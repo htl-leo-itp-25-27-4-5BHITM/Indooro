@@ -41,7 +41,7 @@ flowchart TB
     BE -->|HTTPS| OAI[OpenAI API]
 ```
 
-**Java-Versionen [IST]:** Compile `maven.compiler.release=17`, CI JDK 21, Runtime-Image JDK 25 (Befund AUD-36). **[SOLL]** CI mit JDK 17 und Tests (`mvn -B verify`), Runtime-Image `eclipse-temurin:17-jre` oder bewusste Anhebung aller drei Stellen über einen OpenSpec-Delta.
+**Java-Versionen [IST]:** Compile `maven.compiler.release=17`, CI JDK 21, Runtime-Image JDK 25 (Befund AUD-36). **[SOLL]** JDK 21 LTS an allen drei Stellen (`maven.compiler.release=21`, CI JDK 21 mit `mvn -B verify`, Runtime-Image `eclipse-temurin:21-jre`) gemäß BP-ADR-02 in `docs/audit/MODERNIZATION_BLUEPRINT.md`.
 
 **Umgebungsvariablen Backend (k8s/backend.yaml):** `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `OPENSEARCH_PORT`, `OPENAI_API_KEY` (Secret), `OPENAI_UPSELL_ENABLED`, `OPENAI_UPSELL_MODEL`, `OPENAI_UPSELL_REASONING_EFFORT`, `OPENAI_UPSELL_TIMEOUT_MS`, `UPSELL_MAX_CANDIDATES`, `QUARKUS_OIDC_AUTH_SERVER_URL`, `QUARKUS_OIDC_CLIENT_ID`, `QUARKUS_OIDC_CREDENTIALS_SECRET` (Secret), `QUARKUS_OIDC_APPLICATION_TYPE`, `QUARKUS_HTTP_PROXY_PROXY_ADDRESS_FORWARDING`, `QUARKUS_OIDC_TOKEN_STATE_MANAGER_STRATEGY`, `QUARKUS_OIDC_TOKEN_STATE_MANAGER_SPLIT_TOKENS`.
 
@@ -820,7 +820,7 @@ Pretty-printed, sortierte Keys, ISO-8601. Dateiname `<Name>-<8 Zeichen ID>.indoo
 | --- | --- | --- |
 | iOS-Build | Xcode manuell, Scheme `MCindooroApp` | 3 Konfigurationen/Schemes, xcconfig |
 | iOS-Tests | keine | Swift Testing + XCUITest, CI `ios.yaml` |
-| Backend-Build | `mvn -B package -DskipTests` (JDK 21) | `mvn -B verify` (JDK 17), JaCoCo-Artefakt |
+| Backend-Build | `mvn -B package -DskipTests` (JDK 21) | `mvn -B verify` (JDK 21), JaCoCo-Artefakt |
 | Backend-Tests | 8 Testklassen, JS-Unit, Playwright, httpYac | + Security-Matrix (Change D), Rate-Limit-Tests (Change C) |
 | OpenSpec | `npx -y @fission-ai/openspec@1.3.1 validate --all --strict` | zusätzlich CI-Job |
 | Deploy | GHCR `latest` + `kubectl rollout restart` | Rollout per SHA-Tag, Smoke `npm run api:test:public` |

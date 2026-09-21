@@ -91,7 +91,7 @@
 - [ ] 13.2 Verify the backend rate-limit tests of `harden-platform-security-baseline` cover the plan and events limits of this change.
 - [ ] 13.3 Handle HTTP 429 in `UpsellModel` as empty suggestions without retry.
 - [ ] 13.4 Add `.github/workflows/ios.yaml` running build and tests.
-- [ ] 13.5 Change `.github/workflows/ci.yaml` to JDK 21 (one Java version for compile, CI, and runtime per `docs/audit/MODERNIZATION_BLUEPRINT.md` BP-ADR-02) and `mvn -B verify` with tests.
+- [ ] 13.5 Set `maven.compiler.release=21` in `backend/indooro_server/pom.xml` and change `.github/workflows/ci.yaml` to JDK 21 (one Java version for compile, CI, and runtime per `docs/audit/MODERNIZATION_BLUEPRINT.md` BP-ADR-02) and `mvn -B verify` with tests.
 
 ## 14. Legacy Retirement
 

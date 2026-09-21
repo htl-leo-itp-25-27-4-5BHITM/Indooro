@@ -97,7 +97,7 @@ flowchart LR
 | P2-09 | **App Attest** evaluieren, falls Rate Limiting nicht reicht. | AUD-31 | ADR-007 | L | Entscheidungsnotiz |
 | P2-10 | **Rezept-Paginierung** (heute nur Seite 0/20) mit Nachladen beim Scrollen. | – | neuer Change `add-recipe-pagination` | S | Mehr als 20 Rezepte erreichbar |
 | P2-11 | **Stopp-Reihenfolge 2-opt** (Feature-Flag) nach Messung. | AUD-16 | C Decision 8 | S | Kürzere Tourlänge ohne Laufzeitüberschreitung |
-| P2-12 | **Java-Versionen vereinheitlichen** oder bewusst anheben (17/21/25). | AUD-36 | neuer Change `align-java-runtime` | S | Compile, CI und Image nutzen dieselbe Hauptversion |
+| P2-12 | **Java-Versionen vereinheitlichen** auf JDK 21 LTS (BP-ADR-02; heute 17/21/25). | AUD-36 | C 13.5 (Compile + CI) und `harden-platform-security-baseline` (Runtime-Image `eclipse-temurin:21-jre`) | S | Compile, CI und Image nutzen dieselbe Hauptversion |
 | P2-13 | **Recipe-Bild-URLs entkoppeln**: relative Pfade in DB, Basis-URL im Backend/Client auflösen (heute LeoCloud-absolute URLs in V9). | – | neuer Change `relative-recipe-image-urls` | S | Lokale Umgebung zeigt Bilder vom lokalen Backend |
 
 ---

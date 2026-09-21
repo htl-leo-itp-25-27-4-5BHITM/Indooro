@@ -168,7 +168,7 @@ api/openapi/indooro-mobile.yaml
 | Security | Methoden-spezifische HTTP-Permissions + `@RolesAllowed` + `deny-unannotated-endpoints` in `prod` (Change D) |
 | Mobile-Schutz | `MobileRateLimitFilter` für Upsell-Routen (Change C) |
 | Vertrag | SmallRye-OpenAPI-Export + `@Schema` auf Mobile-DTOs (Change C) |
-| Build | JDK 17 durchgängig, Tests in CI, JaCoCo-Report |
+| Build | JDK 21 LTS durchgängig (Compile, CI, `eclipse-temurin:21-jre`; siehe [BP-ADR-02](../audit/MODERNIZATION_BLUEPRINT.md)), Tests in CI, JaCoCo-Report |
 | Upsell | AI-first mit Post-Validierung und Idempotenz (aktive Upsell-Changes) |
 | Layout | `accessAngle`-Semantik definieren (Roadmap P2-06) |
 
