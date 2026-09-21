@@ -1,0 +1,2778 @@
+openapi: 3.1.0
+info:
+  title: Indooro API
+  version: "2026.09.17"
+  summary: Shared HTTP contract of the Indooro backend (Quarkus) for the iOS client, the Admin Platform, and the customer web page.
+  description: |
+    Hand-reviewed contract that mirrors the implementation in
+    `backend/indooro_server/src/main/java/at/htl/resource` at commit `63a42d4`.
+    It is the single source of truth referenced by the OpenSpec capability `shared-api`.
+
+    Every operation carries:
+    - `x-indooro-access`: effective access class today
+      (`public`, `authenticated`, `role:admin`, `role:admin|region-manager`, `role:admin|region-manager|store-manager`).
+      Region and store scope is enforced additionally by `AdminAccessService` for non-admin roles.
+    - `x-indooro-consumers`: known shipped consumers (`ios`, `admin-ui`, `customer-web`, `api-tests`, `none`).
+    - `x-indooro-findings` (optional): audit finding ids from `docs/audit/CODE_AUDIT.md`.
+
+    Conventions: camelCase JSON, UUID strings for PostgreSQL ids, integer product ids and category codes,
+    ISO-8601 UTC instants (fractional seconds possible), beacon UUIDs as 32 lowercase hex characters.
+  contact:
+    name: Indooro Team (HTL Leonding)
+servers:
+  - url: https://it220209.cloud.htl-leonding.ac.at
+    description: LeoCloud (namespace student-it220209)
+  - url: http://localhost:8080
+    description: Local Quarkus dev mode
+tags:
+  - name: mobile-stores
+    description: Anonymous store discovery and store layouts for the iOS client.
+  - name: mobile-recipes
+    description: Anonymous published recipe catalog.
+  - name: mobile-upsell
+    description: Anonymous upsell planning, telemetry, and dismissals.
+  - name: catalog
+    description: Product and category catalog (OpenSearch).
+  - name: legacy-layout
+    description: Global legacy layout documents (OpenSearch index `layouts`).
+  - name: utility
+    description: PDF conversion and export utilities.
+  - name: maintenance
+    description: Catalog index maintenance and health.
+  - name: admin-session
+    description: Current admin user.
+  - name: admin-logs
+    description: Audit and error logs.
+  - name: admin-products
+    description: Admin product catalog maintenance.
+  - name: admin-recipes
+    description: Admin recipe management and ingredient-product mapping.
+  - name: admin-recipe-tags
+    description: Admin recipe tag management.
+  - name: regions
+    description: Region master data.
+  - name: stores
+    description: Store master data, audit, and beacon assignments.
+  - name: store-layouts
+    description: Versioned store layouts and editor context.
+  - name: beacons
+    description: Beacon inventory and assignments.
+  - name: example
+    description: Quarkus template resource (dead code, DC-16).
+
+security: []
+
+paths:
+  /hello:
+    get:
+      tags: [example]
+      operationId: hello
+      deprecated: true
+      summary: Quarkus template greeting.
+      x-indooro-access: public
+      x-indooro-consumers: [none]
+      x-indooro-findings: [DC-16]
+      responses:
+        "200":
+          description: Greeting text.
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Hello from Quarkus REST
+
+  # ---------------------------------------------------------------- mobile
+  /api/mobile/stores:
+    get:
+      tags: [mobile-stores]
+      operationId: listMobileStores
+      summary: List active stores ordered by name.
+      x-indooro-access: public
+      x-indooro-consumers: [ios]
+      responses:
+        "200":
+          description: Active stores.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MobileStoreSummary" }
+  /api/mobile/stores/beacon-identities:
+    get:
+      tags: [mobile-stores]
+      operationId: listMobileBeaconIdentities
+      summary: Distinct normalized UUIDs of active beacons assigned to active stores.
+      x-indooro-access: public
+      x-indooro-consumers: [ios]
+      responses:
+        "200":
+          description: Beacon UUID catalog for ranging constraints.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BeaconIdentitiesResponse" }
+  /api/mobile/stores/by-beacon:
+    get:
+      tags: [mobile-stores]
+      operationId: findMobileStoreByBeacon
+      summary: Resolve the active store for a detected beacon.
+      description: |
+        With major and minor, the exact identity key is tried first. If no active exact match exists,
+        resolution falls back to UUID-only matching (finding BUG-09).
+      x-indooro-access: public
+      x-indooro-consumers: [ios]
+      x-indooro-findings: [BUG-09]
+      parameters:
+        - name: uuid
+          in: query
+          required: true
+          description: Beacon UUID with or without hyphens, any case.
+          schema: { type: string, maxLength: 40 }
+        - name: major
+          in: query
+          description: Must be sent together with minor.
+          schema: { type: integer }
+        - name: minor
+          in: query
+          description: Must be sent together with major.
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Store and matched beacon.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StoreByBeaconResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/mobile/stores/{storeId}/layout/current:
+    get:
+      tags: [mobile-stores]
+      operationId: getMobileStoreLayout
+      summary: Active layout of an active store, or the bundled default layout.
+      x-indooro-access: public
+      x-indooro-consumers: [ios]
+      x-indooro-findings: [API-03, PERF-26, PERF-29]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdPath"
+      responses:
+        "200":
+          description: Layout with source information.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MobileLayoutResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/mobile/recipes:
+    get:
+      tags: [mobile-recipes]
+      operationId: listMobileRecipes
+      summary: Published recipes, newest first.
+      x-indooro-access: public
+      x-indooro-consumers: [ios]
+      x-indooro-findings: [PERF-02]
+      parameters:
+        - $ref: "#/components/parameters/RecipeTagQuery"
+        - $ref: "#/components/parameters/StoreIdQuery"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/MobilePageSize"
+      responses:
+        "200":
+          description: Page of recipe summaries.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeSummaryPage" }
+  /api/mobile/recipes/search:
+    get:
+      tags: [mobile-recipes]
+      operationId: searchMobileRecipes
+      summary: Search published recipes by title, summary, or description.
+      x-indooro-access: public
+      x-indooro-consumers: [ios]
+      x-indooro-findings: [PERF-02, PERF-31]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2 }
+        - $ref: "#/components/parameters/RecipeTagQuery"
+        - $ref: "#/components/parameters/StoreIdQuery"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/MobilePageSize"
+      responses:
+        "200":
+          description: Page of recipe summaries.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeSummaryPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+  /api/mobile/recipes/{recipeId}:
+    get:
+      tags: [mobile-recipes]
+      operationId: getMobileRecipe
+      summary: Published recipe detail.
+      x-indooro-access: public
+      x-indooro-consumers: [ios]
+      parameters:
+        - $ref: "#/components/parameters/RecipeIdPath"
+      responses:
+        "200":
+          description: Recipe detail.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/mobile/recipes/{recipeId}/product-mapping:
+    get:
+      tags: [mobile-recipes]
+      operationId: getMobileRecipeProductMapping
+      summary: Ingredient-to-product mapping status of a published recipe for a store.
+      x-indooro-access: public
+      x-indooro-consumers: [ios]
+      parameters:
+        - $ref: "#/components/parameters/RecipeIdPath"
+        - $ref: "#/components/parameters/StoreIdQuery"
+        - $ref: "#/components/parameters/StoreCodeQuery"
+      responses:
+        "200":
+          description: Mapping status per ingredient.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeProductMappingResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /api/mobile/upsell/suggestions:
+    post:
+      tags: [mobile-upsell]
+      operationId: postUpsellSuggestions
+      deprecated: true
+      summary: Single-product upsell suggestions (no shipped client).
+      x-indooro-access: public
+      x-indooro-consumers: [none]
+      x-indooro-findings: [DC-23, PERF-01, SEC-12]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpsellSuggestionRequest" }
+      responses:
+        "200":
+          description: Suggestions.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UpsellSuggestionResponse" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
+  /api/mobile/upsell/plan:
+    post:
+      tags: [mobile-upsell]
+      operationId: postUpsellPlan
+      summary: Upsell suggestions for several shopping stations at once.
+      x-indooro-access: public
+      x-indooro-consumers: [ios, api-tests]
+      x-indooro-findings: [PERF-01, PERF-03, PERF-04, SEC-12, SEC-21]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpsellPlanRequest" }
+      responses:
+        "200":
+          description: Plan with suggestions per opportunity.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/UpsellPlanResponse" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+  /api/mobile/upsell/events:
+    post:
+      tags: [mobile-upsell]
+      operationId: postUpsellEvent
+      summary: Store an upsell telemetry event.
+      x-indooro-access: public
+      x-indooro-consumers: [ios, api-tests]
+      x-indooro-findings: [SEC-13]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpsellEventRequest" }
+      responses:
+        "202": { description: Event stored. }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+  /api/mobile/upsell/dismiss:
+    post:
+      tags: [mobile-upsell]
+      operationId: postUpsellDismiss
+      summary: Record that a suggestion was dismissed.
+      description: The stored suppression is currently never read (finding BUG-01).
+      x-indooro-access: public
+      x-indooro-consumers: [ios, api-tests]
+      x-indooro-findings: [API-01, BUG-01, BUG-02]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpsellDismissRequest" }
+      responses:
+        "202": { description: Dismissal stored. }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+
+  # ---------------------------------------------------------------- catalog
+  /api/products:
+    get:
+      tags: [catalog]
+      operationId: listProducts
+      summary: List product documents (match_all).
+      x-indooro-access: public
+      x-indooro-consumers: [ios, customer-web]
+      x-indooro-findings: [API-14, PERF-25]
+      parameters:
+        - name: size
+          in: query
+          description: No upper bound is enforced on this legacy route.
+          schema: { type: integer, default: 100 }
+      responses:
+        "200":
+          description: Products. The array may contain null entries (finding API-14).
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  oneOf:
+                    - $ref: "#/components/schemas/Product"
+                    - type: "null"
+        "500": { $ref: "#/components/responses/LegacyServerError" }
+    post:
+      tags: [catalog]
+      operationId: indexProduct
+      summary: Index one product (legacy write path).
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [api-tests]
+      x-indooro-findings: [API-20, BUG-12]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Product" }
+      responses:
+        "200":
+          description: OpenSearch result as string.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result: { type: string, examples: [Created, Updated] }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/LegacyServerError" }
+  /api/products/search:
+    get:
+      tags: [catalog]
+      operationId: searchProducts
+      summary: Fuzzy product search with optional store filter.
+      x-indooro-access: public
+      x-indooro-consumers: [ios, customer-web, admin-ui]
+      x-indooro-findings: [API-04, API-13, SEC-22]
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 1 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 10 }
+        - $ref: "#/components/parameters/StoreIdTextQuery"
+        - $ref: "#/components/parameters/StoreCodeQuery"
+      responses:
+        "200":
+          description: Matching products.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Product" }
+        "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "500": { $ref: "#/components/responses/LegacyServerError" }
+  /api/products/{id}:
+    get:
+      tags: [catalog]
+      operationId: getProduct
+      summary: Product by id.
+      x-indooro-access: public
+      x-indooro-consumers: [api-tests]
+      parameters:
+        - $ref: "#/components/parameters/ProductIdPath"
+      responses:
+        "200":
+          description: Product.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+        "404": { $ref: "#/components/responses/LegacyNotFound" }
+        "500": { $ref: "#/components/responses/LegacyServerError" }
+  /api/products/bulk:
+    post:
+      tags: [catalog]
+      operationId: indexProductsBulk
+      summary: Bulk index products (used by the admin import drawer).
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      x-indooro-findings: [API-20]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              minItems: 1
+              items: { $ref: "#/components/schemas/Product" }
+      responses:
+        "200":
+          description: Summary message. Per-item OpenSearch errors are only logged.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/categories:
+    get:
+      tags: [catalog]
+      operationId: listCategories
+      summary: List categories sorted by code; seeds the index on first read.
+      x-indooro-access: public
+      x-indooro-consumers: [admin-ui, api-tests]
+      x-indooro-findings: [API-15, PERF-08]
+      parameters:
+        - name: size
+          in: query
+          description: Clamped to 1..500; values below 1 become 100.
+          schema: { type: integer, default: 100, maximum: 500 }
+      responses:
+        "200":
+          description: Categories.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Category" }
+        "500": { $ref: "#/components/responses/LegacyServerError" }
+    post:
+      tags: [catalog]
+      operationId: upsertCategory
+      summary: Create or replace one category.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Category" }
+      responses:
+        "200":
+          description: Stored category.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/categories/{categoryCode}:
+    parameters:
+      - name: categoryCode
+        in: path
+        required: true
+        schema: { type: integer }
+    get:
+      tags: [catalog]
+      operationId: getCategory
+      summary: Category by code.
+      x-indooro-access: public
+      x-indooro-consumers: [api-tests]
+      responses:
+        "200":
+          description: Category.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "404": { $ref: "#/components/responses/LegacyNotFound" }
+    put:
+      tags: [catalog]
+      operationId: replaceCategory
+      summary: Create or replace a category under the path code.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [none]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Category" }
+      responses:
+        "200":
+          description: Stored category.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Category" }
+        "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/categories/bulk:
+    post:
+      tags: [catalog]
+      operationId: indexCategoriesBulk
+      summary: Bulk index categories.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              minItems: 1
+              items: { $ref: "#/components/schemas/Category" }
+      responses:
+        "200":
+          description: Summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message, count]
+                properties:
+                  message: { type: string, const: Categories indexed }
+                  count: { type: integer }
+        "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ---------------------------------------------------------------- legacy layout
+  /api/layout/current:
+    get:
+      tags: [legacy-layout]
+      operationId: getLegacyCurrentLayout
+      summary: Current global layout or the bundled default layout.
+      x-indooro-access: public
+      x-indooro-consumers: [ios, customer-web, admin-ui]
+      x-indooro-findings: [PERF-08]
+      responses:
+        "200":
+          description: Layout document.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyLayoutDocument" }
+        "500": { $ref: "#/components/responses/LegacyServerError" }
+    post:
+      tags: [legacy-layout]
+      operationId: saveLegacyCurrentLayout
+      summary: Save a new global layout version and make it current.
+      description: Currently anonymous (finding SEC-06); scheduled to require role admin by change `protect-legacy-write-endpoints`.
+      x-indooro-access: public
+      x-indooro-consumers: [admin-ui]
+      x-indooro-findings: [SEC-02, SEC-06, PERF-33, BUG-04]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LegacyLayoutDocument" }
+      responses:
+        "200":
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [message, layoutId, savedAt]
+                properties:
+                  message: { type: string }
+                  layoutId: { type: string, format: uuid }
+                  savedAt: { type: string, format: date-time }
+        "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "500": { $ref: "#/components/responses/LegacyServerError" }
+  /api/layout/history:
+    get:
+      tags: [legacy-layout]
+      operationId: listLegacyLayoutHistory
+      summary: Recent global layout versions.
+      x-indooro-access: public
+      x-indooro-consumers: [ios]
+      x-indooro-findings: [API-08, PERF-09]
+      parameters:
+        - name: limit
+          in: query
+          description: Values below 1 become 10; no upper bound is enforced.
+          schema: { type: integer, default: 10 }
+      responses:
+        "200":
+          description: Versions ordered by savedAt descending.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/LayoutHistoryEntry" }
+        "500": { $ref: "#/components/responses/LegacyServerError" }
+  /api/layout/versions/{layoutId}:
+    get:
+      tags: [legacy-layout]
+      operationId: getLegacyLayoutVersion
+      summary: One global layout version by id.
+      x-indooro-access: public
+      x-indooro-consumers: [ios]
+      parameters:
+        - name: layoutId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Layout document.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegacyLayoutDocument" }
+        "404": { $ref: "#/components/responses/LegacyNotFound" }
+
+  # ---------------------------------------------------------------- utility
+  /api/convert/pdf-to-json:
+    post:
+      tags: [utility]
+      operationId: convertPdfToJson
+      summary: Parse a belegplan PDF into product rows without persisting them.
+      x-indooro-access: public
+      x-indooro-consumers: [none]
+      x-indooro-findings: [SEC-06, SEC-11]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  contentMediaType: application/pdf
+      responses:
+        "200":
+          description: Parsed rows, deduplicated by layout code.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ImportedProduct" }
+        "400":
+          description: No file uploaded.
+          content:
+            application/json:
+              schema: { type: string, const: Keine Datei hochgeladen }
+        "500":
+          description: Parsing failed (plain German message).
+          content:
+            application/json:
+              schema: { type: string }
+  /api/export/pdf:
+    post:
+      tags: [utility]
+      operationId: exportBelegplanPdf
+      summary: Render a belegplan PDF from product rows.
+      x-indooro-access: public
+      x-indooro-consumers: [none]
+      x-indooro-findings: [SEC-05, SEC-06]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: "#/components/schemas/Product" }
+      responses:
+        "200":
+          description: PDF attachment `belegplan_export.pdf`.
+          content:
+            application/pdf:
+              schema: { type: string, contentMediaType: application/pdf }
+        "500":
+          description: Export failed (plain German message).
+          content:
+            application/pdf:
+              schema: { type: string }
+
+  # ---------------------------------------------------------------- maintenance
+  /api/admin/index/create:
+    post:
+      tags: [maintenance]
+      operationId: createProductIndex
+      summary: Create the product index with its mapping.
+      description: Reports success even when creation fails (finding BUG-11).
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: authenticated
+      x-indooro-consumers: [api-tests]
+      x-indooro-findings: [SEC-06, BUG-11, BUG-12]
+      responses:
+        "200":
+          description: Message.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/index:
+    delete:
+      tags: [maintenance]
+      operationId: deleteProductIndex
+      summary: Delete the product index (destructive).
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: authenticated
+      x-indooro-consumers: [api-tests]
+      x-indooro-findings: [SEC-06, BUG-11]
+      responses:
+        "200":
+          description: Message.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /api/admin/health:
+    get:
+      tags: [maintenance]
+      operationId: adminHealth
+      summary: Static health response.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: authenticated
+      x-indooro-consumers: [api-tests]
+      responses:
+        "200":
+          description: Always UP.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: UP }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ---------------------------------------------------------------- admin session & logs
+  /api/admin/me:
+    get:
+      tags: [admin-session]
+      operationId: getCurrentAdminUser
+      summary: Current admin identity and scope.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      responses:
+        "200":
+          description: Current user.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentUserResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/logs:
+    get:
+      tags: [admin-logs]
+      operationId: listAuditLogs
+      summary: Most recent audit events.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      x-indooro-findings: [SEC-10, PERF-32]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: Audit events.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemLogResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/error-logs:
+    get:
+      tags: [admin-logs]
+      operationId: listErrorLogs
+      summary: Most recent error log entries including stack traces.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      x-indooro-findings: [SEC-07]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, minimum: 1, maximum: 100 }
+      responses:
+        "200":
+          description: Error entries.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ErrorLogResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ---------------------------------------------------------------- admin products
+  /api/admin/products:
+    get:
+      tags: [admin-products]
+      operationId: listAdminProducts
+      summary: Product list for the admin UI.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      x-indooro-findings: [PERF-23]
+      parameters:
+        - name: size
+          in: query
+          description: Missing means 500; clamped to 1..1000.
+          schema: { type: integer, maximum: 1000 }
+      responses:
+        "200":
+          description: Products.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Product" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
+    post:
+      tags: [admin-products]
+      operationId: upsertAdminProduct
+      summary: Create or replace a product (name and layout code are trimmed).
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/Product" }
+      responses:
+        "200":
+          description: Stored product.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
+  /api/admin/products/{id}:
+    delete:
+      tags: [admin-products]
+      operationId: deleteAdminProduct
+      summary: Delete a product document.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      parameters:
+        - $ref: "#/components/parameters/ProductIdPath"
+      responses:
+        "204": { description: Deleted. }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- admin recipes
+  /api/admin/recipes:
+    get:
+      tags: [admin-recipes]
+      operationId: listAdminRecipes
+      summary: Recipes of any status.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      x-indooro-findings: [API-12, PERF-02]
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - $ref: "#/components/parameters/RecipeTagQuery"
+        - name: status
+          in: query
+          schema: { $ref: "#/components/schemas/RecipeStatus" }
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/AdminPageSize"
+      responses:
+        "200":
+          description: Page of recipes.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeSummaryPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [admin-recipes]
+      operationId: createRecipe
+      summary: Create a recipe with ingredients and steps.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecipeCreateRequest" }
+      responses:
+        "200":
+          description: Created recipe.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeDetail" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/admin/recipes/{recipeId}:
+    parameters:
+      - $ref: "#/components/parameters/RecipeIdPath"
+    get:
+      tags: [admin-recipes]
+      operationId: getAdminRecipe
+      summary: Recipe detail of any status.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      responses:
+        "200":
+          description: Recipe detail.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [admin-recipes]
+      operationId: updateRecipe
+      summary: Replace recipe metadata and tag assignments.
+      description: |
+        Full replacement: omitted optional fields become null and `tagIds` replaces all tag assignments
+        (null or empty removes all tags). See finding BUG-13.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      x-indooro-findings: [BUG-13]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecipeUpsertRequest" }
+      responses:
+        "200":
+          description: Updated recipe.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeDetail" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/admin/recipes/{recipeId}/publish:
+    patch:
+      tags: [admin-recipes]
+      operationId: publishRecipe
+      summary: Publish a recipe that has a title, ingredients, and steps.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      parameters:
+        - $ref: "#/components/parameters/RecipeIdPath"
+      responses:
+        "200": { $ref: "#/components/responses/RecipeDetailOk" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/admin/recipes/{recipeId}/deactivate:
+    patch:
+      tags: [admin-recipes]
+      operationId: deactivateRecipe
+      summary: Move a recipe back to DRAFT.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/RecipeIdPath"
+      responses:
+        "200": { $ref: "#/components/responses/RecipeDetailOk" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/admin/recipes/{recipeId}/archive:
+    patch:
+      tags: [admin-recipes]
+      operationId: archiveRecipe
+      summary: Archive a recipe.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/RecipeIdPath"
+      responses:
+        "200": { $ref: "#/components/responses/RecipeDetailOk" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/admin/recipes/{recipeId}/ingredients:
+    post:
+      tags: [admin-recipes]
+      operationId: addRecipeIngredient
+      summary: Add an ingredient.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [api-tests]
+      parameters:
+        - $ref: "#/components/parameters/RecipeIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecipeIngredientRequest" }
+      responses:
+        "200":
+          description: Created ingredient.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeIngredient" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/admin/recipes/{recipeId}/ingredients/{ingredientId}:
+    parameters:
+      - $ref: "#/components/parameters/RecipeIdPath"
+      - $ref: "#/components/parameters/IngredientIdPath"
+    put:
+      tags: [admin-recipes]
+      operationId: updateRecipeIngredient
+      summary: Replace an ingredient.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [api-tests]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecipeIngredientRequest" }
+      responses:
+        "200":
+          description: Updated ingredient.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeIngredient" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [admin-recipes]
+      operationId: deleteRecipeIngredient
+      summary: Delete an ingredient.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [api-tests]
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/admin/recipes/{recipeId}/steps:
+    post:
+      tags: [admin-recipes]
+      operationId: addRecipeStep
+      summary: Add a preparation step.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [api-tests]
+      parameters:
+        - $ref: "#/components/parameters/RecipeIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecipeStepRequest" }
+      responses:
+        "200":
+          description: Created step.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeStep" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/admin/recipes/{recipeId}/steps/{stepId}:
+    parameters:
+      - $ref: "#/components/parameters/RecipeIdPath"
+      - name: stepId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    put:
+      tags: [admin-recipes]
+      operationId: updateRecipeStep
+      summary: Replace a step.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [api-tests]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecipeStepRequest" }
+      responses:
+        "200":
+          description: Updated step.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeStep" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+    delete:
+      tags: [admin-recipes]
+      operationId: deleteRecipeStep
+      summary: Delete a step.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [api-tests]
+      responses:
+        "204": { description: Deleted. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/admin/recipes/{recipeId}/mapping-status:
+    get:
+      tags: [admin-recipes]
+      operationId: getAdminRecipeMappingStatus
+      summary: Mapping status of any recipe.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      parameters:
+        - $ref: "#/components/parameters/RecipeIdPath"
+        - $ref: "#/components/parameters/StoreIdQuery"
+        - $ref: "#/components/parameters/StoreCodeQuery"
+      responses:
+        "200":
+          description: Mapping status per ingredient.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeProductMappingResponse" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/admin/recipes/{recipeId}/ingredients/{ingredientId}/mapping-suggestions:
+    get:
+      tags: [admin-recipes]
+      operationId: getMappingSuggestions
+      summary: Catalog search results for an ingredient (empty on catalog errors).
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/RecipeIdPath"
+        - $ref: "#/components/parameters/IngredientIdPath"
+        - $ref: "#/components/parameters/StoreIdQuery"
+        - name: q
+          in: query
+          description: Defaults to the canonical name, then the display name.
+          schema: { type: string }
+        - name: size
+          in: query
+          schema: { type: integer, default: 10, minimum: 1, maximum: 25 }
+      responses:
+        "200":
+          description: Candidate products.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/MappedRecipeProduct" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/admin/recipes/{recipeId}/ingredients/{ingredientId}/product-mapping:
+    put:
+      tags: [admin-recipes]
+      operationId: confirmIngredientMapping
+      summary: Confirm an ingredient-to-product mapping.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      parameters:
+        - $ref: "#/components/parameters/RecipeIdPath"
+        - $ref: "#/components/parameters/IngredientIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProductMappingRequest" }
+      responses:
+        "200":
+          description: New mapping status of the ingredient.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IngredientMappingStatus" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/ServerError" }
+  /api/admin/recipes/{recipeId}/ingredients/{ingredientId}/product-mapping/{mappingId}:
+    delete:
+      tags: [admin-recipes]
+      operationId: archiveIngredientMapping
+      summary: Archive a mapping.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/RecipeIdPath"
+        - $ref: "#/components/parameters/IngredientIdPath"
+        - name: mappingId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "204": { description: Archived. }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/admin/recipe-tags:
+    get:
+      tags: [admin-recipe-tags]
+      operationId: listRecipeTags
+      summary: Recipe tags filtered by status (default ACTIVE) and text.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [api-tests]
+      parameters:
+        - $ref: "#/components/parameters/RecordStatusQuery"
+        - name: q
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Tags.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RecipeTag" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+    post:
+      tags: [admin-recipe-tags]
+      operationId: createRecipeTag
+      summary: Create a tag.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [api-tests]
+      x-indooro-findings: [SEC-10, BUG-06]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecipeTagRequest" }
+      responses:
+        "200":
+          description: Created tag.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeTag" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/admin/recipe-tags/{tagId}:
+    put:
+      tags: [admin-recipe-tags]
+      operationId: updateRecipeTag
+      summary: Replace a tag.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [api-tests]
+      parameters:
+        - $ref: "#/components/parameters/TagIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RecipeTagRequest" }
+      responses:
+        "200":
+          description: Updated tag.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeTag" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/admin/recipe-tags/{tagId}/archive:
+    patch:
+      tags: [admin-recipe-tags]
+      operationId: archiveRecipeTag
+      summary: Archive a tag.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [api-tests]
+      parameters:
+        - $ref: "#/components/parameters/TagIdPath"
+      responses:
+        "200":
+          description: Archived tag.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeTag" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- regions
+  /api/regions:
+    get:
+      tags: [regions]
+      operationId: listRegions
+      summary: Regions in scope (default status ACTIVE).
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      parameters:
+        - $ref: "#/components/parameters/RecordStatusQuery"
+      responses:
+        "200":
+          description: Regions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/RegionResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [regions]
+      operationId: createRegion
+      summary: Create a region.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegionUpsertRequest" }
+      responses:
+        "200":
+          description: Created region.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegionResponse" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/regions/{regionId}:
+    parameters:
+      - name: regionId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [regions]
+      operationId: getRegion
+      summary: Region in scope.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [api-tests]
+      responses:
+        "200":
+          description: Region.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegionResponse" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [regions]
+      operationId: updateRegion
+      summary: Replace region code, name, and description.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RegionUpsertRequest" }
+      responses:
+        "200":
+          description: Updated region.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegionResponse" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/regions/{regionId}/archive:
+    patch:
+      tags: [regions]
+      operationId: archiveRegion
+      summary: Archive a region.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - name: regionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Archived region.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RegionResponse" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- stores
+  /api/stores:
+    get:
+      tags: [stores]
+      operationId: listStores
+      summary: Stores in scope (default status ACTIVE), sorted by name.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      x-indooro-findings: [API-12, PERF-05]
+      parameters:
+        - name: query
+          in: query
+          description: Matches name, store code, or city (case-insensitive substring).
+          schema: { type: string }
+        - name: regionId
+          in: query
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/RecordStatusQuery"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/AdminPageSize"
+      responses:
+        "200":
+          description: Page of stores.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StoreSummaryPage" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [stores]
+      operationId: createStore
+      summary: Create a store (admin, or region manager inside the assigned region).
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StoreUpsertRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/StoreDetailOk" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/stores/{storeId}:
+    parameters:
+      - $ref: "#/components/parameters/StoreIdPath"
+    get:
+      tags: [stores]
+      operationId: getStore
+      summary: Store detail in scope.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      responses:
+        "200": { $ref: "#/components/responses/StoreDetailOk" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [stores]
+      operationId: updateStore
+      summary: Replace store data; non-admins cannot move a store to another region.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StoreUpsertRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/StoreDetailOk" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/stores/{storeId}/archive:
+    patch:
+      tags: [stores]
+      operationId: archiveStore
+      summary: Archive a store and release its beacon assignments.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui]
+      x-indooro-findings: [SEC-14]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdPath"
+      responses:
+        "200": { $ref: "#/components/responses/StoreDetailOk" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/stores/{storeId}/audit:
+    get:
+      tags: [stores]
+      operationId: getStoreAudit
+      summary: Audit history of a store, newest first.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdPath"
+      responses:
+        "200":
+          description: Audit entries.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/StoreAuditResponse" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/stores/{storeId}/beacons:
+    get:
+      tags: [stores]
+      operationId: getStoreBeacons
+      summary: Active beacon assignments of a store.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdPath"
+      responses:
+        "200":
+          description: Assignments.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BeaconAssignmentResponse" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- store layouts
+  /api/stores/{storeId}/layout/current:
+    get:
+      tags: [store-layouts]
+      operationId: getStoreCurrentLayout
+      summary: Active layout or the default layout (status DEFAULT).
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdPath"
+      responses:
+        "200": { $ref: "#/components/responses/StoreLayoutOk" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/stores/{storeId}/layout/versions:
+    parameters:
+      - $ref: "#/components/parameters/StoreIdPath"
+    get:
+      tags: [store-layouts]
+      operationId: listStoreLayoutVersions
+      summary: All layout versions, highest version first.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui]
+      x-indooro-findings: [API-17]
+      responses:
+        "200":
+          description: Version summaries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/LayoutVersionSummary" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: [store-layouts]
+      operationId: saveStoreLayoutVersion
+      summary: Save a new version; activates it when requested or when no active version exists.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui]
+      x-indooro-findings: [SEC-02, BUG-03, PERF-33]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LayoutSaveRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/StoreLayoutOk" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/stores/{storeId}/layout/versions/{layoutId}:
+    get:
+      tags: [store-layouts]
+      operationId: getStoreLayoutVersion
+      summary: One layout version of the store.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdPath"
+        - $ref: "#/components/parameters/LayoutIdPath"
+      responses:
+        "200": { $ref: "#/components/responses/StoreLayoutOk" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/stores/{storeId}/layout/versions/{layoutId}/activate:
+    post:
+      tags: [store-layouts]
+      operationId: activateStoreLayoutVersion
+      summary: Activate a version and archive the previously active one.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui]
+      x-indooro-findings: [BUG-03]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdPath"
+        - $ref: "#/components/parameters/LayoutIdPath"
+      responses:
+        "200": { $ref: "#/components/responses/StoreLayoutOk" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/stores/{storeId}/layout/editor-context:
+    get:
+      tags: [store-layouts]
+      operationId: getStoreEditorContext
+      summary: Store reference, current layout, and assigned beacons for the editor.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdPath"
+      responses:
+        "200":
+          description: Editor context.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EditorContextResponse" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------------- beacons
+  /api/beacons:
+    get:
+      tags: [beacons]
+      operationId: listBeacons
+      summary: Beacons visible in scope, sorted by beacon code.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      x-indooro-findings: [PERF-06]
+      parameters:
+        - $ref: "#/components/parameters/RecordStatusQuery"
+        - name: assigned
+          in: query
+          schema: { type: boolean }
+        - $ref: "#/components/parameters/StoreIdQuery"
+        - name: query
+          in: query
+          description: Matches beacon code or identity key (case-insensitive substring).
+          schema: { type: string }
+      responses:
+        "200":
+          description: Beacons.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BeaconResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [beacons]
+      operationId: createBeacon
+      summary: Create a beacon.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui, api-tests]
+      x-indooro-findings: [BUG-08]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BeaconCreateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/BeaconOk" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/beacons/free:
+    get:
+      tags: [beacons]
+      operationId: listFreeBeacons
+      summary: Active beacons without an active assignment.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [api-tests]
+      x-indooro-findings: [DC-11]
+      responses:
+        "200":
+          description: Free beacons.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BeaconResponse" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /api/beacons/bulk:
+    post:
+      tags: [beacons]
+      operationId: bulkCreateBeacons
+      summary: Create several beacons with a shared UUID and major.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BeaconBulkCreateRequest" }
+      responses:
+        "200":
+          description: Created beacons.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BeaconBulkCreateResponse" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/beacons/{beaconId}:
+    parameters:
+      - $ref: "#/components/parameters/BeaconIdPath"
+    get:
+      tags: [beacons]
+      operationId: getBeacon
+      summary: Beacon in scope.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [api-tests]
+      responses:
+        "200": { $ref: "#/components/responses/BeaconOk" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: [beacons]
+      operationId: updateBeacon
+      summary: Replace beacon code, identity, and notes.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      x-indooro-findings: [SEC-14, BUG-08]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BeaconCreateRequest" }
+      responses:
+        "200": { $ref: "#/components/responses/BeaconOk" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/beacons/{beaconId}/archive:
+    patch:
+      tags: [beacons]
+      operationId: archiveBeacon
+      summary: Archive a beacon and release its assignment.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/BeaconIdPath"
+      responses:
+        "200": { $ref: "#/components/responses/BeaconOk" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/beacons/{beaconId}/assign:
+    post:
+      tags: [beacons]
+      operationId: assignBeacon
+      summary: Assign an active beacon to an active store in scope.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      parameters:
+        - $ref: "#/components/parameters/BeaconIdPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BeaconAssignmentRequest" }
+      responses:
+        "200":
+          description: Active assignment (existing one when already assigned to the store).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BeaconAssignmentResponse" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /api/beacons/{beaconId}/release:
+    post:
+      tags: [beacons]
+      operationId: releaseBeacon
+      summary: End the active assignment.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      parameters:
+        - $ref: "#/components/parameters/BeaconIdPath"
+      responses:
+        "200":
+          description: Release result.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [beaconId, released]
+                properties:
+                  beaconId: { type: string, format: uuid }
+                  released: { type: boolean }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+components:
+  securitySchemes:
+    oidcSession:
+      type: apiKey
+      in: cookie
+      name: q_session
+      description: Quarkus OIDC web-app session cookie (split tokens) created by the Keycloak authorization code flow.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Keycloak access token of realm `indooro` with realm roles in `realm_access.roles`.
+
+  parameters:
+    StoreIdPath:
+      name: storeId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    RecipeIdPath:
+      name: recipeId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    IngredientIdPath:
+      name: ingredientId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    TagIdPath:
+      name: tagId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    LayoutIdPath:
+      name: layoutId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    BeaconIdPath:
+      name: beaconId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ProductIdPath:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+    StoreIdQuery:
+      name: storeId
+      in: query
+      schema: { type: string, format: uuid }
+    StoreIdTextQuery:
+      name: storeId
+      in: query
+      description: Free-text store id matched against the product `storeId` keyword.
+      schema: { type: string }
+    StoreCodeQuery:
+      name: storeCode
+      in: query
+      schema: { type: string, maxLength: 50 }
+    RecipeTagQuery:
+      name: tag
+      in: query
+      description: Recipe tag code (case-insensitive).
+      schema: { type: string }
+    RecordStatusQuery:
+      name: status
+      in: query
+      description: Defaults to ACTIVE; invalid values return 400.
+      schema: { $ref: "#/components/schemas/RecordStatus" }
+    Page:
+      name: page
+      in: query
+      description: Zero-based; negative values become 0.
+      schema: { type: integer, default: 0, minimum: 0 }
+    AdminPageSize:
+      name: size
+      in: query
+      description: Clamped to 1..100.
+      schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+    MobilePageSize:
+      name: size
+      in: query
+      description: Clamped to 1..50.
+      schema: { type: integer, default: 20, minimum: 1, maximum: 50 }
+
+  responses:
+    BadRequest:
+      description: Request rejected by service validation.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorResponse" }
+    ValidationFailed:
+      description: Bean Validation or service validation failed.
+      content:
+        application/json:
+          schema:
+            oneOf:
+              - $ref: "#/components/schemas/ApiErrorResponse"
+              - $ref: "#/components/schemas/ViolationReport"
+    Unauthorized:
+      description: Not authenticated. Browser requests to `/admin/**` are redirected to Keycloak instead.
+    Forbidden:
+      description: Role or scope does not allow the operation.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorResponse" }
+    NotFound:
+      description: Entity not found or not visible.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorResponse" }
+    Conflict:
+      description: Uniqueness or state conflict.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorResponse" }
+    ServerError:
+      description: Unexpected error.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorResponse" }
+    ServiceUnavailable:
+      description: Product catalog not reachable.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ApiErrorResponse" }
+    LegacyBadRequest:
+      description: Legacy error body.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/LegacyError" }
+    LegacyNotFound:
+      description: Legacy error body.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/LegacyError" }
+    LegacyServerError:
+      description: Legacy error body built by string concatenation (may be invalid JSON, finding BUG-12).
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/LegacyError" }
+    RecipeDetailOk:
+      description: Recipe detail.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/RecipeDetail" }
+    StoreDetailOk:
+      description: Store detail.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/StoreDetailResponse" }
+    StoreLayoutOk:
+      description: Store layout.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/StoreLayoutResponse" }
+    BeaconOk:
+      description: Beacon.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/BeaconResponse" }
+
+  schemas:
+    # ---------- shared
+    ApiErrorResponse:
+      type: object
+      required: [status, error, method, path, timestamp]
+      properties:
+        status: { type: integer, examples: [404] }
+        error: { type: string, examples: [Filiale nicht gefunden.] }
+        method: { type: string, examples: [GET] }
+        path: { type: string, examples: [/api/stores/00000000-0000-0000-0000-000000000000] }
+        timestamp: { type: string, format: date-time }
+    ViolationReport:
+      type: object
+      description: Quarkus Hibernate Validator violation report.
+      properties:
+        title: { type: string }
+        status: { type: integer, const: 400 }
+        violations:
+          type: array
+          items:
+            type: object
+            properties:
+              field: { type: string }
+              message: { type: string }
+    LegacyError:
+      type: object
+      properties:
+        error: { type: string }
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    RecordStatus:
+      type: string
+      enum: [ACTIVE, ARCHIVED]
+    RecipeStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED, ARCHIVED]
+    # ---------- catalog
+    Product:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        price: { type: [number, "null"], minimum: 0 }
+        layoutCode:
+          type: [string, "null"]
+          description: Store format `<categoryCode>/<meter>/<level>/<position>`, e.g. `310/1/1/1`.
+        storeId: { type: [string, "null"] }
+        storeCode: { type: [string, "null"] }
+    Category:
+      type: object
+      required: [categoryCode, categoryName]
+      properties:
+        categoryCode: { type: integer }
+        categoryName: { type: string }
+    ImportedProduct:
+      type: object
+      properties:
+        id: { type: [integer, "null"] }
+        name: { type: string }
+        layoutCode: { type: string }
+
+    # ---------- layouts
+    LayoutElement:
+      type: object
+      additionalProperties: true
+      description: Editor element. Unknown keys are preserved.
+      properties:
+        id: { type: [string, integer] }
+        type: { type: string, examples: [shelf, wall, aisle, cashier, entrance, poi, beacon] }
+        x: { type: number }
+        y: { type: number }
+        width: { type: number }
+        height: { type: number }
+        rotation: { type: number }
+        accessAngle: { type: number }
+        locked: { type: boolean }
+        label: { type: string, description: Untrusted text; clients must escape it (finding SEC-02). }
+        category: { type: [string, integer] }
+        meter: { type: [string, integer] }
+        color: { type: string }
+        beaconId: { type: string, description: Untrusted text; clients must escape it. }
+        beaconCode: { type: string }
+        identityKey: { type: string }
+        uuid: { type: string }
+        major: { type: integer }
+        minor: { type: integer }
+    LayoutDocument:
+      type: object
+      additionalProperties: true
+      properties:
+        shopName: { type: string }
+        exportDate: { type: string }
+        gridSize:
+          type: object
+          properties:
+            width: { type: number }
+            height: { type: number }
+        elements:
+          type: array
+          items: { $ref: "#/components/schemas/LayoutElement" }
+    LegacyLayoutDocument:
+      allOf:
+        - $ref: "#/components/schemas/LayoutDocument"
+        - type: object
+          properties:
+            layoutId: { type: string, description: UUID or `bundled-default`. }
+            savedAt: { type: string, format: date-time }
+            recordType: { type: string, enum: [current, version, bundled] }
+    LayoutHistoryEntry:
+      type: object
+      properties:
+        layoutId: { type: string }
+        shopName: { type: string }
+        savedAt: { type: string }
+        exportDate: { type: string }
+        elementCount: { type: integer }
+
+    # ---------- mobile
+    MobileStoreSummary:
+      type: object
+      required: [id, storeCode, name]
+      properties:
+        id: { type: string, format: uuid }
+        storeCode: { type: string }
+        name: { type: string }
+        city: { type: string }
+        address: { type: string, description: "`<street>, <zipCode> <city>`" }
+        latitude: { type: [number, "null"], minimum: -90, maximum: 90 }
+        longitude: { type: [number, "null"], minimum: -180, maximum: 180 }
+    BeaconIdentitiesResponse:
+      type: object
+      required: [uuids]
+      properties:
+        uuids:
+          type: array
+          items: { type: string, pattern: "^[0-9a-f]{32}$" }
+    MatchedBeaconSummary:
+      type: object
+      properties:
+        beaconId: { type: string, format: uuid }
+        beaconCode: { type: string }
+        identityKey: { type: string }
+    StoreByBeaconResponse:
+      type: object
+      required: [store, matchedBeacon]
+      properties:
+        store: { $ref: "#/components/schemas/MobileStoreSummary" }
+        matchedBeacon: { $ref: "#/components/schemas/MatchedBeaconSummary" }
+    MobileLayoutResponse:
+      type: object
+      required: [storeId, source, fallback, layout]
+      properties:
+        storeId: { type: string, format: uuid }
+        layoutId: { type: [string, "null"], format: uuid }
+        source: { type: string, enum: [ACTIVE, DEFAULT] }
+        fallback: { type: boolean }
+        layout: { $ref: "#/components/schemas/LayoutDocument" }
+
+    # ---------- recipes
+    RecipeTag:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        kind: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+    RecipeStep:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        position: { type: integer, minimum: 1 }
+        instruction: { type: string }
+        durationMinutes: { type: [integer, "null"], minimum: 0 }
+    RecipeIngredient:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        position: { type: integer, minimum: 1 }
+        displayName: { type: string }
+        canonicalName: { type: [string, "null"] }
+        quantity: { type: [number, "null"] }
+        quantityText: { type: [string, "null"] }
+        unitCode: { type: [string, "null"] }
+        unitDisplayName: { type: [string, "null"] }
+        preparationNote: { type: [string, "null"] }
+        optional: { type: boolean }
+    RecipeSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        title: { type: string }
+        summary: { type: [string, "null"] }
+        imageUrl: { type: [string, "null"] }
+        servings: { type: integer }
+        prepTimeMinutes: { type: [integer, "null"] }
+        cookTimeMinutes: { type: [integer, "null"] }
+        totalTimeMinutes: { type: [integer, "null"] }
+        status: { $ref: "#/components/schemas/RecipeStatus" }
+        publishedAt: { type: [string, "null"], format: date-time }
+        mappedIngredientCount: { type: integer }
+        totalIngredientCount: { type: integer }
+        tags:
+          type: array
+          items: { $ref: "#/components/schemas/RecipeTag" }
+    RecipeDetail:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        slug: { type: string }
+        title: { type: string }
+        summary: { type: [string, "null"] }
+        description: { type: [string, "null"] }
+        imageUrl: { type: [string, "null"] }
+        imageAlt: { type: [string, "null"] }
+        servings: { type: integer }
+        prepTimeMinutes: { type: [integer, "null"] }
+        cookTimeMinutes: { type: [integer, "null"] }
+        totalTimeMinutes: { type: [integer, "null"] }
+        status: { $ref: "#/components/schemas/RecipeStatus" }
+        publishedAt: { type: [string, "null"], format: date-time }
+        archivedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        tags:
+          type: array
+          items: { $ref: "#/components/schemas/RecipeTag" }
+        ingredients:
+          type: array
+          items: { $ref: "#/components/schemas/RecipeIngredient" }
+        steps:
+          type: array
+          items: { $ref: "#/components/schemas/RecipeStep" }
+    RecipeSummaryPage:
+      type: object
+      required: [content, page, size, totalElements]
+      properties:
+        content:
+          type: array
+          items: { $ref: "#/components/schemas/RecipeSummary" }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer }
+    RecipeUpsertRequest:
+      type: object
+      required: [slug, title, servings]
+      properties:
+        slug: { type: string, maxLength: 140, description: "Normalized to `[a-z0-9-]`." }
+        title: { type: string, maxLength: 180 }
+        summary: { type: [string, "null"], maxLength: 4000 }
+        description: { type: [string, "null"], maxLength: 12000 }
+        imageUrl: { type: [string, "null"] }
+        imageAlt: { type: [string, "null"], maxLength: 240 }
+        servings: { type: integer, minimum: 1 }
+        prepTimeMinutes: { type: [integer, "null"], minimum: 0 }
+        cookTimeMinutes: { type: [integer, "null"], minimum: 0 }
+        totalTimeMinutes: { type: [integer, "null"], minimum: 0 }
+        status: { oneOf: [{ $ref: "#/components/schemas/RecipeStatus" }, { type: "null" }] }
+        tagIds:
+          type: [array, "null"]
+          items: { type: string, format: uuid }
+    RecipeIngredientRequest:
+      type: object
+      required: [position, displayName]
+      properties:
+        position: { type: integer, minimum: 1 }
+        displayName: { type: string, maxLength: 180 }
+        canonicalName: { type: [string, "null"], maxLength: 180 }
+        quantity: { type: [number, "null"], minimum: 0 }
+        quantityText: { type: [string, "null"], maxLength: 80 }
+        unitCode: { type: [string, "null"], maxLength: 20 }
+        preparationNote: { type: [string, "null"], maxLength: 2000 }
+        optional: { type: [boolean, "null"] }
+    RecipeStepRequest:
+      type: object
+      required: [position, instruction]
+      properties:
+        position: { type: integer, minimum: 1 }
+        instruction: { type: string, maxLength: 12000 }
+        durationMinutes: { type: [integer, "null"], minimum: 0 }
+    RecipeTagRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, maxLength: 80 }
+        name: { type: string, maxLength: 120 }
+        kind: { type: [string, "null"], maxLength: 40 }
+        status: { oneOf: [{ $ref: "#/components/schemas/RecordStatus" }, { type: "null" }] }
+    RecipeCreateRequest:
+      type: object
+      required: [recipe]
+      properties:
+        recipe: { $ref: "#/components/schemas/RecipeUpsertRequest" }
+        ingredients:
+          type: [array, "null"]
+          items: { $ref: "#/components/schemas/RecipeIngredientRequest" }
+        steps:
+          type: [array, "null"]
+          items: { $ref: "#/components/schemas/RecipeStepRequest" }
+    MappedRecipeProduct:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        price: { type: [number, "null"] }
+        layoutCode: { type: [string, "null"] }
+        storeId: { type: [string, "null"] }
+        storeCode: { type: [string, "null"] }
+    IngredientMappingStatus:
+      type: object
+      properties:
+        ingredientId: { type: string, format: uuid }
+        ingredientName: { type: string }
+        status:
+          type: string
+          enum: [UNMAPPED, UNAVAILABLE_IN_STORE, MULTIPLE_CANDIDATES, PRODUCT_WITHOUT_LAYOUT, MAPPED]
+        product: { oneOf: [{ $ref: "#/components/schemas/MappedRecipeProduct" }, { type: "null" }] }
+        candidates:
+          type: array
+          items: { $ref: "#/components/schemas/MappedRecipeProduct" }
+        confidence: { type: [number, "null"], minimum: 0, maximum: 1 }
+        manuallyConfirmed: { type: boolean }
+        reason: { type: [string, "null"] }
+    RecipeProductMappingResponse:
+      type: object
+      properties:
+        recipeId: { type: string, format: uuid }
+        storeId: { type: [string, "null"], format: uuid }
+        storeCode: { type: [string, "null"] }
+        ingredients:
+          type: array
+          items: { $ref: "#/components/schemas/IngredientMappingStatus" }
+    ProductMappingRequest:
+      type: object
+      required: [productId]
+      properties:
+        productId: { type: integer }
+        productName: { type: [string, "null"], description: Ignored by the backend. }
+        layoutCode: { type: [string, "null"], description: Ignored by the backend. }
+        storeId: { type: [string, "null"], format: uuid }
+        storeCode: { type: [string, "null"], maxLength: 50 }
+        mappingType: { type: [string, "null"], enum: [EXACT, CATEGORY, SYNONYM, MANUAL, null] }
+        confidence: { type: [number, "null"], minimum: 0, maximum: 1 }
+        manuallyConfirmed: { type: [boolean, "null"] }
+
+    # ---------- upsell
+    UpsellSource:
+      type: string
+      enum: [openai, fallback, filtered, none, cache, disabled]
+    UpsellProductSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        price: { type: [number, "null"] }
+        layoutCode: { type: [string, "null"] }
+        storeId: { type: [string, "null"] }
+        storeCode: { type: [string, "null"] }
+        brand: { type: [string, "null"] }
+        category: { type: [string, "null"] }
+        imageUrl: { type: [string, "null"] }
+        hasLayoutPosition: { type: boolean }
+    UpsellSuggestion:
+      type: object
+      properties:
+        product: { $ref: "#/components/schemas/UpsellProductSummary" }
+        reason: { type: string, maxLength: 180 }
+        confidence: { type: number, minimum: 0, maximum: 1 }
+    UpsellSuggestionRequest:
+      type: object
+      required: [checkedProductId]
+      properties:
+        storeId: { type: [string, "null"], format: uuid }
+        storeCode: { type: [string, "null"], maxLength: 50 }
+        checkedProductId: { type: integer }
+        shoppingListId: { type: [string, "null"], maxLength: 80 }
+        currentListProductIds: { type: [array, "null"], items: { type: integer } }
+        completedProductIds: { type: [array, "null"], items: { type: integer } }
+        source: { type: [string, "null"], maxLength: 50 }
+        recipeId: { type: [string, "null"], format: uuid }
+    UpsellSuggestionResponse:
+      type: object
+      properties:
+        checkedProductId: { type: integer }
+        suggestions:
+          type: array
+          items: { $ref: "#/components/schemas/UpsellSuggestion" }
+        source: { $ref: "#/components/schemas/UpsellSource" }
+        expiresAt: { type: string, format: date-time }
+    UpsellOpportunityRequest:
+      type: object
+      required: [opportunityId]
+      description: Nested constraints are declared but not enforced because the list lacks `@Valid` (finding SEC-12).
+      properties:
+        opportunityId: { type: string, maxLength: 100 }
+        triggerProductIds:
+          type: [array, "null"]
+          maxItems: 20
+          items: { type: integer }
+        triggerProductNames:
+          type: [array, "null"]
+          maxItems: 20
+          items: { type: string, maxLength: 120 }
+    UpsellPlanRequest:
+      type: object
+      required: [opportunities]
+      properties:
+        storeId: { type: [string, "null"], format: uuid }
+        storeCode: { type: [string, "null"], maxLength: 50 }
+        shoppingListId: { type: [string, "null"], maxLength: 80 }
+        currentListProductIds: { type: [array, "null"], items: { type: integer } }
+        completedProductIds: { type: [array, "null"], items: { type: integer } }
+        source: { type: [string, "null"], maxLength: 50 }
+        opportunities:
+          type: array
+          minItems: 1
+          maxItems: 80
+          items: { $ref: "#/components/schemas/UpsellOpportunityRequest" }
+    UpsellOpportunityResponse:
+      type: object
+      properties:
+        opportunityId: { type: string }
+        triggerProductIds: { type: array, items: { type: integer } }
+        suggestions:
+          type: array
+          items: { $ref: "#/components/schemas/UpsellSuggestion" }
+    UpsellPlanDebug:
+      type: object
+      description: Diagnostic data exposed to anonymous clients (finding SEC-21).
+      properties:
+        requestId: { type: string }
+        model: { type: [string, "null"] }
+        responseSource: { type: string }
+        elapsedMs: { type: [integer, "null"] }
+        openAiElapsedMs: { type: [integer, "null"] }
+        inputTokens: { type: [integer, "null"] }
+        outputTokens: { type: [integer, "null"] }
+        totalTokens: { type: [integer, "null"] }
+        cachedInputTokens: { type: [integer, "null"] }
+        reasoningTokens: { type: [integer, "null"] }
+        fallbackReason: { type: [string, "null"] }
+        opportunityCount: { type: [integer, "null"] }
+        candidateCount: { type: [integer, "null"] }
+    UpsellPlanResponse:
+      type: object
+      properties:
+        opportunities:
+          type: array
+          items: { $ref: "#/components/schemas/UpsellOpportunityResponse" }
+        source: { $ref: "#/components/schemas/UpsellSource" }
+        expiresAt: { type: string, format: date-time }
+        debug: { oneOf: [{ $ref: "#/components/schemas/UpsellPlanDebug" }, { type: "null" }] }
+    UpsellEventRequest:
+      type: object
+      required: [eventType]
+      properties:
+        eventType: { type: string, maxLength: 40, description: Stored upper-case. }
+        checkedProductId: { type: [integer, "null"] }
+        suggestedProductId: { type: [integer, "null"] }
+        storeId: { type: [string, "null"], format: uuid }
+        storeCode: { type: [string, "null"], maxLength: 50 }
+        sessionId: { type: [string, "null"], maxLength: 120, description: Stored as SHA-256 hash. }
+        source: { type: [string, "null"], maxLength: 40 }
+        metadataJson: { type: [string, "null"], maxLength: 4000 }
+    UpsellDismissRequest:
+      type: object
+      required: [checkedProductId]
+      properties:
+        checkedProductId: { type: integer }
+        suggestedProductId: { type: [integer, "null"] }
+        storeId: { type: [string, "null"], format: uuid }
+        storeCode: { type: [string, "null"], maxLength: 50 }
+        sessionId: { type: [string, "null"], maxLength: 120 }
+        suppressMinutes:
+          type: [integer, "null"]
+          minimum: 1
+          maximum: 30
+          description: Default 240 when null. The iOS client sends 1440, which is rejected (finding API-01).
+
+    # ---------- admin session & logs
+    CurrentUserResponse:
+      type: object
+      properties:
+        subject: { type: string }
+        username: { type: string }
+        email: { type: [string, "null"] }
+        role: { type: string, enum: [admin, region-manager, store-manager] }
+        scope:
+          type: object
+          properties:
+            regionId: { type: [string, "null"], format: uuid }
+            regionName: { type: [string, "null"] }
+            storeId: { type: [string, "null"], format: uuid }
+            storeName: { type: [string, "null"] }
+    SystemLogResponse:
+      type: object
+      properties:
+        limit: { type: integer }
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              entityType: { type: string }
+              entityId: { type: string, format: uuid }
+              action: { type: string }
+              summary: { type: [string, "null"] }
+              actorRole: { type: [string, "null"] }
+              actorLabel: { type: [string, "null"] }
+              createdAt: { type: string, format: date-time }
+    ErrorLogResponse:
+      type: object
+      properties:
+        limit: { type: integer }
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              statusCode: { type: integer }
+              method: { type: [string, "null"] }
+              path: { type: string }
+              message: { type: [string, "null"] }
+              errorType: { type: [string, "null"] }
+              stackTrace: { type: [string, "null"] }
+              createdAt: { type: string, format: date-time }
+
+    # ---------- regions & stores
+    RegionUpsertRequest:
+      type: object
+      required: [code, name]
+      properties:
+        code: { type: string, maxLength: 50 }
+        name: { type: string, maxLength: 120 }
+        description: { type: [string, "null"], maxLength: 2000 }
+    RegionResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+        description: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    StoreUpsertRequest:
+      type: object
+      required: [regionId, storeCode, name, street, zipCode, city, country]
+      properties:
+        regionId: { type: string, format: uuid }
+        storeCode: { type: string, maxLength: 50 }
+        name: { type: string, maxLength: 150 }
+        street: { type: string, maxLength: 150 }
+        zipCode: { type: string, maxLength: 20 }
+        city: { type: string, maxLength: 100 }
+        country: { type: string, maxLength: 100 }
+        latitude: { type: [number, "null"], minimum: -90, maximum: 90 }
+        longitude: { type: [number, "null"], minimum: -180, maximum: 180 }
+        notes: { type: [string, "null"], maxLength: 2000 }
+    StoreRegionSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        name: { type: string }
+    StoreSummaryResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        storeCode: { type: string }
+        name: { type: string }
+        city: { type: string }
+        latitude: { type: [number, "null"] }
+        longitude: { type: [number, "null"] }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+        region: { $ref: "#/components/schemas/StoreRegionSummary" }
+        activeBeaconCount: { type: integer }
+        hasActiveLayout: { type: boolean }
+    StoreSummaryPage:
+      type: object
+      required: [content, page, size, totalElements]
+      properties:
+        content:
+          type: array
+          items: { $ref: "#/components/schemas/StoreSummaryResponse" }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer }
+    StoreDetailResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        storeCode: { type: string }
+        name: { type: string }
+        street: { type: string }
+        zipCode: { type: string }
+        city: { type: string }
+        country: { type: string }
+        latitude: { type: [number, "null"] }
+        longitude: { type: [number, "null"] }
+        notes: { type: [string, "null"] }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+        archivedAt: { type: [string, "null"], format: date-time }
+        region: { $ref: "#/components/schemas/StoreRegionSummary" }
+        activeLayout:
+          oneOf:
+            - type: "null"
+            - type: object
+              properties:
+                id: { type: string, format: uuid }
+                versionNo: { type: integer }
+                createdAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    StoreAuditResponse:
+      type: object
+      properties:
+        storeId: { type: string, format: uuid }
+        entries:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              entityType: { type: string }
+              action: { type: string }
+              summary: { type: [string, "null"] }
+              actorRole: { type: [string, "null"] }
+              actorLabel: { type: [string, "null"] }
+              createdAt: { type: string, format: date-time }
+
+    # ---------- store layouts
+    LayoutSaveRequest:
+      type: object
+      required: [layout]
+      properties:
+        layoutName: { type: [string, "null"], maxLength: 150 }
+        changeNote: { type: [string, "null"], maxLength: 2000 }
+        activate: { type: [boolean, "null"] }
+        layout: { $ref: "#/components/schemas/LayoutDocument" }
+    StoreLayoutResponse:
+      type: object
+      properties:
+        layoutId: { type: [string, "null"], format: uuid }
+        storeId: { type: string, format: uuid }
+        versionNo: { type: [integer, "null"] }
+        status: { type: string, enum: [DRAFT, ACTIVE, ARCHIVED, DEFAULT] }
+        createdAt: { type: [string, "null"], format: date-time }
+        activatedAt: { type: [string, "null"], format: date-time }
+        layout: { $ref: "#/components/schemas/LayoutDocument" }
+    LayoutVersionSummary:
+      type: object
+      properties:
+        layoutId: { type: string, format: uuid }
+        versionNo: { type: integer }
+        layoutName: { type: [string, "null"] }
+        status: { type: string, enum: [DRAFT, ACTIVE, ARCHIVED] }
+        createdAt: { type: string, format: date-time }
+        activatedAt: { type: [string, "null"], format: date-time }
+    EditorContextResponse:
+      type: object
+      properties:
+        store:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            storeCode: { type: string }
+            name: { type: string }
+        currentLayout: { $ref: "#/components/schemas/StoreLayoutResponse" }
+        assignedBeacons:
+          type: array
+          items:
+            type: object
+            properties:
+              beaconId: { type: string, format: uuid }
+              beaconCode: { type: string }
+              identityKey: { type: string }
+              uuid: { type: string }
+              major: { type: [integer, "null"] }
+              minor: { type: [integer, "null"] }
+
+    # ---------- beacons
+    BeaconCreateRequest:
+      type: object
+      required: [beaconCode, uuid]
+      properties:
+        beaconCode: { type: string, maxLength: 60 }
+        uuid: { type: string, maxLength: 40, description: 32 hex characters, hyphens allowed. }
+        major: { type: [integer, "null"], description: Required together with minor. No 0..65535 range check yet (finding BUG-08). }
+        minor: { type: [integer, "null"], description: Required together with major. }
+        notes: { type: [string, "null"], maxLength: 2000 }
+    BeaconBulkCreateRequest:
+      type: object
+      required: [uuid, items]
+      properties:
+        uuid: { type: string, maxLength: 40 }
+        major: { type: [integer, "null"] }
+        notes: { type: [string, "null"], maxLength: 2000 }
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [beaconCode]
+            properties:
+              beaconCode: { type: string, maxLength: 60 }
+              minor: { type: [integer, "null"] }
+    BeaconStoreSummary:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        storeCode: { type: string }
+        name: { type: string }
+    BeaconResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        beaconCode: { type: string }
+        uuid: { type: string, pattern: "^[0-9a-f]{32}$" }
+        major: { type: [integer, "null"] }
+        minor: { type: [integer, "null"] }
+        identityKey: { type: string }
+        status: { $ref: "#/components/schemas/RecordStatus" }
+        notes: { type: [string, "null"] }
+        currentStore: { oneOf: [{ $ref: "#/components/schemas/BeaconStoreSummary" }, { type: "null" }] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    BeaconBulkCreateResponse:
+      type: object
+      properties:
+        created: { type: integer }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/BeaconResponse" }
+    BeaconAssignmentRequest:
+      type: object
+      required: [storeId]
+      properties:
+        storeId: { type: string, format: uuid }
+    BeaconAssignmentResponse:
+      type: object
+      properties:
+        assignmentId: { type: string, format: uuid }
+        beaconId: { type: string, format: uuid }
+        beaconCode: { type: string }
+        identityKey: { type: string }
+        storeId: { type: string, format: uuid }
+        storeCode: { type: string }
+        storeName: { type: string }
+        assignedAt: { type: string, format: date-time }
+        isActive: { type: boolean }

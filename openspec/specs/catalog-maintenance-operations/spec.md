@@ -47,19 +47,6 @@ The backend SHALL support indexing one product with `POST /api/products` and bul
 - **WHEN** an anonymous user, `region-manager`, or `store-manager` calls `POST /api/products` or `POST /api/products/bulk`
 - **THEN** the backend rejects the mutation without changing product catalog data
 
-### Requirement: Category maintenance supports lookup and bulk import
-The backend SHALL support category listing, category-code lookup, and bulk category indexing through the category API.
-
-#### Scenario: Category code is requested
-- **GIVEN** a category has been indexed
-- **WHEN** a client calls `GET /api/categories/{categoryCode}`
-- **THEN** the backend returns the category or a not-found response
-
-#### Scenario: Categories are bulk imported
-- **GIVEN** a JSON array of category objects is supplied
-- **WHEN** the client calls `POST /api/categories/bulk`
-- **THEN** the backend indexes the categories and reports the count
-
 ### Requirement: Catalog health check is available for operations
 The backend SHALL provide a health check endpoint at `GET /api/admin/health` for deployment and smoke-test workflows.
 
@@ -116,3 +103,51 @@ The backend SHALL expose protected product catalog maintenance operations under 
 - **GIVEN** an authenticated admin submits a product missing id, name, price, or layout code
 - **WHEN** the backend validates the request
 - **THEN** it returns a bad-request response and does not index the product
+
+### Requirement: Catalog admin surfaces maintenance readiness
+The redesigned Admin Platform SHALL provide catalog maintenance UI that separates routine product/category editing from higher-risk bulk/import/index maintenance and exposes readiness states for the catalog data used by search and layout navigation.
+
+#### Scenario: Admin opens catalog management
+- **WHEN** an `admin` opens catalog management
+- **THEN** products and categories can be searched, filtered, sorted, inspected, created, edited, or removed through protected admin workflows with explicit loading, empty, validation, conflict, and error states
+
+#### Scenario: Catalog has missing layout data
+- **WHEN** products exist without usable layout codes, store context, category context, or routable position readiness
+- **THEN** the UI marks those records as incomplete for navigation without blocking ordinary catalog search visibility
+
+### Requirement: Bulk catalog operations are reviewed before commit
+The redesigned Admin Platform SHALL guide bulk product/category imports through upload, parse, review, validation, conflict resolution, commit, and summary states before writing catalog data.
+
+#### Scenario: Admin uploads bulk data
+- **WHEN** an `admin` uploads product or category data for import
+- **THEN** the UI shows parsed counts, validation errors, warnings, duplicate/conflict rows, and the exact commit action before sending write requests
+
+#### Scenario: Bulk import fails partially
+- **WHEN** a bulk import request fails or reports invalid rows
+- **THEN** the UI preserves the review context and clearly separates saved, skipped, failed, and retryable records
+
+### Requirement: Destructive catalog maintenance is isolated
+The redesigned Admin Platform SHALL isolate destructive index or reset operations from routine product editing and SHALL require explicit confirmation and recovery guidance before such operations are triggered.
+
+#### Scenario: Admin considers index reset
+- **WHEN** an `admin` opens a destructive catalog maintenance action such as index reset
+- **THEN** the UI explains that product data may need reimport, requires confirmation, and links to the relevant verification/recovery workflow
+
+### Requirement: Category maintenance supports lookup and protected bulk import
+The backend SHALL support public category listing and category-code lookup, and SHALL protect bulk category indexing as an admin-only catalog maintenance write path.
+
+#### Scenario: Category code is requested
+- **GIVEN** a category has been indexed
+- **WHEN** an anonymous or authenticated client calls `GET /api/categories/{categoryCode}`
+- **THEN** the backend returns the category or a not-found response without requiring Admin Platform login
+
+#### Scenario: Categories are bulk imported
+- **GIVEN** an authenticated `admin` with an active Indooro access assignment supplies a JSON array of category objects
+- **WHEN** the client calls `POST /api/categories/bulk`
+- **THEN** the backend indexes the categories and reports the count
+
+#### Scenario: Non-admin attempts category bulk import
+- **GIVEN** Keycloak authentication and Indooro access assignments are configured
+- **WHEN** an anonymous user, `region-manager`, or `store-manager` calls `POST /api/categories/bulk`
+- **THEN** the backend rejects the mutation without changing category catalog data
+

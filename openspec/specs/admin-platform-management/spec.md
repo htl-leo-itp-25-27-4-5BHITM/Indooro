@@ -247,3 +247,289 @@ The Admin Platform SHALL allow optional latitude and longitude values to be main
 - **WHEN** the admin leaves latitude and longitude empty
 - **THEN** the store can still be saved, but mobile store maps do not render a fake production pin for it
 
+### Requirement: Admin Platform uses real protected subpages
+The Admin Platform SHALL expose focused, protected staff pages under `/admin/` instead of relying on hash anchors as the primary navigation model.
+
+#### Scenario: Staff opens dashboard
+- **WHEN** an authenticated staff user opens `/admin/`
+- **THEN** the system serves the Admin Platform dashboard page with navigation to allowed management pages
+
+#### Scenario: Staff opens management page directly
+- **WHEN** an authenticated staff user opens `/admin/regions/`, `/admin/stores/`, `/admin/stores/detail/`, `/admin/beacons/`, `/admin/products/`, or `/admin/recipes/`
+- **THEN** the system serves the requested protected Admin Platform subpage and loads only the workflow data needed by that page
+
+#### Scenario: Anonymous user opens management page
+- **WHEN** an anonymous user opens any protected Admin Platform subpage under `/admin/`
+- **THEN** the system starts the configured Keycloak login flow instead of rendering protected admin data
+
+### Requirement: Admin navigation is role-aware across pages
+The Admin Platform SHALL render navigation and workflow entry points according to the authenticated user's role and Indooro scope on every Admin Platform page.
+
+#### Scenario: Admin opens navigation
+- **WHEN** an authenticated `admin` opens an Admin Platform page
+- **THEN** navigation includes dashboard, regions, stores, beacons, products, recipes, server logs, and layout editor entry points
+
+#### Scenario: Non-admin opens navigation
+- **WHEN** an authenticated `region-manager` or `store-manager` opens an Admin Platform page
+- **THEN** product, recipe, system-log, and server-log navigation entries are not visible
+
+#### Scenario: Non-admin opens admin-only URL
+- **WHEN** an authenticated `region-manager` or `store-manager` opens `/admin/products/`, `/admin/recipes/`, or `/admin/server-logs/`
+- **THEN** the UI does not expose the admin-only management workflow or protected diagnostic data
+
+### Requirement: Store detail is deep-linkable
+The Admin Platform SHALL support direct store detail URLs through `/admin/stores/detail/?storeId=<id>` while preserving existing scoped store-detail data rules.
+
+#### Scenario: Store detail opens with store id
+- **WHEN** an authenticated user opens `/admin/stores/detail/?storeId=<id>` for a store inside their allowed scope
+- **THEN** the UI loads store metadata, assigned beacons, layout versions, and audit history for that store
+
+#### Scenario: Store detail opens without store id
+- **WHEN** an authenticated user opens `/admin/stores/detail/` without a `storeId`
+- **THEN** the UI shows an explicit empty or selection state instead of failing or redirecting away
+
+#### Scenario: Store detail opens outside scope
+- **WHEN** a scoped authenticated user opens `/admin/stores/detail/?storeId=<id>` for a store outside their allowed scope
+- **THEN** the UI shows an access denied state and does not render stale protected detail data
+
+### Requirement: German Admin UI copy uses native characters
+Visible German Admin Platform UI text SHALL use native German characters such as `ä`, `ö`, `ü`, `Ä`, `Ö`, `Ü`, and `ß` instead of ASCII transliterations where German text is intended.
+
+#### Scenario: German labels are rendered
+- **WHEN** Admin Platform pages, the layout editor, or server-log pages render German labels, buttons, empty states, confirmations, and status messages
+- **THEN** the visible text uses native German spelling such as `Übersicht`, `prüfen`, `Zurücksetzen`, `Straße`, and `Änderungen`
+
+### Requirement: Admin pages provide explicit page states
+Each Admin Platform subpage SHALL provide clear loading, empty, success, error, and access-denied states that are scoped to the current page workflow.
+
+#### Scenario: Page is loading data
+- **WHEN** an Admin Platform subpage starts loading protected data
+- **THEN** the page shows an explicit loading state for that workflow
+
+#### Scenario: Page has no data
+- **WHEN** a list or detail workflow has no records for the current role, scope, or filter
+- **THEN** the page shows an explicit empty state with the relevant next action when that action is allowed
+
+#### Scenario: Page receives authorization failure
+- **WHEN** a protected request on an Admin Platform subpage returns `401` or `403`
+- **THEN** the page redirects to login or shows an access-denied state without rendering stale protected data
+
+### Requirement: Admin editor is visually distinct and workflow-focused
+The layout editor SHALL remain a protected Admin Platform workflow while using a visually distinct editor interface that does not resemble the previous dashboard layout.
+
+#### Scenario: User opens layout editor
+- **WHEN** an authenticated user opens `/admin/editor/` with or without a `storeId`
+- **THEN** the editor shows a focused layout-editing workspace with improved controls, native German copy, and preserved legacy/global versus store-specific behavior
+
+#### Scenario: User returns from store editor
+- **WHEN** a user opens the editor with `storeId=<id>` and follows the back link
+- **THEN** the user is returned to `/admin/stores/detail/?storeId=<id>`
+
+### Requirement: Admin Platform presents a task-focused operations shell
+The Admin Platform SHALL present a consistent operations shell with persistent navigation, page title, breadcrumbs or equivalent location context, current user identity, role/scope display, logout, and page-scoped primary actions.
+
+#### Scenario: Staff navigates the redesigned platform
+- **WHEN** an authenticated staff user opens any redesigned Admin Platform page under `/admin/`
+- **THEN** the UI shows where the user is, which role/scope is active, which top-level page is selected, and which primary action is available for that page
+
+#### Scenario: Scoped staff opens a page
+- **WHEN** a `region-manager` or `store-manager` opens the redesigned Admin Platform
+- **THEN** navigation, actions, links, and empty states reflect the user's allowed scope without exposing admin-only workflows
+
+### Requirement: Admin Platform uses page-specific information architecture
+The Admin Platform SHALL use explicit pages and page-specific data loading for dashboard, regions, stores, store detail, beacons, products, recipes, server logs, and the layout editor instead of duplicating one full management surface behind route-specific visibility toggles.
+
+#### Scenario: Staff opens a management page directly
+- **WHEN** an authenticated staff user opens `/admin/stores/`, `/admin/beacons/`, `/admin/products/`, `/admin/recipes/`, or another redesigned admin page directly
+- **THEN** only that page's shell, data dependencies, controls, loading states, and error states are initialized
+
+#### Scenario: Page modules are inspected
+- **WHEN** a developer reviews the redesigned Admin Platform frontend
+- **THEN** page modules, shared shell utilities, API clients, component primitives, and workflow-specific code are separated enough that unrelated workflows do not require editing one monolithic script
+
+### Requirement: Dashboard provides an operational overview
+The redesigned dashboard SHALL provide a concise operational overview with role-scoped KPIs, relevant setup warnings, recent audit events, and quick actions rather than acting as a management onepager.
+
+#### Scenario: Admin opens dashboard
+- **WHEN** an `admin` opens `/admin/`
+- **THEN** the dashboard shows high-signal counts and recent operational activity with links to the relevant management pages
+
+#### Scenario: Store manager opens dashboard
+- **WHEN** a `store-manager` opens `/admin/`
+- **THEN** the dashboard summarizes only the assigned store context and offers next actions allowed for that store
+
+### Requirement: Store management separates list, detail, and edit workflows
+The redesigned Store Management UI SHALL separate store listing, store detail, store creation/editing, layout versions, beacon assignments, and audit history into clear page sections or tabs with explicit navigation between them.
+
+#### Scenario: Staff reviews stores
+- **WHEN** staff opens the store list
+- **THEN** stores can be searched, filtered, sorted, paginated where applicable, and opened into a detail view without mixing the create/edit form into the default list scanning area
+
+#### Scenario: Staff edits store data
+- **WHEN** staff creates or edits a store
+- **THEN** the form is grouped into meaningful sections or steps for identity, region, address, coordinates, notes, and review/confirmation
+
+#### Scenario: Staff opens store detail
+- **WHEN** staff opens `/admin/stores/detail/?storeId=<id>`
+- **THEN** the detail view shows store metadata, active beacon assignments, layout versions, audit history, and context-aware links to the layout editor
+
+### Requirement: Beacon management supports assignment workflows
+The redesigned Beacon Management UI SHALL make free, assigned, archived, invalid, and ambiguous beacon states explicit and SHALL guide assignment, release, and archive actions through store-aware workflows.
+
+#### Scenario: Staff assigns a beacon
+- **WHEN** staff starts a beacon assignment
+- **THEN** the UI shows eligible target stores, current assignment state, validation feedback, and a confirmation step before mutating the assignment
+
+#### Scenario: Beacon identity is invalid
+- **WHEN** staff enters a beacon UUID, major, or minor combination that fails current backend validation rules
+- **THEN** the UI presents inline validation and does not allow the user to mistake the beacon as assignable
+
+### Requirement: Product and recipe admin workflows are structured
+The redesigned Admin Platform SHALL provide structured product, category, import, recipe, ingredient, step, tag, product-mapping, preview, publish, deactivate, and archive workflows where those features exist for the current role.
+
+#### Scenario: Admin manages products
+- **WHEN** an `admin` opens product management
+- **THEN** the UI provides product search/filter/sort, create/edit/detail actions, layout-code readiness feedback, destructive-action confirmation, and clear success/error states
+
+#### Scenario: Admin imports products
+- **WHEN** an `admin` imports or bulk-updates product data
+- **THEN** the UI guides file selection, parsing/review, validation, conflict handling, submit progress, and post-import summary before data is treated as ready
+
+#### Scenario: Admin edits a recipe
+- **WHEN** an `admin` edits a recipe
+- **THEN** recipe metadata, ingredients, steps, tags, product mappings, preview, and publish readiness are separated into a guided detail workflow
+
+### Requirement: Admin Platform uses a coherent component and state system
+The redesigned Admin Platform SHALL define and apply a consistent design system for typography, spacing, color tokens, icons, buttons, inputs, form groups, tables, lists, tabs, dialogs, toasts, empty states, loading states, validation states, error states, and permission states.
+
+#### Scenario: A list has no rows
+- **WHEN** a redesigned admin list has no rows because of scope, filters, or missing data
+- **THEN** the UI shows an empty state with the reason and the next allowed action instead of a blank region or misleading success state
+
+#### Scenario: A mutation fails
+- **WHEN** a redesigned admin mutation returns validation, conflict, authorization, or server failure
+- **THEN** the UI shows the failure near the affected workflow and does not keep stale protected data as if the action succeeded
+
+#### Scenario: The viewport is narrow
+- **WHEN** staff uses the redesigned Admin Platform on notebook or tablet-sized viewports
+- **THEN** navigation, forms, tables, and tool panels remain usable without requiring a hard desktop-only minimum width for ordinary admin pages
+
+### Requirement: Critical admin actions are protected by confirmation and recovery cues
+The redesigned Admin Platform SHALL distinguish reversible edits from critical actions such as archive, release, delete, publish, deactivate, import, index reset, and layout publish, and SHALL provide confirmation, validation, and post-action feedback appropriate to the action risk.
+
+#### Scenario: Staff archives a managed record
+- **WHEN** staff activates an archive action for a region, store, beacon, product, or recipe where supported
+- **THEN** the UI states the effect of the action, asks for confirmation, submits through the existing protected API, and shows the resulting state after the backend confirms it
+
+#### Scenario: Staff cancels a critical action
+- **WHEN** staff cancels a critical action confirmation
+- **THEN** no mutation request is sent and the user returns to the prior workflow context
+
+### Requirement: Admin recipe management is protected
+The Admin Platform SHALL expose recipe management only to authenticated users with sufficient recipe administration permissions and SHALL keep mobile recipe read routes separate from protected admin mutation routes.
+
+#### Scenario: Admin opens recipe management
+- **GIVEN** an authenticated `admin` with an active Indooro assignment opens the Admin Platform
+- **WHEN** role-aware UI state is applied
+- **THEN** recipe management navigation and mutation controls are available
+
+#### Scenario: Anonymous user requests recipe admin API
+- **GIVEN** recipe admin APIs exist under `/api/admin/recipes`
+- **WHEN** an anonymous user requests a protected recipe admin route
+- **THEN** the system rejects the request without exposing protected recipe management data
+
+#### Scenario: Non-admin opens Admin Platform
+- **GIVEN** an authenticated `region-manager` or `store-manager` opens the Admin Platform in the MVP
+- **WHEN** role-aware UI state is applied
+- **THEN** recipe mutation controls are hidden unless a future change defines scoped recipe permissions
+
+### Requirement: Admins can maintain recipe content
+The Admin Platform SHALL let authorized admins create, edit, list, preview, publish, deactivate, and archive recipes with ingredients, ordered steps, tags, portions, times, and optional image metadata.
+
+#### Scenario: Admin creates recipe
+- **GIVEN** an authorized admin enters valid recipe metadata, at least one ingredient, and at least one step
+- **WHEN** the admin saves the recipe
+- **THEN** the backend persists the recipe as a draft or published record according to the requested status
+
+#### Scenario: Required content is missing
+- **GIVEN** an authorized admin submits a recipe without a title, ingredient, or step
+- **WHEN** the backend validates the request
+- **THEN** it rejects the mutation and keeps existing recipe data unchanged
+
+#### Scenario: Admin deactivates recipe
+- **GIVEN** a recipe is published
+- **WHEN** an authorized admin deactivates or archives it
+- **THEN** the recipe is excluded from anonymous mobile recipe list/search/detail routes
+
+### Requirement: Admins can maintain recipe tags and categories
+The Admin Platform SHALL let authorized admins manage recipe tags/categories and assign them to recipes for mobile display and filtering.
+
+#### Scenario: Tag is assigned to recipe
+- **GIVEN** an authorized admin edits a recipe
+- **WHEN** the admin selects an existing tag
+- **THEN** the recipe detail and mobile summary can include that tag
+
+#### Scenario: Duplicate tag code is submitted
+- **GIVEN** a tag code already exists
+- **WHEN** an admin submits another tag with that code
+- **THEN** the backend rejects the duplicate tag identity
+
+### Requirement: Admins can manage ingredient product mappings
+The Admin Platform SHALL let authorized admins map recipe ingredients to catalog products, review mapping status, select among multiple candidates, and manually confirm mappings.
+
+#### Scenario: Admin maps ingredient to product
+- **GIVEN** an ingredient has no confirmed mapping
+- **WHEN** an admin searches catalog products and chooses one product for the ingredient
+- **THEN** the backend stores an active mapping with product id, product snapshot fields, mapping type, confidence, manual confirmation state, and optional store scope
+
+#### Scenario: Multiple mapping candidates exist
+- **GIVEN** an ingredient such as milk has multiple candidate products
+- **WHEN** the admin reviews mapping suggestions
+- **THEN** the UI presents candidates for manual selection instead of auto-publishing an ambiguous mapping
+
+#### Scenario: Product has no layout position
+- **GIVEN** an admin maps an ingredient to a product without a usable layout code
+- **WHEN** the mapping is saved or previewed
+- **THEN** the Admin Platform marks the mapping as non-routable or incomplete so the admin can correct it
+
+### Requirement: Mapping suggestions are reviewable and bounded
+The backend SHALL provide mapping suggestions based on product search, category hints, normalized ingredient names, and optional synonyms, but SHALL require explicit status and confidence in suggestion responses.
+
+#### Scenario: Suggestion endpoint is called
+- **GIVEN** an authorized admin requests suggestions for an ingredient
+- **WHEN** the backend searches catalog products
+- **THEN** the response returns a bounded candidate list with product fields, confidence, reason, and store context where supplied
+
+#### Scenario: No suggestion is safe
+- **GIVEN** the backend cannot find a confident product candidate
+- **WHEN** suggestions are requested
+- **THEN** the response is empty or marked low-confidence and no mapping is created automatically
+
+### Requirement: Admin preview exposes recipe mobile readiness
+The Admin Platform SHALL provide a preview or readiness state that shows whether a recipe is publishable and which ingredients are mapped, ambiguous, unmapped, unavailable in a selected store, or mapped to products without layout positions.
+
+#### Scenario: Admin previews recipe
+- **GIVEN** a recipe has mixed mapping states
+- **WHEN** the admin opens the recipe preview
+- **THEN** the UI shows the mobile-facing recipe content and ingredient mapping readiness before publish
+
+#### Scenario: Publish validation fails
+- **GIVEN** a recipe has invalid core content
+- **WHEN** an admin attempts to publish it
+- **THEN** the backend rejects publish and returns validation details that the Admin UI can show without consuming the response body multiple times
+
+### Requirement: Admin Recipe Mapping uses searchable product controls
+The Admin Platform recipe mapping workflow SHALL provide a searchable product selection control for ingredient mappings and SHALL prevent saving arbitrary product names as mappings.
+
+#### Scenario: Recipe mapping drawer opens
+- **WHEN** an authenticated admin opens the recipe ingredient mapping drawer
+- **THEN** each ingredient mapping panel exposes a product search/selection control instead of requiring manual product text entry
+
+#### Scenario: Admin saves without selected product
+- **WHEN** an admin types search text but has not selected a product result
+- **THEN** the UI does not submit a mapping confirmation
+
+#### Scenario: Existing mapping has product data
+- **WHEN** an ingredient already has an active mapping
+- **THEN** the mapping panel shows the confirmed product identity and allows the admin to search for a replacement or archive the mapping through existing mapping lifecycle behavior
+

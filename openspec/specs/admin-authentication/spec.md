@@ -58,12 +58,12 @@ The system SHALL keep anonymous customer/mobile routes accessible without Admin 
 - **THEN** the system processes the request without requiring an admin session
 
 ### Requirement: Logged-in user information is visible
-The system SHALL expose the current authenticated admin user's subject, username, email, Keycloak roles, and Indooro access assignment to the Admin UI so the UI can render user identity, role, scope, and allowed content accurately.
+The system SHALL expose the current authenticated admin user's subject, username, email, resolved Indooro role, and Indooro access assignment to the Admin UI so the UI can render user identity, role, scope, and allowed content accurately. Keycloak roles SHALL be used by the backend to verify agreement with the active Indooro assignment, and SHALL only be exposed in the current-user response if the response contract explicitly includes them.
 
 #### Scenario: Admin UI loads current user
 - **GIVEN** Admin Platform authentication and route policies are configured
 - **WHEN** an authenticated user opens the Admin Platform
-- **THEN** the Admin UI displays the user's identity and role context
+- **THEN** the Admin UI displays the user's identity and resolved Indooro role context
 
 #### Scenario: User has no active Indooro access assignment
 - **GIVEN** Admin Platform authentication and route policies are configured
@@ -74,6 +74,11 @@ The system SHALL expose the current authenticated admin user's subject, username
 - **GIVEN** Admin Platform authentication and route policies are configured
 - **WHEN** a `region-manager` or `store-manager` loads the Admin Platform
 - **THEN** the current-user response includes the assigned region or store scope needed by the frontend
+
+#### Scenario: Keycloak role exposure is reviewed
+- **GIVEN** the backend already compares Keycloak roles with the Indooro assignment role
+- **WHEN** the current-user API response is reviewed
+- **THEN** the durable API contract states whether raw Keycloak roles are omitted or returned as an explicit field
 
 ### Requirement: Logout ends admin session
 The system SHALL provide a logout action that ends the Quarkus OIDC web-app session, triggers the configured Keycloak logout behavior where applicable, clears protected UI state, and returns the user to a non-admin landing path.
@@ -110,3 +115,4 @@ The system SHALL return explicit authentication or authorization failure behavio
 - **GIVEN** Admin Platform authentication and route policies are configured
 - **WHEN** a protected admin API denies access due to role or scope
 - **THEN** the response communicates failure through the appropriate HTTP status and does not include protected resource data
+

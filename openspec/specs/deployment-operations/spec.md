@@ -172,3 +172,40 @@ The project SHALL keep known deployment inconsistencies visible until fixed, inc
 - **WHEN** a cleanup change is proposed
 - **THEN** it verifies current cluster/resource usage before removal
 
+### Requirement: Backend coverage reports can be generated during verification
+The project SHALL allow backend Java coverage reports to be generated as part of local or CI verification without changing deployed runtime behavior.
+
+#### Scenario: Local verification includes coverage
+- **WHEN** a developer runs the documented backend coverage command locally
+- **THEN** the command verifies backend Java tests and produces coverage artifacts without requiring a LeoCloud deployment
+
+#### Scenario: CI verification includes coverage artifacts
+- **WHEN** a future CI workflow runs backend Java tests with coverage enabled
+- **THEN** CI can publish or retain the generated JaCoCo HTML or XML artifacts without changing Kubernetes manifests, runtime images, public routes, Keycloak configuration, or database schema
+
+#### Scenario: Coverage generation is not a deployment gate initially
+- **WHEN** the first backend coverage reporting change is implemented
+- **THEN** CI or local verification does not fail solely because coverage percentages are below a threshold
+
+### Requirement: Admin frontend deployment remains traceable
+The redesigned Admin Platform and layout editor SHALL be built and deployed through a traceable process that serves the resulting assets from the existing backend public host and keeps `/admin/`, `/admin/editor/`, and `/admin/server-logs/` under the configured authentication boundary.
+
+#### Scenario: Redesigned admin assets are deployed
+- **WHEN** the backend image or static asset bundle containing the redesigned Admin Platform is deployed
+- **THEN** `/admin/`, `/admin/regions/`, `/admin/stores/`, `/admin/stores/detail/`, `/admin/beacons/`, `/admin/products/`, `/admin/recipes/`, `/admin/editor/`, and `/admin/server-logs/` resolve through the backend host according to the existing protected route policy
+
+#### Scenario: Frontend build dependency is introduced
+- **WHEN** the implementation introduces a frontend build tool or package dependency
+- **THEN** the repository documents local build commands, CI/build integration, asset output location, and rollback behavior for the Quarkus-served Admin Platform
+
+### Requirement: Admin redesign verification covers UX-critical routes
+Deployment verification SHALL include representative checks for redesigned admin shell rendering, protected-route behavior, role-aware navigation, core list pages, store detail, layout editor canvas, save/publish affordances, and public mobile/customer route preservation.
+
+#### Scenario: Protected admin route is verified
+- **WHEN** deployment verification runs after the redesign
+- **THEN** at least one protected Admin Platform route confirms login/authorization behavior and at least one authenticated smoke path verifies page rendering
+
+#### Scenario: Public route is verified
+- **WHEN** deployment verification runs after the redesign
+- **THEN** representative public mobile/customer routes remain accessible without Admin Platform login
+

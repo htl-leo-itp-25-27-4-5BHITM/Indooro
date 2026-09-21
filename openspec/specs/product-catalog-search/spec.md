@@ -56,17 +56,22 @@ The system SHALL use OpenSearch-backed product and category indexes for customer
 - **THEN** the backend returns category data from the configured catalog/search source
 
 ### Requirement: Store-aware catalog data is preferred
-The system SHALL preserve store identity in product catalog data where multi-store correctness matters, so future search and navigation can return products for the selected or detected store.
+The system SHALL preserve store identity in product catalog data where multi-store correctness matters, so search and navigation can return products for the selected or detected store. Store-specific product documents SHALL include explicit store scope such as `storeId`, `storeCode`, or an equivalent documented field before the system claims multi-store product-location correctness.
 
 #### Scenario: Product exists in multiple stores
 - **GIVEN** the OpenSearch-backed catalog API is configured
 - **WHEN** product catalog data contains the same product name in multiple stores
-- **THEN** the search workflow can distinguish the store-specific product record or location
+- **THEN** the search workflow can distinguish the store-specific product record or location through explicit store scope fields
 
 #### Scenario: Mobile client has selected store
 - **GIVEN** the OpenSearch-backed catalog API is configured
 - **WHEN** a mobile client searches after selecting or detecting a store
-- **THEN** the search behavior can be scoped to the selected store when the route supports store scoping
+- **THEN** the search behavior can be scoped to the selected store when product documents and the route support store scoping
+
+#### Scenario: Product document has no store scope
+- **GIVEN** a product document contains only global id, name, price, and layout code fields
+- **WHEN** a client searches in a multi-store context
+- **THEN** the system treats the result as store-agnostic and must not claim the location is correct for every store
 
 ### Requirement: Search quality improvements remain compatible with the catalog contract
 The system SHALL allow future fuzzy, synonym, colloquial, and typo-tolerant search improvements without changing the public expectation that products are searchable anonymously and map back to product documents.
@@ -145,4 +150,133 @@ The category API SHALL allow clients to list categories and fetch a category by 
 - **GIVEN** a client needs all products for a category code
 - **WHEN** no documented product-by-category endpoint exists
 - **THEN** the change must add or reuse an explicit product search/filter contract before claiming support
+
+### Requirement: Admin catalog shows product location readiness
+The Admin Platform SHALL show whether catalog products have usable location metadata for the selected or target store while preserving the existing public product search contract.
+
+#### Scenario: Admin reviews product list
+- **WHEN** an `admin` reviews products in the redesigned catalog management UI
+- **THEN** each product row or detail view indicates whether its layout code and store metadata are present, valid, unresolved, or non-routable
+
+#### Scenario: Admin edits layout code
+- **WHEN** an `admin` creates or updates a product layout code
+- **THEN** the UI validates the documented layout-code shape where possible and warns when the product cannot be confidently mapped to a layout target
+
+### Requirement: Admin product readiness does not change public search boundaries
+The redesigned Admin Platform SHALL use product readiness indicators and admin validation without making anonymous customer product/category lookup require Admin Platform authentication.
+
+#### Scenario: Anonymous customer searches products
+- **WHEN** an anonymous customer calls existing public product or category routes after the admin redesign
+- **THEN** those public routes remain available according to the existing product catalog search and admin authentication specs
+
+### Requirement: Product search supports admin mapping selection metadata
+Product search results used by recipe mapping suggestions SHALL include enough product identity and location metadata for an admin to distinguish products before confirming a mapping.
+
+#### Scenario: Mapping suggestions are requested
+- **WHEN** the Admin Recipe Mapping UI requests product suggestions for an ingredient search term
+- **THEN** the backend returns bounded product results containing product id, name, price where available, layout code where available, store id where available, and store code where available
+
+#### Scenario: Product names collide
+- **WHEN** multiple product results share the same or similar name
+- **THEN** the response includes product id and location/store metadata so the Admin UI can distinguish them
+
+#### Scenario: Product has no layout code
+- **WHEN** a product suggestion has no usable layout code
+- **THEN** the response still includes the product identity and the Admin UI can mark it as not routable
+
+### Requirement: Product catalog supports bounded upsell candidate retrieval
+The backend SHALL provide or reuse product catalog lookup behavior that can retrieve a bounded set of existing products for upsell candidate generation without assuming an undocumented product-by-category route.
+
+#### Scenario: Candidate retrieval is requested
+- **GIVEN** an upsell request identifies a checked product and optional store context
+- **WHEN** the backend loads possible upsell candidates
+- **THEN** it uses implemented product catalog/search behavior or explicitly added helper methods rather than inventing products or relying on an undocumented public endpoint
+
+#### Scenario: Size limit is applied
+- **GIVEN** the backend searches or scans catalog data for candidates
+- **WHEN** candidate products are returned to the upsell ranking step
+- **THEN** the candidate list is bounded by a configured maximum size
+
+#### Scenario: Store filter is available
+- **GIVEN** product documents include `storeId` or `storeCode`
+- **WHEN** store context is present in the upsell request
+- **THEN** candidate retrieval applies matching store filters where the OpenSearch index supports them
+
+### Requirement: Product summaries expose suggestion-safe fields
+The catalog-to-upsell boundary SHALL expose only product fields needed for suggestion display, validation, ranking, and routing compatibility.
+
+#### Scenario: Product summary is built
+- **GIVEN** a catalog product is selected as an upsell candidate
+- **WHEN** the backend builds an AI candidate summary or mobile response product summary
+- **THEN** it includes product id, name, price where available, layout code where available, store scope where available, and derived layout-position availability
+
+#### Scenario: Unsupported product metadata is absent
+- **GIVEN** the current product document has no brand, category name, or image URL field
+- **WHEN** an upsell response is built
+- **THEN** the backend leaves those fields absent or null instead of inventing metadata
+
+#### Scenario: Category signal is needed
+- **GIVEN** the current catalog provides layout code but no explicit category field
+- **WHEN** the backend needs a coarse category signal for candidate ranking
+- **THEN** it may derive a category code from the first layout-code segment and must treat invalid or missing layout codes as unknown category
+
+### Requirement: Product records support optional internal derived classification
+The backend SHALL support deriving internal product-domain and product-class signals from existing product catalog fields for recommendation support, diagnostics, tests, or future filtering workflows.
+
+#### Scenario: Product has name and layout code
+- **WHEN** the backend evaluates a product with name and layout code
+- **THEN** it can derive internal classification signals without changing the public product response contract
+
+#### Scenario: Product classification is unavailable
+- **WHEN** product name and layout code are insufficient to derive a reliable class or domain
+- **THEN** the backend treats the product as unknown for quality-sensitive workflows
+
+#### Scenario: Public catalog response is returned
+- **WHEN** a customer product endpoint returns product data
+- **THEN** internal upsell classification fields are not required to appear in the public response
+
+### Requirement: Product domains are normalized for internal support
+The backend SHALL support normalizing products into broad internal domains such as food, drink, cleaning, laundry, paper-household, hygiene, cooking, baking, dairy, fruit, grain-breakfast, snack, and unknown where the current catalog permits reliable inference.
+
+#### Scenario: Cleaning product is classified
+- **WHEN** a product name contains cleaner, bathroom cleaner, shower cleaner, surface cleaner, or similar reliable terms
+- **THEN** the backend classifies it into a cleaning-compatible domain
+
+#### Scenario: Laundry product is classified
+- **WHEN** a product name contains softener, detergent, laundry, or similar reliable terms
+- **THEN** the backend classifies it into a laundry-compatible domain
+
+#### Scenario: Fruit product is classified
+- **WHEN** a product name or layout-code category reliably indicates apples, bananas, oranges, fruit, apple sauce, or similar fruit products
+- **THEN** the backend classifies it into fruit-compatible product classes
+
+#### Scenario: Ambiguous product is classified
+- **WHEN** a product could belong to multiple domains or has insufficient signals
+- **THEN** the backend uses unknown or the safer narrower class rather than a broad guessed domain
+
+### Requirement: Product classes can group equivalent variants
+The backend SHALL support deriving normalized product classes that group equivalent variants across brands, package sizes, and naming differences.
+
+#### Scenario: Apple variants exist
+- **WHEN** products include Gala apples, loose apples, organic apples, and budget apples
+- **THEN** they share an apple product class for exclusion and repetition control
+
+#### Scenario: Flour variants exist
+- **WHEN** products include flour variants with different brands or prices
+- **THEN** they share a flour product class for exclusion and repetition control
+
+#### Scenario: Cleaner variants exist
+- **WHEN** products include bathroom cleaner, shower cleaner, or all-purpose cleaner variants
+- **THEN** they share a cleaning-product class or compatible subclass for recommendation rules
+
+### Requirement: Classification remains internal unless explicitly exposed later
+The backend SHALL NOT expose a new public product-class or product-domain API as part of upsell quality gating unless a future OpenSpec change defines that public contract.
+
+#### Scenario: Mobile upsell uses classification
+- **WHEN** the mobile upsell service or future recommender helpers use product domains and classes
+- **THEN** they use internal derived signals and keep the existing mobile upsell response shape compatible
+
+#### Scenario: Future client requests classifications
+- **WHEN** a future feature needs classifications in public API responses
+- **THEN** that feature must add or modify an OpenSpec requirement for the public response contract
 

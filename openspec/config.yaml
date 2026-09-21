@@ -48,6 +48,12 @@ context: |
     sketch containing shelf/beacon labels and approximate dimensions (`~5`,
     `~9`). Translate it into explicit layout JSON/test data before using it as
     implementation input.
+  - docs/audit/SYSTEM_MAP.md, docs/audit/CODE_AUDIT.md, and
+    docs/audit/MODERNIZATION_BLUEPRINT.md (2026-09-17): full-stack system
+    map, finding catalog (DC/SEC/API/PERF/BUG ids), and prioritized
+    modernization roadmap. docs/specs/ holds the earlier iOS FSD/TSD/audit.
+  - openspec/specs/shared-api/openapi.yaml: reviewed OpenAPI 3.1 contract of
+    all 86 backend operations with access class and consumers per operation.
   - documentation/IndooroScrumRetrospektive4Ls.pdf contains process
     retrospection about beacon-task structure and communication. It does not
     add durable runtime requirements, but it reinforces keeping OpenSpec tasks
@@ -84,19 +90,33 @@ context: |
   Core architecture:
   - Backend: Quarkus 3 on Java 17, RESTEasy Reactive, Hibernate ORM Panache,
     PostgreSQL, Flyway, OpenSearch REST client, and Keycloak/OIDC.
-  - Database: PostgreSQL stores operational entities such as regions, stores,
-    beacons, beacon assignments, layout versions, audit logs, error logs, and
-    user access assignments.
+  - Database: PostgreSQL (Flyway V1-V11) stores operational entities such as
+    regions, stores (with coordinates), beacons, beacon assignments, layout
+    versions, audit logs, error logs, user access assignments, recipes,
+    recipe ingredients/steps/tags/units, ingredient product mappings and
+    synonyms, and the upsell suggestion cache, events, and dismissals.
+  - AI: the backend optionally ranks upsell suggestions with the OpenAI API
+    (server-side key, AI-first, empty result on failure); the iOS app never
+    talks to OpenAI directly.
   - Search: OpenSearch stores product, category, and legacy/current layout
     search documents. Product search remains public for mobile/customer use.
   - Admin frontend: static HTML/CSS/JavaScript served by Quarkus from
     backend/indooro_server/src/main/resources/META-INF/resources/admin.
-  - Mobile frontend: Swift/SwiftUI iOS app code exists under
-    swift/indooro-/indooroApp (feature-rich current app with BLE positioning,
-    shopping lists, AR, layout version selection, map display, and routing) and
-    swift/indooroApp/indooroApp (older/smaller app copy). Prefer the
-    feature-rich tree for current capability analysis unless a future change
-    explicitly targets the older copy.
+  - Mobile frontend: the canonical Swift/SwiftUI iOS customer app is
+    swift/indooro-EinkaeuferFinal/indooroApp (Xcode project
+    swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj, scheme MCindooroApp,
+    bundle id at.ac.htl.leonding.indooroswift2, iOS 18.5, five tabs: Start,
+    Planung, Rezepte, Einkaufen, Karte; BLE/iBeacon positioning, store
+    detection, shopping lists and tours, recipes, upsell prompts, AR route
+    preview). swift/indooro-/indooroApp and swift/indooroApp/indooroApp are
+    legacy references and receive no new features. The iOS contract lives in
+    the ios-* and mobile-* capabilities; docs/specs/ holds the FSD, TSD,
+    architecture blueprint, audit, and roadmap.
+  - Cross-cutting single-source-of-truth capabilities: `admin-dashboard`
+    (static Admin UI contract), `swift-client` (iOS platform contract),
+    `backend-core` (Quarkus structure, persistence, auth, audit, pipelines),
+    and `shared-api` (HTTP contract plus openapi.yaml). Feature details stay
+    in the feature capabilities they reference.
   - Deployment: LeoCloud Kubernetes manifests live under k8s/. Local developer
     orchestration is done with docker-compose.yml and Quarkus dev tooling.
   - Container registry: backend images use
@@ -199,7 +219,8 @@ context: |
 
   Admin authentication and authorization:
   - Admin Platform login uses Keycloak with Quarkus OIDC Authorization Code Flow
-    (`quarkus-oidc`, `application-type=web-app`).
+    (`quarkus-oidc`, `application-type=hybrid`, split id/refresh token
+    cookies, logout path `/admin/logout`).
   - Admin pages under `/admin` and `/admin/*` require authentication.
   - Protected admin APIs include `/api/admin/logs`, `/api/admin/error-logs`,
     `/api/regions`, `/api/stores`, `/api/beacons`, and
@@ -232,7 +253,7 @@ context: |
   - Main components are PostgreSQL, OpenSearch, OpenSearch Dashboards,
     Keycloak, and the Indooro backend.
   - Typical rollout uses `kubectl -n student-it220209 apply -f k8s/...` and
-    `kubectl -n student-it220209 rollout restart deployment/indooro-backend-v2`
+    `kubectl -n student-it220209 rollout restart deployment/indooro-backend`
     when the backend image is updated.
   - Any future deployment change must state exactly which image tag, manifests,
     secrets, routes, and verification commands were used.
@@ -257,6 +278,32 @@ context: |
     commitments unless a future OpenSpec change adds them.
   - If legacy documentation and current code disagree, record the conflict in
     design.md and verify actual runtime behavior before changing code.
+
+  Current OpenSpec state and how to continue (updated 2026-09-21):
+  - openspec/specs holds 30 capabilities and is the single source of truth.
+    Cross-cutting baselines: backend-core, shared-api (incl. openapi.yaml),
+    admin-dashboard, swift-client. iOS feature contracts: ios-* and mobile-*.
+  - All historical changes are archived under openspec/changes/archive.
+    improve-upsell-candidate-ranking was archived with --skip-specs because it
+    was superseded by the AI-first upsell design; do not revive it.
+  - Known gaps between code and specs are tracked, never hidden: every
+    requirement the current code violates is listed in docs/specs/AUDIT.md
+    (AUD-xx) or docs/audit/CODE_AUDIT.md and is fixed by an open change.
+  - Recommended implementation order of the open changes:
+    1. protect-legacy-write-endpoints, 2. fix-ios-contract-and-spec-drift,
+    3. harden-platform-security-baseline, 4. fix-admin-dashboard-contract-drift,
+    5. establish-shared-api-contract, 6. optimize-backend-data-access,
+    7. modernize-ios-client-architecture,
+    8. stabilize-upsell-quality-and-request-lifecycle.
+    Ownership overlaps are resolved in the design.md files (rate limiting and
+    PDF bounds: harden-platform-security-baseline; OpenAPI export:
+    establish-shared-api-contract; Swift type generation and 429 handling:
+    modernize-ios-client-architecture).
+  - Every code change must go through a change (proposal, specs, design,
+    tasks), be validated with validate --all --strict, and be archived after
+    verification; replace generated "TBD" purposes immediately after archive.
+  - Human-readable companions: docs/specs (FSD, TSD, blueprint, roadmap) and
+    docs/audit (system map, code audit, modernization blueprint).
 
 rules:
   proposal:
