@@ -289,12 +289,15 @@ context: |
   - Known gaps between code and specs are tracked, never hidden: every
     requirement the current code violates is listed in docs/specs/AUDIT.md
     (AUD-xx) or docs/audit/CODE_AUDIT.md and is fixed by an open change.
-  - Recommended implementation order of the open changes:
-    1. protect-legacy-write-endpoints, 2. fix-ios-contract-and-spec-drift,
-    3. harden-platform-security-baseline, 4. fix-admin-dashboard-contract-drift,
-    5. establish-shared-api-contract, 6. optimize-backend-data-access,
+  - Recommended implementation order (details and acceptance criteria in
+    docs/RUNBOOK.md): 0. manual immediate actions on LeoCloud (rotate demo,
+    Keycloak admin and client secrets; OpenSearch services to ClusterIP),
+    1. protect-legacy-write-endpoints, 2. harden-platform-security-baseline,
+    3. fix-ios-contract-and-spec-drift, 4. fix-admin-dashboard-contract-drift,
+    5. optimize-backend-data-access, 6. establish-shared-api-contract,
     7. modernize-ios-client-architecture,
     8. stabilize-upsell-quality-and-request-lifecycle.
+    Changes in different subsystems may run in parallel.
     Ownership overlaps are resolved in the design.md files (rate limiting and
     PDF bounds: harden-platform-security-baseline; OpenAPI export:
     establish-shared-api-contract; Swift type generation and 429 handling:

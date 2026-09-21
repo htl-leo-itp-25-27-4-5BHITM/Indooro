@@ -367,7 +367,7 @@ flowchart LR
 | P0-PERF-1 | ⚡ | OpenAI-Aufruf aus der Transaktion lösen, Bulkhead/Timeout/Fallback | PERF-01, PERF-27 | DA 2.1–2.2 | M | 40 parallele Plan-Requests: `/api/stores` p95 < 500 ms |
 | P0-DATA-1 | 🔒 | Rezept-Bearbeitung verlustfrei machen (Detail laden, alle Felder senden, `tagIds: null` behält Tags) | BUG-13, BUG-14 | AD 2.1, 3.2–3.3 | M | Bearbeitetes Seed-Rezept behält Bild, Beschreibung, Tags |
 | P0-API-1 | 🧩 | iOS-Dismiss-Vertrag (1 440 vs. max 30) und weitere iOS-Vertragsfehler | API-01…API-10 | B | L | Dismiss liefert 202; Vertragsfehlerliste in B abgehakt |
-| P0-GOV-1 | 🧹 | Abgeschlossene OpenSpec-Changes archivieren, überholten Upsell-Change schließen, `align-openspec-audit-findings` reparieren | AUD-04, AUD-05, AUD-34 | iOS-P0-01/02/06 | S | `openspec/specs` enthält `recipe-catalog-shopping`, `mobile-upsell-*` |
+| P0-GOV-1 | 🧹 | ✅ **Erledigt 2026-09-21.** Abgeschlossene OpenSpec-Changes archivieren, überholten Upsell-Change schließen, `align-openspec-audit-findings` reparieren | AUD-04, AUD-05, AUD-34 | iOS-P0-01/02/06 | S | `openspec/specs` enthält `recipe-catalog-shopping`, `mobile-upsell-*` |
 
 ### 5.2 P1 – Nächste Sprints (Phase 1 und 2)
 

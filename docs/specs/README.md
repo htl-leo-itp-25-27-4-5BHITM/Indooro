@@ -1,5 +1,7 @@
 # Indooro – Spezifikationsdokumente
 
+**Einstieg und nächste Schritte:** [docs/RUNBOOK.md](../RUNBOOK.md)
+
 `openspec/specs/` ist die normative Single Source of Truth. Der plattformübergreifende Audit (Backend, Admin, Infrastruktur, Swift) vom 2026-09-17 liegt unter [docs/audit/](../audit/README.md). Die Dokumente hier erklären, visualisieren und priorisieren; bei Widersprüchen gilt OpenSpec.
 
 | Dokument | Inhalt | Wann lesen |
@@ -24,18 +26,9 @@
 | `mobile-shopping-lists` | Listen, Tour, Teilen, Import |
 | `mobile-ar-navigation` | AR-Routenvorschau |
 
-## Offene Changes (empfohlene Reihenfolge)
+## Offene Changes
 
-| # | Change | Zweck |
-| --- | --- | --- |
-| 1 | `protect-legacy-write-endpoints` (D) | Backend-Schreibrouten absichern, Index-Fehler 409 |
-| 2 | `fix-ios-contract-and-spec-drift` (B) | Vertragsfehler und Spec-Drift im iOS-Client beheben |
-| 3 | `harden-platform-security-baseline` | Keycloak-Prod, XSS/CSP, Netzwerk, Rate Limiting, PDF-Grenzen |
-| 4 | `fix-admin-dashboard-contract-drift` | Admin-UI an Backend-Vertrag angleichen |
-| 5 | `establish-shared-api-contract` | OpenAPI-Vertrag, `/api/v1`, Contract-Tests |
-| 6 | `optimize-backend-data-access` | Datenzugriff im Backend optimieren |
-| 7 | `modernize-ios-client-architecture` (C) | Swift 6, Observation, Module, APIClient, Tests, CI |
-| 8 | `stabilize-upsell-quality-and-request-lifecycle` | Upsell-Qualität und Anfrage-Lebenszyklus |
+Reihenfolge, Sofortmaßnahmen und Abnahmekriterien stehen im [Runbook](../RUNBOOK.md#2-nächste-schritte-in-dieser-reihenfolge).
 
 Alle abgeschlossenen Changes liegen unter `openspec/changes/archive/`.
 
