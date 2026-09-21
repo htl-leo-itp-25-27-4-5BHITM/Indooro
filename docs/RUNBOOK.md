@@ -3,8 +3,7 @@
 | Feld | Wert |
 | --- | --- |
 | Stand | 2026-09-21 |
-| Branch | `openspec/full-sync-2026-09-21` (gepusht, **noch nicht in `main` gemergt**) |
-| Pull Request anlegen | https://github.com/htl-leo-itp-25-27-4-5BHITM/Indooro/pull/new/openspec/full-sync-2026-09-21 |
+| Branch | `main` (enthält den übernommenen Branch `openspec/full-sync-2026-09-21`) |
 | OpenSpec | `npx -y @fission-ai/openspec@1.3.1 validate --all --strict` → **38 passed, 0 failed** (30 Specs, 8 offene Changes) |
 | Code-Stand | unverändert seit `63a42d4` – bisher wurden **nur Specs und Dokumente** geändert, kein App- oder Backend-Code |
 
@@ -31,14 +30,13 @@
 
 ## 2. Nächste Schritte (in dieser Reihenfolge)
 
-### Schritt 0 – Heute: Branch übernehmen und Repo aufräumen
+### Schritt 0 – Branch übernehmen und Repo aufräumen ✅ erledigt 2026-09-21
 
-- [ ] 0.1 Pull Request aus `openspec/full-sync-2026-09-21` erstellen und in `main` mergen (Link oben). Die vielen „gelöschten“ Dateien im Diff sind **Verschiebungen** nach `openspec/changes/archive/` – nichts geht verloren.
-- [ ] 0.2 Nach dem Merge lokal: `git switch main && git pull`.
-- [ ] 0.3 Lokale Reste entscheiden:
-  - `swift/indooro-EinkaeuferFinal.zip` → löschen (altes Archiv).
-  - `…/UserInterfaceState.xcuserstate` → nicht committen (persönliche Xcode-Datei); `xcuserdata/` wird mit Change C in `.gitignore` aufgenommen.
-  - `documentation/LEOCLOUD_HOSTING_GUIDE_GENERAL.md` → committen, falls benötigt.
+- [x] 0.1 `openspec/full-sync-2026-09-21` per Fast-Forward in `main` übernommen und gepusht (ohne PR, da `gh` lokal fehlt). Die vielen „gelöschten“ Dateien im Diff waren **Verschiebungen** nach `openspec/changes/archive/`.
+- [x] 0.2 Xcode-Nutzerdateien (`xcuserdata/`, `*.xcuserstate`) aus Git entfernt (lokal erhalten) und in `.gitignore` aufgenommen.
+- [x] 0.3 `swift/indooro-EinkaeuferFinal.zip` in den macOS-Papierkorb verschoben; `swift/*.zip` ist ignoriert.
+- [ ] 0.4 `documentation/LEOCLOUD_HOSTING_GUIDE_GENERAL.md` bewusst behalten (noch nicht committet) – bei Bedarf committen.
+- Alle Teammitglieder: `git switch main && git pull`. Eigene lokale Xcode-Dateien bleiben erhalten; Git ignoriert sie ab jetzt.
 
 ### Schritt 1 – Sofortmaßnahmen (manuell, Tag 0–2, kein Code)
 

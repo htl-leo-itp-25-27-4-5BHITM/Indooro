@@ -63,7 +63,7 @@ flowchart LR
 | P0-04 | **iOS-Vertragsfehler und Spec-Drift beheben**: Dismiss-Limit, Fake-Koordinaten, Adresse, Fallback-Flag, Low-Confidence-Darstellung, store-gefilterte Suche, verlustfreies Produkt-Decoding, HTTP-Status, Datumsformat, Layout-Cache, Rotation im Graph, Beschriftung „Passt gut dazu“. | C1–C6, C9, AUD-08–13 | B (Tasks 1–11) | L | Alle Szenarien der B-Deltas manuell bestätigt; Backend-Test `suppressMinutes=1440` grün |
 | P0-05 | **Swift-Build-Check dokumentieren**: `xcodebuild … -scheme MCindooroApp … build` einmal ausführen und Ergebnis in `swift/indooro-EinkaeuferFinal/TESTING.md` festhalten (Baseline vor Umbau). | AUD-03 | B 11.3 | S | Build-Log mit Xcode-Version im Repo-Dokument |
 | P0-06 | ✅ **Erledigt 2026-09-21.** **`align-openspec-audit-findings` reparieren**: Delta `catalog-maintenance-operations` nutzt `MODIFIED` mit Namen „…lookup and protected bulk import“, die permanente Spec heißt „…lookup and bulk import“ → `## RENAMED Requirements` (FROM/TO) ergänzen oder Namen angleichen, sonst scheitert das Archivieren. | AUD-34 | X1 | S | `archive align-openspec-audit-findings` läuft ohne Fehler |
-| P0-07 | **Repository-Hygiene**: `swift/indooro-EinkaeuferFinal.zip` löschen, `xcuserdata/` in `.gitignore`, versionierte `UserInterfaceState.xcuserstate` entfernen. | AUD-02 | C 2.6, 14.2 | S | `git status` zeigt keine Xcode-User-Dateien mehr |
+| P0-07 | ✅ **Erledigt 2026-09-21.** **Repository-Hygiene**: `swift/indooro-EinkaeuferFinal.zip` löschen, `xcuserdata/` in `.gitignore`, versionierte `UserInterfaceState.xcuserstate` entfernen. | AUD-02 | C 2.6, 14.2 | S | `git status` zeigt keine Xcode-User-Dateien mehr |
 
 ## P1 – Nächster Sprint
 

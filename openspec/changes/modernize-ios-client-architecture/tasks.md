@@ -11,7 +11,7 @@
 - [ ] 2.3 Add `IndooroAPIBaseURL` to `Info.plist` and remove `NSAllowsArbitraryLoads`; add the localhost ATS exception only for `Debug-Local`.
 - [ ] 2.4 Add `Assets.xcassets` with AppIcon and AccentColor.
 - [ ] 2.5 Move unused layout JSONs to `swift/indooro-EinkaeuferFinal/Fixtures/Layouts/`, move `presentation-airdrop-swift/` to `presentations/swift-airdrop/`, and exclude `README.md` from the app target.
-- [ ] 2.6 Add `xcuserdata/` and `*.xcuserstate` to `.gitignore` and remove tracked user state files.
+- [x] 2.6 Add `xcuserdata/` and `*.xcuserstate` to `.gitignore` and remove tracked user state files. (Done 2026-09-21.)
 
 ## 3. Package Skeleton And Tests
 
@@ -96,7 +96,7 @@
 ## 14. Legacy Retirement
 
 - [ ] 14.1 Delete `swift/indooro-` and `swift/indooroApp` after confirming no unique behavior remains (compare against `docs/specs/AUDIT.md` §1.3).
-- [ ] 14.2 Delete the untracked `swift/indooro-EinkaeuferFinal.zip`.
+- [x] 14.2 Delete the untracked `swift/indooro-EinkaeuferFinal.zip`. (Done 2026-09-21, moved to the macOS Trash.)
 - [ ] 14.3 Update `openspec/config.yaml`, `README.md`, and `docs/specs/TSD.md` to the new structure.
 
 ## 15. Verification
