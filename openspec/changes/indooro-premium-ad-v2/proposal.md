@@ -1,31 +1,31 @@
 ## Why
 
-The preserved 65-second V1 explains Indooro through eight diagram-led chapters but never shows a customer using it or finding a product. A shorter customer-centered advertisement can make the search-to-route benefit immediately understandable while retaining truthful, clearly illustrative product visuals.
+The preserved 65-second V1 explains Indooro through diagrams but never gives the shopper a meaningful role. The first V2 plan corrected that with a live-action shoot; this revision removes its actor, location and footage dependency so the premium customer story can be produced through deterministic motion graphics and code-driven 3D.
 
 ## What Changes
 
-- Plan a **32-second German premium advertisement** built around one customer's need, tap, route decision, movement and product discovery. The proposed film is a future deliverable; this change currently contains planning only.
-- Replace the eight-chapter explanation with seven tightly connected beats: uncertainty, app opening, search, route activation, physical navigation, product found, brand payoff.
-- Establish an original warm-real-world/dark-mint-digital visual identity, shot-level storyboard, camera and transition grammar, and a short natural German voice-over with a music/SFX arc.
-- Specify an isolated future `indooro-ad-v2/` Remotion production, reuse of proven V1 technical pieces, preview-first review gates, asset rights and final quality checks.
-- Preserve V1 unchanged. Do not implement, render, generate V2 media, buy assets or begin OpenSpec apply until explicit user approval.
+- Plan a **28-second, German, 16:9 premium motion graphics advertisement** with one stylized shopper, one product need, a smartphone search, a visible route, guided movement and a product discovery. This is a future deliverable; this change remains planning only.
+- Use a restrained faceless 3D/2.5D shopper and modular supermarket geometry. Avoid photoreal humans, cartoons, a feature checklist and algorithm exposition.
+- Make Remotion the master timeline, UI, typography, route handoff, sound and export system. Prefer a few procedural Blender hero/environment passes where they materially improve depth; keep a Remotion/SVG fallback. Cinema 4D is unnecessary for the approved core concept.
+- Define shot-level storyboard, original visual grammar, concise German voice-over, premium electronic sound design, asset provenance and preview-first review gates.
+- Preserve V1 and its evidence unchanged. Do not implement, create Blender scenes, generate V2 media, render, buy assets or begin OpenSpec apply until explicit user approval.
 
 ## Capabilities
 
 ### New Capabilities
 
-- `premium-ad-creative-direction`: Audience, claim boundaries, human-centered creative identity and 32-second story.
-- `premium-ad-visual-storytelling`: Shot-level search-to-discovery narrative and readable app interaction.
-- `premium-ad-motion-design`: Motivated camera, match-cut route language, transitions and timing.
-- `premium-ad-user-experience`: Truthful depiction of the customer's interaction and illustrative UI.
-- `premium-ad-audio-production`: German VO, original/cleared music, sparse SFX and listening/technical acceptance.
-- `premium-ad-technical-production`: Isolated Remotion architecture, footage integration and staged previews.
-- `premium-ad-quality-assurance`: Human creative review, technical media checks, rights and approval gates.
+- `premium-ad-creative-direction`: Audience, claim boundaries, motion-first identity and 28-second human-centered story.
+- `premium-ad-visual-storytelling`: Stylized shopper, phone interaction, route and product discovery at shot level.
+- `premium-ad-motion-design`: Motivated 2D/2.5D/3D camera language, route continuity and deterministic timing.
+- `premium-ad-user-experience`: Truthful illustrative search/map flow and emotionally readable shopper agency.
+- `premium-ad-audio-production`: Short German VO, cleared/original music, designed SFX and listening/technical acceptance.
+- `premium-ad-technical-production`: Isolated Remotion project, optional procedural Blender passes and staged previews.
+- `premium-ad-quality-assurance`: Human creative review, technical media checks, rights and explicit approval gates.
 
 ### Modified Capabilities
 
-None. The ad documents a proposed representation of the product; it changes no app, API or deployed behavior, and the V1 film specs remain historical.
+None. This is a proposed film representation; it changes no app, API or deployment behavior, and V1 film specs remain historical.
 
 ## Impact
 
-Planning lives in this independent OpenSpec change. A future approved implementation would create `indooro-ad-v2/` and may copy selected helpers from `indooro-motion/` without importing the V1 production at runtime. The canonical iOS code, backend, administrator, current film and local exports remain intact. Source truth comes from the V1 film audit and current Indooro iOS/search/navigation specs. New dependencies are human/store footage with release and location permissions, an approved brand lockup, a natural German narrator or licensed voice service, and original or licensed music/SFX. Production time and exact spend remain contingent on these choices. The proposed creative direction favors a controllable local shoot and original audio; licensed or AI-generated footage are fallback decisions requiring separate rights and continuity review.
+Planning stays in this independent OpenSpec change. After approval, a separate `indooro-ad-v2/` project may copy selected V1 frame helpers, route logic, map geometry and visual primitives with provenance. The canonical iOS app, backend, V1 source and exports remain intact. The film's search/map/route claims must remain traceable to current repository specs; no measured positioning, time saving, retailer or deployment claim is authorized. Required new assets are code-generated store/character/phone/route visuals, an approved brand mark and original or cleared voice/music/SFX. **No live-action footage, filmed performer, camera crew or store location is required.** Blender is a preferred optional 3D renderer, not a condition for telling the story; its executable is not currently found in this environment and must be preflighted only after production approval.

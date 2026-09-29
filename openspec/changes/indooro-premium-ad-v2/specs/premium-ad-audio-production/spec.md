@@ -1,14 +1,14 @@
 ## ADDED Requirements
 
 ### Requirement: Natural German narration
-The film SHALL have a short German narration, recorded by an authorized performer or generated under a documented suitable license, with intelligible and natural delivery approved by a human listener.
+The film SHALL have a short German narration that can be produced within an AI-assisted workflow using an authorized speaker or a suitably licensed synthetic voice, with intelligible and natural delivery approved by a human listener. A filmed performer SHALL NOT be required.
 
 #### Scenario: Voice acceptance
 - **WHEN** a reviewer listens to the voice alone and in the mix
 - **THEN** pronunciation, pacing, tone and the selected script are approved before final mix
 
 ### Requirement: Story-driven music and effects
-The mix SHALL use cleared or original music with a deliberate tension-to-momentum-to-resolution arc and sparse effects linked to significant physical/UI events.
+The mix SHALL use cleared or original music with a deliberate tension-to-momentum-to-resolution arc and sparse designed effects linked to shopper movement, route activation, product selection and brand events.
 
 #### Scenario: Cue review
 - **WHEN** the storyboard cue sheet is compared with the rough cut
