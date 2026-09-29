@@ -26,7 +26,7 @@ The final and preview MP4s, poster PNG and generated WAV remain in `indooro-moti
 
 The original planning was committed in stages: tooling/media policy (`0bebace`), proposal/design (`2e00aa9`), six capability specs (`c2137a0`), creative direction/storyboard (`4353095`), and animation/audio/render plans (`7b3b396`). The production source was then committed as a scaffold (`340f043`), tokens (`451dd0f`), motion helpers (`b3040de`), graph and route logic (`efacd8e`), route tests (`8d2e95f`), shared visuals (`3d7e8d3`), eight scenes (`de2e452`), procedural audio (`60f4286`), composition assembly (`ea3179e`), reproduction rules/license (`c8672b1`), implementation audit (`9a98f97`), and delivery report/hash manifest (`7dd5dcb`). These are the actual repository commits; this report does not assign earlier dates or claim that generated media were committed.
 
-The two unrelated untracked files `docs/PROJECT_HANDOVER.md` and `documentation/LEOCLOUD_HOSTING_GUIDE_GENERAL.md` existed before this handover and are deliberately excluded from film commits. No V1 source or render was deleted or rewritten for the V2 concept work.
+The unrelated untracked file `documentation/LEOCLOUD_HOSTING_GUIDE_GENERAL.md` existed before this handover and is deliberately excluded from film commits. `docs/PROJECT_HANDOVER.md` was prepared concurrently for the V1 handover and is included in the final V1 commit. No V1 source or render was deleted or rewritten for the V2 concept work.
 
 ## Known creative limitation
 
