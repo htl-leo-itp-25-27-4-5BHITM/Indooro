@@ -1,0 +1,10 @@
+import React from 'react';
+import {AbsoluteFill,Sequence,staticFile,useCurrentFrame} from 'remotion';
+import {Audio} from '@remotion/media';
+import {Atmosphere} from './components/Visuals';
+import {scenes} from './design/tokens';
+import {Problem,Reveal,Search,Position,Route,List,Admin,Hero} from './scenes/Scenes';
+import {linear} from './utils/motion';
+const parts=[Problem,Reveal,Search,Position,Route,List,Admin,Hero];
+const SceneLayer:React.FC<{index:number}>=({index})=>{const f=useCurrentFrame(),s=scenes[index],Scene=parts[index];const intro=index===0?1:linear(f,0,15);const outro=index===7?1:1-linear(f,s.duration,s.duration+15);return <AbsoluteFill style={{opacity:intro*outro}}><Scene/></AbsoluteFill>};
+export const Film:React.FC=()=> <AbsoluteFill><Atmosphere/>{scenes.map((s,i)=><Sequence key={s.name} from={s.start} durationInFrames={s.duration+(i<7?15:0)} name={s.name}><SceneLayer index={i}/></Sequence>)}<Audio src={staticFile('audio/indooro-original-score.wav')} volume={0.8}/></AbsoluteFill>;
