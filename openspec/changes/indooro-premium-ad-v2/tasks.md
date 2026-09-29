@@ -17,7 +17,7 @@ Checked tasks are verified planning/preservation work only. **No V2 implementati
 - [x] 2.3 Plan 16 timed shots with camera, action, graphics, VO, SFX, transition and assets; result: 960-frame storyboard and shoot list.
 - [x] 2.4 Write three German VO scripts and audio-first music/mix plan; result: recommended script and cue/acceptance documents.
 - [x] 2.5 Specify isolated architecture, reuse, rights, assets, risks and preview workflow; result: production documents and seven capability specs.
-- [ ] 2.6 Validate OpenSpec strict, review links/timing/checklists and commit review package; result: complete, internally consistent proposal ready for approval.
+- [x] 2.6 Validate OpenSpec strict, review links/timing/checklists and commit review package; result: 40/40 strict items valid, 960 contiguous storyboard frames and complete proposal ready for approval.
 
 ## 3. User review and authorization
 
