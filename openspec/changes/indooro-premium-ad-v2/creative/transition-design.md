@@ -1,10 +1,9 @@
-# Transition choreography
+# Motion-graphics transition choreography
 
-1. **Gaze → phone (3.2 s):** cut on the same hand moving from a shelf pause to the pocket. Hand motion carries direction; no wipe graphic.
-2. **Phone → search (7.0 s):** screen fills enough frame that the thumb and search text share the same plane. One push is tied to actual screen attention, not a decorative orbit.
-3. **Selection → map (10.5–12.0 s):** milk result compresses toward the same product marker; route starts from a plausible walkable point. Sound activation leads the visual line by about three frames.
-4. **Map → aisle (12.0–14.0 s):** match path tangent and screen direction. The mint line exits the phone at lower right and becomes a shelf-edge/ground cue at the same screen location, with matched blur and exposure. Composite a brief occlusion behind foreground shelf goods to seat it in space. This is the high-risk prototype to prove first.
-5. **Walking cuts (17–24 s):** use body/shelf occlusion and 120 BPM accents; no reverse screen direction without a visible turn. Hold the 20–22 s phone glance long enough to confirm same destination.
-6. **Reach → brand (24–32 s):** path collapses when real milk is touched; the basket edge/last route fragment becomes the approved route glyph. Identity appears only after the product payoff. Final card settles by 30.0 s and holds 2 s.
+1. **Uncertainty → phone (3 s):** amber split traces retract toward the figure's raised phone. Camera follows the simple arm/phone motion; the figure remains a visible anchor.
+2. **Search → result (6.5 s):** one search field compresses to a result card, then a touch pulse selects `Milch`; avoid decorative letter-by-letter exposition. Destination marker inherits the same mint accent.
+3. **Map → spatial route (10–13 s):** the 2D route reaches the map edge, then cuts on position/tangent to the same line in the generated store. Remotion owns the first half; a Blender pass or layered SVG owns the second. Shared layout coordinates and a fixed camera preset make the join deterministic. No live footage tracking is involved.
+4. **Shopper follows route (13–21 s):** screen direction stays left-to-right, with route line moving ahead of the figure. Shelf occlusion and parallax create depth; camera motion follows the shopper's turn instead of orbiting randomly.
+5. **Found → identity (21–28 s):** route collapses when the figure reaches the milk carton, then one residual mint segment becomes the Indooro route glyph. The phone briefly returns as hero object; final card settles by 25.5 s and holds 2.5 s.
 
-Motion curves: quick ease-out for UI confirmation, linear/physically tracked path movement for travel, soft ease-in-out only for end-card resolution. Motion blur matches source footage shutter and does not soften UI typography during its clarity holds. Reject a transition if it obscures the customer decision, product identity or route direction.
+UI focus uses quick ease-out, route travel uses controlled linear timing along walkable geometry, figure gestures use restrained eased transforms, and the brand resolution uses a longer soft settle. Motion blur affects moving geometry but never the UI/readability holds. Any transition that obscures what the shopper chose or where the path leads fails creative review.
