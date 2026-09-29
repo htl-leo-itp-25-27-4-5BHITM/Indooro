@@ -1,0 +1,3 @@
+# Indooro motion production rules
+
+OpenSpec change `../openspec/changes/indooro-motion-graphics-film/` is the production source of truth. Keep TypeScript maintainable, scenes editable, animation deterministic and frame-based, assets local and licensed, and UI claims traceable to the repository. Use shared design tokens, preview often, test route geometry, check actual renders, and update tasks only after verification. Do not claim measured positioning accuracy, commercial retailer partnership, backend-synced lists, or production deployment. A successful build alone does not complete this film.
