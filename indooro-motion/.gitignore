@@ -1,0 +1,13 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Ignore the output video from Git but not videos you import into src/.
+out
+
+# Regenerable media and local review artifacts. Keep source and delivery reports in Git.
+previews/
+exports/*.mp4
+exports/*.png
+public/audio/*.wav
