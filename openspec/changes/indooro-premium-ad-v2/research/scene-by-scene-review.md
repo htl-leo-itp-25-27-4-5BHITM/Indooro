@@ -2,6 +2,8 @@
 
 Method: sampled **encoded final MP4** frames at 1, 3, 5, 7, 10, 12, 14, 18, 22, 24, 28, 33, 35, 39, 42, 44, 48, 51, 53, 56, 58, 60, 62 and 64 seconds; compared each scene with `Scenes.tsx`, `Film.tsx` and the V1 storyboard. This is an evidence-based still/source audit, not a claim of continuous playback. Durations follow `src/design/tokens.ts`.
 
+![Chronological contact sheet of sampled V1 final-video frames](v1-contact-sheet.jpg)
+
 | Scene / interval | Intent and observed image | Critical judgment / V2 response |
 |---|---|---|
 | 01 Problem, 0–6 s | At 1/3/5 s, left question `Wo ist eigentlich die Milch?` faces a small tilted shelf diagram and amber line. 6 s establishes friction, but no customer or actual aisle appears. | Abstract problem needs too much reading; replace with a 2–3 s human glance/decision in a real aisle. Keep the amber detour as a brief graphic accent only. |

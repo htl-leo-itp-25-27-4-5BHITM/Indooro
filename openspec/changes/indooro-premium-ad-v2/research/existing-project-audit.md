@@ -1,6 +1,6 @@
 # V1 project audit — evidence ledger
 
-Evidence inspected 2026-09-29: the committed V1 OpenSpec change, `indooro-motion/` source and production report, `indooro-motion/exports/indooro-motion-graphics-final.mp4`, extracted frames at 24 points from 1–64 s, FFprobe, FFmpeg audio analysis, root product specs, and Git history. The local contact sheet is `/tmp/indooro-v1-audit/contact-sheet.png` and is an analysis aid, not a deliverable. Still-frame evidence supports composition, content and state changes; it does not prove a full moving-picture or listening experience.
+Evidence inspected 2026-09-29: the committed V1 OpenSpec change, `indooro-motion/` source and production report, `indooro-motion/exports/indooro-motion-graphics-final.mp4`, extracted frames at 24 points from 1–64 s, FFprobe, FFmpeg audio analysis, root product specs, and Git history. The chronological contact sheet `research/v1-contact-sheet.jpg` preserves the sampled encoded frames as review evidence. Still-frame evidence supports composition, content and state changes; it does not prove a full moving-picture or listening experience.
 
 | Area | Planned | Delivered / verified | Limit |
 |---|---|---|---|
