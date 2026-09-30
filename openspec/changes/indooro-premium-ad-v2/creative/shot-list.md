@@ -1,15 +1,14 @@
-# Digital shot and asset build list — future production only
+# Digital shot and asset list — future production only
 
-This replaces the earlier filming list. No camera, actor, location or live-action plate is required. Build only after explicit approval. One shared illustrative store layout must drive Remotion route logic and optional Blender shelf placement.
+Nine storyboard shots, 26 s / 780 frames. This list is a plan; build nothing until explicit prototype approval. The four first prototypes are **P1 opening (shots 01–02), P2 smartphone/search (shot 03), P3 phone-to-store (shot 04), P4 destination/brand (shots 08–09)**. Navigation shots 05–07 belong to later full production after prototype approval. All assets use one illustrative walkable store layout.
 
-| Asset / storyboard shots | Preferred generator | Deliverable after approval | Remotion-only fallback / acceptance |
+| Asset / shots | Preferred scripted asset | Blender responsibility | Remotion responsibility / fallback |
 |---|---|---|---|
-| Modular shelf/floor kit / 01, 07–11 | Blender Python primitives: rounded shelves, matte floor, fixed lights, three virtual cameras | Script + short opaque frame sequences, color/coordinate manifest | SVG shelf planes at 3 depth layers with parallax; one consistent layout, no collision with route |
-| Faceless shopper / 01–03, 07–11 | Blender Python parented head/torso/limbs and a few named poses | One reusable adult-proportioned figure, pause/phone/turn/travel/reach keys | SVG silhouette poses and frame-based translation; leg motion restrained, visible at 720p |
-| Phone hero body / 03–05, 12 | Blender beveled primitive with subtle reflection, or CSS/SVG from V1 | Transparent still/short pass aligned to screen plane | CSS/SVG shell; no baked UI text |
-| Search/result/map screen / 04–06, 12 | Remotion React/SVG from current app/spec reference | Editable UI states with `Milch`, result and route | Same; readable at 720p and clearly illustrative |
-| Route and marker / 06–11 | Remotion SVG path plus Blender route mesh where spatial depth matters | Matched screen/store tangent and endpoint at walkable shelf access | SVG path split into foreground/background masks using shelf layers |
-| Milk product / 10–11 | Generic Blender carton primitive or SVG shape | Unbranded recognisable target matching UI marker | SVG carton with shelf shadow; no third-party package art |
-| Brand card / 12–13 | Remotion vector glyph, approved wordmark, Inter | Fully settled 2.5 s end frame | Same |
+| Modular store and camera / 01–02, 04–08 | Shelf/floor kit, camera splines, fixed light rigs, ID/depth masks | Render short 720p draft beauty/depth/ID passes, later selected final passes | Composite and grade; layered shelf cards/parallax for every shot |
+| Sculptural shopper / 01–03, 06–08 | Adult jacket-like continuous silhouette; named pause, phone, turn, reach poses | Model with simple mesh/bevel/materials, parented controls, short translations/poses; no face or full gait rig | Preserve human framing/continuity; 2.5D silhouette, upper-body or partial interaction fallback |
+| Hero phone / 02–04 | Beveled body, screen plane/matte and projection data | Render body, reflections, screen occlusion and camera motion | Editable `Milch` search/result/map UI; corner-pin screen composite or CSS 3D body fallback |
+| Shared route/map / 03–09 | One polyline, UI/floor transform, marker and endpoint | Map footprints extrude to shelves in shot 04; floor mesh/depth for 04–08 | SVG core, draw timing, overlap, position ripple, marker, grade, route-to-brand; perspective/occlusion-mask fallback |
+| Milk destination / 08 | Generic warm-white carton, sparse neighboring product silhouettes, exact shelf access | Render shelf/carton, reach pose and light/depth passes | Destination circle/plane, contrast hierarchy, contact cue; 2.5D shelf/product/partial-shopper fallback |
+| Approved brand / 09 | Official mark/wordmark and one claim | Optional dissolving store silhouettes only | Residual route creates or frames mark, `INDOORO`, `Finde deinen Weg.` held frames 705–779 |
 
-Use no photoreal face, detailed hand mesh, cloth simulation, mocap, grocery inventory library or generated live-action clip. Short 3D passes should be reproducible through scripts and deterministic seeds. For Blender, prototype a still and a 1–2 s movement before committing to all passes; if the pass looks toy-like or renders poorly, switch that shot to its listed 2.5D fallback. This is a production *plan*, not an asset creation task executed now.
+Keep fixed seeds, color space and coordinate manifest. Draft prototypes use 1280×720, 30 fps, low samples/fast settings, temporary cleared audio and scratch VO only where useful. Review each in motion, not only stills. No photographed actor, location, stock footage, photoreal face, cloth simulation, mocap or C4D is required. Main/fallback, failure points and precise sound timing for the three signature moments are in [signature-shots.md](signature-shots.md).
