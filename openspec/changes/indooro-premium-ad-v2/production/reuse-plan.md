@@ -1,10 +1,10 @@
-# Reuse execution plan after approval
+# Reuse plan after explicit approval
 
-1. Freeze V1 at `indooro-motion-v1-baseline`; keep its existing 65 s film reproducible and its local export hash manifest intact.
-2. Initialize `indooro-ad-v2/` separately. Copy `src/utils/motion.ts` patterns and selected token values into V2 with source attribution; refactor names for shot-level use.
-3. Copy the deterministic graph and relevant tests only if the final approved store map has corresponding walkable geometry. Do not blindly carry V1's 59→31 list example or technical node wave into the ad.
-4. Rebuild phone UI using canonical iOS reference and approved shot scale. Extract V1 shell only if a controlled mockup insert is used; otherwise composite real filmed glass/screen.
-5. Build new camera transitions, filmed overlays, scene assembly and audio stems. Do not port V1 scene components or its 65 s score as the new film.
-6. Keep the original OpenSpec change as historical context. This new change owns V2 requirements and future task verification.
+1. Preserve V1 at `indooro-motion-v1-baseline` and keep its local export hashes intact.
+2. Initialize `indooro-ad-v2/` separately. Adapt V1's pinned Remotion configuration, composition registration, deterministic easing and export/QA pattern; use 840 frames/30 fps as the initial V2 contract.
+3. Extract the walkable graph and route tests only after defining a shared illustrative V2 store layout. Feed the same geometry to TypeScript and optional Blender Python. Never reuse V1's 59→31 shopping-list example or false Manhattan/A* node wave in this ad.
+4. Redesign the V1 phone shell and search/map states for premium close-ups while using current iOS source/specs to verify copy. Reuse Inter and selected graphite/mint tokens. Confirm the official brand mark before animating V1's route glyph.
+5. Rebuild shot choreography and camera motion; V1's eight scene components and opacity overlaps do not create the required shopper journey. Generate simple shopper/store assets procedurally with 2.5D equivalents.
+6. Keep V1's soundtrack only as an audit/reference. Write a new short cue and sparse effect palette aligned to the revised VO. Retain technical loudness/QA methods, not the old mix.
 
-Detailed asset-by-asset decisions and effort appear in `research/reuse-matrix.md`.
+The categorized component-level decisions and effort estimates are in `research/reuse-matrix.md`. No extraction or production code is part of this revision.

@@ -1,26 +1,26 @@
-# V1 reuse matrix
+# V1/V2 reuse matrix for the motion-graphics-only direction
 
-Effort is a planning estimate for **future approved production**, not work started here: S <0.5 day, M 0.5–2 days, L >2 days. Technical reuse does not imply the existing look suits the new film.
+Effort is a future planning estimate: S <0.5 day, M 0.5–2 days, L >2 days. “Reusable” can mean sound technical structure while its current look still needs redesign.
 
-| Component / file | Decision | Why / future effort |
+| Component / source | Decision | Reason / estimated adaptation |
 |---|---|---|
-| Remotion configuration and package, `indooro-motion/package.json`, `remotion.config.ts` | Reuse with minor changes | Version-matched, deterministic base; new 30/32 s compositions and preview presets in separate project. S |
-| Source architecture, `src/Root.tsx`, `Film.tsx` | Reuse with significant redesign | Sequence/registration pattern works; V2 needs shot-level timeline, stems and footage. M |
-| Frame-based easing, `src/utils/motion.ts` | Reuse with minor changes | Reliable clamped interpolation; add controlled camera/transition helpers. S |
-| Palette/tokens, `src/design/tokens.ts` | Reuse with significant redesign | Mint/charcoal useful brand anchor; warm physical footage needs calibrated contrast and skin tones. M |
-| Inter typography and OFL license, `public/fonts/INTER-LICENSE.txt` | Reuse unchanged | Clear neutral UI type with documented license; verify chosen weights. S |
-| Phone shell, `src/components/Visuals.tsx` | Reuse with significant redesign | Editable shell is technically useful; small dark screen is visually too distant. Build hero close-ups and track filmed hand geometry. M–L |
-| Search UI, `Visuals.tsx`, `Scenes.tsx` | Reuse with significant redesign | Search/result/map sequence is core; use real app reference, larger readable states and fingertip causality. M |
-| Map graphic / route / markers, `Visuals.tsx`, `src/data/store.ts` | Reuse with significant redesign | Tested walkable graph is valuable; existing schematic should be reframed as illustrative navigation overlay tied to a filmed move. M–L |
-| Shopping list visualization, `Scenes.tsx` | Do not reuse in 32 s V2 | Secondary benefit costs narrative time. Save for separate spot. S to omit |
-| Admin editor scene, `Scenes.tsx` | Do not reuse | Wrong audience and chapter for customer ad. S to omit |
-| Eight scene compositions, `Scenes.tsx` | Rebuild completely | Same split layout and holds produce V1 pacing. New shot architecture. L |
-| Camera and opacity overlaps, `Scenes.tsx`, `Film.tsx` | Rebuild completely | Crossfades lack physical/digital continuity; plan tracked match cuts and motivated camera motion. L |
-| Wordmark and route glyph, `Visuals.tsx`; `logos/` | Reuse with significant redesign | Recognizable route cue; compare against actual approved Indooro mark, avoid treating concept glyph as official without approval. M |
-| Existing score WAV and generator, `public/audio/`, `scripts/generate-audio.mjs` | Do not reuse as soundtrack; generator may be redesigned | 65 s no-VO bed does not match new arc; original short synthesis can inform new UI signature only after listening. M |
-| Separate SFX | Rebuild completely | V1 has no documented multitrack SFX library; design sparse action-linked sounds. M |
-| Render scripts and export policy, `package.json`, `.gitignore` | Reuse with minor changes | Reproducible H.264, ignored binaries and hash manifest pattern; add low-resolution ranges and stem checks. S |
-| Route tests and QA/report docs, `store.test.ts`, `exports/indooro-production-report.md`, V1 quality checklist | Reuse with minor changes | Tested geometry and QA structure; extend to footage rights, VO and human narrative. M |
-| Existing V1 storyboards/OpenSpec | Reuse as historical reference only | Preserve as audit evidence, do not turn its scene order into V2. S |
+| Remotion configuration and pinned package, `indooro-motion/package.json`, `remotion.config.ts` | Reuse with adaptation | Proven frame-based pipeline; isolate new 840-frame project and preview settings. S |
+| Composition/folder pattern, `src/Root.tsx`, `src/Film.tsx` | Reuse with adaptation | Sequence registration works; rebuild 13-shot timeline and stems. M |
+| Frame/easing helpers, `src/utils/motion.ts` | Reuse with adaptation | Deterministic interpolation is valuable; add figure/route camera helpers. S |
+| Store graph/A* and route tests, `src/data/store.ts`, `store.test.ts` | Reuse with adaptation | Valid walkable geometry pattern; adapt to one V2 layout shared with Blender. M |
+| Map SVG and markers, `src/components/Visuals.tsx` | Redesign | Existing map is clear but flat; use as source for phone view and 3D handoff. M |
+| Graphite/mint tokens, `src/design/tokens.ts` | Reuse with adaptation | Strong identity anchors; add 3D material/light equivalents. S–M |
+| Inter and bundled OFL notice | Reuse unchanged | Clear neutral UI and documented font license. S |
+| CSS/SVG phone shell, `Visuals.tsx` | Redesign | Technically editable; scale/bevel/lighting must support hero view. Optional Blender body, no filmed phone. M |
+| Search/result/map UI, `Visuals.tsx`, `Scenes.tsx` | Redesign | Core causal interaction; make bigger, shorter and trace copy to iOS specs. M |
+| Wordmark/route glyph, `Visuals.tsx`, `logos/` | Reuse with adaptation | Keep route motif, but confirm approved official mark. M |
+| Eight V1 scene components, `Scenes.tsx` | Rebuild | Repeated headline/map layout lacks shopper and premium camera arc. L |
+| 15-frame opacity overlaps and camera patterns, `Film.tsx` | Rebuild | Replace generic crossfades with matched path/geometry transitions. M–L |
+| Shopper figure and modular 3D store | New asset | No V1 equivalent; primitive procedural geometry and SVG fallback. L |
+| List and admin scenes | Discard from 28 s ad | Wrong audience/story beat; preserve V1 unchanged. S to omit |
+| V1 65 s synthesized score/WAV | Discard as soundtrack | No-VO bed and length do not fit short audio arc. Retain generator as technical reference only. M for new cue |
+| Separate SFX/VO | New assets | Original sparse digital cues and authorized German VO, with human listening. M |
+| Render scripts, ignored generated media, hash manifest | Reuse with adaptation | Strong reproducibility policy; add Blender-pass hashes and short-range previews. S–M |
+| V1 storyboard, QA report and OpenSpec | Historical reference only | Preserve evidence and technical QA standards; V2 owns new timing/requirements. S |
 
-There is no authorized real customer/store footage in the inspected V1 assets. The brand `logos/` directory contains static variants; rights and final approved lockup need confirmation before a public advertisement.
+No live-action footage, actor release, location permission or stock clip is a prerequisite. The existing V1 implementation and render remain intact.
