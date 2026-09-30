@@ -1,6 +1,6 @@
 # Final German voice-over alternatives — 26 s / 780 frames
 
-All scripts are planning text, not recorded audio. Speak close, calm and natural in Austrian or neutral German, with a precise but unforced delivery. Use an authorized, commercially suitable synthetic German voice for an AI-producible pipeline; a licensed human read is optional. No voice cloning without the speaker's authorization. Durations below estimate **spoken sound**, excluding marked pauses, at roughly 130–150 effective words/minute with a deliberate brand ending. Scratch takes after prototype approval must be timed by ear and replace these estimates. Avoid trailer emphasis, tutorial phrasing and technical terms.
+All scripts are planning text, not recorded audio. Speak close, calm and natural in Austrian or neutral German, with a precise but unforced delivery. Use an authorized, commercially suitable synthetic German voice for an AI-producible pipeline; a licensed human read is optional. No voice cloning without the speaker's authorization. Durations below estimate **spoken sound**, excluding marked pauses, at roughly 130–150 effective words/minute with a deliberate brand ending. Scratch takes after authorization for prototype production must be timed by ear and replace these estimates. Avoid trailer emphasis, tutorial phrasing and technical terms.
 
 ## A — Minimal (recommended)
 

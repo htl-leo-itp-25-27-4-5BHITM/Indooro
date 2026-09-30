@@ -1,6 +1,6 @@
 # Digital shot and asset list — future production only
 
-Nine storyboard shots, 26 s / 780 frames. This list is a plan; build nothing until explicit prototype approval. The four first prototypes are **P1 opening (shots 01–02), P2 smartphone/search (shot 03), P3 phone-to-store (shot 04), P4 destination/brand (shots 08–09)**. Navigation shots 05–07 belong to later full production after prototype approval. All assets use one illustrative walkable store layout.
+Nine storyboard shots, 26 s / 780 frames. This list is a plan; build nothing until explicit authorization for prototype production. The four first prototypes are **P1 opening (shots 01–02), P2 smartphone/search (shot 03), P3 phone-to-store (shot 04), P4 destination/brand (shots 08–09)**. Navigation shots 05–07 belong to later full production after explicit prototype acceptance. All assets use one illustrative walkable store layout.
 
 | Asset / shots | Preferred scripted asset | Blender responsibility | Remotion responsibility / fallback |
 |---|---|---|---|
