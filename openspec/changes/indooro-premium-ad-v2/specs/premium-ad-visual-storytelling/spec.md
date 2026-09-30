@@ -1,6 +1,6 @@
 ## ADDED Requirements
 
-### Requirement: Complete physical-to-digital-to-physical story
+### Requirement: Complete shopper-to-phone-to-store story
 The film SHALL show a recognizable problem in a stylized modular store, a motivated phone interaction, a clear route response, purposeful movement by the same simplified shopper and a product discovery in that order, using only generated 2D/2.5D/3D assets.
 
 #### Scenario: Shot-order inspection
