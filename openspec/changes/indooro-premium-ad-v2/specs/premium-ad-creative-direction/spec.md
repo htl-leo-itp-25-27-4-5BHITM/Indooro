@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Customer-centered advertising idea
-The V2 advertisement SHALL make one stylized shopper's product-finding need, decision and outcome the narrative spine, SHALL be motion-graphics-first without a live-action dependency, and SHALL fit a justified 25–30 second runtime, initially planned at 28 seconds.
+The V2 advertisement SHALL make one stylized shopper's product-finding need, decision and outcome the narrative spine, SHALL be motion-graphics-first without a live-action dependency, and SHALL fit a justified 25–27 second runtime, currently planned at 26 seconds / 780 frames.
 
 #### Scenario: First-time viewer sees the approved rough cut
 - **WHEN** a viewer unfamiliar with Indooro watches the film once

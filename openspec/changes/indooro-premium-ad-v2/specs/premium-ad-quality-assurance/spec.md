@@ -8,7 +8,7 @@ The production SHALL verify actual preview/final media, shopper/route continuity
 - **THEN** a reviewer watches it muted and with sound, records time-coded notes and confirms each external asset's license or approval before final quality rendering
 
 ### Requirement: Explicit production gates
-Planning SHALL end at `AWAITING USER APPROVAL — INDOORO V2 MOTION GRAPHICS CONCEPT`; implementation, Blender scene creation, media generation, purchases and rendering SHALL remain pending until explicit user approval, with later rough-cut and final-master checkpoints.
+Planning SHALL end at `FINAL CREATIVE CONCEPT READY — AWAITING APPROVAL FOR PROTOTYPE PRODUCTION`; implementation, Blender scene creation, media generation, purchases and rendering SHALL remain pending until explicit user approval for the four prototypes. Full-film production SHALL require a separate prototype-acceptance decision, with later rough-cut and final-master checkpoints.
 
 #### Scenario: Planning change completed
 - **WHEN** OpenSpec artifacts and review package are complete

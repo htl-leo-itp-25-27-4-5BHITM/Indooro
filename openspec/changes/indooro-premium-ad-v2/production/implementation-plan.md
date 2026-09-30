@@ -1,12 +1,14 @@
-# Future implementation plan — approval required
+# Future implementation plan — prototype approval required
 
-Indicative **8–14 focused working days** for a small AI-assisted workflow: preflight/geometry 1–2, shopper/store/phone prototypes 2–3, UI/route/edit 2–3, original/cleared audio 1–2, reviews/QA 2–4. This is a planning estimate, not a promise or quote. Blender availability, voice quality and review rounds can change effort. There is no filming day or location dependency.
+Indicative effort for the complete AI-assisted production is **9–16 focused working days**, conditional on tool preflight, model quality and review rounds. This estimate is not a commitment or quote. The first authorized milestone is only four draft sequences, not a full advertisement.
 
-1. After explicit user approval, settle brand/UI copy, voice source, distribution and any spending cap. Check Blender executable/version and Remotion package compatibility; keep the Remotion-only fallback ready.
-2. Create isolated V2 package and shared `store-layout.json`; port only selected V1 helpers/tests. Establish exact shot/cue frame indices and deterministic render scripts.
-3. Prototype four short 720p ranges: shopper/uncertainty, phone UI, phone-to-store route handoff, found/brand. Generate only the Blender still/1–2 s passes necessary to test depth and character quality; compare against SVG fallback.
-4. Lay an authorized scratch German read and original/cleared temporary music. Build complete 720p rough cut with clearly labeled temporary audio. Review muted for the shopper story, then with sound for pacing and intelligibility.
-5. Refine shot design and cues, obtain picture-lock approval, produce final authorized VO/music/SFX stems and complete a human mix review.
-6. Obtain explicit final-render approval. Render 1080p master and poster, inspect encoded frames/boundaries, route truth, claims, stream metadata, audio and rights; deliver source/manifest and archive OpenSpec only after actual acceptance.
+1. **Approval and preflight.** After explicit approval for prototype production, confirm approved logo, illustrative UI copy/claim, voice rights, distribution and optional spend. Check Blender CLI/version and Remotion compatibility. Establish a documented Remotion-only fallback and isolated V2 package.
+2. **Geometry and production contract.** Create one walkable store layout, UI/floor transform, route polyline, camera/shot/cue frame map and asset manifest. Port only selected V1 helpers/tests. Confirm path clearance, screen projection export and color workflow.
+3. **Prototype 1 — opening / chaos becomes direction, 0–4 s.** Draft 1280×720, 30 fps. Test low store camera, turn/crane, shopper silhouette and activation-driven selective hierarchy. Temporary pulse/ticks; VO only if it helps judge cadence. Review legibility and avoid a toy store.
+4. **Prototype 2 — smartphone / search, 4–6 s.** Draft 1280×720. Test premium phone shell with crisp `Milch` result, one select and map; verify illustrative copy and 720p reading. Temporary select cue.
+5. **Prototype 3 — phone-to-store, 6–10 s.** Draft 1280×720. Test one continuous camera, screen plane, geometry extrusion, SVG/3D route overlap, mattes, depth and evolving route sound. Compare preferred Blender composite with the continuous 2.5D fallback before committing to the full build.
+6. **Prototype 4 — destination + brand, 18–26 s.** Draft 1280×720. Test floor-level arrival, marker/vertical shelf cue, same shopper's reach, residual line into approved brand and a fully static 2.5-second hold. Temporary sonic mark and scratch final VO if authorized.
+7. **Prototype review gate.** Watch all four at normal speed muted and with temporary sound. Record time-coded human comprehension, UI/character/route continuity, visual premium quality, render practicality and voice/sound findings. Obtain explicit approval of the four prototypes or revise them. **Do not build navigation shots 05–07 or the full film before this gate passes.**
+8. **Only after explicit prototype acceptance:** build the 10–18 s navigation sequence, assemble a complete 720p 26 s rough cut, test story/claims, refine, obtain picture lock, finish licensed audio and obtain final-render approval. Then export/verify 1080p H.264/AAC master and archive OpenSpec only after actual delivery acceptance.
 
-**No step above is started by this planning change.**
+No step above is started by this documentation revision.

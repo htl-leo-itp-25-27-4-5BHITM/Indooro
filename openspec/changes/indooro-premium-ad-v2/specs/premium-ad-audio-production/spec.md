@@ -10,6 +10,8 @@ The film SHALL have a short German narration that can be produced within an AI-a
 ### Requirement: Story-driven music and effects
 The mix SHALL use cleared or original music with a deliberate tension-to-momentum-to-resolution arc and sparse designed effects linked to shopper movement, route activation, product selection and brand events.
 
+The route SHALL have one recognizable evolving sound that shifts from digital UI to spatial movement at the phone crossing and resolves as a concise two-note destination/brand identity; repeated generic whooshes SHALL NOT substitute for this motion-linked cue.
+
 #### Scenario: Cue review
 - **WHEN** the storyboard cue sheet is compared with the rough cut
 - **THEN** each accent serves a visible action and the narration is not masked
