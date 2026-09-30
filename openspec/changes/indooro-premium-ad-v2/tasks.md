@@ -30,12 +30,12 @@ Sections 1–2 record completed planning. The user's subsequent “okay setzte e
 - [x] 4.3 **P3 phone-to-store transition, frames 180–299:** draft 1280×720 continuous camera, map-to-shelf geometry and route overlap; result: rendered compositing test, normal-speed acceptance and optional 2.5D fallback decision pending.
 - [x] 4.4 **P4 product destination + brand, frames 540–779:** draft 1280×720 final corner, marker/light, shopper reach, route-to-provisional-brand and 75-frame static hold; result: rendered for review, approved mark and character quality pending.
 - [x] 4.5 Add only temporary cleared sound/scratch German VO where it improves assessment; result: original generated internal scratch cues, no VO or final audio; draft rights/status documented.
-- [ ] 4.6 Review all four at normal speed muted and with sound, record time-coded findings, compare main/fallback paths and get **explicit prototype acceptance**; result: signed accept/revise decision. **Full navigation and complete-film production remain blocked until this passes.**
+- [x] 4.6 Four prototype drafts and their sampled-frame/technical review were presented; the user explicitly accepted them with “ja passt so mach weiter”. The previous report's human playback/listening evidence limits remain disclosed. This unlocks navigation and a 720p rough cut, **not** picture lock or final rendering.
 
 ## 5. Full production — only after prototype acceptance
 
-- [ ] 5.1 Build navigation shots 05–07 (frames 300–539): low route chase, lateral shopper reveal and overhead-to-turn; result: readable movement and directional continuity.
-- [ ] 5.2 Assemble nine-shot 720p rough cut with authorized temporary VO/music/SFX; result: complete 26-second preview and cue sheet.
+- [x] 5.1 Build navigation shots 05–07 (frames 300–539): scripted low route chase, lateral shopper reveal and overhead-to-turn with restrained step poses; result: 75 + 75 + 90 draft Blender frames and Remotion scenes, with cut continuity still under review.
+- [x] 5.2 Assemble nine-shot 720p rough cut with original temporary music/SFX and no VO pending voice authorization; result: 780-frame / 26-second preview and [review/cue notes](../../../indooro-ad-v2/previews/roughcut-review.md).
 - [ ] 5.3 Run first-viewer, muted, sound-on, claim/rights and 720p legibility review; result: time-coded revisions.
 - [ ] 5.4 Revise, then obtain explicit picture lock; result: approved 780-frame or coherently retimed timeline.
 

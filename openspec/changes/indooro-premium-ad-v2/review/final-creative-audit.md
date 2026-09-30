@@ -1,6 +1,6 @@
 # Final creative audit — before prototype production
 
-**Status addendum after prototype authorization:** This document records the earlier planning decision. The four draft prototypes have since been rendered; see the [prototype review](../../../../indooro-ad-v2/previews/prototype-review.md). The shopper still looks schematic, the P3 geometry match is unfinished, and normal-speed human review remains pending. The full film remains blocked.
+**Status addendum after rough-cut production:** This document records the earlier planning decision. The four prototypes were accepted and a complete 720p rough cut now exists; see the [prototype review](../../../../indooro-ad-v2/previews/prototype-review.md) and [rough-cut review](../../../../indooro-ad-v2/previews/roughcut-review.md). Procedural materials and a smoother coat improve the shopper, which still looks stylized; the P3 geometry match and normal-speed human review remain pending. Picture lock and final master rendering remain blocked.
 
 **Scope:** planning-only review of the 28-second motion-graphics V2 concept against the newly requested premium ad standard. No new scene, render, sound or prototype was made. The overall Remotion/Blender, stylized store/shopper, phone, route and German VO foundation remains.
 

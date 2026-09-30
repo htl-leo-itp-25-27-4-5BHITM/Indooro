@@ -1,6 +1,6 @@
-# Indooro V2 — final creative concept for prototype decision
+# Indooro V2 — 26-second rough cut for picture review
 
-**Status update:** The user authorized only the four prototype sequences, now rendered in `indooro-ad-v2/previews/`. The established motion-graphics foundation is retained. The proposed master remains **26 seconds, nine shots, 780 frames at 30 fps, 16:9, German**. Working title: **Der Weg wird sichtbar**. Navigation shots and the full film are still unbuilt.
+**Status update:** The user accepted the four prototypes and authorized continuation. [The 720p rough cut](../../../../indooro-ad-v2/previews/roughcut-review.md) now spans **26 seconds, nine planned shots, 780 frames at 30 fps, 16:9**. Working title: **Der Weg wird sichtbar**. It has scratch sound but no final German voice, approved logo or picture lock.
 
 ## The film in one sentence
 
@@ -13,7 +13,7 @@ A camera feels the scale and uncertainty of a sculptural supermarket; one shoppe
 | 10–18 s | Guided movement | Low route chase, fast lateral shopper reveal, brief elevated turn; matched travel direction. |
 | 18–26 s | Product and identity | **Destination becomes identity:** route rounds the last corner, resolves at milk and the shopper's reach, then the residual path creates or frames approved brand art. Wordmark/claim hold from 23.5–26 s. |
 
-The shopper is an adult-proportioned **premium sculptural figure**, with continuous clothing volumes and matte graphite/fabric/ceramic materials. Minimal poses, no face, mascot styling, visible primitive joints or long walk cycle. Camera, light and posture carry emotion. If full body motion fails, use upper-body/silhouette/partial reach framing while preserving the human throughout the story.
+The shopper is an adult-proportioned **stylized sculptural figure**, now with a smoothed coat and procedural graphite fabric response. The store and carton also gained procedural metal/paper surfaces, varied unbranded stock and a printed `MILCH` label. Short leg offsets create movement without a full gait rig. The figure remains visibly synthetic in close view; this is an explicit picture-review issue, and upper-body/partial framing remains the fallback.
 
 ## Why this version is stronger and buildable
 
@@ -27,8 +27,8 @@ V1's Remotion structure, deterministic helpers, route graph/tests, Inter and gra
 
 ## Decision requested
 
-The four draft **1280×720** prototype sequences exist: P1 opening/clarity (0–4 s), P2 phone/search (4–6 s), P3 phone-to-store (6–10 s), and P4 destination/brand (18–26 s). They contain original scratch cues but no recorded German VO. The requested decision is whether these prototypes need revision or may proceed to navigation/full-film production. [Prototype review](../../../../indooro-ad-v2/previews/prototype-review.md) records technical checks and visual caveats. [Open decisions](open-decisions.md) cover official mark, illustrative UI/copy, voice rights, channel and optional spend; the [approval checklist](approval-checklist.md) records gates.
+The complete draft **1280×720** film exists at `indooro-ad-v2/previews/IndooroV2-roughcut-720p.mp4`. Review the specific first-viewer questions in the [rough-cut report](../../../../indooro-ad-v2/previews/roughcut-review.md) and request revisions or approve picture lock. [Open decisions](open-decisions.md) cover official mark, illustrative UI/copy, voice rights, channel and optional spend; the [approval checklist](approval-checklist.md) records later gates.
 
-**Evidence limits:** V1 was assessed through sampled encoded frames/source and objective audio measures, without continuous playback or listening. The four V2 draft renders and sampled frames now exist; they have not yet had a human normal-speed muted/sound-on review. Their character finish, screen transition and scratch sound require that review before any full-film decision.
+**Evidence limits:** V1 was assessed through sampled encoded frames/source and objective audio measures, without continuous playback or listening. The V2 780-frame draft has objective stream/frame/audio checks and sampled-frame/cut inspection. A human normal-speed muted/sound-on review is still needed before picture lock. The character, P3 screen transition and scratch sound are not final-quality evidence.
 
-**FOUR DRAFT PROTOTYPES READY — AWAITING PROTOTYPE REVIEW AND ACCEPTANCE**
+**26-SECOND ROUGH CUT READY — AWAITING PICTURE REVIEW**

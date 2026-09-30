@@ -1,5 +1,7 @@
 # Final audio direction — three signature moments, 26 s
 
+**Rough-cut status:** An original generated 48 kHz stereo timing bed now spans the 26-second preview, with cue accents at the planned activation, search, route, destination and brand beats. It is a scratch reference, has no German VO and has not been approved by human listening. The arrangement and final loudness/rights requirements below still apply to final audio.
+
 The mix has separate stems for German VO, original/cleared electronic score and sparse designed effects. No filmed-location sound or live-action foley is needed. At provisional **120 BPM**, 13 four-beat bars span 26 seconds exactly. The score is cinematic through contrast and spatial depth, not a constant loud bed. V1's 65-second no-VO cue is not reused.
 
 | Bars / time | Score and space | Signature synchronization |
