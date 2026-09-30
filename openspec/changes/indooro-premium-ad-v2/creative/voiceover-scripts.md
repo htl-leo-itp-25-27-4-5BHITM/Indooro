@@ -1,23 +1,23 @@
-# German voice-over options — revised 28 s motion-graphics spot
+# Final German voice-over alternatives — 26 s / 780 frames
 
-All text is editable and unrecorded. The preferred workflow can be fully AI-produced: use a commercially licensed German synthetic voice **without cloning a real person's voice**, export several takes, then select and edit by human listening. An authorized human performer is an optional quality upgrade, not a core dependency. Aim for a calm, close Austrian or neutral German tone with precise consonants, natural breathing space and no classroom narration or booming trailer read. Verify the chosen service's current terms and pronunciation of “Indooro” before production; no service or purchase is assumed here.
+All scripts are planning text, not recorded audio. Speak close, calm and natural in Austrian or neutral German, with a precise but unforced delivery. Use an authorized, commercially suitable synthetic German voice for an AI-producible pipeline; a licensed human read is optional. No voice cloning without the speaker's authorization. Durations below estimate **spoken sound**, excluding marked pauses, at roughly 130–150 effective words/minute with a deliberate brand ending. Scratch takes after prototype approval must be timed by ear and replace these estimates. Avoid trailer emphasis, tutorial phrasing and technical terms.
 
-## A — Minimal and confident (recommended)
+## A — Minimal (recommended)
 
-> Milch. Aber wo? [pause] Indooro zeigt dir das Regal. Und den Weg dorthin. [space for movement] Gefunden. Indooro. Finde deinen Weg.
+> Zu viel auf einmal. [pause] Ein Weg genügt. [long visual space] Indooro. Finde deinen Weg.
 
-About 19 spoken words. Estimated 11–14 s of natural speech across 0.6–2.6, 4.8–7.8, 10.3–12.4, 21.5–22.4 and 24.3–27.1 s; the rest belongs to route and shopper motion. The text names the need and benefit without explaining the graphic mechanism. `zeigt dir das Regal` must match the approved illustrative UI and current product truth.
+**11 spoken words; estimated voiced time 5.0–5.5 s.** Cue windows: “Zu viel auf einmal.” ~2.5–4.0 s; “Ein Weg genügt.” ~4.35–5.8 s; **silence through screen entry and navigation** 6–22 s; “Indooro.” ~22.75–23.4 s; “Finde deinen Weg.” ~23.85–25.25 s. The language names overload and clarity, while the three signature shots prove the benefit visually. The final line lands during the static brand hold, which begins at 23.5 s.
 
-## B — Rhythmic product confidence
+## B — Human-centered
 
-> Ein Ziel. Kein Rätsel. Indooro zeigt dir, wo das Produkt liegt. Die Route steht. Du gehst. Du findest. Indooro. Finde deinen Weg.
+> Wo ist die Milch? [pause] Jetzt weiß ich, wo lang. [long visual space] Indooro. Finde deinen Weg.
 
-About 22 spoken words, estimated 13–16 s. Short beats could fit stronger percussion, but this risks sounding like a slogan list; choose only if the rough cut supports it and the voice stays relaxed.
+**13 spoken words; estimated voiced time 6.0–7.0 s.** Proposed windows: first question ~2.5–4.0 s, second thought ~10.2–12.5 s, brand ~22.75–25.25 s. First-person language can make the abstract shopper warmer but requires a voice performance that feels like the shopper's thought, not an external announcer. Keep the screen-entry passage free of speech. If “wo lang” feels too colloquial in the authorized voice, use “welcher Weg” and retime.
 
-## C — Customer point of view
+## C — Product-focused
 
-> Milch fehlt noch. Wo finde ich sie? Indooro zeigt mir das Regal und den Weg. Da ist sie. Indooro. Finde deinen Weg.
+> Indooro zeigt dir das richtige Regal. [pause] Und den Weg dorthin. [long visual space] Indooro. Finde deinen Weg.
 
-About 23 spoken words, estimated 14–17 s. First-person VO makes the abstract shopper more personal, but requires a consistent point of view; otherwise Script A is clearer.
+**14 spoken words; estimated voiced time 6.5–7.5 s.** Proposed windows: first benefit ~2.8–5.9 s, second clause ~10.2–12.0 s, brand ~22.75–25.25 s. This is the clearest benefit statement but is closer to describing the visible UI. It requires review of illustrative UI and actual product claims before recording. Keep the 6–10 s screen crossing speech-free.
 
-**Recommendation:** A supports the 28-second visual rhythm and leaves a meaningful silent stretch while the faceless shopper follows the route. First produce an authorized scratch read after approval; lock picture timing only after listening at real pace. Do not generate any voice asset during this planning revision.
+**Selection:** A leaves the hero transition and movement entirely to picture/music and avoids describing the obvious find. If the first 720p audience cannot understand what the phone contributes, test C before adding on-screen explanatory copy. Do not generate audio during this planning revision.

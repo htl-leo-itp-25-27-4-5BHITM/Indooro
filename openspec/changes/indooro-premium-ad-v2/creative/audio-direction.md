@@ -1,18 +1,18 @@
-# Audio direction — designed for a digital world
+# Final audio direction — three signature moments, 26 s
 
-The sound is built from three separate stems: German VO, original/cleared music, and a small palette of designed interface/spatial effects. There is **no location-recording or live-action foley dependency**. A few synthetic footfall/contact cues give the stylized shopper weight, but the route and phone remain the sonic signatures. V1's 65-second continuous no-VO bed is not reused as the V2 score; its procedural generator can inform original tone synthesis after audition and redesign.
+The mix has separate stems for German VO, original/cleared electronic score and sparse designed effects. No filmed-location sound or live-action foley is needed. At provisional **120 BPM**, 13 four-beat bars span 26 seconds exactly. The score is cinematic through contrast and spatial depth, not a constant loud bed. V1's 65-second no-VO cue is not reused.
 
-## Proposed fourteen-bar arc at 120 BPM
-
-| Bars / time | Music | Event cues / voice |
+| Bars / time | Score and space | Signature synchronization |
 |---|---|---|
-| 1–2 / 0–4 s | Low filtered pulse, sparse dark harmonic cell, small dissonant interval | Two restrained spatial ticks follow the figure's hesitation. “Milch. Aber wo?” sits forward. |
-| 3–4 / 4–8 s | Dry electronic kick and muted high percussion emerge; chord gains width | One device activation and one select sound. “Indooro zeigt dir das Regal.” Music ducks under text. |
-| 5–6 / 8–12 s | Route ignition on downbeat, a rising narrow synth line traces direction | Path draw has one sustained designed tone rather than repeated whooshes. “Und den Weg dorthin.” |
-| 7–10 / 12–20 s | Fullest controlled groove, low pulse aligned to movement, brief high accents at route turns | Abstract weighted steps and a subtle shelf occlusion sound; no VO during the main travel. |
-| 11–12 / 20–24 s | Kick falls away as the figure reaches milk; warm chord resolves | One quiet product/contact transient. “Gefunden.” Allow a short breathable pause. |
-| 13–14 / 24–28 s | Original two-note Indooro sonic mnemonic, then decaying tail | “Indooro. Finde deinen Weg.” Brand image is fully clear by 25.5 s. No abrupt gate. |
+| 1–2 / 0–4 s | Narrow low pulse, unresolved two-note harmonic seed. Brief stereo aisle passes are precise, not a noisy market ambience. | **Chaos → direction:** directional shelf ticks at planned close passes; rising space during crane; ~0.25 s subtraction at phone lift (2.5 s), then a small mint position cue. VO A begins after shopper reveal. |
+| 3 / 4–6 s | Dry restrained beat appears, harmonic field clarifies; duck beneath VO. | One tactile select transient and a near-silent map opening. Do not put an effect on each letter or card. |
+| 4–5 / 6–10 s | Beat at 6.0; bass width opens at 8.0 as geometry gains depth. No VO. | **Phone → world:** one recognizable Indooro route sound begins as a narrow digital two-tone rise, broadens continuously into spatial low-frequency movement as camera crosses the screen, then releases into the store. Never stack generic whooshes. |
+| 6–9 / 10–18 s | Fullest controlled groove; a pulse follows route distance, with space around camera cuts. | Low chase gets air/weight, lateral shopper reveal gets a restrained material/step cue, overhead turn gets one high directional accent. No repetitive footstep loop. |
+| 10–11 / 18–22 s | Percussion thins, harmony holds then resolves at product contact. | **Destination:** route tone decelerates into a precise two-note terminal motif around 20.5 s; soft contact around 21.4 s; roughly 0.2 s of reduction lets the find register. |
+| 12–13 / 22–26 s | Two-note motif reappears as the short Indooro sonic signature, then natural tail under still brand frame. | Route line travels into approved mark; final VO “Indooro. Finde deinen Weg.” is forward and unmasked. No impact boom or abrupt gate. |
 
-Use a limited original timbre family: rounded sub/bass, crisp but quiet electronic percussion, airy directional line and a warm resolution tone. Programmatic synthesis or properly licensed samples can be used after approval; avoid generic corporate stock music and wall-to-wall whooshes. Every cue must be tied to a visible action or designed transition. Build a frame-based cue sheet and label temporary stems in previews.
+## Sonic identity and future review
 
-**Future acceptance:** human listeners must approve the German delivery and mix on headphones, laptop and phone. Technically, document the destination platform's loudness target; provisional web/social aim is around −16 LUFS integrated stereo and ≤−1 dBTP, with no clipping, unintended gaps or masked words. Preserve 48 kHz lossless stems and AAC export. These are targets, not claims about existing V2 audio; no voice, music or effect has been generated in this planning session. The measured V1 audio limitations remain in `research/audio-audit.md`.
+The **Indooro route sound** is one timbre with two related pitches: a clean, narrow digital attack, a soft widening spatial body during movement, and a warm, short two-note resolution at destination/brand. Its intervals and exact pitches are design decisions for authorized scratch audio after approval; test whether it remains recognizable at phone-speaker level without becoming a notification cliché. Use the same motif at three scales, not repeated loud cues. Movement effects are grounded and sparse; sound should expose the visual hierarchy change in signature shot 1 and the dimensional shift in shot 2.
+
+After prototype approval, produce temporary labeled stems and a scratch VO only for four draft sequences. Human listening on headphones, laptop and phone is required; waveform metrics alone cannot judge premium quality. For eventual web/social delivery, verify destination requirements; provisional stereo aim is about −16 LUFS integrated and ≤−1 dBTP, with 48 kHz lossless stems and AAC master. No target here claims an existing V2 mix. Claim, license and voice authorization checks precede final audio.
