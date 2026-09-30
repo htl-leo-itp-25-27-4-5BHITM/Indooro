@@ -1,0 +1,9 @@
+Poly Haven CC0: https://polyhaven.com/license
+Assets: https://polyhaven.com/a/interior_tiles and https://polyhaven.com/a/denim_fabric_03
+Downloaded via public API on 2026-09-30. Original 1k JPG maps.
+denim_fabric_03 Diffuse denim_fabric_03_Diffuse.jpg 4a1d34077a5c999f590a31a056be5f70edac19f254b6d970e41942b335788575 https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/denim_fabric_03/denim_fabric_03_diff_1k.jpg
+denim_fabric_03 Rough denim_fabric_03_Rough.jpg 1c92a2278fb834849ae2c16379a6f5a0e6c616c237654791a93bbdc86c7b1d43 https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/denim_fabric_03/denim_fabric_03_rough_1k.jpg
+denim_fabric_03 nor_gl denim_fabric_03_nor_gl.jpg 9b72b5f97f71d4256acb7ee21e532d7fe8af93c49aabf196cc6692b63bd67c09 https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/denim_fabric_03/denim_fabric_03_nor_gl_1k.jpg
+interior_tiles Diffuse interior_tiles_Diffuse.jpg f267c4357e629f5ca2ab86f30da4fb0ae8c655a566cec6d81278df8d78dcca4a https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/interior_tiles/interior_tiles_diff_1k.jpg
+interior_tiles Rough interior_tiles_Rough.jpg 478b5cad03a064b9b25369223f8334d26c1bdc2cba08e3398c16234a4b2a1aaf https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/interior_tiles/interior_tiles_rough_1k.jpg
+interior_tiles nor_gl interior_tiles_nor_gl.jpg fdfb9fe192d438176508290fe873e181d88c5e6444a43bbab2ec156c9a78aa33 https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/interior_tiles/interior_tiles_nor_gl_1k.jpg
