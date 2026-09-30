@@ -1,22 +1,24 @@
-# Review and production authorization checklist
+# Revised concept and production gates
 
 ## Concept review (current)
 
-- [x] V1 preserved by tag and historical report; generated exports remain locally intact.
-- [x] Actual final MP4 sampled and probed; audio measured; playback/listening limitations disclosed.
-- [x] Three alternatives compared; selected story and 16-shot timing documented.
-- [x] VO alternatives, music/SFX arc, reuse, assets, rights, risks and preview plan documented.
-- [ ] User approves concept and explicit V2 production start.
-- [ ] Actor/location, UI, mark, voice, channels and spending decisions resolved.
+- [x] V1 preserved by tag and historical report; local exports remain untouched.
+- [x] V1 encoded frames/source/audio signal were audited with playback/listening limits disclosed.
+- [x] Live-action dependencies identified and removed from the selected V2 concept.
+- [x] Shopper representation, 13-shot/840-frame story and Remotion + optional Blender workflow documented.
+- [x] Three German VO alternatives, digital sound arc, reuse/asset/rights/risk plan documented.
+- [x] Strict OpenSpec and cross-document checks completed for this revision: 40/40 OpenSpec items valid, links and 840-frame continuity checked.
+- [ ] User explicitly approves revised concept and production start.
+- [ ] Brand/UI/voice/channel/spend decisions resolved.
 
 ## Future production gates (all pending)
 
-- [ ] Asset/release ledger complete before filming/import.
-- [ ] Four key-shot 720p prototypes reviewed.
+- [ ] Blender/Remotion tools and Remotion-only fallback preflighted after approval.
+- [ ] Generated shopper, phone, route and brand short 720p prototypes reviewed.
 - [ ] Full 720p rough cut reviewed muted and with sound.
 - [ ] Refined cut/picture lock explicitly approved.
-- [ ] Final voice/music/mix auditioned and rights verified.
+- [ ] Final VO/music/mix auditioned; rights and technical audio verified.
 - [ ] Final-quality 1080p render explicitly approved.
-- [ ] Encoded master visually and technically checked; delivered.
+- [ ] Encoded master and source/manifest checked and delivered.
 
-**AWAITING USER APPROVAL — INDOORO V2 CONCEPT**
+**AWAITING USER APPROVAL — INDOORO V2 MOTION GRAPHICS CONCEPT**
