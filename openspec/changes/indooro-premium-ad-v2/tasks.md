@@ -36,8 +36,8 @@ Sections 1–2 record completed planning. The user's subsequent “okay setzte e
 
 - [x] 5.1 Build navigation shots 05–07 (frames 300–539): scripted low route chase, lateral shopper reveal and overhead-to-turn with restrained step poses; result: 75 + 75 + 90 draft Blender frames and Remotion scenes, with cut continuity still under review.
 - [x] 5.2 Assemble nine-shot 720p rough cut with original temporary music/SFX and no VO pending voice authorization; result: 780-frame / 26-second preview and [review/cue notes](../../../indooro-ad-v2/previews/roughcut-review.md).
-- [ ] 5.3 Run first-viewer, muted, sound-on, claim/rights and 720p legibility review; result: time-coded revisions.
-- [ ] 5.4 Revise, then obtain explicit picture lock; result: approved 780-frame or coherently retimed timeline.
+- [ ] 5.3 Run first-viewer, muted, sound-on, claim/rights and 720p legibility review; result: time-coded revisions. **Visual review on 2026-09-30 failed:** the user rejected empty-looking store geometry, artificial shopper movement and weak surface quality. A separate [look-development reset](../../../indooro-ad-v2/previews/lookdev-review.md) has stills and a 1.03-second silent 360p motion diagnostic, not a revised film; character/grasp quality and sound/claims/rights review remain open.
+- [ ] 5.4 Revise, then obtain explicit picture lock; result: approved 780-frame or coherently retimed timeline. **Blocked by the failed visual review:** first prove store, shopper movement and hand/product action in a moving test, then assemble a revised cut.
 
 ## 6. Final picture, audio and delivery — later gates
 

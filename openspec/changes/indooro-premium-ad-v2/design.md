@@ -17,7 +17,7 @@ V1 is preserved at `indooro-motion-v1-baseline`; its route tests, vector UI/map 
 5. **Production choice.** Remotion owns 780-frame edit, React/SVG UI, route timing, projection composite, masks, type, sound and export. Blender Python is preferred for short architectural camera/store/phone/shopper passes, map-to-shelf extrusion and depth/ID/screen matte data. Cinema 4D adds needless complexity. Every signature has a Remotion 2.5D fallback retaining its narrative idea; no filmed footage is needed.
 6. **Screen crossing.** Use one scripted continuous camera from phone hero into store. Export camera matrices and phone-screen corners per frame; Remotion corner-pins UI, overlaps the route with Blender's floor mesh for 12–18 frames and clears the screen matte as the camera crosses. Geometry and projected route must align within roughly 2 px at 720p in the overlap. Do not disguise a reset with blur. If the composite fails, maintain a single Remotion 2.5D virtual camera with map-to-shelf extrusion.
 7. **VO and score.** Recommend minimal Script A: “Zu viel auf einmal. Ein Weg genügt. Indooro. Finde deinen Weg.” Estimated voiced time 5.2 s. Let 6–22 s hero transition/navigation/product arrival largely breathe. One evolving two-tone Indooro route sound changes from digital to spatial and resolves at destination/brand. Thirteen-bar score supports tension, clarity, movement and release; human listening remains required.
-8. **Approval stages.** The user first approved **only four 1280×720 draft prototypes** (opening, phone/search, phone-to-store, destination/brand), then accepted them and authorized continuation. Navigation shots and a 780-frame 720p rough cut now exist with original scratch sound and no VO. Human rough-cut review, picture lock, audio and final-render gates remain separate.
+8. **Approval stages.** The user first approved **only four 1280×720 draft prototypes** (opening, phone/search, phone-to-store, destination/brand), then accepted them and authorized continuation. Navigation shots and a 780-frame 720p rough cut exist with original scratch sound and no VO. On 2026-09-30 the user rejected its visual quality. A separate look test explores a stocked retail environment, PBR maps, scanned goods, a rigged distant shopper, an anatomical hand and a 1.03-second silent motion diagnostic. Its camera defect was corrected; character and grasp quality remain below the premium gate. It is not a revised cut. Picture lock, audio and final-render gates remain separate.
 
 ## Risks / Trade-offs
 
@@ -25,8 +25,8 @@ A more ambitious one-camera screen crossing increases projection, masking, route
 
 ## Migration Plan
 
-There is no app or V1 migration. Tool preflight, the isolated four-draft V2 project, navigation and a complete rough cut are complete. Review the 26-second film before picture lock and final-quality production. Preserve V1 source and exports. Do not archive this change until a future final delivery is actually accepted.
+There is no app or V1 migration. Tool preflight, the isolated four-draft V2 project, navigation and an initial rough cut are complete. Rebuild and review the rejected picture before picture lock and final-quality production. Preserve V1 source and exports. Do not archive this change until a future final delivery is actually accepted.
 
 ## Open Questions
 
-Rough-cut picture decision; approved brand mark, exact illustrative UI copy/disclosure, voice source/rights, delivery channels/aspect ratios and optional spend. These do not authorize final rendering by silence or assumption.
+Replacement shopper and camera strategy after the failed visual review; approved brand mark, exact illustrative UI copy/disclosure, voice source/rights, delivery channels/aspect ratios and optional spend. These do not authorize final rendering by silence or assumption.

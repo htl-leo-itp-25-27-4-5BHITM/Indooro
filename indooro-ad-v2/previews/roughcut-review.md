@@ -1,6 +1,6 @@
 # Indooro V2 — 26-second rough-cut review
 
-**Current deliverable:** `IndooroV2-roughcut-720p.mp4` is an internal review film, assembled after the user accepted the four signature prototypes. It is **not** picture lock, the final German voice/music mix, approved logo art or a 1080p master. The spatial line and UI are illustrative concept imagery.
+**Review outcome:** The user rejected `IndooroV2-roughcut-720p.mp4` on 2026-09-30 because the store looked empty, the shopper moved unnaturally and the materials lacked realism. This internal film is preserved only as a comparison. It is **not** picture lock, a showable advertisement, the final German voice/music mix, approved logo art or a 1080p master. The separate [visual-reset test](lookdev-review.md) starts a replacement look and has not been assembled into a new film.
 
 ## Timeline and ownership
 
@@ -34,7 +34,7 @@ These improvements make the materials and product more legible while keeping the
 - Sampled cut frames show near-matched geometry at 9.97–10.00 s (P3→P5). The P7→P4 boundary at 17.97–18.00 s retains a visible mint line after its start was moved to route progress 0.92. The lateral/overhead cuts are intentional changes of viewpoint.
 - The 48 kHz stereo soundtrack is generated locally from oscillators and envelopes. It marks activation, selection, route entry, movement, destination and brand. The encoded file measures about −12.1 dBFS peak and −26.5 dBFS mean; this is **scratch audio**, not a loudness-compliant final mix. There is no German VO yet, and no human listening signoff is claimed.
 
-## What to inspect before picture lock
+## Original review questions and unresolved gates
 
 1. **0–4 s:** Does the opening convey a search problem, and does the activation make the shopper's situation clearer without explanatory text?
 2. **4–10 s:** Is `Milch` readable at normal speed? Does the screen-entry feel continuous? P3 still uses a designed vector/3D overlap rather than a final corner-pinned matte with a verified 2 px geometric match.

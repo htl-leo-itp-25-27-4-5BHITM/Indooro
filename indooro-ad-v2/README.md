@@ -1,6 +1,10 @@
 # Indooro V2 — seven scene passes and 26-second rough cut
 
-This isolated project began with four approved 1280×720 / 30 fps signature prototypes. After the user's explicit acceptance, it gained the three navigation passages and an **internal 26-second / 780-frame rough cut**. This is an editable preview, not picture lock, final voice/audio, approved brand artwork or a 1080p master.
+This isolated project began with four approved 1280×720 / 30 fps signature prototypes. After the user's explicit acceptance, it gained the three navigation passages and an **internal 26-second / 780-frame rough cut**. The user rejected that cut's visual quality on 2026-09-30. It is retained as a reproducible comparison, not picture lock or a showable film.
+
+The separate [visual-reset review](previews/lookdev-review.md) and `blender/scripts/render_lookdev.py` test a more complete supermarket, licensed PBR material maps, a continuous walking rig and an anatomical hand. They do **not** replace the rough-cut media or authorize a final master. Exact third-party asset sources and CC0 rights are in [ASSET-SOURCES.md](assets/ASSET-SOURCES.md).
+
+For a single isolated look frame, run `blender -b --factory-startup --python blender/scripts/render_lookdev.py -- P1 22`. For the 640×360 motion diagnostic, run the same script with `P6 25:55`, then encode frames 25–55 at 30 fps. This test corrected a camera yaw wrap but did not approve the character performance or the final visual quality.
 
 ## Reproduce locally
 
