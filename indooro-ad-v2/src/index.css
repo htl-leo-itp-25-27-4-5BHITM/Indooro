@@ -1,0 +1,6 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/inter/800.css';
+*{box-sizing:border-box} html,body,#root{margin:0;width:100%;height:100%;background:#071117;color:#f4f7f5;font-family:Inter,Arial,sans-serif}
