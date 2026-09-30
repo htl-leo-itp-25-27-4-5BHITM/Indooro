@@ -1,12 +1,12 @@
 ## Context
 
-V1 is preserved at `indooro-motion-v1-baseline`; its route tests, vector UI/map and deterministic Remotion helpers are useful, but its film has no visible shopper. The first V2 live-action plan was replaced by a fully AI-producible Remotion/Blender motion ad. This revision keeps that foundation and resolves three creative weaknesses documented in [final-creative-audit.md](review/final-creative-audit.md): weak opening, matched-cut phone handoff and ordinary found/logo ending. Blender is not currently in `PATH`; that affects future preflight, not planning.
+V1 is preserved at `indooro-motion-v1-baseline`; its route tests, vector UI/map and deterministic Remotion helpers are useful, but its film has no visible shopper. The first V2 live-action plan was replaced by a fully AI-producible Remotion/Blender motion ad. This revision keeps that foundation and addresses three creative weaknesses documented in [final-creative-audit.md](review/final-creative-audit.md): weak opening, matched-cut phone handoff and ordinary found/logo ending. Blender CLI and Remotion have since been preflighted for the four approved prototypes.
 
 ## Goals / Non-Goals
 
 **Goals:** A **26-second / 780-frame / 30 fps**, nine-shot, 16:9 premium advertisement with a sculptural shopper, readable `Milch` search, one coherent route, three memorable signature moments, short German VO, distinctive electronic sound and prototype-first gates.
 
-**Non-Goals:** This planning request creates no V2 package, scene, model, prototype, audio or render. The future film requires no photographed actor, location, stock footage, photoreal rig, C4D or remote video-generation service. It does not explain algorithms, shopping lists, admin features, measured accuracy or retailer availability.
+**Non-Goals:** The current prototype authorization excludes navigation shots 05–07, the assembled film, final voice/music and final rendering. The film requires no photographed actor, location, stock footage, photoreal rig, C4D or remote video-generation service. It does not explain algorithms, shopping lists, admin features, measured accuracy or retailer availability.
 
 ## Decisions
 
@@ -17,7 +17,7 @@ V1 is preserved at `indooro-motion-v1-baseline`; its route tests, vector UI/map 
 5. **Production choice.** Remotion owns 780-frame edit, React/SVG UI, route timing, projection composite, masks, type, sound and export. Blender Python is preferred for short architectural camera/store/phone/shopper passes, map-to-shelf extrusion and depth/ID/screen matte data. Cinema 4D adds needless complexity. Every signature has a Remotion 2.5D fallback retaining its narrative idea; no filmed footage is needed.
 6. **Screen crossing.** Use one scripted continuous camera from phone hero into store. Export camera matrices and phone-screen corners per frame; Remotion corner-pins UI, overlaps the route with Blender's floor mesh for 12–18 frames and clears the screen matte as the camera crosses. Geometry and projected route must align within roughly 2 px at 720p in the overlap. Do not disguise a reset with blur. If the composite fails, maintain a single Remotion 2.5D virtual camera with map-to-shelf extrusion.
 7. **VO and score.** Recommend minimal Script A: “Zu viel auf einmal. Ein Weg genügt. Indooro. Finde deinen Weg.” Estimated voiced time 5.2 s. Let 6–22 s hero transition/navigation/product arrival largely breathe. One evolving two-tone Indooro route sound changes from digital to spatial and resolves at destination/brand. Thirteen-bar score supports tension, clarity, movement and release; human listening remains required.
-8. **Approval stages.** Current work ends with creative documentation. Explicit user approval permits **only four 1280×720 draft prototypes** (opening, phone/search, phone-to-store, destination/brand), with temporary cleared audio/scratch voice where useful. Human review and explicit prototype acceptance are required before navigation shots or the full cut. Later rough-cut, picture-lock, audio and final-render gates remain separate.
+8. **Approval stages.** The user approved **only four 1280×720 draft prototypes** (opening, phone/search, phone-to-store, destination/brand). They now exist with original temporary scratch cues and no VO. Human review and explicit prototype acceptance are required before navigation shots or the full cut. Later rough-cut, picture-lock, audio and final-render gates remain separate.
 
 ## Risks / Trade-offs
 
@@ -25,8 +25,8 @@ A more ambitious one-camera screen crossing increases projection, masking, route
 
 ## Migration Plan
 
-There is no app or V1 migration. After explicit authorization for prototype production, preflight tools/rights, create isolated V2, produce four drafts only, review/approve them, then decide separately on full production. Preserve V1 source and exports. Do not archive this change until a future final delivery is actually accepted.
+There is no app or V1 migration. Tool preflight and the isolated four-draft V2 project are complete. Review/approve the four drafts, then decide separately on full production. Preserve V1 source and exports. Do not archive this change until a future final delivery is actually accepted.
 
 ## Open Questions
 
-Approval for prototype production; approved brand mark, exact illustrative UI copy/disclosure, voice source/rights, delivery channels/aspect ratios and optional spend. These do not authorize a full-film build by silence or assumption.
+Prototype acceptance; approved brand mark, exact illustrative UI copy/disclosure, voice source/rights, delivery channels/aspect ratios and optional spend. These do not authorize a full-film build by silence or assumption.

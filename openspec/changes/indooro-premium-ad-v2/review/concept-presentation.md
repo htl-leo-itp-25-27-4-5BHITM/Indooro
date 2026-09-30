@@ -1,6 +1,6 @@
 # Indooro V2 — final creative concept for prototype decision
 
-**Planning only. No V2 scene, Blender model, production code, audio, prototype or render was created.** The established motion-graphics foundation is retained. Recommended master: **26 seconds, nine shots, 780 frames at 30 fps, 16:9, German**. Working title: **Der Weg wird sichtbar**.
+**Status update:** The user authorized only the four prototype sequences, now rendered in `indooro-ad-v2/previews/`. The established motion-graphics foundation is retained. The proposed master remains **26 seconds, nine shots, 780 frames at 30 fps, 16:9, German**. Working title: **Der Weg wird sichtbar**. Navigation shots and the full film are still unbuilt.
 
 ## The film in one sentence
 
@@ -19,7 +19,7 @@ The shopper is an adult-proportioned **premium sculptural figure**, with continu
 
 The previous 28-second version had a static problem setup, a matched graphic phone/store cut and a conventional product/end card. The three new moments make the app's central promise tangible. The route has a defined core width, rounded draw/corners, one position ripple, exact destination marker and a residual brand path; it is one object from UI to final frame. The supermarket's geometry stays fixed when Indooro is activated, so the visual metaphor remains credible.
 
-**Remotion** owns the master edit, crisp UI, SVG route, projection composite/masks, typography, sound and final export. **Scripted Blender** is preferred for the architectural camera, sculptural shopper, phone body, map-footprint extrusion, store light/depth and selected short passes. A continuous Remotion 2.5D camera alternative preserves each signature idea if Blender/compositing fails. No actor, filmed supermarket, stock footage, C4D or remote video-generation service is required. Blender is not currently in `PATH` and must be preflighted only after approval.
+**Remotion** owns the draft compositions, crisp UI, SVG route, compositing, typography, scratch sound and export. **Scripted Blender** rendered the architectural store/camera/shopper/product passes. The phone hero is currently a Remotion construction; the P3 map/store handoff is a composited draft, not a final corner-pinned 3D screen or exact route projection. A continuous Remotion 2.5D camera alternative remains the fallback if normal-speed review finds the handoff weak. No actor, filmed supermarket, stock footage, C4D or remote video-generation service is required.
 
 **Recommended VO A:** “Zu viel auf einmal. Ein Weg genügt. Indooro. Finde deinen Weg.” Estimated spoken time **5.2 seconds**, leaving the screen crossing and navigation largely free of narration. The proposed 13-bar electronic score and one recognisable route sound move from tense space, to digital-to-spatial transition, to a two-note destination/brand resolution. Human listening is required.
 
@@ -27,8 +27,8 @@ V1's Remotion structure, deterministic helpers, route graph/tests, Inter and gra
 
 ## Decision requested
 
-The broad direction is approved in principle. The next authorization is **only** for four draft **1280×720** prototype sequences: P1 opening/clarity (0–4 s), P2 phone/search (4–6 s), P3 continuous phone-to-store (6–10 s), and P4 destination/brand (18–26 s). Temporary cleared sound and scratch VO may support review. After those four are watched and explicitly accepted, decide separately whether to build navigation shots and the complete film. [Open decisions](open-decisions.md) cover official mark, illustrative UI/copy, voice rights, channel and optional spend; the [approval checklist](approval-checklist.md) records gates.
+The four draft **1280×720** prototype sequences exist: P1 opening/clarity (0–4 s), P2 phone/search (4–6 s), P3 phone-to-store (6–10 s), and P4 destination/brand (18–26 s). They contain original scratch cues but no recorded German VO. The requested decision is whether these prototypes need revision or may proceed to navigation/full-film production. [Prototype review](../../../../indooro-ad-v2/previews/prototype-review.md) records technical checks and visual caveats. [Open decisions](open-decisions.md) cover official mark, illustrative UI/copy, voice rights, channel and optional spend; the [approval checklist](approval-checklist.md) records gates.
 
-**Evidence limits:** V1 was assessed through sampled encoded frames/source and objective audio measures, without continuous playback or listening. No V2 look, camera, render cost or sound quality has been proven yet. The new signature moments have specific fallbacks and must earn acceptance in prototypes.
+**Evidence limits:** V1 was assessed through sampled encoded frames/source and objective audio measures, without continuous playback or listening. The four V2 draft renders and sampled frames now exist; they have not yet had a human normal-speed muted/sound-on review. Their character finish, screen transition and scratch sound require that review before any full-film decision.
 
-**FINAL CREATIVE CONCEPT READY — AWAITING APPROVAL FOR PROTOTYPE PRODUCTION**
+**FOUR DRAFT PROTOTYPES READY — AWAITING PROTOTYPE REVIEW AND ACCEPTANCE**

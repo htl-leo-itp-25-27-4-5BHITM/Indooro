@@ -1,6 +1,6 @@
-# Three signature moments — production specification (planning only)
+# Three signature moments — target production specification
 
-**Master:** 26.0 s, 30 fps, 780 frames, 16:9. Frame intervals are half-open. The three ideas are one visual sentence: complexity becomes direction; the viewer enters the map; the route finishes at the product and becomes the brand. The shopper, milk target and route share one illustrative store layout. Spatial guidance in the film is an editorial visualization, not a claim that Indooro ships AR. These are future production instructions, not completed assets.
+**Master target:** 26.0 s, 30 fps, 780 frames, 16:9. Frame intervals are half-open. The three ideas are one visual sentence: complexity becomes direction; the viewer enters the map; the route finishes at the product and becomes the brand. The shopper, milk target and route share one illustrative store layout. Spatial guidance in the film is an editorial visualization, not a claim that Indooro ships AR. Four draft sequences now test these targets; exact route projection, character finish and final audio are still unverified.
 
 ## 1. Chaos becomes direction — frames 0–119 / 0.0–4.0 s
 

@@ -9,16 +9,16 @@
 - [x] Three German VO alternatives and 13-bar sound concept documented.
 - [x] Four-prototype-first technical plan, risk plan and final creative audit documented.
 - [x] Strict OpenSpec, link, timing and pending-gate checks completed for this revision: 40/40 items valid, nine shots/780 contiguous frames, no broken relative links.
-- [ ] User explicitly approves **prototype production only**.
+- [x] User explicitly approves **prototype production only** in the follow-up message “okay setzte es um jetzt”.
 - [ ] Approved mark, illustrative UI/copy, voice rights, channel and optional spend resolved for prototypes.
 
-## Prototype production — all pending
+## Prototype production — draft renders complete, acceptance pending
 
-- [ ] Blender/Remotion preflight, shared layout and fallback contract complete.
-- [ ] P1 opening/clarity draft 1280×720 reviewed.
-- [ ] P2 smartphone/search draft 1280×720 reviewed.
-- [ ] P3 continuous phone-to-store draft 1280×720 reviewed, including fallback if needed.
-- [ ] P4 destination/brand draft 1280×720 reviewed.
+- [x] Blender/Remotion preflight, shared layout and fallback contract complete.
+- [x] P1 opening/clarity draft 1280×720 rendered and technically checked; human viewing pending.
+- [x] P2 smartphone/search draft 1280×720 rendered and technically checked; human viewing pending.
+- [x] P3 continuous phone-to-store draft 1280×720 rendered and technically checked; fallback choice pending human viewing.
+- [x] P4 destination/brand draft 1280×720 rendered and technically checked; human viewing pending.
 - [ ] Temporary sound/scratch VO cleared where used and normal-speed muted/sound-on review documented.
 - [ ] User explicitly accepts four prototypes and authorizes navigation/full-film build.
 
@@ -30,4 +30,4 @@
 - [ ] Final-quality 1080p render explicitly approved.
 - [ ] Master, source/provenance and media QA accepted.
 
-**FINAL CREATIVE CONCEPT READY — AWAITING APPROVAL FOR PROTOTYPE PRODUCTION**
+**FOUR DRAFT PROTOTYPES READY — AWAITING PROTOTYPE REVIEW AND ACCEPTANCE**

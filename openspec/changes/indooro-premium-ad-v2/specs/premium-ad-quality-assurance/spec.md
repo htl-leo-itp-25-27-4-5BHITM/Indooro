@@ -8,8 +8,8 @@ The production SHALL verify actual preview/final media, shopper/route continuity
 - **THEN** a reviewer watches it muted and with sound, records time-coded notes and confirms each external asset's license or approval before final quality rendering
 
 ### Requirement: Explicit production gates
-Planning SHALL end at `FINAL CREATIVE CONCEPT READY — AWAITING APPROVAL FOR PROTOTYPE PRODUCTION`; implementation, Blender scene creation, media generation, purchases and rendering SHALL remain pending until explicit user approval for the four prototypes. Full-film production SHALL require a separate prototype-acceptance decision, with later rough-cut and final-master checkpoints.
+Planning SHALL end at a prototype approval gate. Blender scene creation, media generation, purchases and rendering SHALL remain pending until explicit user approval for the four prototypes. Full-film production SHALL require a separate prototype-acceptance decision, with later rough-cut and final-master checkpoints.
 
-#### Scenario: Planning change completed
-- **WHEN** OpenSpec artifacts and review package are complete
-- **THEN** no V2 animation project or prototype exists and all implementation/render tasks remain unchecked
+#### Scenario: Prototype production approved
+- **WHEN** the user explicitly approves the four prototype sequences
+- **THEN** only those four sequences MAY be implemented and rendered; navigation shots and complete-film work remain unchecked until separate prototype acceptance

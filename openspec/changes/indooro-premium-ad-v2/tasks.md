@@ -1,6 +1,6 @@
 # Indooro V2 final creative plan and future production gates
 
-Checked items are **documentation/audit work only**. The overall motion-graphics direction is approved in principle; that is **not** approval to create a prototype, Blender scene, production code, audio or render. Every item below states an observable result.
+Sections 1–2 record completed planning. The user's subsequent “okay setzte es um jetzt” authorized the four prototype sequences in section 4. It did **not** authorize navigation shots 05–07 or the complete 26-second film. Every item below states an observable result.
 
 ## 1. V1 preservation and evidence — completed previously
 
@@ -17,19 +17,19 @@ Checked items are **documentation/audit work only**. The overall motion-graphics
 - [x] 2.5 Plan four-prototype gate, technical contracts, production risks and final creative audit; result: decision-ready review package.
 - [x] 2.6 Strict-validate revised OpenSpec and cross-check all timing, links, claims, pending gates and commits; result: 40/40 OpenSpec items valid, nine shots/780 contiguous frames and no broken relative links.
 
-## 3. Approval for prototype production — pending
+## 3. Approval and preflight for prototype production
 
-- [ ] 3.1 User explicitly approves **only** four prototype sequences; result: recorded authorization for draft 1280×720 work.
+- [x] 3.1 User explicitly approves **only** four prototype sequences; result: authorization recorded by the user's “okay setzte es um jetzt” after the four-prototype plan.
 - [ ] 3.2 Set approved mark, illustrative `Milch` UI/copy/disclosure, voice authorization, channel and optional spend; result: prototype brief.
-- [ ] 3.3 Preflight Blender CLI/Remotion and confirm fallback, then create isolated `indooro-ad-v2/` and shared layout; result: reproducible prototype toolchain without touching V1.
+- [x] 3.3 Preflight Blender CLI/Remotion and confirm fallback, then create isolated `indooro-ad-v2/` and shared layout; result: reproducible prototype toolchain without touching V1.
 
-## 4. Four prototype sequences — only after section 3 approval
+## 4. Four prototype sequences — authorized draft scope
 
-- [ ] 4.1 **P1 opening / chaos becomes direction, frames 0–119:** draft 1280×720 store flight, shopper reveal and activation-driven light hierarchy; result: need and clarity understood in one view.
-- [ ] 4.2 **P2 smartphone / product search, frames 120–179:** draft 1280×720 hero phone, readable `Milch`, one result/selection and map; result: UI quality and claim truth reviewed.
-- [ ] 4.3 **P3 phone-to-store transition, frames 180–299:** draft 1280×720 continuous camera, map-to-shelf geometry and route overlap, with simpler continuous 2.5D alternative if needed; result: screen entry reads without a hidden cut.
-- [ ] 4.4 **P4 product destination + brand, frames 540–779:** draft 1280×720 final corner, marker/light, shopper reach, route-to-approved-brand and 75-frame static hold; result: found item and identity are memorable and legible.
-- [ ] 4.5 Add only temporary cleared sound/scratch German VO where it improves assessment; result: labeled draft stems and rights notes, no final audio.
+- [x] 4.1 **P1 opening / chaos becomes direction, frames 0–119:** draft 1280×720 store flight, shopper reveal and activation-driven light hierarchy; result: rendered for review, first-viewer clarity pending.
+- [x] 4.2 **P2 smartphone / product search, frames 120–179:** draft 1280×720 hero phone, readable `Milch`, one result/selection and map; result: rendered with illustrative UI, claim/brand approval pending.
+- [x] 4.3 **P3 phone-to-store transition, frames 180–299:** draft 1280×720 continuous camera, map-to-shelf geometry and route overlap; result: rendered compositing test, normal-speed acceptance and optional 2.5D fallback decision pending.
+- [x] 4.4 **P4 product destination + brand, frames 540–779:** draft 1280×720 final corner, marker/light, shopper reach, route-to-provisional-brand and 75-frame static hold; result: rendered for review, approved mark and character quality pending.
+- [x] 4.5 Add only temporary cleared sound/scratch German VO where it improves assessment; result: original generated internal scratch cues, no VO or final audio; draft rights/status documented.
 - [ ] 4.6 Review all four at normal speed muted and with sound, record time-coded findings, compare main/fallback paths and get **explicit prototype acceptance**; result: signed accept/revise decision. **Full navigation and complete-film production remain blocked until this passes.**
 
 ## 5. Full production — only after prototype acceptance

@@ -1,5 +1,7 @@
 # Final creative audit — before prototype production
 
+**Status addendum after prototype authorization:** This document records the earlier planning decision. The four draft prototypes have since been rendered; see the [prototype review](../../../../indooro-ad-v2/previews/prototype-review.md). The shopper still looks schematic, the P3 geometry match is unfinished, and normal-speed human review remains pending. The full film remains blocked.
+
 **Scope:** planning-only review of the 28-second motion-graphics V2 concept against the newly requested premium ad standard. No new scene, render, sound or prototype was made. The overall Remotion/Blender, stylized store/shopper, phone, route and German VO foundation remains.
 
 | Remaining weakness in prior plan | Change in this revision | Why the ad improves |
@@ -15,7 +17,7 @@
 
 ## Unresolved creative and technical risks
 
-The opening could feel like a generic architectural fly-through or obscure the person. A premium sculptural shopper may still look synthetic. The phone crossing requires accurate screen projection, camera matrices, map/store geometry and alpha/depth handling; the 2.5D continuous-camera fallback must be judged by the same idea, not treated as a shortcut. The destination/brand line cannot distort an official mark. At 720p, search/result, target carton and 2.5-second brand hold must survive a single normal-speed view. Sound's two-note motif and a synthetic German voice cannot be judged from documentation. Blender is not currently in `PATH`; it remains untested. Claims about UI and spatial navigation need comparison with current app/spec references, and brand/voice/music rights remain open.
+The opening could feel like a generic architectural fly-through or obscure the person. A premium sculptural shopper may still look synthetic. The phone crossing requires accurate screen projection, camera matrices, map/store geometry and alpha/depth handling; the 2.5D continuous-camera fallback must be judged by the same idea, not treated as a shortcut. The destination/brand line cannot distort an official mark. At 720p, search/result, target carton and 2.5-second brand hold must survive a single normal-speed view. Sound's two-note motif and a synthetic German voice cannot be judged from documentation. Blender availability was an untested risk at the time of this audit and has since been resolved for the drafts. Claims about UI and spatial navigation need comparison with current app/spec references, and brand/voice/music rights remain open.
 
 ## Recommendation and next gate
 

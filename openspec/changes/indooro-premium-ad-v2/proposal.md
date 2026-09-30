@@ -9,7 +9,7 @@ V1's 65-second film explains Indooro but gives the shopper little presence. The 
 - Give the route one consistent UI/map/world/destination/brand motion and sound language. Improve the human from exposed primitives to a premium adult-proportioned clothed silhouette with limited, reproducible pose animation.
 - Keep Remotion as master edit, crisp UI, route/compositing, audio and export system; prefer short scripted Blender store/figure/phone passes with a Remotion 2.5D fallback. No live-action footage, filmed actor, location, C4D or remote video-generation service is required.
 - Add an explicit **four-prototype gate**: opening/clarity, phone/search, continuous phone-to-store, destination/brand at 1280×720 draft quality. Full navigation and complete-film production wait for separate prototype acceptance.
-- Update the storyboard, VO/music/SFX, shot/technical/risk/review documents and specs. This change is planning only; no V2 animation, Blender scene, audio, prototype or render is created now.
+- Update the storyboard, VO/music/SFX, shot/technical/risk/review documents and specs. This originally ended at a planning gate; the user's later approval authorized only the four draft prototypes, now recorded in `indooro-ad-v2/`.
 
 ## Capabilities
 
@@ -29,4 +29,4 @@ None. This is a proposed film representation; it changes no app, API or deployme
 
 ## Impact
 
-Planning stays in this existing OpenSpec change; V1 and its tag/exports remain intact. After explicit **prototype-production** approval, an isolated `indooro-ad-v2/` project may copy selected V1 frame helpers, route logic and visual primitives with provenance. The phone search/map/route claim must match current app/spec references; the store-space line is an editorial visualization, not a shipping AR or measured accuracy claim. Required future assets are code-generated store/shopper/phone/route graphics, the approved Indooro mark and licensed/original voice/music/effects. No filming dependency exists. Blender is not currently found in this host's `PATH`; preflight occurs only after approval, while the Remotion fallback preserves the story.
+Planning and the approved prototypes stay in this existing OpenSpec change; V1 and its tag/exports remain intact. The isolated `indooro-ad-v2/` project contains four draft sequences and a shared illustrative layout. The phone search/map/route claim must still match current app/spec references; the store-space line is an editorial visualization, not a shipping AR or measured accuracy claim. Official mark and authorized voice/music remain future assets. No filming dependency exists. Blender CLI was preflighted successfully. Full navigation and the complete film remain gated on separate prototype acceptance.
