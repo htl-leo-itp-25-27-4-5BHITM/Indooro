@@ -1,52 +1,34 @@
-# Indooro V2 — revised motion graphics concept for approval
+# Indooro V2 — final creative concept for prototype decision
 
-**Concept only. No V2 scene, Blender project, prototype, render or audio has been created.** Recommended format: **28 seconds, German, 16:9, 30 fps**, premium 2D/2.5D/3D motion design. Working title: **Der Weg wird sichtbar**.
+**Planning only. No V2 scene, Blender model, production code, audio, prototype or render was created.** The established motion-graphics foundation is retained. Recommended master: **26 seconds, nine shots, 780 frames at 30 fps, 16:9, German**. Working title: **Der Weg wird sichtbar**.
 
-## Decision in one paragraph
+## The film in one sentence
 
-A sculptural faceless shopper pauses in a dark modular supermarket, needs milk and raises a floating Indooro phone. The large readable screen shows `Milch`, one result and a route. A mint line travels from the phone map into the store; the same shopper turns, follows it and reaches a generic milk carton. The route resolves into the Indooro identity: `Finde deinen Weg.` This is a **human-centered ad told entirely through generated graphics**, not an app tutorial or filmed commercial.
+A camera feels the scale and uncertainty of a sculptural supermarket; one shopper opens Indooro for milk; the viewer enters the phone's map, follows its route through the store, finds the product, and the same line completes the Indooro identity.
 
-## What changed since the first V2 plan
-
-The prior concept depended on a filmed actor, permitted supermarket, practical phone plates, live-action match cut and location sound. Those dependencies are removed. The human is now an adult-proportioned faceless 3D/2.5D figure with a small set of expressive poses; the store and product are modular generated assets. A graphical coordinate-matched route replaces camera tracking on real footage. The core benefit and V1 critique remain: the viewer still sees a need, app use, direction, movement and a product found. This direction better matches an autonomous code/AI production workflow and avoids location, performer and footage continuity gates.
-
-## Why this is realistic and premium
-
-| Production option | Quality/effort judgment | Decision |
+| Time | Story | Memorable visual event |
 |---|---|---|
-| Remotion only | Complete feasible fallback using SVG/CSS, parallax, layered shelves and silhouette poses; depth needs disciplined art direction | Preserve as fallback for every shot |
-| **Remotion + scripted Blender** | Few procedural 3D store/figure/phone passes add sculptural depth while Remotion keeps UI, edit, route handoff and sound deterministic | **Preferred** after tool preflight |
-| Remotion + Blender + Cinema 4D/extra video tools | More handoffs and manual art direction without a needed story gain | Exclude from core plan |
+| 0–4 s | Need and activation | **Chaos becomes direction:** aisle flight and crane reveal the shopper; activation changes selective light/information, never shelf positions. |
+| 4–10 s | Search, select, enter map | **Phone to world:** `Milch` → result → map; one continuous camera crosses the display as map blocks become shelves and the route gains floor depth. |
+| 10–18 s | Guided movement | Low route chase, fast lateral shopper reveal, brief elevated turn; matched travel direction. |
+| 18–26 s | Product and identity | **Destination becomes identity:** route rounds the last corner, resolves at milk and the shopper's reach, then the residual path creates or frames approved brand art. Wordmark/claim hold from 23.5–26 s. |
 
-Blender is not currently found in `PATH`; its availability is a post-approval check. The concept does not fail if it is unavailable: the 2.5D fallback keeps all 13 shots, VO and timing. No photoreal human rig, filmed footage, stock clips or remote video generation is required. Blender's [official command-line documentation](https://docs.blender.org/manual/en/5.1/advanced/command_line/render.html) supports the proposed scripted pass workflow; the plan does not claim it has run yet.
+The shopper is an adult-proportioned **premium sculptural figure**, with continuous clothing volumes and matte graphite/fabric/ceramic materials. Minimal poses, no face, mascot styling, visible primitive joints or long walk cycle. Camera, light and posture carry emotion. If full body motion fails, use upper-body/silhouette/partial reach framing while preserving the human throughout the story.
 
-## Story and highlight moments
+## Why this version is stronger and buildable
 
-| Time | Beat | Main image |
-|---|---|---|
-| 0–3 s | Need | Small paused shopper among tall dark shelves; amber uncertainty trace splits |
-| 3–8 s | Indooro action | Phone rises beside figure; `Milch` search and one result stay readable |
-| 8–13 s | Route ignition | Map route draws, then crosses into a spatial store shot on matched geometry |
-| 13–21 s | Guided movement | Same figure turns and follows mint path through two walkable turns |
-| 21–24 s | Found | Figure reaches simple milk carton; path contracts and disappears |
-| 24–28 s | Brand | Phone and route glyph resolve to approved Indooro mark; 2.5 s final hold |
+The previous 28-second version had a static problem setup, a matched graphic phone/store cut and a conventional product/end card. The three new moments make the app's central promise tangible. The route has a defined core width, rounded draw/corners, one position ripple, exact destination marker and a residual brand path; it is one object from UI to final frame. The supermarket's geometry stays fixed when Indooro is activated, so the visual metaphor remains credible.
 
-The [13-shot storyboard](../creative/storyboard.md) allocates **840 contiguous frames**. Fourteen bars at a proposed 120 BPM give tension, activation, momentum, discovery and brand each a purposeful musical span. The figure appears throughout the story; its pause, phone lift, turn and reach supply emotion without cartoon acting. The visual system uses graphite, mint, controlled amber, matte/beveled store forms, sparse Inter typography and camera motion motivated by the shopper or route. Store-space path graphics are editorial visualization, not a claim about shipping AR or measured positioning.
+**Remotion** owns the master edit, crisp UI, SVG route, projection composite/masks, typography, sound and final export. **Scripted Blender** is preferred for the architectural camera, sculptural shopper, phone body, map-footprint extrusion, store light/depth and selected short passes. A continuous Remotion 2.5D camera alternative preserves each signature idea if Blender/compositing fails. No actor, filmed supermarket, stock footage, C4D or remote video-generation service is required. Blender is not currently in `PATH` and must be preflighted only after approval.
 
-## Voice and sound
+**Recommended VO A:** “Zu viel auf einmal. Ein Weg genügt. Indooro. Finde deinen Weg.” Estimated spoken time **5.2 seconds**, leaving the screen crossing and navigation largely free of narration. The proposed 13-bar electronic score and one recognisable route sound move from tense space, to digital-to-spatial transition, to a two-note destination/brand resolution. Human listening is required.
 
-**Recommended Script A:** “Milch. Aber wo? … Indooro zeigt dir das Regal. Und den Weg dorthin. … Gefunden. Indooro. Finde deinen Weg.” Roughly 11–14 seconds of speech across the 28-second cut leaves the main travel passage to music and image. Two alternatives are in [voiceover-scripts.md](../creative/voiceover-scripts.md). Prefer a natural, authorized German synthetic voice for a fully AI-producible pipeline; an authorized human read is optional. A new premium electronic cue builds from low pulse to route downbeat and controlled groove, drops back at the find, then ends with a two-note sonic mark. Sparse designed phone/route/figure sounds replace live-location foley. Human listening remains necessary for final audio acceptance. V1's soundtrack is not reused as the new score.
+V1's Remotion structure, deterministic helpers, route graph/tests, Inter and graphite/mint anchors remain useful. Phone presentation, character/store assets, nine-shot choreography and audio must be built fresh. See the [reuse plan](../production/reuse-plan.md), [signature-shot specification](../creative/signature-shots.md), [nine-shot storyboard](../creative/storyboard.md), [voice alternatives](../creative/voiceover-scripts.md) and [final creative audit](final-creative-audit.md).
 
-## Reuse, assets and risk
+## Decision requested
 
-Reuse V1's Remotion structure, deterministic frame helpers, route graph/tests, Inter license, graphite/mint anchors and render/QA discipline. Redesign phone/UI/map presentation and brand treatment. Rebuild the 13 shots, transitions, shopper/store assets and score. Omit list/admin chapters. See the [reuse matrix](../research/reuse-matrix.md). New picture assets are generated from code and simple geometry; only approved brand art and authorized voice/music require external rights. Indicative future effort is **8–14 focused working days**, dependent on Blender preflight, quality iteration and review rounds.
+The broad direction is approved in principle. The next authorization is **only** for four draft **1280×720** prototype sequences: P1 opening/clarity (0–4 s), P2 phone/search (4–6 s), P3 continuous phone-to-store (6–10 s), and P4 destination/brand (18–26 s). Temporary cleared sound and scratch VO may support review. After those four are watched and explicitly accepted, decide separately whether to build navigation shots and the complete film. [Open decisions](open-decisions.md) cover official mark, illustrative UI/copy, voice rights, channel and optional spend; the [approval checklist](approval-checklist.md) records gates.
 
-The main risks are a figure that feels toy-like, 3D/2D continuity, route/UI legibility, audio that sounds synthetic, and render cost. The plan answers them with a first short prototype of the figure/phone/route, a Remotion-only fallback for every 3D shot, 720p comprehension reviews and actual listening before any final-quality export. No preview is made in this planning assignment.
+**Evidence limits:** V1 was assessed through sampled encoded frames/source and objective audio measures, without continuous playback or listening. No V2 look, camera, render cost or sound quality has been proven yet. The new signature moments have specific fallbacks and must earn acceptance in prototypes.
 
-## Approval needed
-
-The direction is selected here; the remaining decisions are approval of this revised concept and future production start, the official logo, exact illustrative UI/copy, preferred authorized German voice, distribution/aspect ratios and optional spending cap. There is **no actor or location decision**. After explicit approval, the next action is tool/asset preflight and four short 720p prototypes; full rough cut and final render have later gates. See [open-decisions.md](open-decisions.md) and the [approval checklist](approval-checklist.md).
-
-**Analysis limits:** The V1 audit used sampled encoded frames and objective audio measurements, not continuous viewing or audition. No V2 visual or sound quality has been tested because production remains unauthorized.
-
-**AWAITING USER APPROVAL — INDOORO V2 MOTION GRAPHICS CONCEPT**
+**FINAL CREATIVE CONCEPT READY — AWAITING APPROVAL FOR PROTOTYPE PRODUCTION**
