@@ -6,7 +6,7 @@ import {PrototypeLabel} from '../components/PrototypeLabel';
 import proj from '../data/projection-P1.json';
 import {C,clamp,smooth} from '../design/system';
 
-export const P1Opening:React.FC=()=>{
+export const P1Opening:React.FC<{withAudio?:boolean;withLabel?:boolean}>=({withAudio=true,withLabel=true})=>{
   const f=useCurrentFrame(),active=smooth((f-75)/25),p=proj[Math.min(119,f)].shopper;
   const ripple=f<77?0:smooth((f-77)/15);
   return <AbsoluteFill style={{backgroundColor:C.bg}}>
@@ -23,7 +23,7 @@ export const P1Opening:React.FC=()=>{
       </g>}
     </svg>
     <div style={{position:'absolute',inset:0,background:'radial-gradient(ellipse at 30% 63%,#63E6B420,transparent 55%)',opacity:active}}/>
-    <Audio src={staticFile('audio/P1-temp.wav')} volume={.55}/>
-    <PrototypeLabel name="01 CHAOS → RICHTUNG"/>
+    {withAudio&&<Audio src={staticFile('audio/P1-temp.wav')} volume={.55}/>}
+    {withLabel&&<PrototypeLabel name="01 CHAOS → RICHTUNG"/>}
   </AbsoluteFill>;
 };

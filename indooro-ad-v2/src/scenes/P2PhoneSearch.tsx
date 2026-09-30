@@ -5,7 +5,7 @@ import {Phone} from '../components/Phone';
 import {PrototypeLabel} from '../components/PrototypeLabel';
 import {C,smooth} from '../design/system';
 
-export const P2PhoneSearch:React.FC=()=>{
+export const P2PhoneSearch:React.FC<{withAudio?:boolean;withLabel?:boolean}>=({withAudio=true,withLabel=true})=>{
   const f=useCurrentFrame();
   return <AbsoluteFill style={{backgroundColor:C.bg,overflow:'hidden'}}>
     <Img src={staticFile('3d-passes/P1/frame_0120.png')} style={{position:'absolute',inset:-20,width:1320,height:760,objectFit:'cover',filter:'blur(3px) brightness(.64)',scale:1+f/1800}}/>
@@ -13,7 +13,7 @@ export const P2PhoneSearch:React.FC=()=>{
     <div style={{position:'absolute',left:730,top:28,scale:1+smooth(f/60)*.06,translate:`${-25*smooth(f/60)}px 0px`}}>
       <Phone frame={f} mode="search"/>
     </div>
-    <Audio src={staticFile('audio/P2-temp.wav')} volume={.5}/>
-    <PrototypeLabel name="02 MILCH SUCHEN"/>
+    {withAudio&&<Audio src={staticFile('audio/P2-temp.wav')} volume={.5}/>}
+    {withLabel&&<PrototypeLabel name="02 MILCH SUCHEN"/>}
   </AbsoluteFill>;
 };

@@ -30,10 +30,15 @@
     "render:p2": "remotion render P2PhoneSearch previews/P2-phone-search.mp4 --codec=h264 --pixel-format=yuv420p --concurrency=4",
     "render:p3": "remotion render P3EnterMap previews/P3-enter-map.mp4 --codec=h264 --pixel-format=yuv420p --concurrency=4",
     "render:p4": "remotion render P4DestinationBrand previews/P4-destination-brand.mp4 --codec=h264 --pixel-format=yuv420p --concurrency=4",
+    "render:rough": "remotion render IndooroV2RoughCut previews/IndooroV2-roughcut-720p.mp4 --codec=h264 --pixel-format=yuv420p --concurrency=4",
     "audio:scratch": "python3 scripts-generate-temp-audio.py",
+    "audio:rough": "python3 scripts-generate-roughcut-audio.py",
     "blender:p1": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P1",
     "blender:p3": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P3",
     "blender:p4": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P4",
+    "blender:p5": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P5",
+    "blender:p6": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P6",
+    "blender:p7": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P7",
     "validate:layout": "node scripts/validate-layout.mjs"
   },
   "sideEffects": [

@@ -6,7 +6,7 @@ import {PrototypeLabel} from '../components/PrototypeLabel';
 import proj from '../data/projection-P4.json';
 import {C,smooth} from '../design/system';
 
-export const P4DestinationBrand:React.FC=()=>{
+export const P4DestinationBrand:React.FC<{withAudio?:boolean;withLabel?:boolean}>=({withAudio=true,withLabel=true})=>{
   const f=useCurrentFrame(),idx=Math.min(119,f),p=proj[idx],dest=p.destination,milk=p.milk;
   const mark=smooth((f-63)/23),fade=smooth((f-120)/45),brand=smooth((f-140)/25);
   const last=proj[119].destination;
@@ -30,9 +30,9 @@ export const P4DestinationBrand:React.FC=()=>{
     <div style={{position:'absolute',top:265,left:540,opacity:brand,translate:`0px ${(1-brand)*15}px`}}>
       <div style={{fontSize:77,fontWeight:800,letterSpacing:-5,lineHeight:1}}>INDOORO</div>
       <div style={{fontSize:29,color:C.white,marginTop:19,letterSpacing:-.5}}>Finde deinen Weg.</div>
-      <div style={{fontSize:14,color:C.muted,marginTop:22,letterSpacing:2}}>PROTOTYPISCHE MARKENBEHANDLUNG</div>
+      {withLabel&&<div style={{fontSize:14,color:C.muted,marginTop:22,letterSpacing:2}}>PROTOTYPISCHE MARKENBEHANDLUNG</div>}
     </div>
-    <Audio src={staticFile('audio/P4-temp.wav')} volume={.55}/>
-    <PrototypeLabel name="04 ZIEL → MARKE"/>
+    {withAudio&&<Audio src={staticFile('audio/P4-temp.wav')} volume={.55}/>}
+    {withLabel&&<PrototypeLabel name="04 ZIEL → MARKE"/>}
   </AbsoluteFill>;
 };

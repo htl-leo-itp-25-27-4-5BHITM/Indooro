@@ -6,7 +6,7 @@ import {Phone} from '../components/Phone';
 import {PrototypeLabel} from '../components/PrototypeLabel';
 import {C,clamp,smooth} from '../design/system';
 
-export const P3EnterMap:React.FC=()=>{
+export const P3EnterMap:React.FC<{withAudio?:boolean;withLabel?:boolean}>=({withAudio=true,withLabel=true})=>{
   const f=useCurrentFrame();
   const zoom=smooth(f/56),fade=1-smooth((f-53)/25);
   const scale=1+zoom*2.75;
@@ -20,9 +20,10 @@ export const P3EnterMap:React.FC=()=>{
     <div style={{position:'absolute',inset:0,pointerEvents:'none',
       background:'radial-gradient(ellipse at 52% 68%,transparent 36%,#02090D99 100%)',
       opacity:clamp((f-57)/34)}}/>
-    <div style={{position:'absolute',left:55,top:35,letterSpacing:3,fontSize:15,fontWeight:700,color:C.mint,
+    {withLabel&&<div style={{position:'absolute',left:55,top:35,letterSpacing:3,fontSize:15,fontWeight:700,color:C.mint,
       opacity:1-smooth((f-48)/15)}}>DEIN WEG WIRD SICHTBAR</div>
-    <Audio src={staticFile('audio/P3-temp.wav')} volume={.55}/>
-    <PrototypeLabel name="03 IN DIE KARTE"/>
+    }
+    {withAudio&&<Audio src={staticFile('audio/P3-temp.wav')} volume={.55}/>}
+    {withLabel&&<PrototypeLabel name="03 IN DIE KARTE"/>}
   </AbsoluteFill>;
 };
