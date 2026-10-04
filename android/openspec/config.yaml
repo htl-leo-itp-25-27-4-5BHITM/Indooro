@@ -1,0 +1,38 @@
+schema: spec-driven
+context: |
+  Indooro native Android planning project; working directory is android/.
+  Reference commit: 501e2f76e404f749ee5e0c6353f765c83aff189f, origin/main fetched 2026-10-04.
+  Active iOS reference: ../swift/indooro-EinkaeuferFinal/indooroApp only.
+  This project currently contains planning artifacts, NOT an implemented Android app.
+  Android feature requirements stay in change delta specs until implemented and accepted.
+  Permanent android-planning-governance describes only the planning contract.
+  Shared backend authority: ../openspec/specs/shared-api/spec.md and openapi.yaml;
+  feature contracts: ../openspec/specs/mobile-*, recipe-catalog-shopping,
+  product-catalog-search, store-layout-management. Never copy backend ownership here.
+  Read ../docs/RUNBOOK.md, ../docs/audit/SYSTEM_MAP.md, CODE_AUDIT.md,
+  ../docs/specs/AUDIT.md and ../openspec/config.yaml before implementation.
+  Read PARITY_MATRIX.md, ARCHITECTURE.md, API_CONTRACT.md, DEPENDENCIES.md,
+  ACCEPTANCE.md and RESEARCH.md in this Android project.
+  Native Kotlin/Compose, anonymous customer application, foreground-only BLE,
+  local shopping lists, optional ARCore; no account, tracking, admin or backend deployment.
+  iOS bugs are observations, never Android requirements. Root dependencies are explicit gates.
+  OpenSpec CLI is pinned to 1.3.1 as required by the repository; global CLI may differ.
+  Run npx -y @fission-ai/openspec@1.3.1 from android, never rely on root recursion.
+rules:
+  proposal:
+    - State problem, scope, exact new/modified capability names and impacted systems.
+    - Reference parity IDs and shared contracts, prerequisites and blocked acceptance.
+    - Public mobile routes stay anonymous; admin roles and protected routes stay in root.
+  specs:
+    - Use delta requirement sections; permanent specs use Requirements.
+    - Every requirement uses SHALL or MUST and at least one four-hash Scenario heading.
+    - Scenarios use explicit GIVEN, WHEN and observable THEN; include negative cases.
+    - Specify Android consumer behavior; do not duplicate backend route definitions.
+  design:
+    - Separate code-verified observations, documentation, assumptions and unknowns.
+    - Compare alternatives; state decisions, risks, acceptance, migrations and rollback.
+    - Link root blockers and platform documentation; no secrets or personal data in evidence.
+  tasks:
+    - Use exactly unchecked '- [ ] X.Y ...' tasks; nothing is implemented in this planning order.
+    - Include concrete modules, contract fixtures, state transitions, negative and offline cases.
+    - Include unit, integration, UI/device evidence, docs, acceptance and applicable rollout work.
