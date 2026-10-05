@@ -1,38 +1,80 @@
 .DS_Store
 .idea
 
-# Node.js
+# Node.js and generated output
 node_modules/
-npm-debug.log
-yarn-error.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 dist/
 build/
+coverage/
+.cache/
+.eslintcache
+/.next/
+/.nuxt/
+/.expo/
+/.parcel-cache/
+/.sass-cache/
+/.turbo/
+/.output/
+
+# Local configuration and secrets
 .env
 .env.example/
+.venv/
+venv/
 .vscode/
-.cache/
+.history/
+/documentation/leocloud-openai-secret.local.md
 
-# Python
+# Python and notebooks
 __pycache__/
 *.pyc
 *.pyo
-.env
-venv/
+.ipynb_checkpoints/
 
-# Logs
+# Logs and temporary files
 logs/
 *.log
 *.out
 *.err
+*.tmp
+*.bak
+*.old
+*.orig
+tmp/
+/.tmp/
 
-# Local secret runbooks
-/documentation/leocloud-openai-secret.local.md
-
-# OS generated files
+# OS and editor files
+$RECYCLE.BIN/
 Thumbs.db
+ehthumbs.db
 Desktop.ini
 *.swp
 *.swo
+
+# Local databases and compiled artifacts
+*.sqlite3
+*.db
+*.iml
+*.class
+*.jar
+*.war
+*.exe
+*.dll
+*.o
+*.so
+*.a
+*.dSYM/
+
+# Tool caches
+/.pnp
+/.pnp.js
+/.firebase/
+/.serverless/
+/.vercel/
+/.netlify/
 
 # Xcode user state (personal, never commit)
 xcuserdata/

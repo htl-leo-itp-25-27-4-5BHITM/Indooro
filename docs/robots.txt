@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Link zu deiner Sitemap (Wichtig für Google)
+Sitemap: https://www.indooro.at/sitemap.xml
