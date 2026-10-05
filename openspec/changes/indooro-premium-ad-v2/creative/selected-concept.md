@@ -1,0 +1,13 @@
+# Selected concept — Der Weg wird sichtbar (final creative planning)
+
+**One sentence:** An architectural store overwhelms one shopper; Indooro makes the relevant path visible, the viewer enters that map, and the route leads through product discovery into the brand itself.
+
+This is a **26-second / 780-frame / 30 fps** motion-graphics advertisement, with nine shots and three signature moments: **Chaos becomes direction** (0–4 s), **Enter the map** (4–10 s, continuous camera crossing 6–10 s), and **Destination becomes identity** (18–26 s). The 10–18 s navigation passage varies low route chase, lateral shopper reveal and short overhead-to-turn camera without losing screen direction. See [storyboard.md](storyboard.md) and [signature-shots.md](signature-shots.md).
+
+The shopper is a simplified **premium sculptural adult**, with realistic proportions, restrained clothing volumes and seamless matte graphite/fabric/ceramic materials. No face, exposed primitive joints, mascot form, detailed fingers or repetitive walk cycle. Pose, light, composition and camera provide the feeling. Build from a low-complexity reusable model, named whole-body poses and limited rig controls; use a shoulder/upper-body or silhouette crop if full-body motion cannot meet quality. The same human remains the narrative anchor in opening, phone, route and find.
+
+The supermarket is modular, unbranded architectural geometry based on one walkable illustrative layout. Indooro activation does **not** move shelves: selective light and focus remove distractions, the position and target become legible, and mint direction enters. The phone is a premium object with a crisp editable UI showing `Milch`, one result and the map. The route is an editorial visualization, not a shipping AR or accuracy claim. The target is a generic milk carton. Once found, the route itself creates or frames the approved brand identity, with `Finde deinen Weg.` held fully legible for 2.5 s.
+
+**Pipeline:** Remotion now assembles a 780-frame 720p rough cut, UI, route continuity, compositing, type and scratch sound. Short scripted Blender camera/environment/figure passes supply spatial depth; each critical beat retains a Remotion 2.5D fallback. No filmed actor, location or footage is required. The cut is not picture-locked or final-quality.
+
+**Next gate:** the user accepted four drafts and authorized navigation plus the complete 720p rough cut. Review the new film at normal speed and decide whether revisions are needed before picture lock. Official logo, UI truth, voice rights, channel and optional spend remain open decisions.

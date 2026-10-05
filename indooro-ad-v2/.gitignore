@@ -1,0 +1,11 @@
+node_modules/
+previews/*.mp4
+previews/*.wav
+previews/*.png
+previews/*.log
+public/3d-passes/
+public/audio/
+*.blend
+/assets/character-source/
+/assets/character/*.blend1
+!/assets/character/hand-realistic.blend

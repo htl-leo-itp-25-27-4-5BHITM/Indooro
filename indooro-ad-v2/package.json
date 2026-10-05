@@ -1,0 +1,47 @@
+{
+  "name": "indooro-ad-v2",
+  "version": "1.0.0",
+  "description": "Indooro V2 signature-shot prototype package",
+  "repository": {},
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@remotion/cli": "4.0.530",
+    "@remotion/media": "4.0.530",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.530"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.530",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "9.39.5",
+    "prettier": "3.8.1",
+    "tsx": "^4.23.15",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "dev": "remotion studio",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src && tsc --noEmit",
+    "render:p1": "remotion render P1Opening previews/P1-opening.mp4 --codec=h264 --pixel-format=yuv420p --concurrency=4",
+    "render:p2": "remotion render P2PhoneSearch previews/P2-phone-search.mp4 --codec=h264 --pixel-format=yuv420p --concurrency=4",
+    "render:p3": "remotion render P3EnterMap previews/P3-enter-map.mp4 --codec=h264 --pixel-format=yuv420p --concurrency=4",
+    "render:p4": "remotion render P4DestinationBrand previews/P4-destination-brand.mp4 --codec=h264 --pixel-format=yuv420p --concurrency=4",
+    "render:rough": "remotion render IndooroV2RoughCut previews/IndooroV2-roughcut-720p.mp4 --codec=h264 --pixel-format=yuv420p --concurrency=4",
+    "audio:scratch": "python3 scripts-generate-temp-audio.py",
+    "audio:rough": "python3 scripts-generate-roughcut-audio.py",
+    "blender:p1": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P1",
+    "blender:p3": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P3",
+    "blender:p4": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P4",
+    "blender:p5": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P5",
+    "blender:p6": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P6",
+    "blender:p7": "blender -b --factory-startup --python blender/scripts/render_prototype.py -- P7",
+    "validate:layout": "node scripts/validate-layout.mjs"
+  },
+  "sideEffects": [
+    "*.css"
+  ]
+}

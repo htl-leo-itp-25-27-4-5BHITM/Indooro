@@ -1,0 +1,23 @@
+# Final creative storyboard — 26 s / 30 fps / 780 frames
+
+Nine purposeful shots replace the prior 13-shot/28-second plan. Intervals are half-open and cover frames 0–779 without gaps. The three signature moments are specified in [signature-shots.md](signature-shots.md). R = Remotion composition; B = optional scripted Blender pass with a documented Remotion fallback. A continuous camera movement inside a shot may combine rendered layers and UI composites. All store-space path graphics are editorial visualization, not a claim of app AR.
+
+| Shot / time / frames | Story and camera | Picture/sound purpose | Planned build |
+|---|---|---|---|
+| 01 / 0.0–2.5 / 0–74 | **Signature 1 begins.** Low, fast architectural aisle passage; one controlled turn; camera cranes to show small paused shopper and multiple plausible paths. | Complexity is felt before any copy. Filtered pulse, two passing-aisle ticks; no VO. | B store/camera/figure masks or R layered shelf parallax. |
+| 02 / 2.5–4.0 / 75–119 | **Chaos becomes direction.** Shopper raises phone. Shelves stay fixed while peripheral detail dims, depth/target/position become readable and first mint ripple appears. | Activation subtracts sound for ~0.25 s; visual hierarchy changes exactly with action. | B keyed store/figure passes; R grade, masks, ripple; R-only fallback. |
+| 03 / 4.0–6.0 / 120–179 | Large, near-front phone with shopper shoulder. Search `Milch`, one result, one selection, then map. | UI receives a genuine readable hold. Dry select sound; VO benefit begins. | R React/SVG screen; B body optional. |
+| 04 / 6.0–10.0 / 180–299 | **Signature 2.** One continuous dolly into screen. Route draws; map blocks gain height as camera passes screen plane; route becomes floor line; low store view emerges. | Central hero event. One evolving route sound shifts from digital to spatial, with music opening at 6 and 8 s. No VO during crossing. | B scripted camera, store/map/phone/mattes/path; R editable UI, corner pin, route overlap, mix; R 2.5D continuous-camera fallback. |
+| 05 / 10.0–12.5 / 300–374 | Low chase along route through first aisle; route head runs ahead, shelf edges pass with depth. | Movement begins immediately after screen entry. Maintain forward screen direction. | B short low camera pass or R depth layers; shared path. |
+| 06 / 12.5–15.0 / 375–449 | Fast lateral reveal catches the shopper following route; camera movement continues the direction of the preceding path sweep. | Human remains causal anchor, not a detached UI demo. Light groove; no walking loop held too long. | B figure/store pass or R silhouette/parallax. |
+| 07 / 15.0–18.0 / 450–539 | Brief elevated view reveals one remaining turn, then camera descends and catches up as shopper enters destination aisle. | Geographic clarity, then renewed momentum. Cut on matched leftward travel into shot 08. | B overhead-to-oblique pass or R transform with shelf occlusion. |
+| 08 / 18.0–22.0 / 540–659 | **Signature 3 begins.** Low route chase around final corner; circle and thin shelf light identify milk. Shopper reaches it; marker resolves on contact. | Product payoff: deceleration, destination tone, tactile transient, brief space. | B shelf/carton/figure/depth passes; R marker/grade/SFX; R 2.5D fallback. |
+| 09 / 22.0–26.0 / 660–779 | Residual route travels out of the store into darkness and creates or frames approved brand element. `INDOORO` and `Finde deinen Weg.` static from frame 705 / 23.5 s. | Same route completes Phone → Store → Product → Brand. Two-note mark and final VO; 2.5 s clean hold. | R route/glyph/brand/VO; B store fade pass optional. |
+
+## Continuity and timing rules
+
+- The same sculptural shopper is visible in shots 01–03 and 06–08. Camera, pose and silhouette convey need, activation, following and find. No face, full walk rig or realistic fingers are required.
+- The same `Milch` result and generic carton remain identifiable. A shared walkable layout maps UI (u,v) to Blender floor (x,y), Z up. Route ends at shelf access, not inside geometry.
+- The route is one continuous design object across UI, map, store, marker and brand. Rounded corners, easing, thickness, light and exit behavior follow [visual-direction.md](visual-direction.md).
+- The phone-to-store moment is a continuous camera/composite, with a geometry-matched Remotion fallback. Avoid a blur-hidden cut.
+- At 720p, first viewers must recognize shopper, search word, selected result, where the path leads, carton and final claim. If speech or comprehension fails, retime within 25–27 seconds and update all frame/cue tables before full production; do not add feature chapters.
