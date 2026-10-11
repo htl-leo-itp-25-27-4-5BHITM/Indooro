@@ -118,7 +118,7 @@ test("candidate store list keeps server filters and paging in direct links", asy
   await page.goto("/admin/next/stores/?query=Linz&regionId=region-1&layout=missing&page=1");
   await expect(page.getByRole("heading", { name: "Stores" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Store-Ergebnisse" })).toContainText("Seite 2 von 2");
-  await expect(page.getByRole("link", { name: "Details" })).toHaveAttribute("href", "/admin/stores/detail/?storeId=store-21");
+  await expect(page.getByRole("link", { name: "Details" })).toHaveAttribute("href", "/admin/next/stores/detail/?storeId=store-21");
   expect(storeRequests.at(-1)).toContain("hasActiveLayout=false");
   expect(storeRequests.at(-1)).toContain("page=1");
   await expect(page.getByRole("link", { name: "Zurück" })).toHaveAttribute("href", "/admin/next/stores/?query=Linz&regionId=region-1&layout=missing");

@@ -4,6 +4,7 @@ import { ApiClientError, createApiClient } from "./api/client";
 import { Dashboard } from "./Dashboard";
 import { StoresPage } from "./StoresPage";
 import { EditorRoute } from "./EditorRoute";
+import { StoreDetailPage } from "./StoreDetailPage";
 import { candidateAccess, visibleRoutes, type CurrentUser } from "./routes";
 import "./style.css";
 
@@ -51,7 +52,7 @@ function AdminCandidate() {
           {user && access === "allowed" && (window.location.pathname.includes("/editor")
             ? <EditorRoute api={api} />
             : window.location.pathname.includes("/stores/detail")
-            ? <section className="notice"><h2>Store Detail</h2><p>Die Store-Ansicht wird vorbereitet. <a href={`/admin/stores/detail/${window.location.search}`}>Store in der bisherigen Ansicht öffnen</a></p></section>
+            ? <StoreDetailPage api={api} user={user} />
             : window.location.pathname.includes("/stores") ? <StoresPage api={api} /> : <Dashboard api={api} user={user} />)}
         </main>
       </div>
