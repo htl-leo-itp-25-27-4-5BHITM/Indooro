@@ -1451,6 +1451,10 @@ paths:
           in: query
           schema: { type: string, format: uuid }
         - $ref: "#/components/parameters/RecordStatusQuery"
+        - name: hasActiveLayout
+          in: query
+          description: Filters stores by whether they have an ACTIVE layout version.
+          schema: { type: boolean }
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/AdminPageSize"
       responses:

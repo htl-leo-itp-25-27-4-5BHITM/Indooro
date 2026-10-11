@@ -57,31 +57,39 @@ public class StoreAdminService {
     public CommonDtos.PageResponse<StoreDtos.StoreSummaryResponse> listStores(String query,
                                                                              UUID regionId,
                                                                              RecordStatus status,
+                                                                             Boolean hasActiveLayout,
                                                                              int page,
                                                                              int size) {
-        StringBuilder hql = new StringBuilder("1 = 1");
+        StringBuilder hql = new StringBuilder("from StoreEntity s where 1 = 1");
         Map<String, Object> params = new HashMap<>();
 
         RecordStatus effectiveStatus = status == null ? RecordStatus.ACTIVE : status;
-        hql.append(" and status = :status");
+        hql.append(" and s.status = :status");
         params.put("status", effectiveStatus);
 
         UUID effectiveRegionId = adminAccessService.effectiveRegionFilter(regionId);
         UUID effectiveStoreId = adminAccessService.effectiveStoreFilter(null);
 
         if (effectiveRegionId != null) {
-            hql.append(" and region.id = :regionId");
+            hql.append(" and s.region.id = :regionId");
             params.put("regionId", effectiveRegionId);
         }
 
         if (effectiveStoreId != null) {
-            hql.append(" and id = :storeId");
+            hql.append(" and s.id = :storeId");
             params.put("storeId", effectiveStoreId);
         }
 
         if (query != null && !query.isBlank()) {
-            hql.append(" and (lower(name) like :query or lower(storeCode) like :query or lower(city) like :query)");
+            hql.append(" and (lower(s.name) like :query or lower(s.storeCode) like :query or lower(s.city) like :query)");
             params.put("query", "%" + query.trim().toLowerCase() + "%");
+        }
+
+        if (hasActiveLayout != null) {
+            hql.append(hasActiveLayout
+                    ? " and exists (select 1 from LayoutVersionEntity lv where lv.store.id = s.id and lv.status = :layoutStatus)"
+                    : " and not exists (select 1 from LayoutVersionEntity lv where lv.store.id = s.id and lv.status = :layoutStatus)");
+            params.put("layoutStatus", LayoutVersionStatus.ACTIVE);
         }
 
         PanacheQuery<StoreEntity> panacheQuery = storeRepository.find(hql.toString(), Sort.by("name"), params);
