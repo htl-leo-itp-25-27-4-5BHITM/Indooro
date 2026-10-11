@@ -88,6 +88,12 @@ class LayoutDocumentValidatorTest {
         ObjectNode outside = layout();
         ((ArrayNode) outside.get("elements")).add(elementWithoutId(41, 1));
         assertBadRequest(outside);
+
+        ObjectNode crossingBoundary = layout();
+        ObjectNode crossingElement = elementWithoutId(39, 59);
+        crossingElement.put("width", 2);
+        ((ArrayNode) crossingBoundary.get("elements")).add(crossingElement);
+        assertBadRequest(crossingBoundary);
     }
 
     @Test

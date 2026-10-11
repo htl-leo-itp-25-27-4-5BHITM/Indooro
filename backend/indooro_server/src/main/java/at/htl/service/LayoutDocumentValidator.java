@@ -72,8 +72,11 @@ public class LayoutDocumentValidator {
                 throw badRequest(path + " liegt ausserhalb von gridSize.");
             }
             boolean beacon = "beacon".equals(type.asText());
-            optionalDimension(element, "width", path, gridWidth, !beacon);
-            optionalDimension(element, "height", path, gridHeight, !beacon);
+            Double width = optionalDimension(element, "width", path, gridWidth, !beacon);
+            Double height = optionalDimension(element, "height", path, gridHeight, !beacon);
+            if (!beacon && (x + width > gridWidth || y + height > gridHeight)) {
+                throw badRequest(path + " liegt mit seiner Flaeche ausserhalb von gridSize.");
+            }
             optionalNumber(element, "rotation", path);
             if (beacon) {
                 validateBeacon(element, beaconIds, beaconIdentities, path);
@@ -122,17 +125,18 @@ public class LayoutDocumentValidator {
         return requiredNumber(parent, field, path + "." + field);
     }
 
-    private void optionalDimension(JsonNode element, String field, String path, double maximum, boolean required) {
+    private Double optionalDimension(JsonNode element, String field, String path, double maximum, boolean required) {
         Double value = optionalNumber(element, field, path);
         if (value == null) {
             if (required) {
                 throw badRequest(path + "." + field + " ist erforderlich.");
             }
-            return;
+            return null;
         }
         if (value <= 0 || value > maximum) {
             throw badRequest(path + "." + field + " muss groesser als 0 und innerhalb von gridSize sein.");
         }
+        return value;
     }
 
     private void validateBeacon(JsonNode element, Set<String> ids, Set<String> identities, String path) {
