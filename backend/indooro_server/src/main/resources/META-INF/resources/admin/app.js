@@ -445,7 +445,7 @@ function renderRecipeList(recipes) {
             `${badge(readiness.label, readiness.status)}<br><span class="muted">${recipe.mappedIngredientCount ?? 0}/${recipe.totalIngredientCount ?? 0} Zutaten${readiness.warnings.length ? ` · ${escapeHtml(readiness.warnings.join(", "))}` : ""}</span>`,
             escapeHtml((recipe.tags || []).map((tag) => tag.name).join(", ") || "-"),
             actions([
-              ["Bearbeiten", () => openRecipeDrawer(recipe)],
+              ["Bearbeiten", () => openRecipeForEdit(recipe.id)],
               ["Mapping", () => openMappingDrawer(recipe)],
               ["Publish", () => confirmMutation(`${recipe.title} publizieren?`, "Das Rezept wird fuer mobile Nutzer sichtbar.", () => apiPatch(`${API.recipes}/${recipe.id}/publish`, {}), renderRecipes)],
               ["Deaktivieren", () => confirmMutation(`${recipe.title} deaktivieren?`, "Das Rezept bleibt erhalten, ist aber nicht aktiv.", () => apiPatch(`${API.recipes}/${recipe.id}/deactivate`, {}), renderRecipes)],
@@ -694,7 +694,23 @@ function openImportDrawer(kind) {
   });
 }
 
+async function openRecipeForEdit(recipeId) {
+  try {
+    const recipe = await apiGet(`${API.recipes}/${encodeURIComponent(recipeId)}`);
+    const required = ["summary", "description", "imageUrl", "imageAlt", "tags", "ingredients", "steps"];
+    if (String(recipe?.id) !== String(recipeId) || required.some((fieldName) => !(fieldName in recipe)) || !Array.isArray(recipe.tags) || !Array.isArray(recipe.ingredients) || !Array.isArray(recipe.steps)) {
+      throw new Error("Rezeptdetails sind unvollstaendig.");
+    }
+    openRecipeDrawer(recipe);
+  } catch (error) {
+    toast(`Rezept konnte nicht geladen werden: ${error.message}`, "danger");
+  }
+}
+
 function openRecipeDrawer(recipe = {}) {
+  const existingRecipe = Boolean(recipe.id);
+  const tags = normalizeList(recipe.tags);
+  const currentTagIds = tags.every((tag) => tag.id) ? tags.map((tag) => tag.id) : null;
   const initialIngredients = normalizeList(recipe.ingredients).length
     ? normalizeList(recipe.ingredients).map((item, index) => ({
       id: item.id || null,
@@ -703,13 +719,13 @@ function openRecipeDrawer(recipe = {}) {
       selectedProduct: item.product || null,
       displayName: item.displayName || ""
     }))
-    : [{ id: null, position: 1, quantityText: "", selectedProduct: null, displayName: "" }];
+    : existingRecipe ? [] : [{ id: null, position: 1, quantityText: "", selectedProduct: null, displayName: "" }];
   const initialSteps = normalizeList(recipe.steps).length
     ? normalizeList(recipe.steps).map((item, index) => ({ id: item.id || null, position: item.position || index + 1, instruction: item.instruction || "" }))
-    : [{ id: null, position: 1, instruction: "" }];
+    : existingRecipe ? [] : [{ id: null, position: 1, instruction: "" }];
 
   openDrawer(recipe.id ? "Rezept bearbeiten" : "Rezept anlegen", `
-    <div class="stepper"><div class="step active">1 Metadata</div><div class="step active">2 Zutaten</div><div class="step active">3 Schritte</div><div class="step">4 Publish</div></div>
+    ${existingRecipe ? '<div class="notice">Metadaten bearbeiten. Zutaten und Schritte werden unveraendert beibehalten.</div>' : '<div class="stepper"><div class="step active">1 Metadata</div><div class="step active">2 Zutaten</div><div class="step active">3 Schritte</div><div class="step">4 Publish</div></div>'}
     <form class="stack">
       <div class="form-grid">
         ${field("slug", "Slug", recipe.slug || "", "text", "", "apfel-hafer-crumble")}
@@ -720,20 +736,23 @@ function openRecipeDrawer(recipe = {}) {
         ${field("totalTimeMinutes", "Gesamt min", recipe.totalTimeMinutes ?? "", "number", "", "37")}
         <div class="span-2">${textarea("summary", "Summary", recipe.summary || "", "Warmer Crumble mit Apfel, Hafer und Butter.")}</div>
         <div class="span-2">${textarea("description", "Beschreibung", recipe.description || "", "Ein einfaches Ofenrezept fuer 4 Portionen.")}</div>
+        ${field("imageUrl", "Bild-URL", recipe.imageUrl || "", "text", "", "https://example.com/rezept.jpg")}
+        ${field("imageAlt", "Bildbeschreibung", recipe.imageAlt || "", "text", "", "Apfel-Hafer-Crumble in einer Auflaufform")}
+        ${existingRecipe ? `<div class="span-2 field"><label>Tags</label><div class="toolbar">${tags.length ? tags.map((tag) => badge(tag.name || tag.code || "Tag", "info")).join("") : '<span class="muted">Keine Tags</span>'}</div><p class="muted">Bestehende Tags bleiben bei Metadaten-Aenderungen erhalten.</p></div>` : ""}
         <div class="span-2 recipe-builder">
           <div class="split">
             <div>
               <label>Zutaten</label>
-              <p class="muted">Produkt aus dem Katalog suchen und auswaehlen. Freitext wird hier nicht als Produkt-Mapping gespeichert.</p>
+              <p class="muted">${existingRecipe ? "Zutaten sind beim Bearbeiten derzeit nur lesbar; Metadaten-Aenderungen lassen sie unveraendert." : "Produkt aus dem Katalog suchen und auswaehlen. Freitext wird hier nicht als Produkt-Mapping gespeichert."}</p>
             </div>
-            <button type="button" class="small" data-add-ingredient>+ Zutat</button>
+            ${existingRecipe ? "" : '<button type="button" class="small" data-add-ingredient>+ Zutat</button>'}
           </div>
           <div class="recipe-ingredient-list" data-recipe-ingredients></div>
         </div>
         <div class="span-2 recipe-builder">
           <div class="split">
             <label>Schritte</label>
-            <button type="button" class="small" data-add-step>+ Schritt</button>
+            ${existingRecipe ? "" : '<button type="button" class="small" data-add-step>+ Schritt</button>'}
           </div>
           <div class="recipe-step-list" data-recipe-steps></div>
         </div>
@@ -747,26 +766,31 @@ function openRecipeDrawer(recipe = {}) {
     let productOptions = [];
 
     const renderRecipeBuilder = () => {
-      drawer.querySelector("[data-recipe-ingredients]").innerHTML = ingredientState.map((item, index) => renderRecipeIngredientRow(item, index)).join("");
-      drawer.querySelector("[data-recipe-steps]").innerHTML = stepState.map((item, index) => renderRecipeStepRow(item, index)).join("");
-      hydrateRecipeBuilder(drawer, ingredientState, stepState, () => {
-        renderRecipeBuilder();
-      }, () => productOptions);
+      drawer.querySelector("[data-recipe-ingredients]").innerHTML = ingredientState.length ? ingredientState.map((item, index) => existingRecipe ? renderRecipeExistingIngredientRow(item, index) : renderRecipeIngredientRow(item, index)).join("") : '<span class="muted">Keine Zutaten.</span>';
+      drawer.querySelector("[data-recipe-steps]").innerHTML = stepState.length ? stepState.map((item, index) => existingRecipe ? renderRecipeExistingStepRow(item, index) : renderRecipeStepRow(item, index)).join("") : '<span class="muted">Keine Schritte.</span>';
+      if (!existingRecipe) {
+        hydrateRecipeBuilder(drawer, ingredientState, stepState, () => {
+          renderRecipeBuilder();
+        }, () => productOptions);
+      }
     };
 
-    loadRecipeProductOptions().then((products) => {
-      productOptions = products;
-      renderRecipeBuilder();
-    }).catch((error) => {
-      productOptions = [];
-      toast(`Produkte konnten nicht geladen werden: ${error.message}`, "danger");
-      renderRecipeBuilder();
-    });
+    if (!existingRecipe) {
+      loadRecipeProductOptions().then((products) => {
+        productOptions = products;
+        renderRecipeBuilder();
+      }).catch((error) => {
+        productOptions = [];
+        toast(`Produkte konnten nicht geladen werden: ${error.message}`, "danger");
+        renderRecipeBuilder();
+      });
+    }
     renderRecipeBuilder();
 
     drawer.querySelector("form").addEventListener("submit", async (event) => {
       event.preventDefault();
-      const values = formValues(event.currentTarget);
+      const form = event.currentTarget;
+      const values = formValues(form);
       const errors = validateRecipeForm(values);
       const ingredients = ingredientState
         .map((item, index) => ({ ...item, position: index + 1, quantityText: String(item.quantityText || "").trim() }))
@@ -774,27 +798,35 @@ function openRecipeDrawer(recipe = {}) {
       const steps = stepState
         .map((item, index) => ({ position: index + 1, instruction: String(item.instruction || "").trim() }))
         .filter((item) => item.instruction);
-      if (!ingredients.length) {
+      if (!existingRecipe && !ingredients.length) {
         errors.ingredients = "Mindestens eine Zutat mit Produkt auswaehlen.";
       }
-      if (!steps.length) {
+      if (!existingRecipe && !steps.length) {
         errors.steps = "Mindestens einen Zubereitungsschritt eintragen.";
       }
-      if (showErrors(event.currentTarget, errors)) return;
+      if (showErrors(form, errors)) return;
       const recipePayload = {
         slug: values.slug,
         title: values.title,
         summary: values.summary || null,
         description: values.description || null,
+        imageUrl: values.imageUrl || null,
+        imageAlt: values.imageAlt || null,
         servings: Number(values.servings),
         prepTimeMinutes: numberOrNull(values.prepTimeMinutes),
         cookTimeMinutes: numberOrNull(values.cookTimeMinutes),
         totalTimeMinutes: numberOrNull(values.totalTimeMinutes),
         status: recipe.status || "DRAFT",
-        tagIds: []
+        tagIds: existingRecipe ? currentTagIds : []
       };
-      if (recipe.id) {
-        await apiPut(`${API.recipes}/${recipe.id}`, recipePayload);
+      if (existingRecipe) {
+        try {
+          await apiPut(`${API.recipes}/${recipe.id}`, recipePayload);
+        } catch (error) {
+          showErrors(form, { save: error.message });
+          toast(`Rezept konnte nicht gespeichert werden: ${error.message}`, "danger");
+          return;
+        }
       } else {
         const savedRecipe = await apiPost(API.recipes, {
           recipe: recipePayload,
@@ -814,6 +846,14 @@ function openRecipeDrawer(recipe = {}) {
       renderRecipes();
     });
   });
+}
+
+function renderRecipeExistingIngredientRow(item, index) {
+  return `<div class="recipe-ingredient-row"><div class="recipe-row-number">${index + 1}</div><div><strong>${escapeHtml(item.displayName || "Zutat")}</strong><br><span class="muted">${escapeHtml(item.quantityText || "Menge nicht angegeben")}</span></div></div>`;
+}
+
+function renderRecipeExistingStepRow(item, index) {
+  return `<div class="recipe-step-row"><div class="recipe-row-number">${index + 1}</div><div>${escapeHtml(item.instruction)}</div></div>`;
 }
 
 function renderRecipeIngredientRow(item, index) {
