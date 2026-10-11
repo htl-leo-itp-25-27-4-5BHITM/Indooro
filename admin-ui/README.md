@@ -11,6 +11,11 @@ npm run typecheck
 npm run lint
 npm test
 npm run build
+npm run package:candidate
+npm run verify:candidate
+npm run test:browser
 ```
 
-`dist/` stays local to this workspace for now. The API client is in `src/api/client.ts`; it accepts only same-origin `/api/*` paths and sends session cookies with `credentials: "same-origin"`.
+`dist/` stays local to this workspace. `package:candidate` copies the build only to Quarkus resources at `admin/next/`, including a static entry for `/admin/next/stores/detail/`. The command never replaces the current `/admin/` pages. `test:browser` uses a file-only static server to verify direct navigation and refresh; Quarkus packaging and OIDC behavior still require a running-stack check before OpenSpec task 2.2 can be closed.
+
+The API client is in `src/api/client.ts`; it accepts only same-origin `/api/*` paths and sends session cookies with `credentials: "same-origin"`.
