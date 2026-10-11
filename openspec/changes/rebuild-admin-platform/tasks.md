@@ -37,7 +37,7 @@
 - [ ] 4.3 Implement editor workspace, element library/list, toolbar modes, canvas zoom/pan/grid/snap, inspector, status, and unsaved-change warning.
 - [ ] 4.4 Implement store-context beacon selection and duplicate/unassigned placement feedback; keep legacy/global mode visibly distinct and protected.
 - [ ] 4.5 Implement element-linked validation for bounds, overlap, entrance, beacon, shelf metadata, and routing readiness with blocking versus warning outcomes.
-- [ ] 4.6 Verify first-draft behavior in `StoreLayoutAdminService`; make an inactive first version possible without changing the public no-active-layout response, if runtime evidence confirms the gap.
+- [x] 4.6 Verify first-draft behavior in `StoreLayoutAdminService`; make an inactive first version possible without changing the public no-active-layout response, if runtime evidence confirms the gap.
 - [ ] 4.7 Implement separate draft save, publish/activate confirmation, version history, and mobile preview; preserve layout JSON fields and one-active-version invariant.
 - [ ] 4.8 Coordinate concurrent layout save/activate tests and row-locking implementation with `optimize-backend-data-access` before marking publication conflict-safe.
 - [ ] 4.9 Add editor unit, interaction, persistence, and public mobile compatibility tests for store and legacy modes.

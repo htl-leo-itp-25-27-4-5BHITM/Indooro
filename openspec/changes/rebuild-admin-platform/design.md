@@ -48,6 +48,8 @@ The editor uses a normalized in-memory layout model plus pure command functions 
 
 Validation returns element-linked blocking errors and warnings. Save creates an inactive draft; publish/activate is a separate confirmed action that checks validation and updates one active version. Current `StoreLayoutAdminService.saveLayoutVersion` auto-activates the first version even when `activate=false`. Change that behavior only with a regression test of first-draft, fallback, publication, and existing mobile reads. `optimize-backend-data-access` owns row locking; the rebuild owns the workflow semantics. Schema migration is not expected for baseline draft/publish because `LayoutVersionStatus.DRAFT` and activation endpoints already exist; verify against schema and actual runtime before ruling it out.
 
+Implementation decision (2026-10-11): explicit `activate=false` saves a first DRAFT. `activate=true` activates. Omitted or `null` retains historical first-save activation for existing API clients. The reviewed shared OpenAPI description records this compatibility behavior; `establish-shared-api-contract` still owns global schema export and type generation. The no-active anonymous mobile fallback is unchanged and covered by a service regression test.
+
 Alternative: maintain editor state directly in DOM/canvas objects. Rejected because it makes undo, validation, autosave state, and fixture testing fragile. Undo history is session-local unless a later change specifies persistent drafts beyond saved layout versions.
 
 ### 6. Contracts, deployment, and rollback

@@ -85,7 +85,10 @@ public class StoreLayoutAdminService {
         layoutDocumentValidator.validate(request == null ? null : request.layout());
         StoreEntity store = storeAdminService.requireStore(storeId);
         LayoutVersionEntity activeLayout = layoutVersionRepository.findActiveByStoreId(storeId).orElse(null);
-        boolean shouldActivate = Boolean.TRUE.equals(request.activate()) || activeLayout == null;
+        // An explicit false is a draft even for a new store. Omitted/null retains the
+        // historical first-save behavior for existing API clients.
+        boolean shouldActivate = Boolean.TRUE.equals(request.activate())
+                || request.activate() == null && activeLayout == null;
 
         if (shouldActivate && activeLayout != null) {
             activeLayout.status = LayoutVersionStatus.ARCHIVED;

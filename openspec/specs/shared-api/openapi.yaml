@@ -1605,7 +1605,7 @@ paths:
     post:
       tags: [store-layouts]
       operationId: saveStoreLayoutVersion
-      summary: Save a new version; activates it when requested or when no active version exists.
+      summary: Save a new version. Explicit activate=false keeps a draft; true activates it. Omitted or null activates only when no active version exists for legacy clients.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin|region-manager|store-manager
       x-indooro-consumers: [admin-ui]
@@ -2663,7 +2663,9 @@ components:
       properties:
         layoutName: { type: [string, "null"], maxLength: 150 }
         changeNote: { type: [string, "null"], maxLength: 2000 }
-        activate: { type: [boolean, "null"] }
+        activate:
+          type: [boolean, "null"]
+          description: Explicit false saves a draft, including the first version. True activates it. Omitted or null preserves legacy first-save activation.
         layout: { $ref: "#/components/schemas/LayoutDocument" }
     StoreLayoutResponse:
       type: object
