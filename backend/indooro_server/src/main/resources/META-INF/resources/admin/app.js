@@ -9,7 +9,9 @@ import {
   escapeHtml,
   formatDate,
   includesText,
+  isActiveLayoutVersion,
   normalizeList,
+  nullableNumber,
   paginateRows,
   parseImportText,
   recipeMappingProductMeta,
@@ -90,7 +92,7 @@ function renderShell() {
     </main>
     <div class="toast-region" id="toasts" aria-live="polite"></div>
   `;
-  root.querySelector("[data-action='logout']").addEventListener("click", () => location.href = "/logout");
+  root.querySelector("[data-action='logout']").addEventListener("click", () => location.href = "/admin/logout");
 }
 
 async function renderRoute() {
@@ -440,7 +442,7 @@ function renderRecipeList(recipes) {
           return [
             `<strong>${escapeHtml(recipe.title)}</strong><br><span class="muted mono">${escapeHtml(recipe.slug)}</span>`,
             badge(recipe.status || "DRAFT", recipe.status === "PUBLISHED" ? "success" : recipe.status === "ARCHIVED" ? "muted" : "warning"),
-            `${badge(readiness.label, readiness.status)}<br><span class="muted">${recipe.mappedIngredientCount ?? 0}/${recipe.totalIngredientCount ?? 0} Zutaten</span>`,
+            `${badge(readiness.label, readiness.status)}<br><span class="muted">${recipe.mappedIngredientCount ?? 0}/${recipe.totalIngredientCount ?? 0} Zutaten${readiness.warnings.length ? ` · ${escapeHtml(readiness.warnings.join(", "))}` : ""}</span>`,
             escapeHtml((recipe.tags || []).map((tag) => tag.name).join(", ") || "-"),
             actions([
               ["Bearbeiten", () => openRecipeDrawer(recipe)],
@@ -577,13 +579,13 @@ function openBeaconBulkDrawer() {
       const values = formValues(event.currentTarget);
       const items = values.items.split(/\r?\n/).filter(Boolean).map((line) => {
         const [beaconCode, minor] = line.split(",").map((part) => part.trim());
-        return { beaconCode, minor: Number(minor) };
+        return { beaconCode, minor: nullableNumber(minor) };
       });
-      if (!values.uuid || !items.length || items.some((item) => !item.beaconCode || Number.isNaN(item.minor))) {
+      if (!values.uuid || !items.length || items.some((item) => !item.beaconCode || item.minor == null || Number.isNaN(item.minor))) {
         toast("Bulk-Review fehlgeschlagen: UUID und gueltige Zeilen sind erforderlich.", "danger");
         return;
       }
-      await apiPost(`${API.beacons}/bulk`, { uuid: values.uuid, major: Number(values.major), items });
+      await apiPost(`${API.beacons}/bulk`, { uuid: values.uuid, major: nullableNumber(values.major), items });
       closeDrawer();
       toast(`${items.length} Beacon(s) angelegt.`);
       renderBeacons();
@@ -617,7 +619,7 @@ function openProductDrawer(product = {}) {
         ${field("id", "Produkt-ID", product.id ?? "", "number", "", "101")}
         ${field("name", "Name", product.name || "", "text", "", "Apfel")}
         ${field("price", "Preis", product.price ?? "", "number", "0.01", "1.99")}
-        ${field("layoutCode", "Layout-Code", product.layoutCode || "", "text", "", "A-01")}
+        ${field("layoutCode", "Layout-Code", product.layoutCode || "", "text", "", "310/1/1/1")}
         ${field("storeId", "Store-ID optional", product.storeId || "", "text", "", "ad61389a-7486-48fa-afa2-9b5e4132f6a8")}
         ${field("storeCode", "Store-Code optional", product.storeCode || "", "text", "", "SPAR-Leonding-001")}
       </div>
@@ -671,7 +673,7 @@ function openImportDrawer(kind) {
   const title = kind === "category" ? "Kategorie-Import" : "Produkt-Import";
   openDrawer(title, `
     <form class="stack">
-      ${textarea("payload", "JSON Array oder NDJSON", "", kind === "category" ? '[{"categoryCode":310,"categoryName":"Obst & Gemüse"}]' : '[{"id":101,"name":"Apfel","price":1.99,"layoutCode":"A-01","storeCode":"SPAR-Leonding-001"}]')}
+      ${textarea("payload", "JSON Array oder NDJSON", "", kind === "category" ? '[{"categoryCode":310,"categoryName":"Obst & Gemüse"}]' : '[{"id":101,"name":"Apfel","price":1.99,"layoutCode":"310/1/1/1","storeCode":"SPAR-Leonding-001"}]')}
       <div class="notice">Schritt 1 Parse, Schritt 2 Review, Schritt 3 Commit. Der Commit nutzt nur vorhandene Backend-Endpunkte.</div>
       <div class="toolbar"><button class="primary">Parsen und committen</button></div>
     </form>
@@ -1394,7 +1396,7 @@ function renderBeaconMiniList(beacons) {
 
 function renderLayoutList(layouts, storeId) {
   if (!layouts.length) return empty("Keine Layout-Versionen.", "Oeffne den Editor und speichere eine erste Version.");
-  return `<div class="stack">${layouts.map((layout) => `<div class="split"><span>Version ${escapeHtml(layout.versionNo || layout.layoutName || layout.layoutId)}</span><span>${badge(layout.active ? "Aktiv" : "Version", layout.active ? "success" : "muted")} <a class="button small" href="/admin/editor/?storeId=${storeId}&layoutId=${layout.layoutId || layout.id}">Oeffnen</a></span></div>`).join("")}</div>`;
+  return `<div class="stack">${layouts.map((layout) => `<div class="split"><span>Version ${escapeHtml(layout.versionNo || layout.layoutName || layout.layoutId)}</span><span>${badge(isActiveLayoutVersion(layout) ? "Aktiv" : "Version", isActiveLayoutVersion(layout) ? "success" : "muted")} <a class="button small" href="/admin/editor/?storeId=${storeId}&layoutId=${layout.layoutId || layout.id}">Oeffnen</a></span></div>`).join("")}</div>`;
 }
 
 function rowsFromText(text) {

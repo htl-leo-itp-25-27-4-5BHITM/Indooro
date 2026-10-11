@@ -114,8 +114,9 @@ export function paginateRows(rows, page = 1, pageSize = 25) {
 
 export function readinessForProduct(product = {}) {
   const problems = [];
-  if (!product.layoutCode || !String(product.layoutCode).trim()) problems.push("Layout-Code fehlt");
-  if (product.layoutCode && !/^[A-Za-z0-9_.:-]{2,80}$/.test(product.layoutCode)) problems.push("Layout-Code ist unklar");
+  const layoutCode = String(product.layoutCode ?? "").trim();
+  if (!layoutCode) problems.push("Layout-Code fehlt");
+  else if (!/^\d{1,4}\/\d{1,3}\/\d{1,2}\/\d{1,2}$/.test(layoutCode)) problems.push("Layout-Code ist unklar");
   const assignedToStore = Boolean(product.storeId || product.storeCode);
   const blockingProblems = problems.filter((problem) => problem !== "Store-Kontext fehlt");
   return {
@@ -194,7 +195,7 @@ export function recipeReadiness(recipe = {}) {
   const warnings = [];
   if (!total) warnings.push("Keine Zutaten");
   if (mapped < total) warnings.push(`${total - mapped} Mapping offen`);
-  if (!recipe.steps?.length && recipe.stepCount === 0) warnings.push("Keine Schritte");
+  if (recipe.stepCount === 0 || (Array.isArray(recipe.steps) && recipe.steps.length === 0)) warnings.push("Keine Schritte");
   return {
     status: warnings.length ? "warning" : "ready",
     label: warnings.length ? "Nicht publikationsbereit" : "Publikationsbereit",
@@ -236,11 +237,19 @@ export function buildProductPayload(values = {}) {
   return {
     id: Number(values.id),
     name: String(values.name ?? "").trim(),
-    price: Number(values.price),
+    price: nullableNumber(values.price),
     layoutCode: String(values.layoutCode ?? "").trim(),
     storeId: values.storeId?.trim() || null,
     storeCode: values.storeCode?.trim() || null
   };
+}
+
+export function nullableNumber(value) {
+  return value === "" || value == null ? null : Number(value);
+}
+
+export function isActiveLayoutVersion(layout = {}) {
+  return layout.status === "ACTIVE";
 }
 
 export function buildStorePayload(values = {}) {
