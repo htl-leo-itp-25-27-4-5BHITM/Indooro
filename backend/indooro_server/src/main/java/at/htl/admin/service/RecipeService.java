@@ -666,6 +666,7 @@ public class RecipeService {
                 recipe.prepTimeMinutes,
                 recipe.cookTimeMinutes,
                 recipe.totalTimeMinutes,
+                recipe.steps.size(),
                 recipe.status.name(),
                 recipe.publishedAt,
                 (int) mapped,

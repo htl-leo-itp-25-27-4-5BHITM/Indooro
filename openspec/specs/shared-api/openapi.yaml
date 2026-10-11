@@ -2225,6 +2225,7 @@ components:
         prepTimeMinutes: { type: [integer, "null"] }
         cookTimeMinutes: { type: [integer, "null"] }
         totalTimeMinutes: { type: [integer, "null"] }
+        stepCount: { type: integer, minimum: 0 }
         status: { $ref: "#/components/schemas/RecipeStatus" }
         publishedAt: { type: [string, "null"], format: date-time }
         mappedIngredientCount: { type: integer }
