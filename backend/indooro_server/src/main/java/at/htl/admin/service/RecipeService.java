@@ -486,11 +486,11 @@ public class RecipeService {
     }
 
     private void assignTags(RecipeEntity recipe, List<UUID> tagIds) {
-        recipe.tagAssignments.clear();
-        entityManager.flush();
         if (tagIds == null) {
             return;
         }
+        recipe.tagAssignments.clear();
+        entityManager.flush();
         for (UUID tagId : tagIds.stream().filter(Objects::nonNull).distinct().toList()) {
             RecipeTagEntity tag = tagRepository.findByIdOptional(tagId)
                     .orElseThrow(() -> new NotFoundException("Rezept-Tag nicht gefunden."));

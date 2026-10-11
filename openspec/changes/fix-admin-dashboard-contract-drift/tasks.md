@@ -5,7 +5,7 @@
 
 ## 2. Backend
 
-- [ ] 2.1 Change `RecipeService.assignTags` so that `null` keeps assignments and add `RecipeServiceTest` cases for `null`, `[]`, and replacement.
+- [x] 2.1 Change `RecipeService.assignTags` so that `null` keeps assignments and add `RecipeTagAssignmentTest` cases for `null`, `[]`, and replacement.
 - [ ] 2.2 Add `stepCount` to `RecipeDtos.RecipeSummaryResponse` and the OpenAPI schema.
 - [ ] 2.3 Add `page`, `size`, and `q` to `GET /api/admin/products` with a paged OpenSearch query returning `totalElements`.
 - [ ] 2.4 Add the `hasActiveLayout` filter to `GET /api/stores` (EXISTS subquery on active layout versions).
