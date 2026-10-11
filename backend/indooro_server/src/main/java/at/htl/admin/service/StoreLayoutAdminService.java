@@ -7,6 +7,7 @@ import at.htl.admin.entity.LayoutVersionStatus;
 import at.htl.admin.entity.StoreEntity;
 import at.htl.admin.repository.BeaconAssignmentRepository;
 import at.htl.admin.repository.LayoutVersionRepository;
+import at.htl.service.LayoutDocumentValidator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -35,6 +36,9 @@ public class StoreLayoutAdminService {
 
     @Inject
     ObjectMapper objectMapper;
+
+    @Inject
+    LayoutDocumentValidator layoutDocumentValidator;
 
     @Inject
     AuditLogService auditLogService;
@@ -78,6 +82,7 @@ public class StoreLayoutAdminService {
     @Transactional
     public LayoutDtos.StoreLayoutResponse saveLayoutVersion(UUID storeId, LayoutDtos.LayoutSaveRequest request) {
         adminAccessService.requireStoreAccess(storeId);
+        layoutDocumentValidator.validate(request == null ? null : request.layout());
         StoreEntity store = storeAdminService.requireStore(storeId);
         LayoutVersionEntity activeLayout = layoutVersionRepository.findActiveByStoreId(storeId).orElse(null);
         boolean shouldActivate = Boolean.TRUE.equals(request.activate()) || activeLayout == null;

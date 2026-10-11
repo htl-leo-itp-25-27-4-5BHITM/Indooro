@@ -35,6 +35,9 @@ public class LayoutService {
     @Inject
     ObjectMapper objectMapper;
 
+    @Inject
+    LayoutDocumentValidator layoutDocumentValidator;
+
     @ConfigProperty(name = "opensearch.layout-index")
     String layoutIndexName;
 
@@ -95,6 +98,7 @@ public class LayoutService {
     }
 
     public LayoutHistoryEntry saveCurrentLayout(JsonNode layout) throws IOException {
+        layoutDocumentValidator.validate(layout);
         ensureLayoutIndex();
 
         String layoutId = UUID.randomUUID().toString();

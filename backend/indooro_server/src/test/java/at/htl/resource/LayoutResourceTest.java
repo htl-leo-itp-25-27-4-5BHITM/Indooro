@@ -107,4 +107,17 @@ class LayoutResourceTest {
         verify(adminAccessService).requireAdmin();
         verify(layoutService).saveCurrentLayout(any());
     }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void malformedJsonNeverReachesLegacyLayoutService() throws IOException {
+        given()
+                .contentType("application/json")
+                .body("{\"gridSize\":")
+                .when().post("/api/layout/current")
+                .then()
+                .statusCode(400);
+
+        verify(layoutService, never()).saveCurrentLayout(any());
+    }
 }
