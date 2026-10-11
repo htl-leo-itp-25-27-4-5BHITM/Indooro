@@ -22,17 +22,20 @@ Updated: 2026-10-11. Working branch: `codex/admin-platform-rebuild` in the isola
 | `96798a4` | Reversible editor history for draw/move/properties/duplicate/delete | Admin verify: 17 Node and 21 mocked browser tests passed. |
 | `b8420b6`, `55b7a13` | Shared layout document validation and full bounding-box check; security 4.1 | Validator/default fixture and service tests; Maven 90 tests passed at `b8420b6`, targeted boundary test passed after `55b7a13`. |
 | `350028e` | Isolated typed React/Vite admin source and API client; rebuild 2.1/2.4 | Typecheck, lint, seven tests, build, strict OpenSpec validation passed. No route cutover. |
+| `31196e0` | Recipe edit loads full detail and preserves metadata; dashboard drift 3.2 | Seeded recipe browser regression passed. |
+| `6bb27ad` | Explicit inactive first layout draft; rebuild 4.6 | Admin/mobile service tests passed. |
+| `dd22502` | Candidate frontend packaged under `/admin/next/` without replacing current routes | Candidate lint, seven unit tests, package verification, browser deep-link smoke passed. |
 
 The initial baseline before these fixes passed 11 Node tests, 12 mocked browser checks, admin asset checks, and 40 OpenSpec validations. Playwright initially lacked Chromium; it is now installed locally. These checks do not prove live database/auth integration.
 
 ## Active work and next priorities
 
-1. Finish complete recipe edit loading/payload preservation and first-draft layout semantics. Verify both with focused regressions and update only completed task boxes.
-2. Package the candidate typed frontend under protected Quarkus paths, then build route parity and role/scope tests before any cutover.
+1. Finish ingredient/step editing for recipes, with a seeded no-data-loss update test.
+2. Verify the packaged candidate through Quarkus/OIDC, then build route parity and role/scope tests before any cutover.
 3. Continue legacy write protection and security headers/CSP; verify all public and protected operation classes.
 4. Run a local stack with PostgreSQL, OpenSearch, and Keycloak to exercise store creation → beacon assignment → layout draft → publish → anonymous mobile read, plus recipe editing. Current Maven/browser suites rely heavily on mocks.
 5. Migrate one admin route at a time and independently review accessibility, responsive behavior, error recovery, and rollback.
 
-Known high-risk gaps: first draft currently autoactivates; layout version writes lack serialized numbering/activation; catalog IDs are globally keyed in OpenSearch; product import can report misleading success; editor has no complete pure command architecture or unsaved-change warning; admin lists still have paging/filter/focus problems; local production-equivalent stack and role matrix have not been verified.
+Known high-risk gaps: layout version writes lack serialized numbering/activation; catalog IDs are globally keyed in OpenSearch; product import can report misleading success; editor has no complete pure command architecture; admin lists still have paging/filter/focus problems; local production-equivalent stack and role matrix have not been verified.
 
 Before resuming: run `git status --short`, `git log -8 --oneline`, `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`, and `npm run admin:verify` from the repository root; run `sh ./mvnw test` from `backend/indooro_server` when tests are not concurrently running. Review active agent commits before updating this record. Do not mark the full rebuild complete until every OpenSpec acceptance scenario and live customer journey is verified.

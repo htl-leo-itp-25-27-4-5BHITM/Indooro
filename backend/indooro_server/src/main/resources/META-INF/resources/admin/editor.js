@@ -49,6 +49,7 @@ const cellSize = 20; // pixels per meter cell
 /* ----- Undo/Redo System ----- */
 let history = null;
 let pendingHistoryTimer = null;
+let savedStateSignature = null;
 
 function captureState() {
   return {
@@ -56,6 +57,18 @@ function captureState() {
     gridSize: { ...gridSize },
     shopName: shopNameInput.value
   };
+}
+
+function currentStateSignature() {
+  return JSON.stringify(captureState());
+}
+
+function hasUnsavedChanges() {
+  return savedStateSignature !== null && currentStateSignature() !== savedStateSignature;
+}
+
+function showUnsavedStatus() {
+  setSaveStatus(hasUnsavedChanges() ? 'Ungespeicherte Änderungen' : 'Keine ungespeicherten Änderungen');
 }
 
 function restoreState(snapshot) {
@@ -68,14 +81,17 @@ function restoreState(snapshot) {
   selectedElement = null;
   renderCanvas();
   renderProperties();
+  showUnsavedStatus();
 }
 
 function saveState() {
   const snapshot = captureState();
   history = history ? pushHistory(history, snapshot) : createHistory(snapshot);
+  if (savedStateSignature !== null) showUnsavedStatus();
 }
 
 function queueHistorySave() {
+  showUnsavedStatus();
   clearTimeout(pendingHistoryTimer);
   pendingHistoryTimer = setTimeout(() => {
     pendingHistoryTimer = null;
@@ -91,6 +107,11 @@ function flushHistorySave() {
 }
 
 window.addEventListener('pointerdown', flushHistorySave, { capture: true });
+window.addEventListener('beforeunload', (event) => {
+  if (!hasUnsavedChanges()) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
 
 function undo() {
   flushHistorySave();
@@ -367,6 +388,7 @@ function buildLayoutPayload() {
 }
 
 async function saveLayoutToServer(layoutData, activate = true) {
+  const submittedStateSignature = currentStateSignature();
   const response = await fetch(getSaveLayoutEndpoint(), {
     method: 'POST',
     credentials: 'same-origin',
@@ -398,7 +420,9 @@ async function saveLayoutToServer(layoutData, activate = true) {
 
   const savedLayout = await response.json();
   editorLayoutId = savedLayout.layoutId || editorLayoutId;
-  setSaveStatus(hasStoreContext() ? (activate ? 'Filiallayout publiziert' : 'Layout-Draft gespeichert') : 'Layout am Server gespeichert', 'success');
+  savedStateSignature = submittedStateSignature;
+  if (hasUnsavedChanges()) showUnsavedStatus();
+  else setSaveStatus(hasStoreContext() ? (activate ? 'Filiallayout publiziert' : 'Layout-Draft gespeichert') : 'Layout am Server gespeichert', 'success');
   renderValidation();
 }
 
@@ -560,8 +584,12 @@ async function initUI() {
   fileInput.onchange = importLayout;
   validateBtn.onclick = () => renderValidation(true);
   saveDraftBtn.onclick = async () => {
-    const layoutData = buildLayoutPayload();
-    await saveLayoutToServer(layoutData, false);
+    try {
+      const layoutData = buildLayoutPayload();
+      await saveLayoutToServer(layoutData, false);
+    } catch (error) {
+      setSaveStatus(error.message, 'error');
+    }
   };
   publishBtn.onclick = async () => {
     const layoutData = buildLayoutPayload();
@@ -573,7 +601,11 @@ async function initUI() {
     if (validation.warningCount && !window.confirm(`${validation.warningCount} Warnung(en) bleiben bestehen. Trotzdem publizieren?`)) {
       return;
     }
-    await saveLayoutToServer(layoutData, true);
+    try {
+      await saveLayoutToServer(layoutData, true);
+    } catch (error) {
+      setSaveStatus(error.message, 'error');
+    }
   };
   document.getElementById('newBtn').onclick = () => {
   if (confirm('Möchtest du wirklich ein neues Layout starten? Alle aktuellen Elemente gehen verloren.')) {
@@ -650,6 +682,7 @@ async function initUI() {
   await loadSavedLayout();
   setTool('select');
   saveState(); // Initial state after loading
+  savedStateSignature = currentStateSignature();
   renderCanvas();
 }
 
