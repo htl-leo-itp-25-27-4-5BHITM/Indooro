@@ -28,7 +28,7 @@ Updated: 2026-10-11. Working branch: `codex/admin-platform-rebuild` in the isola
 
 The initial baseline before these fixes passed 11 Node tests, 12 mocked browser checks, admin asset checks, and 40 OpenSpec validations. Current legacy admin checks pass 17 Node and 25 mocked browser tests. The candidate passes 9 unit and 3 browser checks, including mocked role/session states. Playwright Chromium is installed locally. These checks do not prove live database/auth integration.
 
-The local Admin smoke server now sends the planned CSP and security headers. All 25 browser tests pass with CSP enabled; the malicious-label check confirms literal rendering and no CSP console violations. Quarkus still needs the matching runtime headers.
+The local Admin smoke server and Quarkus now send the planned CSP and security headers. The unused customer Tailwind CDN script was removed; existing customer classes are defined in local CSS. All 25 browser tests pass with CSP enabled, and editor/customer malicious-label checks show literal rendering without CSP console violations. `SecurityHeadersTest` confirms Quarkus headers on root, customer, and admin pages. Production-only HSTS and the live OIDC flow remain unverified.
 
 ## Active work and next priorities
 
