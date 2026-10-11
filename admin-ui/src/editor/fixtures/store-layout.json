@@ -1,0 +1,10 @@
+{
+  "shopName": "Indooro Testfiliale",
+  "gridSize": { "width": 40, "height": 60 },
+  "elements": [
+    { "id": 1, "type": "entrance", "x": 4, "y": 0, "width": 3, "height": 1, "label": "Haupteingang" },
+    { "id": 2, "type": "shelf", "x": 9, "y": 8, "width": 4, "height": 8, "category": "310/1", "meter": 1, "label": "Obst & Gemüse", "color": "#4CAF50", "rotation": 0, "accessAngle": 90, "productPositions": ["310-42"] },
+    { "id": 3, "type": "beacon", "x": 6, "y": 6, "beaconId": "IN-001", "beaconDbId": "beacon-db-1", "identityKey": "123e4567-e89b-12d3-a456-426614174000:1:2", "uuid": "123e4567-e89b-12d3-a456-426614174000", "major": 1, "minor": 2 }
+  ],
+  "navigationMetadata": { "schema": "existing-v1", "routeNodeIds": ["entrance-main", "fruit"] }
+}

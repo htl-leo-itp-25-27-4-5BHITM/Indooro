@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { screenToWorld, worldToScreen, zoomAt } from "./geometry";
+import { fitViewport, screenToWorld, worldToScreen, zoomAt } from "./geometry";
 import { applyCommand, createEditorState, isDirty, markSaved, redo, undo, type LayoutDocument } from "./model";
 import { validateLayout } from "./validation";
 
@@ -98,4 +98,21 @@ test("zoom keeps the cursor over the same world point", () => {
   const zoomed = zoomAt(viewport, cursor, 1.4);
   assert.deepEqual(screenToWorld(cursor, zoomed), world);
   assert.deepEqual(worldToScreen(world, zoomed), cursor);
+});
+
+test("fit viewport centers the complete map with padding", () => {
+  const viewport = fitViewport({ width: 40, height: 60 }, { width: 800, height: 600 });
+  const left = worldToScreen({ x: 0, y: 0 }, viewport);
+  const right = worldToScreen({ x: 40, y: 60 }, viewport);
+  assert.ok(left.x >= 40 && left.y >= 40);
+  assert.ok(right.x <= 760 && right.y <= 560);
+  assert.equal((left.x + right.x) / 2, 400);
+  assert.equal((left.y + right.y) / 2, 300);
+});
+
+test("layer order changes without altering element data and can be undone", () => {
+  const initial = createEditorState(fixture());
+  const reordered = applyCommand(initial, { type: "reorder", id: 7, direction: "forward" });
+  assert.deepEqual(reordered.document.elements.map((element) => element.id), ["s-1", 7]);
+  assert.deepEqual(undo(reordered).document, initial.document);
 });

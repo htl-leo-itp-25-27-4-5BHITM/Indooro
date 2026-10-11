@@ -34,6 +34,7 @@ export type EditorCommand =
   | { type: "rotate"; id: ElementId; rotation: number }
   | { type: "delete"; id: ElementId }
   | { type: "duplicate"; id: ElementId; duplicateId: ElementId }
+  | { type: "reorder"; id: ElementId; direction: "forward" | "backward" }
   | { type: "patch"; id: ElementId; changes: Partial<LayoutElement> }
   | { type: "document"; changes: Partial<Pick<LayoutDocument, "shopName" | "gridSize">> };
 
@@ -139,6 +140,14 @@ export function applyCommand(state: EditorState, command: EditorCommand, snapSte
       }, before, snapStep, snapping);
       next = { ...before, elements: [...before.elements.slice(0, index + 1), copy, ...before.elements.slice(index + 1)] };
       selectedId = command.duplicateId;
+      break;
+    }
+    case "reorder": {
+      const destination = index + (command.direction === "forward" ? 1 : -1);
+      if (index < 0 || before.elements[index].locked || destination < 0 || destination >= before.elements.length) return state;
+      const elements = [...before.elements];
+      [elements[index], elements[destination]] = [elements[destination], elements[index]];
+      next = { ...before, elements };
       break;
     }
     case "patch": {

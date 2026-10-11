@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
-import { screenToWorld, zoomAt, type Point, type Viewport } from "./geometry";
+import { fitViewport, screenToWorld, zoomAt, type Point, type Viewport } from "./geometry";
+import { elementFill, shelfMetadata, shelfMetadataChanges } from "./metadata";
 import { applyCommand, createEditorState, isDirty, markSaved, newElementId, redo, selectElement, undo, type EditorCommand, type EditorState, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
 import { validateLayout, type AssignedBeacon } from "./validation";
 import "./LayoutEditor.css";
@@ -57,6 +58,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const issues = useMemo(() => validateLayout(document, assignedBeacons), [document, assignedBeacons]);
   const errors = issues.filter((issue) => issue.severity === "error").length;
   const selected = document.elements.find((element) => element.id === editor.selectedId) ?? null;
+  const selectedIndex = document.elements.findIndex((element) => element.id === editor.selectedId);
 
   useEffect(() => {
     const node = svgRef.current;
@@ -82,10 +84,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   }, []);
 
   useEffect(() => {
-    const width = Math.max(1, document.gridSize.width);
-    const height = Math.max(1, document.gridSize.height);
-    const scale = Math.max(0.2, Math.min(40, (canvasSize.width - 80) / width, (canvasSize.height - 80) / height));
-    setViewport({ scale, x: (canvasSize.width - width * scale) / 2, y: (canvasSize.height - height * scale) / 2 });
+    setViewport(fitViewport(document.gridSize, canvasSize));
     // Fit on initial size and document switch; routine edits retain the viewport.
   }, [canvasSize.width, canvasSize.height, initialDocument]);
 
@@ -116,6 +115,17 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
       } else if (event.key === "Delete" || event.key === "Backspace") {
         const id = editorRef.current.selectedId;
         if (id !== null) setEditor((current) => applyCommand(current, { type: "delete", id }));
+      } else if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
+        const id = editorRef.current.selectedId;
+        const element = editorRef.current.document.elements.find((item) => item.id === id);
+        if (element && !element.locked) {
+          event.preventDefault();
+          const step = event.shiftKey ? 10 : 1;
+          setEditor((current) => applyCommand(current, {
+            type: "move", id: element.id!, x: element.x + (event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0),
+            y: element.y + (event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0),
+          }));
+        }
       } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "d") {
         event.preventDefault();
         const id = editorRef.current.selectedId;
@@ -265,7 +275,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
         <div className="le-layers" role="list">{document.elements.length ? document.elements.map((element, index) => <button type="button" role="listitem" key={`${element.id ?? "missing"}-${index}`} aria-current={editor.selectedId === element.id} onClick={() => setEditor((current) => selectElement(current, element.id ?? null))}><span className="le-layer-index">{String(index + 1).padStart(2, "0")}</span><span>{labelFor(element)}</span>{element.locked && <span title="Gesperrt">🔒</span>}{issueFor(element.id) && <span className="le-error-dot" title="Validierungsfehler">!</span>}</button>) : <p className="le-empty">Noch keine Elemente</p>}</div>
       </aside>
       <div className="le-center">
-        <div className="le-canvas-toolbar"><span>{document.gridSize.width} × {document.gridSize.height} Rastereinheiten</span><label><input type="checkbox" checked={showGrid} onChange={(event) => setShowGrid(event.target.checked)} /> Raster</label><label><input type="checkbox" checked={snapping} onChange={(event) => setSnapping(event.target.checked)} /> Einrasten</label><button type="button" onClick={() => setEditor(undo)} disabled={!editor.past.length} title="Rückgängig">↶</button><button type="button" onClick={() => setEditor(redo)} disabled={!editor.future.length} title="Wiederholen">↷</button><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1.2))}>＋</button><span>{viewport.scale.toFixed(1)} px/E</span><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1 / 1.2))}>－</button></div>
+        <div className="le-canvas-toolbar"><span>{document.gridSize.width} × {document.gridSize.height} Rastereinheiten</span><label><input type="checkbox" checked={showGrid} onChange={(event) => setShowGrid(event.target.checked)} /> Raster</label><label><input type="checkbox" checked={snapping} onChange={(event) => setSnapping(event.target.checked)} /> Einrasten</label><button type="button" onClick={() => setEditor(undo)} disabled={!editor.past.length} title="Rückgängig">↶</button><button type="button" onClick={() => setEditor(redo)} disabled={!editor.future.length} title="Wiederholen">↷</button><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1.2))}>＋</button><span>{viewport.scale.toFixed(1)} px/E</span><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1 / 1.2))}>－</button><button type="button" onClick={() => setViewport(fitViewport(document.gridSize, canvasSize))}>Einpassen</button></div>
         <svg ref={svgRef} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} aria-label="Interaktiver Grundriss" role="img">
           <defs><pattern id="le-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#d9e2df" strokeWidth={0.045} /></pattern></defs>
           <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>
@@ -282,7 +292,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
               const cy = element.y + h / 2;
               const rotation = element.rotation || 0;
               return <g key={`${element.id ?? "missing"}-${index}`} transform={`rotate(${rotation} ${cx} ${cy})`}>
-                {point ? <g onPointerDown={(event) => onElementDown(event, element)}><circle cx={element.x} cy={element.y} r={Math.max(0.32, 8 / viewport.scale)} fill={definition?.color || "#b6635f"} stroke={active ? "#123f40" : "white"} strokeWidth={2 / viewport.scale} /><circle cx={element.x} cy={element.y} r={Math.max(0.55, 14 / viewport.scale)} fill="transparent" /></g> : <g onPointerDown={(event) => onElementDown(event, element)}><rect x={element.x} y={element.y} width={w} height={h} rx={Math.min(0.25, h / 5)} fill={definition?.color || "#7d91a0"} stroke={active ? "#123f40" : issueFor(element.id) ? "#c23b42" : "#ffffff"} strokeWidth={(active ? 3 : 1.5) / viewport.scale} /><text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={Math.min(0.7, Math.max(0.3, w / 8))} pointerEvents="none">{w >= 2 ? labelFor(element).slice(0, 16) : ""}</text></g>}
+                {point ? <g onPointerDown={(event) => onElementDown(event, element)}><circle cx={element.x} cy={element.y} r={Math.max(0.32, 8 / viewport.scale)} fill={elementFill(element, definition?.color || "#b6635f")} stroke={active ? "#123f40" : "white"} strokeWidth={2 / viewport.scale} /><circle cx={element.x} cy={element.y} r={Math.max(0.55, 14 / viewport.scale)} fill="transparent" /></g> : <g onPointerDown={(event) => onElementDown(event, element)}><rect x={element.x} y={element.y} width={w} height={h} rx={Math.min(0.25, h / 5)} fill={elementFill(element, definition?.color || "#7d91a0")} stroke={active ? "#123f40" : issueFor(element.id) ? "#c23b42" : "#ffffff"} strokeWidth={(active ? 3 : 1.5) / viewport.scale} /><text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={Math.min(0.7, Math.max(0.3, w / 8))} pointerEvents="none">{w >= 2 ? labelFor(element).slice(0, 16) : ""}</text></g>}
                 {active && !element.locked && !point && <><circle className="le-handle" cx={element.x + w} cy={element.y + h} r={7 / viewport.scale} onPointerDown={(event) => startGesture(event, { kind: "resize", id: element.id!, start: screenToWorld(localPoint(event), viewport), element })} /><line x1={cx} y1={element.y} x2={cx} y2={element.y - 18 / viewport.scale} stroke="#123f40" strokeWidth={2 / viewport.scale} pointerEvents="none" /><circle className="le-handle le-rotate" cx={cx} cy={element.y - 18 / viewport.scale} r={7 / viewport.scale} onPointerDown={(event) => { const world = screenToWorld(localPoint(event), viewport); startGesture(event, { kind: "rotate", id: element.id!, start: world, element, initialAngle: Math.atan2(world.y - cy, world.x - cx) * 180 / Math.PI }); }} /></>}
               </g>;
             })}
@@ -296,10 +306,12 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
           <div className="le-inspector-heading"><span className="le-swatch" style={{ background: TYPES.find((item) => item.type === selected.type)?.color || "#7d91a0" }} /><strong>{labelFor(selected)}</strong></div>
           <label>Bezeichnung<input type="text" maxLength={200} value={selected.label || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { label: event.target.value } })} /></label>
           <div className="le-number-grid">{(["x", "y", ...(selected.type === "beacon" ? [] : ["width", "height"]), "rotation"] as const).map((field) => <label key={field}>{({ x: "X", y: "Y", width: "Breite", height: "Höhe", rotation: "Winkel" } as Record<string, string>)[field]}<input type="number" step={field === "rotation" ? 1 : snapping ? 1 : 0.1} value={Number(selected[field] ?? 0)} disabled={selected.locked} onChange={(event) => changeNumber(field as "x" | "y" | "width" | "height" | "rotation", event.target.value)} /></label>)}</div>
-          {(selected.type === "shelf" || selected.type === "poi") && <label>Kategorie<input type="text" maxLength={200} value={selected.category || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { category: event.target.value } })} /></label>}
+          {selected.type === "shelf" && <div className="le-number-grid"><label>Kategoriecode<input type="text" maxLength={180} value={shelfMetadata(selected).code} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { code: event.target.value }) })} /></label><label>Abschnitt<input type="number" min={1} step={1} value={shelfMetadata(selected).section ?? ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { section: event.target.value === "" ? null : number(event.target.value, shelfMetadata(selected).section || 1) }) })} /></label></div>}
+          {selected.type === "poi" && <label>Kategorie<input type="text" maxLength={200} value={selected.category || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { category: event.target.value } })} /></label>}
           {selected.type === "beacon" && mode === "store" && <label>Zugeordneter Beacon<select value={selected.beaconId || ""} disabled={selected.locked} onChange={(event) => { const beacon = assignedBeacons.find((item) => item.beaconCode === event.target.value); dispatch({ type: "patch", id: selected.id!, changes: { beaconId: beacon?.beaconCode || "", beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } }); }}><option value="">Nicht zugeordnet</option>{assignedBeacons.map((item) => <option key={item.beaconCode || item.id} value={item.beaconCode}>{item.beaconCode || item.id}</option>)}</select></label>}
           {selected.type === "beacon" && mode === "legacy" && <label>Beacon-ID<input type="text" maxLength={200} value={selected.beaconId || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { beaconId: event.target.value } })} /></label>}
           <label className="le-inline"><input type="checkbox" checked={!!selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { locked: event.target.checked } })} /> Gesperrt</label>
+          <div className="le-inspector-actions"><button type="button" disabled={selected.locked || selectedIndex <= 0} onClick={() => dispatch({ type: "reorder", id: selected.id!, direction: "backward" })}>Nach hinten</button><button type="button" disabled={selected.locked || selectedIndex >= document.elements.length - 1} onClick={() => dispatch({ type: "reorder", id: selected.id!, direction: "forward" })}>Nach vorne</button></div>
           <div className="le-inspector-actions"><button type="button" disabled={selected.locked} onClick={() => dispatch({ type: "duplicate", id: selected.id!, duplicateId: newElementId(document) })}>Duplizieren</button><button type="button" disabled={selected.locked} onClick={() => dispatch({ type: "delete", id: selected.id! })}>Löschen</button></div>
         </div> : <div className="le-inspector"><p className="le-empty">Element auswählen, um Position und Eigenschaften zu bearbeiten.</p><label>Filialname<input type="text" maxLength={200} value={document.shopName} onChange={(event) => dispatch({ type: "document", changes: { shopName: event.target.value } })} /></label><div className="le-number-grid"><label>Breite<input type="number" min={1} max={1000} value={document.gridSize.width} onChange={(event) => dispatch({ type: "document", changes: { gridSize: { width: number(event.target.value, document.gridSize.width), height: document.gridSize.height } } })} /></label><label>Höhe<input type="number" min={1} max={1000} value={document.gridSize.height} onChange={(event) => dispatch({ type: "document", changes: { gridSize: { width: document.gridSize.width, height: number(event.target.value, document.gridSize.height) } } })} /></label></div></div>}
         <div className="le-validation"><h2>Prüfung <span>{errors ? `${errors} Fehler` : "Bereit"}</span></h2><p>{issues.length ? `${errors} Fehler · ${issues.length - errors} Hinweise` : "Keine Probleme gefunden."}</p><ul>{issues.map((issue, index) => <li key={`${issue.code}-${String(issue.elementId)}-${index}`} className={`le-${issue.severity}`}><button type="button" onClick={() => issue.elementId !== null && setEditor((current) => selectElement(current, issue.elementId))} disabled={issue.elementId === null}><span>{issue.severity === "error" ? "!" : "i"}</span>{issue.message}</button></li>)}</ul></div>

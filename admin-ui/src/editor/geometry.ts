@@ -17,6 +17,13 @@ export function zoomAt(viewport: Viewport, cursor: Point, factor: number): Viewp
   return { x: cursor.x - world.x * scale, y: cursor.y - world.y * scale, scale };
 }
 
+export function fitViewport(content: { width: number; height: number }, surface: { width: number; height: number }, padding = 40): Viewport {
+  const width = Math.max(1, content.width);
+  const height = Math.max(1, content.height);
+  const scale = Math.max(0.2, Math.min(40, (surface.width - padding * 2) / width, (surface.height - padding * 2) / height));
+  return { scale, x: (surface.width - width * scale) / 2, y: (surface.height - height * scale) / 2 };
+}
+
 /** Axis aligned bounds of a shape rotated around its centre, in layout units. */
 export function elementBounds(element: LayoutElement): { left: number; top: number; right: number; bottom: number } {
   if (element.type === "beacon") return { left: element.x, top: element.y, right: element.x, bottom: element.y };
