@@ -15,7 +15,7 @@
 
 - [x] 3.1 Change the logout target to `/admin/logout`.
 - [x] 3.2 Load the recipe detail before editing; pre-fill image, description, tags, ingredients, and steps; send all fields and current `tagIds`.
-- [ ] 3.3 Implement the ingredient/step diff with temporary positions and reload after saving.
+- [x] 3.3 Implement the ingredient/step diff with temporary positions and reload after saving.
 - [ ] 3.4 Introduce per-route query state and server-side paging/search/filter for Stores, Rezepte, and Produkte; switch the recipe product picker to paged search.
 - [ ] 3.5 Request categories with `size=500` and show a limit notice when 500 are returned.
 - [x] 3.6 Fix `readinessForProduct` to the documented format; change placeholders to `310/1/1/1`; send `null` for empty numeric fields.
