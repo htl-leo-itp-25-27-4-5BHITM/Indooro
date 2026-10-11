@@ -6,6 +6,9 @@ import { StoresPage } from "./StoresPage";
 import { EditorRoute } from "./EditorRoute";
 import { StoreDetailPage } from "./StoreDetailPage";
 import { RegionsPage } from "./RegionsPage";
+import { StoreCreatePage } from "./StoreCreatePage";
+import { BeaconsPage } from "./BeaconsPage";
+import { RecipesPage } from "./RecipesPage";
 import { candidateAccess, visibleRoutes, type CurrentUser } from "./routes";
 import "./style.css";
 
@@ -52,10 +55,14 @@ function AdminCandidate() {
           {user && access === "missing" && <section role="alert" className="notice"><h2>Seite nicht gefunden</h2><p>Dieser Kandidatenpfad ist nicht eingerichtet.</p></section>}
           {user && access === "allowed" && (window.location.pathname.includes("/editor")
             ? <EditorRoute api={api} />
+            : window.location.pathname.includes("/stores/new")
+            ? <StoreCreatePage api={api} user={user} />
             : window.location.pathname.includes("/stores/detail")
             ? <StoreDetailPage api={api} user={user} />
-            : window.location.pathname.includes("/stores") ? <StoresPage api={api} />
+            : window.location.pathname.includes("/stores") ? <StoresPage api={api} user={user} />
             : window.location.pathname.includes("/regions") ? <RegionsPage api={api} user={user} />
+            : window.location.pathname.includes("/beacons") ? <BeaconsPage api={api} user={user} />
+            : window.location.pathname.includes("/recipes") ? <RecipesPage api={api} />
             : <Dashboard api={api} user={user} />)}
         </main>
       </div>

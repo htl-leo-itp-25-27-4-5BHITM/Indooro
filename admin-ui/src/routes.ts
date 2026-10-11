@@ -34,11 +34,20 @@ export function candidateAccess(pathname: string, role: string, requestedStoreId
     if (role === "store-manager" && (!requestedStoreId || requestedStoreId !== scopeStoreId)) return "forbidden";
     return ["admin", "region-manager", "store-manager"].includes(role) ? "allowed" : "forbidden";
   }
+  if (pathname === "/admin/next/stores/new/" || pathname === "/admin/next/stores/new") {
+    return role === "admin" || role === "region-manager" ? "allowed" : "forbidden";
+  }
   if (pathname === "/admin/next/stores/" || pathname === "/admin/next/stores") {
     return ["admin", "region-manager", "store-manager"].includes(role) ? "allowed" : "forbidden";
   }
   if (pathname === "/admin/next/regions/" || pathname === "/admin/next/regions") {
     return role === "admin" || role === "region-manager" ? "allowed" : "forbidden";
+  }
+  if (pathname === "/admin/next/beacons/" || pathname === "/admin/next/beacons") {
+    return ["admin", "region-manager", "store-manager"].includes(role) ? "allowed" : "forbidden";
+  }
+  if (pathname === "/admin/next/recipes/" || pathname === "/admin/next/recipes") {
+    return role === "admin" ? "allowed" : "forbidden";
   }
   if (pathname === "/admin/next/editor/" || pathname === "/admin/next/editor") {
     if (role === "store-manager" && (!requestedStoreId || requestedStoreId !== scopeStoreId)) return "forbidden";
