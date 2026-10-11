@@ -6,6 +6,19 @@ let categoriesMap = {};
 let zoom = 1;
 let highlightedElementId = null;
 
+function appendTextElement(parent, className, value) {
+  const element = document.createElement('div');
+  element.className = className;
+  element.textContent = String(value ?? '');
+  parent.appendChild(element);
+  return element;
+}
+
+function mapElementById(id) {
+  return [...document.querySelectorAll('[data-element-id]')]
+    .find(element => element.dataset.elementId === String(id));
+}
+
 // Load categories from JSON
 async function loadCategories() {
   try {
@@ -121,10 +134,8 @@ function renderBeaconElement(el, canvas) {
 
   const content = document.createElement('div');
   content.className = 'map-element-content';
-  content.innerHTML = `
-    <div class="beacon-marker">📡</div>
-    <div class="beacon-id">${el.beaconId || ''}</div>
-  `;
+  appendTextElement(content, 'beacon-marker', '📡');
+  appendTextElement(content, 'beacon-id', el.beaconId || '');
 
   div.appendChild(content);
   canvas.appendChild(div);
@@ -153,14 +164,8 @@ function renderRegularElement(el, canvas) {
   const icon = catInfo ? catInfo.emoji : '📦';
   const isSmall = el.width < 3 || el.height < 2;
 
-  if (isSmall) {
-    content.innerHTML = `<div class="element-icon">${icon}</div>`;
-  } else {
-    content.innerHTML = `
-      <div class="element-icon">${icon}</div>
-      <div class="element-label">${el.label || 'Leer'}</div>
-    `;
-  }
+  appendTextElement(content, 'element-icon', icon);
+  if (!isSmall) appendTextElement(content, 'element-label', el.label || 'Leer');
 
   div.appendChild(content);
   canvas.appendChild(div);
@@ -214,7 +219,7 @@ function renderSearchResults(products) {
 
   const header = document.createElement('div');
   header.className = 'result-header';
-  header.innerHTML = `🔍 ${products.length} Produkt${products.length !== 1 ? 'e' : ''} gefunden`;
+  header.textContent = `🔍 ${products.length} Produkt${products.length !== 1 ? 'e' : ''} gefunden`;
   panel.appendChild(header);
 
   const resultsList = document.createElement('div');
@@ -231,11 +236,9 @@ function renderSearchResults(products) {
 
     const location = `${catInfo.emoji} ${catInfo.name}`;
 
-    item.innerHTML = `
-      <div class="product-name">${product.name}</div>
-      <div class="product-price">€${Number(product.price).toFixed(2)}</div>
-      <div class="product-location">${location}</div>
-    `;
+    appendTextElement(item, 'product-name', product.name);
+    appendTextElement(item, 'product-price', `€${Number(product.price).toFixed(2)}`);
+    appendTextElement(item, 'product-location', location);
 
     item.addEventListener('click', () => highlightProduct(product));
 
@@ -263,7 +266,7 @@ function highlightProduct(product) {
     return;
   }
 
-  const mapElement = document.querySelector(`[data-element-id="${element.id}"]`);
+  const mapElement = mapElementById(element.id);
   if (mapElement) {
     mapElement.classList.add('highlighted');
     highlightedElementId = element.id;
@@ -277,8 +280,8 @@ function highlightProduct(product) {
 }
 
 function clearHighlight() {
-  if (highlightedElementId) {
-    const prev = document.querySelector(`[data-element-id="${highlightedElementId}"]`);
+  if (highlightedElementId != null) {
+    const prev = mapElementById(highlightedElementId);
     if (prev) prev.classList.remove('highlighted');
     highlightedElementId = null;
   }
@@ -349,11 +352,15 @@ function setupSearch() {
 }
 
 function showError(message) {
-  document.getElementById('search-results-panel').innerHTML = `
-    <div class="empty-message" style="color: #991b1b; background: #fee2e2; padding: 1.5rem; border-radius: 8px;">
-      ⚠️ ${message}
-    </div>
-  `;
+  const panel = document.getElementById('search-results-panel');
+  const error = document.createElement('div');
+  error.className = 'empty-message';
+  error.textContent = `⚠️ ${message}`;
+  error.style.color = '#991b1b';
+  error.style.background = '#fee2e2';
+  error.style.padding = '1.5rem';
+  error.style.borderRadius = '8px';
+  panel.replaceChildren(error);
 }
 
 // Initialize app
