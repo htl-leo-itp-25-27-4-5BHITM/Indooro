@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type WheelEvent as ReactWheelEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { screenToWorld, zoomAt, type Point, type Viewport } from "./geometry";
 import { applyCommand, createEditorState, isDirty, markSaved, newElementId, redo, selectElement, undo, type EditorCommand, type EditorState, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
 import { validateLayout, type AssignedBeacon } from "./validation";
@@ -70,6 +70,18 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   }, []);
 
   useEffect(() => {
+    const node = svgRef.current;
+    if (!node) return;
+    const wheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const rect = node.getBoundingClientRect();
+      setViewport((current) => zoomAt(current, { x: event.clientX - rect.left, y: event.clientY - rect.top }, Math.exp(-event.deltaY * 0.0015)));
+    };
+    node.addEventListener("wheel", wheel, { passive: false });
+    return () => node.removeEventListener("wheel", wheel);
+  }, []);
+
+  useEffect(() => {
     const width = Math.max(1, document.gridSize.width);
     const height = Math.max(1, document.gridSize.height);
     const scale = Math.max(0.2, Math.min(40, (canvasSize.width - 80) / width, (canvasSize.height - 80) / height));
@@ -121,7 +133,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
 
   const issueFor = (id: ElementId | undefined) => issues.some((issue) => issue.severity === "error" && issue.elementId === id);
   const dispatch = (command: EditorCommand) => { setEditor((current) => applyCommand(current, command, 1, snapping)); setMessage(null); };
-  const localPoint = (event: ReactPointerEvent<SVGElement> | ReactWheelEvent<SVGSVGElement>): Point => {
+  const localPoint = (event: ReactPointerEvent<SVGElement>): Point => {
     const rect = svgRef.current!.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   };
@@ -204,11 +216,6 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
     if (svgRef.current?.hasPointerCapture(event.pointerId)) svgRef.current.releasePointerCapture(event.pointerId);
   };
 
-  const onWheel = (event: ReactWheelEvent<SVGSVGElement>) => {
-    event.preventDefault();
-    setViewport((current) => zoomAt(current, localPoint(event), Math.exp(-event.deltaY * 0.0015)));
-  };
-
   const saveDraft = async () => {
     if (!onSaveDraft || working) return;
     const saved = structuredClone(editorRef.current.document);
@@ -259,7 +266,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
       </aside>
       <div className="le-center">
         <div className="le-canvas-toolbar"><span>{document.gridSize.width} × {document.gridSize.height} Rastereinheiten</span><label><input type="checkbox" checked={showGrid} onChange={(event) => setShowGrid(event.target.checked)} /> Raster</label><label><input type="checkbox" checked={snapping} onChange={(event) => setSnapping(event.target.checked)} /> Einrasten</label><button type="button" onClick={() => setEditor(undo)} disabled={!editor.past.length} title="Rückgängig">↶</button><button type="button" onClick={() => setEditor(redo)} disabled={!editor.future.length} title="Wiederholen">↷</button><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1.2))}>＋</button><span>{viewport.scale.toFixed(1)} px/E</span><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1 / 1.2))}>－</button></div>
-        <svg ref={svgRef} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} onWheel={onWheel} aria-label="Interaktiver Grundriss" role="img">
+        <svg ref={svgRef} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} aria-label="Interaktiver Grundriss" role="img">
           <defs><pattern id="le-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#d9e2df" strokeWidth={0.045} /></pattern></defs>
           <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>
             <rect x={0} y={0} width={document.gridSize.width} height={document.gridSize.height} fill="#fff" stroke="#aabfba" strokeWidth={1 / viewport.scale} />
