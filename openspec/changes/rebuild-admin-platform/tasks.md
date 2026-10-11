@@ -9,10 +9,10 @@
 
 ## 2. Frontend Build And Security Foundation
 
-- [ ] 2.1 Create a pinned React/Vite/TypeScript admin source workspace with typecheck, lint, unit-test, and build scripts.
+- [x] 2.1 Create a pinned React/Vite/TypeScript admin source workspace with typecheck, lint, unit-test, and build scripts.
 - [ ] 2.2 Configure reproducible build output inside Quarkus static resources and verify packaged `/admin/*` direct links and refreshes.
 - [ ] 2.3 Implement a route cutover map that keeps existing static pages active until their parity gate passes and permits route-level rollback.
-- [ ] 2.4 Implement a typed same-origin API client with one response-body read, 401/403 handling, validation/conflict messages, cancellation, and request-state tests.
+- [x] 2.4 Implement a typed same-origin API client with one response-body read, 401/403 handling, validation/conflict messages, cancellation, and request-state tests.
 - [ ] 2.5 Implement `/api/admin/me` bootstrap, role/scope-aware navigation, logout to `/admin/logout`, and direct-link access-denied states.
 - [ ] 2.6 Add design tokens and accessible shell, form, table, dialog, notification, loading, empty, and error components with keyboard and contrast checks.
 - [ ] 2.7 Verify the new frontend has no runtime CDN dependency, uses safe text rendering, and runs under the CSP specified by `harden-platform-security-baseline`.
