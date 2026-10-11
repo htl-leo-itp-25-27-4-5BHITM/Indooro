@@ -1,6 +1,11 @@
+## RENAMED Requirements
+
+- FROM: `### Requirement: Admin dashboard is a build-free static module application`
+- TO: `### Requirement: Admin frontend supports a staged typed rebuild`
+
 ## MODIFIED Requirements
 
-### Requirement: Admin dashboard is a build-free static module application
+### Requirement: Admin frontend supports a staged typed rebuild
 The Admin Platform SHALL remain available from Quarkus-protected `/admin/*` pages during migration. The replacement SHALL use typed, page-specific modules built into static assets that Quarkus serves without a frontend runtime server in production. A route SHALL switch from the existing static ES-module application to the replacement only after its behavior, direct-link, role, scope, and accessibility checks pass. Until then, existing page entries and their DOM-free `core.js` and `editor-core.js` tests SHALL remain usable.
 
 #### Scenario: A page entry is opened
