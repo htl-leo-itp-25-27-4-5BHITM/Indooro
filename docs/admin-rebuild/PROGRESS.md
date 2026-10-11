@@ -25,6 +25,10 @@ Updated: 2026-10-11. Working branch: `codex/admin-platform-rebuild` in the isola
 | `31196e0` | Recipe edit loads full detail and preserves metadata; dashboard drift 3.2 | Seeded recipe browser regression passed. |
 | `6bb27ad` | Explicit inactive first layout draft; rebuild 4.6 | Admin/mobile service tests passed. |
 | `dd22502` | Candidate frontend packaged under `/admin/next/` without replacing current routes | Candidate lint, seven unit tests, package verification, browser deep-link smoke passed. |
+| `6aea5b8` | Editor unsaved-change warning and save-failure feedback | Legacy admin verify: 17 Node and 25 browser checks passed. |
+| `b4fa9e2` | Candidate identity bootstrap, staff navigation, scope denial, and logout | Candidate lint, typecheck, nine unit and three browser checks passed. |
+| `25eab1c` | Admin smoke server sends planned CSP and security headers | Legacy admin verify passed with CSP enabled. |
+| `58c29a8` | Quarkus security headers and removal of unused customer CDN script | `SecurityHeadersTest` and full 95-test Maven suite passed; 25 browser checks passed with CSP. |
 
 The initial baseline before these fixes passed 11 Node tests, 12 mocked browser checks, admin asset checks, and 40 OpenSpec validations. Current legacy admin checks pass 17 Node and 25 mocked browser tests. The candidate passes 9 unit and 3 browser checks, including mocked role/session states. Playwright Chromium is installed locally. These checks do not prove live database/auth integration.
 
