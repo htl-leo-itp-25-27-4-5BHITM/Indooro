@@ -67,6 +67,16 @@ export function labelForElement(element = {}) {
   return element.label || element.name || element.type || "Element";
 }
 
+export function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+
 export function snapValue(value, gridSize = 10, enabled = true) {
   if (!enabled) return Number(value) || 0;
   const grid = Math.max(1, Number(gridSize) || 10);

@@ -1,4 +1,4 @@
-import { validateLayoutDocument } from './editor-core.js';
+import { escapeHtml, validateLayoutDocument } from './editor-core.js';
 
 /* ----- Data (aus React übernommen) ----- */
 let PRODUCT_CATEGORIES = []; // Will be loaded from JSON
@@ -276,15 +276,15 @@ function renderStoreContext() {
   const freeCount = assignedBeacons.filter(beacon => !usedCodes.has(beacon.beaconCode)).length;
 
   storeContextBox.innerHTML = `
-    <strong>${storeContext?.store?.name || 'Filialeditor'}</strong><br>
-    Store-Code: ${storeContext?.store?.storeCode || '-'} · Zugewiesene Beacons: ${assignedBeacons.length} · Noch frei im Layout: ${freeCount}
+    <strong>${escapeHtml(storeContext?.store?.name || 'Filialeditor')}</strong><br>
+    Store-Code: ${escapeHtml(storeContext?.store?.storeCode || '-')} · Zugewiesene Beacons: ${assignedBeacons.length} · Noch frei im Layout: ${freeCount}
   `;
 
   assignedBeaconsList.innerHTML = assignedBeacons.length
     ? assignedBeacons.map(beacon => `
         <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-          <div class="font-semibold">${beacon.beaconCode}</div>
-          <div class="text-xs text-gray-500">${beacon.identityKey}</div>
+          <div class="font-semibold">${escapeHtml(beacon.beaconCode)}</div>
+          <div class="text-xs text-gray-500">${escapeHtml(beacon.identityKey)}</div>
           <div class="text-xs ${usedCodes.has(beacon.beaconCode) ? 'text-emerald-700' : 'text-amber-700'}">
             ${usedCodes.has(beacon.beaconCode) ? 'Bereits im Layout platziert' : 'Noch nicht im Layout verwendet'}
           </div>
@@ -786,7 +786,7 @@ function renderBeaconElement(el) {
   inner.className = 'flex flex-col items-center justify-center gap-0';
   inner.innerHTML = `
     <div class="beacon-icon">📡</div>
-    <div class="beacon-label">${el.beaconId || ''}</div>
+    <div class="beacon-label">${escapeHtml(el.beaconId || '')}</div>
   `;
   div.appendChild(inner);
 
@@ -868,19 +868,19 @@ function renderRegularElement(el) {
   const isNarrow = el.width < 2 || el.height < 2;
   
   if (isNarrow) {
-    inner.innerHTML = `<div class="text-lg">${icon}</div>`;
+    inner.innerHTML = `<div class="text-lg">${escapeHtml(icon)}</div>`;
   } else {
     inner.innerHTML = `
       <div class="font-bold text-[11px] mb-0.5 px-1.5 py-0.5 bg-white bg-opacity-70 rounded">
-        ${elementType.name}
+        ${escapeHtml(elementType.name)}
       </div>
 
-      <div class="text-lg">${icon}</div>
+      <div class="text-lg">${escapeHtml(icon)}</div>
 
-      <div class="text-[10px] leading-tight">${el.label}</div>
+      <div class="text-[10px] leading-tight">${escapeHtml(el.label)}</div>
 
       <div class="text-[9px] text-gray-700 font-semibold">
-        ${meterText}
+        ${escapeHtml(meterText)}
       </div>
     `;
   }
@@ -1299,7 +1299,7 @@ function renderLayers() {
     <div class="layer-group">
       <h3>${escapeHtml(type)} (${items.length})</h3>
       ${items.map((element) => `
-        <button class="layer-item ${selectedElement?.id === element.id ? 'active' : ''}" data-layer-id="${element.id}">
+        <button class="layer-item ${selectedElement?.id === element.id ? 'active' : ''}" data-layer-id="${escapeHtml(element.id)}">
           <span>${escapeHtml(element.label || element.beaconId || element.type)}</span>
           <span>${element.locked ? 'Locked' : 'Visible'}</span>
         </button>
@@ -1333,7 +1333,7 @@ function renderValidation(explicit = false) {
   }
   validationPanel.innerHTML = validation.issues.length
     ? validation.issues.map(issue => `
-        <button class="validation-item ${issue.severity}" ${issue.elementId ? `data-validation-element="${issue.elementId}"` : ''}>
+        <button class="validation-item ${escapeHtml(issue.severity)}" ${issue.elementId ? `data-validation-element="${escapeHtml(issue.elementId)}"` : ''}>
           <strong>${issue.severity === 'error' ? 'Fehler' : 'Warnung'}</strong><br>${escapeHtml(issue.message)}
         </button>
       `).join('')
@@ -1593,7 +1593,7 @@ function renderRegularProperties(el) {
     const btn = document.createElement('button');
     btn.className = `w-full px-2 py-1.5 rounded text-left text-xs flex items-center gap-2 ${el.category === c.id ? 'ring-2 ring-blue-500' : 'hover:bg-gray-50'}`;
     btn.style.backgroundColor = el.category === c.id ? c.color : 'transparent';
-    btn.innerHTML = `<span>${c.icon}</span><span class="flex-1">${c.name}</span>`;
+    btn.innerHTML = `<span>${escapeHtml(c.icon)}</span><span class="flex-1">${escapeHtml(c.name)}</span>`;
     btn.onclick = () => {
       saveState();
       el.category = c.id;
@@ -1699,11 +1699,6 @@ function renderRegularProperties(el) {
     renderCanvas();
     renderProperties();
   });
-}
-
-/* escaping helper */
-function escapeHtml(s) {
-  return (s+'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 /* ----- Templates ----- */

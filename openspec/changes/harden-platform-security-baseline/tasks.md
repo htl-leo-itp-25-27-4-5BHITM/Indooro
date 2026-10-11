@@ -16,7 +16,7 @@
 
 ## 3. Output Encoding and Headers
 
-- [ ] 3.1 Move `escapeHtml` into `admin/editor-core.js` and use it or `textContent` for every interpolated value in `admin/editor.js` (lines 279, 286–287, 789, 880 and all `data-*` ids).
+- [x] 3.1 Move `escapeHtml` into `admin/editor-core.js` and use it or `textContent` for every interpolated value in `admin/editor.js` (lines 279, 286–287, 789, 880 and all `data-*` ids).
 - [ ] 3.2 Replace `innerHTML` interpolation in `customer/app.js` with DOM construction or escaping.
 - [ ] 3.3 Remove the Tailwind Play CDN from `customer/index.html` and add the required classes to `customer/style.css`.
 - [ ] 3.4 Add `quarkus.http.header` configuration for Content-Security-Policy, `X-Content-Type-Options`, `Referrer-Policy`, and `%prod` HSTS.
@@ -45,7 +45,7 @@
 ## 6. Tests
 
 - [ ] 6.1 Add Quarkus tests for audit actor attribution, tag/product/category audit entries, error persistence policy, generic 5xx body, layout validation limits, PDF bounds, upsell nested validation, and reduced anonymous diagnostics.
-- [ ] 6.2 Add `node --test` cases for `escapeHtml` usage in editor helpers.
+- [x] 6.2 Add `node --test` cases for `escapeHtml` usage in editor helpers.
 - [ ] 6.3 Run `npm run admin:verify` with the CSP-enabled smoke server.
 
 ## 7. Documentation and Deployment
