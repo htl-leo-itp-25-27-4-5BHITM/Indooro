@@ -132,6 +132,15 @@ public class StoreLayoutAdminService {
     public LayoutDtos.EditorContextResponse getEditorContext(UUID storeId) {
         adminAccessService.requireStoreAccess(storeId);
         StoreEntity store = storeAdminService.requireStore(storeId);
+        LayoutVersionEntity active = layoutVersionRepository.findActiveByStoreId(storeId).orElse(null);
+        LayoutVersionEntity latestDraft = layoutVersionRepository.listByStoreId(storeId).stream()
+                .filter(version -> version.status == LayoutVersionStatus.DRAFT)
+                .findFirst()
+                .orElse(null);
+        LayoutDtos.StoreLayoutResponse editable = latestDraft != null
+                && (active == null || latestDraft.versionNo > active.versionNo)
+                ? toLayoutResponse(latestDraft)
+                : active != null ? toLayoutResponse(active) : getCurrentLayout(storeId);
         List<LayoutDtos.EditorBeaconResponse> beacons = beaconAssignmentRepository.listActiveByStoreId(storeId)
                 .stream()
                 .map(this::toEditorBeacon)
@@ -139,7 +148,7 @@ public class StoreLayoutAdminService {
 
         return new LayoutDtos.EditorContextResponse(
                 new LayoutDtos.StoreEditorReference(store.id, store.storeCode, store.name),
-                getCurrentLayout(storeId),
+                editable,
                 beacons
         );
     }

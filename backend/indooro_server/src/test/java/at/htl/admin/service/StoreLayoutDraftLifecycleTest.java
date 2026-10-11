@@ -7,6 +7,7 @@ import at.htl.admin.entity.LayoutVersionStatus;
 import at.htl.admin.entity.RecordStatus;
 import at.htl.admin.entity.StoreEntity;
 import at.htl.admin.repository.LayoutVersionRepository;
+import at.htl.admin.repository.BeaconAssignmentRepository;
 import at.htl.admin.repository.StoreRepository;
 import at.htl.service.LayoutDocumentValidator;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -73,6 +74,9 @@ class StoreLayoutDraftLifecycleTest {
 
         adminService = new StoreLayoutAdminService();
         adminService.layoutVersionRepository = versionsRepository;
+        BeaconAssignmentRepository beaconAssignments = mock(BeaconAssignmentRepository.class);
+        when(beaconAssignments.listActiveByStoreId(storeId)).thenReturn(List.of());
+        adminService.beaconAssignmentRepository = beaconAssignments;
         adminService.storeAdminService = storeAdminService;
         adminService.adminAccessService = mock(AdminAccessService.class);
         adminService.auditLogService = mock(AuditLogService.class);
@@ -97,6 +101,7 @@ class StoreLayoutDraftLifecycleTest {
         assertEquals(1, adminService.listLayoutVersions(storeId).size());
         assertEquals(draft.layout(), adminService.getLayoutVersion(storeId, draft.layoutId()).layout());
         assertEquals("DEFAULT", adminService.getCurrentLayout(storeId).status());
+        assertEquals(draft.layoutId(), adminService.getEditorContext(storeId).currentLayout().layoutId());
 
         MobileDtos.MobileLayoutResponse beforePublish = mobileService.getCurrentLayout(storeId);
         assertEquals("DEFAULT", beforePublish.source());
@@ -126,6 +131,7 @@ class StoreLayoutDraftLifecycleTest {
         assertEquals(2, second.versionNo());
         assertEquals(2, adminService.listLayoutVersions(storeId).size());
         assertEquals("DRAFT", adminService.getLayoutVersion(storeId, second.layoutId()).status());
+        assertEquals(second.layoutId(), adminService.getEditorContext(storeId).currentLayout().layoutId());
         assertEquals(first.layoutId(), mobileService.getCurrentLayout(storeId).layoutId());
         assertEquals(1, activeCount());
 
@@ -134,7 +140,18 @@ class StoreLayoutDraftLifecycleTest {
         assertEquals("ARCHIVED", adminService.getLayoutVersion(storeId, first.layoutId()).status());
         assertEquals("ACTIVE", adminService.getLayoutVersion(storeId, second.layoutId()).status());
         assertEquals(second.layoutId(), mobileService.getCurrentLayout(storeId).layoutId());
+        assertEquals(second.layoutId(), adminService.getEditorContext(storeId).currentLayout().layoutId());
         assertEquals(1, activeCount());
+    }
+
+    @Test
+    void editorDoesNotResumeAnOldDraftAfterNewerVersionWasPublished() throws Exception {
+        adminService.saveLayoutVersion(storeId, request("Published first", true));
+        adminService.saveLayoutVersion(storeId, request("Older draft", false));
+        LayoutDtos.StoreLayoutResponse latest = adminService.saveLayoutVersion(storeId, request("Published later", true));
+
+        assertEquals(latest.layoutId(), adminService.getEditorContext(storeId).currentLayout().layoutId());
+        assertEquals(latest.layoutId(), mobileService.getCurrentLayout(storeId).layoutId());
     }
 
     @Test
