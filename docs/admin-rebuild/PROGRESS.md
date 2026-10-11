@@ -28,6 +28,8 @@ Updated: 2026-10-11. Working branch: `codex/admin-platform-rebuild` in the isola
 
 The initial baseline before these fixes passed 11 Node tests, 12 mocked browser checks, admin asset checks, and 40 OpenSpec validations. Current legacy admin checks pass 17 Node and 25 mocked browser tests. The candidate passes 9 unit and 3 browser checks, including mocked role/session states. Playwright Chromium is installed locally. These checks do not prove live database/auth integration.
 
+The local Admin smoke server now sends the planned CSP and security headers. All 25 browser tests pass with CSP enabled; the malicious-label check confirms literal rendering and no CSP console violations. Quarkus still needs the matching runtime headers.
+
 ## Active work and next priorities
 
 1. Finish ingredient/step editing for recipes, with a seeded no-data-loss update test.

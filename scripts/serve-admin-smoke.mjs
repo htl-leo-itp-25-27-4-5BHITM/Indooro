@@ -4,9 +4,14 @@ import { extname, join, normalize } from "node:path";
 
 const root = join(process.cwd(), "backend/indooro_server/src/main/resources/META-INF/resources");
 const port = Number(process.env.ADMIN_SMOKE_PORT || 4177);
+const securityHeaders = {
+  "content-security-policy": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "same-origin"
+};
 
 const json = (response, body, status = 200) => {
-  response.writeHead(status, { "content-type": "application/json" });
+  response.writeHead(status, { ...securityHeaders, "content-type": "application/json" });
   response.end(JSON.stringify(body));
 };
 
@@ -86,7 +91,7 @@ createServer(async (request, response) => {
 
   let filePath = normalize(join(root, url.pathname));
   if (!filePath.startsWith(root)) {
-    response.writeHead(403);
+    response.writeHead(403, securityHeaders);
     response.end("Forbidden");
     return;
   }
@@ -94,10 +99,10 @@ createServer(async (request, response) => {
   try {
     const bytes = await readFile(filePath);
     const types = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json" };
-    response.writeHead(200, { "content-type": types[extname(filePath)] || "application/octet-stream" });
+    response.writeHead(200, { ...securityHeaders, "content-type": types[extname(filePath)] || "application/octet-stream" });
     response.end(bytes);
   } catch {
-    response.writeHead(404);
+    response.writeHead(404, securityHeaders);
     response.end("Not found");
   }
 }).listen(port, "127.0.0.1", () => {

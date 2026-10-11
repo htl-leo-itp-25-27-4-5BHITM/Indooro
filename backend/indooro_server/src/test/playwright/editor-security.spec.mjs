@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
 test("editor renders malicious layout and store values literally", async ({ page }) => {
+  const cspViolations = [];
+  page.on("console", (message) => {
+    if (/content security policy|content-security-policy|refused to/i.test(message.text())) cspViolations.push(message.text());
+  });
   const attack = '<img src=x onerror="window.__indooroXss=1">';
   await page.route("**/api/stores/store-1/layout/editor-context", (route) => route.fulfill({
     json: {
@@ -20,11 +24,13 @@ test("editor renders malicious layout and store values literally", async ({ page
     }
   }));
 
-  await page.goto("/admin/editor/?storeId=store-1");
+  const response = await page.goto("/admin/editor/?storeId=store-1");
+  expect(response.headers()["content-security-policy"]).toContain("script-src 'self'");
   await expect(page.locator("#storeContextBox")).toContainText(attack);
   await expect(page.locator("#assignedBeaconsList")).toContainText(attack);
   await expect(page.locator("#canvasContainer")).toContainText(attack);
   await expect(page.locator("#layersList")).toContainText(attack);
   await expect(page.locator("img[src=x]")).toHaveCount(0);
   expect(await page.evaluate(() => window.__indooroXss)).toBeUndefined();
+  expect(cspViolations).toEqual([]);
 });

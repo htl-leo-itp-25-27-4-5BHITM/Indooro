@@ -20,7 +20,7 @@
 - [x] 3.2 Replace `innerHTML` interpolation in `customer/app.js` with DOM construction or escaping.
 - [ ] 3.3 Remove the Tailwind Play CDN from `customer/index.html` and add the required classes to `customer/style.css`.
 - [ ] 3.4 Add `quarkus.http.header` configuration for Content-Security-Policy, `X-Content-Type-Options`, `Referrer-Policy`, and `%prod` HSTS.
-- [ ] 3.5 Send the same CSP from `scripts/serve-admin-smoke.mjs` and add a Playwright test that stores a malicious label and asserts literal rendering and no console CSP violations.
+- [x] 3.5 Send the same CSP from `scripts/serve-admin-smoke.mjs` and add a Playwright test that stores a malicious label and asserts literal rendering and no console CSP violations.
 
 ## 4. Backend Hardening
 
@@ -46,7 +46,7 @@
 
 - [ ] 6.1 Add Quarkus tests for audit actor attribution, tag/product/category audit entries, error persistence policy, generic 5xx body, layout validation limits, PDF bounds, upsell nested validation, and reduced anonymous diagnostics.
 - [x] 6.2 Add `node --test` cases for `escapeHtml` usage in editor helpers.
-- [ ] 6.3 Run `npm run admin:verify` with the CSP-enabled smoke server.
+- [x] 6.3 Run `npm run admin:verify` with the CSP-enabled smoke server.
 
 ## 7. Documentation and Deployment
 

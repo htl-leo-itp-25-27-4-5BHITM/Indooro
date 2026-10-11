@@ -8,6 +8,6 @@ export default {
   webServer: {
     command: "node scripts/serve-admin-smoke.mjs",
     url: "http://127.0.0.1:4177/admin/",
-    reuseExistingServer: !process.env.CI
+    reuseExistingServer: false
   }
 };
