@@ -26,12 +26,12 @@ Updated: 2026-10-11. Working branch: `codex/admin-platform-rebuild` in the isola
 | `6bb27ad` | Explicit inactive first layout draft; rebuild 4.6 | Admin/mobile service tests passed. |
 | `dd22502` | Candidate frontend packaged under `/admin/next/` without replacing current routes | Candidate lint, seven unit tests, package verification, browser deep-link smoke passed. |
 
-The initial baseline before these fixes passed 11 Node tests, 12 mocked browser checks, admin asset checks, and 40 OpenSpec validations. Playwright initially lacked Chromium; it is now installed locally. These checks do not prove live database/auth integration.
+The initial baseline before these fixes passed 11 Node tests, 12 mocked browser checks, admin asset checks, and 40 OpenSpec validations. Current legacy admin checks pass 17 Node and 25 mocked browser tests. The candidate passes 9 unit and 3 browser checks, including mocked role/session states. Playwright Chromium is installed locally. These checks do not prove live database/auth integration.
 
 ## Active work and next priorities
 
 1. Finish ingredient/step editing for recipes, with a seeded no-data-loss update test.
-2. Verify the packaged candidate through Quarkus/OIDC, then build route parity and role/scope tests before any cutover.
+2. Verify the packaged candidate through Quarkus/OIDC, including scope denial, then build route parity tests before any cutover.
 3. Continue legacy write protection and security headers/CSP; verify all public and protected operation classes.
 4. Run a local stack with PostgreSQL, OpenSearch, and Keycloak to exercise store creation → beacon assignment → layout draft → publish → anonymous mobile read, plus recipe editing. Current Maven/browser suites rely heavily on mocks.
 5. Migrate one admin route at a time and independently review accessibility, responsive behavior, error recovery, and rollback.
