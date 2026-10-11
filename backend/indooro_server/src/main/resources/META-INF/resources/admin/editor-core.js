@@ -98,15 +98,16 @@ export function clampElement(element = {}, bounds = {}) {
 export function createHistory(initialState) {
   return {
     past: [],
-    present: initialState,
+    present: JSON.parse(JSON.stringify(initialState)),
     future: []
   };
 }
 
 export function pushHistory(history, nextState) {
+  if (JSON.stringify(history.present) === JSON.stringify(nextState)) return history;
   return {
     past: [...history.past, history.present].slice(-50),
-    present: nextState,
+    present: JSON.parse(JSON.stringify(nextState)),
     future: []
   };
 }
