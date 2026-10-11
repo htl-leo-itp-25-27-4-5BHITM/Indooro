@@ -27,7 +27,9 @@ export interface LayoutEditorProps {
   mode: "store" | "legacy";
   storeName?: string;
   assignedBeacons?: AssignedBeacon[];
+  saveMode?: "draft" | "immediate";
   onSaveDraft?: (document: LayoutDocument) => Promise<unknown>;
+  onSaveCurrent?: (document: LayoutDocument) => Promise<unknown>;
   onPublish?: (document: LayoutDocument) => Promise<unknown>;
   onBack?: () => void;
 }
@@ -35,7 +37,7 @@ export interface LayoutEditorProps {
 const labelFor = (element: LayoutElement) => element.label || TYPES.find((item) => item.type === element.type)?.label || element.type;
 const number = (value: string, fallback: number) => Number.isFinite(Number(value)) && value !== "" ? Number(value) : fallback;
 
-export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons = [], onSaveDraft, onPublish, onBack }: LayoutEditorProps) {
+export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons = [], saveMode = "draft", onSaveDraft, onSaveCurrent, onPublish, onBack }: LayoutEditorProps) {
   const [editor, setEditor] = useState<EditorState>(() => createEditorState(initialDocument));
   const editorRef = useRef(editor);
   editorRef.current = editor;
@@ -226,15 +228,17 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
     if (svgRef.current?.hasPointerCapture(event.pointerId)) svgRef.current.releasePointerCapture(event.pointerId);
   };
 
-  const saveDraft = async () => {
-    if (!onSaveDraft || working) return;
+  const saveDocument = async () => {
+    const saveAction = saveMode === "immediate" ? onSaveCurrent : onSaveDraft;
+    if (!saveAction || working || (saveMode === "immediate" && errors > 0)) return;
+    if (saveMode === "immediate" && !window.confirm("Das globale Layout jetzt für alle Kunden veröffentlichen? Diese Änderung ist sofort sichtbar.")) return;
     const saved = structuredClone(editorRef.current.document);
     setWorking("save"); setMessage(null);
     try {
-      await onSaveDraft(saved);
+      await saveAction(saved);
       setEditor((current) => markSaved(current, saved));
-      setMessage("Entwurf gespeichert.");
-    } catch (error) { setMessage(error instanceof Error ? error.message : "Entwurf konnte nicht gespeichert werden."); }
+      setMessage(saveMode === "immediate" ? "Globales Layout veröffentlicht." : "Entwurf gespeichert.");
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Layout konnte nicht gespeichert werden."); }
     finally { setWorking(null); }
   };
 
@@ -260,8 +264,8 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
       <div className="le-actions">
         {onBack && <button type="button" className="le-button le-quiet" onClick={() => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) onBack(); }}>Zurück</button>}
         <span className={`le-save-indicator ${dirty ? "is-dirty" : ""}`}>{dirty ? "● Ungespeicherte Änderungen" : "✓ Gespeichert"}</span>
-        <button type="button" className="le-button" disabled={!onSaveDraft || !dirty || !!working} onClick={saveDraft}>{working === "save" ? "Speichert …" : "Entwurf speichern"}</button>
-        <button type="button" className="le-button le-primary" disabled={!onPublish || dirty || errors > 0 || !!working} onClick={publish}>{working === "publish" ? "Veröffentlicht …" : "Veröffentlichen"}</button>
+        <button type="button" className={`le-button ${saveMode === "immediate" ? "le-primary" : ""}`} disabled={!(saveMode === "immediate" ? onSaveCurrent : onSaveDraft) || !dirty || !!working || (saveMode === "immediate" && errors > 0)} onClick={saveDocument}>{working === "save" ? "Speichert …" : saveMode === "immediate" ? "Global veröffentlichen" : "Entwurf speichern"}</button>
+        {saveMode === "draft" && <button type="button" className="le-button le-primary" disabled={!onPublish || dirty || errors > 0 || !!working} onClick={publish}>{working === "publish" ? "Veröffentlicht …" : "Veröffentlichen"}</button>}
       </div>
     </header>
     {message && <p className="le-message" role="status">{message}</p>}

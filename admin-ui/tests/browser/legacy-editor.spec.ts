@@ -1,0 +1,64 @@
+import { readFileSync } from "node:fs";
+import { expect, test } from "@playwright/test";
+import type { LayoutDocument } from "../../src/editor/model";
+
+const layout = JSON.parse(readFileSync(new URL("../../src/editor/fixtures/store-layout.json", import.meta.url), "utf8")) as LayoutDocument;
+
+test("global editor sends raw layout JSON and confirms immediate publication", async ({ page }) => {
+  let posted: Record<string, unknown> | null = null;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", email: null, role: "admin", scope: null } }));
+  await page.route("**/api/layout/current", (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: layout });
+    posted = route.request().postDataJSON() as Record<string, unknown>;
+    return route.fulfill({ json: { message: "Layout saved successfully", layoutId: "published-2", savedAt: "2026-10-11T12:00:00Z" } });
+  });
+  await page.route("**/api/layout/history?*", (route) => route.fulfill({ json: [] }));
+  await page.goto("/admin/next/editor/");
+  await expect(page.getByRole("heading", { name: "Globales Layout", exact: true })).toBeVisible();
+  await expect(page.getByText("Globales Legacy-Layout · nur Admin")).toBeVisible();
+  await page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" }).click();
+  await page.getByLabel("Bezeichnung").fill("Globales Obst");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Global veröffentlichen" }).click();
+  await expect(page.getByText("Globales Layout veröffentlicht.")).toBeVisible();
+  expect(posted).not.toBeNull();
+  expect(posted!.elements).toHaveLength(3);
+  expect((posted!.elements as LayoutDocument["elements"])[1].label).toBe("Globales Obst");
+  expect(posted!.layout).toBeUndefined();
+  expect(posted!.activate).toBeUndefined();
+});
+
+test("non-admin cannot open global editor or call legacy layout APIs", async ({ page }) => {
+  let legacyCalls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "manager-1", username: "manager", email: null, role: "store-manager", scope: { storeId: "store-1" } } }));
+  await page.route("**/api/layout/**", (route) => { legacyCalls += 1; return route.fulfill({ json: layout }); });
+  await page.goto("/admin/next/editor/");
+  await expect(page.getByRole("alert")).toContainText("Zugriff verweigert");
+  expect(legacyCalls).toBe(0);
+});
+
+test("mobile preview stays on fallback until draft activation then shows active version", async ({ page }) => {
+  let mobileActive = false;
+  let mobileReads = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", email: null, role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/editor-context")) return route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-1", name: "Indooro Testfiliale" }, currentLayout: { layoutId: "draft-1", versionNo: 1, status: "DRAFT", layout }, assignedBeacons: [{ beaconCode: "IN-001" }] } });
+    if (path.endsWith("/versions") && route.request().method() === "GET") return route.fulfill({ json: [{ layoutId: "draft-1", versionNo: 1, status: "DRAFT" }] });
+    if (path.endsWith("/activate")) { mobileActive = true; return route.fulfill({ json: { layoutId: "draft-1", versionNo: 1, status: "ACTIVE", layout } }); }
+    return route.fulfill({ status: 404, json: {} });
+  });
+  await page.route("**/api/mobile/stores/store-1/layout/current", (route) => {
+    mobileReads += 1;
+    return route.fulfill({ json: { storeId: "store-1", layoutId: mobileActive ? "draft-1" : null, source: mobileActive ? "ACTIVE" : "DEFAULT", fallback: !mobileActive, layout } });
+  });
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const preview = page.getByRole("region", { name: "Aktuell mobiles Layout" });
+  await expect(preview).toContainText("Standardlayout (Fallback)");
+  await expect(preview).toContainText("Keine aktive Version");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Veröffentlichen" }).click();
+  await expect(preview).toContainText("Aktive Version");
+  await expect(preview).toContainText("draft-1");
+  expect(mobileReads).toBeGreaterThanOrEqual(2);
+});
