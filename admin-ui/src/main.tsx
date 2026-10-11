@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ApiClientError, createApiClient } from "./api/client";
+import { Dashboard } from "./Dashboard";
+import { StoresPage } from "./StoresPage";
+import { EditorRoute } from "./EditorRoute";
 import { candidateAccess, visibleRoutes, type CurrentUser } from "./routes";
 import "./style.css";
 
@@ -35,7 +38,7 @@ function AdminCandidate() {
           <p className="sidebar-title">Arbeitsbereiche</p>
           {visibleRoutes(user.role).map((route) => <a href={route.path} key={route.path}>{route.label}</a>)}
         </nav>}
-        <main id="main-content" className="content">
+        <main id="main-content" className={`content ${window.location.pathname.includes("/next/editor") ? "editor-content" : ""}`}>
           <h1>Indooro Admin</h1>
           {loading && <p role="status">Berechtigungen werden geladen …</p>}
           {error && <section role="alert" className="notice">
@@ -45,10 +48,11 @@ function AdminCandidate() {
           </section>}
           {user && access === "forbidden" && <section role="alert" className="notice"><h2>Zugriff verweigert</h2><p>Für diesen Bereich fehlt die Berechtigung.</p></section>}
           {user && access === "missing" && <section role="alert" className="notice"><h2>Seite nicht gefunden</h2><p>Dieser Kandidatenpfad ist nicht eingerichtet.</p></section>}
-          {user && access === "allowed" && <section className="notice">
-            <h2>{window.location.pathname.includes("/stores/detail") ? "Store Detail" : "Neue Oberfläche im Aufbau"}</h2>
-            <p>Dieser geschützte Kandidat prüft Anmeldung und Rollen. Für die produktiven Arbeitsabläufe bleiben die verlinkten Admin-Bereiche verfügbar.</p>
-          </section>}
+          {user && access === "allowed" && (window.location.pathname.includes("/editor")
+            ? <EditorRoute api={api} />
+            : window.location.pathname.includes("/stores/detail")
+            ? <section className="notice"><h2>Store Detail</h2><p>Die Store-Ansicht wird vorbereitet. <a href={`/admin/stores/detail/${window.location.search}`}>Store in der bisherigen Ansicht öffnen</a></p></section>
+            : window.location.pathname.includes("/stores") ? <StoresPage api={api} /> : <Dashboard api={api} user={user} />)}
         </main>
       </div>
     </div>
