@@ -92,3 +92,25 @@ a:focus-visible { outline: 3px solid #f2a900; outline-offset: 3px; }
 .detail-list time { color: #506779; font-size: .82rem; }
 .success-state { border-color: #69ad87; color: #17603e; }
 @media (max-width: 530px) { .detail-form, .detail-facts { grid-template-columns: 1fr; } .detail-list li, .inline-action { align-items: stretch; flex-direction: column; } }
+.regions-page .page-heading, .regions-page .panel-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.regions-page .page-heading { margin-bottom: 1rem; }
+.regions-page .page-heading h2 { margin: 0; font-size: 2rem; }
+.regions-page .page-heading p { margin: .2rem 0 0; color: #506779; }
+.regions-page .region-workspace { display: grid; grid-template-columns: minmax(300px,1.2fr) minmax(280px,1fr); gap: 1rem; }
+.regions-page .panel { background: white; border: 1px solid #dce5e9; border-radius: .75rem; padding: 1.2rem; }
+.regions-page .panel-header h3 { margin: 0 0 1rem; }
+.regions-page .filters { display: flex; gap: .6rem; margin-bottom: 1rem; }
+.regions-page .filters label, .regions-page .stack { display: grid; gap: .35rem; }
+.regions-page input, .regions-page select, .regions-page textarea { min-height: 42px; border: 1px solid #b6c9d1; border-radius: .5rem; padding: .5rem; font: inherit; }
+.regions-page .filters input { width: 100%; }
+.regions-page table { width: 100%; border-collapse: collapse; text-align: left; }
+.regions-page td, .regions-page th { border-bottom: 1px solid #e0eaec; padding: .65rem .4rem; }
+.regions-page .toolbar { display: flex; gap: .5rem; margin-top: 1rem; }
+.regions-page button { min-height: 40px; border: 1px solid #bdd2d4; border-radius: .5rem; background: white; color: #155a70; padding: .5rem .8rem; cursor: pointer; font: inherit; }
+.regions-page button.primary { color: white; background: #136c60; border-color: #136c60; }
+.regions-page button.danger { color: #9b2d2d; border-color: #d59a9a; }
+.regions-page button.text-button { border: 0; text-decoration: underline; padding: .25rem; }
+.regions-page .detail-list { display: grid; grid-template-columns: auto 1fr; gap: .5rem 1rem; }
+.regions-page .detail-list dt { color: #506779; }
+.regions-page .detail-list dd { margin: 0; }
+@media (max-width: 780px) { .regions-page .region-workspace { grid-template-columns: 1fr; } }

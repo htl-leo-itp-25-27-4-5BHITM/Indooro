@@ -5,6 +5,7 @@ import { Dashboard } from "./Dashboard";
 import { StoresPage } from "./StoresPage";
 import { EditorRoute } from "./EditorRoute";
 import { StoreDetailPage } from "./StoreDetailPage";
+import { RegionsPage } from "./RegionsPage";
 import { candidateAccess, visibleRoutes, type CurrentUser } from "./routes";
 import "./style.css";
 
@@ -53,7 +54,9 @@ function AdminCandidate() {
             ? <EditorRoute api={api} />
             : window.location.pathname.includes("/stores/detail")
             ? <StoreDetailPage api={api} user={user} />
-            : window.location.pathname.includes("/stores") ? <StoresPage api={api} /> : <Dashboard api={api} user={user} />)}
+            : window.location.pathname.includes("/stores") ? <StoresPage api={api} />
+            : window.location.pathname.includes("/regions") ? <RegionsPage api={api} user={user} />
+            : <Dashboard api={api} user={user} />)}
         </main>
       </div>
     </div>

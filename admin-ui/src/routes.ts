@@ -37,6 +37,9 @@ export function candidateAccess(pathname: string, role: string, requestedStoreId
   if (pathname === "/admin/next/stores/" || pathname === "/admin/next/stores") {
     return ["admin", "region-manager", "store-manager"].includes(role) ? "allowed" : "forbidden";
   }
+  if (pathname === "/admin/next/regions/" || pathname === "/admin/next/regions") {
+    return role === "admin" || role === "region-manager" ? "allowed" : "forbidden";
+  }
   if (pathname === "/admin/next/editor/" || pathname === "/admin/next/editor") {
     if (role === "store-manager" && (!requestedStoreId || requestedStoreId !== scopeStoreId)) return "forbidden";
     return ["admin", "region-manager", "store-manager"].includes(role) ? "allowed" : "forbidden";
