@@ -9,6 +9,7 @@ import { RegionsPage } from "./RegionsPage";
 import { StoreCreatePage } from "./StoreCreatePage";
 import { BeaconsPage } from "./BeaconsPage";
 import { RecipesPage } from "./RecipesPage";
+import { DiagnosticsPage } from "./DiagnosticsPage";
 import { candidateAccess, visibleRoutes, type CurrentUser } from "./routes";
 import "./style.css";
 
@@ -63,6 +64,7 @@ function AdminCandidate() {
             : window.location.pathname.includes("/regions") ? <RegionsPage api={api} user={user} />
             : window.location.pathname.includes("/beacons") ? <BeaconsPage api={api} user={user} />
             : window.location.pathname.includes("/recipes") ? <RecipesPage api={api} />
+            : window.location.pathname.includes("/server-logs") ? <DiagnosticsPage api={api} user={user} />
             : <Dashboard api={api} user={user} />)}
         </main>
       </div>

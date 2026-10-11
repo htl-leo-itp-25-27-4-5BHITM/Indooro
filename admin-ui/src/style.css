@@ -135,3 +135,8 @@ a:focus-visible { outline: 3px solid #f2a900; outline-offset: 3px; }
 .beacons-page .status-pill.info { background: #e4effa; color: #28577a; }
 @media (max-width: 820px) { .beacons-page .filters { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 @media (max-width: 530px) { .beacons-page .filters, .beacons-page .form-grid { grid-template-columns: 1fr; } .beacons-page .page-heading { align-items: stretch; flex-direction: column; } }
+.diagnostics-page { display: grid; gap: 1rem; }
+.diagnostics-page table { width: 100%; border-collapse: collapse; text-align: left; }
+.diagnostics-page th, .diagnostics-page td { padding: .7rem .55rem; border-bottom: 1px solid #e0eaec; vertical-align: top; }
+.diagnostics-page th { color: #506779; font-size: .78rem; text-transform: uppercase; }
+.diagnostics-page pre { max-width: 40rem; overflow: auto; white-space: pre-wrap; }
