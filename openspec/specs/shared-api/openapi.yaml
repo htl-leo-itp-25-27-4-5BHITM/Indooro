@@ -822,24 +822,34 @@ paths:
     get:
       tags: [admin-products]
       operationId: listAdminProducts
-      summary: Product list for the admin UI.
+      summary: Search and page products for the admin UI. Omitting page retains the legacy array response.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
       x-indooro-consumers: [admin-ui, api-tests]
       x-indooro-findings: [PERF-23]
       parameters:
+        - name: page
+          in: query
+          description: Zero-based result page. When supplied, the response is a PageResponse.
+          schema: { type: integer, default: 0, minimum: 0 }
         - name: size
           in: query
-          description: Missing means 500; clamped to 1..1000.
-          schema: { type: integer, maximum: 1000 }
+          description: Page size (maximum 100) when page is supplied; legacy array limit (maximum 1000) otherwise.
+          schema: { type: integer, minimum: 1, maximum: 1000 }
+        - name: q
+          in: query
+          description: Optional text search across product name, ID, layout code, and store code.
+          schema: { type: string, maxLength: 120 }
       responses:
         "200":
           description: Products.
           content:
             application/json:
               schema:
-                type: array
-                items: { $ref: "#/components/schemas/Product" }
+                oneOf:
+                  - type: array
+                    items: { $ref: "#/components/schemas/Product" }
+                  - $ref: "#/components/schemas/ProductPageResponse"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/ServerError" }
@@ -2074,6 +2084,16 @@ components:
           description: Store format `<categoryCode>/<meter>/<level>/<position>`, e.g. `310/1/1/1`.
         storeId: { type: [string, "null"] }
         storeCode: { type: [string, "null"] }
+    ProductPageResponse:
+      type: object
+      required: [content, page, size, totalElements]
+      properties:
+        content:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1, maximum: 100 }
+        totalElements: { type: integer, format: int64, minimum: 0 }
     Category:
       type: object
       required: [categoryCode, categoryName]

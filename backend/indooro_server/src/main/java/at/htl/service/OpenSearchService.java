@@ -1,5 +1,6 @@
 package at.htl.service;
 
+import at.htl.admin.dto.CommonDtos;
 import at.htl.model.Product;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -134,6 +135,58 @@ public class OpenSearchService {
         return response.hits().hits().stream()
                 .map(Hit::source)
                 .collect(Collectors.toList());
+    }
+
+    /** Searches and pages the admin catalog while retaining OpenSearch's exact hit count. */
+    public CommonDtos.PageResponse<Product> searchAdminProductsPage(String query, int page, int size) throws IOException {
+        String q = query == null ? "" : query.trim();
+        long offset = (long) Math.max(page, 0) * Math.max(size, 1);
+        int from = (int) Math.min(offset, Integer.MAX_VALUE);
+
+        SearchRequest searchRequest = SearchRequest.of(s -> s
+                .index(indexName)
+                .from(from)
+                .size(size)
+                .trackTotalHits(track -> track.enabled(true))
+                .sort(sort -> sort.field(field -> field.field("id")))
+                .query(q.isEmpty()
+                        ? qry -> qry.matchAll(matchAll -> matchAll)
+                        : qry -> qry.bool(bool -> {
+                            bool.should(should -> should.term(term -> term
+                                    .field("name.keyword")
+                                    .value(value -> value.stringValue(q))
+                                    .boost(10f)));
+                            bool.should(should -> should.match(match -> match
+                                    .field("name")
+                                    .query(FieldValue.of(q))
+                                    .operator(Operator.And)));
+                            bool.should(should -> should.term(term -> term
+                                    .field("layoutCode")
+                                    .value(value -> value.stringValue(q))));
+                            bool.should(should -> should.term(term -> term
+                                    .field("storeCode")
+                                    .value(value -> value.stringValue(q))));
+                            if (q.matches("\\d+")) {
+                                try {
+                                    int productId = Integer.parseInt(q);
+                                    bool.should(should -> should.term(term -> term
+                                            .field("id")
+                                            .value(FieldValue.of(productId))));
+                                } catch (NumberFormatException ignored) {
+                                    // The remaining text fields still provide useful matches for very large numbers.
+                                }
+                            }
+                            return bool.minimumShouldMatch("1");
+                        }))
+        );
+
+        SearchResponse<Product> response = client.search(searchRequest, Product.class);
+        List<Product> products = response.hits().hits().stream()
+                .map(Hit::source)
+                .filter(product -> product != null)
+                .collect(Collectors.toList());
+        long total = response.hits().total() == null ? products.size() : response.hits().total().value();
+        return new CommonDtos.PageResponse<>(products, page, size, total);
     }
 
     public List<Product> findUpsellCandidates(Integer size, String storeId, String storeCode) throws IOException {

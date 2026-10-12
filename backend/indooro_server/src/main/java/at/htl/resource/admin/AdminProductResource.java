@@ -36,11 +36,23 @@ public class AdminProductResource extends AdminApiSupport {
     OpenSearchService openSearchService;
 
     @GET
-    public List<Product> listProducts(@QueryParam("size") Integer size) {
+    public Object listProducts(@QueryParam("page") Integer page,
+                               @QueryParam("size") Integer size,
+                               @QueryParam("q") String query) {
         adminAccessService.requireAdmin();
 
         try {
-            return openSearchService.getAllProducts(normalizeProductListSize(size));
+            if (page != null) {
+                int normalizedPage = normalizePage(page);
+                int normalizedSize = normalizePageSize(size);
+                return openSearchService.searchAdminProductsPage(query, normalizedPage, normalizedSize);
+            }
+            // Preserve the array response for existing clients that have not adopted paging yet.
+            int legacySize = normalizeProductListSize(size);
+            if (query != null && !query.isBlank()) {
+                return openSearchService.searchProducts(query, legacySize);
+            }
+            return openSearchService.getAllProducts(legacySize);
         } catch (IOException exception) {
             LOG.error("Error loading admin products", exception);
             throw new WebApplicationException(
@@ -126,6 +138,15 @@ public class AdminProductResource extends AdminApiSupport {
             return 1;
         }
         return Math.min(size, 1000);
+    }
+
+    private int normalizePage(Integer page) {
+        return page == null ? 0 : Math.max(0, page);
+    }
+
+    private int normalizePageSize(Integer size) {
+        if (size == null) return 20;
+        return Math.min(Math.max(size, 1), 100);
     }
 
     private String normalizeOptional(String value) {
