@@ -296,8 +296,11 @@ public class OpenSearchService {
      * Erstellt den Index mit Mapping
      */
     public void createIndex() throws IOException {
-        try {
-            client.indices().create(c -> c
+        if (client.indices().exists(e -> e.index(indexName)).value()) {
+            LOG.info("Index " + indexName + " already exists");
+            return;
+        }
+        client.indices().create(c -> c
                     .index(indexName)
                     .mappings(m -> m
                             .properties("id", p -> p.integer(i -> i))
@@ -311,10 +314,7 @@ public class OpenSearchService {
                             .properties("storeCode", p -> p.keyword(k -> k))
                     )
             );
-            LOG.info("Index " + indexName + " created successfully");
-        } catch (Exception e) {
-            LOG.warn("Index might already exist: " + e.getMessage());
-        }
+        LOG.info("Index " + indexName + " created successfully");
     }
 
     /**
