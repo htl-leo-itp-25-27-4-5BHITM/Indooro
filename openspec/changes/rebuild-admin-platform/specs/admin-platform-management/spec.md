@@ -11,6 +11,10 @@ The rebuilt Admin Platform SHALL make existing authorized region, store, beacon,
 - **WHEN** a region manager or store manager directly opens an admin-only product, recipe, index, or diagnostics workflow
 - **THEN** the page exposes no protected data or mutation controls and the backend rejects unauthorized API calls
 
+#### Scenario: Scoped user opens a foreign store detail or editor link
+- **WHEN** a manager directly opens a store detail or store layout editor outside their assigned scope
+- **THEN** the backend rejects the data requests and the page presents an access-denied state without exposing the foreign store or layout
+
 ### Requirement: Staff can finish workflows in context
 The rebuilt Admin Platform SHALL return users to a relevant list or detail context after a successful create, assignment, release, publish, archive, or delete action and SHALL show the confirmed resulting state.
 
