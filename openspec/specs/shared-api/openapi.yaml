@@ -710,7 +710,7 @@ paths:
       tags: [maintenance]
       operationId: createProductIndex
       summary: Create the product index with its mapping.
-      description: Idempotently creates the product index; initialization errors are reported to the caller.
+      description: Creates the product index and reports an existing index as a conflict.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
       x-indooro-consumers: [api-tests]
@@ -723,6 +723,7 @@ paths:
               schema: { $ref: "#/components/schemas/MessageResponse" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
         "500": { $ref: "#/components/responses/ServerError" }
   /api/admin/index:
     delete:

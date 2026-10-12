@@ -4,6 +4,8 @@ import at.htl.admin.dto.CommonDtos;
 import at.htl.model.Product;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -297,8 +299,7 @@ public class OpenSearchService {
      */
     public void createIndex() throws IOException {
         if (client.indices().exists(e -> e.index(indexName)).value()) {
-            LOG.info("Index " + indexName + " already exists");
-            return;
+            throw new WebApplicationException("Produktindex existiert bereits.", Response.Status.CONFLICT);
         }
         client.indices().create(c -> c
                     .index(indexName)

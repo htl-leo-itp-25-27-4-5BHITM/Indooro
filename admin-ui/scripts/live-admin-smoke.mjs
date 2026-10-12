@@ -74,7 +74,8 @@ const documentFor = (name) => ({
 try {
   const admin = await login(adminUser);
   assert.equal(expectOk(await api(admin, "GET", "/api/admin/me"), "admin login").role, "admin");
-  expectOk(await api(admin, "POST", "/api/admin/index/create", {}), "product index initialization");
+  const indexInitialization = await api(admin, "POST", "/api/admin/index/create", {});
+  assert.ok([200, 409].includes(indexInitialization.status), `product index initialization: HTTP ${indexInitialization.status}`);
   const run = Date.now().toString(36).slice(-7).toUpperCase();
   const region = expectOk(await api(admin, "POST", "/api/regions", { code: `LIVE-${run}`, name: `Live Region ${run}` }), "region create");
   const store = expectOk(await api(admin, "POST", "/api/stores", {

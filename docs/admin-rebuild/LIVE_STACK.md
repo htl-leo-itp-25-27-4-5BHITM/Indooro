@@ -27,7 +27,7 @@ npm run verify:candidate
 npm run test:live
 ```
 
-`test:live` reads the local demo account credentials from `keycloak/realm/indooro-realm.json`; it does not print them. It initializes the empty product index through the protected admin operation and inserts local scope assignments because migration V5 only seeds those when named demo region/store records already exist. It tests both candidate editor modes through the browser, checks draft isolation against the anonymous mobile endpoint, verifies global publication and history through OpenSearch, checks six anonymous store/catalog/recipe contracts including a recipe draft → publish → deactivate lifecycle, and checks concurrent saves and activations against PostgreSQL. It does not clean up the created records or global layout versions, so use dedicated local PostgreSQL and OpenSearch data only.
+`test:live` reads the local demo account credentials from `keycloak/realm/indooro-realm.json`; it does not print them. It initializes an empty product index through the protected admin operation and accepts the expected 409 conflict on later runs. It inserts local scope assignments because migration V5 only seeds those when named demo region/store records already exist. It tests both candidate editor modes through the browser, checks draft isolation against the anonymous mobile endpoint, verifies global publication and history through OpenSearch, checks six anonymous store/catalog/recipe contracts including a recipe draft → publish → deactivate lifecycle, and checks concurrent saves and activations against PostgreSQL. It does not clean up the created records or global layout versions, so use dedicated local PostgreSQL and OpenSearch data only.
 
 ## Observed 2026-10-12
 

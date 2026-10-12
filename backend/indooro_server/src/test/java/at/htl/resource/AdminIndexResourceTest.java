@@ -5,12 +5,15 @@ import at.htl.service.OpenSearchService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static io.restassured.RestAssured.given;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 @QuarkusTest
@@ -45,5 +48,19 @@ class AdminIndexResourceTest {
         given().contentType("application/json").body("{}").post("/api/admin/index/create").then().statusCode(200);
         verify(adminAccessService).requireAdmin();
         verify(openSearchService).createIndex();
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void existingProductIndexReportsConflict() throws IOException {
+        doThrow(new WebApplicationException("Produktindex existiert bereits.", Response.Status.CONFLICT))
+                .when(openSearchService).createIndex();
+
+        given().contentType("application/json").body("{}")
+                .post("/api/admin/index/create").then()
+                .statusCode(409)
+                .contentType("application/json")
+                .body("status", org.hamcrest.Matchers.equalTo(409))
+                .body("error", org.hamcrest.Matchers.containsString("Produktindex existiert bereits"));
     }
 }
