@@ -13,6 +13,8 @@
 
 ## 3. Admin UI
 
+Coordination (2026-10-12): `docs/admin-rebuild/CHANGE_COORDINATION.md` maps each UI item below to a current static-route fix or a replacement-route acceptance check. Items 3.4–3.5 and 3.8–3.11 remain open for the active static pages. The React candidate implements related behavior under `/admin/next/*`, but its presence does not close these items until route-specific parity and rollback are accepted in `rebuild-admin-platform` task 3.10. Backend/API items in section 2, customer item 4.1, and the contract/test gates remain owned here.
+
 - [x] 3.1 Change the logout target to `/admin/logout`.
 - [x] 3.2 Load the recipe detail before editing; pre-fill image, description, tags, ingredients, and steps; send all fields and current `tagIds`.
 - [x] 3.3 Implement the ingredient/step diff with temporary positions and reload after saving.

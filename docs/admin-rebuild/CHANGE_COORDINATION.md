@@ -21,7 +21,7 @@ Updated: 2026-10-12. Scope: rebuild tasks 1.4–1.6. The candidate remains under
 | 4.1 customer `productLocation` | Customer frontend remains owned by this change; it is not replaced by admin routes. | No candidate substitute. Keep original customer test and implementation obligation. |
 | 5.1–5.3 and 6.1–6.3 | Test and backend/OpenAPI acceptance remains owned by this change. Candidate browser coverage supplements, not replaces, it. | Existing strict validation and suite evidence in `docs/admin-rebuild/PROGRESS.md`; live recipe acceptance in `docs/admin-rebuild/LIVE_STACK.md`. |
 
-**Coordination state:** candidate code and evidence exist for many mapped behaviors, but the active change's overlapping UI tasks remain unchecked until its owner records the rebase. Backend/API tasks and customer task 4.1 remain with `fix-admin-dashboard-contract-drift`.
+**Coordination state:** the active change's task list now records this ownership split. Candidate code and evidence exist for many mapped behaviors, but overlapping static UI tasks remain unchecked until route parity and cutover. Backend/API tasks and customer task 4.1 remain with `fix-admin-dashboard-contract-drift`.
 
 ## `establish-shared-api-contract`
 
@@ -37,7 +37,7 @@ Updated: 2026-10-12. Scope: rebuild tasks 1.4–1.6. The candidate remains under
 | 6.1 contract CI job and backend test dependency | Shared API change retains CI ownership. | No candidate substitute. |
 | 7.1–7.3 contract verification | Shared API change retains global verification. | Existing strict validation is documented in progress notes; rebuild strict validation does not close this task. |
 
-**Coordination state:** the candidate's typed API client is a proposed replacement for the legacy Admin JSDoc/typecheck portion of task 4.2 only. No upstream task update is made here; keep task 4.2 open until its owner records the agreed split. All reviewed OpenAPI parity, generated contract, mobile, and CI work remains in `establish-shared-api-contract`.
+**Coordination state:** the active change's task list now records that the candidate's typed API client replaces the legacy Admin JSDoc/typecheck portion of task 4.2 after cutover. Task 4.2 stays open while current static routes run. All reviewed OpenAPI parity, generated contract, mobile, and CI work remains in `establish-shared-api-contract`.
 
 ## `protect-legacy-write-endpoints` and `harden-platform-security-baseline`
 
