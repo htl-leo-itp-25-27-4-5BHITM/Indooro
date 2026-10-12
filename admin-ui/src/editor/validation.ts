@@ -9,6 +9,52 @@ export interface LayoutIssue {
   elementId: ElementId | null;
 }
 
+/**
+ * A conservative editor-side check for shelves that explicitly carry product
+ * targets. Layout geometry can show an obvious blocked approach, but it cannot
+ * prove that the mobile client's routing graph or positioning will work.
+ */
+function hasGeometricShelfAccess(document: LayoutDocument, shelf: LayoutElement): boolean {
+  const shelfBounds = elementBounds(shelf);
+  const { width, height } = document.gridSize;
+  if (![shelfBounds.left, shelfBounds.top, shelfBounds.right, shelfBounds.bottom, width, height].every(Number.isFinite)) return true;
+
+  const clearance = 0.5;
+  const accessPoints = [
+    { x: (shelfBounds.left + shelfBounds.right) / 2, y: shelfBounds.top - clearance },
+    { x: (shelfBounds.right + shelfBounds.left) / 2, y: shelfBounds.bottom + clearance },
+    { x: shelfBounds.left - clearance, y: (shelfBounds.top + shelfBounds.bottom) / 2 },
+    { x: shelfBounds.right + clearance, y: (shelfBounds.top + shelfBounds.bottom) / 2 },
+  ];
+  // Only known physical obstacles count. Aisles, POIs, and unknown legacy
+  // elements are deliberately treated as potentially walkable.
+  const obstacles = document.elements.filter((element) =>
+    element !== shelf && ["shelf", "wall", "cashier"].includes(element.type)
+    && Number.isFinite(element.x) && Number.isFinite(element.y)
+    && Number.isFinite(element.width) && Number.isFinite(element.height)
+    && (element.width ?? 0) > 0 && (element.height ?? 0) > 0,
+  );
+  return accessPoints.some((point) => {
+    // Keep a small body radius inside the map. A side beyond the map edge is
+    // not considered a usable approach point.
+    if (point.x < clearance || point.y < clearance || point.x > width - clearance || point.y > height - clearance) return false;
+    return !obstacles.some((obstacle) => {
+      const bounds = elementBounds(obstacle);
+      return point.x >= bounds.left - 0.25 && point.x <= bounds.right + 0.25
+        && point.y >= bounds.top - 0.25 && point.y <= bounds.bottom + 0.25;
+    });
+  });
+}
+
+function shelfProductTargets(shelf: LayoutElement): string[] {
+  const positions = Array.isArray(shelf.productPositions)
+    ? shelf.productPositions.filter((value): value is string | number => typeof value === "string" || typeof value === "number")
+      .map(String).map((value) => value.trim()).filter(Boolean)
+    : [];
+  const layoutCode = typeof shelf.layoutCode === "string" ? shelf.layoutCode.trim() : "";
+  return [...new Set([...positions, ...(layoutCode ? [layoutCode] : [])])];
+}
+
 export function validateLayout(document: LayoutDocument, assignedBeacons: AssignedBeacon[] = []): LayoutIssue[] {
   const issues: LayoutIssue[] = [];
   const add = (severity: LayoutIssue["severity"], code: string, message: string, elementId: ElementId | null = null) => issues.push({ severity, code, message, elementId });
@@ -62,6 +108,16 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
   for (const beacon of assignedBeacons) {
     const key = beacon.beaconCode || beacon.id || beacon.identityKey;
     if (key && !beaconIds.has(key)) add("warning", "beacon-unused", `Zugewiesener Beacon ${key} ist noch nicht platziert.`);
+  }
+  for (const shelf of document.elements.filter((element) => element.type === "shelf")) {
+    const targets = shelfProductTargets(shelf);
+    // Category/section metadata alone is not a product route target. Legacy
+    // layouts without explicit target geometry therefore remain unchanged.
+    if (targets.length && hasGeometricShelfAccess(document, shelf)) continue;
+    if (targets.length) {
+      const name = shelf.label || "Regal";
+      add("warning", "routing-access", `${name}: Für ${targets.join(", ")} ist anhand der Geometrie kein direkter Regalzugang erkennbar. Bitte Routing manuell prüfen; dies ist keine Aussage zur mobilen Routbarkeit.`, shelf.id ?? null);
+    }
   }
   // Physical fixtures may intentionally touch. Overlap warnings prompt review, not publication denial.
   const fixtures = document.elements.filter((element): element is LayoutElement => element.type !== "beacon" && element.type !== "entrance");

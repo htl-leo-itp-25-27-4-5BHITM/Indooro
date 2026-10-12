@@ -100,6 +100,36 @@ test("shelf locations require the customer CODE/SECTION format before publicatio
   assert.equal(validateLayout(source).some((issue) => issue.code === "shelf-category"), false);
 });
 
+test("routing readiness warns only for explicit product targets with no geometric shelf approach", () => {
+  const source: LayoutDocument = {
+    shopName: "Routing fixture", gridSize: { width: 12, height: 12 },
+    elements: [
+      { id: "entry", type: "entrance", x: 0, y: 0, width: 2, height: 1 },
+      { id: "target-shelf", type: "shelf", x: 5, y: 5, width: 2, height: 2, category: "310/1", productPositions: ["310-42", "310-43"] },
+    ],
+  };
+  assert.equal(validateLayout(source).some((issue) => issue.code === "routing-access"), false);
+
+  // Each side has a known physical obstruction, while the shelf itself stays
+  // in bounds. The issue remains a warning and links back to the target shelf.
+  source.elements.push(
+    { id: "north", type: "wall", x: 4, y: 2, width: 4, height: 2.75 },
+    { id: "south", type: "wall", x: 4, y: 7.25, width: 4, height: 2 },
+    { id: "west", type: "wall", x: 2, y: 4, width: 2.75, height: 4 },
+    { id: "east", type: "wall", x: 7.25, y: 4, width: 2, height: 4 },
+  );
+  const warning = validateLayout(source).find((issue) => issue.code === "routing-access");
+  assert.equal(warning?.severity, "warning");
+  assert.equal(warning?.elementId, "target-shelf");
+  assert.match(warning?.message ?? "", /310-42, 310-43/);
+  assert.match(warning?.message ?? "", /keine Aussage zur mobilen Routbarkeit/);
+});
+
+test("category-only legacy shelves do not get a routing readiness warning", () => {
+  const source = fixture();
+  assert.equal(validateLayout(source).some((issue) => issue.code === "routing-access"), false);
+});
+
 test("zoom keeps the cursor over the same world point", () => {
   const viewport = { x: 35, y: -20, scale: 10 };
   const cursor = { x: 270, y: 140 };
