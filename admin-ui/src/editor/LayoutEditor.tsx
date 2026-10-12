@@ -285,6 +285,15 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
       </aside>
       <div className="le-center">
         <div className="le-canvas-toolbar"><span>{document.gridSize.width} × {document.gridSize.height} Rastereinheiten</span><label><input type="checkbox" checked={showGrid} onChange={(event) => setShowGrid(event.target.checked)} /> Raster</label><label><input type="checkbox" checked={snapping} onChange={(event) => setSnapping(event.target.checked)} /> Einrasten</label><button type="button" onClick={() => setEditor(undo)} disabled={!editor.past.length} title="Rückgängig">↶</button><button type="button" onClick={() => setEditor(redo)} disabled={!editor.future.length} title="Wiederholen">↷</button><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1.2))}>＋</button><span>{viewport.scale.toFixed(1)} px/E</span><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1 / 1.2))}>－</button><button type="button" onClick={() => setViewport(fitViewport(document.gridSize, canvasSize))}>Einpassen</button></div>
+        <div className="le-mobile-controls" aria-label="Mobile Grundrisswerkzeuge">
+          <div className="le-tool-row">
+            <button type="button" aria-pressed={tool === "select"} onClick={() => setTool("select")}>Auswählen</button>
+            <button type="button" aria-pressed={tool === "pan"} onClick={() => setTool("pan")}>Verschieben</button>
+          </div>
+          <label>Elementtyp<select aria-label="Elementtyp" value={createType} onChange={(event) => { setCreateType(event.target.value as (typeof TYPES)[number]["type"]); setTool("create"); }}>
+            {TYPES.map((item) => <option key={item.type} value={item.type}>{item.label}</option>)}
+          </select></label>
+        </div>
         <svg ref={svgRef} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} aria-label="Interaktiver Grundriss" role="img">
           <defs><pattern id="le-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#d9e2df" strokeWidth={0.045} /></pattern></defs>
           <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>

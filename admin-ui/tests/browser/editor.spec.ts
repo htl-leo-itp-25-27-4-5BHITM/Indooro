@@ -65,3 +65,29 @@ test("store editor links an unassigned beacon error and blocks publishing after 
   await expect(page.getByRole("button", { name: "Veröffentlichen" })).toBeDisabled();
   expect(saved[0].elements).toHaveLength(4);
 });
+
+test("mobile editor keeps the canvas in the first viewport and exposes compact placement controls", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockEditor(page, "DRAFT", []);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+
+  const canvas = page.getByRole("img", { name: "Interaktiver Grundriss" });
+  await expect(canvas).toBeVisible();
+  expect((await canvas.boundingBox())?.y).toBeLessThan(844);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+
+  const typeChooser = page.getByRole("combobox", { name: "Elementtyp" });
+  await typeChooser.selectOption("shelf");
+  await expect(canvas).toHaveClass(/le-tool-create/);
+  await expect(page.locator(".le-canvas-footer")).toContainText("Regal platzieren");
+  await expect(page.getByRole("button", { name: "Auswählen", exact: true }).first()).toHaveAttribute("aria-pressed", "false");
+});
+
+test("desktop editor keeps its palette controls and hides mobile controls", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await mockEditor(page, "DRAFT", []);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await expect(page.locator(".le-left .le-library")).toBeVisible();
+  await expect(page.locator(".le-mobile-controls")).toBeHidden();
+  await expect(page.locator(".le-left .le-tool-row button", { hasText: "Verschieben" })).toBeVisible();
+});
