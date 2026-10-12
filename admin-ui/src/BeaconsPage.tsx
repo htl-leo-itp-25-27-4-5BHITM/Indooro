@@ -70,6 +70,7 @@ export function validateBeaconDraft(draft: BeaconDraft, existing: Beacon[], edit
   const uuid = normalizeBeaconUuid(draft.uuid);
   if (!draft.beaconCode.trim()) errors.beaconCode = "Beacon-Code ist erforderlich.";
   else if (draft.beaconCode.trim().length > 60) errors.beaconCode = "Der Beacon-Code darf höchstens 60 Zeichen enthalten.";
+  else if (existing.some((beacon) => beacon.id !== editingId && beacon.beaconCode.trim().toLowerCase() === draft.beaconCode.trim().toLowerCase())) errors.beaconCode = "Dieser Beacon-Code ist bereits vergeben.";
   if (!uuid) errors.uuid = "UUID muss 32 hexadezimale Zeichen enthalten; Bindestriche sind erlaubt.";
   else {
     const major = draft.major.trim() === "" ? null : Number(draft.major);

@@ -49,6 +49,13 @@ test("rejects malformed or half-specified beacon identities and duplicate identi
   assert.match(validateBeaconDraft({ ...duplicate, uuid: "bad" }, []).uuid, /32 hexadezimale/);
 });
 
+test("single beacon form catches duplicate codes and permits the beacon being edited", () => {
+  const first = { ...assignedBeacon, beaconCode: "B-001" };
+  const draft: BeaconDraft = { beaconCode: " b-001 ", uuid: first.uuid, major: "1", minor: "2", notes: "" };
+  assert.match(validateBeaconDraft(draft, [first]).beaconCode, /Code ist bereits vergeben/);
+  assert.deepEqual(validateBeaconDraft(draft, [first], first.id), {});
+});
+
 test("bulk review identifies row, duplicate code, and shared identity errors before commit", () => {
   const parsed = parseBulkBeacons("fda50693-a4e2-4fb1-afcf-c6eb07647825", "1", "B-002,3\nB-002,4\nB-004,3\nB-003,nope\n,5", [assignedBeacon]);
   assert.equal(parsed.uuid, "fda50693a4e24fb1afcfc6eb07647825");
