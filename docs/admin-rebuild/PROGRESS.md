@@ -75,3 +75,5 @@ After concurrent activations, the script reactivated that earlier published stor
 Candidate diagnostics now reads the local audit and error-log endpoints with an admin session, displays real audit rows, and refreshes by keyboard. Scoped users' API and direct-link denials continue to pass in the same live run. A representative stack trace and live fault recovery remain open.
 
 Expanded live direct-link checks exposed a candidate UX defect: region managers received HTTP 403 on foreign Store detail/editor APIs, but the pages showed a generic load failure. Both now render access denied without retry; a browser regression covers both paths. The rebuilt packaged image passes 15 denied direct links, 12 authenticated candidate refreshes, the full CRUD/editor live script, and ten route switch/rollback pairs. Candidate tests pass 59 unit and 62 browser cases. The new immutable image ID and jar hash are recorded in `RELEASE_EVIDENCE.md`.
+
+The live script now compares region/store-manager dashboard metrics with each role's scoped region, store, missing-layout, and free-beacon APIs and confirms admin-only activity is absent. The packaged-image run remains green.

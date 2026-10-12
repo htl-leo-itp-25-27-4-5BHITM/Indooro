@@ -309,6 +309,17 @@ try {
     const page = await login(user);
     const me = expectOk(await api(page, "GET", "/api/admin/me"), `${role} login`);
     assert.equal(me.role, role);
+    const dashboardRegions = expectOk(await api(page, "GET", "/api/regions"), `${role} dashboard regions`);
+    const dashboardStores = expectOk(await api(page, "GET", "/api/stores?size=1"), `${role} dashboard stores`);
+    const dashboardMissingLayouts = expectOk(await api(page, "GET", "/api/stores?size=1&hasActiveLayout=false"), `${role} dashboard missing layouts`);
+    const dashboardFreeBeacons = expectOk(await api(page, "GET", "/api/beacons/free"), `${role} dashboard free beacons`);
+    await page.goto(`${base}/admin/next/`, { waitUntil: "domcontentloaded" });
+    const metrics = page.getByRole("region", { name: "Kennzahlen" });
+    for (const [label, expected] of [
+      ["Regionen", dashboardRegions.length], ["Stores", dashboardStores.totalElements],
+      ["Freie Beacons", dashboardFreeBeacons.length], ["Layouts offen", dashboardMissingLayouts.totalElements]
+    ]) assert.equal(Number(await metrics.locator(".metric").filter({ hasText: label }).locator("strong").textContent()), expected, `${role} dashboard metric ${label}`);
+    assert.equal(await page.getByRole("heading", { name: "Letzte Aktivitäten" }).count(), 0);
     assert.equal((await api(page, "GET", `/api/stores/${store.id}`)).status, 200);
     assert.equal((await api(page, "GET", `/api/stores/${foreignStore.id}`)).status, 403);
     assert.equal((await api(page, "GET", `/api/regions/${foreignRegion.id}`)).status, 403);
@@ -493,7 +504,7 @@ try {
   await admin.keyboard.press("Enter");
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeLifecycle: true, candidateDiagnosticsReadRefresh: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeLifecycle: true, candidateDiagnosticsReadRefresh: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();

@@ -57,6 +57,8 @@ The candidate diagnostics route also loaded admin audit/error logs from the pack
 
 An expanded role run found that foreign-store detail/editor API calls returned 403, but the candidate pages rendered a generic loading error. Both pages now render an explicit access-denied state without retry. The rebuilt image passed all 15 denied direct links, the full live script, and the ten route switch/rollback checks.
 
+The live script also compares four manager dashboard metrics with each role's scoped API responses and verifies that admin-only activity is absent; its output reports `candidateScopedDashboard: true`.
+
 ## Evidence boundary (2026-10-12)
 
 | Area | Observed in the local run | Still not established |
