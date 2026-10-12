@@ -87,7 +87,7 @@ The `legacy/` directory holds the ten current static-route captures from the 202
 | Recipes | [recipes](screenshots/legacy/recipes.png) | — | `/admin/recipes/`; `/admin/next/recipes/`; `admin-ui/tests/browser/recipes.spec.ts` |
 | Diagnostics | [diagnostics](screenshots/legacy/diagnostics.png) | — | `/admin/server-logs/`; `/admin/next/server-logs/`; `admin-ui/tests/browser/diagnostics.spec.ts` |
 | Store layout editor | [store editor](screenshots/legacy/editor.png) | [candidate store editor](screenshots/store-editor.png) | `/admin/editor/?storeId={storeId}`; `/admin/next/editor/?storeId={storeId}`; `admin-ui/tests/browser/editor.spec.ts` |
-| Global layout editor | — | [candidate global editor](screenshots/global-editor.png) | `/admin/editor/`; `/admin/next/editor/`; `admin-ui/tests/browser/legacy-editor.spec.ts` |
+| Global layout editor | [global editor](screenshots/legacy/global-editor.png) | [candidate global editor](screenshots/global-editor.png) | `/admin/editor/`; `/admin/next/editor/`; `admin-ui/tests/browser/legacy-editor.spec.ts` |
 
 Candidate browser specs use mocked APIs. The local live acceptance adds authenticated refreshes and backend-backed workflows but does not exercise every listed action/state. Existing screenshots are retained unchanged.
 

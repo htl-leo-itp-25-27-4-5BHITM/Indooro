@@ -45,5 +45,6 @@ These are examples of the candidate UI, not proof that every route is released:
 - Dashboard: [dashboard.png](screenshots/dashboard.png)
 - Products: [products.png](screenshots/products.png)
 - Store editor: [store-editor.png](screenshots/store-editor.png)
+- Store editor on a narrow screen: [store-editor-mobile.png](screenshots/store-editor-mobile.png)
 - Global editor: [global-editor.png](screenshots/global-editor.png)
 
