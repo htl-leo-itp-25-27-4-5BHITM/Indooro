@@ -48,7 +48,7 @@ npm run test:live:cutover
 
 The run uses a local development stack. Production deployment, iOS device testing, and migration of the current `/admin/*` routes require separate acceptance evidence.
 
-The external `test:live` script was extended without changing the packaged image. Its latest run passed candidate UI region create/edit/archive, beacon create/edit/assign/release/archive, store-manager store-detail edit, product create/edit/delete, and recipe edit/publish/deactivate, including persisted API and public post-state checks. The output reports `candidateRegionLifecycle`, `candidateBeaconLifecycle`, `candidateStoreDetailEdit`, `candidateProductLifecycle`, and `candidateRecipeLifecycle` as `true`.
+The external `test:live` script was extended without changing the packaged image. Its latest run passed candidate UI region create/edit/archive, beacon create/edit/assign/release/archive, region-manager store create and detail navigation, store-manager store-detail edit, product create/edit/delete, and recipe edit/publish/deactivate, including persisted API and public post-state checks. The output reports `candidateRegionLifecycle`, `candidateBeaconLifecycle`, `candidateStoreCreate`, `candidateStoreDetailEdit`, `candidateProductLifecycle`, and `candidateRecipeLifecycle` as `true`.
 
 ## Evidence boundary (2026-10-12)
 

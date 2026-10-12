@@ -361,6 +361,25 @@ try {
     if (role === "region-manager") {
       assert.equal(attemptedCreate.status, 200, "region manager creates in assigned region");
       assert.equal((await api(page, "POST", "/api/stores", { ...ownUpdate, storeCode: `FOREIGN-${run}`, regionId: foreignRegion.id })).status, 403);
+      const uiStoreCode = `UI-STORE-${run}`;
+      const uiStoreName = `UI Store ${run}`;
+      await page.goto(`${base}/admin/next/stores/new/`, { waitUntil: "domcontentloaded" });
+      for (const [label, value] of [
+        ["Store-Code", uiStoreCode], ["Name", uiStoreName], ["Straße", "UI Testgasse 4"],
+        ["PLZ", "4020"], ["Ort", "Linz"], ["Land", "AT"]
+      ]) await page.getByRole("textbox", { name: label, exact: true }).fill(value);
+      await page.getByRole("button", { name: "Store anlegen" }).click();
+      await page.getByRole("heading", { name: "Store angelegt" }).waitFor();
+      const createdStoreLink = await page.getByRole("link", { name: "Store-Detail öffnen" }).getAttribute("href");
+      assert.ok(createdStoreLink, "candidate store creation links to detail");
+      const uiStoreId = new URL(createdStoreLink, base).searchParams.get("storeId");
+      assert.ok(uiStoreId, "candidate store creation returned a store ID");
+      const uiStore = expectOk(await api(page, "GET", `/api/stores/${uiStoreId}`), "candidate scoped store create");
+      assert.equal(uiStore.region.id, region.id);
+      assert.equal(uiStore.name, uiStoreName);
+      await page.getByRole("link", { name: "Store-Detail öffnen" }).click();
+      await page.getByRole("heading", { name: uiStoreName }).waitFor();
+      assert.ok((await publicJson("/api/mobile/stores")).some((item) => item.id === uiStoreId && item.name === uiStoreName));
     } else {
       assert.equal(attemptedCreate.status, 403, "store manager cannot create a store");
     }
@@ -438,7 +457,7 @@ try {
   const current = await currentLayout(store.id);
   assert.ok(activated.some((version) => version.layoutId === current.layoutId));
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeLifecycle: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeLifecycle: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();
