@@ -89,11 +89,26 @@ try {
   }), "other store create");
   assignDemoScopes(region.id, store.id);
   const mobileStores = await publicJson("/api/mobile/stores");
-  assert.ok(Array.isArray(mobileStores) && mobileStores.some((item) => item.id === store.id));
+  assert.ok(Array.isArray(mobileStores));
+  const mobileStore = mobileStores.find((item) => item.id === store.id);
+  assert.ok(mobileStore, "new store appears in the anonymous iOS store list");
+  for (const key of ["id", "storeCode", "name", "city"]) assert.equal(typeof mobileStore[key], "string", `iOS store field ${key}`);
   const beaconIdentities = await publicJson("/api/mobile/stores/beacon-identities");
   assert.ok(Array.isArray(beaconIdentities.uuids));
   assert.ok(Array.isArray(await publicJson("/api/products?size=5")));
   assert.ok(Array.isArray(await publicJson("/api/products/search?q=apfel&size=5")));
+  const productId = Math.floor(Date.now() / 1000);
+  const productName = `Live Produkt ${run}`;
+  expectOk(await api(admin, "POST", "/api/admin/products", { id: productId, name: productName, price: 2.49, layoutCode: "310/1/1/1", storeCode: store.storeCode }), "product create");
+  let publicProduct;
+  for (let attempt = 0; attempt < 20 && !publicProduct; attempt += 1) {
+    publicProduct = (await publicJson(`/api/products/search?q=${encodeURIComponent(productName)}&size=10`)).find((item) => item.id === productId);
+    if (!publicProduct) await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  assert.ok(publicProduct, "new product appears in the anonymous iOS/customer search");
+  assert.equal(publicProduct.name, productName);
+  assert.equal(publicProduct.price, 2.49);
+  assert.equal(publicProduct.layoutCode, "310/1/1/1");
   const mobileRecipes = await publicJson("/api/mobile/recipes?page=0&size=5");
   assert.ok(Array.isArray(mobileRecipes.content));
 
@@ -133,7 +148,13 @@ try {
   assert.equal((await currentLayout(store.id)).source, "DEFAULT");
   const published = expectOk(await api(admin, "POST", `${layoutPath}/${draft.layoutId}/activate`, {}), "draft publish");
   assert.equal(published.status, "ACTIVE");
-  assert.equal((await currentLayout(store.id)).layoutId, draft.layoutId);
+  const mobilePublished = await currentLayout(store.id);
+  assert.equal(mobilePublished.layoutId, draft.layoutId);
+  assert.equal(mobilePublished.storeId, store.id);
+  assert.equal(mobilePublished.layout.shopName, "First draft");
+  assert.equal(typeof mobilePublished.layout.gridSize.width, "number");
+  assert.equal(typeof mobilePublished.layout.gridSize.height, "number");
+  assert.ok(mobilePublished.layout.elements.every((item) => Number.isInteger(item.id) && typeof item.type === "string" && typeof item.x === "number" && typeof item.y === "number"));
 
   for (const [user, role] of [[regionUser, "region-manager"], [storeUser, "store-manager"]]) {
     const page = await login(user);
@@ -193,7 +214,7 @@ try {
   const current = await currentLayout(store.id);
   assert.ok(activated.some((version) => version.layoutId === current.layoutId));
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, roleChecks: 2, publicContracts: 6, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, roleChecks: 2, publicContracts: 6, publicProductAfterMutation: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();

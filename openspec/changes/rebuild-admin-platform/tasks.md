@@ -3,8 +3,8 @@
 - [ ] 1.1 Verify this proposal, delta specs, and design against a running local stack; record corrections before implementation. A dated runtime/spec review is now in `docs/admin-rebuild/BASELINE.md`, but it postdates implementation and therefore does not meet the stated timing gate.
 - [ ] 1.2 Inventory every current admin route, user action, API call, role, scope, and page state with reproducible fixtures and screenshots. Route/action/API/source references and captures are recorded, but not every action and page state has a reproducible fixture.
 - [x] 1.3 Record current backend, frontend, database, Keycloak, OpenSearch, and public mobile/customer smoke results, separating observed behavior from specifications. See the dated evidence boundary in `docs/admin-rebuild/LIVE_STACK.md`.
-- [ ] 1.4 Map each `fix-admin-dashboard-contract-drift` UI task to an old-route fix or replacement-route acceptance test; preserve its backend/API tasks and obtain coordinated task updates before closing any overlap.
-- [ ] 1.5 Map `establish-shared-api-contract` JSDoc/type-generation tasks to the new TypeScript client while preserving reviewed-schema parity and CI ownership; record coordinated changes before closing them.
+- [x] 1.4 Map each `fix-admin-dashboard-contract-drift` UI task to an old-route fix or replacement-route acceptance test; preserve its backend/API tasks and obtain coordinated task updates before closing any overlap.
+- [x] 1.5 Map `establish-shared-api-contract` JSDoc/type-generation tasks to the new TypeScript client while preserving reviewed-schema parity and CI ownership; record coordinated changes before closing them.
 - [x] 1.6 Confirm `protect-legacy-write-endpoints` route protection and `harden-platform-security-baseline` CSP/encoding acceptance before switching new frontend routes.
 
 ## 2. Frontend Build And Security Foundation
@@ -45,7 +45,7 @@
 ## 5. Contracts, Documentation, And Release
 
 - [x] 5.1 Add every rebuild-owned HTTP change to reviewed `openspec/specs/shared-api/openapi.yaml` with operation, auth, payload, error, and consumer coverage.
-- [ ] 5.2 Verify iOS/customer anonymous catalog, store, and current-layout contract fixtures after admin mutation and editor publication changes.
+- [x] 5.2 Verify iOS/customer anonymous catalog, store, and current-layout contract fixtures after admin mutation and editor publication changes.
 - [ ] 5.3 Run frontend typecheck/lint/unit/component tests, route Playwright tests, backend tests, API role matrix, package smoke tests, and `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
 - [ ] 5.4 Perform complete workflows on a running stack as admin, region manager, and store manager, including denial of out-of-scope direct links and mutations.
 - [ ] 5.5 Update admin developer, operations, migration, rollback, and user documentation with actual commands, screenshots, route map, and known limits.
