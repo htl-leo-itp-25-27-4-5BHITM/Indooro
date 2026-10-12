@@ -91,6 +91,15 @@ test("validation links bounds, rotated bounds, beacon assignment and overlap to 
   assert.ok(issues.some((issue) => issue.code === "metadata" && issue.elementId === "s2"));
 });
 
+test("shelf locations require the customer CODE/SECTION format before publication", () => {
+  const source = fixture();
+  source.elements[1].category = "310";
+  const invalid = validateLayout(source);
+  assert.ok(invalid.some((issue) => issue.code === "shelf-category" && issue.severity === "error" && issue.elementId === "s-1"));
+  source.elements[1].category = "310/1";
+  assert.equal(validateLayout(source).some((issue) => issue.code === "shelf-category"), false);
+});
+
 test("zoom keeps the cursor over the same world point", () => {
   const viewport = { x: 35, y: -20, scale: 10 };
   const cursor = { x: 270, y: 140 };

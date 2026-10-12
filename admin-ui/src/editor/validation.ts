@@ -40,10 +40,10 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
     if ((element.type === "shelf" || element.type === "poi") && !element.category && !element.layoutCode) {
       add("warning", "metadata", `${name} hat keine Kategorie oder Layoutkennung.`, id);
     }
-    if (element.type === "shelf" && typeof element.category === "string" && element.category.includes("/")) {
+    if (element.type === "shelf" && typeof element.category === "string" && element.category.trim()) {
       const parts = element.category.split("/");
       const section = Number(parts[1]);
-      if (parts.length !== 2 || !parts[0] || !Number.isInteger(section) || section <= 0) {
+      if (parts.length !== 2 || !parts[0].trim() || !Number.isInteger(section) || section <= 0) {
         add("error", "shelf-category", `${name} braucht eine Kategorie im Format Code/Abschnitt.`, id);
       } else if (element.meter !== null && element.meter !== undefined && element.meter !== section) {
         add("error", "shelf-section", `${name}: Kategorie-Abschnitt und Meterangabe widersprechen sich.`, id);
