@@ -14,7 +14,7 @@
 - [x] 2.3 Implement a route cutover map that keeps existing static pages active until their parity gate passes and permits route-level rollback.
 - [x] 2.4 Implement a typed same-origin API client with one response-body read, 401/403 handling, validation/conflict messages, cancellation, and request-state tests.
 - [x] 2.5 Implement `/api/admin/me` bootstrap, role/scope-aware navigation, logout to `/admin/logout`, and direct-link access-denied states.
-- [ ] 2.6 Add design tokens and accessible shell, form, table, dialog, notification, loading, empty, and error components with keyboard and contrast checks.
+- [x] 2.6 Add design tokens and accessible shell, form, table, dialog, notification, loading, empty, and error components with keyboard and contrast checks.
 - [x] 2.7 Verify the new frontend has no runtime CDN dependency, uses safe text rendering, and runs under the CSP specified by `harden-platform-security-baseline`.
 
 ## 3. Core Staff Routes
@@ -44,7 +44,7 @@
 
 ## 5. Contracts, Documentation, And Release
 
-- [ ] 5.1 Add every rebuild-owned HTTP change to reviewed `openspec/specs/shared-api/openapi.yaml` with operation, auth, payload, error, and consumer coverage.
+- [x] 5.1 Add every rebuild-owned HTTP change to reviewed `openspec/specs/shared-api/openapi.yaml` with operation, auth, payload, error, and consumer coverage.
 - [ ] 5.2 Verify iOS/customer anonymous catalog, store, and current-layout contract fixtures after admin mutation and editor publication changes.
 - [ ] 5.3 Run frontend typecheck/lint/unit/component tests, route Playwright tests, backend tests, API role matrix, package smoke tests, and `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
 - [ ] 5.4 Perform complete workflows on a running stack as admin, region manager, and store manager, including denial of out-of-scope direct links and mutations.
