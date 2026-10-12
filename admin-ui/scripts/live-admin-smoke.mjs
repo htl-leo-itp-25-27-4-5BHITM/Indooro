@@ -8,7 +8,7 @@ import { chromium } from "@playwright/test";
 const base = "http://localhost:8080";
 const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8"));
 const [adminUser, regionUser, storeUser] = realm.users;
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: process.env.ADMIN_SMOKE_HOST_ALIAS ? ["--host-resolver-rules=MAP host.docker.internal 127.0.0.1"] : [] });
 
 async function login(user, path = "/admin/next/") {
   const page = await browser.newPage();

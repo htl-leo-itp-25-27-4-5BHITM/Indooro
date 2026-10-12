@@ -48,6 +48,6 @@
 - [x] 5.2 Verify iOS/customer anonymous catalog, store, and current-layout contract fixtures after admin mutation and editor publication changes.
 - [ ] 5.3 Run frontend typecheck/lint/unit/component tests, route Playwright tests, backend tests, API role matrix, package smoke tests, and `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
 - [ ] 5.4 Perform complete workflows on a running stack as admin, region manager, and store manager, including denial of out-of-scope direct links and mutations.
-- [ ] 5.5 Update admin developer, operations, migration, rollback, and user documentation with actual commands, screenshots, route map, and known limits.
-- [ ] 5.6 Verify a production build and immutable image artifact; record image tag, manifests, secrets, health checks, and public/protected smoke commands before any authorized LeoCloud rollout.
+- [x] 5.5 Update admin developer, operations, migration, rollback, and user documentation with actual commands, screenshots, route map, and known limits. See `docs/admin-rebuild/{ADMIN_GUIDE,DEVELOPER_OPERATIONS,ROUTE_CUTOVER,ROUTE_INVENTORY,RELEASE_EVIDENCE}.md`.
+- [x] 5.6 Verify a production build and immutable image artifact; record image tag, manifests, secrets, health checks, and public/protected smoke commands before any authorized LeoCloud rollout. The local immutable image ID and `prod` profile live result are in `RELEASE_EVIDENCE.md`; no registry push or rollout occurred.
 - [ ] 5.7 After implementation evidence satisfies every requirement and scenario, mark task boxes accurately, run OpenSpec verification, and archive this change through the normal workflow.

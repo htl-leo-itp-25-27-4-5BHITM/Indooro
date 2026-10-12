@@ -4,10 +4,10 @@ import { chromium } from "@playwright/test";
 
 // Exercise every current URL with one simulated map flag, then its rollback.
 // The committed route map remains unchanged and all flags remain disabled.
-const base = "http://localhost:8080";
+const base = process.env.ADMIN_SMOKE_BASE_URL || "http://localhost:8080";
 const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8"));
 const user = realm.users[0];
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: process.env.ADMIN_SMOKE_HOST_ALIAS ? ["--host-resolver-rules=MAP host.docker.internal 127.0.0.1"] : [] });
 const page = await browser.newPage();
 
 try {
