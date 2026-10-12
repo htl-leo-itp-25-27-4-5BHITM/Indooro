@@ -130,3 +130,25 @@ test("candidate store list keeps server filters and paging in direct links", asy
   await expect(page).not.toHaveURL(/page=1/);
   await expect.poll(() => storeRequests.at(-1)).toContain("hasActiveLayout=true");
 });
+
+test("candidate stores exposes empty, load-error, and keyboard retry states", async ({ page }) => {
+  let fail = true;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", email: null, role: "admin", scope: null } }));
+  await page.route("**/api/regions", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/stores?*", (route) => fail
+    ? route.fulfill({ status: 503, json: { error: "Unavailable" } })
+    : route.fulfill({ json: { content: [], page: 0, size: 20, totalElements: 0 } }));
+  await page.goto("/admin/next/stores/");
+  await expect(page.getByRole("alert")).toContainText("Stores konnten nicht geladen werden");
+  await expect(page.getByRole("button", { name: "Erneut versuchen" })).toBeVisible();
+
+  fail = false;
+  await page.getByRole("button", { name: "Erneut versuchen" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("region", { name: "Store-Ergebnisse" })).toContainText("Keine Stores passen zu den Filtern.");
+
+  await page.getByRole("searchbox", { name: "Suche" }).focus();
+  await page.keyboard.type("Linz");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("combobox", { name: "Region" })).toBeFocused();
+});
