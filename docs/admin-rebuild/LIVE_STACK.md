@@ -59,6 +59,8 @@ An expanded role run found that foreign-store detail/editor API calls returned 4
 
 The live script also compares four manager dashboard metrics with each role's scoped API responses and verifies that admin-only activity is absent; its output reports `candidateScopedDashboard: true`.
 
+The live store editor also exports and reimports JSON with a navigation metadata marker. The marker survived draft save, publication, anonymous current-layout retrieval, and version recovery against the same packaged image; the output reports `layoutJsonRoundTrip: true`.
+
 ## Evidence boundary (2026-10-12)
 
 | Area | Observed in the local run | Still not established |

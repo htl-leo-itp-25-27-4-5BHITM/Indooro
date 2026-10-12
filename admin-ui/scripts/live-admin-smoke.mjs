@@ -414,6 +414,17 @@ try {
 
   const manager = await login(storeUser, `/admin/next/editor/?storeId=${store.id}`);
   await manager.locator(".le-canvas").waitFor();
+  const downloadPromise = manager.waitForEvent("download");
+  await manager.getByRole("button", { name: "JSON exportieren" }).click();
+  const exportedLayout = JSON.parse(readFileSync(await (await downloadPromise).path(), "utf8"));
+  assert.equal(exportedLayout.shopName, "First draft");
+  assert.equal(exportedLayout.elements.length, 2);
+  delete exportedLayout.exportDate;
+  exportedLayout.navigationMetadata = { ...(exportedLayout.navigationMetadata ?? {}), smokeMarker: run };
+  await manager.getByLabel("Grundrissdatei importieren").setInputFiles({
+    name: "live-layout.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(exportedLayout))
+  });
+  await manager.getByRole("status").getByText("Grundriss importiert. Bitte prüfen und als Entwurf speichern.").waitFor();
   await manager.locator(".le-layers button").nth(1).click();
   const selectedX = manager.getByLabel("X", { exact: true });
   const initialX = Number(await selectedX.inputValue());
@@ -447,6 +458,7 @@ try {
   assert.equal(edited.layout.elements[1].accessAngle, 135);
   assert.equal(edited.layout.elements[1].layoutCode, "310/1/1/1");
   assert.deepEqual(edited.layout.elements[1].productPositions, ["310-42"]);
+  assert.equal(edited.layout.navigationMetadata.smokeMarker, run);
   await manager.goto(`${base}/admin/next/stores/detail/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
   await manager.getByRole("heading", { name: "Stammdaten" }).waitFor();
   await manager.getByText("Aktiv: Version", { exact: false }).waitFor();
@@ -492,6 +504,7 @@ try {
   assert.equal(restoredPublicLayout.layoutId, edited.layoutId);
   assert.equal(restoredPublicLayout.layout.elements[1].x, initialX + 1);
   assert.equal(restoredPublicLayout.layout.elements[1].accessAngle, 135);
+  assert.equal(restoredPublicLayout.layout.navigationMetadata.smokeMarker, run);
 
   const auditLogs = expectOk(await api(admin, "GET", "/api/admin/logs?limit=50"), "admin audit logs");
   const errorLogs = expectOk(await api(admin, "GET", "/api/admin/error-logs?limit=50"), "admin error logs");
@@ -504,7 +517,7 @@ try {
   await admin.keyboard.press("Enter");
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeLifecycle: true, candidateDiagnosticsReadRefresh: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeLifecycle: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();
