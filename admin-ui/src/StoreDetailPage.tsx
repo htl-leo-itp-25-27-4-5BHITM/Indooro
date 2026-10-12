@@ -8,11 +8,17 @@ interface StoreDetail {
   latitude: number | null; longitude: number | null; notes: string | null; status: string;
   region: Region; activeLayout: { id: string; versionNo: number } | null;
 }
-interface BeaconAssignment { beaconId: string; beaconCode: string; identityKey: string; assignedAt: string }
+interface BeaconAssignment { beaconId: string; beaconCode: string; identityKey: string; assignedAt: string; isActive?: boolean }
 interface FreeBeacon { id: string; beaconCode: string; identityKey: string }
-interface LayoutVersion { layoutId: string; versionNo: number; status: string; layoutName: string | null; createdAt: string }
-interface AuditEntry { id: string; action: string; summary: string; actorLabel: string; createdAt: string }
+interface LayoutVersion { layoutId: string; versionNo: number; status: string; layoutName: string | null; createdAt: string; activatedAt?: string | null }
+interface AuditEntry { id: string; entityType?: string; action: string; summary: string; actorLabel: string; actorRole?: string; createdAt: string }
 interface StoreData { store: StoreDetail; regions: Region[]; beacons: BeaconAssignment[]; versions: LayoutVersion[]; audit: AuditEntry[]; free: FreeBeacon[] }
+
+function formattedDate(value?: string | null): string {
+  if (!value) return "–";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "–" : date.toLocaleString("de-AT");
+}
 
 export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUser }) {
   const storeId = new URLSearchParams(window.location.search).get("storeId");
@@ -94,14 +100,14 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
       </form> : <dl className="detail-facts"><div><dt>Region</dt><dd>{store.region.name}</dd></div><div><dt>Land</dt><dd>{store.country}</dd></div><div><dt>Koordinaten</dt><dd>{store.latitude == null || store.longitude == null ? "Nicht gesetzt" : `${store.latitude}, ${store.longitude}`}</dd></div><div><dt>Notizen</dt><dd>{store.notes || "–"}</dd></div></dl>}
     </section>
     <section className="notice detail-section" aria-labelledby="beacons-title"><div className="section-heading"><h3 id="beacons-title">Beacons ({beacons.length})</h3></div>
-      {beacons.length ? <ul className="detail-list">{beacons.map((beacon) => <li key={beacon.beaconId}><span><strong>{beacon.beaconCode}</strong><small>{beacon.identityKey}</small></span><button className="button" disabled={busy} onClick={() => { if (window.confirm(`Beacon ${beacon.beaconCode} freigeben?`)) void mutate(() => api.post(`/api/beacons/${encodeURIComponent(beacon.beaconId)}/release`, {}), "Beacon freigegeben."); }}>Freigeben</button></li>)}</ul> : <p>Keine Beacons zugeordnet.</p>}
+      {beacons.length ? <ul className="detail-list">{beacons.map((beacon) => <li key={beacon.beaconId}><span><strong>{beacon.beaconCode}</strong><small>{beacon.identityKey} · Zugeordnet am {formattedDate(beacon.assignedAt)}</small></span><button className="button" disabled={busy} onClick={() => { if (window.confirm(`Beacon ${beacon.beaconCode} freigeben?`)) void mutate(() => api.post(`/api/beacons/${encodeURIComponent(beacon.beaconId)}/release`, {}), "Beacon freigegeben."); }}>Freigeben</button></li>)}</ul> : <p>Keine Beacons zugeordnet.</p>}
       {canAssign && <div className="inline-action"><label>Freien Beacon zuordnen<select value={selectedBeacon} onChange={(event) => setSelectedBeacon(event.target.value)}><option value="">Beacon wählen</option>{free.map((beacon) => <option key={beacon.id} value={beacon.id}>{beacon.beaconCode} · {beacon.identityKey}</option>)}</select></label><button className="button primary" disabled={busy || !selectedBeacon} onClick={() => void mutate(() => api.post(`/api/beacons/${encodeURIComponent(selectedBeacon)}/assign`, { storeId: store.id }), "Beacon zugeordnet.")}>Zuordnen</button></div>}
     </section>
     <section className="notice detail-section" aria-labelledby="layouts-title"><div className="section-heading"><h3 id="layouts-title">Layout-Versionen</h3><a className="button" href={`/admin/next/editor/?storeId=${encodeURIComponent(store.id)}`}>Layout Editor öffnen</a></div>
       <p>{store.activeLayout ? `Aktiv: Version ${store.activeLayout.versionNo}` : "Noch kein aktives Layout. Ein Entwurf kann im Editor angelegt werden."}</p>
-      {versions.length > 0 && <ul className="detail-list">{versions.map((version) => <li key={version.layoutId}><span>v{version.versionNo} · {version.layoutName || "Layout"} · {version.status}</span><a href={`/admin/next/editor/?storeId=${encodeURIComponent(store.id)}&layoutId=${encodeURIComponent(version.layoutId)}`}>Im Editor öffnen</a></li>)}</ul>}
+      {versions.length > 0 && <ul className="detail-list">{versions.map((version) => <li key={version.layoutId}><span><strong>v{version.versionNo} · {version.layoutName || "Layout"} · {version.status}</strong><small>Erstellt am {formattedDate(version.createdAt)}{version.activatedAt ? ` · Aktiviert am ${formattedDate(version.activatedAt)}` : ""}</small></span><a href={`/admin/next/editor/?storeId=${encodeURIComponent(store.id)}&layoutId=${encodeURIComponent(version.layoutId)}`}>Im Editor öffnen</a></li>)}</ul>}
     </section>
-    <section className="notice detail-section" aria-labelledby="audit-title"><h3 id="audit-title">Änderungsverlauf</h3>{audit.length ? <ul className="detail-list">{audit.map((entry) => <li key={entry.id}><span>{entry.summary} · {entry.actorLabel || "System"}</span><time dateTime={entry.createdAt}>{new Date(entry.createdAt).toLocaleString("de-AT")}</time></li>)}</ul> : <p>Keine Änderungen protokolliert.</p>}</section>
+    <section className="notice detail-section" aria-labelledby="audit-title"><h3 id="audit-title">Änderungsverlauf</h3>{audit.length ? <ul className="detail-list">{audit.map((entry) => <li key={entry.id}><span><strong>{entry.summary || "Änderung"}</strong><small>{[entry.entityType, entry.action, entry.actorLabel || entry.actorRole || "System"].filter(Boolean).join(" · ")}</small></span><time dateTime={entry.createdAt}>{formattedDate(entry.createdAt)}</time></li>)}</ul> : <p>Keine Änderungen protokolliert.</p>}</section>
     {canArchive && <section className="notice detail-section"><h3>Store archivieren</h3><p>Beim Archivieren werden alle Beacon-Zuordnungen freigegeben.</p><button className="button" disabled={busy} onClick={() => { if (window.confirm(`Store ${store.name} archivieren und Beacons freigeben?`)) void mutate(() => api.request(`${path}/archive`, { method: "PATCH" }), "Store archiviert."); }}>Archivieren</button></section>}
   </div>;
 }
