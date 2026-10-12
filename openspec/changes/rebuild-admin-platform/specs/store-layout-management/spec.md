@@ -28,6 +28,11 @@ The editor and backend SHALL distinguish saved draft versions from the active mo
 - **WHEN** authorized staff publish a draft with no blocking validation errors and confirm the action
 - **THEN** exactly that version becomes active, the former active version is retained in history, and mobile current-layout reads return the published content
 
+#### Scenario: Global layout history exceeds a single search page
+- **GIVEN** more global layout versions exist than one OpenSearch result page
+- **WHEN** an admin publishes another global layout and opens recent history
+- **THEN** the newly published version appears in newest-first order within the requested limit
+
 ### Requirement: Layout validation identifies actionable map problems
 Validation SHALL distinguish blocking errors from warnings and SHALL identify the affected element or map context for out-of-bounds geometry, missing entrance, duplicate or unassigned beacons, invalid shelf metadata, and unreachable product targets where routing data is available.
 

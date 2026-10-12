@@ -133,6 +133,38 @@ test("scoped staff can assign within scope but cannot create or bulk create", as
   expect(writes).toBe(1);
 });
 
+test("beacon assignment reaches a store beyond the first 100 results", async ({ page }) => {
+  const firstStores = Array.from({ length: 100 }, (_, index) => ({ ...store, id: `store-${index}`, storeCode: `S-${index}`, name: `Store ${index}` }));
+  const target = { ...store, id: "store-target", storeCode: "TARGET", name: "Target Store" };
+  const free = beacon("beacon-free", "FREE-1", 1);
+  let assignedStoreId: string | null = null;
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores?*", (route) => {
+    const pageNumber = Number(new URL(route.request().url()).searchParams.get("page") ?? 0);
+    return route.fulfill({ json: { content: pageNumber === 0 ? firstStores : [target], page: pageNumber, size: 100, totalElements: 101 } });
+  });
+  await page.route("**/api/beacons**", (route) => {
+    if (route.request().method() === "POST") {
+      assignedStoreId = route.request().postDataJSON().storeId;
+      free.currentStore = target;
+      return route.fulfill({ json: { beaconId: free.id, storeId: target.id } });
+    }
+    return route.fulfill({ json: [free] });
+  });
+
+  await page.goto("/admin/next/beacons/");
+  await page.getByRole("button", { name: "Zuweisen" }).click();
+  const targetSelect = page.getByRole("combobox", { name: "Ziel-Store" });
+  await expect(targetSelect.locator('option[value="store-target"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "Weitere Stores laden (100 von 101)" }).click();
+  await expect(targetSelect.locator('option[value="store-target"]')).toHaveCount(1);
+  await targetSelect.selectOption(target.id);
+  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Target Store zugewiesen" })).toBeVisible();
+  expect(assignedStoreId).toBe(target.id);
+});
+
 test("beacon inventory shows empty state and retries load failures", async ({ page }) => {
   let inventoryCalls = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));

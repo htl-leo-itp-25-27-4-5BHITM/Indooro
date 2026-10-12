@@ -71,6 +71,8 @@ Before that archive, the region manager assigned and released a free beacon thro
 
 After archive, the candidate detail page showed the server's archive audit entry and the store audit endpoint returned the `ARCHIVE` action.
 
+The next packaged image includes paged beacon target stores and `currentStore.regionId`. A browser regression assigned to store 101 and the live scoped API returned its region ID. The grown OpenSearch index exposed a global layout history bug: unsorted hits were truncated before local sorting. The fixed backend filters versions and sorts by saved time in OpenSearch; the just-published version appeared immediately in the next live run. Both live scripts passed again.
+
 ## Evidence boundary (2026-10-12)
 
 | Area | Observed in the local run | Still not established |

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
 
@@ -19,7 +19,7 @@ export interface Beacon {
   identityKey: string;
   status: "ACTIVE" | "ARCHIVED";
   notes: string | null;
-  currentStore: { id: string; storeCode: string; name: string } | null;
+  currentStore: { id: string; storeCode: string; name: string; regionId?: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -137,9 +137,10 @@ export function parseBulkBeacons(uuidValue: string, majorValue: string, text: st
 export function canManageBeacon(user: CurrentUser, beacon: Beacon, stores: BeaconStore[]): boolean {
   if (user.role === "admin") return true;
   if (!beacon.currentStore) return false;
+  if (user.role === "store-manager") return user.scope?.storeId === beacon.currentStore.id;
+  if (user.role === "region-manager" && beacon.currentStore.regionId) return user.scope?.regionId === beacon.currentStore.regionId;
   const store = stores.find((candidate) => candidate.id === beacon.currentStore?.id);
   if (!store) return false;
-  if (user.role === "store-manager") return user.scope?.storeId === store.id;
   if (user.role === "region-manager") return !!user.scope?.regionId && user.scope.regionId === store.region?.id;
   return false;
 }
@@ -169,6 +170,11 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
   const [filters, setFilters] = useState<BeaconFilters>({ query: "", status: "ACTIVE", assigned: "all", storeId: "" });
   const [beacons, setBeacons] = useState<Beacon[]>([]);
   const [stores, setStores] = useState<BeaconStore[]>([]);
+  const [storePage, setStorePage] = useState(0);
+  const [storeTotal, setStoreTotal] = useState(0);
+  const [loadingMoreStores, setLoadingMoreStores] = useState(false);
+  const [storePageError, setStorePageError] = useState("");
+  const storeGeneration = useRef(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [revision, setRevision] = useState(0);
@@ -198,21 +204,50 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
 
   useEffect(() => {
     const controller = new AbortController();
+    storeGeneration.current += 1;
     setLoading(true);
+    setLoadingMoreStores(false);
     setLoadError("");
+    setStorePageError("");
     Promise.all([
       api.get<Beacon[]>(beaconListPath(filters), { signal: controller.signal }),
-      api.get<{ content: BeaconStore[] }>("/api/stores?status=ACTIVE&size=100", { signal: controller.signal })
+      api.get<{ content: BeaconStore[]; totalElements: number }>("/api/stores?status=ACTIVE&page=0&size=100", { signal: controller.signal })
     ]).then(([beaconList, storePage]) => {
-      if (!Array.isArray(beaconList) || !Array.isArray(storePage?.content)) throw new Error("Beacon- oder Store-Antwort ist unvollständig.");
+      if (!Array.isArray(beaconList) || !Array.isArray(storePage?.content) || !Number.isFinite(storePage.totalElements)) throw new Error("Beacon- oder Store-Antwort ist unvollständig.");
       setBeacons(beaconList);
       setStores(storePage.content);
+      setStorePage(0);
+      setStoreTotal(storePage.totalElements);
     }).catch((error: unknown) => {
       if (error instanceof DOMException && error.name === "AbortError") return;
       setLoadError(errorMessage(error));
     }).finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [api, filters, revision]);
+
+  async function loadMoreStores() {
+    if (loadingMoreStores || stores.length >= storeTotal) return;
+    const generation = storeGeneration.current;
+    const nextPage = storePage + 1;
+    setLoadingMoreStores(true);
+    setStorePageError("");
+    try {
+      const result = await api.get<{ content: BeaconStore[]; totalElements: number }>(`/api/stores?status=ACTIVE&page=${nextPage}&size=100`);
+      if (!Array.isArray(result?.content) || !Number.isFinite(result.totalElements)) throw new Error("Weitere Stores konnten nicht geladen werden.");
+      if (generation !== storeGeneration.current) return;
+      if (result.content.length === 0) {
+        setStoreTotal(stores.length);
+        return;
+      }
+      setStores((current) => [...current, ...result.content.filter((store) => !current.some((item) => item.id === store.id))]);
+      setStorePage(nextPage);
+      setStoreTotal(result.totalElements);
+    } catch (error) {
+      if (generation === storeGeneration.current) setStorePageError(errorMessage(error));
+    } finally {
+      if (generation === storeGeneration.current) setLoadingMoreStores(false);
+    }
+  }
 
   const sortedBeacons = useMemo(() => [...beacons].sort((a, b) => a.beaconCode.localeCompare(b.beaconCode, "de", { sensitivity: "base" })), [beacons]);
 
@@ -417,6 +452,8 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
         <label>Zuweisung<select value={filters.assigned} onChange={(event) => setFilters({ ...filters, assigned: event.currentTarget.value as BeaconFilters["assigned"] })}><option value="all">Alle</option><option value="free">Frei</option><option value="assigned">Zugewiesen</option></select></label>
         <label>Store<select value={filters.storeId} onChange={(event) => setFilters({ ...filters, storeId: event.currentTarget.value })}><option value="">Alle im Zugriff</option>{storesForUser.map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select></label>
       </form>
+      {stores.length < storeTotal && <button type="button" onClick={() => void loadMoreStores()} disabled={loadingMoreStores}>{loadingMoreStores ? "Lädt …" : `Weitere Stores laden (${stores.length} von ${storeTotal})`}</button>}
+      {storePageError && <p role="alert" className="notice error">Weitere Stores konnten nicht geladen werden: {storePageError}</p>}
       {loading && <p role="status">Beacons werden geladen …</p>}
       {!loading && !loadError && sortedBeacons.length === 0 && <p className="empty-state">Keine Beacons passen zu Suche, Filtern oder Zugriff.</p>}
       {!loading && sortedBeacons.length > 0 && <div className="table-scroll"><table><thead><tr><th>Code</th><th>Identität</th><th>Status</th><th>Store</th><th>Aktionen</th></tr></thead><tbody>{sortedBeacons.map((beacon) => {

@@ -22,6 +22,11 @@ The rebuilt Admin Platform SHALL return users to a relevant list or detail conte
 - **WHEN** staff assigns an eligible beacon from an in-scope store detail page and the backend confirms the assignment
 - **THEN** the store detail shows the active assignment and offers the next available store action
 
+#### Scenario: Beacon target is beyond the first store page
+- **GIVEN** an authorized user can access more than 100 active stores
+- **WHEN** they select a beacon assignment target beyond the first page
+- **THEN** the target remains reachable and the confirmed assignment identifies the correct store
+
 #### Scenario: Recipe edit fails
 - **WHEN** a recipe edit fails after the user changes metadata, tags, ingredients, or steps
 - **THEN** the UI does not claim success, identifies the failed stage, reloads authoritative detail where needed, and preserves the user's unsaved input for correction

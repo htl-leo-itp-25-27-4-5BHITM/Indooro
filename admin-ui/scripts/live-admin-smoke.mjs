@@ -394,6 +394,7 @@ try {
       assert.equal(await page.getByRole("button", { name: "Region anlegen" }).count(), 0);
       assert.equal(await page.getByRole("cell", { name: editedUiRegionName }).count(), 0);
       assert.equal(expectOk(await api(page, "POST", `/api/beacons/${ownBeacon.id}/assign`, { storeId: store.id }), "region beacon assignment").storeId, store.id);
+      assert.equal(expectOk(await api(page, "GET", `/api/beacons/${ownBeacon.id}`), "scoped beacon store region").currentStore?.regionId, region.id);
     } else {
       assert.equal((await api(page, "GET", `/api/beacons/${ownBeacon.id}`)).status, 200);
       assert.equal(expectOk(await api(page, "POST", `/api/beacons/${ownBeacon.id}/release`, {}), "store beacon release").released, true);

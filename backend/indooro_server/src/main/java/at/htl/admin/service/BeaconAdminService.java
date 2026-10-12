@@ -312,7 +312,7 @@ public class BeaconAdminService {
     private BeaconDtos.BeaconResponse toResponse(BeaconEntity beacon, BeaconAssignmentEntity assignment) {
         BeaconDtos.BeaconStoreSummary currentStore = assignment == null
                 ? null
-                : new BeaconDtos.BeaconStoreSummary(assignment.store.id, assignment.store.storeCode, assignment.store.name);
+                : new BeaconDtos.BeaconStoreSummary(assignment.store.id, assignment.store.storeCode, assignment.store.name, assignment.store.region.id);
 
         return new BeaconDtos.BeaconResponse(
                 beacon.id,

@@ -41,7 +41,8 @@ public final class BeaconDtos {
     public record BeaconStoreSummary(
             UUID id,
             String storeCode,
-            String name
+            String name,
+            UUID regionId
     ) {
     }
 
