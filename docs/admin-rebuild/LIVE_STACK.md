@@ -61,6 +61,8 @@ The live script also compares four manager dashboard metrics with each role's sc
 
 The live store editor also exports and reimports JSON with a navigation metadata marker. The marker survived draft save, publication, anonymous current-layout retrieval, and version recovery against the same packaged image; the output reports `layoutJsonRoundTrip: true`.
 
+The candidate recipe UI created a draft using a real catalog product, ingredient quantity, and step, then published it; the anonymous recipe endpoint returned it. The output reports `candidateRecipeCreatePublish: true`.
+
 ## Evidence boundary (2026-10-12)
 
 | Area | Observed in the local run | Still not established |

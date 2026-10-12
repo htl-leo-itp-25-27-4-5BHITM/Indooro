@@ -79,3 +79,5 @@ Expanded live direct-link checks exposed a candidate UX defect: region managers 
 The live script now compares region/store-manager dashboard metrics with each role's scoped region, store, missing-layout, and free-beacon APIs and confirms admin-only activity is absent. The packaged-image run remains green.
 
 The store layout editor live workflow now exports JSON, imports it with an added navigation metadata marker, and checks that the marker survives draft save, publication, anonymous mobile retrieval, and restoration of that version. This passed against the same packaged image; no runtime rebuild was needed.
+
+The candidate recipe UI also created a new draft from an actual catalog product, ingredient quantity, and preparation step. The draft stayed private until the candidate UI published it; the public mobile recipe then contained the expected title. This passed on the same packaged image. Live tag revisions, archive, and multi-stage failure recovery remain open.

@@ -275,6 +275,35 @@ try {
   await admin.getByRole("dialog").locator(".status-pill").getByText("DRAFT").waitFor();
   assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
 
+  const uiRecipeTitle = `UI Rezept ${run}`;
+  await admin.goto(`${base}/admin/next/recipes/`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("button", { name: "Rezept anlegen" }).click();
+  const newRecipeDialog = admin.getByRole("dialog");
+  await newRecipeDialog.getByRole("textbox", { name: "Slug" }).fill(`ui-recipe-${run.toLowerCase()}`);
+  await newRecipeDialog.getByRole("textbox", { name: "Titel" }).fill(uiRecipeTitle);
+  await newRecipeDialog.getByRole("button", { name: "+ Zutat" }).click();
+  await newRecipeDialog.getByRole("textbox", { name: "Produkt aus Katalog" }).fill(updatedProductName);
+  await newRecipeDialog.getByRole("button", { name: "Suchen" }).click();
+  await newRecipeDialog.locator(".recipe-product-search select").selectOption(String(productId));
+  await newRecipeDialog.getByRole("textbox", { name: "Menge" }).fill("1 Stück");
+  await newRecipeDialog.getByRole("button", { name: "+ Schritt" }).click();
+  await newRecipeDialog.getByRole("textbox", { name: "Schritt 1" }).fill("Vorbereiten.");
+  await newRecipeDialog.getByRole("button", { name: "Entwurf anlegen" }).click();
+  await newRecipeDialog.waitFor({ state: "hidden" });
+  const uiRecipeList = expectOk(await api(admin, "GET", `/api/admin/recipes?q=${encodeURIComponent(uiRecipeTitle)}&page=0&size=20`), "candidate recipe create list");
+  const uiRecipe = uiRecipeList.content.find((item) => item.title === uiRecipeTitle);
+  assert.ok(uiRecipe, "candidate recipe create appears in admin list");
+  const uiRecipeDetail = expectOk(await api(admin, "GET", `/api/admin/recipes/${uiRecipe.id}`), "candidate recipe create detail");
+  assert.equal(uiRecipeDetail.ingredients[0].displayName, updatedProductName);
+  assert.equal(uiRecipeDetail.steps[0].instruction, "Vorbereiten.");
+  assert.equal((await fetch(`${base}/api/mobile/recipes/${uiRecipe.id}`)).status, 404);
+  await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(uiRecipeTitle)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: uiRecipeTitle }).getByRole("button", { name: "Bearbeiten" }).click();
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("dialog").getByRole("button", { name: "Veröffentlichen" }).click();
+  await admin.getByRole("dialog").locator(".status-pill").getByText("PUBLISHED").waitFor();
+  assert.equal((await publicJson(`/api/mobile/recipes/${uiRecipe.id}`)).title, uiRecipeTitle);
+
   const candidateRoutes = [
     "/admin/next/", "/admin/next/regions/", "/admin/next/stores/", "/admin/next/stores/new/",
     `/admin/next/stores/detail/?storeId=${store.id}`, "/admin/next/beacons/", "/admin/next/products/",
@@ -517,7 +546,7 @@ try {
   await admin.keyboard.press("Enter");
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeLifecycle: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();
