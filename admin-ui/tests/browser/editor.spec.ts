@@ -97,6 +97,26 @@ test("shelf inspector persists routing metadata and confirms critical deletion",
   await expect(page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" })).toHaveCount(0);
 });
 
+test("legacy cashier deletion is confirmed and publication names remaining warnings", async ({ page }) => {
+  const saved: LayoutDocument[] = [];
+  await mockEditor(page, "DRAFT", saved);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const imported: LayoutDocument = structuredClone(layout);
+  imported.elements[1].category = "";
+  imported.elements.push({ id: "legacy-cashier", type: "cashier", x: 20, y: 20, width: 3, height: 2, label: "Zusatzkasse" });
+  await page.locator(".le-file-input").setInputFiles({ name: "legacy.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(imported)) });
+  await page.locator(".le-layers button").filter({ hasText: "Zusatzkasse" }).click();
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByRole("button", { name: "Löschen", exact: true }).click();
+  await expect(page.locator(".le-layers button").filter({ hasText: "Zusatzkasse" })).toHaveCount(1);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Löschen", exact: true }).click();
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.locator(".le-message")).toContainText("Entwurf gespeichert");
+  page.once("dialog", (dialog) => { expect(dialog.message()).toContain("hat keine Kategorie oder Layoutkennung"); return dialog.dismiss(); });
+  await page.getByRole("button", { name: "Veröffentlichen" }).click();
+});
+
 test("mobile editor keeps the canvas in the first viewport and exposes compact placement controls", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await mockEditor(page, "DRAFT", []);

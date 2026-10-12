@@ -222,6 +222,10 @@ try {
   await manager.locator(".le-canvas").waitFor();
   await manager.locator(".le-layers button").nth(1).click();
   await manager.getByRole("textbox", { name: "Bezeichnung" }).fill("Published from live editor");
+  await manager.getByRole("spinbutton", { name: "Zugriffswinkel" }).fill("135");
+  await manager.getByRole("textbox", { name: "Layout-Code" }).fill("310/1/1/1");
+  await manager.getByRole("textbox", { name: "Produktposition hinzufügen" }).fill("310-42");
+  await manager.getByRole("button", { name: "Hinzufügen" }).click();
   await manager.getByRole("button", { name: "Entwurf speichern" }).click();
   await manager.getByText("Entwurf gespeichert.").waitFor();
   assert.equal((await currentLayout(store.id)).layoutId, draft.layoutId);
@@ -236,6 +240,9 @@ try {
   const edited = await currentLayout(store.id);
   assert.notEqual(edited.layoutId, draft.layoutId);
   assert.equal(edited.layout.elements[1].label, "Published from live editor");
+  assert.equal(edited.layout.elements[1].accessAngle, 135);
+  assert.equal(edited.layout.elements[1].layoutCode, "310/1/1/1");
+  assert.deepEqual(edited.layout.elements[1].productPositions, ["310-42"]);
   await manager.close();
 
   const globalBefore = expectOk(await api(admin, "GET", "/api/layout/current"), "global layout before edit");

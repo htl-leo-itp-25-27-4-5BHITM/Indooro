@@ -36,9 +36,16 @@ export interface LayoutEditorProps {
 
 const labelFor = (element: LayoutElement) => element.label || TYPES.find((item) => item.type === element.type)?.label || element.type;
 const number = (value: string, fallback: number) => Number.isFinite(Number(value)) && value !== "" ? Number(value) : fallback;
-const confirmCriticalDelete = (element: LayoutElement) => !(["entrance", "checkout", "wall", "shelf", "beacon"].includes(element.type)
+const confirmCriticalDelete = (element: LayoutElement) => !(["entrance", "exit", "checkout", "cashier", "wall", "shelf", "aisle", "beacon", "navigation-node"].includes(element.type)
   || (Array.isArray(element.productPositions) && element.productPositions.length > 0)
   || !!element.layoutCode) || window.confirm(`„${labelFor(element)}“ löschen? Die Karte oder Produktpositionen können danach ungültig sein.`);
+const publishWarningNote = (issues: ReturnType<typeof validateLayout>) => {
+  const warnings = issues.filter((issue) => issue.severity === "warning");
+  if (!warnings.length) return "";
+  const details = warnings.slice(0, 5).map((issue) => `• ${issue.message}`).join("\n");
+  const remaining = warnings.length > 5 ? `\n… und ${warnings.length - 5} weitere Hinweise in der Prüfung.` : "";
+  return `\n\n${warnings.length} Hinweis${warnings.length === 1 ? "" : "e"} bleiben offen:\n${details}${remaining}`;
+};
 
 export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons = [], saveMode = "draft", onSaveDraft, onSaveCurrent, onPublish, onBack }: LayoutEditorProps) {
   const [editor, setEditor] = useState<EditorState>(() => createEditorState(initialDocument));
@@ -271,8 +278,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const saveDocument = async () => {
     const saveAction = saveMode === "immediate" ? onSaveCurrent : onSaveDraft;
     if (!saveAction || working || (saveMode === "immediate" && errors > 0)) return;
-    const warningCount = issues.length - errors;
-    const warningNote = warningCount ? `\n\n${warningCount} Hinweis${warningCount === 1 ? "" : "e"} aus der Prüfung bleiben offen. Bitte vor der Veröffentlichung prüfen.` : "";
+    const warningNote = publishWarningNote(issues);
     if (saveMode === "immediate" && !window.confirm(`Das globale Layout jetzt für alle Kunden veröffentlichen? Diese Änderung ist sofort sichtbar.${warningNote}`)) return;
     const saved = structuredClone(editorRef.current.document);
     setWorking("save"); setMessage(null);
@@ -286,8 +292,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
 
   const publish = async () => {
     if (!onPublish || working || dirty || errors) return;
-    const warningCount = issues.length - errors;
-    const warningNote = warningCount ? `\n\n${warningCount} Hinweis${warningCount === 1 ? "" : "e"} aus der Prüfung bleiben offen. Bitte vor der Veröffentlichung prüfen.` : "";
+    const warningNote = publishWarningNote(issues);
     if (!window.confirm(`Diesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.${warningNote}`)) return;
     setWorking("publish"); setMessage(null);
     try { await onPublish(structuredClone(editorRef.current.document)); setMessage("Layout veröffentlicht."); }
