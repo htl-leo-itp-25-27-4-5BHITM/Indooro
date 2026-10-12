@@ -41,6 +41,34 @@ test("store manager cannot fetch candidate recipe data", async ({ page }) => {
   expect(calls).toBe(0);
 });
 
+test("candidate recipe list exposes empty and load-error states with keyboard retry and search", async ({ page }) => {
+  let listCalls = 0;
+  const listQueries: URL[] = [];
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/admin/recipe-tags?*", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/admin/recipes?*", (route) => {
+    listCalls += 1;
+    const url = new URL(route.request().url());
+    listQueries.push(url);
+    if (listCalls === 1) return route.fulfill({ status: 503, json: { message: "Rezeptdienst vorübergehend nicht verfügbar." } });
+    return route.fulfill({ json: { content: [], page: Number(url.searchParams.get("page") ?? 0), size: 20, totalElements: 0 } });
+  });
+
+  await page.goto("/admin/next/recipes/");
+  await expect(page.getByRole("alert")).toContainText("Serverfehler. Bitte später erneut versuchen.");
+  await page.getByRole("button", { name: "Erneut versuchen" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Keine Rezepte passen zu den Filtern.")).toBeVisible();
+  expect(listCalls).toBe(2);
+
+  const search = page.getByRole("searchbox", { name: "Suche" });
+  await search.fill("Apfel");
+  await search.press("Enter");
+  await expect(page).toHaveURL(/q=Apfel/);
+  await expect(page.getByText("Keine Rezepte passen zu den Filtern.")).toBeVisible();
+  expect(listQueries.at(-1)?.searchParams.get("q")).toBe("Apfel");
+});
+
 test("candidate recipe create and publish preserve saved content and tags", async ({ page }) => {
   const tag = { id: "tag-1", code: "VEGAN", name: "Vegan" };
   const product = { id: 23, name: "Birne", layoutCode: "310" };

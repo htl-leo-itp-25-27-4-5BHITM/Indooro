@@ -23,6 +23,33 @@ test("admin product list pages through server results and opens a validated edit
   await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue("Apfel 1");
 });
 
+test("product search submits with the keyboard and list failures can be retried", async ({ page }) => {
+  const queries: string[] = [];
+  let listCalls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/categories?*", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/admin/products?*", (route) => {
+    listCalls += 1;
+    const url = new URL(route.request().url());
+    queries.push(url.searchParams.get("q") ?? "");
+    if (listCalls === 1) return route.fulfill({ status: 503, json: { message: "Katalog vorübergehend nicht verfügbar." } });
+    return route.fulfill({ json: { content: [], page: 0, size: 20, totalElements: 0 } });
+  });
+
+  await page.goto("/admin/next/products/");
+  await expect(page.getByRole("alert")).toContainText("Serverfehler. Bitte später erneut versuchen.");
+  await page.getByRole("button", { name: "Erneut laden" }).click();
+  await expect(page.getByText("Der Produktkatalog ist leer.")).toBeVisible();
+  expect(listCalls).toBe(2);
+
+  const search = page.getByRole("searchbox", { name: "Suche" });
+  await search.fill("Birne");
+  await search.press("Enter");
+  await expect(page).toHaveURL(/q=Birne/);
+  await expect(page.getByText("Keine Produkte zur Suche gefunden.")).toBeVisible();
+  expect(queries.at(-1)).toBe("Birne");
+});
+
 test("region manager product direct link calls no product API", async ({ page }) => {
   let calls = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "region-1", username: "manager", role: "region-manager", scope: { regionId: "region-1" } } }));
