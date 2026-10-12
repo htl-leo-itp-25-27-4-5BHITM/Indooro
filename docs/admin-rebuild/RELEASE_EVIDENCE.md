@@ -21,6 +21,8 @@ The same script then exercised store-editor JSON export/import with a navigation
 
 Candidate recipe creation with a real product ingredient and step, draft privacy, and UI publication to the anonymous mobile endpoint also passed against this image.
 
+Candidate beacon bulk review/commit with two identities sharing one UUID also passed against this image; both records were confirmed through the authenticated API.
+
 ## Deployment inputs to review
 
 `k8s/backend.yaml` currently names `ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:latest` with `imagePullPolicy: Always`. A rollout needs a published image digest in that manifest and the matching rollback digest recorded before applying it. `k8s/keycloak.yaml`, `k8s/opensearch.yaml`, and `k8s/postgres.yaml` define the dependencies; the live local acceptance used Keycloak 26.2, OpenSearch 2.9, and PostgreSQL 17. Version differences from LeoCloud must be checked before deployment.

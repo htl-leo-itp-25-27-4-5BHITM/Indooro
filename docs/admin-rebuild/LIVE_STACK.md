@@ -63,6 +63,8 @@ The live store editor also exports and reimports JSON with a navigation metadata
 
 The candidate recipe UI created a draft using a real catalog product, ingredient quantity, and step, then published it; the anonymous recipe endpoint returned it. The output reports `candidateRecipeCreatePublish: true`.
 
+The candidate beacon UI reviewed and committed two rows sharing one UUID with distinct minors. API reads confirmed both records; the output reports `candidateBeaconBulkCreate: true`.
+
 ## Evidence boundary (2026-10-12)
 
 | Area | Observed in the local run | Still not established |

@@ -150,6 +150,20 @@ try {
   assert.equal(expectOk(await api(admin, "GET", `/api/beacons/${uiBeacon.id}`), "candidate beacon archive").status, "ARCHIVED");
   await admin.getByLabel("Status").selectOption("ARCHIVED");
   await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).waitFor();
+  const bulkBeaconCode = `UI-BULK-${run}`;
+  const bulkBeaconUuid = randomUUID();
+  await admin.getByRole("button", { name: "Bulk anlegen" }).click();
+  await admin.getByRole("textbox", { name: "Gemeinsame UUID" }).fill(bulkBeaconUuid);
+  await admin.getByRole("textbox", { name: "Gemeinsamer Major" }).fill("5");
+  await admin.locator("section[aria-labelledby='beacon-bulk-title'] textarea").last().fill(`${bulkBeaconCode}-1,1\n${bulkBeaconCode}-2,2`);
+  await admin.getByRole("button", { name: "Review", exact: true }).click();
+  await admin.getByRole("button", { name: "Review bestätigen und 2 anlegen" }).waitFor();
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("button", { name: "Review bestätigen und 2 anlegen" }).click();
+  await admin.getByRole("status").getByText("2 Beacons wurden angelegt.").waitFor();
+  const bulkBeacons = expectOk(await api(admin, "GET", `/api/beacons?query=${bulkBeaconCode}`), "candidate beacon bulk create");
+  assert.equal(bulkBeacons.filter((item) => item.beaconCode.startsWith(bulkBeaconCode)).length, 2);
+  assert.ok(bulkBeacons.every((item) => item.uuid.replaceAll("-", "").toLowerCase() === bulkBeaconUuid.replaceAll("-", "").toLowerCase()));
   const mobileStores = await publicJson("/api/mobile/stores");
   assert.ok(Array.isArray(mobileStores));
   const mobileStore = mobileStores.find((item) => item.id === store.id);
@@ -546,7 +560,7 @@ try {
   await admin.keyboard.press("Enter");
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();

@@ -81,3 +81,5 @@ The live script now compares region/store-manager dashboard metrics with each ro
 The store layout editor live workflow now exports JSON, imports it with an added navigation metadata marker, and checks that the marker survives draft save, publication, anonymous mobile retrieval, and restoration of that version. This passed against the same packaged image; no runtime rebuild was needed.
 
 The candidate recipe UI also created a new draft from an actual catalog product, ingredient quantity, and preparation step. The draft stayed private until the candidate UI published it; the public mobile recipe then contained the expected title. This passed on the same packaged image. Live tag revisions, archive, and multi-stage failure recovery remain open.
+
+The candidate beacon UI reviewed and committed a two-row bulk creation with a shared UUID and distinct minor values. Both records appeared through the authenticated API with matching identities. Identity-conflict and scoped UI cases remain open.
