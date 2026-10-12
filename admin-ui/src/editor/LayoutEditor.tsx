@@ -231,7 +231,9 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const saveDocument = async () => {
     const saveAction = saveMode === "immediate" ? onSaveCurrent : onSaveDraft;
     if (!saveAction || working || (saveMode === "immediate" && errors > 0)) return;
-    if (saveMode === "immediate" && !window.confirm("Das globale Layout jetzt für alle Kunden veröffentlichen? Diese Änderung ist sofort sichtbar.")) return;
+    const warningCount = issues.length - errors;
+    const warningNote = warningCount ? `\n\n${warningCount} Hinweis${warningCount === 1 ? "" : "e"} aus der Prüfung bleiben offen. Bitte vor der Veröffentlichung prüfen.` : "";
+    if (saveMode === "immediate" && !window.confirm(`Das globale Layout jetzt für alle Kunden veröffentlichen? Diese Änderung ist sofort sichtbar.${warningNote}`)) return;
     const saved = structuredClone(editorRef.current.document);
     setWorking("save"); setMessage(null);
     try {
@@ -243,7 +245,10 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   };
 
   const publish = async () => {
-    if (!onPublish || working || dirty || errors || !window.confirm("Diesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.")) return;
+    if (!onPublish || working || dirty || errors) return;
+    const warningCount = issues.length - errors;
+    const warningNote = warningCount ? `\n\n${warningCount} Hinweis${warningCount === 1 ? "" : "e"} aus der Prüfung bleiben offen. Bitte vor der Veröffentlichung prüfen.` : "";
+    if (!window.confirm(`Diesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.${warningNote}`)) return;
     setWorking("publish"); setMessage(null);
     try { await onPublish(structuredClone(editorRef.current.document)); setMessage("Layout veröffentlicht."); }
     catch (error) { setMessage(error instanceof Error ? error.message : "Veröffentlichung fehlgeschlagen."); }

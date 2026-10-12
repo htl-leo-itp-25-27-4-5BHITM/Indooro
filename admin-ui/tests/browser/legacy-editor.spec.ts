@@ -62,3 +62,25 @@ test("mobile preview stays on fallback until draft activation then shows active 
   await expect(preview).toContainText("draft-1");
   expect(mobileReads).toBeGreaterThanOrEqual(2);
 });
+
+test("mobile preview distinguishes a saved draft from the public layout", async ({ page }) => {
+  const draftLayout = { ...layout, shopName: "Unveröffentlichter Entwurf" };
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/editor-context")) return route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-1", name: "Indooro Testfiliale" }, currentLayout: { layoutId: "draft-1", versionNo: 1, status: "DRAFT", layout: draftLayout }, assignedBeacons: [] } });
+    if (path.endsWith("/versions")) return route.fulfill({ json: [{ layoutId: "draft-1", versionNo: 1, status: "DRAFT" }] });
+    return route.fulfill({ status: 404, json: {} });
+  });
+  await page.route("**/api/mobile/stores/store-1/layout/current", (route) => route.fulfill({ json: { storeId: "store-1", layoutId: null, source: "DEFAULT", fallback: true, layout } }));
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const preview = page.getByRole("region", { name: "Aktuell mobiles Layout" });
+  await expect(preview).toContainText("Standardlayout (Fallback)");
+  await preview.getByRole("button", { name: "Gespeicherten Entwurf ansehen" }).click();
+  await expect(preview).toContainText("Gespeicherter Entwurf · nicht öffentlich");
+  await expect(preview).toContainText("Unveröffentlichter Entwurf");
+  await expect(preview).toContainText("Produktpositionen");
+  await expect(preview).toContainText("Mobile Route nicht geprüft");
+  await preview.getByRole("button", { name: "Öffentlich aktiv" }).click();
+  await expect(preview).toContainText("Standardlayout (Fallback)");
+});

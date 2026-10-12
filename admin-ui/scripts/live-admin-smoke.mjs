@@ -154,6 +154,11 @@ try {
   await manager.getByRole("button", { name: "Entwurf speichern" }).click();
   await manager.getByText("Entwurf gespeichert.").waitFor();
   assert.equal((await currentLayout(store.id)).layoutId, draft.layoutId);
+  const mobilePreview = manager.getByRole("region", { name: "Aktuell mobiles Layout" });
+  await mobilePreview.getByRole("button", { name: "Gespeicherten Entwurf ansehen" }).click();
+  await mobilePreview.getByText("Gespeicherter Entwurf · nicht öffentlich").waitFor();
+  await mobilePreview.getByRole("button", { name: "Öffentlich aktiv" }).click();
+  await mobilePreview.getByText("Aktive Version").waitFor();
   manager.once("dialog", (dialog) => void dialog.accept());
   await manager.getByRole("button", { name: "Veröffentlichen", exact: true }).click();
   await manager.getByText("Layout veröffentlicht.").waitFor();
