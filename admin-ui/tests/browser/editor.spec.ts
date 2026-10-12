@@ -172,6 +172,44 @@ test("keyboard can place an element inside the grid and move the selected elemen
   await expect(x).toHaveValue(String(placedX + 1));
 });
 
+test("pointer gestures move, resize, rotate and undo a shelf without losing metadata", async ({ page }) => {
+  await mockEditor(page, "DRAFT", []);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" }).click();
+  const shelf = page.locator('.le-canvas rect[stroke="#123f40"]');
+  const start = await shelf.boundingBox();
+  expect(start).not.toBeNull();
+  const unit = start!.width / 4;
+  await page.mouse.move(start!.x + start!.width / 2, start!.y + start!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(start!.x + start!.width / 2 + unit * 2, start!.y + start!.height / 2 + unit, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.getByLabel("X", { exact: true })).toHaveValue("11");
+  await expect(page.getByLabel("Y", { exact: true })).toHaveValue("9");
+
+  const resize = await page.locator(".le-handle:not(.le-rotate)").boundingBox();
+  expect(resize).not.toBeNull();
+  await page.mouse.move(resize!.x + resize!.width / 2, resize!.y + resize!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(resize!.x + resize!.width / 2 + unit * 2, resize!.y + resize!.height / 2 + unit, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.getByLabel("Breite", { exact: true })).toHaveValue("6");
+  await expect(page.getByLabel("Höhe", { exact: true })).toHaveValue("9");
+
+  const rotatedShelf = await shelf.boundingBox();
+  const rotate = await page.locator(".le-handle.le-rotate").boundingBox();
+  expect(rotatedShelf).not.toBeNull();
+  expect(rotate).not.toBeNull();
+  await page.mouse.move(rotate!.x + rotate!.width / 2, rotate!.y + rotate!.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(rotatedShelf!.x + rotatedShelf!.width / 2 + 18, rotatedShelf!.y + rotatedShelf!.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.getByLabel("Winkel", { exact: true })).toHaveValue("90");
+  await page.getByRole("button", { name: "Rückgängig" }).click();
+  await expect(page.getByLabel("Winkel", { exact: true })).toHaveValue("0");
+  await expect(page.getByLabel("Kategoriecode")).toHaveValue("310");
+});
+
 test("JSON import validates, remains undoable, and export downloads the current document without saving", async ({ page }) => {
   const saved: LayoutDocument[] = [];
   await mockEditor(page, "DRAFT", saved);

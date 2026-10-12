@@ -36,6 +36,13 @@ test("move, resize, rotate and inspector edits are atomic and reversible", () =>
   assert.equal(state.document.elements[0].x, 1);
 });
 
+test("pointer rotation rounds floating point drift and ignores invalid angles", () => {
+  const initial = createEditorState(fixture());
+  const rotated = applyCommand(initial, { type: "rotate", id: "s-1", rotation: 90.00001049872242 });
+  assert.equal(rotated.document.elements[1].rotation, 90);
+  assert.equal(applyCommand(rotated, { type: "rotate", id: "s-1", rotation: Number.NaN }), rotated);
+});
+
 test("dirty state tracks the saved revision even when editing continues during save", () => {
   const initial = createEditorState(fixture());
   let state = applyCommand(initial, { type: "move", id: "s-1", x: 10, y: 4 });

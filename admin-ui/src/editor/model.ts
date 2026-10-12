@@ -161,8 +161,8 @@ export function applyCommand(state: EditorState, command: EditorCommand, snapSte
       next = replace(constrainElement({ ...before.elements[index], width: snap(command.width, snapStep, snapping), height: snap(command.height, snapStep, snapping) }, before, snapStep, snapping));
       break;
     case "rotate":
-      if (index < 0 || before.elements[index].locked) return state;
-      next = replace({ ...before.elements[index], rotation: ((command.rotation % 360) + 360) % 360 });
+      if (index < 0 || before.elements[index].locked || !Number.isFinite(command.rotation)) return state;
+      next = replace({ ...before.elements[index], rotation: ((Math.round(command.rotation * 10) / 10 % 360) + 360) % 360 });
       break;
     case "delete":
       if (index < 0 || before.elements[index].locked) return state;
