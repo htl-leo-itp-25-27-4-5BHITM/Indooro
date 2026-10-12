@@ -92,6 +92,33 @@ test("desktop editor keeps its palette controls and hides mobile controls", asyn
   await expect(page.locator(".le-left .le-tool-row button", { hasText: "Verschieben" })).toBeVisible();
 });
 
+test("keyboard can place an element inside the grid and move the selected element", async ({ page }) => {
+  await mockEditor(page, "DRAFT", []);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const canvas = page.getByRole("img", { name: "Interaktiver Grundriss" });
+  await page.getByRole("button", { name: "Theke" }).click();
+  await expect(page.locator(".le-canvas-footer")).toContainText("Theke platzieren");
+  await canvas.focus();
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("Enter");
+
+  const layer = page.locator(".le-layers button").filter({ hasText: "Theke" });
+  await expect(layer).toHaveAttribute("aria-current", "true");
+  const x = page.getByLabel("X", { exact: true });
+  const y = page.getByLabel("Y", { exact: true });
+  const placedX = Number(await x.inputValue());
+  const placedY = Number(await y.inputValue());
+  expect(placedX).toBeGreaterThanOrEqual(0);
+  expect(placedY).toBeGreaterThanOrEqual(0);
+  expect(placedX + 4).toBeLessThanOrEqual(layout.gridSize.width);
+  expect(placedY + 2).toBeLessThanOrEqual(layout.gridSize.height);
+
+  await canvas.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(x).toHaveValue(String(placedX + 1));
+});
+
 test("JSON import validates, remains undoable, and export downloads the current document without saving", async ({ page }) => {
   const saved: LayoutDocument[] = [];
   await mockEditor(page, "DRAFT", saved);

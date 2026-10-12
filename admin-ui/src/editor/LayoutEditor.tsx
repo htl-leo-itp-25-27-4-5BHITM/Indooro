@@ -48,6 +48,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const [viewport, setViewport] = useState<Viewport>({ x: 40, y: 40, scale: 12 });
   const [canvasSize, setCanvasSize] = useState({ width: 720, height: 540 });
   const [preview, setPreview] = useState<LayoutElement | null>(null);
+  const [keyboardPoint, setKeyboardPoint] = useState<Point>(() => ({ x: initialDocument.gridSize.width / 2, y: initialDocument.gridSize.height / 2 }));
   const [working, setWorking] = useState<"save" | "publish" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -55,13 +56,37 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const gesture = useRef<Gesture | null>(null);
   const previewRef = useRef<LayoutElement | null>(null);
   const spaceHeld = useRef(false);
+  const keyboardPointRef = useRef(keyboardPoint);
+  keyboardPointRef.current = keyboardPoint;
+  const placementTypeRef = useRef(createType);
+  placementTypeRef.current = createType;
+  const toolRef = useRef(tool);
+  toolRef.current = tool;
 
   const document = editor.document;
+  const documentRef = useRef(document);
+  documentRef.current = document;
   const dirty = isDirty(editor);
   const issues = useMemo(() => validateLayout(document, assignedBeacons), [document, assignedBeacons]);
   const errors = issues.filter((issue) => issue.severity === "error").length;
   const selected = document.elements.find((element) => element.id === editor.selectedId) ?? null;
   const selectedIndex = document.elements.findIndex((element) => element.id === editor.selectedId);
+
+  const createAtWorld = (world: Point, type: (typeof TYPES)[number]["type"]) => {
+    const definition = TYPES.find((item) => item.type === type)!;
+    let beacon: AssignedBeacon | undefined;
+    if (type === "beacon" && mode === "store") {
+      const placed = new Set(editorRef.current.document.elements.filter((element) => element.type === "beacon").map((element) => element.beaconId));
+      beacon = assignedBeacons.find((item) => item.beaconCode && !placed.has(item.beaconCode));
+      if (!beacon) { setMessage("Keine freien zugeordneten Beacons verfügbar."); return; }
+    }
+    const x = type === "beacon" ? world.x : world.x - definition.width / 2;
+    const y = type === "beacon" ? world.y : world.y - definition.height / 2;
+    dispatch({ type: "create", element: { id: newElementId(editorRef.current.document), type, x, y,
+      ...(type === "beacon" ? { beaconId: beacon?.beaconCode, beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } : { width: definition.width, height: definition.height }) } });
+    setTool("select");
+  };
+  const placeKeyboardElement = () => createAtWorld(keyboardPointRef.current, placementTypeRef.current);
 
   useEffect(() => {
     const node = svgRef.current;
@@ -108,6 +133,24 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
         event.preventDefault();
       }
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return;
+      if (toolRef.current === "create" && event.target === svgRef.current && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
+        event.preventDefault();
+        const definition = TYPES.find((item) => item.type === placementTypeRef.current)!;
+        const current = keyboardPointRef.current;
+        const step = event.shiftKey ? 5 : 1;
+        const halfWidth = definition.width / 2;
+        const halfHeight = definition.height / 2;
+        const x = Math.max(halfWidth, Math.min(documentRef.current.gridSize.width - halfWidth, current.x + (event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0)));
+        const y = Math.max(halfHeight, Math.min(documentRef.current.gridSize.height - halfHeight, current.y + (event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0)));
+        keyboardPointRef.current = { x, y };
+        setKeyboardPoint({ x, y });
+        return;
+      }
+      if (toolRef.current === "create" && event.target === svgRef.current && event.key === "Enter") {
+        event.preventDefault();
+        placeKeyboardElement();
+        return;
+      }
       if (event.key.toLowerCase() === "v" && !event.metaKey && !event.ctrlKey) setTool("select");
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "z") {
         event.preventDefault();
@@ -160,20 +203,8 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
       return;
     }
     if (tool === "create") {
-      const definition = TYPES.find((item) => item.type === createType)!;
       const world = screenToWorld(at, viewport);
-      let beacon: AssignedBeacon | undefined;
-      if (createType === "beacon" && mode === "store") {
-        const placed = new Set(document.elements.filter((element) => element.type === "beacon").map((element) => element.beaconId));
-        beacon = assignedBeacons.find((item) => item.beaconCode && !placed.has(item.beaconCode));
-        if (!beacon) { setMessage("Keine freien zugeordneten Beacons verfügbar."); return; }
-      }
-      const element: LayoutElement = {
-        id: newElementId(document), type: createType, x: world.x - definition.width / 2, y: world.y - definition.height / 2,
-        ...(createType === "beacon" ? { beaconId: beacon?.beaconCode, beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } : { width: definition.width, height: definition.height }),
-      };
-      dispatch({ type: "create", element });
-      setTool("select");
+      createAtWorld(world, createType);
     } else setEditor((current) => selectElement(current, null));
   };
 
@@ -312,8 +343,8 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
       <aside className="le-left" aria-label="Werkzeuge und Elemente">
         <h2>Werkzeuge</h2>
         <div className="le-tool-row"><button type="button" aria-pressed={tool === "select"} onClick={() => setTool("select")}>Auswählen <kbd>V</kbd></button><button type="button" aria-pressed={tool === "pan"} onClick={() => setTool("pan")}>Verschieben <kbd>Space</kbd></button></div>
-        <h2>Elemente</h2><p className="le-hint">Element wählen, dann im Grundriss platzieren.</p>
-        <div className="le-library">{TYPES.map((item) => <button type="button" key={item.type} aria-pressed={tool === "create" && createType === item.type} onClick={() => { setCreateType(item.type); setTool("create"); }}><span className="le-swatch" style={{ background: item.color }} />{item.label}</button>)}</div>
+        <h2>Elemente</h2><p className="le-hint">Element wählen, dann im Grundriss platzieren. Tastatur: Element wählen, Tab zum Grundriss, Pfeile positionieren, Enter platzieren. Shift + Pfeil bewegt 5 Rastereinheiten.</p>
+        <div className="le-library">{TYPES.map((item) => <button type="button" key={item.type} aria-pressed={tool === "create" && createType === item.type} onClick={() => { setCreateType(item.type); setTool("create"); setKeyboardPoint({ x: document.gridSize.width / 2, y: document.gridSize.height / 2 }); }}><span className="le-swatch" style={{ background: item.color }} />{item.label}</button>)}</div>
         <h2>Ebenen <span>{document.elements.length}</span></h2>
         <div className="le-layers" role="list">{document.elements.length ? document.elements.map((element, index) => <button type="button" role="listitem" key={`${element.id ?? "missing"}-${index}`} aria-current={editor.selectedId === element.id} onClick={() => setEditor((current) => selectElement(current, element.id ?? null))}><span className="le-layer-index">{String(index + 1).padStart(2, "0")}</span><span>{labelFor(element)}</span>{element.locked && <span title="Gesperrt">🔒</span>}{issueFor(element.id) && <span className="le-error-dot" title="Validierungsfehler">!</span>}</button>) : <p className="le-empty">Noch keine Elemente</p>}</div>
       </aside>
@@ -328,11 +359,13 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
             {TYPES.map((item) => <option key={item.type} value={item.type}>{item.label}</option>)}
           </select></label>
         </div>
-        <svg ref={svgRef} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} aria-label="Interaktiver Grundriss" role="img">
+        <svg ref={svgRef} tabIndex={0} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} aria-label="Interaktiver Grundriss" role="img">
           <defs><pattern id="le-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#d9e2df" strokeWidth={0.045} /></pattern></defs>
           <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>
             <rect x={0} y={0} width={document.gridSize.width} height={document.gridSize.height} fill="#fff" stroke="#aabfba" strokeWidth={1 / viewport.scale} />
             {showGrid && <rect x={0} y={0} width={document.gridSize.width} height={document.gridSize.height} fill="url(#le-grid)" pointerEvents="none" />}
+            {tool === "create" && createType !== "beacon" && <rect className="le-keyboard-preview" x={keyboardPoint.x - (TYPES.find((item) => item.type === createType)?.width || 0) / 2} y={keyboardPoint.y - (TYPES.find((item) => item.type === createType)?.height || 0) / 2} width={TYPES.find((item) => item.type === createType)?.width} height={TYPES.find((item) => item.type === createType)?.height} rx=".2" />}
+            {tool === "create" && createType === "beacon" && <circle className="le-keyboard-preview" cx={keyboardPoint.x} cy={keyboardPoint.y} r=".35" />}
             {document.elements.map((stored, index) => {
               const element = preview && preview.id === stored.id ? preview : stored;
               const definition = TYPES.find((item) => item.type === element.type);
