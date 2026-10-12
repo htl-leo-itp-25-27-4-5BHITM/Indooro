@@ -1,6 +1,6 @@
 # Admin rebuild supervisor handoff
 
-Updated: 2026-10-11. Working branch: `codex/admin-platform-rebuild` in the isolated managed worktree `/Users/erikbergi/.codex/worktrees/admin-rebuild/Indooro`. Base: `origin/main` at `99b802b8`. The original checkout remains on `codex/indooro-v2-roughcut` with unrelated dirty advertising and documentation files; do not stage them into this branch.
+Updated: 2026-10-12. Working branch: `codex/admin-platform-rebuild` in the isolated managed worktree `/Users/erikbergi/.codex/worktrees/admin-rebuild/Indooro`. Base: `origin/main` at `99b802b8`. The original checkout remains on `codex/indooro-v2-roughcut` with unrelated dirty advertising and documentation files; do not stage them into this branch.
 
 ## Decisions and source of truth
 
@@ -30,7 +30,7 @@ Updated: 2026-10-11. Working branch: `codex/admin-platform-rebuild` in the isola
 | `25eab1c` | Admin smoke server sends planned CSP and security headers | Legacy admin verify passed with CSP enabled. |
 | `58c29a8` | Quarkus security headers and removal of unused customer CDN script | `SecurityHeadersTest` and full 95-test Maven suite passed; 25 browser checks passed with CSP. |
 
-The initial baseline before these fixes passed 11 Node tests, 12 mocked browser checks, admin asset checks, and 40 OpenSpec validations. Current legacy admin checks pass 17 Node and 25 mocked browser tests. The candidate passes 9 unit and 3 browser checks, including mocked role/session states. Playwright Chromium is installed locally. These checks do not prove live database/auth integration.
+The initial baseline before these fixes passed 11 Node tests, 12 mocked browser checks, admin asset checks, and 40 OpenSpec validations. Playwright Chromium is installed locally. The dated checkpoint below supersedes these earlier test counts.
 
 The local Admin smoke server and Quarkus now send the planned CSP and security headers. The unused customer Tailwind CDN script was removed; existing customer classes are defined in local CSS. All 25 browser tests pass with CSP enabled, and editor/customer malicious-label checks show literal rendering without CSP console violations. `SecurityHeadersTest` confirms Quarkus headers on root, customer, and admin pages. Production-only HSTS and the live OIDC flow remain unverified.
 
@@ -42,6 +42,18 @@ The local Admin smoke server and Quarkus now send the planned CSP and security h
 4. Run a local stack with PostgreSQL, OpenSearch, and Keycloak to exercise store creation → beacon assignment → layout draft → publish → anonymous mobile read, plus recipe editing. Current Maven/browser suites rely heavily on mocks.
 5. Migrate one admin route at a time and independently review accessibility, responsive behavior, error recovery, and rollback.
 
-Known high-risk gaps: layout version writes lack serialized numbering/activation; catalog IDs are globally keyed in OpenSearch; product import can report misleading success; editor has no complete pure command architecture; admin lists still have paging/filter/focus problems; local production-equivalent stack and role matrix have not been verified.
+Known high-risk gaps: the layout row lock lacks live concurrent-write evidence; catalog IDs are globally keyed in OpenSearch; product import can report misleading success; routing readiness cannot yet be proven from the existing layout metadata; local role matrix and customer journeys have not been verified.
 
-Before resuming: run `git status --short`, `git log -8 --oneline`, `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`, and `npm run admin:verify` from the repository root; run `sh ./mvnw test` from `backend/indooro_server` when tests are not concurrently running. Review active agent commits before updating this record. Do not mark the full rebuild complete until every OpenSpec acceptance scenario and live customer journey is verified.
+Before resuming: run `git status --short`, `git log -8 --oneline`, `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`, and `npm run admin:verify` from the repository root; run `sh ./mvnw test` from `backend/indooro_server` when tests are not concurrently running. Do not mark the full rebuild complete until every OpenSpec acceptance scenario and live customer journey is verified.
+
+## 2026-10-12 checkpoint
+
+The isolated branch now contains candidate React routes under `/admin/next/` for dashboard, regions, store list/create/detail, beacons, products, categories, recipes, diagnostics, store layout editor, and admin-only global layout editor. Existing `/admin/*` entries remain the release path. The candidate navigation stays within `/admin/next/`; the store-manager editor link includes the assigned store ID. Store draft save and activation are separate; the editor reads the public mobile current-layout endpoint for a read-only preview. Representative shipped and store JSON fixtures are tested for lossless edits.
+
+Relevant verified commits: `905abf5` (store active-layout filter), `8e20b40` (recipe step count), `03cde01` (legacy recipe ingredient/step edits), `d09531c` (resume newest draft), `abb7ce1`/`9ccd03b`/`7324d2d`/`f323455` (editor), `d229eaa`/`e64be2b`/`c720557`/`f227298`/`198cb89`/`6ae3e38`/`7d1ce02` (candidate routes/navigation), `8ec7c45`/`7fe1f2b`/`d7dab60`/`53b0cb2` (page modules), `ddc00ed` (paged admin product search), and `e553078` (store-row lock before layout version mutation).
+
+Latest completed checks: candidate `npm run lint`, `npm test` (47/47), `npm run package:candidate`, `npm run verify:candidate`, and `npm run test:browser` (27/27). Full Maven suite passed 107/107 after product paging and row locking; the service mock was updated to exercise the new lock path. Legacy `npm run admin:verify` passed 17 Node and 27 browser checks. Strict OpenSpec validation passed 41/41 after the latest task checkbox changes. All candidate browser checks use mocked APIs.
+
+Docker Desktop was started on 2026-10-12. A dedicated local PostgreSQL 17 container named `indooro-admin-rebuild-pg` listens on `127.0.0.1:55433`; `docker compose -p indooro-admin-rebuild up -d keycloak opensearch` was started to isolate volumes from the existing `indooro_opensearch_data`. Verify container readiness before starting Quarkus with `DB_PORT=55433`. Do not remove unrelated Docker containers or volumes.
+
+Open work: live OIDC/role/scope and PostgreSQL/OpenSearch workflow tests; candidate route parity for region edit/archive, beacon and product mutations, recipe create/publish, catalog import review; one-active-version concurrency evidence in PostgreSQL; current iOS/customer compatibility; accessibility/responsive review; packaged release, rollback, and documentation. No current `/admin/*` route has been cut over and no deployment/push has occurred.

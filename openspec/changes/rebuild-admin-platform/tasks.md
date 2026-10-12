@@ -13,29 +13,29 @@
 - [ ] 2.2 Configure reproducible build output inside Quarkus static resources and verify packaged `/admin/*` direct links and refreshes.
 - [ ] 2.3 Implement a route cutover map that keeps existing static pages active until their parity gate passes and permits route-level rollback.
 - [x] 2.4 Implement a typed same-origin API client with one response-body read, 401/403 handling, validation/conflict messages, cancellation, and request-state tests.
-- [ ] 2.5 Implement `/api/admin/me` bootstrap, role/scope-aware navigation, logout to `/admin/logout`, and direct-link access-denied states.
+- [x] 2.5 Implement `/api/admin/me` bootstrap, role/scope-aware navigation, logout to `/admin/logout`, and direct-link access-denied states.
 - [ ] 2.6 Add design tokens and accessible shell, form, table, dialog, notification, loading, empty, and error components with keyboard and contrast checks.
 - [ ] 2.7 Verify the new frontend has no runtime CDN dependency, uses safe text rendering, and runs under the CSP specified by `harden-platform-security-baseline`.
 
 ## 3. Core Staff Routes
 
-- [ ] 3.1 Rebuild dashboard with scoped counts, setup warnings, recent activity, and actionable links; pass admin, region-manager, and store-manager route tests.
+- [x] 3.1 Rebuild dashboard with scoped counts, setup warnings, recent activity, and actionable links; pass admin, region-manager, and store-manager route tests.
 - [ ] 3.2 Rebuild region list/detail/create/edit/archive workflows and verify scope, validation, confirmation, and post-action state.
-- [ ] 3.3 Rebuild store list with server-backed query state, paging, filters, layout status, and direct store-detail links.
+- [x] 3.3 Rebuild store list with server-backed query state, paging, filters, layout status, and direct store-detail links.
 - [ ] 3.4 Rebuild guided store create/edit and detail sections for metadata, beacon assignments, layout versions, and audit history.
 - [ ] 3.5 Rebuild beacon inventory, bulk parse/review, create/edit, assignment, release, and archive workflows with identity validation.
 - [ ] 3.6 Rebuild product list/create/edit/delete, readiness, and category context; verify documented `310/1/1/1` layout-code behavior and backend paging.
 - [ ] 3.7 Rebuild recipe list/detail/edit, tags, ingredients, steps, mapping, preview, and publication controls; pass a seeded-recipe no-data-loss test.
-- [ ] 3.8 Rebuild admin-only diagnostics within the shell and verify scoped staff cannot see logs or trigger their APIs.
+- [x] 3.8 Rebuild admin-only diagnostics within the shell and verify scoped staff cannot see logs or trigger their APIs.
 - [ ] 3.9 Review current catalog bulk APIs; implement parse/review/commit/summary only for supported behavior and document any blocked transaction/preview gap before enabling it.
 - [ ] 3.10 For each migrated route, record direct-link, role/scope, keyboard, empty/error, existing-action parity, and rollback evidence before switching its entry.
 
 ## 4. Layout Editor And Backend Workflow Gaps
 
-- [ ] 4.1 Capture representative store and legacy layout JSON fixtures, assigned-beacon cases, routing targets, and mobile current-layout responses.
-- [ ] 4.2 Implement pure editor state and command functions for create, move, resize, rotate, delete, inspector changes, selection, undo, and redo with fixture-based tests.
-- [ ] 4.3 Implement editor workspace, element library/list, toolbar modes, canvas zoom/pan/grid/snap, inspector, status, and unsaved-change warning.
-- [ ] 4.4 Implement store-context beacon selection and duplicate/unassigned placement feedback; keep legacy/global mode visibly distinct and protected.
+- [x] 4.1 Capture representative store and legacy layout JSON fixtures, assigned-beacon cases, routing targets, and mobile current-layout responses.
+- [x] 4.2 Implement pure editor state and command functions for create, move, resize, rotate, delete, inspector changes, selection, undo, and redo with fixture-based tests.
+- [x] 4.3 Implement editor workspace, element library/list, toolbar modes, canvas zoom/pan/grid/snap, inspector, status, and unsaved-change warning.
+- [x] 4.4 Implement store-context beacon selection and duplicate/unassigned placement feedback; keep legacy/global mode visibly distinct and protected.
 - [ ] 4.5 Implement element-linked validation for bounds, overlap, entrance, beacon, shelf metadata, and routing readiness with blocking versus warning outcomes.
 - [x] 4.6 Verify first-draft behavior in `StoreLayoutAdminService`; make an inactive first version possible without changing the public no-active-layout response, if runtime evidence confirms the gap.
 - [ ] 4.7 Implement separate draft save, publish/activate confirmation, version history, and mobile preview; preserve layout JSON fields and one-active-version invariant.

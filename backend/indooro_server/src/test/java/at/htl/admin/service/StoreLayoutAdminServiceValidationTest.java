@@ -54,7 +54,7 @@ class StoreLayoutAdminServiceValidationTest {
         StoreEntity store = new StoreEntity();
         store.id = storeId;
         store.name = "Indooro";
-        when(service.storeAdminService.requireStore(storeId)).thenReturn(store);
+        when(service.storeAdminService.lockStore(storeId)).thenReturn(store);
         when(service.layoutVersionRepository.findActiveByStoreId(storeId)).thenReturn(Optional.empty());
         when(service.layoutVersionRepository.nextVersionNo(storeId)).thenReturn(1);
 
