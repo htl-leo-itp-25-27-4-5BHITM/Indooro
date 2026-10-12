@@ -1,6 +1,6 @@
 # Admin route, action, API, role, scope, and state inventory
 
-**Evidence cut:** repository checkout on 2026-10-12. This is a source and test inventory, not a claim that routes were exercised against a running stack. The local stack prerequisites and available runtime evidence are tracked in [`LIVE_STACK.md`](LIVE_STACK.md) and [`BASELINE.md`](BASELINE.md). No screenshots were captured for this inventory.
+**Evidence cut:** repository checkout on 2026-10-12. This is a source and test inventory, not a claim that all routes/actions were exercised against a running stack. The local stack prerequisites and runtime evidence are tracked in [`LIVE_STACK.md`](LIVE_STACK.md) and [`BASELINE.md`](BASELINE.md). Captured screens are linked below; they document rendered routes, not every action or state.
 
 ## Route topology and cutover status
 
@@ -70,6 +70,26 @@ Legacy shared `request()` parses responses and redirects on 401; pages often use
 This is an endpoint-family inventory, not a replacement for reviewed OpenAPI. The change's task 5.1 owns reviewed schema updates for rebuild-owned HTTP changes. A typed route-to-request inventory should be refreshed against resource annotations and `openspec/specs/shared-api/openapi.yaml` before release.
 
 ## Fixtures, tests, and repeatable parity evidence
+
+### Captured route references
+
+The `legacy/` directory holds the ten current static-route captures from the 2026-10-12 local session; the four top-level captures show candidate routes. Reproduce candidate mock states with the linked browser specs; use [`LIVE_STACK.md`](LIVE_STACK.md) and `cd admin-ui && npm run test:live` for fresh runtime data. The live run creates a store and returns its ID; substitute that ID for `{storeId}` in detail/editor URLs. Screenshots are snapshots, not proof of the complete route inventory.
+
+| Route / fixture | Static route capture | Candidate capture | Reproducible route or fixture |
+| --- | --- | --- | --- |
+| Dashboard | [dashboard](screenshots/legacy/dashboard.png) | [candidate dashboard](screenshots/dashboard.png) | `/admin/`; `/admin/next/`; `admin-ui/tests/browser/candidate.spec.ts` |
+| Regions | [regions](screenshots/legacy/regions.png) | — | `/admin/regions/`; `/admin/next/regions/`; `admin-ui/tests/browser/regions.spec.ts` |
+| Stores | [stores](screenshots/legacy/stores.png) | — | `/admin/stores/`; `/admin/next/stores/`; `admin-ui/tests/browser/store-create.spec.ts` |
+| Store detail | [store detail](screenshots/legacy/store-detail.png) | — | `/admin/stores/detail/?storeId={storeId}` and `/admin/next/stores/detail/?storeId={storeId}`; `admin-ui/tests/browser/store-detail.spec.ts` |
+| Beacons | [beacons](screenshots/legacy/beacons.png) | — | `/admin/beacons/`; `/admin/next/beacons/`; `admin-ui/tests/browser/beacons.spec.ts` |
+| Products | [products](screenshots/legacy/products.png) | [candidate products](screenshots/products.png) | `/admin/products/`; `/admin/next/products/`; `admin-ui/tests/browser/products.spec.ts` |
+| Categories | [categories](screenshots/legacy/categories.png) | — | `/admin/categories/`; `/admin/next/categories/`; `admin-ui/tests/browser/categories.spec.ts` |
+| Recipes | [recipes](screenshots/legacy/recipes.png) | — | `/admin/recipes/`; `/admin/next/recipes/`; `admin-ui/tests/browser/recipes.spec.ts` |
+| Diagnostics | [diagnostics](screenshots/legacy/diagnostics.png) | — | `/admin/server-logs/`; `/admin/next/server-logs/`; `admin-ui/tests/browser/diagnostics.spec.ts` |
+| Store layout editor | [store editor](screenshots/legacy/editor.png) | [candidate store editor](screenshots/store-editor.png) | `/admin/editor/?storeId={storeId}`; `/admin/next/editor/?storeId={storeId}`; `admin-ui/tests/browser/editor.spec.ts` |
+| Global layout editor | — | [candidate global editor](screenshots/global-editor.png) | `/admin/editor/`; `/admin/next/editor/`; `admin-ui/tests/browser/legacy-editor.spec.ts` |
+
+Candidate browser specs use mocked APIs. The local live acceptance adds authenticated refreshes and backend-backed workflows but does not exercise every listed action/state. Existing screenshots are retained unchanged.
 
 | Evidence purpose | Present repository evidence | What it establishes / limit |
 | --- | --- | --- |

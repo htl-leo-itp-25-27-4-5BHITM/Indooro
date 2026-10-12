@@ -41,3 +41,16 @@ npm run test:live
 - The recipe lifecycle stayed invisible to anonymous mobile reads while DRAFT, became readable with its ingredient and step after publication, and disappeared after deactivation. The final `npm run test:live` run passed with 12 candidate deep links and refreshes, two scoped-role denial checks, six anonymous contract checks, both editor modes, four parallel saves, two parallel activations, and one active version.
 
 The run uses a local development stack. Production deployment, iOS device testing, and migration of the current `/admin/*` routes require separate acceptance evidence.
+
+## Evidence boundary (2026-10-12)
+
+| Area | Observed in the local run | Still not established |
+| --- | --- | --- |
+| Frontend / Quarkus | Candidate package built and verified; 12 authenticated candidate deep links refreshed. | Current `/admin/*` cutover, packaged production artifact, unauthenticated redirect for every asset, route rollback. |
+| Backend / authorization | Real demo-role sessions; region/store scope denials; store/global layout and recipe workflows; concurrent layout writes. | Production identity configuration and the full API role matrix. |
+| PostgreSQL | Schema-backed store/layout persistence; concurrent version numbering and one-active-version constraint. | Production database state or migration/restore behavior. |
+| Keycloak | Demo admin, region-manager, and store-manager logins work with the local realm. | Production realm/client behavior. |
+| OpenSearch | Global publication/history; protected index initialization; anonymous product/catalog reads after initialization. | Production index readiness and recovery. |
+| Public mobile/customer | Anonymous store, catalog, recipe, global-layout, and current store-layout response fields checked after mutations. | iOS device journey, full customer journey, and mobile route reachability. |
+
+These are runtime observations, not substitutes for the proposal/spec acceptance gates. The initial static baseline remains the separate pre-change record in [`BASELINE.md`](BASELINE.md).
