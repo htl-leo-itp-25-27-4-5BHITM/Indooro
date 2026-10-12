@@ -14,6 +14,7 @@ import {
   nullableNumber,
   paginateRows,
   parseImportText,
+  reviewCatalogImport,
   recipeMappingProductMeta,
   recipeMappingProductReadiness,
   readinessForProduct,
@@ -674,21 +675,33 @@ function openImportDrawer(kind) {
   openDrawer(title, `
     <form class="stack">
       ${textarea("payload", "JSON Array oder NDJSON", "", kind === "category" ? '[{"categoryCode":310,"categoryName":"Obst & Gemüse"}]' : '[{"id":101,"name":"Apfel","price":1.99,"layoutCode":"310/1/1/1","storeCode":"SPAR-Leonding-001"}]')}
-      <div class="notice">Schritt 1 Parse, Schritt 2 Review, Schritt 3 Commit. Der Commit nutzt nur vorhandene Backend-Endpunkte.</div>
-      <div class="toolbar"><button class="primary">Parsen und committen</button></div>
+      <div class="notice">Schritt 1: Eingabe parsen. Danach werden alle Zeilen geprueft und vor jeder Mutation angezeigt.</div>
+      <div class="toolbar"><button class="primary">Parsen und pruefen</button></div>
+      <section data-import-review aria-live="polite"></section>
     </form>
   `, (drawer) => {
     drawer.querySelector("form").addEventListener("submit", async (event) => {
       event.preventDefault();
+      const reviewNode = drawer.querySelector("[data-import-review]");
       try {
         const items = parseImportText(formValues(event.currentTarget).payload);
         if (!items.length) throw new Error("Keine Datensaetze gefunden.");
-        await apiPost(kind === "category" ? API.categoryBulk : API.productBulk, items);
-        closeDrawer();
-        toast(`${items.length} Datensatz/Datensaetze importiert.`);
-        kind === "category" ? renderCategories() : renderProducts();
+        const review = reviewCatalogImport(kind, items);
+        const rows = review.rows.map(({ row, item, errors }) => `
+          <tr>
+            <td>${row}</td>
+            <td><span class="badge ${errors.length ? "danger" : "success"}">${errors.length ? "Ungueltig" : "Gueltig"}</span></td>
+            <td><code>${escapeHtml(JSON.stringify(item))}</code></td>
+            <td>${errors.length ? errors.map(escapeHtml).join("<br>") : "—"}</td>
+          </tr>`).join("");
+        reviewNode.innerHTML = `
+          <h3>Schritt 2: Review</h3>
+          <p class="muted">${review.total} Zeilen · ${review.valid} gueltig · ${review.invalid} ungueltig</p>
+          <div class="table-wrap"><table><thead><tr><th>Zeile</th><th>Status</th><th>Datensatz</th><th>Pruefung</th></tr></thead><tbody>${rows}</tbody></table></div>
+          <div class="notice warning" style="margin-top:12px"><strong>Commit gesperrt.</strong> Die vorhandenen Bulk-Endpunkte melden keine verifizierbaren Ergebnisse je Zeile. Produktfehler koennen teilweise gespeichert werden; Kategorien ignorieren Fehlerpositionen. Ein sicherer Commit braucht ein Backend-Ergebnis pro Zeile und definierte Teilfehler-/Transaktionssemantik. Es wurde nichts gesendet.</div>
+          <div class="toolbar"><button type="button" disabled aria-disabled="true">Commit nicht verfuegbar</button></div>`;
       } catch (error) {
-        toast(`Import abgebrochen: ${error.message}`, "danger");
+        reviewNode.innerHTML = `<div class="notice danger" role="alert">Import konnte nicht geprueft werden: ${escapeHtml(error.message)}</div>`;
       }
     });
   });

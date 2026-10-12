@@ -178,8 +178,59 @@ export function validateRecipeForm(values = {}) {
 export function parseImportText(text) {
   const trimmed = String(text ?? "").trim();
   if (!trimmed) return [];
-  if (trimmed.startsWith("[")) return JSON.parse(trimmed);
-  return trimmed.split(/\r?\n/).filter(Boolean).map((line) => JSON.parse(line));
+  if (trimmed.startsWith("[")) {
+    try {
+      const value = JSON.parse(trimmed);
+      if (!Array.isArray(value)) throw new Error("JSON muss ein Array enthalten.");
+      return value;
+    } catch (error) {
+      throw new Error(`JSON-Array ist ungueltig: ${error.message}`);
+    }
+  }
+  return trimmed.split(/\r?\n/).map((line, index) => ({ line: line.trim(), row: index + 1 }))
+    .filter(({ line }) => line)
+    .map(({ line, row }) => {
+      try {
+        return JSON.parse(line);
+      } catch (error) {
+        throw new Error(`Zeile ${row} ist kein gueltiges JSON: ${error.message}`);
+      }
+    });
+}
+
+export function reviewCatalogImport(kind, items = []) {
+  const idField = kind === "category" ? "categoryCode" : "id";
+  const seen = new Set();
+  const rows = items.map((item, index) => {
+    const errors = [];
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      errors.push("Datensatz muss ein JSON-Objekt sein.");
+    } else if (kind === "category") {
+      const code = Number(item.categoryCode);
+      if (!Number.isInteger(code) || code < 1) errors.push("categoryCode muss eine positive Ganzzahl sein.");
+      if (typeof item.categoryName !== "string" || !item.categoryName.trim()) errors.push("categoryName ist erforderlich.");
+    } else {
+      const id = Number(item.id);
+      if (!Number.isInteger(id) || id < 1) errors.push("Produkt-ID muss eine positive Ganzzahl sein.");
+      if (typeof item.name !== "string" || !item.name.trim()) errors.push("Produktname ist erforderlich.");
+      if (item.price == null || item.price === "" || !Number.isFinite(Number(item.price)) || Number(item.price) < 0) errors.push("Preis muss eine endliche Zahl ab 0 sein.");
+      if (typeof item.layoutCode !== "string" || !/^\d+\/\d+\/\d+\/\d+$/.test(item.layoutCode.trim())) errors.push("Layout-Code muss dem Format Kategorie/Meter/Fach/Reihe entsprechen.");
+    }
+
+    const key = item && typeof item === "object" ? item[idField] : null;
+    if (key != null && String(key).trim()) {
+      const normalizedKey = String(key).trim();
+      if (seen.has(normalizedKey)) errors.push(`Doppelte ${idField}: ${normalizedKey}.`);
+      seen.add(normalizedKey);
+    }
+    return { row: index + 1, item, errors };
+  });
+  return {
+    rows,
+    total: rows.length,
+    valid: rows.filter((row) => row.errors.length === 0).length,
+    invalid: rows.filter((row) => row.errors.length > 0).length
+  };
 }
 
 export function beaconState(beacon = {}) {
