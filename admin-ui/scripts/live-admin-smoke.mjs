@@ -473,6 +473,9 @@ try {
   await admin.getByRole("status").getByText("Store archiviert.").waitFor();
   assert.equal(expectOk(await api(admin, "GET", `/api/stores/${regionCreatedStoreId}`), "candidate store archive").status, "ARCHIVED");
   assert.ok(!(await publicJson("/api/mobile/stores")).some((item) => item.id === regionCreatedStoreId), "archived store disappears from public store list");
+  const archivedStoreAudit = expectOk(await api(admin, "GET", `/api/stores/${regionCreatedStoreId}/audit`), "candidate store audit");
+  assert.ok(archivedStoreAudit.entries.some((entry) => entry.action === "ARCHIVE"));
+  await admin.getByRole("region", { name: "Änderungsverlauf" }).getByText("Filiale archiviert").waitFor();
 
   const manager = await login(storeUser, `/admin/next/editor/?storeId=${store.id}`);
   await manager.locator(".le-canvas").waitFor();

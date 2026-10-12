@@ -86,4 +86,4 @@ The candidate beacon UI reviewed and committed a two-row bulk creation with a sh
 
 An admin archived the store previously created through the region-manager candidate form. The API returned `ARCHIVED`, and the anonymous mobile store list no longer included it.
 
-Before archival, the region manager assigned and released a free beacon from that store's candidate detail page. The store-beacon API confirmed assignment and release. Audit post-state and fault recovery remain open.
+Before archival, the region manager assigned and released a free beacon from that store's candidate detail page. The store-beacon API confirmed assignment and release. After archive, the admin detail page displayed the server audit entry and the audit endpoint returned the `ARCHIVE` action. Fault recovery remains open.

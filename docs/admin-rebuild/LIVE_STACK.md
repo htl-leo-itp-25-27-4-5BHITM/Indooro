@@ -69,6 +69,8 @@ The candidate store-detail page archived the store created through the region-ma
 
 Before that archive, the region manager assigned and released a free beacon through the candidate Store detail page; the store-beacon API confirmed both states. The output reports `candidateDetailBeaconLifecycle: true`.
 
+After archive, the candidate detail page showed the server's archive audit entry and the store audit endpoint returned the `ARCHIVE` action.
+
 ## Evidence boundary (2026-10-12)
 
 | Area | Observed in the local run | Still not established |
