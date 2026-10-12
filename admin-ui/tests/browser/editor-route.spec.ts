@@ -36,7 +36,7 @@ test("new editor saves a draft, reloads it, then activates the same version", as
   await page.getByRole("button", { name: "Entwurf speichern" }).click();
   await expect.poll(() => savedPayload?.activate).toBe(false);
   expect((savedPayload?.layout as typeof document).elements).toHaveLength(2);
-  await expect(page.getByRole("status")).toContainText("Entwurf gespeichert");
+  await expect(page.locator(".le-message")).toContainText("Entwurf gespeichert");
   await expect(page).toHaveURL(/layoutId=layout-2/);
 
   await page.reload();
@@ -45,7 +45,7 @@ test("new editor saves a draft, reloads it, then activates the same version", as
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Veröffentlichen" }).click();
   await expect.poll(() => activateCalls).toBe(1);
-  await expect(page.getByRole("status")).toContainText("Layout veröffentlicht");
+  await expect(page.locator(".le-message")).toContainText("Layout veröffentlicht");
   expect(current.status).toBe("ACTIVE");
 });
 

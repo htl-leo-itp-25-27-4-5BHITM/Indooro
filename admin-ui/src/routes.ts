@@ -49,10 +49,17 @@ export function candidateAccess(pathname: string, role: string, requestedStoreId
   if (pathname === "/admin/next/recipes/" || pathname === "/admin/next/recipes") {
     return role === "admin" ? "allowed" : "forbidden";
   }
+  if (pathname === "/admin/next/products/" || pathname === "/admin/next/products") {
+    return role === "admin" ? "allowed" : "forbidden";
+  }
+  if (pathname === "/admin/next/categories/" || pathname === "/admin/next/categories") {
+    return role === "admin" ? "allowed" : "forbidden";
+  }
   if (pathname === "/admin/next/server-logs/" || pathname === "/admin/next/server-logs") {
     return role === "admin" ? "allowed" : "forbidden";
   }
   if (pathname === "/admin/next/editor/" || pathname === "/admin/next/editor") {
+    if (!requestedStoreId) return role === "admin" ? "allowed" : "forbidden";
     if (role === "store-manager" && (!requestedStoreId || requestedStoreId !== scopeStoreId)) return "forbidden";
     return ["admin", "region-manager", "store-manager"].includes(role) ? "allowed" : "forbidden";
   }

@@ -10,6 +10,9 @@ import { StoreCreatePage } from "./StoreCreatePage";
 import { BeaconsPage } from "./BeaconsPage";
 import { RecipesPage } from "./RecipesPage";
 import { DiagnosticsPage } from "./DiagnosticsPage";
+import { LegacyEditorRoute } from "./LegacyEditorRoute";
+import { ProductsPage } from "./ProductsPage";
+import { CategoriesPage } from "./CategoriesPage";
 import { candidateAccess, visibleRoutes, type CurrentUser } from "./routes";
 import "./style.css";
 
@@ -55,7 +58,7 @@ function AdminCandidate() {
           {user && access === "forbidden" && <section role="alert" className="notice"><h2>Zugriff verweigert</h2><p>Für diesen Bereich fehlt die Berechtigung.</p></section>}
           {user && access === "missing" && <section role="alert" className="notice"><h2>Seite nicht gefunden</h2><p>Dieser Kandidatenpfad ist nicht eingerichtet.</p></section>}
           {user && access === "allowed" && (window.location.pathname.includes("/editor")
-            ? <EditorRoute api={api} />
+            ? new URLSearchParams(window.location.search).has("storeId") ? <EditorRoute api={api} /> : <LegacyEditorRoute api={api} role={user.role} />
             : window.location.pathname.includes("/stores/new")
             ? <StoreCreatePage api={api} user={user} />
             : window.location.pathname.includes("/stores/detail")
@@ -64,6 +67,8 @@ function AdminCandidate() {
             : window.location.pathname.includes("/regions") ? <RegionsPage api={api} user={user} />
             : window.location.pathname.includes("/beacons") ? <BeaconsPage api={api} user={user} />
             : window.location.pathname.includes("/recipes") ? <RecipesPage api={api} />
+            : window.location.pathname.includes("/products") ? <ProductsPage api={api} />
+            : window.location.pathname.includes("/categories") ? <CategoriesPage api={api} />
             : window.location.pathname.includes("/server-logs") ? <DiagnosticsPage api={api} user={user} />
             : <Dashboard api={api} user={user} />)}
         </main>

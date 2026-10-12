@@ -7,4 +7,4 @@ const repository = path.resolve(workspace, "..");
 export const dist = path.join(workspace, "dist");
 export const adminResources = path.join(repository, "backend/indooro_server/src/main/resources/META-INF/resources/admin");
 export const candidate = path.join(adminResources, "next");
-export const nestedEntries = ["stores", "stores/detail", "stores/new", "editor", "regions", "beacons", "recipes", "server-logs"];
+export const nestedEntries = ["stores", "stores/detail", "stores/new", "editor", "regions", "beacons", "recipes", "products", "categories", "server-logs"];

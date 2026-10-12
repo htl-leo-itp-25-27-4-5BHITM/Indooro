@@ -3,6 +3,7 @@ import type { ApiClient } from "./api/client";
 import { LayoutEditor } from "./editor/LayoutEditor";
 import type { LayoutDocument } from "./editor/model";
 import type { AssignedBeacon } from "./editor/validation";
+import { MobileCurrentPreview } from "./editor/MobileCurrentPreview";
 
 interface LayoutVersion {
   layoutId: string;
@@ -89,6 +90,7 @@ export function EditorRoute({ api }: { api: ApiClient }) {
   return <div className="editor-route">
     <div className="editor-route-header"><div><p className="eyebrow">{context.store.storeCode} · {context.store.name}</p><h2>Layout Editor</h2><p>Version {version.versionNo ?? "–"} · {version.status === "DEFAULT" ? "Vorlage" : version.status === "DRAFT" ? "Entwurf" : version.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</p></div><a className="button" href={`/admin/next/stores/detail/?storeId=${encodeURIComponent(storeId)}`}>Store-Detail öffnen</a></div>
     <LayoutEditor key={storeId} initialDocument={version.layout} mode="store" storeName={context.store.name} assignedBeacons={context.assignedBeacons ?? []} onSaveDraft={saveDraft} onPublish={publish} onBack={() => { window.location.href = "/admin/next/stores/"; }} />
+    <MobileCurrentPreview api={api} storeId={storeId} refreshKey={`${version.layoutId}:${version.status}`} />
     <section className="notice version-history"><div className="section-heading"><h3>Versionen</h3><span>Öffnen lädt die gewählte Version im Editor.</span></div>
       {versionError && <p role="alert">Versionsliste nicht verfügbar: {versionError}</p>}
       {!versionError && (versions.length ? <ul>{versions.map((item) => <li key={item.layoutId}><span>v{item.versionNo} · {item.layoutName || "Layout"} · {item.status}</span><a href={`/admin/next/editor/?storeId=${encodeURIComponent(storeId)}&layoutId=${encodeURIComponent(item.layoutId)}`}>Öffnen</a></li>)}</ul> : <p>Noch keine gespeicherten Versionen.</p>)}
