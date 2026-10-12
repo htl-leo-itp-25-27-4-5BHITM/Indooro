@@ -36,8 +36,15 @@ function AdminCandidate() {
   }, []);
 
   const access = user ? candidateAccess(window.location.pathname, user.role, new URLSearchParams(window.location.search).get("storeId"), user.scope?.storeId) : null;
+  const navigation = user ? visibleRoutes(user.role).map((route) => ({ route, href: candidateNavigationPath(route, user) })) : [];
+  const currentPath = window.location.pathname.replace(/\/$/, "");
+  const currentNavigation = navigation.find(({ href }) => {
+    const targetPath = new URL(href, window.location.origin).pathname.replace(/\/$/, "");
+    return currentPath === targetPath || (targetPath !== "/admin/next" && currentPath.startsWith(`${targetPath}/`));
+  })?.route;
   return (
     <div className="admin-shell">
+      <a className="skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <header className="masthead">
         <a className="brand" href="/admin/next/" aria-label="Indooro Admin Startseite">Indooro <span>Admin</span></a>
         {user && <div className="account"><span>{user.username}</span><span className="scope">{user.scope?.storeName ?? user.scope?.regionName ?? user.role}</span><a href="/admin/logout">Logout</a></div>}
@@ -45,9 +52,9 @@ function AdminCandidate() {
       <div className="workspace">
         {user && <nav aria-label="Admin Navigation" className="sidebar">
           <p className="sidebar-title">Arbeitsbereiche</p>
-          {visibleRoutes(user.role).map((route) => <a href={candidateNavigationPath(route, user)} key={route.path}>{route.label}</a>)}
+          {navigation.map(({ route, href }) => <a href={href} key={route.path} aria-current={route === currentNavigation ? "page" : undefined}>{route.label}</a>)}
         </nav>}
-        <main id="main-content" className={`content ${window.location.pathname.includes("/next/editor") ? "editor-content" : ""}`}>
+        <main id="main-content" tabIndex={-1} className={`content ${window.location.pathname.includes("/next/editor") ? "editor-content" : ""}`}>
           <h1>Indooro Admin</h1>
           {loading && <p role="status">Berechtigungen werden geladen …</p>}
           {error && <section role="alert" className="notice">
