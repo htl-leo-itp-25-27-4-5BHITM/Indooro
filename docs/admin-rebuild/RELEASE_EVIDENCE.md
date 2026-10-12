@@ -11,6 +11,9 @@ The image ran locally in the Quarkus `prod` profile with the dedicated PostgreSQ
 The external live script was extended after image packaging and passed again against the same immutable image. It now verifies candidate region create/edit/archive, beacon create/edit/assign/release/archive, region-manager store create and detail navigation, store-manager store-detail edit, product create/edit/delete, and recipe edit/publish/deactivate through the UI, plus assigned-region isolation and API/public post-state. Product search checks allow for OpenSearch index refresh. This adds acceptance evidence without changing the image digest.
 
 The live editor acceptance also checks keyboard shelf move, undo, redo, draft save, publication, and the final shelf position in the anonymous active-layout response.
+After concurrent activations it reactivates the previous published store layout and confirms the public geometry/metadata and a single active version. This is separate from route-map rollback.
+
+The same local image also passed candidate diagnostics UI read and keyboard refresh, with admin audit/error endpoints and scoped-role denials.
 
 ## Deployment inputs to review
 

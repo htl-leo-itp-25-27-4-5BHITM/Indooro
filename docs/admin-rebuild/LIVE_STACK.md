@@ -51,6 +51,9 @@ The run uses a local development stack. Production deployment, iOS device testin
 The external `test:live` script was extended without changing the packaged image. Its latest run passed candidate UI region create/edit/archive, beacon create/edit/assign/release/archive, region-manager store create and detail navigation, store-manager store-detail edit, product create/edit/delete, and recipe edit/publish/deactivate, including persisted API and public post-state checks. The output reports `candidateRegionLifecycle`, `candidateBeaconLifecycle`, `candidateStoreCreate`, `candidateStoreDetailEdit`, `candidateProductLifecycle`, and `candidateRecipeLifecycle` as `true`.
 
 The same run moved a selected shelf with the keyboard in the live store editor, undid and redid the move, saved the draft, and published it. The anonymous active layout returned the final shelf `x` value.
+After concurrent activations, the script restored that previous store-layout version and confirmed the anonymous response and unique active-version count; the output reports `layoutVersionRecovery: true`.
+
+The candidate diagnostics route also loaded admin audit/error logs from the packaged server and refreshed with the keyboard; the output reports `candidateDiagnosticsReadRefresh: true`.
 
 ## Evidence boundary (2026-10-12)
 

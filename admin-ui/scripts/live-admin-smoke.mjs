@@ -466,8 +466,26 @@ try {
   assert.equal(activeCount(store.id), 1);
   const current = await currentLayout(store.id);
   assert.ok(activated.some((version) => version.layoutId === current.layoutId));
+  const restored = expectOk(await api(admin, "POST", `${layoutPath}/${edited.layoutId}/activate`, {}), "restore previous published layout");
+  assert.equal(restored.layoutId, edited.layoutId);
+  assert.equal(activeCount(store.id), 1);
+  const restoredPublicLayout = await currentLayout(store.id);
+  assert.equal(restoredPublicLayout.layoutId, edited.layoutId);
+  assert.equal(restoredPublicLayout.layout.elements[1].x, initialX + 1);
+  assert.equal(restoredPublicLayout.layout.elements[1].accessAngle, 135);
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeLifecycle: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  const auditLogs = expectOk(await api(admin, "GET", "/api/admin/logs?limit=50"), "admin audit logs");
+  const errorLogs = expectOk(await api(admin, "GET", "/api/admin/error-logs?limit=50"), "admin error logs");
+  assert.ok(Array.isArray(auditLogs.entries) && auditLogs.entries.length > 0);
+  assert.ok(Array.isArray(errorLogs.entries));
+  await admin.goto(`${base}/admin/next/server-logs/`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
+  await admin.getByRole("region", { name: "Serverfehler" }).waitFor();
+  await admin.getByRole("button", { name: "Aktualisieren" }).focus();
+  await admin.keyboard.press("Enter");
+  await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
+
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeLifecycle: true, candidateDiagnosticsReadRefresh: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();
