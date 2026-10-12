@@ -25,6 +25,8 @@ Candidate beacon bulk review/commit with two identities sharing one UUID also pa
 
 Admin store archival through the candidate detail page passed as well; the archived store disappeared from the anonymous mobile store list.
 
+The region manager also assigned and released a free beacon from that candidate Store detail page; authenticated store-beacon reads confirmed both states.
+
 ## Deployment inputs to review
 
 `k8s/backend.yaml` currently names `ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:latest` with `imagePullPolicy: Always`. A rollout needs a published image digest in that manifest and the matching rollback digest recorded before applying it. `k8s/keycloak.yaml`, `k8s/opensearch.yaml`, and `k8s/postgres.yaml` define the dependencies; the live local acceptance used Keycloak 26.2, OpenSearch 2.9, and PostgreSQL 17. Version differences from LeoCloud must be checked before deployment.

@@ -67,6 +67,8 @@ The candidate beacon UI reviewed and committed two rows sharing one UUID with di
 
 The candidate store-detail page archived the store created through the region-manager form; the API confirmed `ARCHIVED` and the anonymous store list omitted it. The output reports `candidateStoreArchive: true`.
 
+Before that archive, the region manager assigned and released a free beacon through the candidate Store detail page; the store-beacon API confirmed both states. The output reports `candidateDetailBeaconLifecycle: true`.
+
 ## Evidence boundary (2026-10-12)
 
 | Area | Observed in the local run | Still not established |

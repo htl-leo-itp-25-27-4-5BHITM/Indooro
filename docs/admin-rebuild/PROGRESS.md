@@ -84,4 +84,6 @@ The candidate recipe UI also created a new draft from an actual catalog product,
 
 The candidate beacon UI reviewed and committed a two-row bulk creation with a shared UUID and distinct minor values. Both records appeared through the authenticated API with matching identities. Identity-conflict and scoped UI cases remain open.
 
-An admin archived the store previously created through the region-manager candidate form. The API returned `ARCHIVED`, and the anonymous mobile store list no longer included it. Live store-detail beacon controls, audit post-state, and fault recovery remain open.
+An admin archived the store previously created through the region-manager candidate form. The API returned `ARCHIVED`, and the anonymous mobile store list no longer included it.
+
+Before archival, the region manager assigned and released a free beacon from that store's candidate detail page. The store-beacon API confirmed assignment and release. Audit post-state and fault recovery remain open.
