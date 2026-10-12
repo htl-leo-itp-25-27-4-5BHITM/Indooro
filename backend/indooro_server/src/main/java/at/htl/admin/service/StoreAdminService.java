@@ -20,6 +20,9 @@ import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.LockTimeoutException;
+import jakarta.persistence.PessimisticLockException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -200,6 +203,15 @@ public class StoreAdminService {
     StoreEntity requireStore(UUID storeId) {
         return storeRepository.findByIdOptional(storeId)
                 .orElseThrow(() -> new NotFoundException("Filiale nicht gefunden."));
+    }
+
+    StoreEntity lockStore(UUID storeId) {
+        try {
+            return storeRepository.findByIdOptional(storeId, LockModeType.PESSIMISTIC_WRITE)
+                    .orElseThrow(() -> new NotFoundException("Filiale nicht gefunden."));
+        } catch (LockTimeoutException | PessimisticLockException exception) {
+            throw new WebApplicationException("Filiallayout wird gerade bearbeitet. Bitte erneut versuchen.", exception, Response.Status.CONFLICT);
+        }
     }
 
     private RegionEntity requireRegion(UUID regionId) {

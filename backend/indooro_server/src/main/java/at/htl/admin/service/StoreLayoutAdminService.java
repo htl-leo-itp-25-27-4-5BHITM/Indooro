@@ -83,7 +83,8 @@ public class StoreLayoutAdminService {
     public LayoutDtos.StoreLayoutResponse saveLayoutVersion(UUID storeId, LayoutDtos.LayoutSaveRequest request) {
         adminAccessService.requireStoreAccess(storeId);
         layoutDocumentValidator.validate(request == null ? null : request.layout());
-        StoreEntity store = storeAdminService.requireStore(storeId);
+        // Serialize version numbering and active-version transitions for this store.
+        StoreEntity store = storeAdminService.lockStore(storeId);
         LayoutVersionEntity activeLayout = layoutVersionRepository.findActiveByStoreId(storeId).orElse(null);
         // An explicit false is a draft even for a new store. Omitted/null retains the
         // historical first-save behavior for existing API clients.
@@ -114,7 +115,7 @@ public class StoreLayoutAdminService {
     @Transactional
     public LayoutDtos.StoreLayoutResponse activateLayoutVersion(UUID storeId, UUID layoutId) {
         adminAccessService.requireStoreAccess(storeId);
-        storeAdminService.requireStore(storeId);
+        storeAdminService.lockStore(storeId);
         LayoutVersionEntity entity = layoutVersionRepository.findByStoreAndId(storeId, layoutId)
                 .orElseThrow(() -> new NotFoundException("Layout-Version nicht gefunden."));
 

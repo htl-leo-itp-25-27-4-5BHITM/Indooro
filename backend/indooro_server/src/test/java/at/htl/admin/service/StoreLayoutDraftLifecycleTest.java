@@ -32,6 +32,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.times;
 
 class StoreLayoutDraftLifecycleTest {
 
@@ -42,6 +44,7 @@ class StoreLayoutDraftLifecycleTest {
     private StoreLayoutAdminService adminService;
     private MobileStoreService mobileService;
     private StoreEntity store;
+    private StoreAdminService storeAdminService;
 
     @BeforeEach
     void setUp() {
@@ -69,8 +72,9 @@ class StoreLayoutDraftLifecycleTest {
             return null;
         }).when(versionsRepository).persist(any(LayoutVersionEntity.class));
 
-        StoreAdminService storeAdminService = mock(StoreAdminService.class);
+        storeAdminService = mock(StoreAdminService.class);
         when(storeAdminService.requireStore(storeId)).thenReturn(store);
+        when(storeAdminService.lockStore(storeId)).thenReturn(store);
 
         adminService = new StoreLayoutAdminService();
         adminService.layoutVersionRepository = versionsRepository;
@@ -119,6 +123,7 @@ class StoreLayoutDraftLifecycleTest {
         assertEquals(draft.layoutId(), afterPublish.layoutId());
         assertEquals(draft.layout(), afterPublish.layout());
         assertEquals(1, activeCount());
+        verify(storeAdminService, times(2)).lockStore(storeId);
     }
 
     @Test
