@@ -13,7 +13,7 @@ import { DiagnosticsPage } from "./DiagnosticsPage";
 import { LegacyEditorRoute } from "./LegacyEditorRoute";
 import { ProductsPage } from "./ProductsPage";
 import { CategoriesPage } from "./CategoriesPage";
-import { candidateAccess, visibleRoutes, type CurrentUser } from "./routes";
+import { candidateAccess, candidateNavigationPath, visibleRoutes, type CurrentUser } from "./routes";
 import "./style.css";
 
 const api = createApiClient();
@@ -45,7 +45,7 @@ function AdminCandidate() {
       <div className="workspace">
         {user && <nav aria-label="Admin Navigation" className="sidebar">
           <p className="sidebar-title">Arbeitsbereiche</p>
-          {visibleRoutes(user.role).map((route) => <a href={route.path} key={route.path}>{route.label}</a>)}
+          {visibleRoutes(user.role).map((route) => <a href={candidateNavigationPath(route, user)} key={route.path}>{route.label}</a>)}
         </nav>}
         <main id="main-content" className={`content ${window.location.pathname.includes("/next/editor") ? "editor-content" : ""}`}>
           <h1>Indooro Admin</h1>

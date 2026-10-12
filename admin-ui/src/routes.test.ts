@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { candidateAccess, visibleRoutes } from "./routes.ts";
+import { candidateAccess, candidateNavigationPath, visibleRoutes } from "./routes.ts";
 
 test("navigation follows current staff roles", () => {
   assert.equal(visibleRoutes("admin").length, 9);
@@ -26,4 +26,11 @@ test("candidate direct links deny unknown roles and unknown paths", () => {
   assert.equal(candidateAccess("/admin/next/editor/", "admin"), "allowed");
   assert.equal(candidateAccess("/admin/next/editor/", "region-manager"), "forbidden");
   assert.equal(candidateAccess("/admin/next/other/", "admin"), "missing");
+});
+
+test("candidate navigation keeps staff inside the new shell and scopes editor links", () => {
+  const editor = visibleRoutes("store-manager").find((route) => route.label === "Layout Editor")!;
+  assert.equal(candidateNavigationPath(editor, { subject: "store-1", username: "manager", email: null, role: "store-manager", scope: { regionId: null, regionName: null, storeId: "store-1", storeName: "Linz" } }), "/admin/next/editor/?storeId=store-1");
+  const products = visibleRoutes("admin").find((route) => route.label === "Produkte")!;
+  assert.equal(candidateNavigationPath(products, { subject: "admin-1", username: "admin", email: null, role: "admin", scope: null }), "/admin/next/products/");
 });

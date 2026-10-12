@@ -26,6 +26,14 @@ export function visibleRoutes(role: string): StaffRoute[] {
   return staffRoutes.filter((route) => route.roles.some((allowed) => allowed === role));
 }
 
+export function candidateNavigationPath(route: StaffRoute, user: CurrentUser): string {
+  if (route.path === "/admin/editor/") {
+    if (user.role === "store-manager" && user.scope?.storeId) return `/admin/next/editor/?storeId=${encodeURIComponent(user.scope.storeId)}`;
+    if (user.role === "region-manager") return "/admin/next/stores/";
+  }
+  return route.path.replace(/^\/admin\//, "/admin/next/");
+}
+
 export function candidateAccess(pathname: string, role: string, requestedStoreId?: string | null, scopeStoreId?: string | null): "allowed" | "forbidden" | "missing" {
   if (pathname === "/admin/next/" || pathname === "/admin/next") {
     return visibleRoutes(role).length ? "allowed" : "forbidden";

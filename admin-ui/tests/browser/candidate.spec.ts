@@ -31,6 +31,8 @@ test("candidate navigation follows staff role and offers logout", async ({ page 
   await page.goto("/admin/next/stores/detail/?storeId=store-1");
   const navigation = page.getByRole("navigation", { name: "Admin Navigation" });
   await expect(navigation.getByRole("link", { name: "Stores" })).toBeVisible();
+  await expect(navigation.getByRole("link", { name: "Stores" })).toHaveAttribute("href", "/admin/next/stores/");
+  await expect(navigation.getByRole("link", { name: "Layout Editor" })).toHaveAttribute("href", "/admin/next/editor/?storeId=store-1");
   await expect(navigation.getByRole("link", { name: "Rezepte" })).toHaveCount(0);
   await expect(page.getByText("Indooro Linz")).toBeVisible();
   await expect(page.getByRole("link", { name: "Logout" })).toHaveAttribute("href", "/admin/logout");
@@ -64,7 +66,7 @@ test("dashboard uses scoped backend totals and only admin loads audit activity",
   await expect(metrics).toContainText("4");
   await expect(metrics).toContainText("2");
   await expect(page.getByText("Layout veröffentlicht")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Layouts prüfen" })).toHaveAttribute("href", "/admin/stores/");
+  await expect(page.getByRole("link", { name: "Layouts prüfen" })).toHaveAttribute("href", "/admin/next/stores/?layout=missing");
 });
 
 test("store manager dashboard omits admin activity and recovers from a failed request", async ({ page }) => {

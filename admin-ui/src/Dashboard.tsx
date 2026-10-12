@@ -61,7 +61,7 @@ export function Dashboard({ api, user }: { api: ApiClient; user: CurrentUser }) 
   }, [api, user, revision]);
 
   return <div className="dashboard">
-    <div className="page-intro"><div><p className="eyebrow">Übersicht</p><h2>Dashboard</h2><p>Stand Ihrer sichtbaren Stores und der nächsten Einrichtungsschritte.</p></div><a className="button primary" href="/admin/stores/">Stores verwalten</a></div>
+    <div className="page-intro"><div><p className="eyebrow">Übersicht</p><h2>Dashboard</h2><p>Stand Ihrer sichtbaren Stores und der nächsten Einrichtungsschritte.</p></div><a className="button primary" href="/admin/next/stores/">Stores verwalten</a></div>
     {error && <div className="notice error-state" role="alert"><h3>Daten konnten nicht geladen werden</h3><p>{error}</p><button className="button" onClick={retry}>Erneut versuchen</button></div>}
     {!data && !error && <div className="notice" role="status">Dashboard wird geladen …</div>}
     {data && !error && <>
@@ -72,18 +72,18 @@ export function Dashboard({ api, user }: { api: ApiClient; user: CurrentUser }) 
         <Metric label="Layouts offen" value={data.storesWithoutLayout} detail="ohne aktives Layout" />
       </section>
       <div className="dashboard-columns">
-        <section className="notice"><div className="section-heading"><h3>Einrichtung</h3><a href="/admin/stores/">Stores öffnen</a></div>
+        <section className="notice"><div className="section-heading"><h3>Einrichtung</h3><a href="/admin/next/stores/">Stores öffnen</a></div>
           {data.storesWithoutLayout === 0 && data.freeBeacons === 0 ? <p>Keine offenen Einrichtungshinweise.</p> : <ul className="warning-list">
-            {data.storesWithoutLayout > 0 && <li><strong>{data.storesWithoutLayout} Stores ohne aktives Layout</strong><span>Entwurf prüfen und veröffentlichen.</span><a href="/admin/stores/">Layouts prüfen</a></li>}
-            {data.freeBeacons > 0 && <li><strong>{data.freeBeacons} freie Beacons</strong><span>Position im Store zuweisen.</span><a href="/admin/beacons/">Beacons zuweisen</a></li>}
+            {data.storesWithoutLayout > 0 && <li><strong>{data.storesWithoutLayout} Stores ohne aktives Layout</strong><span>Entwurf prüfen und veröffentlichen.</span><a href="/admin/next/stores/?layout=missing">Layouts prüfen</a></li>}
+            {data.freeBeacons > 0 && <li><strong>{data.freeBeacons} freie Beacons</strong><span>Position im Store zuweisen.</span><a href="/admin/next/beacons/">Beacons zuweisen</a></li>}
           </ul>}
         </section>
         <section className="notice"><div className="section-heading"><h3>Schnellzugriff</h3></div><div className="quick-links">
-          <a href="/admin/stores/">Store verwalten</a><a href="/admin/editor/">Layout Editor öffnen</a><a href="/admin/beacons/">Beacons verwalten</a>
-          {user.role === "admin" && <><a href="/admin/products/">Produkte verwalten</a><a href="/admin/recipes/">Rezept erstellen</a></>}
+          <a href="/admin/next/stores/">Store verwalten</a><a href={user.role === "store-manager" && user.scope?.storeId ? `/admin/next/editor/?storeId=${encodeURIComponent(user.scope.storeId)}` : user.role === "region-manager" ? "/admin/next/stores/" : "/admin/next/editor/"}>Layout Editor öffnen</a><a href="/admin/next/beacons/">Beacons verwalten</a>
+          {user.role === "admin" && <><a href="/admin/next/products/">Produkte verwalten</a><a href="/admin/next/recipes/">Rezepte verwalten</a></>}
         </div></section>
       </div>
-      {user.role === "admin" && <section className="notice activity"><div className="section-heading"><h3>Letzte Aktivitäten</h3><a href="/admin/server-logs/">Diagnose öffnen</a></div>
+      {user.role === "admin" && <section className="notice activity"><div className="section-heading"><h3>Letzte Aktivitäten</h3><a href="/admin/next/server-logs/">Diagnose öffnen</a></div>
         {data.activity.length === 0 ? <p>Keine Aktivitäten vorhanden.</p> : <ul>{data.activity.map((entry) => <li key={entry.id}><span>{entry.summary || entry.action}</span><time dateTime={entry.createdAt}>{new Intl.DateTimeFormat("de-AT", { dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.createdAt))}</time></li>)}</ul>}
       </section>}
     </>}
