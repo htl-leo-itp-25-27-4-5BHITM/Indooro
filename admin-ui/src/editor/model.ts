@@ -69,6 +69,42 @@ export function createEditorState(document: LayoutDocument): EditorState {
   return { document: copy, past: [], future: [], selectedId: null, savedSignature: documentSignature(copy) };
 }
 
+/** Import is one undoable edit and never changes the last server-saved signature. */
+export function replaceDocument(state: EditorState, document: LayoutDocument): EditorState {
+  const imported = createEditorState(document).document;
+  if (documentSignature(imported) === documentSignature(state.document)) return state;
+  return { ...state, document: imported, past: [...state.past, clone(state.document)].slice(-MAX_HISTORY), future: [], selectedId: null };
+}
+
+export function parseImportedDocument(value: unknown): LayoutDocument {
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Die Datei enthält keinen Grundriss.");
+  const document = value as Partial<LayoutDocument>;
+  const grid = document.gridSize;
+  if (typeof document.shopName !== "string" || !grid || !Number.isFinite(grid.width) || !Number.isFinite(grid.height)
+    || grid.width <= 0 || grid.height <= 0 || grid.width > 1000 || grid.height > 1000) {
+    throw new Error("Filialname oder Rastergröße sind ungültig.");
+  }
+  if (!Array.isArray(document.elements) || document.elements.length > 5000) throw new Error("Die Elementliste ist ungültig oder zu groß.");
+  const ids = new Set<string>();
+  for (const item of document.elements) {
+    if (!item || typeof item !== "object" || Array.isArray(item) || typeof item.type !== "string" || !item.type.trim()
+      || !Number.isFinite(item.x) || !Number.isFinite(item.y)
+      || (item.width !== undefined && (!Number.isFinite(item.width) || item.width < 0))
+      || (item.height !== undefined && (!Number.isFinite(item.height) || item.height < 0))
+      || (item.rotation !== undefined && !Number.isFinite(item.rotation))
+      || (item.label !== undefined && typeof item.label !== "string")
+      || (item.id !== undefined && typeof item.id !== "number" && typeof item.id !== "string")) {
+      throw new Error("Mindestens ein Element enthält ungültige Daten.");
+    }
+    if (item.id !== undefined) {
+      const id = String(item.id);
+      if (ids.has(id)) throw new Error("Element-IDs müssen eindeutig sein.");
+      ids.add(id);
+    }
+  }
+  return document as LayoutDocument;
+}
+
 export function isDirty(state: EditorState): boolean {
   return documentSignature(state.document) !== state.savedSignature;
 }

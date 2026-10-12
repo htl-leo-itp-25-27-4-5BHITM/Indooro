@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { fitViewport, screenToWorld, zoomAt, type Point, type Viewport } from "./geometry";
 import { elementFill, shelfMetadata, shelfMetadataChanges } from "./metadata";
-import { applyCommand, createEditorState, isDirty, markSaved, newElementId, redo, selectElement, undo, type EditorCommand, type EditorState, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
+import { applyCommand, createEditorState, isDirty, markSaved, newElementId, parseImportedDocument, redo, replaceDocument, selectElement, undo, type EditorCommand, type EditorState, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
 import { validateLayout, type AssignedBeacon } from "./validation";
 import "./LayoutEditor.css";
 
@@ -51,6 +51,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const [working, setWorking] = useState<"save" | "publish" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const previewRef = useRef<LayoutElement | null>(null);
   const spaceHeld = useRef(false);
@@ -255,6 +256,36 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
     finally { setWorking(null); }
   };
 
+  const exportDocument = () => {
+    const current = structuredClone(editorRef.current.document);
+    const data = { ...current, exportDate: new Date().toISOString() };
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+    const link = window.document.createElement("a");
+    link.href = url;
+    link.download = `${(current.shopName || "layout").trim().replace(/[^\p{L}\p{N}._-]+/gu, "_").slice(0, 80) || "layout"}_layout.json`;
+    window.document.body.append(link);
+    link.click();
+    link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+    setMessage("Grundriss als JSON heruntergeladen. Der Serverstand wurde nicht geändert.");
+  };
+
+  const importDocument = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      if (file.size > 5_000_000) throw new Error("Die JSON-Datei darf höchstens 5 MB groß sein.");
+      const imported = parseImportedDocument(JSON.parse(await file.text()) as unknown);
+      if (isDirty(editorRef.current) && !window.confirm("Ungespeicherte Änderungen durch den Import ersetzen? Rückgängig bleibt möglich.")) return;
+      setEditor((current) => replaceDocument(current, imported));
+      setTool("select");
+      setMessage("Grundriss importiert. Bitte prüfen und als Entwurf speichern.");
+    } catch (error) {
+      setMessage(error instanceof Error ? `Import fehlgeschlagen: ${error.message}` : "Import fehlgeschlagen.");
+    } finally {
+      if (importRef.current) importRef.current.value = "";
+    }
+  };
+
   const changeNumber = (field: "x" | "y" | "width" | "height" | "rotation", value: string) => {
     if (!selected?.id && selected?.id !== 0) return;
     const parsed = number(value, Number(selected[field]) || 0);
@@ -268,6 +299,9 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
       <div className="le-heading"><span className="le-kicker">INDOORO · GRUNDRISS</span><h1>{storeName || document.shopName || "Neuer Grundriss"}</h1><span className="le-context">{mode === "store" ? "Filiallayout" : "Globales Legacy-Layout · nur Admin"}</span></div>
       <div className="le-actions">
         {onBack && <button type="button" className="le-button le-quiet" onClick={() => { if (!dirty || window.confirm("Ungespeicherte Änderungen verwerfen?")) onBack(); }}>Zurück</button>}
+        <button type="button" className="le-button" onClick={exportDocument}>JSON exportieren</button>
+        <button type="button" className="le-button" onClick={() => importRef.current?.click()} disabled={!!working}>JSON importieren</button>
+        <input ref={importRef} className="le-file-input" type="file" accept=".json,application/json" aria-label="Grundrissdatei importieren" onChange={(event) => void importDocument(event.target.files?.[0])} />
         <span className={`le-save-indicator ${dirty ? "is-dirty" : ""}`}>{dirty ? "● Ungespeicherte Änderungen" : "✓ Gespeichert"}</span>
         <button type="button" className={`le-button ${saveMode === "immediate" ? "le-primary" : ""}`} disabled={!(saveMode === "immediate" ? onSaveCurrent : onSaveDraft) || !dirty || !!working || (saveMode === "immediate" && errors > 0)} onClick={saveDocument}>{working === "save" ? "Speichert …" : saveMode === "immediate" ? "Global veröffentlichen" : "Entwurf speichern"}</button>
         {saveMode === "draft" && <button type="button" className="le-button le-primary" disabled={!onPublish || dirty || errors > 0 || !!working} onClick={publish}>{working === "publish" ? "Veröffentlicht …" : "Veröffentlichen"}</button>}
@@ -284,7 +318,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
         <div className="le-layers" role="list">{document.elements.length ? document.elements.map((element, index) => <button type="button" role="listitem" key={`${element.id ?? "missing"}-${index}`} aria-current={editor.selectedId === element.id} onClick={() => setEditor((current) => selectElement(current, element.id ?? null))}><span className="le-layer-index">{String(index + 1).padStart(2, "0")}</span><span>{labelFor(element)}</span>{element.locked && <span title="Gesperrt">🔒</span>}{issueFor(element.id) && <span className="le-error-dot" title="Validierungsfehler">!</span>}</button>) : <p className="le-empty">Noch keine Elemente</p>}</div>
       </aside>
       <div className="le-center">
-        <div className="le-canvas-toolbar"><span>{document.gridSize.width} × {document.gridSize.height} Rastereinheiten</span><label><input type="checkbox" checked={showGrid} onChange={(event) => setShowGrid(event.target.checked)} /> Raster</label><label><input type="checkbox" checked={snapping} onChange={(event) => setSnapping(event.target.checked)} /> Einrasten</label><button type="button" onClick={() => setEditor(undo)} disabled={!editor.past.length} title="Rückgängig">↶</button><button type="button" onClick={() => setEditor(redo)} disabled={!editor.future.length} title="Wiederholen">↷</button><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1.2))}>＋</button><span>{viewport.scale.toFixed(1)} px/E</span><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1 / 1.2))}>－</button><button type="button" onClick={() => setViewport(fitViewport(document.gridSize, canvasSize))}>Einpassen</button></div>
+        <div className="le-canvas-toolbar"><span>{document.gridSize.width} × {document.gridSize.height} Rastereinheiten</span><label><input type="checkbox" checked={showGrid} onChange={(event) => setShowGrid(event.target.checked)} /> Raster</label><label><input type="checkbox" checked={snapping} onChange={(event) => setSnapping(event.target.checked)} /> Einrasten</label><button type="button" onClick={() => setEditor(undo)} disabled={!editor.past.length} title="Rückgängig" aria-label="Rückgängig">↶</button><button type="button" onClick={() => setEditor(redo)} disabled={!editor.future.length} title="Wiederholen" aria-label="Wiederholen">↷</button><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1.2))} aria-label="Vergrößern">＋</button><span>{viewport.scale.toFixed(1)} px/E</span><button type="button" onClick={() => setViewport((current) => zoomAt(current, { x: canvasSize.width / 2, y: canvasSize.height / 2 }, 1 / 1.2))} aria-label="Verkleinern">－</button><button type="button" onClick={() => setViewport(fitViewport(document.gridSize, canvasSize))}>Einpassen</button></div>
         <div className="le-mobile-controls" aria-label="Mobile Grundrisswerkzeuge">
           <div className="le-tool-row">
             <button type="button" aria-pressed={tool === "select"} onClick={() => setTool("select")}>Auswählen</button>

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { fitViewport, screenToWorld, worldToScreen, zoomAt } from "./geometry";
-import { applyCommand, createEditorState, isDirty, markSaved, redo, undo, type LayoutDocument } from "./model";
+import { applyCommand, createEditorState, isDirty, markSaved, parseImportedDocument, redo, replaceDocument, undo, type LayoutDocument } from "./model";
 import { validateLayout } from "./validation";
 
 const fixture = (): LayoutDocument => ({
@@ -154,4 +154,17 @@ test("layer order changes without altering element data and can be undone", () =
   const reordered = applyCommand(initial, { type: "reorder", id: 7, direction: "forward" });
   assert.deepEqual(reordered.document.elements.map((element) => element.id), ["s-1", 7]);
   assert.deepEqual(undo(reordered).document, initial.document);
+});
+
+test("JSON import preserves unknown mobile fields, is undoable and leaves server save state dirty", () => {
+  const initial = createEditorState(fixture());
+  const imported = parseImportedDocument({ ...fixture(), shopName: "Import", navigationMetadata: { source: "customer" } });
+  const next = replaceDocument(initial, imported);
+  assert.equal(next.document.shopName, "Import");
+  assert.deepEqual(next.document.navigationMetadata, { source: "customer" });
+  assert.equal(isDirty(next), true);
+  assert.deepEqual(undo(next).document, initial.document);
+  assert.equal(isDirty(undo(next)), false);
+  assert.throws(() => parseImportedDocument({ ...fixture(), elements: [{ id: 1, type: "shelf", x: "bad", y: 0 }] }), /ungültige Daten/);
+  assert.throws(() => parseImportedDocument({ ...fixture(), elements: [{ id: 1, type: "shelf", x: 0, y: 0 }, { id: 1, type: "wall", x: 1, y: 1 }] }), /eindeutig/);
 });

@@ -15,7 +15,8 @@
     "package:candidate": "npm run build && node scripts/package-candidate.mjs",
     "verify:candidate": "node scripts/verify-candidate.mjs",
     "test:browser": "playwright test",
-    "test:live": "node scripts/live-admin-smoke.mjs"
+    "test:live": "node scripts/live-admin-smoke.mjs",
+    "test:live:cutover": "node scripts/live-route-cutover.mjs"
   },
   "dependencies": {
     "react": "19.3.0",

@@ -26,7 +26,7 @@ In store mode, edits are drafts. **Save draft** creates a version but does not c
 
 In global mode (admin only), the legacy/global layout has no store draft activation workflow: saving writes the current global layout immediately. It affects the public global current-layout endpoint. Check the confirmation and resulting version history carefully.
 
-The editor supports layout element editing, undo/redo, validation, version history, and mobile preview. Validation can identify geometry and metadata issues, but routing readiness is heuristic and cannot establish that every mobile path works. Import/export and editor details can differ between the current and candidate pages; use the current page for release work until route parity is accepted.
+The editor supports layout element editing, undo/redo, validation, version history, and mobile preview. **JSON exportieren** downloads the current editor document without saving it to the server. **JSON importieren** accepts a layout file up to 5 MB, checks its structure, and makes the import an undoable unsaved edit. Review validation findings, then save a draft or publish in the appropriate mode. Validation can identify geometry and metadata issues, but routing readiness is heuristic and cannot establish that every mobile path works. Use the current page for release work until route parity is accepted.
 
 ## Other staff workflows
 

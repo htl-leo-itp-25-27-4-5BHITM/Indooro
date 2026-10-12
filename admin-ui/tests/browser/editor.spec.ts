@@ -91,3 +91,33 @@ test("desktop editor keeps its palette controls and hides mobile controls", asyn
   await expect(page.locator(".le-mobile-controls")).toBeHidden();
   await expect(page.locator(".le-left .le-tool-row button", { hasText: "Verschieben" })).toBeVisible();
 });
+
+test("JSON import validates, remains undoable, and export downloads the current document without saving", async ({ page }) => {
+  const saved: LayoutDocument[] = [];
+  await mockEditor(page, "DRAFT", saved);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const file = page.locator(".le-file-input");
+  await file.setInputFiles({ name: "broken.json", mimeType: "application/json", buffer: Buffer.from('{"shopName":"broken"}') });
+  await expect(page.getByRole("status")).toContainText("Import fehlgeschlagen");
+  await expect(page.locator(".le-save-indicator")).toContainText("Gespeichert");
+
+  const imported = { ...layout, shopName: "Importierte Filiale", navigationMetadata: { source: "fixture" } };
+  await file.setInputFiles({ name: "layout.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(imported)) });
+  await expect(page.getByRole("heading", { name: "Indooro Testfiliale" })).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Grundriss importiert");
+  await expect(page.getByText("Ungespeicherte Änderungen")).toBeVisible();
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "JSON exportieren" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("Importierte_Filiale_layout.json");
+  const exported = JSON.parse(readFileSync(await download.path(), "utf8")) as LayoutDocument;
+  expect(exported.shopName).toBe("Importierte Filiale");
+  expect(exported.navigationMetadata).toEqual({ source: "fixture" });
+  expect(saved).toHaveLength(0);
+  await page.getByRole("button", { name: "Rückgängig" }).click();
+  await expect(page.getByText("Ungespeicherte Änderungen")).toHaveCount(0);
+  await file.setInputFiles({ name: "layout.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(imported)) });
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.getByRole("status")).toContainText("Entwurf gespeichert");
+  expect(saved[0].navigationMetadata).toEqual({ source: "fixture" });
+});

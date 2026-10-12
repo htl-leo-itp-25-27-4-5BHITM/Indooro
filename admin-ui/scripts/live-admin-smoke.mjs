@@ -166,6 +166,24 @@ try {
     assert.equal((await api(page, "GET", "/api/admin/logs")).status, 403);
     assert.equal((await api(page, "POST", "/api/admin/index/create", {})).status, 403);
     assert.equal((await api(page, "DELETE", "/api/admin/index")).status, 403);
+    const ownUpdate = {
+      regionId: region.id, storeCode: store.storeCode, name: `Updated by ${role} ${run}`,
+      street: "Testgasse 1", zipCode: "4020", city: "Linz", country: "AT",
+    };
+    assert.equal(expectOk(await api(page, "PUT", `/api/stores/${store.id}`, ownUpdate), `${role} own store update`).name, ownUpdate.name);
+    assert.equal((await api(page, "PUT", `/api/stores/${foreignStore.id}`, { ...ownUpdate, regionId: foreignRegion.id, storeCode: foreignStore.storeCode })).status, 403);
+    assert.equal((await api(page, "POST", `/api/stores/${foreignStore.id}/layout/versions`, { layoutName: "Forbidden", activate: false, layout: documentFor("Forbidden") })).status, 403);
+    const attemptedCreate = await api(page, "POST", "/api/stores", {
+      regionId: role === "region-manager" ? region.id : foreignRegion.id,
+      storeCode: `SCOPED-${role === "region-manager" ? "RM" : "SM"}-${run}`,
+      name: "Scoped creation check", street: "Testgasse 3", zipCode: "4020", city: "Linz", country: "AT",
+    });
+    if (role === "region-manager") {
+      assert.equal(attemptedCreate.status, 200, "region manager creates in assigned region");
+      assert.equal((await api(page, "POST", "/api/stores", { ...ownUpdate, storeCode: `FOREIGN-${run}`, regionId: foreignRegion.id })).status, 403);
+    } else {
+      assert.equal(attemptedCreate.status, 403, "store manager cannot create a store");
+    }
     await page.close();
   }
 
@@ -214,7 +232,7 @@ try {
   const current = await currentLayout(store.id);
   assert.ok(activated.some((version) => version.layoutId === current.layoutId));
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, roleChecks: 2, publicContracts: 6, publicProductAfterMutation: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, roleChecks: 2, scopedMutationChecks: 10, publicContracts: 6, publicProductAfterMutation: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();

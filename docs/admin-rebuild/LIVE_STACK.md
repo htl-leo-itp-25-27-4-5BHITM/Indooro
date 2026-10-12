@@ -25,9 +25,12 @@ npm ci
 npm run package:candidate
 npm run verify:candidate
 npm run test:live
+npm run test:live:cutover
 ```
 
 `test:live` reads the local demo account credentials from `keycloak/realm/indooro-realm.json`; it does not print them. It initializes an empty product index through the protected admin operation and accepts the expected 409 conflict on later runs. It inserts local scope assignments because migration V5 only seeds those when named demo region/store records already exist. It tests both candidate editor modes through the browser, checks draft isolation against the anonymous mobile endpoint, verifies global publication and history through OpenSearch, checks six anonymous store/catalog/recipe contracts including a recipe draft → publish → deactivate lifecycle, and checks concurrent saves and activations against PostgreSQL. It does not clean up the created records or global layout versions, so use dedicated local PostgreSQL and OpenSearch data only.
+
+`test:live:cutover` authenticates and exercises each of the ten current-route switches and their rollback by intercepting the served map; it does not alter the committed flags. On 2026-10-12 it passed all ten switch/rollback pairs with query parameters and URL fragments preserved. The later `test:live` run also passed in-scope store updates for both manager roles, a region-manager store creation, and denial of foreign store updates/layout saves and store-manager creation.
 
 ## Observed 2026-10-12
 
@@ -48,8 +51,8 @@ The run uses a local development stack. Production deployment, iOS device testin
 
 | Area | Observed in the local run | Still not established |
 | --- | --- | --- |
-| Frontend / Quarkus | Candidate package built and verified; 12 authenticated candidate deep links refreshed. | Current `/admin/*` cutover, packaged production artifact, unauthenticated redirect for every asset, route rollback. |
-| Backend / authorization | Real demo-role sessions; region/store scope denials; store/global layout and recipe workflows; concurrent layout writes. | Production identity configuration and the full API role matrix. |
+| Frontend / Quarkus | Candidate package built and verified; 12 authenticated candidate deep links refreshed; ten route flags switched and rolled back in an intercepted live map. | Current `/admin/*` release cutover and every route's action/state parity. |
+| Backend / authorization | Real demo-role sessions; region/store scoped writes and foreign-scope denials; store/global layout and recipe workflows; concurrent layout writes. | Production identity configuration and the full API role matrix. |
 | PostgreSQL | Schema-backed store/layout persistence; concurrent version numbering and one-active-version constraint. | Production database state or migration/restore behavior. |
 | Keycloak | Demo admin, region-manager, and store-manager logins work with the local realm. | Production realm/client behavior. |
 | OpenSearch | Global publication/history; protected index initialization; anonymous product/catalog reads after initialization. | Production index readiness and recovery. |
