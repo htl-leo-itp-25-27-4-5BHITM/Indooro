@@ -31,3 +31,70 @@ test("region manager product direct link calls no product API", async ({ page })
   await expect(page.getByRole("alert")).toContainText("Zugriff verweigert");
   expect(calls).toBe(0);
 });
+
+test("admin validates and creates a product with the documented layout code", async ({ page }) => {
+  const products: Array<Record<string, unknown>> = [];
+  const writes: Record<string, unknown>[] = [];
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/categories?*", (route) => route.fulfill({ json: [{ categoryCode: 310, categoryName: "Obst & Gemüse" }] }));
+  await page.route("**/api/admin/products?*", (route) => route.fulfill({ json: { content: products, page: 0, size: 20, totalElements: products.length } }));
+  await page.route("**/api/admin/products", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const payload = route.request().postDataJSON() as Record<string, unknown>;
+    writes.push(payload);
+    products.push(payload);
+    return route.fulfill({ json: payload });
+  });
+
+  await page.goto("/admin/next/products/");
+  await page.getByRole("button", { name: "Produkt anlegen" }).click();
+  await expect(page.getByText("Layout-Code: 310/1/1/1", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await expect(page.getByText("Produkt-ID muss eine positive ganze Zahl sein.")).toBeVisible();
+  await expect(page.getByText("Name ist erforderlich.")).toBeVisible();
+  expect(writes).toHaveLength(0);
+
+  await page.getByLabel("Produkt-ID").fill("7310");
+  await page.getByRole("textbox", { name: "Name Name ist erforderlich." }).fill("  Tomaten  ");
+  await page.getByLabel("Preis (EUR)").fill("1,99");
+  await page.getByLabel("Kategorie").selectOption("310");
+  await page.getByLabel("Meter (1–5)").selectOption("5");
+  await page.getByLabel("Fach (1–7)").selectOption("7");
+  await page.getByLabel("Reihe (1–3)").selectOption("3");
+  await expect(page.getByText("Layout-Code: 310/5/7/3", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Speichern" }).click();
+
+  await expect(page.getByText("Produkt wurde angelegt.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Tomaten" })).toBeVisible();
+  expect(writes).toEqual([{ id: 7310, name: "Tomaten", price: 1.99, layoutCode: "310/5/7/3", storeId: null, storeCode: null }]);
+});
+
+test("admin can cancel product deletion or confirm it and sees the empty post-action state", async ({ page }) => {
+  let product: Record<string, unknown> | null = { id: 42, name: "Tomaten", price: 1.99, layoutCode: "310/1/1/1", storeId: null, storeCode: null };
+  let deleteCalls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/categories?*", (route) => route.fulfill({ json: [{ categoryCode: 310, categoryName: "Obst & Gemüse" }] }));
+  await page.route("**/api/admin/products?*", (route) => route.fulfill({ json: { content: product ? [product] : [], page: 0, size: 20, totalElements: product ? 1 : 0 } }));
+  await page.route("**/api/admin/products/42", async (route) => {
+    expect(route.request().method()).toBe("DELETE");
+    deleteCalls += 1;
+    product = null;
+    return route.fulfill({ status: 204, body: "" });
+  });
+
+  await page.goto("/admin/next/products/");
+  await expect(page.getByRole("cell", { name: "Tomaten" })).toBeVisible();
+  page.once("dialog", (dialog) => {
+    expect(dialog.message()).toContain("Produkt Tomaten (#42) löschen?");
+    void dialog.dismiss();
+  });
+  await page.getByRole("button", { name: "Löschen" }).click();
+  expect(deleteCalls).toBe(0);
+  await expect(page.getByRole("cell", { name: "Tomaten" })).toBeVisible();
+
+  page.once("dialog", (dialog) => { void dialog.accept(); });
+  await page.getByRole("button", { name: "Löschen" }).click();
+  await expect(page.getByText("Produkt Tomaten wurde gelöscht.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Der Produktkatalog ist leer.")).toBeVisible();
+  expect(deleteCalls).toBe(1);
+});
