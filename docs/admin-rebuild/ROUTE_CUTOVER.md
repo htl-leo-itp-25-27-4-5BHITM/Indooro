@@ -1,0 +1,22 @@
+# Admin route cutover and rollback
+
+The release entries at `/admin/*` still serve the existing static pages. The new React pages are packaged at `/admin/next/*`. Each existing entry loads `route-cutover.js` from the protected admin resources; the map currently sets every route to `false`. No current user route has moved.
+
+| Map key | Current entry | Candidate entry |
+| --- | --- | --- |
+| `dashboard` | `/admin/` | `/admin/next/` |
+| `regions` | `/admin/regions/` | `/admin/next/regions/` |
+| `stores` | `/admin/stores/` | `/admin/next/stores/` |
+| `storeDetail` | `/admin/stores/detail/` | `/admin/next/stores/detail/` |
+| `beacons` | `/admin/beacons/` | `/admin/next/beacons/` |
+| `products` | `/admin/products/` | `/admin/next/products/` |
+| `categories` | `/admin/categories/` | `/admin/next/categories/` |
+| `recipes` | `/admin/recipes/` | `/admin/next/recipes/` |
+| `editor` | `/admin/editor/` | `/admin/next/editor/` |
+| `diagnostics` | `/admin/server-logs/` | `/admin/next/server-logs/` |
+
+`storeDetail` is independent of `stores`, and the shared editor entry covers both `?storeId=...` and the admin-only global mode. The redirect preserves query parameters and URL fragments. Legacy HTML and scripts remain in the image, so changing one map value back to `false` and rebuilding restores that page without a data migration. The prior immutable image is the full rollback target.
+
+Before enabling a map key, complete its row in `ROUTE_INVENTORY.md` with authenticated direct-link and refresh checks, each role and foreign scope, keyboard and accessible status checks, loading/empty/error/success, each existing action and server state, and an exercised rollback. Verify the editor's separate draft/publication semantics and anonymous mobile response for both editor modes. Build/package the candidate, run `node --test backend/indooro_server/src/test/js/admin-route-cutover.test.mjs`, then perform the live checks in `LIVE_STACK.md`. Changing a flag alone does not establish parity.
+
+The URL switch uses a same-origin module loaded from each current entry. Existing paths still require Quarkus OIDC authentication, and the backend remains the authority for role and store scope. Direct `/admin/next/*` URLs remain available to testers independently of the cutover flags.
