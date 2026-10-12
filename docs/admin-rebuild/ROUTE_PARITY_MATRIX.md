@@ -17,6 +17,12 @@ Evidence cut: 2026-10-12. Scope is the ten legacy route-map entries in [`ROUTE_C
 
 ## Evidence interpretation and cutover blockers
 
+### Additional evidence recorded on 2026-10-12
+
+- The packaged-image live script now checks 11 denied candidate direct links across region and store managers, 18 scoped mutation/read assertions, and a store beacon assign → release → reassign lifecycle. It also checks foreign beacon, store, region, layout-context, catalog, recipe, and log API denials. These are real Keycloak/Quarkus responses; they do not cover every UI action in the route rows above.
+- `categories.spec.ts` and `diagnostics.spec.ts` now cover keyboard operation and explicit empty/error/retry states with request suppression for unauthorized users. Their row-level gaps are therefore narrower than the original table text. The remaining gaps are authenticated live route/action persistence and full legacy parity.
+- `editor.spec.ts` now covers keyboard canvas placement/movement, JSON import/export and undo, persisted shelf layout code/product positions/access angle, invalid-code publication blocking, duplicate beacon option prevention, and critical deletion confirmation. These use mocked APIs. The live image tests publication and scope; a full keyboard and accessibility pass remains open.
+
 - The only live evidence common to all ten entries is URL switching/rollback mechanics via an intercepted served map. `test:live` adds packaged candidate deep-link refreshes and selected backend workflows; it is not per-route action parity. See [`ROUTE_CUTOVER.md`](ROUTE_CUTOVER.md), [`LIVE_STACK.md`](LIVE_STACK.md), and [`RELEASE_EVIDENCE.md`](RELEASE_EVIDENCE.md).
 - Candidate browser specs use mocked APIs. They establish rendered behavior under their fixtures, not Quarkus/OIDC roles, persistence, or production endpoint semantics. Backend/source annotations and OpenSpec tasks are supporting evidence, not browser acceptance.
 - Before any route flag changes, close that row's remaining gaps with authenticated live role/scope, action/post-state, keyboard, empty/error, deep-link/refresh evidence and the shared route-map rollback. For editor, test data/version rollback independently; route-map rollback does not undo published data.

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { chromium } from "@playwright/test";
 
@@ -87,6 +88,9 @@ try {
     regionId: foreignRegion.id, storeCode: `OTHER-STORE-${run}`, name: `Other Store ${run}`,
     street: "Fremdgasse 2", zipCode: "1010", city: "Wien", country: "AT",
   }), "other store create");
+  const ownBeacon = expectOk(await api(admin, "POST", "/api/beacons", { beaconCode: `LIVE-B-${run}`, uuid: randomUUID(), major: 1, minor: 1 }), "beacon create");
+  const foreignBeacon = expectOk(await api(admin, "POST", "/api/beacons", { beaconCode: `OTHER-B-${run}`, uuid: randomUUID(), major: 1, minor: 2 }), "foreign beacon create");
+  expectOk(await api(admin, "POST", `/api/beacons/${foreignBeacon.id}/assign`, { storeId: foreignStore.id }), "foreign beacon assign");
   assignDemoScopes(region.id, store.id);
   const mobileStores = await publicJson("/api/mobile/stores");
   assert.ok(Array.isArray(mobileStores));
@@ -164,6 +168,27 @@ try {
     assert.equal((await api(page, "GET", `/api/stores/${foreignStore.id}`)).status, 403);
     assert.equal((await api(page, "GET", `/api/regions/${foreignRegion.id}`)).status, 403);
     assert.equal((await api(page, "GET", "/api/admin/logs")).status, 403);
+    assert.equal((await api(page, "GET", "/api/admin/error-logs")).status, 403);
+    assert.equal((await api(page, "GET", "/api/admin/products?page=0&size=1")).status, 403);
+    assert.equal((await api(page, "GET", "/api/admin/recipes?page=0&size=1")).status, 403);
+    assert.equal((await api(page, "GET", `/api/stores/${store.id}/layout/editor-context`)).status, 200);
+    assert.equal((await api(page, "GET", `/api/stores/${foreignStore.id}/layout/editor-context`)).status, 403);
+    assert.equal((await api(page, "GET", `/api/beacons/${foreignBeacon.id}`)).status, 403);
+    const visibleStores = expectOk(await api(page, "GET", "/api/stores?page=0&size=50"), `${role} scoped store list`);
+    assert.ok(visibleStores.content.some((item) => item.id === store.id));
+    assert.ok(!visibleStores.content.some((item) => item.id === foreignStore.id));
+    const visibleBeacons = expectOk(await api(page, "GET", "/api/beacons"), `${role} scoped beacons`);
+    assert.ok(!visibleBeacons.some((item) => item.id === foreignBeacon.id));
+    assert.equal((await api(page, "POST", "/api/beacons", { beaconCode: `DENIED-${run}`, uuid: randomUUID() })).status, 403);
+    assert.equal((await api(page, "POST", "/api/beacons/bulk", { uuid: randomUUID(), items: [{ beaconCode: `DENIED-BULK-${run}` }] })).status, 403);
+    assert.equal((await api(page, "POST", `/api/beacons/${ownBeacon.id}/assign`, { storeId: foreignStore.id })).status, 403);
+    if (role === "region-manager") {
+      assert.equal(expectOk(await api(page, "POST", `/api/beacons/${ownBeacon.id}/assign`, { storeId: store.id }), "region beacon assignment").storeId, store.id);
+    } else {
+      assert.equal((await api(page, "GET", `/api/beacons/${ownBeacon.id}`)).status, 200);
+      assert.equal(expectOk(await api(page, "POST", `/api/beacons/${ownBeacon.id}/release`, {}), "store beacon release").released, true);
+      assert.equal(expectOk(await api(page, "POST", `/api/beacons/${ownBeacon.id}/assign`, { storeId: store.id }), "store beacon reassignment").storeId, store.id);
+    }
     assert.equal((await api(page, "POST", "/api/admin/index/create", {})).status, 403);
     assert.equal((await api(page, "DELETE", "/api/admin/index")).status, 403);
     const ownUpdate = {
@@ -183,6 +208,12 @@ try {
       assert.equal((await api(page, "POST", "/api/stores", { ...ownUpdate, storeCode: `FOREIGN-${run}`, regionId: foreignRegion.id })).status, 403);
     } else {
       assert.equal(attemptedCreate.status, 403, "store manager cannot create a store");
+    }
+    const deniedLinks = ["/admin/next/products/", "/admin/next/recipes/", "/admin/next/server-logs/", "/admin/next/editor/"];
+    if (role === "store-manager") deniedLinks.push(`/admin/next/stores/detail/?storeId=${foreignStore.id}`, `/admin/next/editor/?storeId=${foreignStore.id}`, "/admin/next/regions/");
+    for (const deniedLink of deniedLinks) {
+      await page.goto(base + deniedLink, { waitUntil: "domcontentloaded" });
+      await page.getByRole("alert").getByRole("heading", { name: "Zugriff verweigert" }).waitFor();
     }
     await page.close();
   }
@@ -232,7 +263,7 @@ try {
   const current = await currentLayout(store.id);
   assert.ok(activated.some((version) => version.layoutId === current.layoutId));
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, roleChecks: 2, scopedMutationChecks: 10, publicContracts: 6, publicProductAfterMutation: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks: 11, roleChecks: 2, scopedMutationChecks: 18, beaconLifecycle: true, publicContracts: 6, publicProductAfterMutation: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();

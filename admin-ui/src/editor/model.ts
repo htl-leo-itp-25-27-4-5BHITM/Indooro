@@ -11,6 +11,8 @@ export interface LayoutElement {
   category?: string | null;
   meter?: number | null;
   layoutCode?: string;
+  productPositions?: Array<string | number>;
+  accessAngle?: number;
   beaconId?: string;
   beaconCode?: string;
   identityKey?: string;

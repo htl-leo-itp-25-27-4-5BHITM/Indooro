@@ -60,10 +60,41 @@ test("store editor links an unassigned beacon error and blocks publishing after 
   await page.locator(".le-layers button").filter({ hasText: "Beacon" }).click();
   await page.getByRole("button", { name: "Duplizieren" }).click();
   await expect(page.locator(".le-validation")).toContainText("keinem Beacon zugeordnet");
+  await expect(page.getByRole("option", { name: /IN-001.*bereits platziert/ })).toHaveAttribute("disabled", "");
   await page.getByRole("button", { name: "Entwurf speichern" }).click();
   await expect(page.getByText("Entwurf gespeichert.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Veröffentlichen" })).toBeDisabled();
   expect(saved[0].elements).toHaveLength(4);
+});
+
+test("shelf inspector persists routing metadata and confirms critical deletion", async ({ page }) => {
+  const saved: LayoutDocument[] = [];
+  await mockEditor(page, "DRAFT", saved);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" }).click();
+  await expect(page.getByText("Elementtyp: Regal")).toBeVisible();
+  await page.getByLabel("Zugriffswinkel").fill("135");
+  await page.getByLabel("Layout-Code").fill("310/1/1/1");
+  await page.getByLabel("Produktposition hinzufügen").fill("310-43");
+  await page.getByRole("button", { name: "Hinzufügen" }).click();
+  await expect(page.getByText("310-43", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.locator(".le-message")).toContainText("Entwurf gespeichert");
+  expect(saved.at(-1)?.elements[1]).toMatchObject({ accessAngle: 135, layoutCode: "310/1/1/1", productPositions: ["310-42", "310-43"] });
+
+  await page.getByLabel("Layout-Code").fill("310/1");
+  await expect(page.locator(".le-validation")).toContainText("Layout-Code im Format");
+  await expect(page.getByRole("button", { name: "Veröffentlichen" })).toBeDisabled();
+  await page.getByLabel("Layout-Code").fill("310/1/1/1");
+  await page.getByRole("button", { name: "Produktposition 310-43 entfernen" }).click();
+  await expect(page.getByText("310-43", { exact: true })).toHaveCount(0);
+
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByRole("button", { name: "Löschen", exact: true }).click();
+  await expect(page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" })).toHaveCount(1);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Löschen", exact: true }).click();
+  await expect(page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" })).toHaveCount(0);
 });
 
 test("mobile editor keeps the canvas in the first viewport and exposes compact placement controls", async ({ page }) => {

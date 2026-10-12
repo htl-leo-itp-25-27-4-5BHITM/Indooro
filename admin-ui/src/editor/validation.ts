@@ -86,6 +86,19 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
     if ((element.type === "shelf" || element.type === "poi") && !element.category && !element.layoutCode) {
       add("warning", "metadata", `${name} hat keine Kategorie oder Layoutkennung.`, id);
     }
+    if (element.accessAngle !== undefined && (!Number.isFinite(element.accessAngle) || element.accessAngle < 0 || element.accessAngle > 360)) {
+      add("error", "access-angle", `${name} braucht einen Zugriffswinkel zwischen 0 und 360 Grad.`, id);
+    }
+    if (element.layoutCode !== undefined && (typeof element.layoutCode !== "string" || (element.layoutCode.trim() !== "" && !/^\d{1,4}\/\d{1,3}\/\d{1,2}\/\d{1,2}$/.test(element.layoutCode.trim())))) {
+      add("error", "layout-code", `${name} braucht einen Layout-Code im Format Kategorie/Abschnitt/Fach/Reihe.`, id);
+    }
+    if (element.productPositions !== undefined) {
+      const positions = element.productPositions;
+      if (!Array.isArray(positions) || positions.length > 500 || positions.some((position) => (typeof position !== "string" && typeof position !== "number") || !String(position).trim())
+        || new Set(positions.map(String)).size !== positions.length) {
+        add("error", "product-positions", `${name} hat ungültige oder doppelte Produktpositionen.`, id);
+      }
+    }
     if (element.type === "shelf" && typeof element.category === "string" && element.category.trim()) {
       const parts = element.category.split("/");
       const section = Number(parts[1]);

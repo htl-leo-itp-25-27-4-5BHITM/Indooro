@@ -36,6 +36,9 @@ export interface LayoutEditorProps {
 
 const labelFor = (element: LayoutElement) => element.label || TYPES.find((item) => item.type === element.type)?.label || element.type;
 const number = (value: string, fallback: number) => Number.isFinite(Number(value)) && value !== "" ? Number(value) : fallback;
+const confirmCriticalDelete = (element: LayoutElement) => !(["entrance", "checkout", "wall", "shelf", "beacon"].includes(element.type)
+  || (Array.isArray(element.productPositions) && element.productPositions.length > 0)
+  || !!element.layoutCode) || window.confirm(`„${labelFor(element)}“ löschen? Die Karte oder Produktpositionen können danach ungültig sein.`);
 
 export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons = [], saveMode = "draft", onSaveDraft, onSaveCurrent, onPublish, onBack }: LayoutEditorProps) {
   const [editor, setEditor] = useState<EditorState>(() => createEditorState(initialDocument));
@@ -51,6 +54,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const [keyboardPoint, setKeyboardPoint] = useState<Point>(() => ({ x: initialDocument.gridSize.width / 2, y: initialDocument.gridSize.height / 2 }));
   const [working, setWorking] = useState<"save" | "publish" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [newPosition, setNewPosition] = useState("");
   const svgRef = useRef<SVGSVGElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const gesture = useRef<Gesture | null>(null);
@@ -71,6 +75,9 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const errors = issues.filter((issue) => issue.severity === "error").length;
   const selected = document.elements.find((element) => element.id === editor.selectedId) ?? null;
   const selectedIndex = document.elements.findIndex((element) => element.id === editor.selectedId);
+  const placedBeaconCodes = new Set(document.elements.filter((element) => element.type === "beacon" && element.id !== selected?.id).map((element) => element.beaconId));
+
+  useEffect(() => { setNewPosition(""); }, [editor.selectedId]);
 
   const createAtWorld = (world: Point, type: (typeof TYPES)[number]["type"]) => {
     const definition = TYPES.find((item) => item.type === type)!;
@@ -82,7 +89,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
     }
     const x = type === "beacon" ? world.x : world.x - definition.width / 2;
     const y = type === "beacon" ? world.y : world.y - definition.height / 2;
-    dispatch({ type: "create", element: { id: newElementId(editorRef.current.document), type, x, y,
+    dispatch({ type: "create", element: { id: newElementId(editorRef.current.document), type, x, y, accessAngle: 90,
       ...(type === "beacon" ? { beaconId: beacon?.beaconCode, beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } : { width: definition.width, height: definition.height }) } });
     setTool("select");
   };
@@ -160,7 +167,8 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
         setEditor(redo);
       } else if (event.key === "Delete" || event.key === "Backspace") {
         const id = editorRef.current.selectedId;
-        if (id !== null) setEditor((current) => applyCommand(current, { type: "delete", id }));
+        const element = editorRef.current.document.elements.find((item) => item.id === id);
+        if (element && !element.locked && confirmCriticalDelete(element)) setEditor((current) => applyCommand(current, { type: "delete", id: element.id! }));
       } else if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
         const id = editorRef.current.selectedId;
         const element = editorRef.current.document.elements.find((item) => item.id === id);
@@ -389,15 +397,19 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
         <h2>Eigenschaften</h2>
         {selected ? <div className="le-inspector" key={String(selected.id)}>
           <div className="le-inspector-heading"><span className="le-swatch" style={{ background: TYPES.find((item) => item.type === selected.type)?.color || "#7d91a0" }} /><strong>{labelFor(selected)}</strong></div>
+          <p className="le-hint">Elementtyp: {TYPES.find((item) => item.type === selected.type)?.label || selected.type}</p>
           <label>Bezeichnung<input type="text" maxLength={200} value={selected.label || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { label: event.target.value } })} /></label>
           <div className="le-number-grid">{(["x", "y", ...(selected.type === "beacon" ? [] : ["width", "height"]), "rotation"] as const).map((field) => <label key={field}>{({ x: "X", y: "Y", width: "Breite", height: "Höhe", rotation: "Winkel" } as Record<string, string>)[field]}<input type="number" step={field === "rotation" ? 1 : snapping ? 1 : 0.1} value={Number(selected[field] ?? 0)} disabled={selected.locked} onChange={(event) => changeNumber(field as "x" | "y" | "width" | "height" | "rotation", event.target.value)} /></label>)}</div>
+          {selected.type !== "beacon" && <label>Zugriffswinkel<input type="number" min={0} max={360} step={1} value={Number(selected.accessAngle ?? 90)} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { accessAngle: Math.max(0, Math.min(360, number(event.target.value, Number(selected.accessAngle ?? 90)))) } })} /></label>}
           {selected.type === "shelf" && <div className="le-number-grid"><label>Kategoriecode<input type="text" maxLength={180} value={shelfMetadata(selected).code} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { code: event.target.value }) })} /></label><label>Abschnitt<input type="number" min={1} step={1} value={shelfMetadata(selected).section ?? ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { section: event.target.value === "" ? null : number(event.target.value, shelfMetadata(selected).section || 1) }) })} /></label></div>}
+          {(selected.type === "shelf" || selected.type === "poi") && <label>Layout-Code<input type="text" maxLength={180} value={selected.layoutCode || ""} disabled={selected.locked} placeholder="310/1/1/1" onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { layoutCode: event.target.value } })} /></label>}
+          {selected.type === "shelf" && <div className="le-position-editor"><strong>Produktpositionen</strong><ul>{(Array.isArray(selected.productPositions) ? selected.productPositions : []).map((position, index) => <li key={`${String(position)}-${index}`}><span>{String(position)}</span><button type="button" disabled={selected.locked} aria-label={`Produktposition ${String(position)} entfernen`} onClick={() => dispatch({ type: "patch", id: selected.id!, changes: { productPositions: selected.productPositions?.filter((_, at) => at !== index) || [] } })}>Entfernen</button></li>)}</ul><form onSubmit={(event) => { event.preventDefault(); const position = newPosition.trim(); const existing = Array.isArray(selected.productPositions) ? selected.productPositions : []; if (!position) return; if (existing.some((value) => String(value) === position)) { setMessage("Diese Produktposition ist bereits zugeordnet."); return; } if (existing.length >= 500) { setMessage("Höchstens 500 Produktpositionen pro Element."); return; } dispatch({ type: "patch", id: selected.id!, changes: { productPositions: [...existing, position] } }); setNewPosition(""); }}><label>Produktposition hinzufügen<input type="text" maxLength={80} value={newPosition} disabled={selected.locked} onChange={(event) => setNewPosition(event.target.value)} placeholder="z. B. 310-42" /></label><button type="submit" disabled={selected.locked || !newPosition.trim()}>Hinzufügen</button></form></div>}
           {selected.type === "poi" && <label>Kategorie<input type="text" maxLength={200} value={selected.category || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { category: event.target.value } })} /></label>}
-          {selected.type === "beacon" && mode === "store" && <label>Zugeordneter Beacon<select value={selected.beaconId || ""} disabled={selected.locked} onChange={(event) => { const beacon = assignedBeacons.find((item) => item.beaconCode === event.target.value); dispatch({ type: "patch", id: selected.id!, changes: { beaconId: beacon?.beaconCode || "", beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } }); }}><option value="">Nicht zugeordnet</option>{assignedBeacons.map((item) => <option key={item.beaconCode || item.id} value={item.beaconCode}>{item.beaconCode || item.id}</option>)}</select></label>}
+          {selected.type === "beacon" && mode === "store" && <label>Zugeordneter Beacon<select value={selected.beaconId || ""} disabled={selected.locked} onChange={(event) => { if (placedBeaconCodes.has(event.target.value)) { setMessage("Dieser Beacon ist bereits im Grundriss platziert."); return; } const beacon = assignedBeacons.find((item) => item.beaconCode === event.target.value); dispatch({ type: "patch", id: selected.id!, changes: { beaconId: beacon?.beaconCode || "", beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } }); }}><option value="">Nicht zugeordnet</option>{assignedBeacons.map((item) => <option key={item.beaconCode || item.id} value={item.beaconCode} disabled={placedBeaconCodes.has(item.beaconCode)}>{item.beaconCode || item.id}{placedBeaconCodes.has(item.beaconCode) ? " · bereits platziert" : ""}</option>)}</select></label>}
           {selected.type === "beacon" && mode === "legacy" && <label>Beacon-ID<input type="text" maxLength={200} value={selected.beaconId || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { beaconId: event.target.value } })} /></label>}
           <label className="le-inline"><input type="checkbox" checked={!!selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { locked: event.target.checked } })} /> Gesperrt</label>
           <div className="le-inspector-actions"><button type="button" disabled={selected.locked || selectedIndex <= 0} onClick={() => dispatch({ type: "reorder", id: selected.id!, direction: "backward" })}>Nach hinten</button><button type="button" disabled={selected.locked || selectedIndex >= document.elements.length - 1} onClick={() => dispatch({ type: "reorder", id: selected.id!, direction: "forward" })}>Nach vorne</button></div>
-          <div className="le-inspector-actions"><button type="button" disabled={selected.locked} onClick={() => dispatch({ type: "duplicate", id: selected.id!, duplicateId: newElementId(document) })}>Duplizieren</button><button type="button" disabled={selected.locked} onClick={() => dispatch({ type: "delete", id: selected.id! })}>Löschen</button></div>
+          <div className="le-inspector-actions"><button type="button" disabled={selected.locked} onClick={() => dispatch({ type: "duplicate", id: selected.id!, duplicateId: newElementId(document) })}>Duplizieren</button><button type="button" disabled={selected.locked} onClick={() => { if (confirmCriticalDelete(selected)) dispatch({ type: "delete", id: selected.id! }); }}>Löschen</button></div>
         </div> : <div className="le-inspector"><p className="le-empty">Element auswählen, um Position und Eigenschaften zu bearbeiten.</p><label>Filialname<input type="text" maxLength={200} value={document.shopName} onChange={(event) => dispatch({ type: "document", changes: { shopName: event.target.value } })} /></label><div className="le-number-grid"><label>Breite<input type="number" min={1} max={1000} value={document.gridSize.width} onChange={(event) => dispatch({ type: "document", changes: { gridSize: { width: number(event.target.value, document.gridSize.width), height: document.gridSize.height } } })} /></label><label>Höhe<input type="number" min={1} max={1000} value={document.gridSize.height} onChange={(event) => dispatch({ type: "document", changes: { gridSize: { width: document.gridSize.width, height: number(event.target.value, document.gridSize.height) } } })} /></label></div></div>}
         <div className="le-validation"><h2>Prüfung <span>{errors ? `${errors} Fehler` : "Bereit"}</span></h2><p>{issues.length ? `${errors} Fehler · ${issues.length - errors} Hinweise` : "Keine Probleme gefunden."}</p><ul>{issues.map((issue, index) => <li key={`${issue.code}-${String(issue.elementId)}-${index}`} className={`le-${issue.severity}`}><button type="button" onClick={() => issue.elementId !== null && setEditor((current) => selectElement(current, issue.elementId))} disabled={issue.elementId === null}><span>{issue.severity === "error" ? "!" : "i"}</span>{issue.message}</button></li>)}</ul></div>
       </aside>

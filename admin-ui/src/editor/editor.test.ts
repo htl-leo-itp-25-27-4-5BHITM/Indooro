@@ -100,6 +100,25 @@ test("shelf locations require the customer CODE/SECTION format before publicatio
   assert.equal(validateLayout(source).some((issue) => issue.code === "shelf-category"), false);
 });
 
+test("editor validates shelf routing metadata while preserving valid customer positions", () => {
+  const source = fixture();
+  const shelf = source.elements[1];
+  shelf.layoutCode = "310/1/1/1";
+  shelf.productPositions = ["310-42", 43];
+  shelf.accessAngle = 90;
+  assert.equal(validateLayout(source).some((issue) => ["layout-code", "product-positions", "access-angle"].includes(issue.code)), false);
+
+  shelf.layoutCode = "310/1";
+  shelf.productPositions = ["310-42", "310-42"];
+  shelf.accessAngle = 361;
+  const issues = validateLayout(source);
+  for (const code of ["layout-code", "product-positions", "access-angle"]) {
+    assert.ok(issues.some((issue) => issue.code === code && issue.elementId === "s-1" && issue.severity === "error"));
+  }
+  shelf.productPositions = { invalid: true } as unknown as Array<string | number>;
+  assert.ok(validateLayout(source).some((issue) => issue.code === "product-positions"));
+});
+
 test("routing readiness warns only for explicit product targets with no geometric shelf approach", () => {
   const source: LayoutDocument = {
     shopName: "Routing fixture", gridSize: { width: 12, height: 12 },
