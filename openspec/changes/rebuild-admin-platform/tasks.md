@@ -5,7 +5,7 @@
 - [ ] 1.3 Record current backend, frontend, database, Keycloak, OpenSearch, and public mobile/customer smoke results, separating observed behavior from specifications.
 - [ ] 1.4 Map each `fix-admin-dashboard-contract-drift` UI task to an old-route fix or replacement-route acceptance test; preserve its backend/API tasks and obtain coordinated task updates before closing any overlap.
 - [ ] 1.5 Map `establish-shared-api-contract` JSDoc/type-generation tasks to the new TypeScript client while preserving reviewed-schema parity and CI ownership; record coordinated changes before closing them.
-- [ ] 1.6 Confirm `protect-legacy-write-endpoints` route protection and `harden-platform-security-baseline` CSP/encoding acceptance before switching new frontend routes.
+- [x] 1.6 Confirm `protect-legacy-write-endpoints` route protection and `harden-platform-security-baseline` CSP/encoding acceptance before switching new frontend routes.
 
 ## 2. Frontend Build And Security Foundation
 
