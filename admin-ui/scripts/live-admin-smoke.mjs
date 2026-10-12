@@ -396,6 +396,15 @@ try {
   const manager = await login(storeUser, `/admin/next/editor/?storeId=${store.id}`);
   await manager.locator(".le-canvas").waitFor();
   await manager.locator(".le-layers button").nth(1).click();
+  const selectedX = manager.getByLabel("X", { exact: true });
+  const initialX = Number(await selectedX.inputValue());
+  await manager.getByRole("img", { name: "Interaktiver Grundriss" }).focus();
+  await manager.keyboard.press("ArrowRight");
+  assert.equal(Number(await selectedX.inputValue()), initialX + 1, "live editor keyboard moves selected shelf");
+  await manager.keyboard.press("ControlOrMeta+z");
+  assert.equal(Number(await selectedX.inputValue()), initialX, "live editor undo restores selected shelf");
+  await manager.keyboard.press("ControlOrMeta+Shift+z");
+  assert.equal(Number(await selectedX.inputValue()), initialX + 1, "live editor redo restores selected shelf move");
   await manager.getByRole("textbox", { name: "Bezeichnung" }).fill("Published from live editor");
   await manager.getByRole("spinbutton", { name: "Zugriffswinkel" }).fill("135");
   await manager.getByRole("textbox", { name: "Layout-Code" }).fill("310/1/1/1");
@@ -415,6 +424,7 @@ try {
   const edited = await currentLayout(store.id);
   assert.notEqual(edited.layoutId, draft.layoutId);
   assert.equal(edited.layout.elements[1].label, "Published from live editor");
+  assert.equal(edited.layout.elements[1].x, initialX + 1);
   assert.equal(edited.layout.elements[1].accessAngle, 135);
   assert.equal(edited.layout.elements[1].layoutCode, "310/1/1/1");
   assert.deepEqual(edited.layout.elements[1].productPositions, ["310-42"]);
