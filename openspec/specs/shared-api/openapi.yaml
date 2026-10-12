@@ -1,11 +1,11 @@
 openapi: 3.1.0
 info:
   title: Indooro API
-  version: "2026.09.17"
+  version: "2026.10.12"
   summary: Shared HTTP contract of the Indooro backend (Quarkus) for the iOS client, the Admin Platform, and the customer web page.
   description: |
-    Hand-reviewed contract that mirrors the implementation in
-    `backend/indooro_server/src/main/java/at/htl/resource` at commit `63a42d4`.
+    Hand-reviewed contract for the current implementation in
+    `backend/indooro_server/src/main/java/at/htl/resource` and its admin resources.
     It is the single source of truth referenced by the OpenSpec capability `shared-api`.
 
     Every operation carries:
@@ -508,7 +508,7 @@ paths:
       summary: Create or replace a category under the path code.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [none]
+      x-indooro-consumers: [admin-ui]
       requestBody:
         required: true
         content:
@@ -1046,7 +1046,7 @@ paths:
       summary: Add an ingredient.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       parameters:
         - $ref: "#/components/parameters/RecipeIdPath"
       requestBody:
@@ -1073,7 +1073,7 @@ paths:
       summary: Replace an ingredient.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       requestBody:
         required: true
         content:
@@ -1094,7 +1094,7 @@ paths:
       summary: Delete an ingredient.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -1105,7 +1105,7 @@ paths:
       summary: Add a preparation step.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       parameters:
         - $ref: "#/components/parameters/RecipeIdPath"
       requestBody:
@@ -1135,7 +1135,7 @@ paths:
       summary: Replace a step.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       requestBody:
         required: true
         content:
@@ -1156,7 +1156,7 @@ paths:
       summary: Delete a step.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -1258,7 +1258,7 @@ paths:
       summary: Recipe tags filtered by status (default ACTIVE) and text.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       parameters:
         - $ref: "#/components/parameters/RecordStatusQuery"
         - name: q
@@ -1392,7 +1392,7 @@ paths:
       summary: Region in scope.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin|region-manager|store-manager
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       responses:
         "200":
           description: Region.
@@ -1742,7 +1742,7 @@ paths:
       summary: Active beacons without an active assignment.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin|region-manager|store-manager
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       x-indooro-findings: [DC-11]
       responses:
         "200":
