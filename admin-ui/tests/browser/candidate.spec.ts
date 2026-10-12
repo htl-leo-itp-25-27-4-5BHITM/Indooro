@@ -40,6 +40,22 @@ test("candidate navigation follows staff role and offers logout", async ({ page 
   await expect(page.getByRole("alert")).toContainText("Zugriff verweigert");
 });
 
+test("region manager foreign store and editor links show access denial from the API", async ({ page }) => {
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "region-1", username: "manager", role: "region-manager", scope: { regionId: "region-1", storeId: null } } }));
+  await page.route("**/api/regions", (route) => route.fulfill({ json: [{ id: "region-1", code: "AT-O", name: "Ost" }] }));
+  await page.route("**/api/beacons/free", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/stores/foreign/**", (route) => route.fulfill({ status: 403, json: { error: "Forbidden" } }));
+  await page.route("**/api/stores/foreign", (route) => route.fulfill({ status: 403, json: { error: "Forbidden" } }));
+
+  await page.goto("/admin/next/stores/detail/?storeId=foreign");
+  await expect(page.getByRole("alert").getByRole("heading", { name: "Zugriff verweigert" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Layout-Versionen" })).toHaveCount(0);
+
+  await page.goto("/admin/next/editor/?storeId=foreign");
+  await expect(page.getByRole("alert").getByRole("heading", { name: "Zugriff verweigert" })).toBeVisible();
+  await expect(page.locator(".le-canvas")).toHaveCount(0);
+});
+
 test("candidate displays session and role denial states", async ({ page }) => {
   await page.route("**/api/admin/me", (route) => route.fulfill({ status: 401, json: { error: "Unauthorized" } }));
   await page.goto("/admin/next/");

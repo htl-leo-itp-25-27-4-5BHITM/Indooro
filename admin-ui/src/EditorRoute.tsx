@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ApiClient } from "./api/client";
+import { ApiClientError, type ApiClient } from "./api/client";
 import { LayoutEditor } from "./editor/LayoutEditor";
 import type { LayoutDocument } from "./editor/model";
 import type { AssignedBeacon } from "./editor/validation";
@@ -34,7 +34,7 @@ export function EditorRoute({ api }: { api: ApiClient }) {
   const [version, setVersion] = useState<LayoutVersion | null>(null);
   const [versions, setVersions] = useState<LayoutVersion[]>([]);
   const [savedDraftId, setSavedDraftId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; forbidden: boolean } | null>(null);
   const [versionError, setVersionError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
 
@@ -54,7 +54,10 @@ export function EditorRoute({ api }: { api: ApiClient }) {
         setSavedDraftId(loadedVersion.status === "DRAFT" ? loadedVersion.layoutId : null);
         setError(null);
       })
-      .catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Editor konnte nicht geladen werden."); });
+      .catch((cause: unknown) => { if (!controller.signal.aborted) setError({
+        message: cause instanceof Error ? cause.message : "Editor konnte nicht geladen werden.",
+        forbidden: cause instanceof ApiClientError && cause.kind === "forbidden"
+      }); });
     api.get<LayoutVersion[]>(`${base}/versions`, { signal: controller.signal })
       .then((result) => { if (!controller.signal.aborted) { setVersions(Array.isArray(result) ? result : []); setVersionError(null); } })
       .catch((cause: unknown) => { if (!controller.signal.aborted) setVersionError(cause instanceof Error ? cause.message : "Versionsliste konnte nicht geladen werden."); });
@@ -62,7 +65,7 @@ export function EditorRoute({ api }: { api: ApiClient }) {
   }, [api, storeId, selectedVersionId, revision]);
 
   if (!storeId) return <section className="notice" role="alert"><h2>Store auswählen</h2><p>Der neue Layout-Editor benötigt eine Filiale. Das globale Kundenlayout bleibt im bisherigen Editor verfügbar.</p><a href="/admin/next/stores/">Zur Store-Liste</a><span> · </span><a href="/admin/editor/">Globales Layout öffnen</a></section>;
-  if (error) return <section className="notice error-state" role="alert"><h2>Editor konnte nicht geladen werden</h2><p>{error}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></section>;
+  if (error) return <section className="notice error-state" role="alert"><h2>{error.forbidden ? "Zugriff verweigert" : "Editor konnte nicht geladen werden"}</h2><p>{error.message}</p>{!error.forbidden && <button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button>}</section>;
   if (!context || !version?.layout) return <p role="status">Layout-Editor wird geladen …</p>;
 
   const base = `/api/stores/${encodeURIComponent(storeId)}/layout`;

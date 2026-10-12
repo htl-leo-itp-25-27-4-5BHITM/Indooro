@@ -23,7 +23,7 @@ function formattedDate(value?: string | null): string {
 export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUser }) {
   const storeId = new URLSearchParams(window.location.search).get("storeId");
   const [data, setData] = useState<StoreData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ message: string; forbidden: boolean } | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [notice, setNotice] = useState<string | null>(null);
@@ -48,12 +48,15 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
       if (!store?.id || !Array.isArray(regions) || !Array.isArray(beacons) || !Array.isArray(versions) || !Array.isArray(audit?.entries) || !Array.isArray(free)) throw new Error("Store-Daten sind unvollständig.");
       setData({ store, regions, beacons, versions, audit: audit.entries, free });
       setError(null);
-    }).catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Store konnte nicht geladen werden."); });
+    }).catch((cause: unknown) => { if (!controller.signal.aborted) setError({
+      message: cause instanceof Error ? cause.message : "Store konnte nicht geladen werden.",
+      forbidden: cause instanceof ApiClientError && cause.kind === "forbidden"
+    }); });
     return () => controller.abort();
   }, [api, storeId, user.role, revision]);
 
   if (!storeId) return <section className="notice" role="alert"><h2>Store auswählen</h2><a href="/admin/next/stores/">Zur Store-Liste</a></section>;
-  if (error) return <section className="notice error-state" role="alert"><h2>Store konnte nicht geladen werden</h2><p>{error}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></section>;
+  if (error) return <section className="notice error-state" role="alert"><h2>{error.forbidden ? "Zugriff verweigert" : "Store konnte nicht geladen werden"}</h2><p>{error.message}</p>{!error.forbidden && <button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button>}</section>;
   if (!data) return <p role="status">Store wird geladen …</p>;
 
   const { store, regions, beacons, versions, audit, free } = data;

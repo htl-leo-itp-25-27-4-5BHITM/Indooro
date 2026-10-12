@@ -383,11 +383,19 @@ try {
     } else {
       assert.equal(attemptedCreate.status, 403, "store manager cannot create a store");
     }
-    const deniedLinks = ["/admin/next/products/", "/admin/next/recipes/", "/admin/next/server-logs/", "/admin/next/editor/"];
-    if (role === "store-manager") deniedLinks.push(`/admin/next/stores/detail/?storeId=${foreignStore.id}`, `/admin/next/editor/?storeId=${foreignStore.id}`, "/admin/next/regions/");
+    const deniedLinks = [
+      "/admin/next/products/", "/admin/next/categories/", "/admin/next/recipes/", "/admin/next/server-logs/",
+      "/admin/next/editor/", `/admin/next/stores/detail/?storeId=${foreignStore.id}`,
+      `/admin/next/editor/?storeId=${foreignStore.id}`
+    ];
+    if (role === "store-manager") deniedLinks.push("/admin/next/regions/");
     for (const deniedLink of deniedLinks) {
       await page.goto(base + deniedLink, { waitUntil: "domcontentloaded" });
-      await page.getByRole("alert").getByRole("heading", { name: "Zugriff verweigert" }).waitFor();
+      try {
+        await page.getByRole("alert").getByRole("heading", { name: "Zugriff verweigert" }).waitFor({ timeout: 5_000 });
+      } catch {
+        throw new Error(`${role} did not receive candidate access denial at ${deniedLink}`);
+      }
       deniedDirectLinks += 1;
     }
     await page.close();
