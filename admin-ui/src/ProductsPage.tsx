@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
+import { CatalogImportPanel } from "./CatalogImport";
 
 export interface Product {
   id: number;
@@ -288,6 +289,7 @@ export function ProductsPage({ api }: { api: ApiClient }) {
 
   return <section className="products-page" aria-labelledby="products-title">
     <div className="page-heading"><div><p className="eyebrow">Katalog</p><h2 id="products-title">Produkte</h2><p>Produkte, Kategorie-Kontext und Regalpositionen im Katalog verwalten.</p></div><button type="button" className="primary" onClick={startCreate}>Produkt anlegen</button></div>
+    <CatalogImportPanel kind="product" />
     {notice && <p role="status" className="notice success">{notice}</p>}
     {deleteError && <p role="alert" className="notice error">{deleteError}</p>}
     {categoryError && <p role="status" className="notice">Kategorien konnten nicht geladen werden. Kategorie-Namen und lokale Layout-Prüfung sind eingeschränkt: {categoryError}</p>}

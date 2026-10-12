@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { ApiClient } from "./api/client";
+import { CatalogImportPanel } from "./CatalogImport";
 
 interface Category { categoryCode: number; categoryName: string }
 
@@ -43,6 +44,7 @@ export function CategoriesPage({ api }: { api: ApiClient }) {
   };
   return <div className="categories-page">
     <div className="page-intro"><div><p className="eyebrow">Katalog</p><h2>Kategorien</h2><p>Produktgruppen und ihre Codes verwalten.</p></div><button className="button primary" onClick={() => open(null)}>Kategorie anlegen</button></div>
+    <CatalogImportPanel kind="category" />
     {notice && <p role="status" className="notice success-state">{notice}</p>}
     {error && <div className="notice error-state" role="alert"><h3>Kategorien konnten nicht geladen werden</h3><p>{error}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
     {!categories && !error && <p role="status" className="notice">Kategorien werden geladen …</p>}

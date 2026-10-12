@@ -31,3 +31,18 @@ test("scoped user cannot load category candidate", async ({ page }) => {
   await expect(page.getByRole("alert")).toContainText("Zugriff verweigert");
   expect(calls).toBe(0);
 });
+
+test("category import reports duplicate codes and does not call the bulk endpoint", async ({ page }) => {
+  let bulkCalls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/categories?size=500", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/categories/bulk", (route) => { bulkCalls += 1; return route.fulfill({ json: {} }); });
+  await page.goto("/admin/next/categories/");
+  await page.getByLabel("JSON-Array oder NDJSON").fill('[{"categoryCode":310,"categoryName":"Obst"},{"categoryCode":310,"categoryName":"Gemüse"},{"categoryCode":420,"categoryName":" "}]');
+  await page.getByRole("button", { name: "Parsen und prüfen" }).click();
+  await expect(page.getByRole("status")).toContainText("3 Zeilen · 1 gültig · 2 ungültig");
+  await expect(page.getByText("Doppelte categoryCode: 310.")).toBeVisible();
+  await expect(page.getByText("categoryName ist erforderlich.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Commit nicht verfügbar" })).toBeDisabled();
+  expect(bulkCalls).toBe(0);
+});

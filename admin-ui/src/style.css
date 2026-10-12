@@ -166,6 +166,17 @@ a:focus-visible { outline: 3px solid #f2a900; outline-offset: 3px; }
 .categories-page label { display: grid; gap: .3rem; color: #506779; font-size: .82rem; font-weight: 700; }
 .categories-page input { min-height: 42px; border: 1px solid #b6c9d1; border-radius: .5rem; padding: .55rem .65rem; color: #173047; font: inherit; }
 .categories-page .category-search { max-width: 20rem; margin-bottom: 1rem; }
+.catalog-import form { display: grid; gap: .6rem; }
+.catalog-import textarea { width: 100%; min-height: 9rem; border: 1px solid #b6c9d1; border-radius: .5rem; padding: .65rem; color: #173047; font: 0.9rem/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; resize: vertical; }
+.catalog-import button { min-height: 40px; justify-self: start; border: 1px solid #bdd2d4; border-radius: .5rem; background: white; color: #155a70; padding: .5rem .8rem; font: inherit; }
+.catalog-import button.primary { color: white; background: #136c60; border-color: #136c60; }
+.catalog-import button:disabled { color: #506779; background: #eef2f3; cursor: not-allowed; }
+.catalog-review { margin-top: 1rem; }
+.catalog-review h4 { margin-bottom: .3rem; }
+.catalog-review table { width: 100%; border-collapse: collapse; text-align: left; }
+.catalog-review th, .catalog-review td { border-bottom: 1px solid #e0eaec; padding: .7rem .5rem; vertical-align: top; }
+.catalog-review code { overflow-wrap: anywhere; }
+.catalog-review ul { margin: 0; padding-left: 1.25rem; }
 .categories-page table { width: 100%; border-collapse: collapse; text-align: left; }
 .categories-page th, .categories-page td { border-bottom: 1px solid #e0eaec; padding: .7rem .5rem; }
 .limit-notice { border-left: 4px solid #b98049; padding: .65rem .9rem; background: #fff1d4; }

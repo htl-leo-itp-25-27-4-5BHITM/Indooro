@@ -98,3 +98,19 @@ test("admin can cancel product deletion or confirm it and sees the empty post-ac
   await expect(page.getByText("Der Produktkatalog ist leer.")).toBeVisible();
   expect(deleteCalls).toBe(1);
 });
+
+test("product import reviews each NDJSON row and leaves bulk commit blocked", async ({ page }) => {
+  let bulkCalls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/categories?*", (route) => route.fulfill({ json: [{ categoryCode: 310, categoryName: "Obst" }] }));
+  await page.route("**/api/admin/products?*", (route) => route.fulfill({ json: { content: [], page: 0, size: 20, totalElements: 0 } }));
+  await page.route("**/api/products/bulk", (route) => { bulkCalls += 1; return route.fulfill({ json: {} }); });
+  await page.goto("/admin/next/products/");
+  await page.getByLabel("JSON-Array oder NDJSON").fill('{"id":4,"name":"Apfel","price":1.2,"layoutCode":"310/1/1/1"}\nnot json\n{"id":4,"name":"Birne","price":-1,"layoutCode":"310/9/1/1"}');
+  await page.getByRole("button", { name: "Parsen und prüfen" }).click();
+  await expect(page.getByRole("status")).toContainText("3 Zeilen · 1 gültig · 2 ungültig");
+  await expect(page.getByText("Zeile 2 ist kein gültiges JSON")).toBeVisible();
+  await expect(page.getByText("Doppelte id: 4.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Commit nicht verfügbar" })).toBeDisabled();
+  expect(bulkCalls).toBe(0);
+});
