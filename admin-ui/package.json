@@ -14,7 +14,8 @@
     "build": "npm run typecheck && vite build",
     "package:candidate": "npm run build && node scripts/package-candidate.mjs",
     "verify:candidate": "node scripts/verify-candidate.mjs",
-    "test:browser": "playwright test"
+    "test:browser": "playwright test",
+    "test:live": "node scripts/live-admin-smoke.mjs"
   },
   "dependencies": {
     "react": "19.3.0",

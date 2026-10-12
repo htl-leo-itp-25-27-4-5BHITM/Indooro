@@ -10,22 +10,22 @@
 ## 2. Frontend Build And Security Foundation
 
 - [x] 2.1 Create a pinned React/Vite/TypeScript admin source workspace with typecheck, lint, unit-test, and build scripts.
-- [ ] 2.2 Configure reproducible build output inside Quarkus static resources and verify packaged `/admin/*` direct links and refreshes.
+- [x] 2.2 Configure reproducible build output inside Quarkus static resources and verify packaged `/admin/*` direct links and refreshes.
 - [ ] 2.3 Implement a route cutover map that keeps existing static pages active until their parity gate passes and permits route-level rollback.
 - [x] 2.4 Implement a typed same-origin API client with one response-body read, 401/403 handling, validation/conflict messages, cancellation, and request-state tests.
 - [x] 2.5 Implement `/api/admin/me` bootstrap, role/scope-aware navigation, logout to `/admin/logout`, and direct-link access-denied states.
 - [ ] 2.6 Add design tokens and accessible shell, form, table, dialog, notification, loading, empty, and error components with keyboard and contrast checks.
-- [ ] 2.7 Verify the new frontend has no runtime CDN dependency, uses safe text rendering, and runs under the CSP specified by `harden-platform-security-baseline`.
+- [x] 2.7 Verify the new frontend has no runtime CDN dependency, uses safe text rendering, and runs under the CSP specified by `harden-platform-security-baseline`.
 
 ## 3. Core Staff Routes
 
 - [x] 3.1 Rebuild dashboard with scoped counts, setup warnings, recent activity, and actionable links; pass admin, region-manager, and store-manager route tests.
-- [ ] 3.2 Rebuild region list/detail/create/edit/archive workflows and verify scope, validation, confirmation, and post-action state.
+- [x] 3.2 Rebuild region list/detail/create/edit/archive workflows and verify scope, validation, confirmation, and post-action state.
 - [x] 3.3 Rebuild store list with server-backed query state, paging, filters, layout status, and direct store-detail links.
-- [ ] 3.4 Rebuild guided store create/edit and detail sections for metadata, beacon assignments, layout versions, and audit history.
-- [ ] 3.5 Rebuild beacon inventory, bulk parse/review, create/edit, assignment, release, and archive workflows with identity validation.
-- [ ] 3.6 Rebuild product list/create/edit/delete, readiness, and category context; verify documented `310/1/1/1` layout-code behavior and backend paging.
-- [ ] 3.7 Rebuild recipe list/detail/edit, tags, ingredients, steps, mapping, preview, and publication controls; pass a seeded-recipe no-data-loss test.
+- [x] 3.4 Rebuild guided store create/edit and detail sections for metadata, beacon assignments, layout versions, and audit history.
+- [x] 3.5 Rebuild beacon inventory, bulk parse/review, create/edit, assignment, release, and archive workflows with identity validation.
+- [x] 3.6 Rebuild product list/create/edit/delete, readiness, and category context; verify documented `310/1/1/1` layout-code behavior and backend paging.
+- [x] 3.7 Rebuild recipe list/detail/edit, tags, ingredients, steps, mapping, preview, and publication controls; pass a seeded-recipe no-data-loss test.
 - [x] 3.8 Rebuild admin-only diagnostics within the shell and verify scoped staff cannot see logs or trigger their APIs.
 - [ ] 3.9 Review current catalog bulk APIs; implement parse/review/commit/summary only for supported behavior and document any blocked transaction/preview gap before enabling it.
 - [ ] 3.10 For each migrated route, record direct-link, role/scope, keyboard, empty/error, existing-action parity, and rollback evidence before switching its entry.
@@ -38,9 +38,9 @@
 - [x] 4.4 Implement store-context beacon selection and duplicate/unassigned placement feedback; keep legacy/global mode visibly distinct and protected.
 - [ ] 4.5 Implement element-linked validation for bounds, overlap, entrance, beacon, shelf metadata, and routing readiness with blocking versus warning outcomes.
 - [x] 4.6 Verify first-draft behavior in `StoreLayoutAdminService`; make an inactive first version possible without changing the public no-active-layout response, if runtime evidence confirms the gap.
-- [ ] 4.7 Implement separate draft save, publish/activate confirmation, version history, and mobile preview; preserve layout JSON fields and one-active-version invariant.
-- [ ] 4.8 Coordinate concurrent layout save/activate tests and row-locking implementation with `optimize-backend-data-access` before marking publication conflict-safe.
-- [ ] 4.9 Add editor unit, interaction, persistence, and public mobile compatibility tests for store and legacy modes.
+- [x] 4.7 Implement separate draft save, publish/activate confirmation, version history, and mobile preview; preserve layout JSON fields and one-active-version invariant.
+- [x] 4.8 Coordinate concurrent layout save/activate tests and row-locking implementation with `optimize-backend-data-access` before marking publication conflict-safe.
+- [x] 4.9 Add editor unit, interaction, persistence, and public mobile compatibility tests for store and legacy modes.
 
 ## 5. Contracts, Documentation, And Release
 
