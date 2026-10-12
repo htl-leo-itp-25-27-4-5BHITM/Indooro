@@ -95,6 +95,61 @@ try {
   const foreignBeacon = expectOk(await api(admin, "POST", "/api/beacons", { beaconCode: `OTHER-B-${run}`, uuid: randomUUID(), major: 1, minor: 2 }), "foreign beacon create");
   expectOk(await api(admin, "POST", `/api/beacons/${foreignBeacon.id}/assign`, { storeId: foreignStore.id }), "foreign beacon assign");
   assignDemoScopes(region.id, store.id);
+  const uiRegionCode = `UI-${run}`;
+  const uiRegionName = `UI Region ${run}`;
+  await admin.goto(`${base}/admin/next/regions/`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("button", { name: "Region anlegen" }).click();
+  await admin.getByRole("textbox", { name: "Code" }).fill(uiRegionCode);
+  await admin.getByRole("textbox", { name: "Name", exact: true }).fill(uiRegionName);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("cell", { name: uiRegionName }).waitFor();
+  const uiRegion = expectOk(await api(admin, "GET", "/api/regions?status=ACTIVE"), "candidate region create")
+    .find((item) => item.code === uiRegionCode);
+  assert.ok(uiRegion, "candidate region create persists in the API");
+  await admin.getByRole("button", { name: "Bearbeiten" }).click();
+  const editedUiRegionName = `${uiRegionName} geprüft`;
+  await admin.getByRole("textbox", { name: "Name", exact: true }).fill(editedUiRegionName);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("cell", { name: editedUiRegionName }).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/regions/${uiRegion.id}`), "candidate region edit").name, editedUiRegionName);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("button", { name: "Archivieren" }).click();
+  await admin.getByRole("status").getByText(`Region „${editedUiRegionName}“ wurde archiviert.`).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/regions/${uiRegion.id}`), "candidate region archive").status, "ARCHIVED");
+  await admin.getByLabel("Status").selectOption("ARCHIVED");
+  await admin.getByRole("cell", { name: editedUiRegionName }).waitFor();
+  const uiBeaconCode = `UI-B-${run}`;
+  const editedUiBeaconCode = `${uiBeaconCode}-EDIT`;
+  await admin.goto(`${base}/admin/next/beacons/`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("button", { name: "Beacon anlegen" }).click();
+  await admin.getByRole("textbox", { name: "Beacon-Code" }).fill(uiBeaconCode);
+  await admin.getByRole("textbox", { name: "UUID", exact: true }).fill(randomUUID());
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("status").getByText("Beacon wurde angelegt.").waitFor();
+  const uiBeacon = expectOk(await api(admin, "GET", `/api/beacons?query=${uiBeaconCode}`), "candidate beacon create")
+    .find((item) => item.beaconCode === uiBeaconCode);
+  assert.ok(uiBeacon, "candidate beacon create persists in the API");
+  await admin.getByRole("row").filter({ hasText: uiBeaconCode }).getByRole("button", { name: "Bearbeiten" }).click();
+  await admin.getByRole("textbox", { name: "Beacon-Code" }).fill(editedUiBeaconCode);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("status").getByText("Beacon wurde gespeichert.").waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/beacons/${uiBeacon.id}`), "candidate beacon edit").beaconCode, editedUiBeaconCode);
+  await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).getByRole("button", { name: "Zuweisen" }).click();
+  await admin.getByLabel("Ziel-Store").selectOption(store.id);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("button", { name: "Zuweisung bestätigen" }).click();
+  await admin.getByRole("status").getByText(`${editedUiBeaconCode} wurde ${store.name} zugewiesen.`).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/beacons/${uiBeacon.id}`), "candidate beacon assign").currentStore?.id, store.id);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).getByRole("button", { name: "Freigeben" }).click();
+  await admin.getByRole("status").getByText(`${editedUiBeaconCode} wurde freigegeben.`).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/beacons/${uiBeacon.id}`), "candidate beacon release").currentStore, null);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).getByRole("button", { name: "Archivieren" }).click();
+  await admin.getByRole("status").getByText(`${editedUiBeaconCode} wurde archiviert.`).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/beacons/${uiBeacon.id}`), "candidate beacon archive").status, "ARCHIVED");
+  await admin.getByLabel("Status").selectOption("ARCHIVED");
+  await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).waitFor();
   const mobileStores = await publicJson("/api/mobile/stores");
   assert.ok(Array.isArray(mobileStores));
   const mobileStore = mobileStores.find((item) => item.id === store.id);
@@ -130,6 +185,35 @@ try {
   }
   assert.equal(updatedPublicProduct?.name, updatedProductName, "candidate product edit reaches the public catalog");
   assert.equal(updatedPublicProduct.layoutCode, "310/1/1/1");
+  const uiProductId = productId + 1;
+  const uiProductName = `UI Produkt ${run}`;
+  await admin.getByRole("button", { name: "Produkt anlegen" }).click();
+  await admin.getByRole("textbox", { name: "Produkt-ID" }).fill(String(uiProductId));
+  await admin.getByRole("textbox", { name: "Name" }).fill(uiProductName);
+  await admin.getByRole("textbox", { name: "Preis (EUR)" }).fill("3.29");
+  await admin.locator("section[aria-labelledby='product-form-title'] select[required]").selectOption("310");
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("status").getByText("Produkt wurde angelegt.").waitFor();
+  let uiPublicProduct;
+  for (let attempt = 0; attempt < 20 && !uiPublicProduct; attempt += 1) {
+    uiPublicProduct = (await publicJson(`/api/products/search?q=${encodeURIComponent(uiProductName)}&size=10`)).find((item) => item.id === uiProductId);
+    if (!uiPublicProduct) await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  assert.equal(uiPublicProduct?.name, uiProductName, "candidate product create reaches the public catalog");
+  assert.equal(uiPublicProduct.layoutCode, "310/1/1/1");
+  await admin.goto(`${base}/admin/next/products/?q=${encodeURIComponent(uiProductName)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: uiProductName }).waitFor();
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("row").filter({ hasText: uiProductName }).getByRole("button", { name: "Löschen" }).click();
+  await admin.getByRole("status").getByText(`Produkt ${uiProductName} wurde gelöscht.`).waitFor();
+  let deletedFromAdmin = false;
+  let deletedFromPublic = false;
+  for (let attempt = 0; attempt < 20 && (!deletedFromAdmin || !deletedFromPublic); attempt += 1) {
+    deletedFromAdmin = !expectOk(await api(admin, "GET", `/api/admin/products?q=${encodeURIComponent(uiProductName)}&page=0&size=10`), "candidate product delete post-state").content.some((item) => item.id === uiProductId);
+    deletedFromPublic = !(await publicJson(`/api/products/search?q=${encodeURIComponent(uiProductName)}&size=10`)).some((item) => item.id === uiProductId);
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  assert.ok(deletedFromAdmin && deletedFromPublic, "candidate product delete disappears from admin and public search");
   const existingCategories = await publicJson("/api/categories?size=500");
   const usedCategoryCodes = new Set(existingCategories.map((item) => item.categoryCode));
   const liveCategoryCode = Array.from({ length: 500 }, (_, index) => 500 + index).find((code) => !usedCategoryCodes.has(code));
@@ -162,6 +246,33 @@ try {
   assert.equal(publicRecipe.ingredients[0].displayName, "Apfel");
   assert.equal(publicRecipe.steps[0].instruction, "Apfel schneiden.");
   assert.equal(expectOk(await api(admin, "PATCH", `/api/admin/recipes/${recipe.id}/deactivate`, {}), "recipe deactivate").status, "DRAFT");
+  assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
+  await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipe.title)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: recipe.title }).getByRole("button", { name: "Bearbeiten" }).click();
+  const recipeDialog = admin.getByRole("dialog");
+  const candidateRecipeTitle = `${recipe.title} UI`;
+  await recipeDialog.getByRole("textbox", { name: "Titel" }).fill(candidateRecipeTitle);
+  await recipeDialog.getByRole("textbox", { name: "Bild-URL" }).fill("/images/live-recipe.jpg");
+  await recipeDialog.getByRole("textbox", { name: "Bildbeschreibung" }).fill("Live Rezeptbild");
+  await recipeDialog.getByRole("button", { name: "Speichern" }).click();
+  await recipeDialog.waitFor({ state: "hidden" });
+  const candidateRecipe = expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "candidate recipe edit");
+  assert.equal(candidateRecipe.title, candidateRecipeTitle);
+  assert.equal(candidateRecipe.imageUrl, "/images/live-recipe.jpg");
+  assert.equal(candidateRecipe.imageAlt, "Live Rezeptbild");
+  assert.equal(candidateRecipe.ingredients[0].displayName, "Apfel");
+  assert.equal(candidateRecipe.steps[0].instruction, "Apfel schneiden.");
+  await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(candidateRecipeTitle)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: candidateRecipeTitle }).getByRole("button", { name: "Bearbeiten" }).click();
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("dialog").getByRole("button", { name: "Veröffentlichen" }).click();
+  await admin.getByRole("dialog").locator(".status-pill").getByText("PUBLISHED").waitFor();
+  const candidatePublicRecipe = await publicJson(`/api/mobile/recipes/${recipe.id}`);
+  assert.equal(candidatePublicRecipe.title, candidateRecipeTitle);
+  assert.equal(candidatePublicRecipe.imageAlt, "Live Rezeptbild");
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("dialog").getByRole("button", { name: "Deaktivieren" }).click();
+  await admin.getByRole("dialog").locator(".status-pill").getByText("DRAFT").waitFor();
   assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
 
   const candidateRoutes = [
@@ -201,6 +312,9 @@ try {
     assert.equal((await api(page, "GET", `/api/stores/${store.id}`)).status, 200);
     assert.equal((await api(page, "GET", `/api/stores/${foreignStore.id}`)).status, 403);
     assert.equal((await api(page, "GET", `/api/regions/${foreignRegion.id}`)).status, 403);
+    assert.equal((await api(page, "GET", `/api/regions/${uiRegion.id}`)).status, 403);
+    assert.equal((await api(page, "POST", "/api/regions", { code: `DENIED-${run}`, name: "Denied" })).status, 403);
+    assert.equal((await api(page, "PUT", `/api/regions/${region.id}`, { code: region.code, name: "Denied" })).status, 403);
     assert.equal((await api(page, "GET", "/api/admin/logs")).status, 403);
     assert.equal((await api(page, "GET", "/api/admin/error-logs")).status, 403);
     assert.equal((await api(page, "GET", "/api/admin/products?page=0&size=1")).status, 403);
@@ -218,6 +332,12 @@ try {
     assert.equal((await api(page, "POST", "/api/beacons/bulk", { uuid: randomUUID(), items: [{ beaconCode: `DENIED-BULK-${run}` }] })).status, 403);
     assert.equal((await api(page, "POST", `/api/beacons/${ownBeacon.id}/assign`, { storeId: foreignStore.id })).status, 403);
     if (role === "region-manager") {
+      const visibleRegions = expectOk(await api(page, "GET", "/api/regions?status=ACTIVE"), "region manager region list");
+      assert.deepEqual(visibleRegions.map((item) => item.id), [region.id]);
+      await page.goto(`${base}/admin/next/regions/`, { waitUntil: "domcontentloaded" });
+      await page.getByRole("cell", { name: region.name }).waitFor();
+      assert.equal(await page.getByRole("button", { name: "Region anlegen" }).count(), 0);
+      assert.equal(await page.getByRole("cell", { name: editedUiRegionName }).count(), 0);
       assert.equal(expectOk(await api(page, "POST", `/api/beacons/${ownBeacon.id}/assign`, { storeId: store.id }), "region beacon assignment").storeId, store.id);
     } else {
       assert.equal((await api(page, "GET", `/api/beacons/${ownBeacon.id}`)).status, 200);
@@ -279,6 +399,18 @@ try {
   assert.equal(edited.layout.elements[1].accessAngle, 135);
   assert.equal(edited.layout.elements[1].layoutCode, "310/1/1/1");
   assert.deepEqual(edited.layout.elements[1].productPositions, ["310-42"]);
+  await manager.goto(`${base}/admin/next/stores/detail/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
+  await manager.getByRole("heading", { name: "Stammdaten" }).waitFor();
+  await manager.getByText("Aktiv: Version", { exact: false }).waitFor();
+  await manager.getByText(ownBeacon.beaconCode).first().waitFor();
+  await manager.getByRole("button", { name: "Bearbeiten" }).click();
+  const candidateStoreName = `Store UI ${run}`;
+  await manager.getByRole("textbox", { name: "Name" }).fill(candidateStoreName);
+  await manager.getByRole("button", { name: "Speichern" }).click();
+  await manager.getByRole("status").getByText("Store gespeichert.").waitFor();
+  await manager.getByRole("heading", { name: candidateStoreName }).waitFor();
+  assert.equal(expectOk(await api(manager, "GET", `/api/stores/${store.id}`), "candidate store detail edit").name, candidateStoreName);
+  assert.equal((await publicJson("/api/mobile/stores")).find((item) => item.id === store.id)?.name, candidateStoreName);
   await manager.close();
 
   const globalBefore = expectOk(await api(admin, "GET", "/api/layout/current"), "global layout before edit");
@@ -306,7 +438,7 @@ try {
   const current = await currentLayout(store.id);
   assert.ok(activated.some((version) => version.layoutId === current.layoutId));
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateProductEdit: true, candidateCategoryCreateEdit: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeLifecycle: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();
