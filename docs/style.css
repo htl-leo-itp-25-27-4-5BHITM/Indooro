@@ -1306,3 +1306,38 @@ h1  {
     .route-result { margin-bottom: 18px; }
     .route-result strong { font-size: 14px; }
 }
+
+.site-header {
+    transition: box-shadow 240ms ease, background-color 240ms ease;
+}
+.site-header.is-scrolled {
+    background-color: rgba(250, 250, 250, 0.97);
+    box-shadow: 0 4px 18px #00000006;
+}
+.button {
+    transition: background-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
+}
+.button span, .text-link span, .nav-cta span {
+    display: inline-block;
+    transition: transform 200ms ease;
+}
+.product-picker button {
+    transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+    .button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 14px #2674491c;
+    }
+    .button:hover span, .text-link:hover span, .nav-cta:hover span {
+        transform: translate(2px, -2px);
+    }
+    .product-picker button:not([aria-pressed=true]):hover {
+        background-color: #e5e8e5;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .button:hover, .button:hover span, .text-link:hover span, .nav-cta:hover span {
+        transform: none;
+    }
+}
