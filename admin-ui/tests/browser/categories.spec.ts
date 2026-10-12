@@ -46,3 +46,55 @@ test("category import reports duplicate codes and does not call the bulk endpoin
   await expect(page.getByRole("button", { name: "Commit nicht verfügbar" })).toBeDisabled();
   expect(bulkCalls).toBe(0);
 });
+
+test("empty categories can be searched and category form is keyboard operable", async ({ page }) => {
+  let categoryCalls = 0;
+  let unexpectedApiCalls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/**", (route) => {
+    if (route.request().url().endsWith("/api/admin/me")) return route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } });
+    if (route.request().url().endsWith("/api/categories?size=500")) { categoryCalls += 1; return route.fulfill({ json: [] }); }
+    unexpectedApiCalls += 1;
+    return route.fulfill({ status: 500, json: { error: "Unexpected API request" } });
+  });
+  await page.goto("/admin/next/categories/");
+  const results = page.getByRole("region", { name: "Kategorie-Ergebnisse" });
+  await expect(results).toContainText("0 Kategorien");
+  await expect(results).toContainText("Keine Kategorie passt zur Suche.");
+  const create = page.getByRole("button", { name: "Kategorie anlegen" });
+  await page.locator("body").focus();
+  for (let step = 0; step < 20 && !(await create.evaluate((element) => element === document.activeElement)); step += 1) await page.keyboard.press("Tab");
+  await expect(create).toBeFocused();
+  await page.keyboard.press("Enter");
+  const code = page.getByRole("spinbutton", { name: "Kategorie-Code" });
+  for (let step = 0; step < 5 && !(await code.evaluate((element) => element === document.activeElement)); step += 1) await page.keyboard.press("Tab");
+  await expect(code).toBeFocused();
+  await page.keyboard.press("Tab");
+  const name = page.getByRole("textbox", { name: "Name" });
+  await expect(name).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("button", { name: "Speichern" })).toBeFocused();
+  expect(categoryCalls).toBe(1);
+  expect(unexpectedApiCalls).toBe(0);
+});
+
+test("category load error offers a working retry and makes no unrelated API calls", async ({ page }) => {
+  let categoryCalls = 0;
+  let unexpectedApiCalls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/**", (route) => {
+    if (route.request().url().endsWith("/api/admin/me")) return route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } });
+    if (route.request().url().endsWith("/api/categories?size=500")) {
+      categoryCalls += 1;
+      return categoryCalls === 1 ? route.fulfill({ status: 503, json: { error: "Katalog nicht verfügbar" } }) : route.fulfill({ json: [{ categoryCode: 310, categoryName: "Obst" }] });
+    }
+    unexpectedApiCalls += 1;
+    return route.fulfill({ status: 500, json: { error: "Unexpected API request" } });
+  });
+  await page.goto("/admin/next/categories/");
+  await expect(page.getByRole("alert")).toContainText("Kategorien konnten nicht geladen werden");
+  await page.getByRole("button", { name: "Erneut versuchen" }).click();
+  await expect(page.getByRole("cell", { name: "Obst" })).toBeVisible();
+  expect(categoryCalls).toBe(2);
+  expect(unexpectedApiCalls).toBe(0);
+});
