@@ -77,6 +77,9 @@ try {
   assert.equal(expectOk(await api(admin, "GET", "/api/admin/me"), "admin login").role, "admin");
   const indexInitialization = await api(admin, "POST", "/api/admin/index/create", {});
   assert.ok([200, 409].includes(indexInitialization.status), `product index initialization: HTTP ${indexInitialization.status}`);
+  const categoryInitialization = await api(admin, "POST", "/api/categories", { categoryCode: 310, categoryName: "Obst & Gemüse" });
+  assert.ok([200, 409].includes(categoryInitialization.status), `category initialization: HTTP ${categoryInitialization.status}`);
+  assert.ok(Array.isArray(await publicJson("/api/categories?size=5")), "anonymous category reads stay public");
   const run = Date.now().toString(36).slice(-7).toUpperCase();
   const region = expectOk(await api(admin, "POST", "/api/regions", { code: `LIVE-${run}`, name: `Live Region ${run}` }), "region create");
   const store = expectOk(await api(admin, "POST", "/api/stores", {
@@ -113,6 +116,36 @@ try {
   assert.equal(publicProduct.name, productName);
   assert.equal(publicProduct.price, 2.49);
   assert.equal(publicProduct.layoutCode, "310/1/1/1");
+  await admin.goto(`${base}/admin/next/products/?q=${encodeURIComponent(productName)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("cell", { name: productName }).waitFor();
+  await admin.getByRole("button", { name: "Bearbeiten" }).first().click();
+  const updatedProductName = `${productName} geprüft`;
+  await admin.getByRole("textbox", { name: "Name" }).fill(updatedProductName);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByText("Produkt wurde aktualisiert.").waitFor();
+  let updatedPublicProduct;
+  for (let attempt = 0; attempt < 20 && !updatedPublicProduct; attempt += 1) {
+    updatedPublicProduct = (await publicJson(`/api/products/search?q=${encodeURIComponent(updatedProductName)}&size=10`)).find((item) => item.id === productId);
+    if (!updatedPublicProduct) await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  assert.equal(updatedPublicProduct?.name, updatedProductName, "candidate product edit reaches the public catalog");
+  assert.equal(updatedPublicProduct.layoutCode, "310/1/1/1");
+  const existingCategories = await publicJson("/api/categories?size=500");
+  const usedCategoryCodes = new Set(existingCategories.map((item) => item.categoryCode));
+  const liveCategoryCode = Array.from({ length: 500 }, (_, index) => 500 + index).find((code) => !usedCategoryCodes.has(code));
+  assert.ok(liveCategoryCode, "a free local category code is available");
+  await admin.goto(`${base}/admin/next/categories/`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("button", { name: "Kategorie anlegen" }).click();
+  await admin.getByRole("spinbutton", { name: "Kategorie-Code" }).fill(String(liveCategoryCode));
+  await admin.getByRole("textbox", { name: "Name" }).fill(`Live Kategorie ${run}`);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("status").getByText(`Kategorie ${liveCategoryCode} gespeichert.`).waitFor();
+  assert.ok((await publicJson("/api/categories?size=500")).some((item) => item.categoryCode === liveCategoryCode && item.categoryName === `Live Kategorie ${run}`));
+  await admin.getByRole("row").filter({ hasText: `Live Kategorie ${run}` }).getByRole("button", { name: "Bearbeiten" }).click();
+  await admin.getByRole("textbox", { name: "Name" }).fill(`Geprüfte Kategorie ${run}`);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("status").getByText(`Kategorie ${liveCategoryCode} gespeichert.`).waitFor();
+  assert.ok((await publicJson("/api/categories?size=500")).some((item) => item.categoryCode === liveCategoryCode && item.categoryName === `Geprüfte Kategorie ${run}`));
   const mobileRecipes = await publicJson("/api/mobile/recipes?page=0&size=5");
   assert.ok(Array.isArray(mobileRecipes.content));
 
@@ -160,6 +193,7 @@ try {
   assert.equal(typeof mobilePublished.layout.gridSize.height, "number");
   assert.ok(mobilePublished.layout.elements.every((item) => Number.isInteger(item.id) && typeof item.type === "string" && typeof item.x === "number" && typeof item.y === "number"));
 
+  let deniedDirectLinks = 0;
   for (const [user, role] of [[regionUser, "region-manager"], [storeUser, "store-manager"]]) {
     const page = await login(user);
     const me = expectOk(await api(page, "GET", "/api/admin/me"), `${role} login`);
@@ -171,6 +205,7 @@ try {
     assert.equal((await api(page, "GET", "/api/admin/error-logs")).status, 403);
     assert.equal((await api(page, "GET", "/api/admin/products?page=0&size=1")).status, 403);
     assert.equal((await api(page, "GET", "/api/admin/recipes?page=0&size=1")).status, 403);
+    assert.equal((await api(page, "POST", "/api/categories", { categoryCode: 999, categoryName: "Denied" })).status, 403);
     assert.equal((await api(page, "GET", `/api/stores/${store.id}/layout/editor-context`)).status, 200);
     assert.equal((await api(page, "GET", `/api/stores/${foreignStore.id}/layout/editor-context`)).status, 403);
     assert.equal((await api(page, "GET", `/api/beacons/${foreignBeacon.id}`)).status, 403);
@@ -214,6 +249,7 @@ try {
     for (const deniedLink of deniedLinks) {
       await page.goto(base + deniedLink, { waitUntil: "domcontentloaded" });
       await page.getByRole("alert").getByRole("heading", { name: "Zugriff verweigert" }).waitFor();
+      deniedDirectLinks += 1;
     }
     await page.close();
   }
@@ -270,7 +306,7 @@ try {
   const current = await currentLayout(store.id);
   assert.ok(activated.some((version) => version.layoutId === current.layoutId));
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks: 11, roleChecks: 2, scopedMutationChecks: 18, beaconLifecycle: true, publicContracts: 6, publicProductAfterMutation: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateProductEdit: true, candidateCategoryCreateEdit: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();

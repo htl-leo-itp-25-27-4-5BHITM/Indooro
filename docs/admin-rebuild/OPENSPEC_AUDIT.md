@@ -32,6 +32,8 @@ Target a staged React/Vite/TypeScript admin SPA, served under the existing Quark
 
 The rebuild owns shared admin UI, route migration, editor interaction model, workflow-level backend gaps, and acceptance evidence. `protect-legacy-write-endpoints` owns write route authorization; `harden-platform-security-baseline` owns security headers, Keycloak production setup, input bounds, audit hardening, and infrastructure; `optimize-backend-data-access` owns broad data-access performance and layout row locking; `establish-shared-api-contract` owns global versioning and contract generation. Any new or changed HTTP operation is added to the reviewed `openspec/specs/shared-api/openapi.yaml` in the same implementation tranche and coordinated with that change.
 
+2026-10-12 coordination note: the local candidate workflow exposed that admin `POST /api/categories` returned 403 because the route was absent from the authenticated HTTP permission. The rebuild added `/api/categories` and `/api/categories/*` to that permission while retaining the existing public `GET` rule and `@RolesAllowed("admin")` method checks. Real Keycloak tests now pass for admin category write, anonymous category read, and scoped staff write denial. This is a narrow prerequisite fix, not completion of `protect-legacy-write-endpoints` task 2.2, which still owns the broader method-scoped `admin-write` split and its remaining tests.
+
 ## Delivery priorities
 
 1. Freeze observable route/API/role behavior, capture usable baseline fixtures and screenshots, and close urgent write endpoint/security gaps.
