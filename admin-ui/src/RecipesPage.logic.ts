@@ -28,6 +28,22 @@ export interface RecipeDetail extends RecipeSummary {
   ingredients: RecipeIngredient[]; steps: RecipeStep[];
 }
 export interface Product { id: number; name: string; price?: number | null; layoutCode?: string | null; storeId?: string | null; storeCode?: string | null }
+export interface RecipeMappingProduct extends Product { id: number }
+export interface RecipeIngredientMapping {
+  ingredientId: string;
+  ingredientName: string;
+  status: string;
+  product: RecipeMappingProduct | null;
+  candidates: RecipeMappingProduct[];
+  confidence?: number | null;
+  manuallyConfirmed: boolean;
+  reason?: string | null;
+}
+export interface RecipeMappingResponse { recipeId: string; storeId: string | null; storeCode: string | null; ingredients: RecipeIngredientMapping[] }
+
+export class RecipeCreatePartialError extends Error {
+  constructor(message: string, public readonly created: RecipeDetail) { super(message); this.name = "RecipeCreatePartialError"; }
+}
 export interface RecipePageResponse { content: RecipeSummary[]; page: number; size: number; totalElements: number }
 export interface RecipeFilters { q: string; status: string; tag: string; page: number }
 
@@ -92,6 +108,68 @@ function recipeBody(values: RecipeDetail, tagIds: string[]) {
     status: values.status,
     tagIds
   };
+}
+
+/** Create a recipe with its ordered content, then persist each selected catalog mapping. */
+export async function createRecipeWithContent(api: ApiClient, draft: RecipeDetail, tagIds: string[]): Promise<RecipeDetail> {
+  if (!draft.ingredients.length) throw new Error("Mindestens eine Zutat ist erforderlich.");
+  if (!draft.steps.length || draft.steps.some((item) => !item.instruction.trim())) throw new Error("Mindestens ein vollständiger Zubereitungsschritt ist erforderlich.");
+  if (draft.ingredients.some((item) => !item.selectedProduct?.id || !item.selectedProduct.name)) throw new Error("Neue Zutaten benötigen ein Produkt aus dem Katalog.");
+
+  const created = await api.post<RecipeDetail>("/api/admin/recipes", {
+    recipe: recipeBody(draft, tagIds),
+    ingredients: draft.ingredients.map((item, index) => ({
+      position: index + 1,
+      displayName: item.selectedProduct!.name,
+      canonicalName: item.selectedProduct!.name,
+      quantityText: item.quantityText?.trim() || null,
+      optional: Boolean(item.optional)
+    })),
+    steps: draft.steps.map((item, index) => stepBody(item, index + 1))
+  });
+  if (!created?.id) throw new Error("Die Serverantwort enthält keine Rezept-ID. Bitte zuerst die Liste aktualisieren, bevor Sie erneut anlegen.");
+  if (!Array.isArray(created.ingredients) || created.ingredients.length !== draft.ingredients.length) {
+    throw new RecipeCreatePartialError("Rezept wurde angelegt, aber die gespeicherten Zutaten konnten nicht bestätigt werden.", created);
+  }
+
+  for (let index = 0; index < draft.ingredients.length; index++) {
+    const product = draft.ingredients[index].selectedProduct!;
+    const ingredient = created.ingredients.find((item) => item.position === index + 1);
+    if (!ingredient?.id) throw new RecipeCreatePartialError("Rezept wurde angelegt, aber eine Zutat konnte nicht bestätigt werden.", created);
+    try {
+      await api.put(`/api/admin/recipes/${encodeURIComponent(created.id)}/ingredients/${encodeURIComponent(ingredient.id)}/product-mapping`, {
+        productId: Number(product.id),
+        storeId: product.storeId ?? null,
+        storeCode: product.storeCode ?? null,
+        mappingType: "MANUAL",
+        confidence: 1,
+        manuallyConfirmed: true
+      });
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Mapping fehlgeschlagen.";
+      throw new RecipeCreatePartialError(`Rezept wurde angelegt, aber das Mapping für „${product.name}“ ist fehlgeschlagen: ${message}`, created);
+    }
+  }
+  try { return await api.get<RecipeDetail>(`/api/admin/recipes/${encodeURIComponent(created.id)}`); }
+  catch (cause) {
+    const message = cause instanceof Error ? cause.message : "Neuladen fehlgeschlagen.";
+    throw new RecipeCreatePartialError(`Rezept wurde angelegt, aber der bestätigte Stand konnte nicht neu geladen werden: ${message}`, created);
+  }
+}
+
+export async function changeRecipePublication(api: ApiClient, recipeId: string, action: "publish" | "deactivate" | "archive"): Promise<RecipeDetail> {
+  const path = `/api/admin/recipes/${encodeURIComponent(recipeId)}/${action}`;
+  const result = await api.request<RecipeDetail>(path, { method: "PATCH", json: {} });
+  if (!result?.id) throw new Error("Der neue Rezeptstatus konnte nicht bestätigt werden.");
+  return result;
+}
+
+export function validateNewRecipe(draft: RecipeDetail): string | null {
+  const error = validateDraft(draft);
+  if (error) return error;
+  if (!draft.ingredients.length) return "Mindestens eine Zutat ist erforderlich.";
+  if (!draft.steps.length) return "Mindestens ein Zubereitungsschritt ist erforderlich.";
+  return null;
 }
 
 /** Persist a recipe edit while avoiding unique-position conflicts during reorder. */

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { ApiClient } from "./api/client";
-import { readRecipeFilters, recipeListPath, saveRecipeChanges, type RecipeDetail } from "./RecipesPage.logic";
+import { changeRecipePublication, createRecipeWithContent, readRecipeFilters, recipeListPath, saveRecipeChanges, type RecipeDetail } from "./RecipesPage.logic";
 
 const detail: RecipeDetail = {
   id: "recipe-1", slug: "apple-oats", title: "Apple oats", summary: "Warm", description: "Full instructions", imageUrl: "/apple.jpg", imageAlt: "Apple bowl",
@@ -80,4 +80,36 @@ test("new ingredients require a selected product before mutation", async () => {
   } as unknown as ApiClient;
   await assert.rejects(saveRecipeChanges(api, detail, { ...detail, ingredients: [{ position: 1, displayName: "", quantityText: "" }] }, ["tag-1"]), /Produkt aus dem Katalog/);
   assert.deepEqual(calls, []);
+});
+
+test("create recipe sends supported aggregate payload and confirms each product mapping", async () => {
+  const calls: Array<{ method: string; path: string; body?: unknown }> = [];
+  const created: RecipeDetail = { ...detail, id: "new-recipe", slug: "pear-oats", title: "Pear oats", tags: [], ingredients: [{ id: "new-ingredient", position: 1, displayName: "Pear", quantityText: "1" }], steps: [{ id: "new-step", position: 1, instruction: "Mix", durationMinutes: null }] };
+  const api = {
+    post: async (path: string, body: unknown) => { calls.push({ method: "POST", path, body }); return created; },
+    put: async (path: string, body: unknown) => { calls.push({ method: "PUT", path, body }); return {}; },
+    get: async (path: string) => { calls.push({ method: "GET", path }); return created; }
+  } as unknown as ApiClient;
+  const draft: RecipeDetail = {
+    ...detail, id: "", slug: "pear-oats", title: "Pear oats", status: "DRAFT", tags: [],
+    ingredients: [{ position: 1, displayName: "", quantityText: "1", selectedProduct: { id: 23, name: "Pear", layoutCode: "310" } }],
+    steps: [{ position: 1, instruction: "Mix", durationMinutes: 4 }]
+  };
+  await createRecipeWithContent(api, draft, []);
+  assert.equal(calls[0].method, "POST");
+  assert.equal(calls[0].path, "/api/admin/recipes");
+  assert.deepEqual(calls[0].body, {
+    recipe: { slug: "pear-oats", title: "Pear oats", summary: "Warm", description: "Full instructions", imageUrl: "/apple.jpg", imageAlt: "Apple bowl", servings: 4, prepTimeMinutes: 10, cookTimeMinutes: 20, totalTimeMinutes: 30, status: "DRAFT", tagIds: [] },
+    ingredients: [{ position: 1, displayName: "Pear", canonicalName: "Pear", quantityText: "1", optional: false }],
+    steps: [{ position: 1, instruction: "Mix", durationMinutes: 4 }]
+  });
+  assert.deepEqual(calls[1], { method: "PUT", path: "/api/admin/recipes/new-recipe/ingredients/new-ingredient/product-mapping", body: { productId: 23, storeId: null, storeCode: null, mappingType: "MANUAL", confidence: 1, manuallyConfirmed: true } });
+  assert.deepEqual(calls[2], { method: "GET", path: "/api/admin/recipes/new-recipe" });
+});
+
+test("publication controls use the protected recipe status actions", async () => {
+  const calls: Array<{ path: string; method?: string; json?: unknown }> = [];
+  const api = { request: async (path: string, options?: { method?: string; json?: unknown }) => { calls.push({ path, method: options?.method, json: options?.json }); return detail; } } as unknown as ApiClient;
+  await changeRecipePublication(api, "recipe/with space", "publish");
+  assert.deepEqual(calls, [{ path: "/api/admin/recipes/recipe%2Fwith%20space/publish", method: "PATCH", json: {} }]);
 });
