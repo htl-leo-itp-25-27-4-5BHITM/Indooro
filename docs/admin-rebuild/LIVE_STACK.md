@@ -65,6 +65,8 @@ The candidate recipe UI created a draft using a real catalog product, ingredient
 
 The candidate beacon UI reviewed and committed two rows sharing one UUID with distinct minors. API reads confirmed both records; the output reports `candidateBeaconBulkCreate: true`.
 
+The candidate store-detail page archived the store created through the region-manager form; the API confirmed `ARCHIVED` and the anonymous store list omitted it. The output reports `candidateStoreArchive: true`.
+
 ## Evidence boundary (2026-10-12)
 
 | Area | Observed in the local run | Still not established |

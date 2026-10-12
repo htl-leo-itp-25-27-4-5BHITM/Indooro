@@ -83,3 +83,5 @@ The store layout editor live workflow now exports JSON, imports it with an added
 The candidate recipe UI also created a new draft from an actual catalog product, ingredient quantity, and preparation step. The draft stayed private until the candidate UI published it; the public mobile recipe then contained the expected title. This passed on the same packaged image. Live tag revisions, archive, and multi-stage failure recovery remain open.
 
 The candidate beacon UI reviewed and committed a two-row bulk creation with a shared UUID and distinct minor values. Both records appeared through the authenticated API with matching identities. Identity-conflict and scoped UI cases remain open.
+
+An admin archived the store previously created through the region-manager candidate form. The API returned `ARCHIVED`, and the anonymous mobile store list no longer included it. Live store-detail beacon controls, audit post-state, and fault recovery remain open.

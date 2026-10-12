@@ -348,6 +348,7 @@ try {
   assert.ok(mobilePublished.layout.elements.every((item) => Number.isInteger(item.id) && typeof item.type === "string" && typeof item.x === "number" && typeof item.y === "number"));
 
   let deniedDirectLinks = 0;
+  let regionCreatedStoreId = null;
   for (const [user, role] of [[regionUser, "region-manager"], [storeUser, "store-manager"]]) {
     const page = await login(user);
     const me = expectOk(await api(page, "GET", "/api/admin/me"), `${role} login`);
@@ -428,6 +429,7 @@ try {
       assert.ok(createdStoreLink, "candidate store creation links to detail");
       const uiStoreId = new URL(createdStoreLink, base).searchParams.get("storeId");
       assert.ok(uiStoreId, "candidate store creation returned a store ID");
+      regionCreatedStoreId = uiStoreId;
       const uiStore = expectOk(await api(page, "GET", `/api/stores/${uiStoreId}`), "candidate scoped store create");
       assert.equal(uiStore.region.id, region.id);
       assert.equal(uiStore.name, uiStoreName);
@@ -454,6 +456,15 @@ try {
     }
     await page.close();
   }
+
+  assert.ok(regionCreatedStoreId, "region manager created a store for archive acceptance");
+  await admin.goto(`${base}/admin/next/stores/detail/?storeId=${regionCreatedStoreId}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("heading", { name: `UI Store ${run}` }).waitFor();
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("button", { name: "Archivieren" }).click();
+  await admin.getByRole("status").getByText("Store archiviert.").waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/stores/${regionCreatedStoreId}`), "candidate store archive").status, "ARCHIVED");
+  assert.ok(!(await publicJson("/api/mobile/stores")).some((item) => item.id === regionCreatedStoreId), "archived store disappears from public store list");
 
   const manager = await login(storeUser, `/admin/next/editor/?storeId=${store.id}`);
   await manager.locator(".le-canvas").waitFor();
@@ -560,7 +571,7 @@ try {
   await admin.keyboard.press("Enter");
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();
