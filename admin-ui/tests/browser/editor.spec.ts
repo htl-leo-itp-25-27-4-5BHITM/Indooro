@@ -31,6 +31,8 @@ test("store editor edits metadata, undoes a move and publishes only the saved dr
   await page.goto("/admin/next/editor/?storeId=store-1");
   await expect(page.getByRole("heading", { name: "Indooro Testfiliale" })).toBeVisible();
   await page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" }).click();
+  const handleStroke = await page.locator(".le-handle").first().evaluate((handle) => parseFloat(getComputedStyle(handle).strokeWidth));
+  expect(handleStroke).toBeLessThan(0.5);
   await expect(page.getByLabel("Kategoriecode")).toHaveValue("310");
   await expect(page.getByLabel("Abschnitt")).toHaveValue("1");
   await page.keyboard.press("ArrowRight");
