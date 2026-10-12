@@ -1314,6 +1314,10 @@ h1  {
     background-color: rgba(250, 250, 250, 0.97);
     box-shadow: 0 4px 18px #00000006;
 }
+
+#inhalt:focus, #inhalt h1[tabindex="-1"]:focus, #vorschau[tabindex="-1"]:focus {
+    outline: none;
+}
 .button {
     transition: background-color 200ms ease, transform 200ms ease, box-shadow 200ms ease;
 }

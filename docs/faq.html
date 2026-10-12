@@ -3,65 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#fafafa">
     <title>Häufige Fragen | Indooro</title>
-    <meta name="description" content="Antworten auf Fragen zu Indooro: App-Verfügbarkeit, Indoor-Navigation, Startposition, Märkte und Projektteam.">
-    <meta property="og:title" content="Häufige Fragen | Indooro">
-    <meta property="og:description" content="Antworten auf Fragen zu Indooro: App-Verfügbarkeit, Indoor-Navigation, Startposition, Märkte und Projektteam.">
-    <meta property="og:image" content="https://indooro.at/img/indooro.png">
-    <meta property="og:url" content="https://indooro.at/faq.html">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="de_AT">
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:image" content="https://indooro.at/img/indooro.png">
-    <link rel="canonical" href="https://indooro.at/faq.html">
-    <link rel="icon" type="image/png" href="icons/favicon-96x96.png" sizes="96x96">
-    <link rel="shortcut icon" href="icons/favicon.ico">
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-    <link rel="manifest" href="icons/site.webmanifest">
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
+    <meta http-equiv="refresh" content="0; url=index.html#/faq">
+    <link rel="canonical" href="https://indooro.at/">
+    <script>
+        const anchor = location.hash.slice(1);
+        location.replace('index.html#/faq' + (anchor ? '/' + anchor : ''));
+    </script>
 </head>
 <body>
-    <a class="skip-link" href="#inhalt">Zum Inhalt</a>
-    <header class="site-header">
-        <nav class="nav container" aria-label="Hauptnavigation">
-            <a class="brand" href="index.html" aria-label="Indooro Startseite"><img src="icons/favicon-96x96.png" width="30" height="30" alt="">Indooro</a>
-            <button class="menu-toggle" type="button" aria-label="Menü öffnen" aria-expanded="false" aria-controls="nav-links"><span></span><span></span></button>
-            <div class="nav-links" id="nav-links">
-                <a href="index.html">Start</a>
-                <a href="produkt.html">Produkt</a>
-                <a href="technologie.html">Technologie</a>
-                <a href="projekt.html">Projekt & Team</a>
-                <a href="faq.html" aria-current="page">FAQ</a>
-                <a class="nav-cta" href="produkt.html#vorschau">Vorschau <span aria-hidden="true">↗</span></a>
-            </div>
-        </nav>
-    </header>
-    <main id="inhalt">
-        <section class="page-heading"><div class="container">
-            <p class="breadcrumb"><a href="index.html">Indooro</a><span aria-hidden="true">/</span>FAQ</p>
-            <p class="eyebrow">FAQ</p><h1>Deine Fragen. Unsere Antworten.</h1><p class="section-lead">Alles Wissenswerte zu Indooro, zur Navigation im Markt und zum aktuellen Entwicklungsstand.</p>
-        </div></section>
-        <section class="questions section">
-            <div class="container faq-layout"><div><p class="eyebrow">HÄUFIGE FRAGEN</p><h2>Gut zu wissen.</h2><p class="faq-aside">Mehr Hintergründe findest du auf der <a class="inline-link" href="technologie.html">Technologieseite</a> und der <a class="inline-link" href="projekt.html">Projektseite</a>.</p></div><div class="faq-list">
-                <details><summary>Kann ich Indooro schon herunterladen?</summary><p>Indooro befindet sich in Entwicklung. Die Apps für iOS und Android werden entwickelt. Aktuell stehen auf dieser Website keine Downloads aus dem App Store oder Google Play zur Verfügung. Die Vorschau zeigt das Prinzip der Produktsuche und Routendarstellung.</p></details>
-                <details><summary>Für welche Smartphones wird Indooro entwickelt?</summary><p>Indooro wird für iOS und Android entwickelt, damit du die App sowohl auf dem iPhone als auch auf einem Android-Smartphone nutzen kannst. Beide Versionen befinden sich aktuell in Entwicklung.</p></details>
-                <details><summary>Funktioniert Indooro in jedem Supermarkt?</summary><p>Für die Navigation müssen der Grundriss, die Regalpositionen und die Produktdaten eines Markts hinterlegt sein. Zusätzlich braucht die Startpositionserkennung passende Signalgeber vor Ort.</p></details>
-                <details><summary>Was zeigt die interaktive Vorschau?</summary><p>Du kannst zwischen drei Beispielprodukten wechseln und ihre Position auf einem vereinfachten Marktplan sehen. Die Darstellung ist eine Illustration, kein Screenshot einer fertigen App und keine Verbindung zu einem realen Markt.</p></details>
-                <details><summary>Wie wird meine Position bestimmt?</summary><p>Im vorgesehenen System liefern Bluetooth-Beacons im Geschäft Signale für die Erkennung der Startposition. Die Route wird von diesem Startpunkt zum ausgewählten Regal berechnet.</p></details>
-                <details><summary>Wird meine Bewegung live verfolgt?</summary><p>Fortlaufendes Live-Tracking ist nicht Teil des Projektumfangs. Indooro konzentriert sich auf die Bestimmung des Startpunkts und die Darstellung der Zielroute.</p></details>
-                <details><summary>Wer entwickelt Indooro?</summary><p>Indooro wird von Erik Bergmair, David Berghahn, Fabian Joos, Niilo Rieser und Michael Stelzmüller als Schulprojekt an der HTBLA Leonding entwickelt. <a class="inline-link" href="projekt.html">Mehr über das Projekt und Team.</a></p></details>
-            </div></div>
-        </section>
-        <section class="next-page"><div class="container"><div><p class="eyebrow">INDOORO ENTDECKEN</p><h2>Dein Weg zum richtigen Regal.</h2><p>Lerne die Produktsuche und Navigationsvorschau kennen.</p></div><a class="button" href="produkt.html">Mehr erfahren <span aria-hidden="true">↗</span></a></div></section>
-    </main>
-    <footer class="site-footer">
-        <div class="container footer-layout">
-            <div><a class="brand" href="index.html">Indooro</a><p>Ein Projekt der HTBLA Leonding.</p><small>© <span id="year">2026</span> Indooro</small></div>
-            <nav aria-label="Footernavigation"><a href="index.html">Start</a><a href="produkt.html">Produkt</a><a href="technologie.html">Technologie</a><a href="projekt.html">Projekt & Team</a><a href="faq.html">FAQ</a></nav>
-            <p class="footer-status">Für iOS und Android.<br>Aktuell in Entwicklung.</p>
-        </div>
-    </footer>
+    <p><a href="index.html#/faq">Indooro öffnen</a></p>
 </body>
 </html>

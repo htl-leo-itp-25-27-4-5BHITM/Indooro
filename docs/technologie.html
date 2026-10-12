@@ -3,78 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#fafafa">
     <title>Technologie | Das System hinter Indooro</title>
-    <meta name="description" content="So greifen iOS- und Android-App, Bluetooth-Beacons, Java/Quarkus-Backend und Markt-Editor bei Indooro ineinander.">
-    <meta property="og:title" content="Technologie | Das System hinter Indooro">
-    <meta property="og:description" content="So greifen iOS- und Android-App, Bluetooth-Beacons, Java/Quarkus-Backend und Markt-Editor bei Indooro ineinander.">
-    <meta property="og:image" content="https://indooro.at/img/indooro.png">
-    <meta property="og:url" content="https://indooro.at/technologie.html">
-    <meta property="og:type" content="website">
-    <meta property="og:locale" content="de_AT">
-    <meta name="twitter:card" content="summary">
-    <meta name="twitter:image" content="https://indooro.at/img/indooro.png">
-    <link rel="canonical" href="https://indooro.at/technologie.html">
-    <link rel="icon" type="image/png" href="icons/favicon-96x96.png" sizes="96x96">
-    <link rel="shortcut icon" href="icons/favicon.ico">
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-    <link rel="manifest" href="icons/site.webmanifest">
-    <link rel="stylesheet" href="style.css">
-    <script src="script.js" defer></script>
+    <meta http-equiv="refresh" content="0; url=index.html#/technologie">
+    <link rel="canonical" href="https://indooro.at/">
+    <script>
+        const anchor = location.hash.slice(1);
+        location.replace('index.html#/technologie' + (anchor ? '/' + anchor : ''));
+    </script>
 </head>
 <body>
-    <a class="skip-link" href="#inhalt">Zum Inhalt</a>
-    <header class="site-header">
-        <nav class="nav container" aria-label="Hauptnavigation">
-            <a class="brand" href="index.html" aria-label="Indooro Startseite"><img src="icons/favicon-96x96.png" width="30" height="30" alt="">Indooro</a>
-            <button class="menu-toggle" type="button" aria-label="Menü öffnen" aria-expanded="false" aria-controls="nav-links"><span></span><span></span></button>
-            <div class="nav-links" id="nav-links">
-                <a href="index.html">Start</a>
-                <a href="produkt.html">Produkt</a>
-                <a href="technologie.html" aria-current="page">Technologie</a>
-                <a href="projekt.html">Projekt & Team</a>
-                <a href="faq.html">FAQ</a>
-                <a class="nav-cta" href="produkt.html#vorschau">Vorschau <span aria-hidden="true">↗</span></a>
-            </div>
-        </nav>
-    </header>
-    <main id="inhalt">
-        <section class="page-heading"><div class="container">
-            <p class="breadcrumb"><a href="index.html">Indooro</a><span aria-hidden="true">/</span>Technologie</p>
-            <p class="eyebrow">TECHNOLOGIE</p><h1>Das System hinter Indooro.</h1><p class="section-lead">Eine verständliche Route auf dem Display. Ein Zusammenspiel aus Ortung, Marktdaten und Routenberechnung im Hintergrund.</p>
-        </div></section>
-        <section class="technology section" id="technologie">
-            <div class="container">
-                <p class="eyebrow">HINTER DEM EINFACHEN STECKT EIN SYSTEM.</p>
-                <h2>Zusammen entwickelt.<br><span>Damit alles zusammenfindet.</span></h2>
-                <div class="system-flow" aria-label="System: iOS- und Android-App, Backend und Markt-Editor">
-                    <div><span class="system-symbol" aria-hidden="true">01</span><strong>Mobile Apps</strong><span>iOS & Android · Suchen & navigieren</span></div><span class="flow-connector" aria-hidden="true">↔</span>
-                    <div><span class="system-symbol" aria-hidden="true">02</span><strong>Backend</strong><span>Produkt- & Marktdaten</span></div><span class="flow-connector" aria-hidden="true">↔</span>
-                    <div><span class="system-symbol" aria-hidden="true">03</span><strong>Markt-Editor</strong><span>Regale & Produkte pflegen</span></div>
-                </div>
-                <div class="tech-details">
-                    <article><h3>Eine Route mit System.</h3><p>Die geplante Routenberechnung nutzt den A*-Algorithmus, um einen Weg durch den Markt zum gewünschten Regal zu ermitteln.</p></article>
-                    <article><h3>Daten am richtigen Platz.</h3><p>Das Java/Quarkus-Backend verbindet Produktdaten und Regalpositionen. Über den Web-Editor lassen sich diese Informationen pflegen.</p></article>
-                    <article><h3>Auf das Wesentliche fokussiert.</h3><p>Der Projektumfang umfasst Startposition und Zielroute. Ein fortlaufendes Live-Tracking der Bewegung ist nicht vorgesehen.</p></article>
-                </div>
-            </div>
-        </section>
-        <section class="section"><div class="container journey-layout">
-            <div><p class="eyebrow">VORAUSSETZUNGEN IM MARKT</p><h2>Eine gute Route<br>beginnt mit guten Daten.</h2><p class="section-lead">Indoor-Navigation braucht einen vorbereiteten Markt und ein gemeinsames Datenmodell.</p></div>
-            <ol class="steps">
-                <li><span>1</span><div><h3>Den Markt abbilden.</h3><p>Ein hinterlegter Grundriss beschreibt die begehbaren Wege und die Positionen der Regale.</p></div></li>
-                <li><span>2</span><div><h3>Produkte zuordnen.</h3><p>Produkte werden mit ihrem Regalplatz verknüpft. Der Editor dient zur Pflege dieser Zuordnungen.</p></div></li>
-                <li><span>3</span><div><h3>Startsignale bereitstellen.</h3><p>Bluetooth-Beacons im Geschäft liefern die Signale für die Erkennung der Startposition.</p></div></li>
-            </ol>
-        </div></section>
-        <section class="next-page"><div class="container"><div><p class="eyebrow">DAS PROJEKT</p><h2>Entwickelt in Leonding.</h2><p>Lerne die Idee, das Team und die Ziele hinter Indooro kennen.</p></div><a class="button" href="projekt.html">Mehr erfahren <span aria-hidden="true">↗</span></a></div></section>
-    </main>
-    <footer class="site-footer">
-        <div class="container footer-layout">
-            <div><a class="brand" href="index.html">Indooro</a><p>Ein Projekt der HTBLA Leonding.</p><small>© <span id="year">2026</span> Indooro</small></div>
-            <nav aria-label="Footernavigation"><a href="index.html">Start</a><a href="produkt.html">Produkt</a><a href="technologie.html">Technologie</a><a href="projekt.html">Projekt & Team</a><a href="faq.html">FAQ</a></nav>
-            <p class="footer-status">Für iOS und Android.<br>Aktuell in Entwicklung.</p>
-        </div>
-    </footer>
+    <p><a href="index.html#/technologie">Indooro öffnen</a></p>
 </body>
 </html>

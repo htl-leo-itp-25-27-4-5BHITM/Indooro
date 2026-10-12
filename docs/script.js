@@ -24,38 +24,53 @@ window.matchMedia('(min-width: 601px)').addEventListener('change', closeMenu);
 document.querySelector('#year').textContent = new Date().getFullYear();
 
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const revealTargets = document.querySelectorAll(
+const revealSelector =
     '.hero-copy > *, .page-heading .eyebrow, .page-heading h1, .page-heading .section-lead, ' +
     '.phone, .overview-grid article, .benefits article, .steps li, .tech-details article, ' +
     '.system-flow > div, .project-heading, .project-story > p, .team, .project-facts, ' +
-    '.section > .container > h2, .next-page .container'
-);
-const revealed = new WeakSet();
+    '.section > .container > h2, .next-page .container';
+let revealed = new WeakSet();
 const entranceAnimations = new Set();
+const pendingEntrances = new Map();
 const revealObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
     entries.forEach(({ target, isIntersecting }) => {
-        if (!isIntersecting) return;
+        if (!isIntersecting || !target.isConnected) return;
         revealObserver.unobserve(target);
         revealed.add(target);
-        if (reducedMotion.matches || typeof target.animate !== 'function') return;
-        const siblings = [...target.parentElement.children];
-        const delay = Math.min(siblings.indexOf(target), 3) * 55;
-        const animation = target.animate([
-            { opacity: 0, transform: 'translateY(16px)' },
-            { opacity: 1, transform: 'translateY(0)' }
-        ], { duration: 620, delay, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'backwards' });
-        entranceAnimations.add(animation);
-        animation.finished.catch(() => {}).finally(() => entranceAnimations.delete(animation));
+        const animation = pendingEntrances.get(target);
+        if (!animation) return;
+        if (reducedMotion.matches || target.contains(document.activeElement)) animation.cancel();
+        else animation.play();
     });
-}, { threshold: 0.12 }) : null;
+}, { threshold: 0, rootMargin: '0px 0px 64px 0px' }) : null;
 
 function observeEntrances() {
-    if (reducedMotion.matches) return;
-    revealTargets.forEach(target => {
-        if (!revealed.has(target)) revealObserver?.observe(target);
+    if (reducedMotion.matches || !revealObserver) return;
+    document.querySelectorAll(revealSelector).forEach(target => {
+        if (revealed.has(target) || pendingEntrances.has(target)) return;
+        // Never reset an element that is already visible; prepare below-viewport entries before scrolling.
+        if (target.getBoundingClientRect().top < window.innerHeight || typeof target.animate !== 'function') {
+            revealed.add(target);
+            return;
+        }
+        const siblings = [...target.parentElement.children];
+        const delay = Math.min(siblings.indexOf(target), 3) * 40;
+        const animation = target.animate([
+            { opacity: 0, transform: 'translateY(12px)' },
+            { opacity: 1, transform: 'translateY(0)' }
+        ], { duration: 550, delay, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' });
+        animation.pause();
+        animation.currentTime = 0;
+        pendingEntrances.set(target, animation);
+        entranceAnimations.add(animation);
+        animation.finished.catch(() => {}).finally(() => {
+            if (pendingEntrances.get(target) === animation) pendingEntrances.delete(target);
+            entranceAnimations.delete(animation);
+            animation.cancel();
+        });
+        revealObserver.observe(target);
     });
 }
-observeEntrances();
 document.addEventListener('focusin', event => {
     entranceAnimations.forEach(animation => {
         if (animation.effect.target.contains(event.target)) animation.cancel();
@@ -69,8 +84,8 @@ function updateHeader() {
 window.addEventListener('scroll', updateHeader, { passive: true });
 updateHeader();
 
-const canvas = document.querySelector('#store-map');
-const context = canvas?.getContext('2d');
+let canvas;
+let context;
 let routeFrame = null;
 let activeProduct;
 // Fixed example routes illustrate the concept without connecting to live market data.
@@ -157,6 +172,7 @@ reducedMotion.addEventListener('change', () => {
     if (reducedMotion.matches) {
         revealObserver?.disconnect();
         entranceAnimations.forEach(animation => animation.cancel());
+        pendingEntrances.clear();
         cancelAnimationFrame(routeFrame);
         routeFrame = null;
         if (activeProduct) drawMap(activeProduct);
@@ -165,13 +181,128 @@ reducedMotion.addEventListener('change', () => {
     }
 });
 
-document.querySelectorAll('[data-product]').forEach(button => {
-    button.addEventListener('click', () => {
-        const product = products[button.dataset.product];
-        document.querySelectorAll('[data-product]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
-        document.querySelector('#destination').textContent = product.name;
-        document.querySelector('#aisle').textContent = product.aisle;
-        showRoute(product);
-    });
+document.addEventListener('click', event => {
+    const button = event.target.closest('[data-product]');
+    if (!button) return;
+    const product = products[button.dataset.product];
+    document.querySelectorAll('[data-product]').forEach(item => item.setAttribute('aria-pressed', String(item === button)));
+    document.querySelector('#destination').textContent = product.name;
+    document.querySelector('#aisle').textContent = product.aisle;
+    showRoute(product);
 });
-drawMap(products.milk);
+
+const main = document.querySelector('#inhalt');
+const homeContent = document.createDocumentFragment();
+homeContent.append(...main.childNodes);
+const views = new Map([['start', {
+    content: homeContent,
+    title: document.title,
+    description: document.querySelector('meta[name="description"]').content
+}]]);
+document.querySelectorAll('template[data-view]').forEach(template => {
+    views.set(template.dataset.view, {
+        content: template.content,
+        title: template.dataset.title,
+        description: template.dataset.description
+    });
+    template.remove();
+});
+const scrollPositions = new Map();
+let currentView;
+let currentHash;
+let linkNavigation = false;
+history.scrollRestoration = 'manual';
+
+function readRoute() {
+    if (!location.hash || location.hash === '#') return { view: 'start', anchor: '' };
+    if (!location.hash.startsWith('#/')) {
+        return { view: currentView || 'start', anchor: location.hash.slice(1) };
+    }
+    const [name, anchor = ''] = location.hash.slice(2).split('/');
+    const view = name || 'start';
+    if (!views.has(view)) {
+        history.replaceState(history.state, '', '#/');
+        return { view: 'start', anchor: '' };
+    }
+    return { view, anchor };
+}
+
+function initializePreview() {
+    canvas = main.querySelector('#store-map');
+    context = canvas?.getContext('2d');
+    const selected = main.querySelector('[data-product][aria-pressed="true"]');
+    activeProduct = selected ? products[selected.dataset.product] : null;
+    if (activeProduct) drawMap(activeProduct);
+}
+
+function renderRoute({ initial = false, restoreScroll = true } = {}) {
+    const route = readRoute();
+    if (currentHash !== undefined) scrollPositions.set(currentHash, window.scrollY);
+    const viewChanged = currentView !== route.view;
+    if (viewChanged) {
+        revealObserver?.disconnect();
+        entranceAnimations.forEach(animation => animation.cancel());
+        pendingEntrances.clear();
+        revealed = new WeakSet();
+        cancelAnimationFrame(routeFrame);
+        routeFrame = null;
+        // Retain each detached view so product selections and open FAQs survive navigation.
+        if (currentView) views.get(currentView).content.append(...main.childNodes);
+        const view = views.get(route.view);
+        main.replaceChildren(view.content);
+        main.dataset.view = route.view;
+        currentView = route.view;
+        document.title = view.title;
+        document.querySelector('meta[name="description"]').content = view.description;
+        document.querySelector('meta[property="og:title"]').content = view.title;
+        document.querySelector('meta[property="og:description"]').content = view.description;
+        initializePreview();
+    }
+    document.querySelectorAll('.nav-links a, .footer-layout nav a').forEach(link => {
+        const active = link.getAttribute('href') === `#/${route.view === 'start' ? '' : route.view}`;
+        if (active) link.setAttribute('aria-current', 'page');
+        else link.removeAttribute('aria-current');
+    });
+    closeMenu();
+    currentHash = location.hash || '#/';
+    const anchor = route.anchor ? main.querySelector(`#${CSS.escape(route.anchor)}`) : null;
+    if (anchor) anchor.scrollIntoView({ behavior: 'instant', block: 'start' });
+    else window.scrollTo({ top: restoreScroll ? scrollPositions.get(currentHash) || 0 : 0, behavior: 'instant' });
+    if (!initial) {
+        const focusTarget = anchor || main.querySelector('h1');
+        focusTarget?.setAttribute('tabindex', '-1');
+        focusTarget?.focus({ preventScroll: true });
+    }
+    updateHeader();
+    observeEntrances();
+    if (viewChanged && !initial && !reducedMotion.matches && typeof main.animate === 'function') {
+        const animation = main.animate([{ opacity: 0.8 }, { opacity: 1 }], { duration: 200, easing: 'ease-out' });
+        entranceAnimations.add(animation);
+        animation.finished.catch(() => {}).finally(() => entranceAnimations.delete(animation));
+    }
+}
+
+document.addEventListener('click', event => {
+    if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    const link = event.target.closest('a[href]');
+    if (!link || link.target === '_blank') return;
+    const href = link.getAttribute('href');
+    if (href === '#inhalt') {
+        event.preventDefault();
+        main.setAttribute('tabindex', '-1');
+        main.focus({ preventScroll: true });
+        main.scrollIntoView({ behavior: 'instant', block: 'start' });
+    } else if (href.startsWith('#/')) {
+        event.preventDefault();
+        if (location.hash === href) renderRoute({ restoreScroll: false });
+        else {
+            linkNavigation = true;
+            location.hash = href;
+        }
+    }
+});
+window.addEventListener('hashchange', () => {
+    renderRoute({ restoreScroll: !linkNavigation });
+    linkNavigation = false;
+});
+renderRoute({ initial: true });

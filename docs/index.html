@@ -26,26 +26,26 @@
     <a class="skip-link" href="#inhalt">Zum Inhalt</a>
     <header class="site-header">
         <nav class="nav container" aria-label="Hauptnavigation">
-            <a class="brand" href="index.html" aria-label="Indooro Startseite"><img src="icons/favicon-96x96.png" width="30" height="30" alt="">Indooro</a>
+            <a class="brand" href="#/" aria-label="Indooro Startseite"><img src="icons/favicon-96x96.png" width="30" height="30" alt="">Indooro</a>
             <button class="menu-toggle" type="button" aria-label="Menü öffnen" aria-expanded="false" aria-controls="nav-links"><span></span><span></span></button>
             <div class="nav-links" id="nav-links">
-                <a href="index.html" aria-current="page">Start</a>
-                <a href="produkt.html">Produkt</a>
-                <a href="technologie.html">Technologie</a>
-                <a href="projekt.html">Projekt & Team</a>
-                <a href="faq.html">FAQ</a>
-                <a class="nav-cta" href="produkt.html#vorschau">Vorschau <span aria-hidden="true">↗</span></a>
+                <a href="#/" aria-current="page">Start</a>
+                <a href="#/produkt">Produkt</a>
+                <a href="#/technologie">Technologie</a>
+                <a href="#/projekt">Projekt & Team</a>
+                <a href="#/faq">FAQ</a>
+                <a class="nav-cta" href="#/produkt/vorschau">Vorschau <span aria-hidden="true">↗</span></a>
             </div>
         </nav>
     </header>
-    <main id="inhalt">
+    <main id="inhalt" data-view="start">
         <section class="hero" aria-labelledby="hero-title">
             <div class="hero-copy container">
                 <p class="eyebrow">INDOOR-NAVIGATION FÜR DEINEN EINKAUF</p>
                 <h1 id="hero-title">Indooro.</h1>
                 <p class="hero-headline">Dein Weg zum richtigen Regal.</p>
                 <p class="hero-description">Weniger suchen. Mehr finden.<br> Entdecke einen einfacheren Weg durch den Supermarkt.</p>
-                <a class="button" href="produkt.html">Indooro erleben <span aria-hidden="true">↗</span></a>
+                <a class="button" href="#/produkt">Indooro erleben <span aria-hidden="true">↗</span></a>
                 <p class="availability">Für iOS und Android. Aktuell in Entwicklung.</p>
             </div>
             <div class="product-stage" id="vorschau">
@@ -75,17 +75,142 @@
         <section class="section home-overview"><div class="container">
             <p class="eyebrow">INDOORO ENTDECKEN</p><h2>Einfach finden.<br><span>Von der Idee bis zum Regal.</span></h2>
             <div class="overview-grid">
-                <article><span class="feature-number">01 / DAS PRODUKT</span><h3>Orientierung für deinen Einkauf.</h3><p>Produktsuche, Marktplan und Zielroute. Erfahre, wie Indooro den Weg zum richtigen Regal zeigt.</p><a class="text-link" href="produkt.html">Indooro kennenlernen <span aria-hidden="true">↗</span></a></article>
-                <article><span class="feature-number">02 / DIE TECHNOLOGIE</span><h3>Ein System, das zusammenarbeitet.</h3><p>App, Backend und Markt-Editor verbinden Produktdaten mit dem Grundriss des Geschäfts.</p><a class="text-link" href="technologie.html">Das System entdecken <span aria-hidden="true">↗</span></a></article>
-                <article><span class="feature-number">03 / DAS PROJEKT</span><h3>Eine Idee aus dem Alltag.</h3><p>Fünf Schüler aus Leonding entwickeln eine Antwort auf eine häufige Frage im Supermarkt.</p><a class="text-link" href="projekt.html">Das Team kennenlernen <span aria-hidden="true">↗</span></a></article>
+                <article><span class="feature-number">01 / DAS PRODUKT</span><h3>Orientierung für deinen Einkauf.</h3><p>Produktsuche, Marktplan und Zielroute. Erfahre, wie Indooro den Weg zum richtigen Regal zeigt.</p><a class="text-link" href="#/produkt">Indooro kennenlernen <span aria-hidden="true">↗</span></a></article>
+                <article><span class="feature-number">02 / DIE TECHNOLOGIE</span><h3>Ein System, das zusammenarbeitet.</h3><p>App, Backend und Markt-Editor verbinden Produktdaten mit dem Grundriss des Geschäfts.</p><a class="text-link" href="#/technologie">Das System entdecken <span aria-hidden="true">↗</span></a></article>
+                <article><span class="feature-number">03 / DAS PROJEKT</span><h3>Eine Idee aus dem Alltag.</h3><p>Fünf Schüler aus Leonding entwickeln eine Antwort auf eine häufige Frage im Supermarkt.</p><a class="text-link" href="#/projekt">Das Team kennenlernen <span aria-hidden="true">↗</span></a></article>
             </div>
         </div></section>
-        <section class="next-page"><div class="container"><div><p class="eyebrow">GUT ZU WISSEN</p><h2>Noch Fragen zu Indooro?</h2><p>Verfügbarkeit, Funktionsweise und Projektumfang auf einen Blick.</p></div><a class="button" href="faq.html">Mehr erfahren <span aria-hidden="true">↗</span></a></div></section>
+        <section class="next-page"><div class="container"><div><p class="eyebrow">GUT ZU WISSEN</p><h2>Noch Fragen zu Indooro?</h2><p>Verfügbarkeit, Funktionsweise und Projektumfang auf einen Blick.</p></div><a class="button" href="#/faq">Mehr erfahren <span aria-hidden="true">↗</span></a></div></section>
     </main>
+    <template data-view="produkt" data-title="Produkt | Indooro für iOS und Android" data-description="Entdecke die Produktsuche und Indoor-Navigation von Indooro: vom Startpunkt im Supermarkt zum richtigen Regal.">
+        <section class="page-heading"><div class="container">
+            <p class="breadcrumb"><a href="#/">Indooro</a><span aria-hidden="true">/</span>Produkt</p>
+            <p class="eyebrow">PRODUKT</p><h1>Indooro für iOS und Android.</h1><p class="section-lead">Dein Produkt suchen. Deinen Weg sehen. Das richtige Regal finden. Indooro verbindet Orientierung und Produktsuche auf deinem Smartphone. Wir entwickeln die App für iOS und Android.</p>
+        </div></section>
+        <section class="product-preview" aria-label="Interaktive Produktvorschau"><div class="product-stage" id="vorschau">
+                <div class="stage-label label-left" aria-hidden="true"><span class="label-index">01</span> Dein Produkt.<br><strong>Einfach gefunden.</strong></div>
+                <figure class="phone">
+                    <div class="phone-device">
+                    <div class="phone-island" aria-hidden="true"></div>
+                    <div class="phone-screen">
+                        <div class="phone-top"><span>9:41</span><span aria-hidden="true">••• ▰</span></div>
+                        <div class="app-heading"><span>Indooro</span><span class="demo-tag">Demo</span></div>
+                        <p class="app-greeting">Was suchst du?</p>
+                        <div class="product-picker" role="group" aria-label="Produkt für die Navigationsvorschau auswählen">
+                            <button type="button" data-product="milk" aria-pressed="true">Hafermilch</button>
+                            <button type="button" data-product="apple" aria-pressed="false">Äpfel</button>
+                            <button type="button" data-product="bread" aria-pressed="false">Brot</button>
+                        </div>
+                        <canvas id="store-map" width="480" height="460" role="img" aria-label="Beispielgrundriss mit Route vom Eingang zur Hafermilch im Regal 3"></canvas>
+                        <div class="route-result" aria-live="polite" aria-atomic="true"><span class="destination-dot" aria-hidden="true"></span><div><strong id="destination">Hafermilch</strong><span id="aisle">Regal 3 · Milch & Alternativen</span></div><span aria-hidden="true">↗</span></div>
+                        <div class="home-indicator" aria-hidden="true"></div>
+                    </div>
+                    </div>
+                    <figcaption>Illustrative Produktvorschau</figcaption>
+                </figure>
+                <div class="stage-label label-right" aria-hidden="true"><span class="label-index">02</span> Dein Weg.<br><strong>Klar vor Augen.</strong></div>
+            </div>
+        </section>
+        <section class="intro section" id="erlebnis">
+            <div class="container">
+                <p class="eyebrow">EINKAUFEN. MIT ORIENTIERUNG.</p>
+                <h2>Du weißt, was du brauchst.<br><span>Indooro zeigt dir, wo.</span></h2>
+                <p class="section-lead">Ein unbekannter Markt. Ein bestimmtes Produkt. Und die Frage nach dem richtigen Gang. Indooro bringt Produktsuche und Orientierung zusammen, direkt auf deinem Smartphone.</p>
+                <div class="benefits">
+                    <article><span class="feature-number">01 / SUCHEN</span><h3>Ein Produkt.<br>Ein klares Ziel.</h3><p>Suche nach dem Artikel, den du brauchst. Der hinterlegte Regalplatz macht aus deiner Suche ein konkretes Ziel.</p></article>
+                    <article><span class="feature-number">02 / ORIENTIEREN</span><h3>Der Markt.<br>Auf einen Blick.</h3><p>Ein übersichtlicher Grundriss zeigt Startpunkt, Ziel und den Weg dazwischen. Damit du weißt, wohin du gehen musst.</p></article>
+                    <article><span class="feature-number">03 / FINDEN</span><h3>Dein Einkauf.<br>Einfacher gedacht.</h3><p>Vom Eingang zum richtigen Regal. Für mehr Orientierung im Geschäft und weniger Umwege bei der Produktsuche.</p></article>
+                </div>
+            </div>
+        </section>
+        <section class="journey section">
+            <div class="container journey-layout">
+                <div><p class="eyebrow">VOM START ZUM REGAL</p><h2>Ein Ziel.<br>Drei Schritte.</h2><p class="section-lead">Die Informationen, die du brauchst.<br>Genau dort, wo du sie brauchst.</p><a class="text-link" href="#/produkt/vorschau">Vorschau ausprobieren <span aria-hidden="true">↗</span></a></div>
+                <ol class="steps">
+                    <li><span>1</span><div><h3>Im Markt ankommen.</h3><p>Bluetooth-Beacons liefern Signale zur Bestimmung deiner Startposition im Geschäft.</p></div></li>
+                    <li><span>2</span><div><h3>Dein Produkt auswählen.</h3><p>Die Suche verbindet deinen gewünschten Artikel mit seinem Platz im Markt.</p></div></li>
+                    <li><span>3</span><div><h3>Dem Weg folgen.</h3><p>Indooro berechnet eine Route ab deinem Startpunkt und stellt sie im Grundriss dar.</p></div></li>
+                </ol>
+            </div>
+        </section>
+        <section class="next-page"><div class="container"><div><p class="eyebrow">DIE TECHNOLOGIE</p><h2>Einfach im Alltag. Durchdacht im Hintergrund.</h2><p>Entdecke das Zusammenspiel von App, Marktdaten und Editor.</p></div><a class="button" href="#/technologie">Mehr erfahren <span aria-hidden="true">↗</span></a></div></section>
+
+    </template>
+    <template data-view="technologie" data-title="Technologie | Das System hinter Indooro" data-description="So greifen iOS- und Android-App, Bluetooth-Beacons, Java/Quarkus-Backend und Markt-Editor bei Indooro ineinander.">
+        <section class="page-heading"><div class="container">
+            <p class="breadcrumb"><a href="#/">Indooro</a><span aria-hidden="true">/</span>Technologie</p>
+            <p class="eyebrow">TECHNOLOGIE</p><h1>Das System hinter Indooro.</h1><p class="section-lead">Eine verständliche Route auf dem Display. Ein Zusammenspiel aus Ortung, Marktdaten und Routenberechnung im Hintergrund.</p>
+        </div></section>
+        <section class="technology section" id="technologie">
+            <div class="container">
+                <p class="eyebrow">HINTER DEM EINFACHEN STECKT EIN SYSTEM.</p>
+                <h2>Zusammen entwickelt.<br><span>Damit alles zusammenfindet.</span></h2>
+                <div class="system-flow" aria-label="System: iOS- und Android-App, Backend und Markt-Editor">
+                    <div><span class="system-symbol" aria-hidden="true">01</span><strong>Mobile Apps</strong><span>iOS & Android · Suchen & navigieren</span></div><span class="flow-connector" aria-hidden="true">↔</span>
+                    <div><span class="system-symbol" aria-hidden="true">02</span><strong>Backend</strong><span>Produkt- & Marktdaten</span></div><span class="flow-connector" aria-hidden="true">↔</span>
+                    <div><span class="system-symbol" aria-hidden="true">03</span><strong>Markt-Editor</strong><span>Regale & Produkte pflegen</span></div>
+                </div>
+                <div class="tech-details">
+                    <article><h3>Eine Route mit System.</h3><p>Die geplante Routenberechnung nutzt den A*-Algorithmus, um einen Weg durch den Markt zum gewünschten Regal zu ermitteln.</p></article>
+                    <article><h3>Daten am richtigen Platz.</h3><p>Das Java/Quarkus-Backend verbindet Produktdaten und Regalpositionen. Über den Web-Editor lassen sich diese Informationen pflegen.</p></article>
+                    <article><h3>Auf das Wesentliche fokussiert.</h3><p>Der Projektumfang umfasst Startposition und Zielroute. Ein fortlaufendes Live-Tracking der Bewegung ist nicht vorgesehen.</p></article>
+                </div>
+            </div>
+        </section>
+        <section class="section"><div class="container journey-layout">
+            <div><p class="eyebrow">VORAUSSETZUNGEN IM MARKT</p><h2>Eine gute Route<br>beginnt mit guten Daten.</h2><p class="section-lead">Indoor-Navigation braucht einen vorbereiteten Markt und ein gemeinsames Datenmodell.</p></div>
+            <ol class="steps">
+                <li><span>1</span><div><h3>Den Markt abbilden.</h3><p>Ein hinterlegter Grundriss beschreibt die begehbaren Wege und die Positionen der Regale.</p></div></li>
+                <li><span>2</span><div><h3>Produkte zuordnen.</h3><p>Produkte werden mit ihrem Regalplatz verknüpft. Der Editor dient zur Pflege dieser Zuordnungen.</p></div></li>
+                <li><span>3</span><div><h3>Startsignale bereitstellen.</h3><p>Bluetooth-Beacons im Geschäft liefern die Signale für die Erkennung der Startposition.</p></div></li>
+            </ol>
+        </div></section>
+        <section class="next-page"><div class="container"><div><p class="eyebrow">DAS PROJEKT</p><h2>Entwickelt in Leonding.</h2><p>Lerne die Idee, das Team und die Ziele hinter Indooro kennen.</p></div><a class="button" href="#/projekt">Mehr erfahren <span aria-hidden="true">↗</span></a></div></section>
+
+    </template>
+    <template data-view="projekt" data-title="Projekt & Team | Indooro" data-description="Die Idee, das Team und die Projektziele von Indooro. Entwickelt von fünf Schülern der HTBLA Leonding.">
+        <section class="page-heading"><div class="container">
+            <p class="breadcrumb"><a href="#/">Indooro</a><span aria-hidden="true">/</span>Projekt & Team</p>
+            <p class="eyebrow">PROJEKT & TEAM</p><h1>Eine Idee. Ein Team. Indooro.</h1><p class="section-lead">Entstanden im Supermarkt. Entwickelt an der HTBLA Leonding. Mit dem Ziel, die Orientierung beim Einkauf einfacher zu machen.</p>
+        </div></section>
+        <section class="project section" id="projekt">
+            <div class="container">
+                <div class="project-heading"><div><p class="eyebrow">AUS EINER ALLTAGSFRAGE WIRD EINE IDEE.</p><h2>Für den Einkauf gedacht.<br>In Leonding entwickelt.</h2></div><img src="img/indooro.png" width="160" height="160" loading="lazy" alt="Indooro: Einkaufswagen mit Weg und Standortmarkierung"></div>
+                <div class="project-story"><p>Die Idee zu Indooro entstand bei der Samstagsarbeit im Supermarkt: Immer wieder suchen Menschen nach einem Produkt und brauchen Hilfe, um das richtige Regal zu finden.</p><p>Wir sind fünf Schüler der HTBLA Leonding und entwickeln dafür eine Lösung aus App, Backend und Editor. Unser Ziel ist eine funktionierende Indoor-Navigation, die wir als Gesamtsystem testen und weiterentwickeln.</p></div>
+                <div class="project-meta"><span><i aria-hidden="true"></i> In Entwicklung</span><span>Projektabschluss geplant: Schuljahr 2026/27</span></div>
+                <div class="team"><h3>Das Team hinter Indooro.</h3><ul><li>Erik Bergmair<span>App-Entwicklung</span></li><li>David Berghahn<span>App & Ortungshardware</span></li><li>Fabian Joos<span>Server-Entwicklung</span></li><li>Niilo Rieser<span>Server-Entwicklung</span></li><li>Michael Stelzmüller<span>Ortungshardware</span></li></ul><p>Projektauftraggeber: Dietmar Steiner, Christian Aberger und Dejan Sivak.</p></div>
+            </div>
+        </section>
+        <section class="section project-goal"><div class="container journey-layout">
+            <div><p class="eyebrow">UNSER PROJEKTZIEL</p><h2>Von einzelnen Teilen<br>zu einer Lösung.</h2><p class="section-lead">Der Erfolg wird daran gemessen, ob Signalerkennung, Produktsuche und Routendarstellung zusammen funktionieren.</p></div>
+            <div class="project-facts"><dl><div><dt>Entwicklungsrahmen</dt><dd>Schulprojekt an der HTBLA Leonding</dd></div><div><dt>Projektumfang</dt><dd>iOS- und Android-App, Backend und Web-Editor</dd></div><div><dt>Geplanter Abschluss</dt><dd>Mitte des Schuljahres 2026/27</dd></div><div><dt>Erprobung</dt><dd>Integration und Tests des Gesamtsystems</dd></div></dl></div>
+        </div></section>
+        <section class="next-page"><div class="container"><div><p class="eyebrow">DAS PRODUKT</p><h2>Erlebe die Idee in der Vorschau.</h2><p>Entdecke, wie aus einer Produktsuche ein Weg zum Regal wird.</p></div><a class="button" href="#/produkt">Mehr erfahren <span aria-hidden="true">↗</span></a></div></section>
+
+    </template>
+    <template data-view="faq" data-title="Häufige Fragen | Indooro" data-description="Antworten auf Fragen zu Indooro: App-Verfügbarkeit, Indoor-Navigation, Startposition, Märkte und Projektteam.">
+        <section class="page-heading"><div class="container">
+            <p class="breadcrumb"><a href="#/">Indooro</a><span aria-hidden="true">/</span>FAQ</p>
+            <p class="eyebrow">FAQ</p><h1>Deine Fragen. Unsere Antworten.</h1><p class="section-lead">Alles Wissenswerte zu Indooro, zur Navigation im Markt und zum aktuellen Entwicklungsstand.</p>
+        </div></section>
+        <section class="questions section">
+            <div class="container faq-layout"><div><p class="eyebrow">HÄUFIGE FRAGEN</p><h2>Gut zu wissen.</h2><p class="faq-aside">Mehr Hintergründe findest du auf der <a class="inline-link" href="#/technologie">Technologieseite</a> und der <a class="inline-link" href="#/projekt">Projektseite</a>.</p></div><div class="faq-list">
+                <details><summary>Kann ich Indooro schon herunterladen?</summary><p>Indooro befindet sich in Entwicklung. Die Apps für iOS und Android werden entwickelt. Aktuell stehen auf dieser Website keine Downloads aus dem App Store oder Google Play zur Verfügung. Die Vorschau zeigt das Prinzip der Produktsuche und Routendarstellung.</p></details>
+                <details><summary>Für welche Smartphones wird Indooro entwickelt?</summary><p>Indooro wird für iOS und Android entwickelt, damit du die App sowohl auf dem iPhone als auch auf einem Android-Smartphone nutzen kannst. Beide Versionen befinden sich aktuell in Entwicklung.</p></details>
+                <details><summary>Funktioniert Indooro in jedem Supermarkt?</summary><p>Für die Navigation müssen der Grundriss, die Regalpositionen und die Produktdaten eines Markts hinterlegt sein. Zusätzlich braucht die Startpositionserkennung passende Signalgeber vor Ort.</p></details>
+                <details><summary>Was zeigt die interaktive Vorschau?</summary><p>Du kannst zwischen drei Beispielprodukten wechseln und ihre Position auf einem vereinfachten Marktplan sehen. Die Darstellung ist eine Illustration, kein Screenshot einer fertigen App und keine Verbindung zu einem realen Markt.</p></details>
+                <details><summary>Wie wird meine Position bestimmt?</summary><p>Im vorgesehenen System liefern Bluetooth-Beacons im Geschäft Signale für die Erkennung der Startposition. Die Route wird von diesem Startpunkt zum ausgewählten Regal berechnet.</p></details>
+                <details><summary>Wird meine Bewegung live verfolgt?</summary><p>Fortlaufendes Live-Tracking ist nicht Teil des Projektumfangs. Indooro konzentriert sich auf die Bestimmung des Startpunkts und die Darstellung der Zielroute.</p></details>
+                <details><summary>Wer entwickelt Indooro?</summary><p>Indooro wird von Erik Bergmair, David Berghahn, Fabian Joos, Niilo Rieser und Michael Stelzmüller als Schulprojekt an der HTBLA Leonding entwickelt. <a class="inline-link" href="#/projekt">Mehr über das Projekt und Team.</a></p></details>
+            </div></div>
+        </section>
+        <section class="next-page"><div class="container"><div><p class="eyebrow">INDOORO ENTDECKEN</p><h2>Dein Weg zum richtigen Regal.</h2><p>Lerne die Produktsuche und Navigationsvorschau kennen.</p></div><a class="button" href="#/produkt">Mehr erfahren <span aria-hidden="true">↗</span></a></div></section>
+
+    </template>
     <footer class="site-footer">
         <div class="container footer-layout">
-            <div><a class="brand" href="index.html">Indooro</a><p>Ein Projekt der HTBLA Leonding.</p><small>© <span id="year">2026</span> Indooro</small></div>
-            <nav aria-label="Footernavigation"><a href="index.html">Start</a><a href="produkt.html">Produkt</a><a href="technologie.html">Technologie</a><a href="projekt.html">Projekt & Team</a><a href="faq.html">FAQ</a></nav>
+            <div><a class="brand" href="#/">Indooro</a><p>Ein Projekt der HTBLA Leonding.</p><small>© <span id="year">2026</span> Indooro</small></div>
+            <nav aria-label="Footernavigation"><a href="#/">Start</a><a href="#/produkt">Produkt</a><a href="#/technologie">Technologie</a><a href="#/projekt">Projekt & Team</a><a href="#/faq">FAQ</a></nav>
             <p class="footer-status">Für iOS und Android.<br>Aktuell in Entwicklung.</p>
         </div>
     </footer>
