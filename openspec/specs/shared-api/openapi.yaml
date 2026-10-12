@@ -710,11 +710,11 @@ paths:
       tags: [maintenance]
       operationId: createProductIndex
       summary: Create the product index with its mapping.
-      description: Reports success even when creation fails (finding BUG-11).
+      description: Idempotently creates the product index; initialization errors are reported to the caller.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
-      x-indooro-access: authenticated
+      x-indooro-access: role:admin
       x-indooro-consumers: [api-tests]
-      x-indooro-findings: [SEC-06, BUG-11, BUG-12]
+      x-indooro-findings: [BUG-12]
       responses:
         "200":
           description: Message.
@@ -722,15 +722,16 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/MessageResponse" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/admin/index:
     delete:
       tags: [maintenance]
       operationId: deleteProductIndex
       summary: Delete the product index (destructive).
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
-      x-indooro-access: authenticated
+      x-indooro-access: role:admin
       x-indooro-consumers: [api-tests]
-      x-indooro-findings: [SEC-06, BUG-11]
       responses:
         "200":
           description: Message.
@@ -738,6 +739,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/MessageResponse" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/admin/health:
     get:
       tags: [maintenance]

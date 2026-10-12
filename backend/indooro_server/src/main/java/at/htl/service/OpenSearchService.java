@@ -321,12 +321,8 @@ public class OpenSearchService {
      * Löscht den Index
      */
     public void deleteIndex() throws IOException {
-        try {
-            client.indices().delete(d -> d.index(indexName));
-            LOG.info("Index " + indexName + " deleted successfully");
-        } catch (Exception e) {
-            LOG.warn("Could not delete index: " + e.getMessage());
-        }
+        client.indices().delete(d -> d.index(indexName));
+        LOG.info("Index " + indexName + " deleted successfully");
     }
 
     private String normalizeOptionalFilter(String value) {
