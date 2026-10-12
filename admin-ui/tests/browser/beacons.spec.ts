@@ -132,3 +132,48 @@ test("scoped staff can assign within scope but cannot create or bulk create", as
   await expect(page.getByRole("button", { name: "Freigeben" })).toBeVisible();
   expect(writes).toBe(1);
 });
+
+test("beacon inventory shows empty state and retries load failures", async ({ page }) => {
+  let inventoryCalls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [], page: 0, size: 100, totalElements: 0 } }));
+  await page.route("**/api/beacons**", (route) => {
+    if (route.request().method() !== "GET") throw new Error("Unexpected write during inventory loading");
+    inventoryCalls += 1;
+    return inventoryCalls === 1
+      ? route.fulfill({ status: 503, json: { error: "Inventar vorübergehend nicht verfügbar" } })
+      : route.fulfill({ json: [] });
+  });
+  await page.goto("/admin/next/beacons/");
+  await expect(page.getByRole("alert")).toContainText("Serverfehler");
+  await page.getByRole("button", { name: "Erneut laden" }).click();
+  await expect(page.getByText("Keine Beacons passen zu Suche, Filtern oder Zugriff.")).toBeVisible();
+  expect(inventoryCalls).toBe(2);
+});
+
+test("admin can create a beacon with keyboard controls and see the saved row", async ({ page }) => {
+  const records: ReturnType<typeof beacon>[] = [];
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [], page: 0, size: 100, totalElements: 0 } }));
+  await page.route("**/api/beacons**", (route) => {
+    const request = route.request();
+    if (request.method() === "GET") return route.fulfill({ json: records });
+    const body = request.postDataJSON();
+    const created = { ...beacon("keyboard-beacon", body.beaconCode, body.minor), uuid: body.uuid, major: body.major, identityKey: `${body.uuid}:${body.major}:${body.minor}`, notes: body.notes };
+    records.push(created);
+    return route.fulfill({ json: created });
+  });
+  await page.goto("/admin/next/beacons/");
+  await page.getByRole("button", { name: "Beacon anlegen" }).focus();
+  await page.keyboard.press("Enter");
+  const code = page.getByRole("textbox", { name: "Beacon-Code" });
+  await code.focus();
+  await page.keyboard.type("KB-01");
+  const uuidField = page.getByRole("textbox", { name: "UUID" });
+  await uuidField.focus();
+  await page.keyboard.type(uuid);
+  await page.getByRole("button", { name: "Speichern" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("cell", { name: "KB-01" })).toBeVisible();
+  await expect(page.getByRole("status")).toContainText("Beacon wurde angelegt.");
+});

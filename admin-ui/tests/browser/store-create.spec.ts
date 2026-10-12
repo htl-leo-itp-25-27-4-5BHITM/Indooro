@@ -27,3 +27,40 @@ test("store manager cannot load store creation data", async ({ page }) => {
   await expect(page.getByRole("alert")).toContainText("Zugriff verweigert");
   expect(regionCalls).toBe(0);
 });
+
+test("store creation retries region loading and reports an empty region state", async ({ page }) => {
+  let calls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/regions?status=ACTIVE", (route) => {
+    calls += 1;
+    return calls === 1
+      ? route.fulfill({ status: 503, json: { error: "Regionen nicht erreichbar" } })
+      : route.fulfill({ json: [] });
+  });
+  await page.goto("/admin/next/stores/new/");
+  await expect(page.getByRole("alert")).toContainText("Serverfehler");
+  await page.getByRole("button", { name: "Erneut versuchen" }).click();
+  await expect(page.getByRole("status")).toContainText("Keine aktiven Regionen vorhanden");
+  expect(calls).toBe(2);
+});
+
+test("admin creates a store using keyboard controls", async ({ page }) => {
+  let createdBody: Record<string, unknown> | null = null;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/regions?status=ACTIVE", (route) => route.fulfill({ json: [{ id: "region-1", code: "AT-OOE", name: "Oberösterreich", status: "ACTIVE" }] }));
+  await page.route("**/api/stores", (route) => { createdBody = route.request().postDataJSON(); return route.fulfill({ json: { id: "store-keyboard", name: createdBody?.name } }); });
+  await page.goto("/admin/next/stores/new/");
+  const fields = [
+    ["Store-Code", "KEY-02"], ["Name", "Keyboard Store"], ["Straße", "Testweg 2"],
+    ["PLZ", "4020"], ["Ort", "Linz"], ["Land", "AT"]
+  ] as const;
+  for (const [label, value] of fields) {
+    const field = page.getByRole("textbox", { name: label, exact: true });
+    await field.focus();
+    await page.keyboard.type(value);
+  }
+  await page.getByRole("button", { name: "Store anlegen" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Store angelegt" })).toBeVisible();
+  expect(createdBody).toMatchObject({ storeCode: "KEY-02", name: "Keyboard Store", regionId: "region-1" });
+});
