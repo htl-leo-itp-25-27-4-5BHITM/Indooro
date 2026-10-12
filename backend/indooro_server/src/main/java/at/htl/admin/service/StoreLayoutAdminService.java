@@ -93,6 +93,9 @@ public class StoreLayoutAdminService {
 
         if (shouldActivate && activeLayout != null) {
             activeLayout.status = LayoutVersionStatus.ARCHIVED;
+            // The partial unique index permits only one ACTIVE row. Flush the archive
+            // before Hibernate inserts the replacement; update ordering is not guaranteed.
+            layoutVersionRepository.flush();
         }
 
         LayoutVersionEntity entity = new LayoutVersionEntity();
@@ -121,7 +124,10 @@ public class StoreLayoutAdminService {
 
         layoutVersionRepository.findActiveByStoreId(storeId)
                 .filter(active -> !active.id.equals(layoutId))
-                .ifPresent(active -> active.status = LayoutVersionStatus.ARCHIVED);
+                .ifPresent(active -> {
+                    active.status = LayoutVersionStatus.ARCHIVED;
+                    layoutVersionRepository.flush();
+                });
 
         entity.status = LayoutVersionStatus.ACTIVE;
         entity.activatedAt = Instant.now();
