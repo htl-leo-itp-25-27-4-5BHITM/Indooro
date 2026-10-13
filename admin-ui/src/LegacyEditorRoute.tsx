@@ -16,7 +16,7 @@ interface LegacySaveResponse { message: string; layoutId: string; savedAt: strin
 
 /** The global OpenSearch layout publishes immediately; it has no draft version state. */
 export function LegacyEditorRoute({ api, role }: { api: ApiClient; role: string }) {
-  const [versionId] = useState(() => new URLSearchParams(window.location.search).get("layoutId"));
+  const [versionId, setVersionId] = useState(() => new URLSearchParams(window.location.search).get("layoutId"));
   const [layout, setLayout] = useState<LayoutDocument | null>(null);
   const [history, setHistory] = useState<LegacyHistoryEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +51,11 @@ export function LegacyEditorRoute({ api, role }: { api: ApiClient; role: string 
     const result = await api.post<LegacySaveResponse>("/api/layout/current", document);
     if (!result.layoutId || !result.savedAt) throw new Error("Server hat die Veröffentlichung nicht bestätigt.");
     setPublishedId(result.layoutId);
+    if (versionId) {
+      window.history.replaceState(null, "", "/admin/next/editor/");
+      setLayout(null);
+      setVersionId(null);
+    }
     api.get<LegacyHistoryEntry[]>("/api/layout/history?limit=12")
       .then((response) => { setHistory(Array.isArray(response) ? response : []); setHistoryError(null); })
       .catch((cause: unknown) => setHistoryError(cause instanceof Error ? cause.message : "Historie konnte nicht aktualisiert werden."));

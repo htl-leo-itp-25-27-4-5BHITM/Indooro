@@ -557,7 +557,8 @@ try {
   await admin.getByRole("heading", { name: "Historische Version bearbeiten" }).waitFor();
   admin.once("dialog", (dialog) => void dialog.accept());
   await admin.getByRole("button", { name: "Global veröffentlichen" }).click();
-  await admin.getByText("Globales Layout veröffentlicht.").waitFor();
+  await admin.locator(".legacy-editor-route-published").waitFor();
+  assert.equal(new URL(admin.url()).searchParams.has("layoutId"), false, "global recovery leaves historical URL");
   const globalRestored = expectOk(await api(admin, "GET", "/api/layout/current"), "restored global layout");
   assert.notEqual(globalRestored.layoutId, globalBefore.layoutId);
   assert.equal(globalRestored.shopName, globalBefore.shopName);

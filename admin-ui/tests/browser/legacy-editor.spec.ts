@@ -34,6 +34,7 @@ test("historical global version can be republished without a fake edit", async (
   await page.route("**/api/layout/versions/old-1", (route) => route.fulfill({ json: layout }));
   await page.route("**/api/layout/history?*", (route) => route.fulfill({ json: [] }));
   await page.route("**/api/layout/current", (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: posted ?? layout });
     posted = route.request().postDataJSON() as LayoutDocument;
     return route.fulfill({ json: { message: "Layout saved", layoutId: "restored-2", savedAt: "2026-10-13T12:00:00Z" } });
   });
@@ -42,7 +43,11 @@ test("historical global version can be republished without a fake edit", async (
   page.once("dialog", (dialog) => dialog.accept());
   await page.getByRole("button", { name: "Global veröffentlichen" }).click();
   await expect(page.locator(".legacy-editor-route-published")).toContainText("Version restored-2");
+  await expect(page).toHaveURL(/\/admin\/next\/editor\/$/);
   expect(posted).toEqual(layout);
+  await expect(page.getByRole("button", { name: "Global veröffentlichen" })).toBeDisabled();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Globales Layout", exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Global veröffentlichen" })).toBeDisabled();
 });
 
