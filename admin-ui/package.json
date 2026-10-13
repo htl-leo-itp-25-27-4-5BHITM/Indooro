@@ -18,7 +18,8 @@
     "test:browser": "playwright test",
     "test:live": "node scripts/live-admin-smoke.mjs",
     "test:live:dashboard": "node scripts/live-dashboard-parity.mjs",
-    "test:live:cutover": "node scripts/live-route-cutover.mjs"
+    "test:live:cutover": "node scripts/live-route-cutover.mjs",
+    "test:swift-layout": "node scripts/verify-swift-layout-decode.mjs"
   },
   "dependencies": {
     "react": "19.3.0",

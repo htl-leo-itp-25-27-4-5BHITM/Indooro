@@ -34,6 +34,8 @@ npm run test:live:cutover
 
 The 2026-10-13 keyboard/recipe recovery image passed the full `test:live` workflow and ten route switch/rollback pairs. The recipe portion now creates a tag, changes the candidate recipe's tag in the UI, verifies its admin and anonymous published representations, then deactivates and archives it in the UI. The archive stays absent from anonymous mobile reads. The packaged run also injected a failed recipe step save before publication and a failed status transition after the revised step saved, verified draft privacy and server state after each, restored input, and retried publication. In the Store-Manager editor, Space selected a focused layer button, arrow keys on that button left geometry unchanged, and canvas arrow keys still moved the selected shelf.
 
+After `test:live` prints a Store ID, `npm run test:swift-layout -- <store-id>` fetches its anonymous current-layout response and compiles the actual `LayoutData.swift` and `MobileStoreModels.swift` with `swiftc` to decode `MobileLayoutResponse`. This requires Xcode command-line tools. The 2026-10-13 local run decoded a published three-element layout with numeric IDs. It tests the Swift data contract on macOS; an iOS device rendering journey remains open.
+
 ## Observed 2026-10-12
 
 - Keycloak 26.2 required complete first and last names for imported demo users. Those fields are now in the local realm JSON.
