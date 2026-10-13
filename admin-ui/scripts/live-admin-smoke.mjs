@@ -643,7 +643,13 @@ try {
   const drawnWallHeight = Number(await manager.getByLabel("Höhe", { exact: true }).inputValue());
   assert.ok(drawnWallWidth > 1 && drawnWallHeight > 1, "live editor drag determines wall dimensions");
   await manager.getByRole("button", { name: "Auswählen", exact: false }).first().click();
-  await manager.locator(".le-layers button").nth(1).click();
+  const shelfLayerButton = manager.locator(".le-layers button").nth(1);
+  await shelfLayerButton.click();
+  const keyboardControlX = await manager.getByLabel("X", { exact: true }).inputValue();
+  await manager.keyboard.press("Space");
+  assert.equal(await shelfLayerButton.getAttribute("aria-current"), "true", "Space activates the focused shelf layer");
+  await manager.keyboard.press("ArrowRight");
+  assert.equal(await manager.getByLabel("X", { exact: true }).inputValue(), keyboardControlX, "arrows on focused controls do not move shelves");
   const categoryPicker = manager.getByLabel("Produktkategorie auswählen");
   await categoryPicker.locator('option[value="310"]').waitFor({ state: "attached" });
   const alternateCategory = await categoryPicker.locator('option:not([value=""]):not([value="310"])').first().getAttribute("value");
@@ -919,7 +925,7 @@ try {
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByText("Keine Änderungen protokolliert.").waitFor();
   await admin.getByRole("region", { name: "Serverfehler" }).getByText("Keine Serverfehler protokolliert.").waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, customerPublishedShelfTarget: true, iosNumericLayoutIds: true, globalMobileIdGuard: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateRecipeTagRevision: true, candidateRecipeArchive: true, candidateRecipePublicationRecovery: true, candidateRecipePartialMappingRecovery: true, candidateEditorTemplateUndo: true, legacyDiagnosticsParity: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsWithoutTrace: true, candidateDiagnosticsFaultRecovery: true, candidateDiagnosticsEmptyState: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, customerPublishedShelfTarget: true, iosNumericLayoutIds: true, globalMobileIdGuard: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateRecipeTagRevision: true, candidateRecipeArchive: true, candidateRecipePublicationRecovery: true, candidateRecipePartialMappingRecovery: true, candidateEditorKeyboardControls: true, candidateEditorTemplateUndo: true, legacyDiagnosticsParity: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsWithoutTrace: true, candidateDiagnosticsFaultRecovery: true, candidateDiagnosticsEmptyState: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();
