@@ -28,6 +28,16 @@ The editor and backend SHALL distinguish saved draft versions from the active mo
 - **WHEN** authorized staff publish a draft with no blocking validation errors and confirm the action
 - **THEN** exactly that version becomes active, the former active version is retained in history, and mobile current-layout reads return the published content
 
+#### Scenario: Historical store version is restored without altering its content
+- **GIVEN** a store has an archived layout version and a different active version
+- **WHEN** authorized staff open the archived version and confirm its reactivation without making an edit
+- **THEN** exactly that archived version becomes active, the former active version remains in history, and mobile current-layout reads return the restored content
+
+#### Scenario: Historical global layout is republished unchanged
+- **GIVEN** an admin opens a prior global layout version
+- **WHEN** the admin confirms publication without making an edit
+- **THEN** a new global version containing that layout becomes current and is visible to mobile readers
+
 #### Scenario: Global layout history exceeds a single search page
 - **GIVEN** more global layout versions exist than one OpenSearch result page
 - **WHEN** an admin publishes another global layout and opens recent history

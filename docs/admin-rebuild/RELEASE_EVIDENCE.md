@@ -1,5 +1,9 @@
 # Local release artifact and rollout inputs
 
+## 2026-10-13 editor recovery image
+
+The candidate assets were repackaged and the backend runner rebuilt with the store and global history recovery controls. Runner SHA-256: `e464c539029a0298cfc739dd709ec16da39d3ebfe9f567d238f10f6868b00492`. Local tag: `indooro-admin-rebuild:local-editor-recovery`; immutable image ID: `sha256:83c5ebf4703f0603da0554fcc666ea457638586b1ef3858ef908e6d40d8895f9`. The image was not pushed. Against the dedicated local stack, `test:live` passed both UI history recoveries and the existing CRUD/editor/role workflow; `test:live:cutover` passed ten switch/rollback pairs without changing committed flags. Candidate typecheck, lint, 59 unit and 65 browser tests passed; OpenSpec strict validation passed 41/41.
+
 Evidence date: 2026-10-12. This is a local build; no registry push or LeoCloud rollout was performed.
 
 ## Artifact

@@ -28,6 +28,24 @@ test("global editor sends raw layout JSON and confirms immediate publication", a
   expect(posted!.activate).toBeUndefined();
 });
 
+test("historical global version can be republished without a fake edit", async ({ page }) => {
+  let posted: LayoutDocument | null = null;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/layout/versions/old-1", (route) => route.fulfill({ json: layout }));
+  await page.route("**/api/layout/history?*", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/layout/current", (route) => {
+    posted = route.request().postDataJSON() as LayoutDocument;
+    return route.fulfill({ json: { message: "Layout saved", layoutId: "restored-2", savedAt: "2026-10-13T12:00:00Z" } });
+  });
+  await page.goto("/admin/next/editor/?layoutId=old-1");
+  await expect(page.getByRole("button", { name: "Global veröffentlichen" })).toBeEnabled();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Global veröffentlichen" }).click();
+  await expect(page.locator(".legacy-editor-route-published")).toContainText("Version restored-2");
+  expect(posted).toEqual(layout);
+  await expect(page.getByRole("button", { name: "Global veröffentlichen" })).toBeDisabled();
+});
+
 test("non-admin cannot open global editor or call legacy layout APIs", async ({ page }) => {
   let legacyCalls = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "manager-1", username: "manager", email: null, role: "store-manager", scope: { storeId: "store-1" } } }));

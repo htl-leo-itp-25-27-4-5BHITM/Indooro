@@ -553,6 +553,15 @@ try {
   const history = expectOk(await api(admin, "GET", "/api/layout/history?limit=12"), "global layout history");
   assert.ok(history.some((entry) => entry.layoutId === globalAfter.layoutId));
   assert.equal((await api(admin, "GET", `/api/layout/versions/${globalAfter.layoutId}`)).status, 200);
+  await admin.goto(`${base}/admin/next/editor/?layoutId=${globalBefore.layoutId}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("heading", { name: "Historische Version bearbeiten" }).waitFor();
+  admin.once("dialog", (dialog) => void dialog.accept());
+  await admin.getByRole("button", { name: "Global veröffentlichen" }).click();
+  await admin.getByText("Globales Layout veröffentlicht.").waitFor();
+  const globalRestored = expectOk(await api(admin, "GET", "/api/layout/current"), "restored global layout");
+  assert.notEqual(globalRestored.layoutId, globalBefore.layoutId);
+  assert.equal(globalRestored.shopName, globalBefore.shopName);
+  assert.deepEqual(globalRestored.elements, globalBefore.elements);
 
   const saves = await Promise.all(Array.from({ length: 4 }, (_, index) =>
     api(admin, "POST", layoutPath, { layoutName: `Concurrent ${index}`, activate: false, layout: documentFor(`Concurrent ${index}`) })));
@@ -563,8 +572,11 @@ try {
   assert.equal(activeCount(store.id), 1);
   const current = await currentLayout(store.id);
   assert.ok(activated.some((version) => version.layoutId === current.layoutId));
-  const restored = expectOk(await api(admin, "POST", `${layoutPath}/${edited.layoutId}/activate`, {}), "restore previous published layout");
-  assert.equal(restored.layoutId, edited.layoutId);
+  await admin.goto(`${base}/admin/next/editor/?storeId=${store.id}&layoutId=${edited.layoutId}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("button", { name: "Version wieder aktivieren" }).waitFor();
+  admin.once("dialog", (dialog) => void dialog.accept());
+  await admin.getByRole("button", { name: "Version wieder aktivieren" }).click();
+  await admin.getByText("Layout veröffentlicht.").waitFor();
   assert.equal(activeCount(store.id), 1);
   const restoredPublicLayout = await currentLayout(store.id);
   assert.equal(restoredPublicLayout.layoutId, edited.layoutId);
@@ -583,7 +595,7 @@ try {
   await admin.keyboard.press("Enter");
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, globalVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();

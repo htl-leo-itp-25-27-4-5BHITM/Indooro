@@ -57,3 +57,27 @@ test("store-scoped direct link blocks another store before loading editor data",
   await expect(page.getByRole("alert")).toContainText("Zugriff verweigert");
   expect(contextRequests).toBe(0);
 });
+
+test("archived store version can be restored unchanged from its direct link", async ({ page }) => {
+  const archived = { layoutId: "old-1", versionNo: 1, layoutName: "Earlier map", status: "ARCHIVED", layout: document };
+  const active = { ...archived, layoutId: "new-2", versionNo: 2, status: "ACTIVE", layout: { ...document, shopName: "Newer map" } };
+  let activatedId: string | null = null;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/editor-context")) return route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: active, assignedBeacons: [] } });
+    if (path.endsWith("/versions")) return route.fulfill({ json: [active, archived] });
+    if (path.endsWith("/versions/old-1")) return route.fulfill({ json: archived });
+    if (path.endsWith("/versions/old-1/activate")) { activatedId = "old-1"; return route.fulfill({ json: { ...archived, status: "ACTIVE" } }); }
+    return route.fulfill({ status: 404 });
+  });
+  await page.route("**/api/mobile/stores/store-1/layout/current", (route) => route.fulfill({ json: { storeId: "store-1", layoutId: activatedId ?? "new-2", source: "ACTIVE", fallback: false, layout: activatedId ? archived.layout : active.layout } }));
+  await page.goto("/admin/next/editor/?storeId=store-1&layoutId=old-1");
+  await expect(page.getByRole("textbox", { name: "Filialname" })).toHaveValue("Indooro Linz");
+  await expect(page.getByRole("button", { name: "Version wieder aktivieren" })).toBeEnabled();
+  page.once("dialog", (dialog) => { expect(dialog.message()).toContain("ältere Version"); return dialog.accept(); });
+  await page.getByRole("button", { name: "Version wieder aktivieren" }).click();
+  await expect.poll(() => activatedId).toBe("old-1");
+  await expect(page.getByRole("region", { name: "Aktuell mobiles Layout" })).toContainText("old-1");
+  await expect(page.getByRole("button", { name: "Version wieder aktivieren" })).toHaveCount(0);
+});

@@ -82,8 +82,9 @@ export function EditorRoute({ api }: { api: ApiClient }) {
     window.history.replaceState(null, "", `/admin/next/editor/?storeId=${encodeURIComponent(storeId)}&layoutId=${encodeURIComponent(response.layoutId)}`);
     setVersions((current) => [{ ...response, layoutName: document.shopName }, ...current]);
   };
-  const publish = savedDraftId ? async () => {
-    const response = await api.post<LayoutVersion>(`${base}/versions/${encodeURIComponent(savedDraftId)}/activate`, {});
+  const activationId = version.status === "ARCHIVED" ? version.layoutId : savedDraftId;
+  const publish = activationId ? async () => {
+    const response = await api.post<LayoutVersion>(`${base}/versions/${encodeURIComponent(activationId)}/activate`, {});
     if (response.status !== "ACTIVE") throw new Error("Server hat die Veröffentlichung nicht bestätigt.");
     setVersion(response);
     setSavedDraftId(null);
@@ -92,7 +93,7 @@ export function EditorRoute({ api }: { api: ApiClient }) {
 
   return <div className="editor-route">
     <div className="editor-route-header"><div><p className="eyebrow">{context.store.storeCode} · {context.store.name}</p><h2>Layout Editor</h2><p>Version {version.versionNo ?? "–"} · {version.status === "DEFAULT" ? "Vorlage" : version.status === "DRAFT" ? "Entwurf" : version.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</p></div><a className="button" href={`/admin/next/stores/detail/?storeId=${encodeURIComponent(storeId)}`}>Store-Detail öffnen</a></div>
-    <LayoutEditor key={storeId} initialDocument={version.layout} mode="store" storeName={context.store.name} assignedBeacons={context.assignedBeacons ?? []} onSaveDraft={saveDraft} onPublish={publish} onBack={() => { window.location.href = "/admin/next/stores/"; }} />
+    <LayoutEditor key={storeId} initialDocument={version.layout} mode="store" storeName={context.store.name} assignedBeacons={context.assignedBeacons ?? []} onSaveDraft={saveDraft} onPublish={publish} publishLabel={version.status === "ARCHIVED" ? "Version wieder aktivieren" : "Veröffentlichen"} publishPrompt={version.status === "ARCHIVED" ? "Diese ältere Version wieder aktivieren? Die mobile Ansicht verwendet danach genau diese gespeicherte Version." : undefined} onBack={() => { window.location.href = "/admin/next/stores/"; }} />
     <MobileCurrentPreview api={api} storeId={storeId} refreshKey={`${version.layoutId}:${version.status}`} draft={version.status === "DRAFT" ? { layoutId: version.layoutId, layout: version.layout } : null} assignedBeacons={context.assignedBeacons ?? []} />
     <section className="notice version-history"><div className="section-heading"><h3>Versionen</h3><span>Öffnen lädt die gewählte Version im Editor.</span></div>
       {versionError && <p role="alert">Versionsliste nicht verfügbar: {versionError}</p>}

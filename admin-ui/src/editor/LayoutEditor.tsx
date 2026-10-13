@@ -31,6 +31,9 @@ export interface LayoutEditorProps {
   onSaveDraft?: (document: LayoutDocument) => Promise<unknown>;
   onSaveCurrent?: (document: LayoutDocument) => Promise<unknown>;
   onPublish?: (document: LayoutDocument) => Promise<unknown>;
+  publishLabel?: string;
+  publishPrompt?: string;
+  allowUnchangedSave?: boolean;
   onBack?: () => void;
 }
 
@@ -47,7 +50,7 @@ const publishWarningNote = (issues: ReturnType<typeof validateLayout>) => {
   return `\n\n${warnings.length} Hinweis${warnings.length === 1 ? "" : "e"} bleiben offen:\n${details}${remaining}`;
 };
 
-export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons = [], saveMode = "draft", onSaveDraft, onSaveCurrent, onPublish, onBack }: LayoutEditorProps) {
+export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons = [], saveMode = "draft", onSaveDraft, onSaveCurrent, onPublish, publishLabel = "Veröffentlichen", publishPrompt = "Diesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.", allowUnchangedSave = false, onBack }: LayoutEditorProps) {
   const [editor, setEditor] = useState<EditorState>(() => createEditorState(initialDocument));
   const editorRef = useRef(editor);
   editorRef.current = editor;
@@ -293,7 +296,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const publish = async () => {
     if (!onPublish || working || dirty || errors) return;
     const warningNote = publishWarningNote(issues);
-    if (!window.confirm(`Diesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.${warningNote}`)) return;
+    if (!window.confirm(`${publishPrompt}${warningNote}`)) return;
     setWorking("publish"); setMessage(null);
     try { await onPublish(structuredClone(editorRef.current.document)); setMessage("Layout veröffentlicht."); }
     catch (error) { setMessage(error instanceof Error ? error.message : "Veröffentlichung fehlgeschlagen."); }
@@ -347,8 +350,8 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
         <button type="button" className="le-button" onClick={() => importRef.current?.click()} disabled={!!working}>JSON importieren</button>
         <input ref={importRef} className="le-file-input" type="file" accept=".json,application/json" aria-label="Grundrissdatei importieren" onChange={(event) => void importDocument(event.target.files?.[0])} />
         <span className={`le-save-indicator ${dirty ? "is-dirty" : ""}`}>{dirty ? "● Ungespeicherte Änderungen" : "✓ Gespeichert"}</span>
-        <button type="button" className={`le-button ${saveMode === "immediate" ? "le-primary" : ""}`} disabled={!(saveMode === "immediate" ? onSaveCurrent : onSaveDraft) || !dirty || !!working || (saveMode === "immediate" && errors > 0)} onClick={saveDocument}>{working === "save" ? "Speichert …" : saveMode === "immediate" ? "Global veröffentlichen" : "Entwurf speichern"}</button>
-        {saveMode === "draft" && <button type="button" className="le-button le-primary" disabled={!onPublish || dirty || errors > 0 || !!working} onClick={publish}>{working === "publish" ? "Veröffentlicht …" : "Veröffentlichen"}</button>}
+        <button type="button" className={`le-button ${saveMode === "immediate" ? "le-primary" : ""}`} disabled={!(saveMode === "immediate" ? onSaveCurrent : onSaveDraft) || (!dirty && !allowUnchangedSave) || !!working || (saveMode === "immediate" && errors > 0)} onClick={saveDocument}>{working === "save" ? "Speichert …" : saveMode === "immediate" ? "Global veröffentlichen" : "Entwurf speichern"}</button>
+        {saveMode === "draft" && <button type="button" className="le-button le-primary" disabled={!onPublish || dirty || errors > 0 || !!working} onClick={publish}>{working === "publish" ? "Veröffentlicht …" : publishLabel}</button>}
       </div>
     </header>
     {message && <p className="le-message" role="status">{message}</p>}
