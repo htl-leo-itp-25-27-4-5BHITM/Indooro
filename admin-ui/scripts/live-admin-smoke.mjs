@@ -495,10 +495,49 @@ try {
     name: "live-layout.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(exportedLayout))
   });
   await manager.getByRole("status").getByText("Grundriss importiert. Bitte prüfen und als Entwurf speichern.").waitFor();
+  const editorCanvas = manager.getByRole("img", { name: "Interaktiver Grundriss" });
+  await manager.getByRole("button", { name: "POI", exact: true }).click();
+  await editorCanvas.focus();
+  await manager.keyboard.press("Enter");
+  assert.equal(await manager.locator(".le-layers button").count(), 3, "live editor keyboard creates an element");
+  await manager.getByRole("button", { name: "Löschen", exact: true }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 2, "live editor deletes an element");
+  await manager.getByRole("button", { name: "Rückgängig" }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 3, "live editor undoes deletion");
+  await manager.getByRole("button", { name: "Wiederholen" }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 2, "live editor redoes deletion");
   await manager.locator(".le-layers button").nth(1).click();
   const selectedX = manager.getByLabel("X", { exact: true });
+  const pointerStartX = Number(await selectedX.inputValue());
+  const selectedShelf = manager.locator('.le-canvas rect[stroke="#123f40"]');
+  const shelfBox = await selectedShelf.boundingBox();
+  assert.ok(shelfBox, "selected live shelf is visible");
+  const editorUnit = shelfBox.width / Number(await manager.getByLabel("Breite", { exact: true }).inputValue());
+  await manager.mouse.move(shelfBox.x + shelfBox.width / 2, shelfBox.y + shelfBox.height / 2);
+  await manager.mouse.down();
+  await manager.mouse.move(shelfBox.x + shelfBox.width / 2 + editorUnit * 2, shelfBox.y + shelfBox.height / 2 + editorUnit, { steps: 5 });
+  await manager.mouse.up();
+  assert.notEqual(Number(await selectedX.inputValue()), pointerStartX, "live editor pointer moves shelf");
+  const originalWidth = Number(await manager.getByLabel("Breite", { exact: true }).inputValue());
+  const resizeHandle = await manager.locator(".le-handle:not(.le-rotate)").boundingBox();
+  assert.ok(resizeHandle, "selected live shelf has resize handle");
+  await manager.mouse.move(resizeHandle.x + resizeHandle.width / 2, resizeHandle.y + resizeHandle.height / 2);
+  await manager.mouse.down();
+  await manager.mouse.move(resizeHandle.x + resizeHandle.width / 2 + editorUnit * 2, resizeHandle.y + resizeHandle.height / 2 + editorUnit, { steps: 5 });
+  await manager.mouse.up();
+  const resizedWidth = Number(await manager.getByLabel("Breite", { exact: true }).inputValue());
+  assert.ok(resizedWidth > originalWidth, "live editor pointer resizes shelf");
+  const rotatedShelfBox = await selectedShelf.boundingBox();
+  const rotateHandle = await manager.locator(".le-handle.le-rotate").boundingBox();
+  assert.ok(rotatedShelfBox && rotateHandle, "selected live shelf has rotate handle");
+  await manager.mouse.move(rotateHandle.x + rotateHandle.width / 2, rotateHandle.y + rotateHandle.height / 2);
+  await manager.mouse.down();
+  await manager.mouse.move(rotatedShelfBox.x + rotatedShelfBox.width / 2 + 18, rotatedShelfBox.y + rotatedShelfBox.height / 2, { steps: 8 });
+  await manager.mouse.up();
+  const rotatedAngle = Number(await manager.getByLabel("Winkel", { exact: true }).inputValue());
+  assert.notEqual(rotatedAngle, 0, "live editor pointer rotates shelf");
   const initialX = Number(await selectedX.inputValue());
-  await manager.getByRole("img", { name: "Interaktiver Grundriss" }).focus();
+  await editorCanvas.focus();
   await manager.keyboard.press("ArrowRight");
   assert.equal(Number(await selectedX.inputValue()), initialX + 1, "live editor keyboard moves selected shelf");
   await manager.keyboard.press("ControlOrMeta+z");
@@ -525,6 +564,8 @@ try {
   assert.notEqual(edited.layoutId, draft.layoutId);
   assert.equal(edited.layout.elements[1].label, "Published from live editor");
   assert.equal(edited.layout.elements[1].x, initialX + 1);
+  assert.equal(edited.layout.elements[1].width, resizedWidth);
+  assert.equal(edited.layout.elements[1].rotation, rotatedAngle);
   assert.equal(edited.layout.elements[1].accessAngle, 135);
   assert.equal(edited.layout.elements[1].layoutCode, "310/1/1/1");
   assert.deepEqual(edited.layout.elements[1].productPositions, ["310-42"]);
@@ -632,7 +673,7 @@ try {
   await admin.keyboard.press("Enter");
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();

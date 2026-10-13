@@ -107,3 +107,5 @@ Store and global version histories now have independent retry controls. A failed
 Store publication now checks every placed Beacon against active assignments even when the store has none. Both the editor and backend reject an unassigned Beacon; the backend permits the draft but denies immediate publication and later activation until assignment. Frontend unit tests pass 60/60, candidate browser tests 68/68, backend tests 116/116, and the local image confirms both denied API publication paths leave the prior public layout active.
 
 The same live image accepted a draft containing the store's assigned Beacon, published it to the anonymous mobile layout, and restored the earlier editor version with one active version. This confirms the new rule permits valid assignments.
+
+The packaged Store Editor now passes live keyboard creation of a POI, delete/undo/redo, pointer move/resize/rotate of a shelf, draft save, publication, and anonymous verification of the final width, rotation, and position. This closes the main geometry command path in real UI/API persistence; remaining editor gates include broader accessibility, import faults, and customer routing behavior.
