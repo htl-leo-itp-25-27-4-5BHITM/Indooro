@@ -572,11 +572,12 @@ try {
   assert.equal(activeCount(store.id), 1);
   const current = await currentLayout(store.id);
   assert.ok(activated.some((version) => version.layoutId === current.layoutId));
-  await admin.goto(`${base}/admin/next/editor/?storeId=${store.id}&layoutId=${edited.layoutId}`, { waitUntil: "domcontentloaded" });
-  await admin.getByRole("button", { name: "Version wieder aktivieren" }).waitFor();
-  admin.once("dialog", (dialog) => void dialog.accept());
-  await admin.getByRole("button", { name: "Version wieder aktivieren" }).click();
-  await admin.getByText("Layout veröffentlicht.").waitFor();
+  const restoreManager = await login(storeUser, `/admin/next/editor/?storeId=${store.id}&layoutId=${edited.layoutId}`);
+  await restoreManager.getByRole("button", { name: "Version wieder aktivieren" }).waitFor();
+  restoreManager.once("dialog", (dialog) => void dialog.accept());
+  await restoreManager.getByRole("button", { name: "Version wieder aktivieren" }).click();
+  await restoreManager.getByText("Layout veröffentlicht.").waitFor();
+  await restoreManager.close();
   assert.equal(activeCount(store.id), 1);
   const restoredPublicLayout = await currentLayout(store.id);
   assert.equal(restoredPublicLayout.layoutId, edited.layoutId);
