@@ -32,6 +32,44 @@ test("candidate recipe edit reads full detail and preserves image, tags, ingredi
   expect(itemWrites).toBe(0);
 });
 
+test("partial recipe edit identifies the failed step and keeps local input recoverable", async ({ page }) => {
+  const tag = { id: "tag-1", code: "VEGAN", name: "Vegan" };
+  const detail = { id: "recipe-1", slug: "apfel-hafer", title: "Apfel-Hafer", summary: "Kurz", description: "Beschreibung", imageUrl: "/apfel.jpg", imageAlt: "Apfel", servings: 4, prepTimeMinutes: 10, cookTimeMinutes: 20, totalTimeMinutes: 30, status: "DRAFT", mappedIngredientCount: 1, totalIngredientCount: 1, stepCount: 1, tags: [tag], ingredients: [{ id: "ingredient-1", position: 1, displayName: "Apfel", quantityText: "2 Stück", canonicalName: "Apfel", optional: false }], steps: [{ id: "step-1", position: 1, instruction: "Backen", durationMinutes: 20 }] };
+  let stepWrites = 0;
+  let detailReads = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/admin/recipe-tags?*", (route) => route.fulfill({ json: [tag] }));
+  await page.route("**/api/admin/recipes?*", (route) => route.fulfill({ json: { content: [detail], page: 0, size: 20, totalElements: 1 } }));
+  await page.route("**/api/admin/recipes/recipe-1", (route) => {
+    if (route.request().method() === "PUT") Object.assign(detail, { title: route.request().postDataJSON().title });
+    else detailReads += 1;
+    return route.fulfill({ json: detail });
+  });
+  await page.route("**/api/admin/recipes/recipe-1/steps/step-1", (route) => {
+    stepWrites += 1;
+    return route.fulfill({ status: 503, json: { error: "Unavailable" } });
+  });
+
+  await page.goto("/admin/next/recipes/");
+  await page.getByRole("button", { name: "Bearbeiten" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("textbox", { name: "Titel" }).fill("Apfel-Hafer neu");
+  await dialog.getByRole("textbox", { name: "Schritt 1" }).fill("Bei 180 Grad backen");
+  await dialog.getByRole("button", { name: "Speichern" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Schritt 1 speichern fehlgeschlagen");
+  await expect(dialog.getByRole("textbox", { name: "Schritt 1" })).toHaveValue("Backen");
+  expect(detail.title).toBe("Apfel-Hafer neu");
+  expect(detail.steps[0].instruction).toBe("Backen");
+  expect(stepWrites).toBe(1);
+  expect(detailReads).toBe(2);
+
+  await dialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+  await expect(dialog.getByRole("textbox", { name: "Schritt 1" })).toHaveValue("Bei 180 Grad backen");
+  await expect(dialog.getByRole("textbox", { name: "Titel" })).toHaveValue("Apfel-Hafer neu");
+  await expect(dialog.getByRole("alert")).toContainText("Prüfen Sie bereits gespeicherte Zutaten und Schritte");
+  expect(detail.steps[0].instruction).toBe("Backen");
+});
+
 test("store manager cannot fetch candidate recipe data", async ({ page }) => {
   let calls = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "store-1", username: "manager", role: "store-manager", scope: { storeId: "store-1" } } }));

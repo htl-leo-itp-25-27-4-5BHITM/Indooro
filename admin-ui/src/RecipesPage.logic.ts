@@ -175,8 +175,12 @@ export function validateNewRecipe(draft: RecipeDetail): string | null {
 /** Persist a recipe edit while avoiding unique-position conflicts during reorder. */
 export async function saveRecipeChanges(api: ApiClient, original: RecipeDetail, draft: RecipeDetail, tagIds: string[], onMetadataSaved?: () => void): Promise<RecipeDetail> {
   const root = `/api/admin/recipes/${encodeURIComponent(original.id)}`;
+  const stage = async <T>(label: string, operation: () => Promise<T>): Promise<T> => {
+    try { return await operation(); }
+    catch (cause) { throw new Error(`${label} fehlgeschlagen: ${cause instanceof Error ? cause.message : "Anfrage fehlgeschlagen."}`, { cause }); }
+  };
   if (draft.ingredients.some((item) => !item.id && !item.selectedProduct?.id)) throw new Error("Neue Zutaten benötigen ein Produkt aus dem Katalog.");
-  await api.put(root, recipeBody(draft, tagIds));
+  await stage("Rezeptdaten speichern", () => api.put(root, recipeBody(draft, tagIds)));
   onMetadataSaved?.();
 
   const keptIngredients = draft.ingredients.filter((item) => item.id);
@@ -189,42 +193,44 @@ export async function saveRecipeChanges(api: ApiClient, original: RecipeDetail, 
   const tempStep = Math.max(0, ...original.steps.map((item) => item.position)) + draft.steps.length + 1000;
 
   if (ingredientStructureChanged) {
-    for (let index = 0; index < keptIngredients.length; index++) await api.put(`${root}/ingredients/${encodeURIComponent(keptIngredients[index].id!)}`, ingredientBody(keptIngredients[index], tempIngredient + index));
+    for (let index = 0; index < keptIngredients.length; index++) await stage(`Zutat ${index + 1} vorübergehend umordnen`, () => api.put(`${root}/ingredients/${encodeURIComponent(keptIngredients[index].id!)}`, ingredientBody(keptIngredients[index], tempIngredient + index)));
   }
   if (stepStructureChanged) {
-    for (let index = 0; index < keptSteps.length; index++) await api.put(`${root}/steps/${encodeURIComponent(keptSteps[index].id!)}`, stepBody(keptSteps[index], tempStep + index));
+    for (let index = 0; index < keptSteps.length; index++) await stage(`Schritt ${index + 1} vorübergehend umordnen`, () => api.put(`${root}/steps/${encodeURIComponent(keptSteps[index].id!)}`, stepBody(keptSteps[index], tempStep + index)));
   }
 
   const ingredientIds = new Set(keptIngredients.map((item) => String(item.id)));
   const stepIds = new Set(keptSteps.map((item) => String(item.id)));
-  for (const item of original.ingredients) if (!ingredientIds.has(String(item.id))) await api.delete(`${root}/ingredients/${encodeURIComponent(item.id!)}`);
-  for (const item of original.steps) if (!stepIds.has(String(item.id))) await api.delete(`${root}/steps/${encodeURIComponent(item.id!)}`);
+  for (const item of original.ingredients) if (!ingredientIds.has(String(item.id))) await stage(`Zutat ${item.position} entfernen`, () => api.delete(`${root}/ingredients/${encodeURIComponent(item.id!)}`));
+  for (const item of original.steps) if (!stepIds.has(String(item.id))) await stage(`Schritt ${item.position} entfernen`, () => api.delete(`${root}/steps/${encodeURIComponent(item.id!)}`));
 
   for (let index = 0; index < draft.ingredients.length; index++) {
     const item = draft.ingredients[index];
     if (item.id) {
+      const itemId = item.id;
       const old = oldIngredients.get(String(item.id))!;
       const body = ingredientBody(item, index + 1);
-      if (ingredientStructureChanged || JSON.stringify(body) !== JSON.stringify(ingredientBody(old, old.position))) await api.put(`${root}/ingredients/${encodeURIComponent(item.id)}`, body);
+      if (ingredientStructureChanged || JSON.stringify(body) !== JSON.stringify(ingredientBody(old, old.position))) await stage(`Zutat ${index + 1} speichern`, () => api.put(`${root}/ingredients/${encodeURIComponent(itemId)}`, body));
     } else {
       const product = item.selectedProduct;
       if (!product?.id) throw new Error("Neue Zutaten benötigen ein Produkt aus dem Katalog.");
-      const created = await api.post<{ id: string }>(`${root}/ingredients`, ingredientBody({ ...item, displayName: product.name, canonicalName: product.name, optional: false }, index + 1));
-      await api.put(`${root}/ingredients/${encodeURIComponent(created.id)}/product-mapping`, {
+      const created = await stage(`Zutat ${index + 1} anlegen`, () => api.post<{ id: string }>(`${root}/ingredients`, ingredientBody({ ...item, displayName: product.name, canonicalName: product.name, optional: false }, index + 1)));
+      await stage(`Produktzuordnung für Zutat ${index + 1} speichern`, () => api.put(`${root}/ingredients/${encodeURIComponent(created.id)}/product-mapping`, {
         productId: Number(product.id), storeId: product.storeId ?? null, storeCode: product.storeCode ?? null,
         mappingType: "MANUAL", confidence: 1, manuallyConfirmed: true
-      });
+      }));
     }
   }
   for (let index = 0; index < draft.steps.length; index++) {
     const item = draft.steps[index];
     if (item.id) {
+      const itemId = item.id;
       const old = oldSteps.get(String(item.id))!;
       const body = stepBody(item, index + 1);
-      if (stepStructureChanged || JSON.stringify(body) !== JSON.stringify(stepBody(old, old.position))) await api.put(`${root}/steps/${encodeURIComponent(item.id)}`, body);
-    } else await api.post(`${root}/steps`, stepBody(item, index + 1));
+      if (stepStructureChanged || JSON.stringify(body) !== JSON.stringify(stepBody(old, old.position))) await stage(`Schritt ${index + 1} speichern`, () => api.put(`${root}/steps/${encodeURIComponent(itemId)}`, body));
+    } else await stage(`Schritt ${index + 1} anlegen`, () => api.post(`${root}/steps`, stepBody(item, index + 1)));
   }
-  return api.get<RecipeDetail>(root);
+  return stage("Gespeicherten Rezeptstand laden", () => api.get<RecipeDetail>(root));
 }
 
 export function cloneDetail(detail: RecipeDetail): RecipeDetail {

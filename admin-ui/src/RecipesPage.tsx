@@ -14,6 +14,7 @@ export function RecipesPage({ api }: { api: ApiClient }) {
   const [original, setOriginal] = useState<RecipeDetail | null>(null);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [editorError, setEditorError] = useState<string | null>(null);
+  const [recoveryDraft, setRecoveryDraft] = useState<{ detail: RecipeDetail; tagIds: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
   const [productQuery, setProductQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
@@ -42,7 +43,7 @@ export function RecipesPage({ api }: { api: ApiClient }) {
   }, [api, revision]);
 
   const loadDetail = useCallback(async (id: string, preview = false) => {
-    setEditorError(null); setBusy(true); setCreating(false); setPreviewMode(preview); setMappingFor(null);
+    setEditorError(null); setRecoveryDraft(null); setBusy(true); setCreating(false); setPreviewMode(preview); setMappingFor(null);
     try {
       const detail = await api.get<RecipeDetail>(`/api/admin/recipes/${encodeURIComponent(id)}`);
       if (!detail?.id || !Array.isArray(detail.ingredients) || !Array.isArray(detail.steps) || !Array.isArray(detail.tags)) throw new Error("Rezeptdetails sind unvollständig.");
@@ -54,7 +55,7 @@ export function RecipesPage({ api }: { api: ApiClient }) {
 
   const startCreate = () => {
     const blank: RecipeDetail = { id: "", slug: "", title: "", summary: "", description: "", imageUrl: "", imageAlt: "", servings: 2, prepTimeMinutes: null, cookTimeMinutes: null, totalTimeMinutes: null, status: "DRAFT", stepCount: 0, mappedIngredientCount: 0, totalIngredientCount: 0, tags: [], ingredients: [], steps: [] };
-    setEditor(blank); setOriginal(blank); setSelectedTagIds([]); setEditorError(null); setCreating(true); setPreviewMode(false); setMappingFor(null);
+    setEditor(blank); setOriginal(blank); setSelectedTagIds([]); setEditorError(null); setRecoveryDraft(null); setCreating(true); setPreviewMode(false); setMappingFor(null);
   };
 
   const patchEditor = (patch: Partial<RecipeDetail>) => setEditor((value) => value ? { ...value, ...patch } : value);
@@ -70,7 +71,7 @@ export function RecipesPage({ api }: { api: ApiClient }) {
     event.preventDefault(); if (!editor || !original || busy || previewMode) return;
     const localError = creating ? validateNewRecipe(editor) : validateDraft(editor);
     if (localError) { setEditorError(localError); return; }
-    setBusy(true); setEditorError(null);
+    setBusy(true); setEditorError(null); setRecoveryDraft(null);
     let metadataSaved = false;
     try {
       if (creating) await createRecipeWithContent(api, editor, selectedTagIds);
@@ -88,11 +89,12 @@ export function RecipesPage({ api }: { api: ApiClient }) {
         return;
       }
       if (!metadataSaved) { setEditorError(message); return; }
+      const attempted = { detail: cloneDetail(editor), tagIds: [...selectedTagIds] };
       try {
         const latest = await api.get<RecipeDetail>(`/api/admin/recipes/${encodeURIComponent(original.id)}`);
-        const normalized = cloneDetail(latest); setOriginal(normalized); setEditor(normalized); setSelectedTagIds(normalized.tags.map((tag) => tag.id));
-        setEditorError(`Speichern teilweise fehlgeschlagen. Aktueller Serverstand wurde geladen: ${message}`);
-      } catch { setEditorError(`Speichern fehlgeschlagen; aktueller Serverstand konnte nicht neu geladen werden: ${message}`); }
+        const normalized = cloneDetail(latest); setOriginal(normalized); setEditor(normalized); setSelectedTagIds(normalized.tags.map((tag) => tag.id)); setRecoveryDraft(attempted);
+        setEditorError(`Speichern teilweise fehlgeschlagen. Aktueller Serverstand wurde geladen; Ihre Eingaben sind zur Wiederherstellung erhalten: ${message}`);
+      } catch { setRecoveryDraft(attempted); setEditorError(`Speichern fehlgeschlagen; aktueller Serverstand konnte nicht neu geladen werden. Ihre Eingaben bleiben erhalten: ${message}`); }
     } finally { setBusy(false); }
   };
 
@@ -163,7 +165,7 @@ export function RecipesPage({ api }: { api: ApiClient }) {
     {editor && original && <div className="recipe-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) { setEditor(null); setOriginal(null); } }}>
       <section className="recipe-drawer" role="dialog" aria-modal="true" aria-labelledby="recipe-editor-title">
         <div className="recipe-drawer-head"><div><p className="eyebrow">{creating ? "Neues Rezept" : previewMode ? "Rezept-Vorschau" : "Rezept bearbeiten"}</p><h2 id="recipe-editor-title">{editor.title || "Rezept anlegen"}</h2></div><div className="recipe-drawer-controls"><span className={`status-pill ${editor.status === "PUBLISHED" ? "ready" : "missing"}`}>{editor.status}</span>{!creating && !previewMode && editor.status !== "PUBLISHED" && <button className="button" type="button" disabled={busy} onClick={() => void updatePublication("publish")}>Veröffentlichen</button>}{!creating && !previewMode && editor.status === "PUBLISHED" && <button className="button" type="button" disabled={busy} onClick={() => void updatePublication("deactivate")}>Deaktivieren</button>}{!creating && !previewMode && editor.status !== "ARCHIVED" && <button className="button danger-button" type="button" disabled={busy} onClick={() => void updatePublication("archive")}>Archivieren</button>}<button className="button" type="button" disabled={busy} onClick={() => { setEditor(null); setOriginal(null); setCreating(false); setPreviewMode(false); }}>Schließen</button></div></div>
-        {editorError && <div className="notice error-state" role="alert">{editorError}</div>}
+        {editorError && <div className="notice error-state" role="alert">{editorError}{recoveryDraft && <button className="button" type="button" disabled={busy} onClick={() => { setEditor(cloneDetail(recoveryDraft.detail)); setSelectedTagIds([...recoveryDraft.tagIds]); setRecoveryDraft(null); setEditorError("Ihre Eingaben wurden wiederhergestellt. Prüfen Sie bereits gespeicherte Zutaten und Schritte vor einem erneuten Speichern."); }}>Meine Eingaben wiederherstellen</button>}</div>}
         <form className="recipe-edit-form" onSubmit={(event) => void save(event)}>
           <fieldset disabled={busy || previewMode}>
             <div className="recipe-form-grid">
