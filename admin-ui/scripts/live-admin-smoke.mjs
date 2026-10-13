@@ -611,9 +611,31 @@ try {
   await manager.close();
 
   const globalBefore = expectOk(await api(admin, "GET", "/api/layout/current"), "global layout before edit");
+  let injectGlobalLoadFailure = true;
+  const failGlobalLoad = (route) => {
+    if (route.request().method() === "GET" && injectGlobalLoadFailure) {
+      injectGlobalLoadFailure = false;
+      return route.fulfill({ status: 503, json: { error: "Injected global layout load failure" } });
+    }
+    return route.continue();
+  };
+  await admin.route("**/api/layout/current", failGlobalLoad);
   await admin.goto(base + "/admin/next/editor/", { waitUntil: "domcontentloaded" });
+  await admin.getByRole("alert").getByText("Globales Layout nicht verfügbar").waitFor();
+  await admin.getByRole("button", { name: "Erneut versuchen" }).focus();
+  await admin.keyboard.press("Enter");
   await admin.getByRole("heading", { name: "Globales Layout", exact: true }).waitFor();
+  await admin.unroute("**/api/layout/current", failGlobalLoad);
   await admin.getByLabel("Filialname").fill(`Live Global ${run}`);
+  const failGlobalPublish = (route) => route.request().method() === "POST"
+    ? route.fulfill({ status: 503, json: { error: "Injected global publish failure" } }) : route.continue();
+  await admin.route("**/api/layout/current", failGlobalPublish);
+  admin.once("dialog", (dialog) => void dialog.accept());
+  await admin.getByRole("button", { name: "Global veröffentlichen" }).click();
+  await admin.getByRole("status").getByText("Serverfehler. Bitte später erneut versuchen.").waitFor();
+  assert.ok((await admin.locator(".le-save-indicator").textContent()).includes("Ungespeicherte Änderungen"), "failed global publish retains editor input");
+  await admin.unroute("**/api/layout/current", failGlobalPublish);
+  assert.equal(expectOk(await api(admin, "GET", "/api/layout/current"), "global layout after failed publish").layoutId, globalBefore.layoutId);
   admin.once("dialog", (dialog) => void dialog.accept());
   await admin.getByRole("button", { name: "Global veröffentlichen" }).click();
   await admin.getByText("Globales Layout veröffentlicht.").waitFor();
