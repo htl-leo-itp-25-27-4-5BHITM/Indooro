@@ -2,6 +2,8 @@
 
 ## 2026-10-13 editor recovery image
 
+The diagnostics parity candidate image is `indooro-admin-rebuild:local-diagnostics-parity`, immutable ID `sha256:6900aaec3bbc8c9e8938d17c9b58b0aadb8cabdd7c98579ce03d2e46038bc080`, runner SHA-256 `7d5ef5d614bb6f64c8bebebba5529697562b039fb9d62d711840e92eda2e9d56`. It remains local and unpushed. The full live workflow passed legacy/candidate error display and keyboard refresh, candidate no-stack-trace details, injected 503 retry, and injected empty responses; 68/68 browser tests, typecheck/lint, and ten intercepted switch/rollback pairs passed. This image still has all committed route flags disabled; the parity record approves only Diagnostics for a subsequent flag change.
+
 The current local image includes store Beacon assignment validation at publication: tag `indooro-admin-rebuild:local-beacon-validation`, immutable image ID `sha256:b17fab6b87e9cb2d41ace044cf2094908939263eb03f8da975a6875512257a5c`, runner SHA-256 `f29cbedc94456a553d02b02f4cd9c0c4a09f79d64c4a12d95a8c36182e35e5b1`. It was not pushed. The full live run verified HTTP 400 for immediate publication and later draft activation with an unassigned Beacon; the previously active public version remained unchanged. Candidate tests passed 60 unit and 68 browser cases; backend tests passed 116/116; strict OpenSpec validation passed 41/41.
 
 A further live run on the same image published a layout containing the store's actively assigned Beacon, confirmed it in the anonymous mobile response, and restored the prior editor version with exactly one active version.

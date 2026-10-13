@@ -664,19 +664,32 @@ try {
 
   const diagnosticMarker = `Local diagnostic ${run}`;
   execFileSync("docker", ["exec", "indooro-admin-rebuild-pg", "psql", "-U", "indooro", "-d", "indooro", "-c",
-    `INSERT INTO error_logs (id, status_code, method, path, message, error_type, stack_trace, created_at, updated_at) VALUES (gen_random_uuid(), 503, 'GET', '/api/local-smoke', '${diagnosticMarker}', 'SmokeException', 'SmokeException: ${diagnosticMarker}\\n  at LocalSmoke.run(LocalSmoke.java:42)', NOW(), NOW())`], { stdio: "pipe" });
+    `INSERT INTO error_logs (id, status_code, method, path, message, error_type, stack_trace, created_at, updated_at) VALUES (gen_random_uuid(), 503, 'GET', '/api/local-smoke', '${diagnosticMarker}', 'SmokeException', 'SmokeException: ${diagnosticMarker}\\n  at LocalSmoke.run(LocalSmoke.java:42)', NOW(), NOW()), (gen_random_uuid(), 400, 'POST', '/api/local-smoke', '${diagnosticMarker} without trace', 'InputError', NULL, NOW(), NOW())`], { stdio: "pipe" });
   const auditLogs = expectOk(await api(admin, "GET", "/api/admin/logs?limit=50"), "admin audit logs");
   const errorLogs = expectOk(await api(admin, "GET", "/api/admin/error-logs?limit=50"), "admin error logs");
   assert.ok(Array.isArray(auditLogs.entries) && auditLogs.entries.length > 0);
   assert.ok(Array.isArray(errorLogs.entries));
+  await admin.goto(`${base}/admin/server-logs/`, { waitUntil: "domcontentloaded" });
+  await admin.getByText("Audit Events", { exact: true }).waitFor();
+  const legacyTrace = admin.locator("details").filter({ hasText: diagnosticMarker }).filter({ hasNotText: "without trace" });
+  await legacyTrace.locator("summary").focus();
+  await admin.keyboard.press("Enter");
+  assert.ok((await legacyTrace.locator("pre").textContent()).includes(`SmokeException: ${diagnosticMarker}`));
+  await admin.getByRole("button", { name: "Aktualisieren" }).focus();
+  await admin.keyboard.press("Enter");
+  await admin.getByText("Audit Events", { exact: true }).waitFor();
   await admin.goto(`${base}/admin/next/server-logs/`, { waitUntil: "domcontentloaded" });
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
-  const diagnosticRow = admin.getByRole("region", { name: "Serverfehler" }).getByRole("row").filter({ hasText: diagnosticMarker });
+  const diagnosticRow = admin.getByRole("region", { name: "Serverfehler" }).getByRole("row").filter({ hasText: diagnosticMarker, hasNotText: "without trace" });
   await diagnosticRow.waitFor();
   await diagnosticRow.getByText("Stacktrace").focus();
   await admin.keyboard.press("Enter");
   await diagnosticRow.locator("pre").waitFor();
   assert.ok((await diagnosticRow.locator("pre").textContent()).includes(`SmokeException: ${diagnosticMarker}`));
+  const noTraceRow = admin.getByRole("region", { name: "Serverfehler" }).getByRole("row").filter({ hasText: `${diagnosticMarker} without trace` });
+  await noTraceRow.getByText("Details").focus();
+  await admin.keyboard.press("Enter");
+  assert.ok((await noTraceRow.locator("pre").textContent()).includes('"errorType": "InputError"'));
   await admin.getByRole("button", { name: "Aktualisieren" }).focus();
   await admin.keyboard.press("Enter");
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
@@ -692,9 +705,13 @@ try {
   await admin.getByRole("alert").getByText("Diagnose nicht verfügbar").waitFor();
   await admin.getByRole("button", { name: "Erneut versuchen" }).focus();
   await admin.keyboard.press("Enter");
-  await admin.getByRole("region", { name: "Serverfehler" }).getByRole("row").filter({ hasText: diagnosticMarker }).waitFor();
+  await admin.getByRole("region", { name: "Serverfehler" }).getByRole("row").filter({ hasText: diagnosticMarker, hasNotText: "without trace" }).waitFor();
+  await admin.route("**/api/admin/*logs?*", (route) => route.fulfill({ json: { limit: 50, entries: [] } }));
+  await admin.reload();
+  await admin.getByRole("region", { name: "Änderungsverlauf" }).getByText("Keine Änderungen protokolliert.").waitFor();
+  await admin.getByRole("region", { name: "Serverfehler" }).getByText("Keine Serverfehler protokolliert.").waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsFaultRecovery: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, legacyDiagnosticsParity: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsWithoutTrace: true, candidateDiagnosticsFaultRecovery: true, candidateDiagnosticsEmptyState: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();
