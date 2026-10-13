@@ -109,3 +109,5 @@ Store publication now checks every placed Beacon against active assignments even
 The same live image accepted a draft containing the store's assigned Beacon, published it to the anonymous mobile layout, and restored the earlier editor version with one active version. This confirms the new rule permits valid assignments.
 
 The packaged Store Editor now passes live keyboard creation of a POI, delete/undo/redo, pointer move/resize/rotate of a shelf, draft save, publication, and anonymous verification of the final width, rotation, and position. This closes the main geometry command path in real UI/API persistence; remaining editor gates include broader accessibility, import faults, and customer routing behavior.
+
+Candidate diagnostics now opens a locally seeded error stack trace by keyboard, refreshes the real audit/error lists, and recovers after one injected HTTP 503 through its keyboard retry action. The full packaged live workflow passed. The fixture was inserted directly into the dedicated local PostgreSQL instance, so this verifies display and recovery rather than the application's error capture pipeline.

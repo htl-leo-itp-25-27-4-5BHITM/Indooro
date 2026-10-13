@@ -662,18 +662,39 @@ try {
   expectOk(await api(admin, "POST", `${layoutPath}/${edited.layoutId}/activate`, {}), "restore editor version after assigned-beacon check");
   assert.equal(activeCount(store.id), 1);
 
+  const diagnosticMarker = `Local diagnostic ${run}`;
+  execFileSync("docker", ["exec", "indooro-admin-rebuild-pg", "psql", "-U", "indooro", "-d", "indooro", "-c",
+    `INSERT INTO error_logs (id, status_code, method, path, message, error_type, stack_trace, created_at, updated_at) VALUES (gen_random_uuid(), 503, 'GET', '/api/local-smoke', '${diagnosticMarker}', 'SmokeException', 'SmokeException: ${diagnosticMarker}\\n  at LocalSmoke.run(LocalSmoke.java:42)', NOW(), NOW())`], { stdio: "pipe" });
   const auditLogs = expectOk(await api(admin, "GET", "/api/admin/logs?limit=50"), "admin audit logs");
   const errorLogs = expectOk(await api(admin, "GET", "/api/admin/error-logs?limit=50"), "admin error logs");
   assert.ok(Array.isArray(auditLogs.entries) && auditLogs.entries.length > 0);
   assert.ok(Array.isArray(errorLogs.entries));
   await admin.goto(`${base}/admin/next/server-logs/`, { waitUntil: "domcontentloaded" });
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
-  await admin.getByRole("region", { name: "Serverfehler" }).waitFor();
+  const diagnosticRow = admin.getByRole("region", { name: "Serverfehler" }).getByRole("row").filter({ hasText: diagnosticMarker });
+  await diagnosticRow.waitFor();
+  await diagnosticRow.getByText("Stacktrace").focus();
+  await admin.keyboard.press("Enter");
+  await diagnosticRow.locator("pre").waitFor();
+  assert.ok((await diagnosticRow.locator("pre").textContent()).includes(`SmokeException: ${diagnosticMarker}`));
   await admin.getByRole("button", { name: "Aktualisieren" }).focus();
   await admin.keyboard.press("Enter");
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
+  let injectDiagnosticsFault = true;
+  await admin.route("**/api/admin/error-logs?*", (route) => {
+    if (injectDiagnosticsFault) {
+      injectDiagnosticsFault = false;
+      return route.fulfill({ status: 503, json: { error: "Injected local diagnostics failure" } });
+    }
+    return route.continue();
+  });
+  await admin.reload();
+  await admin.getByRole("alert").getByText("Diagnose nicht verfügbar").waitFor();
+  await admin.getByRole("button", { name: "Erneut versuchen" }).focus();
+  await admin.keyboard.press("Enter");
+  await admin.getByRole("region", { name: "Serverfehler" }).getByRole("row").filter({ hasText: diagnosticMarker }).waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsFaultRecovery: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();
