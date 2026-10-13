@@ -4,7 +4,7 @@
 
 ## Route topology and cutover status
 
-Legacy static entries live at `backend/indooro_server/src/main/resources/META-INF/resources/admin`. Their pages share `app.js`/`core.js`; the editor and diagnostics also have page-specific scripts. The React/Vite source is `admin-ui/`; README and `scripts/candidate-paths.mjs` state that package output is installed under `admin/next/` and leaves current routes untouched. Thus candidate evidence below does not establish parity or current user-visible cutover.
+Legacy static entries live at `backend/indooro_server/src/main/resources/META-INF/resources/admin`. Their pages share `app.js`/`core.js`; the editor and diagnostics also have page-specific scripts. The React/Vite source is `admin-ui/`, and package output is installed under `admin/next/`. The route map currently sends Dashboard and Diagnostics to that candidate; the other entries remain legacy. Candidate evidence alone does not establish parity or justify additional cutovers.
 
 | Workflow | Current protected static URL | Candidate URL | Candidate component | Direct-link/query contract |
 | --- | --- | --- | --- | --- |
@@ -105,7 +105,7 @@ Recommended route evidence row before cutover: legacy URL and candidate URL; old
 
 ## Concrete parity gaps / acceptance follow-ups
 
-1. Candidate remains under `/admin/next/`; no route has cut over. Packaged Quarkus direct-link/refresh and route-map rollback were exercised live, but per-route action/state parity is still incomplete.
+1. Candidate remains under `/admin/next/`; Dashboard and Diagnostics have cut over through their existing URLs. The other eight routes retain legacy entries. Packaged Quarkus direct-link/refresh and route-map rollback were exercised live, but per-route action/state parity for those eight remains incomplete.
 2. Old list implementations use local filtering and paging (stores 25, products 30) over broad fetches; candidate stores/products/recipes use server query/page. Compare totals, filters and scope under >page-size fixtures.
 3. Legacy `safeGet` fallback can mask fetch failures as empty data. Candidate per-page error states improve observability; verify all failed requests expose retry and preserve enough form state.
 4. Recipe writes span metadata/tags and per-ingredient/per-step operations. Verify success and failure at every stage and no loss of image, tags, ingredients, steps after reload; no atomic transaction is evidenced by these resources.
