@@ -16,7 +16,7 @@ npm run verify:candidate
 npm run test:browser
 ```
 
-`package:candidate` writes only to `backend/indooro_server/src/main/resources/META-INF/resources/admin/next/`. It does not replace current admin pages. The browser suite uses mocked APIs and static deep-link checks; it is not evidence of live OIDC or backend parity.
+`package:candidate` writes only to `backend/indooro_server/src/main/resources/META-INF/resources/admin/next/`. It does not replace current admin pages. `npm run test:browser` automatically builds, packages, and verifies candidate assets before Playwright, so the suite cannot accidentally run against stale files. The browser suite uses mocked APIs and static deep-link checks; it is not evidence of live OIDC or backend parity.
 
 Legacy static admin checks from the repository root:
 
