@@ -70,6 +70,69 @@ test("partial recipe edit identifies the failed step and keeps local input recov
   expect(detail.steps[0].instruction).toBe("Backen");
 });
 
+test("failed recipe publication reloads the saved content and allows a status retry", async ({ page }) => {
+  const detail = { id: "recipe-1", slug: "apfel", title: "Apfel", summary: "Kurz", servings: 2, status: "DRAFT", mappedIngredientCount: 1, totalIngredientCount: 1, stepCount: 1, tags: [], ingredients: [{ id: "ingredient-1", position: 1, displayName: "Apfel" }], steps: [{ id: "step-1", position: 1, instruction: "Backen" }] };
+  let publicationAttempts = 0;
+  let detailReads = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/admin/recipe-tags?*", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/admin/recipes?*", (route) => route.fulfill({ json: { content: [detail], page: 0, size: 20, totalElements: 1 } }));
+  await page.route("**/api/admin/recipes/recipe-1", (route) => {
+    if (route.request().method() === "PUT") detail.title = route.request().postDataJSON().title;
+    else detailReads += 1;
+    return route.fulfill({ json: detail });
+  });
+  await page.route("**/api/admin/recipes/recipe-1/publish", (route) => {
+    publicationAttempts += 1;
+    if (publicationAttempts === 1) return route.fulfill({ status: 503, json: { error: "Unavailable" } });
+    detail.status = "PUBLISHED";
+    return route.fulfill({ json: detail });
+  });
+  page.on("dialog", (dialog) => dialog.accept());
+
+  await page.goto("/admin/next/recipes/");
+  await page.getByRole("button", { name: "Bearbeiten" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("textbox", { name: "Titel" }).fill("Apfel neu");
+  await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Statusänderung fehlgeschlagen. Der aktuelle Serverstand wurde geladen");
+  await expect(dialog.getByRole("textbox", { name: "Titel" })).toHaveValue("Apfel neu");
+  await expect(dialog.getByText("DRAFT", { exact: true })).toBeVisible();
+  expect(detailReads).toBeGreaterThanOrEqual(2);
+
+  await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
+  await expect(dialog.getByText("PUBLISHED", { exact: true })).toBeVisible();
+  expect(publicationAttempts).toBe(2);
+});
+
+test("partial recipe save during publication keeps input recoverable and does not publish", async ({ page }) => {
+  const detail = { id: "recipe-1", slug: "apfel", title: "Apfel", summary: "Kurz", servings: 2, status: "DRAFT", mappedIngredientCount: 1, totalIngredientCount: 1, stepCount: 1, tags: [], ingredients: [{ id: "ingredient-1", position: 1, displayName: "Apfel" }], steps: [{ id: "step-1", position: 1, instruction: "Backen" }] };
+  let publicationAttempts = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/admin/recipe-tags?*", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/admin/recipes?*", (route) => route.fulfill({ json: { content: [detail], page: 0, size: 20, totalElements: 1 } }));
+  await page.route("**/api/admin/recipes/recipe-1", (route) => {
+    if (route.request().method() === "PUT") detail.title = route.request().postDataJSON().title;
+    return route.fulfill({ json: detail });
+  });
+  await page.route("**/api/admin/recipes/recipe-1/steps/step-1", (route) => route.fulfill({ status: 503, json: { error: "Unavailable" } }));
+  await page.route("**/api/admin/recipes/recipe-1/publish", (route) => { publicationAttempts += 1; return route.fulfill({ json: { ...detail, status: "PUBLISHED" } }); });
+  page.on("dialog", (dialog) => dialog.accept());
+
+  await page.goto("/admin/next/recipes/");
+  await page.getByRole("button", { name: "Bearbeiten" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("textbox", { name: "Titel" }).fill("Apfel neu");
+  await dialog.getByRole("textbox", { name: "Schritt 1" }).fill("Bei 180 Grad backen");
+  await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Speichern teilweise fehlgeschlagen");
+  await expect(dialog.getByRole("textbox", { name: "Schritt 1" })).toHaveValue("Backen");
+  expect(publicationAttempts).toBe(0);
+
+  await dialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+  await expect(dialog.getByRole("textbox", { name: "Schritt 1" })).toHaveValue("Bei 180 Grad backen");
+});
+
 test("recipe retry after mapping failure reuses the created ingredient", async ({ page }) => {
   const tag = { id: "tag-1", code: "VEGAN", name: "Vegan" };
   const product = { id: 23, name: "Birne", layoutCode: "310" };

@@ -172,11 +172,13 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
 
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
-      if (event.code === "Space" && !(event.target instanceof HTMLInputElement) && !(event.target instanceof HTMLTextAreaElement)) {
+      const target = event.target;
+      if (!(target instanceof Element) || (target !== document.body && !target.closest(".le"))) return;
+      if (target.closest("button, a, input, textarea, select, summary, [contenteditable], [role='button']")) return;
+      if (event.code === "Space") {
         spaceHeld.current = true;
         event.preventDefault();
       }
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLSelectElement) return;
       if (toolRef.current === "create" && event.target === svgRef.current && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
         event.preventDefault();
         const definition = TYPES.find((item) => item.type === placementTypeRef.current)!;

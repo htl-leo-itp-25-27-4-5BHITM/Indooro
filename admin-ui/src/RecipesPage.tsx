@@ -89,6 +89,7 @@ export function RecipesPage({ api }: { api: ApiClient }) {
         return;
       }
       if (!metadataSaved) { setEditorError(message); return; }
+      setRevision((value) => value + 1);
       const attempted = { detail: cloneDetail(editor), tagIds: [...selectedTagIds] };
       try {
         const latest = await api.get<RecipeDetail>(`/api/admin/recipes/${encodeURIComponent(original.id)}`);
@@ -103,11 +104,30 @@ export function RecipesPage({ api }: { api: ApiClient }) {
     const labels = { publish: "veröffentlichen", deactivate: "deaktivieren", archive: "archivieren" };
     if (!window.confirm(`Rezept „${editor.title}“ ${labels[action]}?`)) return;
     setBusy(true); setEditorError(null);
+    let metadataSaved = false;
+    let contentSaved = false;
     try {
-      const saved = await saveRecipeChanges(api, original, editor, selectedTagIds);
+      const saved = await saveRecipeChanges(api, original, editor, selectedTagIds, () => { metadataSaved = true; });
+      contentSaved = true;
       const updated = cloneDetail(await changeRecipePublication(api, saved.id, action));
-      setOriginal(updated); setEditor(updated); setSelectedTagIds(updated.tags.map((tag) => tag.id)); setRevision((value) => value + 1);
-    } catch (cause) { setEditorError(cause instanceof Error ? cause.message : "Rezeptstatus konnte nicht geändert werden."); }
+      setOriginal(updated); setEditor(updated); setSelectedTagIds(updated.tags.map((tag) => tag.id)); setRecoveryDraft(null); setRevision((value) => value + 1);
+    } catch (cause) {
+      const message = cause instanceof Error ? cause.message : "Rezeptstatus konnte nicht geändert werden.";
+      if (!metadataSaved) { setEditorError(message); return; }
+      setRevision((value) => value + 1);
+      const attempted = { detail: cloneDetail(editor), tagIds: [...selectedTagIds] };
+      try {
+        const latest = cloneDetail(await api.get<RecipeDetail>(`/api/admin/recipes/${encodeURIComponent(original.id)}`));
+        setOriginal(latest); setEditor(latest); setSelectedTagIds(latest.tags.map((tag) => tag.id));
+        setRecoveryDraft(contentSaved ? null : attempted);
+        setEditorError(contentSaved
+          ? `Statusänderung fehlgeschlagen. Der aktuelle Serverstand wurde geladen; bitte den Status prüfen und bei Bedarf erneut versuchen: ${message}`
+          : `Speichern teilweise fehlgeschlagen. Aktueller Serverstand wurde geladen; Ihre Eingaben sind zur Wiederherstellung erhalten: ${message}`);
+      } catch {
+        setRecoveryDraft(attempted);
+        setEditorError(`Statusänderung fehlgeschlagen; aktueller Serverstand konnte nicht neu geladen werden. Ihre Eingaben bleiben erhalten: ${message}`);
+      }
+    }
     finally { setBusy(false); }
   };
 

@@ -67,6 +67,25 @@ test("Enter on a focused layer selects it and Tab moves focus into the inspector
   await tabUntilFocused(page, labelField);
 });
 
+test("focused controls keep native Space and arrow behavior while canvas arrows move elements", async ({ page }) => {
+  await mockEditor(page, "DRAFT", []);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+
+  const shelfLayer = page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" });
+  await shelfLayer.focus();
+  await page.keyboard.press("Space");
+  await expect(shelfLayer).toHaveAttribute("aria-current", "true");
+
+  const x = page.getByLabel("X", { exact: true });
+  const initialX = await x.inputValue();
+  await page.keyboard.press("ArrowRight");
+  await expect(x).toHaveValue(initialX);
+
+  await page.getByRole("img", { name: "Interaktiver Grundriss" }).focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(x).toHaveValue(String(Number(initialX) + 1));
+});
+
 test("Escape cancels an active create tool from the keyboard without adding an element", async ({ page }) => {
   await mockEditor(page, "DRAFT", []);
   await page.goto("/admin/next/editor/?storeId=store-1");

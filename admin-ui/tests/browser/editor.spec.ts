@@ -68,6 +68,7 @@ test("store editor edits metadata, undoes a move and publishes only the saved dr
   expect(handleStroke).toBeLessThan(0.5);
   await expect(page.getByLabel("Kategoriecode")).toHaveValue("310");
   await expect(page.getByLabel("Abschnitt")).toHaveValue("1");
+  await page.getByRole("img", { name: "Interaktiver Grundriss" }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(page.getByLabel("X", { exact: true })).toHaveValue("10");
   await page.keyboard.press("ControlOrMeta+z");
