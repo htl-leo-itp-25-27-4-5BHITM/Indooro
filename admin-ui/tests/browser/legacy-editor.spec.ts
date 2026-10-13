@@ -176,8 +176,8 @@ test("mobile preview stays on fallback until draft activation then shows active 
   expect(mobileReads).toBeGreaterThanOrEqual(2);
 });
 
-test("mobile preview distinguishes a saved draft from the public layout", async ({ page }) => {
-  const draftLayout = { ...layout, shopName: "Unveröffentlichter Entwurf" };
+test("mobile preview distinguishes a saved draft and incompatible IDs from the public layout", async ({ page }) => {
+  const draftLayout = { ...layout, shopName: "Unveröffentlichter Entwurf", elements: layout.elements.map((element, index) => index === 1 ? { ...element, id: "old-shelf" } : element) };
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
   await page.route("**/api/stores/store-1/layout/**", (route) => {
     const path = new URL(route.request().url()).pathname;
@@ -192,8 +192,10 @@ test("mobile preview distinguishes a saved draft from the public layout", async 
   await preview.getByRole("button", { name: "Gespeicherten Entwurf ansehen" }).click();
   await expect(preview).toContainText("Gespeicherter Entwurf · nicht öffentlich");
   await expect(preview).toContainText("Unveröffentlichter Entwurf");
+  await expect(preview).toContainText("1 inkompatible Elemente");
   await expect(preview).toContainText("Produktpositionen");
   await expect(preview).toContainText("Mobile Route nicht geprüft");
   await preview.getByRole("button", { name: "Öffentlich aktiv" }).click();
   await expect(preview).toContainText("Standardlayout (Fallback)");
+  await expect(preview).toContainText("Numerisch lesbar");
 });

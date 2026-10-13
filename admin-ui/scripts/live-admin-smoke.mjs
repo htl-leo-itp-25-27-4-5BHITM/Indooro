@@ -675,6 +675,7 @@ try {
   const mobilePreview = manager.getByRole("region", { name: "Aktuell mobiles Layout" });
   await mobilePreview.getByRole("button", { name: "Gespeicherten Entwurf ansehen" }).click();
   await mobilePreview.getByText("Gespeicherter Entwurf · nicht öffentlich").waitFor();
+  await mobilePreview.getByText("Numerisch lesbar").waitFor();
   await mobilePreview.getByRole("button", { name: "Öffentlich aktiv" }).click();
   await mobilePreview.getByText("Aktive Version").waitFor();
   const failEditorPublish = (route) => route.fulfill({ status: 503, json: { error: "Injected editor publish failure" } });
