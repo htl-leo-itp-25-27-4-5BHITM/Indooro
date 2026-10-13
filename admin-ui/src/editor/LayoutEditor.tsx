@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import type { ApiClient } from "../api/client";
 import { fitViewport, screenToWorld, zoomAt, type Point, type Viewport } from "./geometry";
-import { assignShelfSections, elementFill, shelfMetadata, shelfMetadataChanges } from "./metadata";
+import { assignShelfSections, chooseShelfCategory, elementFill, shelfMetadata, shelfMetadataChanges } from "./metadata";
 import { applyCommand, createEditorState, isDirty, isMobileElementId, markSaved, newElementId, parseImportedDocument, redo, repairMobileElementIds, replaceDocument, selectElement, undo, type EditorCommand, type EditorState, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
 import { validateLayout, type AssignedBeacon } from "./validation";
 import "./LayoutEditor.css";
@@ -30,6 +31,7 @@ type Gesture =
   | { kind: "move" | "resize" | "rotate"; id: ElementId; start: Point; element: LayoutElement; initialAngle?: number };
 
 export interface LayoutEditorProps {
+  api?: ApiClient;
   initialDocument: LayoutDocument;
   mode: "store" | "legacy";
   storeName?: string;
@@ -57,7 +59,7 @@ const publishWarningNote = (issues: ReturnType<typeof validateLayout>) => {
   return `\n\n${warnings.length} Hinweis${warnings.length === 1 ? "" : "e"} bleiben offen:\n${details}${remaining}`;
 };
 
-export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons = [], saveMode = "draft", onSaveDraft, onSaveCurrent, onPublish, publishLabel = "Veröffentlichen", publishPrompt = "Diesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.", allowUnchangedSave = false, onBack }: LayoutEditorProps) {
+export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBeacons = [], saveMode = "draft", onSaveDraft, onSaveCurrent, onPublish, publishLabel = "Veröffentlichen", publishPrompt = "Diesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.", allowUnchangedSave = false, onBack }: LayoutEditorProps) {
   const [editor, setEditor] = useState<EditorState>(() => createEditorState(initialDocument));
   const editorRef = useRef(editor);
   editorRef.current = editor;
@@ -72,6 +74,9 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const [working, setWorking] = useState<"save" | "publish" | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [newPosition, setNewPosition] = useState("");
+  const [categories, setCategories] = useState<Array<{ categoryCode: number; categoryName: string }>>([]);
+  const [categoryError, setCategoryError] = useState(false);
+  const [categoryRevision, setCategoryRevision] = useState(0);
   const svgRef = useRef<SVGSVGElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const gesture = useRef<Gesture | null>(null);
@@ -97,6 +102,19 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const placedBeaconCodes = new Set(document.elements.filter((element) => element.type === "beacon" && element.id !== selected?.id).map((element) => element.beaconId));
 
   useEffect(() => { setNewPosition(""); }, [editor.selectedId]);
+
+  useEffect(() => {
+    if (!api) return;
+    const controller = new AbortController();
+    api.get<Array<{ categoryCode: number; categoryName: string }>>("/api/categories?size=500", { signal: controller.signal })
+      .then((items) => {
+        if (controller.signal.aborted) return;
+        setCategories(Array.isArray(items) ? items.filter((item) => Number.isInteger(item.categoryCode) && typeof item.categoryName === "string") : []);
+        setCategoryError(false);
+      })
+      .catch(() => { if (!controller.signal.aborted) setCategoryError(true); });
+    return () => controller.abort();
+  }, [api, categoryRevision]);
 
   const createAtWorld = (world: Point, type: (typeof TYPES)[number]["type"]) => {
     const definition = TYPES.find((item) => item.type === type)!;
@@ -469,7 +487,10 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
           <label>Bezeichnung<input type="text" maxLength={200} value={selected.label || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { label: event.target.value } })} /></label>
           <div className="le-number-grid">{(["x", "y", ...(selected.type === "beacon" ? [] : ["width", "height"]), "rotation"] as const).map((field) => <label key={field}>{({ x: "X", y: "Y", width: "Breite", height: "Höhe", rotation: "Winkel" } as Record<string, string>)[field]}<input type="number" step={field === "rotation" ? 1 : snapping ? 1 : 0.1} value={Number(selected[field] ?? 0)} disabled={selected.locked} onChange={(event) => changeNumber(field as "x" | "y" | "width" | "height" | "rotation", event.target.value)} /></label>)}</div>
           {selected.type !== "beacon" && <label>Zugriffswinkel<input type="number" min={0} max={360} step={1} value={Number(selected.accessAngle ?? 90)} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { accessAngle: Math.max(0, Math.min(360, number(event.target.value, Number(selected.accessAngle ?? 90)))) } })} /></label>}
-          {selected.type === "shelf" && <div className="le-number-grid"><label>Kategoriecode<input type="text" maxLength={180} value={shelfMetadata(selected).code} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { code: event.target.value }) })} /></label><label>Abschnitt<input type="number" min={1} step={1} value={shelfMetadata(selected).section ?? ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { section: event.target.value === "" ? null : number(event.target.value, shelfMetadata(selected).section || 1) }) })} /></label></div>}
+          {selected.type === "shelf" && <><div className="le-number-grid"><label>Kategoriecode<input type="text" maxLength={180} value={shelfMetadata(selected).code} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { code: event.target.value }) })} /></label><label>Abschnitt<input type="number" min={1} step={1} value={shelfMetadata(selected).section ?? ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { section: event.target.value === "" ? null : number(event.target.value, shelfMetadata(selected).section || 1) }) })} /></label></div>
+          {api && <label>Produktkategorie auswählen<select value={categories.some((item) => String(item.categoryCode) === shelfMetadata(selected).code) ? shelfMetadata(selected).code : ""} disabled={selected.locked || categories.length === 0} onChange={(event) => { if (event.target.value) dispatch({ type: "patch", id: selected.id!, changes: chooseShelfCategory(document, selected, event.target.value) }); }}><option value="">Kategorie wählen</option>{categories.map((item) => <option key={item.categoryCode} value={item.categoryCode}>{item.categoryCode} · {item.categoryName}</option>)}</select></label>}
+          {api && categoryError && <p className="le-category-error" role="status">Kategorien nicht verfügbar. Code kann manuell eingegeben werden. <button type="button" onClick={() => setCategoryRevision((value) => value + 1)}>Erneut laden</button></p>}
+          </>}
           {(selected.type === "shelf" || selected.type === "poi") && <label>Layout-Code<input type="text" maxLength={180} value={selected.layoutCode || ""} disabled={selected.locked} placeholder="310/1/1/1" onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { layoutCode: event.target.value } })} /></label>}
           {selected.type === "shelf" && <div className="le-position-editor"><strong>Produktpositionen</strong><ul>{(Array.isArray(selected.productPositions) ? selected.productPositions : []).map((position, index) => <li key={`${String(position)}-${index}`}><span>{String(position)}</span><button type="button" disabled={selected.locked} aria-label={`Produktposition ${String(position)} entfernen`} onClick={() => dispatch({ type: "patch", id: selected.id!, changes: { productPositions: selected.productPositions?.filter((_, at) => at !== index) || [] } })}>Entfernen</button></li>)}</ul><form onSubmit={(event) => { event.preventDefault(); const position = newPosition.trim(); const existing = Array.isArray(selected.productPositions) ? selected.productPositions : []; if (!position) return; if (existing.some((value) => String(value) === position)) { setMessage("Diese Produktposition ist bereits zugeordnet."); return; } if (existing.length >= 500) { setMessage("Höchstens 500 Produktpositionen pro Element."); return; } dispatch({ type: "patch", id: selected.id!, changes: { productPositions: [...existing, position] } }); setNewPosition(""); }}><label>Produktposition hinzufügen<input type="text" maxLength={80} value={newPosition} disabled={selected.locked} onChange={(event) => setNewPosition(event.target.value)} placeholder="z. B. 310-42" /></label><button type="submit" disabled={selected.locked || !newPosition.trim()}>Hinzufügen</button></form></div>}
           {selected.type === "poi" && <label>Kategorie<input type="text" maxLength={200} value={selected.category || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { category: event.target.value } })} /></label>}

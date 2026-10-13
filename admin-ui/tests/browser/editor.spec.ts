@@ -7,6 +7,7 @@ const assignedBeacons = [{ beaconCode: "IN-001", beaconId: "beacon-db-1", identi
 
 async function mockEditor(page: Page, status: "ACTIVE" | "DRAFT", saved: LayoutDocument[]) {
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", email: null, role: "admin", scope: null } }));
+  await page.route("**/api/categories?*", (route) => route.fulfill({ json: [{ categoryCode: 310, categoryName: "Obst & Gemüse" }, { categoryCode: 525, categoryName: "Molkerei" }] }));
   await page.route("**/api/stores/store-1/layout/**", async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -22,6 +23,38 @@ async function mockEditor(page: Page, status: "ACTIVE" | "DRAFT", saved: LayoutD
     return route.fulfill({ status: 404, json: { message: "Unexpected editor route" } });
   });
 }
+
+test("editor chooses a live catalog category and keeps its shelf address undoable", async ({ page }) => {
+  const saved: LayoutDocument[] = [];
+  await mockEditor(page, "DRAFT", saved);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" }).click();
+  await page.getByLabel("Produktkategorie auswählen").selectOption("525");
+  await expect(page.getByLabel("Kategoriecode")).toHaveValue("525");
+  await expect(page.getByLabel("Abschnitt")).toHaveValue("1");
+  await page.getByRole("button", { name: "Rückgängig" }).click();
+  await expect(page.getByLabel("Kategoriecode")).toHaveValue("310");
+  await page.getByLabel("Produktkategorie auswählen").selectOption("525");
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.getByText("Entwurf gespeichert.")).toBeVisible();
+  expect(saved[0].elements[1].category).toBe("525/1");
+});
+
+test("editor keeps manual shelf codes usable when categories fail and retries the list", async ({ page }) => {
+  await mockEditor(page, "DRAFT", []);
+  let fail = true;
+  await page.route("**/api/categories?*", (route) => fail
+    ? route.fulfill({ status: 503, json: { error: "temporarily unavailable" } })
+    : route.fulfill({ json: [{ categoryCode: 310, categoryName: "Obst & Gemüse" }] }));
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" }).click();
+  await expect(page.getByText("Kategorien nicht verfügbar.", { exact: false })).toBeVisible();
+  await expect(page.getByLabel("Kategoriecode")).toBeEnabled();
+  fail = false;
+  await page.getByRole("button", { name: "Erneut laden" }).click();
+  await expect(page.getByLabel("Produktkategorie auswählen").getByRole("option", { name: "310 · Obst & Gemüse" })).toBeAttached();
+  await expect(page.getByLabel("Kategoriecode")).toHaveValue("310");
+});
 
 test("store editor edits metadata, undoes a move and publishes only the saved draft", async ({ page }) => {
   const saved: LayoutDocument[] = [];
@@ -166,7 +199,8 @@ test("legacy cashier deletion is confirmed and publication names remaining warni
   await page.goto("/admin/next/editor/?storeId=store-1");
   const imported: LayoutDocument = structuredClone(layout);
   imported.elements[1].category = "";
-  imported.elements.push({ id: "legacy-cashier", type: "cashier", x: 20, y: 20, width: 3, height: 2, label: "Zusatzkasse" });
+  imported.elements[1].productPositions = [];
+  imported.elements.push({ id: 484, type: "cashier", x: 20, y: 20, width: 3, height: 2, label: "Zusatzkasse" });
   await page.locator(".le-file-input").setInputFiles({ name: "legacy.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(imported)) });
   await page.locator(".le-layers button").filter({ hasText: "Zusatzkasse" }).click();
   page.once("dialog", (dialog) => dialog.dismiss());

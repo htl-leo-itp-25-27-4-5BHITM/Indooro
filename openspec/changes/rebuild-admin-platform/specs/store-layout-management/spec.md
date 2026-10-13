@@ -79,6 +79,10 @@ Validation SHALL distinguish blocking errors from warnings and SHALL identify th
 - **WHEN** staff assigns shelf sections
 - **THEN** the editor preserves valid unique sections, assigns the remaining sections by map position, and records one undoable change
 
+#### Scenario: Shelf category is chosen from the catalog
+- **WHEN** staff selects an existing catalog category for a shelf
+- **THEN** the editor assigns the first free section for that category, allows undo, and keeps manual code entry available if the catalog request fails
+
 #### Scenario: Product positions lack a navigable shelf address
 - **WHEN** a shelf has product positions or a layout code without a valid category and section
 - **THEN** validation blocks publication and explains that customer and mobile routes require the shelf address

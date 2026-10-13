@@ -23,6 +23,18 @@ export function shelfMetadataChanges(element: LayoutElement, changes: Partial<Sh
   return { category: `${code}/${section}`, meter: section };
 }
 
+/** Choosing a catalog category gives a shelf its first free routable section. */
+export function chooseShelfCategory(document: LayoutDocument, element: LayoutElement, code: string): Pick<LayoutElement, "category" | "meter"> {
+  const used = new Set(document.elements.filter((other) => other !== element && other.id !== element.id && other.type === "shelf")
+    .filter((other) => shelfMetadata(other).code === code)
+    .map((other) => shelfMetadata(other).section)
+    .filter((section): section is number => section !== null));
+  const current = shelfMetadata(element).section;
+  let section = current && !used.has(current) ? current : 1;
+  while (used.has(section)) section++;
+  return shelfMetadataChanges(element, { code, section });
+}
+
 /** Repair incomplete or duplicate shelf addresses while preserving unique published sections. */
 export function assignShelfSections(document: LayoutDocument): LayoutDocument {
   const groups = new Map<string, Array<{ element: LayoutElement; index: number }>>();

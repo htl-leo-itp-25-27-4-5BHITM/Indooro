@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { fitViewport, screenToWorld, worldToScreen, zoomAt } from "./geometry";
-import { assignShelfSections } from "./metadata";
+import { assignShelfSections, chooseShelfCategory } from "./metadata";
 import { applyCommand, createEditorState, isDirty, isMobileElementId, markSaved, newElementId, parseImportedDocument, redo, repairMobileElementIds, replaceDocument, undo, type LayoutDocument } from "./model";
 import { validateLayout } from "./validation";
 
@@ -95,6 +95,14 @@ test("shelf address repair preserves a unique section and resolves duplicates in
   assert.deepEqual(repaired.elements.slice(1).map((element) => [element.category, element.meter]), [["310/1", 1], ["310/2", 2], ["310/3", 3]]);
   assert.equal(validateLayout(repaired).some((issue) => ["shelf-category", "shelf-address-duplicate"].includes(issue.code)), false);
   assert.deepEqual(undo(replaceDocument(createEditorState(source), repaired)).document, source);
+});
+
+test("catalog category choice assigns the next free product routing section", () => {
+  const source = fixture();
+  source.elements.push({ id: 8, type: "shelf", x: 12, y: 4, width: 3, height: 2, category: "525/1", meter: 1 });
+  const changes = chooseShelfCategory(source, source.elements[1], "525");
+  assert.deepEqual(changes, { category: "525/2", meter: 2 });
+  assert.equal(source.elements[1].category, "310/1", "selection does not mutate saved data before command dispatch");
 });
 
 test("product positions alone cannot make a shelf reachable to customer search", () => {

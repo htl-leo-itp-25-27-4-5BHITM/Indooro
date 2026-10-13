@@ -611,6 +611,14 @@ try {
   assert.ok(drawnWallWidth > 1 && drawnWallHeight > 1, "live editor drag determines wall dimensions");
   await manager.getByRole("button", { name: "Auswählen", exact: false }).first().click();
   await manager.locator(".le-layers button").nth(1).click();
+  const categoryPicker = manager.getByLabel("Produktkategorie auswählen");
+  await categoryPicker.locator('option[value="310"]').waitFor({ state: "attached" });
+  const alternateCategory = await categoryPicker.locator('option:not([value=""]):not([value="310"])').first().getAttribute("value");
+  assert.ok(alternateCategory, "live catalog offers a second shelf category");
+  await categoryPicker.selectOption(alternateCategory);
+  assert.equal(await manager.getByLabel("Kategoriecode").inputValue(), alternateCategory);
+  await manager.getByRole("button", { name: "Rückgängig" }).click();
+  assert.equal(await manager.getByLabel("Kategoriecode").inputValue(), "310", "catalog category selection is undoable");
   const selectedX = manager.getByLabel("X", { exact: true });
   const pointerStartX = Number(await selectedX.inputValue());
   const selectedShelf = manager.locator('.le-canvas rect[stroke="#123f40"]');
