@@ -32,6 +32,8 @@ npm run test:live:cutover
 
 `test:live:cutover` authenticates and exercises each of the ten current-route switches and their rollback by intercepting the served map; it does not alter the committed flags. On 2026-10-12 it passed all ten switch/rollback pairs with query parameters and URL fragments preserved. The later `test:live` run also passed in-scope store updates for both manager roles, a region-manager store creation, and denial of foreign store updates/layout saves and store-manager creation.
 
+The 2026-10-13 keyboard/recipe recovery image passed the full `test:live` workflow and ten route switch/rollback pairs. The recipe portion now creates a tag, changes the candidate recipe's tag in the UI, verifies its admin and anonymous published representations, then deactivates and archives it in the UI. The archive stays absent from anonymous mobile reads. The packaged run also injected a failed recipe step save before publication and a failed status transition after the revised step saved, verified draft privacy and server state after each, restored input, and retried publication.
+
 ## Observed 2026-10-12
 
 - Keycloak 26.2 required complete first and last names for imported demo users. Those fields are now in the local realm JSON.

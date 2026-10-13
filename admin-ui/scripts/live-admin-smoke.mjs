@@ -265,6 +265,7 @@ try {
   assert.equal(publicRecipe.steps[0].instruction, "Apfel schneiden.");
   assert.equal(expectOk(await api(admin, "PATCH", `/api/admin/recipes/${recipe.id}/deactivate`, {}), "recipe deactivate").status, "DRAFT");
   assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
+  const recipeTag = expectOk(await api(admin, "POST", "/api/admin/recipe-tags", { code: `live-tag-${run.toLowerCase()}`, name: `Live Tag ${run}`, kind: "DIET", status: "ACTIVE" }), "recipe tag create");
   await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipe.title)}`, { waitUntil: "domcontentloaded" });
   await admin.getByRole("row").filter({ hasText: recipe.title }).getByRole("button", { name: "Bearbeiten" }).click();
   const recipeDialog = admin.getByRole("dialog");
@@ -272,12 +273,14 @@ try {
   await recipeDialog.getByRole("textbox", { name: "Titel" }).fill(candidateRecipeTitle);
   await recipeDialog.getByRole("textbox", { name: "Bild-URL" }).fill("/images/live-recipe.jpg");
   await recipeDialog.getByRole("textbox", { name: "Bildbeschreibung" }).fill("Live Rezeptbild");
+  await recipeDialog.getByLabel("Tags").selectOption(recipeTag.id);
   await recipeDialog.getByRole("button", { name: "Speichern" }).click();
   await recipeDialog.waitFor({ state: "hidden" });
   const candidateRecipe = expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "candidate recipe edit");
   assert.equal(candidateRecipe.title, candidateRecipeTitle);
   assert.equal(candidateRecipe.imageUrl, "/images/live-recipe.jpg");
   assert.equal(candidateRecipe.imageAlt, "Live Rezeptbild");
+  assert.ok(candidateRecipe.tags.some((item) => item.id === recipeTag.id), "candidate recipe tag revision persisted");
   assert.equal(candidateRecipe.ingredients[0].displayName, "Apfel");
   assert.equal(candidateRecipe.steps[0].instruction, "Apfel schneiden.");
   await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(candidateRecipeTitle)}`, { waitUntil: "domcontentloaded" });
@@ -322,15 +325,45 @@ try {
   assert.equal(afterMappingRetry.ingredients.filter((item) => item.canonicalName === updatedProductName).length, 1);
   await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(candidateRecipeTitle)}`, { waitUntil: "domcontentloaded" });
   await admin.getByRole("row").filter({ hasText: candidateRecipeTitle }).getByRole("button", { name: "Bearbeiten" }).click();
+  const publicationDialog = admin.getByRole("dialog");
+  const revisedPublishStep = `Vor Freigabe prüfen ${run}.`;
+  await publicationDialog.getByRole("textbox", { name: "Schritt 1" }).fill(revisedPublishStep);
+  await admin.route(stepFailurePath, failRecipeStep);
   admin.once("dialog", (dialog) => { void dialog.accept(); });
-  await admin.getByRole("dialog").getByRole("button", { name: "Veröffentlichen" }).click();
-  await admin.getByRole("dialog").locator(".status-pill").getByText("PUBLISHED").waitFor();
+  await publicationDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+  await publicationDialog.getByRole("alert").getByText(/Speichern teilweise fehlgeschlagen/).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "failed publication content post-state").status, "DRAFT");
+  assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
+  await publicationDialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+  assert.equal(await publicationDialog.getByRole("textbox", { name: "Schritt 1" }).inputValue(), revisedPublishStep);
+  await admin.unroute(stepFailurePath, failRecipeStep);
+  const publicationFailurePath = `**/api/admin/recipes/${recipe.id}/publish`;
+  const failRecipePublication = (route) => route.fulfill({ status: 503, json: { error: "Injected publication failure" } });
+  await admin.route(publicationFailurePath, failRecipePublication);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await publicationDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+  await publicationDialog.getByRole("alert").getByText(/Statusänderung fehlgeschlagen/).waitFor();
+  const failedPublication = expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "failed publication status post-state");
+  assert.equal(failedPublication.status, "DRAFT");
+  assert.equal(failedPublication.steps[0].instruction, revisedPublishStep);
+  assert.equal(await publicationDialog.getByRole("textbox", { name: "Schritt 1" }).inputValue(), revisedPublishStep);
+  await admin.unroute(publicationFailurePath, failRecipePublication);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await publicationDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+  await publicationDialog.locator(".status-pill").getByText("PUBLISHED").waitFor();
   const candidatePublicRecipe = await publicJson(`/api/mobile/recipes/${recipe.id}`);
   assert.equal(candidatePublicRecipe.title, candidateRecipeTitle);
   assert.equal(candidatePublicRecipe.imageAlt, "Live Rezeptbild");
+  assert.equal(candidatePublicRecipe.steps[0].instruction, revisedPublishStep);
+  assert.ok(candidatePublicRecipe.tags.some((item) => item.id === recipeTag.id), "recipe tag is public after publication");
   admin.once("dialog", (dialog) => { void dialog.accept(); });
   await admin.getByRole("dialog").getByRole("button", { name: "Deaktivieren" }).click();
   await admin.getByRole("dialog").locator(".status-pill").getByText("DRAFT").waitFor();
+  assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("dialog").getByRole("button", { name: "Archivieren" }).click();
+  await admin.getByRole("dialog").locator(".status-pill").getByText("ARCHIVED").waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "candidate recipe archive").status, "ARCHIVED");
   assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
 
   // Canonical product mappings are unique across recipes; use a separate product for the create path.
@@ -886,7 +919,7 @@ try {
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByText("Keine Änderungen protokolliert.").waitFor();
   await admin.getByRole("region", { name: "Serverfehler" }).getByText("Keine Serverfehler protokolliert.").waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, customerPublishedShelfTarget: true, iosNumericLayoutIds: true, globalMobileIdGuard: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateRecipePartialMappingRecovery: true, candidateEditorTemplateUndo: true, legacyDiagnosticsParity: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsWithoutTrace: true, candidateDiagnosticsFaultRecovery: true, candidateDiagnosticsEmptyState: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, customerPublishedShelfTarget: true, iosNumericLayoutIds: true, globalMobileIdGuard: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateRecipeTagRevision: true, candidateRecipeArchive: true, candidateRecipePublicationRecovery: true, candidateRecipePartialMappingRecovery: true, candidateEditorTemplateUndo: true, legacyDiagnosticsParity: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsWithoutTrace: true, candidateDiagnosticsFaultRecovery: true, candidateDiagnosticsEmptyState: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();
