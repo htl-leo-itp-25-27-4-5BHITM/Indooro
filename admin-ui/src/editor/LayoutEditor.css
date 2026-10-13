@@ -2,6 +2,7 @@
 
 .le-mobile-controls{display:none}
 .le-new-layout{width:100%;margin-top:10px;text-align:left}
+.le-templates{display:grid;gap:6px}.le-templates button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:1px solid #dbe5e1;border-radius:8px;background:#f5f8f6;color:#294d48;padding:9px;text-align:left;font-size:12px;font-weight:650}.le-templates button:hover:not(:disabled){border-color:#9bc2b5;background:#eaf2ed}.le-templates button span{white-space:nowrap;color:#647976;font-weight:500}
 .le-keyboard-preview{fill:#1d8c70;fill-opacity:.35;stroke:#12624f;stroke-width:.12;stroke-dasharray:.3 .18;pointer-events:none}
 .le-canvas:focus-visible{outline:3px solid #72b8ad;outline-offset:-3px}
 .le-file-input{display:none}

@@ -17,6 +17,12 @@ const TYPES = [
   { type: "beacon", label: "Beacon", color: "#b6635f", width: 0, height: 0 },
 ] as const;
 
+const TEMPLATES = [
+  { label: "Kleiner Laden", width: 15, height: 20 },
+  { label: "Mittlerer Laden", width: 40, height: 60 },
+  { label: "Großer Laden", width: 60, height: 80 },
+] as const;
+
 type Tool = "select" | "pan" | "create";
 type Gesture =
   | { kind: "pan"; start: Point; viewport: Viewport }
@@ -362,6 +368,14 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
     setMessage("Neuer leerer Grundriss. Änderungen erst speichern, wenn er übernommen werden soll.");
   };
 
+  const applyTemplate = (template: (typeof TEMPLATES)[number]) => {
+    if (editorRef.current.document.elements.length && !window.confirm(`${template.label} (${template.width} × ${template.height}) anwenden? Alle aktuellen Elemente werden entfernt. Rückgängig bleibt möglich.`)) return;
+    setEditor((current) => replaceDocument(current, { ...current.document, gridSize: { width: template.width, height: template.height }, elements: [] }));
+    setTool("select");
+    setKeyboardPoint({ x: template.width / 2, y: template.height / 2 });
+    setMessage(`${template.label} ausgewählt. Der neue Grundriss ist noch nicht gespeichert.`);
+  };
+
   const changeNumber = (field: "x" | "y" | "width" | "height" | "rotation", value: string) => {
     if (!selected?.id && selected?.id !== 0) return;
     const parsed = number(value, Number(selected[field]) || 0);
@@ -389,6 +403,8 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
         <h2>Werkzeuge</h2>
         <div className="le-tool-row"><button type="button" aria-pressed={tool === "select"} onClick={() => setTool("select")}>Auswählen <kbd>V</kbd></button><button type="button" aria-pressed={tool === "pan"} onClick={() => setTool("pan")}>Verschieben <kbd>Space</kbd></button></div>
         <button type="button" className="le-button le-new-layout" onClick={startNewLayout} disabled={!!working}>Neues Layout</button>
+        <h2>Vorlagen</h2>
+        <div className="le-templates">{TEMPLATES.map((template) => <button type="button" key={template.label} disabled={!!working} onClick={() => applyTemplate(template)}>{template.label}<span>{template.width} × {template.height} m</span></button>)}</div>
         <h2>Elemente</h2><p className="le-hint">Element wählen, dann im Grundriss platzieren. Tastatur: Element wählen, Tab zum Grundriss, Pfeile positionieren, Enter platzieren. Shift + Pfeil bewegt 5 Rastereinheiten.</p>
         <div className="le-library">{TYPES.map((item) => <button type="button" key={item.type} aria-pressed={tool === "create" && createType === item.type} onClick={() => { setCreateType(item.type); setTool("create"); setKeyboardPoint({ x: document.gridSize.width / 2, y: document.gridSize.height / 2 }); }}><span className="le-swatch" style={{ background: item.color }} />{item.label}</button>)}</div>
         <h2>Ebenen <span>{document.elements.length}</span></h2>

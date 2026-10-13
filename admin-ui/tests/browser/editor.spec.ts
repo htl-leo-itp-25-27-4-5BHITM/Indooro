@@ -69,6 +69,29 @@ test("store editor links an unassigned beacon error and blocks publishing after 
   expect(saved[0].elements).toHaveLength(4);
 });
 
+test("store templates require confirmation, clear elements and remain undoable until saved", async ({ page }) => {
+  const saved: LayoutDocument[] = [];
+  await mockEditor(page, "DRAFT", saved);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const template = page.getByRole("button", { name: "Kleiner Laden 15 × 20 m" });
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await template.click();
+  await expect(page.locator(".le-layers button")).toHaveCount(layout.elements.length);
+  await expect(page.locator(".le-canvas-toolbar")).toContainText("40 × 60");
+
+  page.once("dialog", (dialog) => dialog.accept());
+  await template.click();
+  await expect(page.locator(".le-layers button")).toHaveCount(0);
+  await expect(page.locator(".le-canvas-toolbar")).toContainText("15 × 20");
+  await expect(page.locator(".le-save-indicator")).toContainText("Ungespeicherte Änderungen");
+  expect(saved).toHaveLength(0);
+
+  await page.getByRole("button", { name: "Rückgängig" }).click();
+  await expect(page.locator(".le-layers button")).toHaveCount(layout.elements.length);
+  await expect(page.locator(".le-canvas-toolbar")).toContainText("40 × 60");
+  await expect(page.locator(".le-save-indicator")).toContainText("Gespeichert");
+});
+
 test("shelf inspector persists routing metadata and confirms critical deletion", async ({ page }) => {
   const saved: LayoutDocument[] = [];
   await mockEditor(page, "DRAFT", saved);
