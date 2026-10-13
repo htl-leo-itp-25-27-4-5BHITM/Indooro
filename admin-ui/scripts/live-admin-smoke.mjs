@@ -553,6 +553,10 @@ try {
   const history = expectOk(await api(admin, "GET", "/api/layout/history?limit=12"), "global layout history");
   assert.ok(history.some((entry) => entry.layoutId === globalAfter.layoutId));
   assert.equal((await api(admin, "GET", `/api/layout/versions/${globalAfter.layoutId}`)).status, 200);
+  const globalHistoryPanel = admin.getByRole("region", { name: "Globale Layout-Historie" });
+  await globalHistoryPanel.getByRole("button", { name: "Weitere Versionen laden" }).click();
+  await globalHistoryPanel.getByRole("listitem").nth(12).waitFor();
+  assert.ok(await globalHistoryPanel.getByRole("listitem").count() > 12, "global history loads older versions");
   await admin.goto(`${base}/admin/next/editor/?layoutId=${globalBefore.layoutId}`, { waitUntil: "domcontentloaded" });
   await admin.getByRole("heading", { name: "Historische Version bearbeiten" }).waitFor();
   admin.once("dialog", (dialog) => void dialog.accept());

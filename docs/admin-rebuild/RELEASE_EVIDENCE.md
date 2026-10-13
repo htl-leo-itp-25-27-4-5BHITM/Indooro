@@ -2,6 +2,10 @@
 
 ## 2026-10-13 editor recovery image
 
+The latest local image also packages global history pagination: tag `indooro-admin-rebuild:local-history-pagination`, immutable image ID `sha256:e2efce0c82935f31f04e07217951cf4e891c5cd60aae98697a2905dfaeac620e`, runner SHA-256 `4c7b293e5779fc4613a72f44d2dad9c701384d44bbe883a582ba002c209ded68`. It remains local and unpushed. The live UI loaded older global versions beyond the first twelve, then restored a historical version; the full candidate workflow passed.
+
+The candidate browser suite passes 66/66, including the fifteen-version history fixture. `test:live:cutover` passed ten switch/rollback pairs on this image, and strict OpenSpec validation passed 41/41.
+
 The latest local artifact includes the global-history URL correction: tag `indooro-admin-rebuild:local-editor-recovery-url`, immutable image ID `sha256:b9e3ebb9051e346b511e3b134388e265761a1871d1f9a8321663a5be54034b33`, runner SHA-256 `86c22137454cb8384147ae8b30bac12ec7af275576a02be708c95ff4c779920e`. It is built locally and unpushed. The full live workflow passed with the historical URL removed after republication. Browser regression confirms that a reload opens the current global layout.
 
 The candidate assets were repackaged and the backend runner rebuilt with the store and global history recovery controls. Runner SHA-256: `e464c539029a0298cfc739dd709ec16da39d3ebfe9f567d238f10f6868b00492`. Local tag: `indooro-admin-rebuild:local-editor-recovery`; immutable image ID: `sha256:83c5ebf4703f0603da0554fcc666ea457638586b1ef3858ef908e6d40d8895f9`. The image was not pushed. Against the dedicated local stack, `test:live` passed both UI history recoveries and the existing CRUD/editor/role workflow; `test:live:cutover` passed ten switch/rollback pairs without changing committed flags. Candidate typecheck, lint, 59 unit and 65 browser tests passed; OpenSpec strict validation passed 41/41.

@@ -51,6 +51,24 @@ test("historical global version can be republished without a fake edit", async (
   await expect(page.getByRole("button", { name: "Global veröffentlichen" })).toBeDisabled();
 });
 
+test("global history loads versions older than the first twelve", async ({ page }) => {
+  const entries = Array.from({ length: 15 }, (_, index) => ({ layoutId: `version-${index + 1}`, shopName: `Map ${index + 1}`, savedAt: "2026-10-13T12:00:00Z", elementCount: 3 }));
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/layout/current", (route) => route.fulfill({ json: layout }));
+  await page.route("**/api/layout/history?*", (route) => {
+    const limit = Number(new URL(route.request().url()).searchParams.get("limit"));
+    return route.fulfill({ json: entries.slice(0, limit) });
+  });
+  await page.goto("/admin/next/editor/");
+  const history = page.getByRole("region", { name: "Globale Layout-Historie" });
+  await expect(history.getByRole("listitem")).toHaveCount(12);
+  await history.getByRole("button", { name: "Weitere Versionen laden" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(history.getByRole("listitem")).toHaveCount(15);
+  await expect(history.getByRole("link", { name: "Öffnen" }).last()).toHaveAttribute("href", "/admin/next/editor/?layoutId=version-15");
+  await expect(history.getByRole("button", { name: "Weitere Versionen laden" })).toHaveCount(0);
+});
+
 test("non-admin cannot open global editor or call legacy layout APIs", async ({ page }) => {
   let legacyCalls = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "manager-1", username: "manager", email: null, role: "store-manager", scope: { storeId: "store-1" } } }));

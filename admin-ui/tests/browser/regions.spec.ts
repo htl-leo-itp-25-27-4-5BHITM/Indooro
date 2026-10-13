@@ -100,20 +100,25 @@ test("region manager receives only the assigned region and has no mutation contr
 
 test("regions exposes empty, load-error, and retry states through keyboard controls", async ({ page }) => {
   let fail = true;
+  let requests = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
-  await page.route("**/api/regions?status=ACTIVE", (route) => fail
-    ? route.fulfill({ status: 503, json: { error: "Unavailable" } })
-    : route.fulfill({ json: [] }));
+  await page.route("**/api/regions?status=ACTIVE", (route) => {
+    requests += 1;
+    return fail ? route.fulfill({ status: 503, json: { error: "Unavailable" } }) : route.fulfill({ json: [] });
+  });
   await page.goto("/admin/next/regions/");
   await expect(page.getByRole("alert")).toContainText("Serverfehler");
 
   await page.getByRole("button", { name: "Erneut laden" }).focus();
   await page.keyboard.press("Enter");
+  await expect.poll(() => requests).toBe(2);
   await expect(page.getByRole("alert")).toContainText("Serverfehler");
+  await expect(page.getByRole("button", { name: "Erneut laden" })).toBeVisible();
 
   fail = false;
   await page.getByRole("button", { name: "Erneut laden" }).focus();
   await page.keyboard.press("Space");
+  await expect.poll(() => requests).toBe(3);
   await expect(page.getByText("Keine Regionen in diesem Status.")).toBeVisible();
   await page.getByRole("button", { name: "Region anlegen" }).focus();
   await page.keyboard.press("Enter");

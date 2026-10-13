@@ -97,3 +97,7 @@ Archived store-layout versions now expose a confirmed “Version wieder aktivier
 A second live run performed the store-version restoration through the scoped Store-Manager session and again confirmed the public response and single active version.
 
 After global history republication, the candidate editor now replaces the historical URL with `/admin/next/editor/` and reloads the current layout. The browser regression checks reload behavior; the packaged live run confirms the URL, public current data, and all existing candidate workflows.
+
+Global layout history now loads older entries in groups of twelve. A browser fixture with fifteen versions confirms keyboard activation of “Weitere Versionen laden” and access to version 15; the grown local OpenSearch history confirms more than twelve entries render in the packaged UI. Both live workflows remain green.
+
+The complete candidate browser suite passes 66/66 after synchronizing the region retry fixture with its completed request and making the shell heading assertion exact.

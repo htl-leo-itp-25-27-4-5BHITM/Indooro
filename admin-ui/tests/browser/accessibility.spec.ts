@@ -10,7 +10,7 @@ async function loadStoreList(page: Page) {
     page: 0, size: 20, totalElements: 1
   } }));
   await page.goto("/admin/next/stores/");
-  await expect(page.getByRole("heading", { name: "Stores" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Stores", exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: "Store-Ergebnisse" })).toBeVisible();
 }
 

@@ -43,6 +43,11 @@ The editor and backend SHALL distinguish saved draft versions from the active mo
 - **WHEN** an admin publishes another global layout and opens recent history
 - **THEN** the newly published version appears in newest-first order within the requested limit
 
+#### Scenario: Admin loads older global layout versions
+- **GIVEN** global layout history contains more than twelve versions
+- **WHEN** an admin requests additional versions from the history panel
+- **THEN** older versions become selectable while the newest versions remain visible
+
 ### Requirement: Layout validation identifies actionable map problems
 Validation SHALL distinguish blocking errors from warnings and SHALL identify the affected element or map context for out-of-bounds geometry, missing entrance, duplicate or unassigned beacons, invalid shelf metadata, and unreachable product targets where routing data is available.
 
