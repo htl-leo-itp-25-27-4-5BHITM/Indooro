@@ -282,6 +282,22 @@ try {
   assert.equal(candidateRecipe.steps[0].instruction, "Apfel schneiden.");
   await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(candidateRecipeTitle)}`, { waitUntil: "domcontentloaded" });
   await admin.getByRole("row").filter({ hasText: candidateRecipeTitle }).getByRole("button", { name: "Bearbeiten" }).click();
+  const revisedStep = `Apfel schneiden und prüfen ${run}.`;
+  await admin.getByRole("dialog").getByRole("textbox", { name: "Schritt 1" }).fill(revisedStep);
+  const stepFailurePath = `**/api/admin/recipes/${recipe.id}/steps/${candidateRecipe.steps[0].id}`;
+  const failRecipeStep = (route) => route.fulfill({ status: 503, json: { error: "Injected recipe step failure" } });
+  await admin.route(stepFailurePath, failRecipeStep);
+  await admin.getByRole("dialog").getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("dialog").getByRole("alert").getByText(/Schritt 1 speichern fehlgeschlagen/).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "failed recipe step post-state").steps[0].instruction, "Apfel schneiden.");
+  await admin.getByRole("dialog").getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+  assert.equal(await admin.getByRole("dialog").getByRole("textbox", { name: "Schritt 1" }).inputValue(), revisedStep, "failed recipe edit preserves local step input");
+  await admin.unroute(stepFailurePath, failRecipeStep);
+  await admin.getByRole("dialog").getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("dialog").waitFor({ state: "hidden" });
+  assert.equal(expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "retried recipe step post-state").steps[0].instruction, revisedStep);
+  await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(candidateRecipeTitle)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: candidateRecipeTitle }).getByRole("button", { name: "Bearbeiten" }).click();
   admin.once("dialog", (dialog) => { void dialog.accept(); });
   await admin.getByRole("dialog").getByRole("button", { name: "Veröffentlichen" }).click();
   await admin.getByRole("dialog").locator(".status-pill").getByText("PUBLISHED").waitFor();
@@ -350,6 +366,25 @@ try {
   assert.equal(typeof mobilePublished.layout.gridSize.width, "number");
   assert.equal(typeof mobilePublished.layout.gridSize.height, "number");
   assert.ok(mobilePublished.layout.elements.every((item) => Number.isInteger(item.id) && typeof item.type === "string" && typeof item.x === "number" && typeof item.y === "number"));
+  const publicLayoutBeforeEditorRetry = await currentLayout(store.id);
+  let injectedEditorContextFailures = 0;
+  await admin.route(`**/api/stores/${store.id}/layout/editor-context`, async (route) => {
+    if (route.request().method() === "GET" && injectedEditorContextFailures === 0) {
+      injectedEditorContextFailures += 1;
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Injected live smoke failure" }) });
+      return;
+    }
+    await route.continue();
+  });
+  await admin.goto(`${base}/admin/next/editor/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("heading", { name: "Editor konnte nicht geladen werden" }).waitFor();
+  const retryEditorLoad = admin.getByRole("button", { name: "Erneut versuchen" });
+  await retryEditorLoad.focus();
+  await retryEditorLoad.press("Enter");
+  await admin.getByRole("heading", { name: "Layout Editor" }).waitFor();
+  assert.equal(injectedEditorContextFailures, 1, "exactly one editor-context request receives the injected 503");
+  assert.deepEqual(await currentLayout(store.id), publicLayoutBeforeEditorRetry, "keyboard retry loads the editor without changing the public active layout");
+  await admin.unroute(`**/api/stores/${store.id}/layout/editor-context`);
   const unassignedBeaconLayout = documentFor("Unassigned beacon");
   unassignedBeaconLayout.elements.push({ id: 3, type: "beacon", x: 10, y: 10, beaconId: `UNASSIGNED-${run}` });
   assert.equal((await api(admin, "POST", layoutPath, { layoutName: "Invalid beacon", activate: true, layout: unassignedBeaconLayout })).status, 400);
@@ -522,6 +557,19 @@ try {
   assert.equal(await manager.locator(".le-layers button").count(), 3, "live editor undoes deletion");
   await manager.getByRole("button", { name: "Wiederholen" }).click();
   assert.equal(await manager.locator(".le-layers button").count(), 2, "live editor redoes deletion");
+  await manager.getByRole("button", { name: "Wand", exact: true }).click();
+  const drawingArea = await manager.locator(".le-canvas > g > rect").first().boundingBox();
+  assert.ok(drawingArea, "live editor drawing area is visible");
+  const wallStart = { x: drawingArea.x + drawingArea.width * 0.62, y: drawingArea.y + drawingArea.height * 0.66 };
+  await manager.mouse.move(wallStart.x, wallStart.y);
+  await manager.mouse.down();
+  await manager.mouse.move(wallStart.x + drawingArea.width * 0.16, wallStart.y + drawingArea.height * 0.18, { steps: 5 });
+  await manager.mouse.up();
+  assert.equal(await manager.locator(".le-layers button").count(), 3, "live editor drag creates a wall");
+  const drawnWallWidth = Number(await manager.getByLabel("Breite", { exact: true }).inputValue());
+  const drawnWallHeight = Number(await manager.getByLabel("Höhe", { exact: true }).inputValue());
+  assert.ok(drawnWallWidth > 1 && drawnWallHeight > 1, "live editor drag determines wall dimensions");
+  await manager.getByRole("button", { name: "Auswählen", exact: false }).first().click();
   await manager.locator(".le-layers button").nth(1).click();
   const selectedX = manager.getByLabel("X", { exact: true });
   const pointerStartX = Number(await selectedX.inputValue());
@@ -600,6 +648,9 @@ try {
   assert.equal(edited.layout.elements[1].accessAngle, 135);
   assert.equal(edited.layout.elements[1].layoutCode, "310/1/1/1");
   assert.deepEqual(edited.layout.elements[1].productPositions, ["310-42"]);
+  const publishedWall = edited.layout.elements.find((element) => element.type === "wall");
+  assert.equal(publishedWall?.width, drawnWallWidth, "drawn wall width reaches the public layout");
+  assert.equal(publishedWall?.height, drawnWallHeight, "drawn wall height reaches the public layout");
   assert.equal(edited.layout.navigationMetadata.smokeMarker, run);
   await manager.goto(`${base}/admin/next/stores/detail/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
   await manager.getByRole("heading", { name: "Stammdaten" }).waitFor();
