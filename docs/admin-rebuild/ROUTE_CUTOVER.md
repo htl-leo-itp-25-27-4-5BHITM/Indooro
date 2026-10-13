@@ -1,6 +1,6 @@
 # Admin route cutover and rollback
 
-The new React pages are packaged at `/admin/next/*`. Each existing entry loads `route-cutover.js` from the protected admin resources. The committed map now redirects only `/admin/server-logs/` to the candidate Diagnostics page; the other nine entries still serve their existing static pages. This is a local branch and image change, with no production rollout.
+The new React pages are packaged at `/admin/next/*`. Each existing entry loads `route-cutover.js` from the protected admin resources. The committed map redirects `/admin/` to the candidate Dashboard and `/admin/server-logs/` to candidate Diagnostics; the other eight entries still serve their existing static pages. This is a local branch and image change, with no production rollout.
 
 | Map key | Current entry | Candidate entry |
 | --- | --- | --- |
@@ -24,3 +24,5 @@ The URL switch uses a same-origin module loaded from each current entry. Existin
 On 2026-10-12, `cd admin-ui && npm run test:live:cutover` passed against the running Quarkus/Keycloak stack. Playwright authenticated once, simulated each of the ten flags individually in the served map, followed the current URL with its query and fragment to the candidate, then restored the original map response and verified the old page. No committed flag was changed. This proves URL switching and rollback mechanics; route action and state parity remain separate gates.
 
 On 2026-10-13, the Diagnostics parity row in `ROUTE_PARITY_MATRIX.md` passed its legacy/candidate action, role, keyboard, empty/error, deep-link, and rollback checks before its flag was enabled. The packaged cutover image then passed the full live workflow, all ten simulated switch/rollback pairs, and an unmodified `/admin/server-logs/?probe=committed#proof` request that landed on `/admin/next/server-logs/` with query and fragment intact. `/admin/` still served the legacy page. Reverting `diagnostics` to `false` or restoring the preceding immutable image restores the old Diagnostics entry.
+
+Later on 2026-10-13, the Dashboard parity row passed authenticated legacy/candidate comparison for all three roles, direct refresh, scoped API counts, action destinations, keyboard, empty/error/retry, and simulated rollback. The old global Dashboard truncated Stores at 20 and missing Layouts at 9 in the grown local dataset; the candidate showed authoritative totals of 221 and 152. The candidate also hides legacy action links that scoped staff cannot use. The local Dashboard flag was then enabled. The current packaged image and actual committed redirect evidence are recorded in `RELEASE_EVIDENCE.md`; reverting only `dashboard` to `false` restores the old root entry.
