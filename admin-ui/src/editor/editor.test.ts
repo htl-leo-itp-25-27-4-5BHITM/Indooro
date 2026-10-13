@@ -98,6 +98,13 @@ test("validation links bounds, rotated bounds, beacon assignment and overlap to 
   assert.ok(issues.some((issue) => issue.code === "metadata" && issue.elementId === "s2"));
 });
 
+test("store validation rejects a beacon when the store has no assignments", () => {
+  const source = fixture();
+  source.elements.push({ id: "b1", type: "beacon", x: 5, y: 5, beaconId: "B-404" });
+  assert.ok(validateLayout(source, [], true).some((issue) => issue.code === "beacon-foreign" && issue.elementId === "b1"));
+  assert.equal(validateLayout(source, [], false).some((issue) => issue.code === "beacon-foreign"), false);
+});
+
 test("shelf locations require the customer CODE/SECTION format before publication", () => {
   const source = fixture();
   source.elements[1].category = "310";

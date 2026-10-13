@@ -3,6 +3,8 @@ package at.htl.admin.service;
 import at.htl.admin.dto.LayoutDtos;
 import at.htl.admin.dto.MobileDtos;
 import at.htl.admin.entity.LayoutVersionEntity;
+import at.htl.admin.entity.BeaconAssignmentEntity;
+import at.htl.admin.entity.BeaconEntity;
 import at.htl.admin.entity.LayoutVersionStatus;
 import at.htl.admin.entity.RecordStatus;
 import at.htl.admin.entity.StoreEntity;
@@ -12,6 +14,7 @@ import at.htl.admin.repository.StoreRepository;
 import at.htl.service.LayoutDocumentValidator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.ws.rs.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -177,6 +181,27 @@ class StoreLayoutDraftLifecycleTest {
         assertEquals("ACTIVE", first.status());
         assertEquals(first.layoutId(), mobileService.getCurrentLayout(storeId).layoutId());
         assertEquals(1, activeCount());
+    }
+
+    @Test
+    void publishingRejectsAStoreBeaconWithoutAnActiveAssignment() throws Exception {
+        JsonNode layout = mapper.readTree("{\"shopName\":\"Testmarkt\",\"gridSize\":{\"width\":20,\"height\":20},\"elements\":[{\"id\":\"b1\",\"type\":\"beacon\",\"x\":5,\"y\":5,\"beaconId\":\"B-404\"}]}");
+        LayoutDtos.LayoutSaveRequest immediate = new LayoutDtos.LayoutSaveRequest("Beacon", "Test", true, layout);
+        assertThrows(BadRequestException.class, () -> adminService.saveLayoutVersion(storeId, immediate));
+        assertEquals(0, versions.size());
+
+        LayoutDtos.LayoutSaveRequest draftRequest = new LayoutDtos.LayoutSaveRequest("Beacon", "Test", false, layout);
+        LayoutDtos.StoreLayoutResponse draft = adminService.saveLayoutVersion(storeId, draftRequest);
+        assertThrows(BadRequestException.class, () -> adminService.activateLayoutVersion(storeId, draft.layoutId()));
+        assertEquals("DRAFT", adminService.getLayoutVersion(storeId, draft.layoutId()).status());
+
+        BeaconEntity beacon = new BeaconEntity();
+        beacon.id = UUID.randomUUID();
+        beacon.beaconCode = "B-404";
+        BeaconAssignmentEntity assignment = new BeaconAssignmentEntity();
+        assignment.beacon = beacon;
+        when(adminService.beaconAssignmentRepository.listActiveByStoreId(storeId)).thenReturn(List.of(assignment));
+        assertEquals("ACTIVE", adminService.activateLayoutVersion(storeId, draft.layoutId()).status());
     }
 
     private long activeCount() {

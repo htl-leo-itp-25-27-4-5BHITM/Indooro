@@ -42,7 +42,7 @@ export function MobileCurrentPreview({ api, storeId, refreshKey = 0, draft, assi
     ? { layout: draft.layout, layoutId: draft.layoutId, source: "DRAFT", fallback: false }
     : current;
   const elements = displayed ? safeElements(displayed.layout) : [];
-  const issues = displayed ? validateLayout(displayed.layout, assignedBeacons) : [];
+  const issues = displayed ? validateLayout(displayed.layout, assignedBeacons, true) : [];
   const beaconIssues = issues.filter((issue) => issue.code.startsWith("beacon-")).length;
   const productIssues = issues.filter((issue) => ["metadata", "shelf-category", "shelf-section", "routing-access"].includes(issue.code)).length;
   const routingIssues = issues.filter((issue) => issue.code === "routing-access").length;

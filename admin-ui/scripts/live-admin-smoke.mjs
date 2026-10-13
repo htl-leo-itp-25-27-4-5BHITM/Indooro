@@ -346,6 +346,10 @@ try {
   assert.equal(typeof mobilePublished.layout.gridSize.width, "number");
   assert.equal(typeof mobilePublished.layout.gridSize.height, "number");
   assert.ok(mobilePublished.layout.elements.every((item) => Number.isInteger(item.id) && typeof item.type === "string" && typeof item.x === "number" && typeof item.y === "number"));
+  const unassignedBeaconLayout = documentFor("Unassigned beacon");
+  unassignedBeaconLayout.elements.push({ id: 3, type: "beacon", x: 10, y: 10, beaconId: `UNASSIGNED-${run}` });
+  assert.equal((await api(admin, "POST", layoutPath, { layoutName: "Invalid beacon", activate: true, layout: unassignedBeaconLayout })).status, 400);
+  assert.equal((await currentLayout(store.id)).layoutId, draft.layoutId);
 
   let deniedDirectLinks = 0;
   let regionCreatedStoreId = null;
@@ -606,6 +610,9 @@ try {
   assert.equal(restoredPublicLayout.layout.elements[1].x, initialX + 1);
   assert.equal(restoredPublicLayout.layout.elements[1].accessAngle, 135);
   assert.equal(restoredPublicLayout.layout.navigationMetadata.smokeMarker, run);
+  const unassignedDraft = expectOk(await api(admin, "POST", layoutPath, { layoutName: "Unassigned draft", activate: false, layout: unassignedBeaconLayout }), "unassigned beacon draft");
+  assert.equal((await api(admin, "POST", `${layoutPath}/${unassignedDraft.layoutId}/activate`, {})).status, 400);
+  assert.equal((await currentLayout(store.id)).layoutId, edited.layoutId);
 
   const auditLogs = expectOk(await api(admin, "GET", "/api/admin/logs?limit=50"), "admin audit logs");
   const errorLogs = expectOk(await api(admin, "GET", "/api/admin/error-logs?limit=50"), "admin error logs");

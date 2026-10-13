@@ -4,6 +4,7 @@ import at.htl.admin.dto.LayoutDtos;
 import at.htl.admin.entity.LayoutVersionEntity;
 import at.htl.admin.entity.StoreEntity;
 import at.htl.admin.repository.LayoutVersionRepository;
+import at.htl.admin.repository.BeaconAssignmentRepository;
 import at.htl.service.LayoutDocumentValidator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.ws.rs.WebApplicationException;
@@ -11,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
 import java.util.Optional;
+import java.util.List;
 import org.mockito.ArgumentCaptor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,6 +50,7 @@ class StoreLayoutAdminServiceValidationTest {
         service.storeAdminService = mock(StoreAdminService.class);
         service.layoutVersionRepository = mock(LayoutVersionRepository.class);
         service.auditLogService = mock(AuditLogService.class);
+        service.beaconAssignmentRepository = mock(BeaconAssignmentRepository.class);
         service.objectMapper = new ObjectMapper();
 
         UUID storeId = UUID.randomUUID();
@@ -57,6 +60,7 @@ class StoreLayoutAdminServiceValidationTest {
         when(service.storeAdminService.lockStore(storeId)).thenReturn(store);
         when(service.layoutVersionRepository.findActiveByStoreId(storeId)).thenReturn(Optional.empty());
         when(service.layoutVersionRepository.nextVersionNo(storeId)).thenReturn(1);
+        when(service.beaconAssignmentRepository.listActiveByStoreId(storeId)).thenReturn(List.of());
 
         var layout = service.objectMapper.readTree("{\"shopName\":\"Indooro\",\"gridSize\":{\"width\":40,\"height\":60},\"elements\":[{\"id\":1,\"type\":\"shelf\",\"x\":1,\"y\":2,\"width\":3,\"height\":4}],\"exportDate\":\"2026-10-11\"}");
         var request = new LayoutDtos.LayoutSaveRequest("Store", null, true, layout);

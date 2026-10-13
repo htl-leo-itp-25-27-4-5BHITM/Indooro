@@ -81,7 +81,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const documentRef = useRef(document);
   documentRef.current = document;
   const dirty = isDirty(editor);
-  const issues = useMemo(() => validateLayout(document, assignedBeacons), [document, assignedBeacons]);
+  const issues = useMemo(() => validateLayout(document, assignedBeacons, mode === "store"), [document, assignedBeacons, mode]);
   const errors = issues.filter((issue) => issue.severity === "error").length;
   const selected = document.elements.find((element) => element.id === editor.selectedId) ?? null;
   const selectedIndex = document.elements.findIndex((element) => element.id === editor.selectedId);

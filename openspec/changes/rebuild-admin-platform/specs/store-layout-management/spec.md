@@ -59,3 +59,8 @@ Validation SHALL distinguish blocking errors from warnings and SHALL identify th
 #### Scenario: Invalid beacon placement is found
 - **WHEN** a store layout contains an unassigned or duplicate beacon
 - **THEN** validation identifies each affected element, prevents publish while the blocking problem remains, and allows the user to select it in the editor
+
+#### Scenario: Direct store publication with an unassigned beacon is rejected
+- **GIVEN** a store has no active assignment for a beacon placed in a saved layout
+- **WHEN** an API client attempts immediate publication or activation of that layout
+- **THEN** the backend rejects the publication and leaves the prior active layout unchanged

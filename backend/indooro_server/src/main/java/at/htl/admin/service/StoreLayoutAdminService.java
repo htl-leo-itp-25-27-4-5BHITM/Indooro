@@ -14,12 +14,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -91,6 +94,10 @@ public class StoreLayoutAdminService {
         boolean shouldActivate = Boolean.TRUE.equals(request.activate())
                 || request.activate() == null && activeLayout == null;
 
+        if (shouldActivate) {
+            validateAssignedBeacons(storeId, request.layout());
+        }
+
         if (shouldActivate && activeLayout != null) {
             activeLayout.status = LayoutVersionStatus.ARCHIVED;
             // The partial unique index permits only one ACTIVE row. Flush the archive
@@ -121,6 +128,8 @@ public class StoreLayoutAdminService {
         storeAdminService.lockStore(storeId);
         LayoutVersionEntity entity = layoutVersionRepository.findByStoreAndId(storeId, layoutId)
                 .orElseThrow(() -> new NotFoundException("Layout-Version nicht gefunden."));
+        layoutDocumentValidator.validate(entity.layoutJson);
+        validateAssignedBeacons(storeId, entity.layoutJson);
 
         layoutVersionRepository.findActiveByStoreId(storeId)
                 .filter(active -> !active.id.equals(layoutId))
@@ -170,6 +179,24 @@ public class StoreLayoutAdminService {
                 entity.activatedAt,
                 entity.layoutJson
         );
+    }
+
+    private void validateAssignedBeacons(UUID storeId, JsonNode layout) {
+        Set<String> assigned = new HashSet<>();
+        for (BeaconAssignmentEntity assignment : beaconAssignmentRepository.listActiveByStoreId(storeId)) {
+            if (assignment.beacon.id != null) assigned.add(assignment.beacon.id.toString());
+            if (assignment.beacon.beaconCode != null) assigned.add(assignment.beacon.beaconCode);
+            if (assignment.beacon.identityKey != null) assigned.add(assignment.beacon.identityKey);
+        }
+        for (JsonNode element : layout.path("elements")) {
+            if (!"beacon".equals(element.path("type").asText())) continue;
+            String beaconId = element.path("beaconId").asText("").trim();
+            if (beaconId.isEmpty()) beaconId = element.path("beaconCode").asText("").trim();
+            if (beaconId.isEmpty()) beaconId = element.path("identityKey").asText("").trim();
+            if (beaconId.isEmpty() || !assigned.contains(beaconId)) {
+                throw new BadRequestException("Layout-Beacon ist dieser Filiale nicht zugeordnet: " + beaconId);
+            }
+        }
     }
 
     private LayoutDtos.LayoutVersionSummary toVersionSummary(LayoutVersionEntity entity) {

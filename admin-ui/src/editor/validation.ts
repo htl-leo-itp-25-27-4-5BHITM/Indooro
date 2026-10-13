@@ -55,7 +55,7 @@ function shelfProductTargets(shelf: LayoutElement): string[] {
   return [...new Set([...positions, ...(layoutCode ? [layoutCode] : [])])];
 }
 
-export function validateLayout(document: LayoutDocument, assignedBeacons: AssignedBeacon[] = []): LayoutIssue[] {
+export function validateLayout(document: LayoutDocument, assignedBeacons: AssignedBeacon[] = [], requireAssignedBeacons = false): LayoutIssue[] {
   const issues: LayoutIssue[] = [];
   const add = (severity: LayoutIssue["severity"], code: string, message: string, elementId: ElementId | null = null) => issues.push({ severity, code, message, elementId });
   const { width, height } = document.gridSize;
@@ -114,7 +114,7 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
       else {
         if (beaconIds.has(beaconId)) add("error", "beacon-duplicate", `${name} verwendet ${beaconId} mehrfach.`, id);
         beaconIds.add(beaconId);
-        if (assignedBeacons.length && !assigned.has(beaconId)) add("error", "beacon-foreign", `${name} gehört nicht zu dieser Filiale.`, id);
+        if ((requireAssignedBeacons || assignedBeacons.length > 0) && !assigned.has(beaconId)) add("error", "beacon-foreign", `${name} gehört nicht zu dieser Filiale.`, id);
       }
     }
   }
