@@ -24,8 +24,28 @@ class LayoutDocumentValidatorTest {
             JsonNode layout = mapper.readTree(stream);
             String before = layout.toString();
             assertDoesNotThrow(() -> validator.validate(layout));
+            assertDoesNotThrow(() -> validator.validateMobileElementIds(layout));
             assertEquals(before, layout.toString());
         }
+    }
+
+    @Test
+    void publicationRequiresSafeNumericIdsWhileDraftValidationKeepsLegacyIds() {
+        ObjectNode layout = layout();
+        ObjectNode element = elementWithoutId(1, 1);
+        ((ArrayNode) layout.get("elements")).add(element);
+        assertDoesNotThrow(() -> validator.validate(layout));
+        assertMobileBadRequest(layout);
+
+        element.put("id", "legacy-1");
+        assertDoesNotThrow(() -> validator.validate(layout));
+        assertMobileBadRequest(layout);
+
+        element.put("id", LayoutDocumentValidator.MAX_MOBILE_ELEMENT_ID + 1);
+        assertMobileBadRequest(layout);
+
+        element.put("id", LayoutDocumentValidator.MAX_MOBILE_ELEMENT_ID);
+        assertDoesNotThrow(() -> validator.validateMobileElementIds(layout));
     }
 
     @Test
@@ -183,6 +203,12 @@ class LayoutDocumentValidatorTest {
 
     private void assertBadRequest(JsonNode layout) {
         WebApplicationException exception = assertThrows(WebApplicationException.class, () -> validator.validate(layout));
+        assertEquals(400, exception.getResponse().getStatus());
+    }
+
+    private void assertMobileBadRequest(JsonNode layout) {
+        WebApplicationException exception = assertThrows(WebApplicationException.class,
+                () -> validator.validateMobileElementIds(layout));
         assertEquals(400, exception.getResponse().getStatus());
     }
 }

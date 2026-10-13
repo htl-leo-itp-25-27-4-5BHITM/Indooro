@@ -1,5 +1,5 @@
 import { elementBounds, overlaps } from "./geometry";
-import type { ElementId, LayoutDocument, LayoutElement } from "./model";
+import { isMobileElementId, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
 
 export interface AssignedBeacon { id?: string; beaconCode?: string; identityKey?: string; beaconId?: string; uuid?: string; major?: number; minor?: number }
 export interface LayoutIssue {
@@ -66,11 +66,13 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
   if (!document.elements.some((element) => element.type === "entrance")) add("error", "entrance", "Ein Eingang ist für die Navigation erforderlich.");
   const beaconIds = new Set<string>();
   const elementIds = new Set<string>();
+  const shelfAddresses = new Set<string>();
   const assigned = new Set(assignedBeacons.flatMap((beacon) => [beacon.id, beacon.beaconCode, beacon.identityKey].filter((value): value is string => Boolean(value))));
 
   for (const element of document.elements) {
     const id = element.id ?? null;
     const name = element.label || element.type;
+    if (!isMobileElementId(id)) add("error", "mobile-id", `${name} braucht eine numerische Element-ID für die iOS-Karte. IDs reparieren und erneut speichern.`, id);
     if (id !== null) {
       const key = `${typeof id}:${String(id)}`;
       if (elementIds.has(key)) add("error", "element-duplicate", `${name} hat eine doppelte Element-ID.`, id);
@@ -85,6 +87,10 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
     }
     if ((element.type === "shelf" || element.type === "poi") && !element.category && !element.layoutCode) {
       add("warning", "metadata", `${name} hat keine Kategorie oder Layoutkennung.`, id);
+    }
+    if (element.type === "shelf" && shelfProductTargets(element).length > 0
+      && (typeof element.category !== "string" || !/^\d{1,4}\/\d{1,3}$/.test(element.category))) {
+      add("error", "shelf-target-address", `${name}: Produktpositionen und Layout-Code allein verknüpfen Produkte nicht mit der Karte. Kategorie und Abschnitt zuweisen.`, id);
     }
     if (element.accessAngle !== undefined && (!Number.isFinite(element.accessAngle) || element.accessAngle < 0 || element.accessAngle > 360)) {
       add("error", "access-angle", `${name} braucht einen Zugriffswinkel zwischen 0 und 360 Grad.`, id);
@@ -102,10 +108,14 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
     if (element.type === "shelf" && typeof element.category === "string" && element.category.trim()) {
       const parts = element.category.split("/");
       const section = Number(parts[1]);
-      if (parts.length !== 2 || !parts[0].trim() || !Number.isInteger(section) || section <= 0) {
-        add("error", "shelf-category", `${name} braucht eine Kategorie im Format Code/Abschnitt.`, id);
+      if (parts.length !== 2 || !/^\d{1,4}$/.test(parts[0]) || !Number.isInteger(section) || section <= 0) {
+        add("error", "shelf-category", `${name} braucht eine numerische Kategorie im Format Code/Abschnitt.`, id);
       } else if (element.meter !== null && element.meter !== undefined && element.meter !== section) {
         add("error", "shelf-section", `${name}: Kategorie-Abschnitt und Meterangabe widersprechen sich.`, id);
+      } else {
+        const address = `${parts[0]}/${section}`;
+        if (shelfAddresses.has(address)) add("error", "shelf-address-duplicate", `${name}: ${address} wird von mehreren Regalen verwendet. Abschnitt zuweisen, damit Produkte das richtige Regal finden.`, id);
+        shelfAddresses.add(address);
       }
     }
     if (element.type === "beacon") {

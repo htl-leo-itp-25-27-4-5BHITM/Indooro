@@ -64,3 +64,21 @@ Validation SHALL distinguish blocking errors from warnings and SHALL identify th
 - **GIVEN** a store has no active assignment for a beacon placed in a saved layout
 - **WHEN** an API client attempts immediate publication or activation of that layout
 - **THEN** the backend rejects the publication and leaves the prior active layout unchanged
+
+#### Scenario: Historical element IDs are repaired before publication
+- **GIVEN** a saved draft contains string or missing element IDs
+- **WHEN** staff opens it in the editor and repairs its IDs
+- **THEN** every element receives a unique positive JSON integer that the iOS client can decode, the change is undoable, and the draft can be saved
+
+#### Scenario: Published layouts require mobile-compatible IDs
+- **WHEN** an API client publishes a global layout or activates a store layout containing a string, missing, or unsafe element ID
+- **THEN** publication is rejected before replacing the active layout, while the same historical content remains saveable as a draft
+
+#### Scenario: Shelf addresses stay unique for product routing
+- **GIVEN** two shelves share a category and section or a shelf has only a bare category code
+- **WHEN** staff assigns shelf sections
+- **THEN** the editor preserves valid unique sections, assigns the remaining sections by map position, and records one undoable change
+
+#### Scenario: Product positions lack a navigable shelf address
+- **WHEN** a shelf has product positions or a layout code without a valid category and section
+- **THEN** validation blocks publication and explains that customer and mobile routes require the shelf address

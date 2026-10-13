@@ -691,6 +691,7 @@ try {
   const publishedWall = edited.layout.elements.find((element) => element.type === "wall");
   assert.equal(publishedWall?.width, drawnWallWidth, "drawn wall width reaches the public layout");
   assert.equal(publishedWall?.height, drawnWallHeight, "drawn wall height reaches the public layout");
+  assert.ok(edited.layout.elements.every((element) => typeof element.id === "number" && Number.isSafeInteger(element.id)), "published store layout keeps iOS-decodable numeric element IDs");
   assert.equal(edited.layout.navigationMetadata.smokeMarker, run);
   await manager.goto(`${base}/admin/next/stores/detail/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
   await manager.getByRole("heading", { name: "Stammdaten" }).waitFor();
@@ -739,6 +740,21 @@ try {
   assert.equal(globalAfter.shopName, `Live Global ${run}`);
   assert.equal(globalAfter.elements.length, globalBefore.elements.length);
   assert.equal(globalAfter.recordType, "current");
+  const invalidMobileLayout = structuredClone(globalAfter);
+  invalidMobileLayout.elements[0].id = "legacy-string-id";
+  assert.equal((await api(admin, "POST", "/api/layout/current", invalidMobileLayout)).status, 400, "global API blocks iOS-incompatible element IDs");
+  assert.equal(expectOk(await api(admin, "GET", "/api/layout/current"), "global layout after rejected IDs").layoutId, globalAfter.layoutId);
+  const customerShelf = globalAfter.elements.find((element) => element.type === "shelf" && element.category === "310/1");
+  assert.ok(customerShelf, "global fixture has the customer product's shelf target");
+  const customer = await browser.newPage();
+  await customer.goto(`${base}/customer/`, { waitUntil: "domcontentloaded" });
+  await customer.locator("#mapCanvas [data-element-id]").first().waitFor();
+  await customer.locator("#search-input").fill(updatedProductName);
+  const customerProduct = customer.locator(".search-result-item").filter({ hasText: updatedProductName });
+  await customerProduct.waitFor();
+  await customerProduct.click();
+  assert.equal(await customer.locator(".map-element.highlighted").getAttribute("data-element-id"), String(customerShelf.id), "customer search reaches the published shelf");
+  await customer.close();
   const history = expectOk(await api(admin, "GET", "/api/layout/history?limit=12"), "global layout history");
   assert.ok(history.some((entry) => entry.layoutId === globalAfter.layoutId));
   assert.equal((await api(admin, "GET", `/api/layout/versions/${globalAfter.layoutId}`)).status, 200);
@@ -861,7 +877,7 @@ try {
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByText("Keine Änderungen protokolliert.").waitFor();
   await admin.getByRole("region", { name: "Serverfehler" }).getByText("Keine Serverfehler protokolliert.").waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateRecipePartialMappingRecovery: true, candidateEditorTemplateUndo: true, legacyDiagnosticsParity: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsWithoutTrace: true, candidateDiagnosticsFaultRecovery: true, candidateDiagnosticsEmptyState: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, customerPublishedShelfTarget: true, iosNumericLayoutIds: true, globalMobileIdGuard: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateRecipePartialMappingRecovery: true, candidateEditorTemplateUndo: true, legacyDiagnosticsParity: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsWithoutTrace: true, candidateDiagnosticsFaultRecovery: true, candidateDiagnosticsEmptyState: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();

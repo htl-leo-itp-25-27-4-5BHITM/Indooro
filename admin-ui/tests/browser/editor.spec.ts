@@ -92,6 +92,44 @@ test("store templates require confirmation, clear elements and remain undoable u
   await expect(page.locator(".le-save-indicator")).toContainText("Gespeichert");
 });
 
+test("editor repairs old string IDs before publication and saves numeric IDs for iOS", async ({ page }) => {
+  const saved: LayoutDocument[] = [];
+  await mockEditor(page, "DRAFT", saved);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const imported = structuredClone(layout);
+  imported.elements[1].id = "candidate-shelf";
+  await page.locator(".le-file-input").setInputFiles({ name: "old-candidate.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(imported)) });
+  await expect(page.locator(".le-validation")).toContainText("numerische Element-ID");
+  await expect(page.getByRole("button", { name: "Veröffentlichen" })).toBeDisabled();
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByRole("button", { name: "iOS-IDs reparieren" }).click();
+  await expect(page.locator(".le-validation")).toContainText("numerische Element-ID");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "iOS-IDs reparieren" }).click();
+  await expect(page.locator(".le-validation")).not.toContainText("numerische Element-ID");
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.getByText("Entwurf gespeichert.")).toBeVisible();
+  expect(saved).toHaveLength(1);
+  expect(saved[0].elements.every((element) => typeof element.id === "number" && Number.isSafeInteger(element.id))).toBe(true);
+});
+
+test("editor assigns a distinct shelf section before saving product targets", async ({ page }) => {
+  const saved: LayoutDocument[] = [];
+  await mockEditor(page, "DRAFT", saved);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const imported = structuredClone(layout);
+  imported.elements.push({ id: 4, type: "shelf", x: 18, y: 18, width: 4, height: 2, category: "310/1", meter: 1, label: "Zweites Obstregal" });
+  await page.locator(".le-file-input").setInputFiles({ name: "duplicate-shelf.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(imported)) });
+  await expect(page.locator(".le-validation")).toContainText("von mehreren Regalen verwendet");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Regalabschnitte zuweisen" }).click();
+  await expect(page.locator(".le-validation")).not.toContainText("von mehreren Regalen verwendet");
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.getByText("Entwurf gespeichert.")).toBeVisible();
+  expect(saved[0].elements[1]).toMatchObject({ category: "310/1", meter: 1 });
+  expect(saved[0].elements[3]).toMatchObject({ category: "310/2", meter: 2 });
+});
+
 test("shelf inspector persists routing metadata and confirms critical deletion", async ({ page }) => {
   const saved: LayoutDocument[] = [];
   await mockEditor(page, "DRAFT", saved);

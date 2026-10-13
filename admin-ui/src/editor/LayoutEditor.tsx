@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { fitViewport, screenToWorld, zoomAt, type Point, type Viewport } from "./geometry";
-import { elementFill, shelfMetadata, shelfMetadataChanges } from "./metadata";
-import { applyCommand, createEditorState, isDirty, markSaved, newElementId, parseImportedDocument, redo, replaceDocument, selectElement, undo, type EditorCommand, type EditorState, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
+import { assignShelfSections, elementFill, shelfMetadata, shelfMetadataChanges } from "./metadata";
+import { applyCommand, createEditorState, isDirty, isMobileElementId, markSaved, newElementId, parseImportedDocument, redo, repairMobileElementIds, replaceDocument, selectElement, undo, type EditorCommand, type EditorState, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
 import { validateLayout, type AssignedBeacon } from "./validation";
 import "./LayoutEditor.css";
 
@@ -90,6 +90,8 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
   const dirty = isDirty(editor);
   const issues = useMemo(() => validateLayout(document, assignedBeacons, mode === "store"), [document, assignedBeacons, mode]);
   const errors = issues.filter((issue) => issue.severity === "error").length;
+  const invalidMobileIds = document.elements.filter((element) => !isMobileElementId(element.id)).length;
+  const brokenShelfAddresses = issues.some((issue) => ["shelf-category", "shelf-section", "shelf-address-duplicate"].includes(issue.code));
   const selected = document.elements.find((element) => element.id === editor.selectedId) ?? null;
   const selectedIndex = document.elements.findIndex((element) => element.id === editor.selectedId);
   const placedBeaconCodes = new Set(document.elements.filter((element) => element.type === "beacon" && element.id !== selected?.id).map((element) => element.beaconId));
@@ -403,6 +405,18 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
         <h2>Werkzeuge</h2>
         <div className="le-tool-row"><button type="button" aria-pressed={tool === "select"} onClick={() => setTool("select")}>Auswählen <kbd>V</kbd></button><button type="button" aria-pressed={tool === "pan"} onClick={() => setTool("pan")}>Verschieben <kbd>Space</kbd></button></div>
         <button type="button" className="le-button le-new-layout" onClick={startNewLayout} disabled={!!working}>Neues Layout</button>
+        {invalidMobileIds > 0 && <button type="button" className="le-button le-new-layout" disabled={!!working} onClick={() => {
+          if (!window.confirm(`${invalidMobileIds} Element-ID${invalidMobileIds === 1 ? "" : "s"} für die iOS-Karte numerisch neu vergeben? Der Schritt kann rückgängig gemacht werden.`)) return;
+          setEditor((current) => replaceDocument(current, repairMobileElementIds(current.document)));
+          setMessage("Element-IDs für die iOS-Karte repariert. Bitte den Grundriss prüfen und speichern.");
+        }}>iOS-IDs reparieren</button>}
+        {brokenShelfAddresses && <button type="button" className="le-button le-new-layout" disabled={!!working} onClick={() => {
+          if (!window.confirm("Fehlende oder doppelte Regalabschnitte zuweisen? Bestehende eindeutige Abschnitte bleiben erhalten. Bitte Produktziele danach prüfen; Rückgängig ist möglich.")) return;
+          const repaired = assignShelfSections(editorRef.current.document);
+          if (JSON.stringify(repaired) === JSON.stringify(editorRef.current.document)) { setMessage("Bitte zuerst einen gültigen numerischen Kategoriecode eingeben."); return; }
+          setEditor((current) => replaceDocument(current, repaired));
+          setMessage("Regalabschnitte zugewiesen. Bitte Produktziele prüfen und den Grundriss speichern.");
+        }}>Regalabschnitte zuweisen</button>}
         <h2>Vorlagen</h2>
         <div className="le-templates">{TEMPLATES.map((template) => <button type="button" key={template.label} disabled={!!working} onClick={() => applyTemplate(template)}>{template.label}<span>{template.width} × {template.height} m</span></button>)}</div>
         <h2>Elemente</h2><p className="le-hint">Element wählen, dann im Grundriss platzieren. Tastatur: Element wählen, Tab zum Grundriss, Pfeile positionieren, Enter platzieren. Shift + Pfeil bewegt 5 Rastereinheiten.</p>

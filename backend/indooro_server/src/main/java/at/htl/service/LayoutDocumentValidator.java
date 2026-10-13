@@ -18,6 +18,22 @@ public class LayoutDocumentValidator {
     public static final int MAX_ELEMENTS = 5_000;
     public static final int MAX_TEXT_LENGTH = 200;
     public static final double MAX_GRID_DIMENSION = 1_000;
+    public static final long MAX_MOBILE_ELEMENT_ID = 9_007_199_254_740_991L;
+
+    /** Published layouts are decoded as Int64 by the iOS client. Drafts may retain legacy IDs for repair. */
+    public void validateMobileElementIds(JsonNode document) {
+        JsonNode elements = document == null ? null : document.get("elements");
+        if (elements == null || !elements.isArray()) {
+            throw badRequest("elements muss eine Liste sein.");
+        }
+        for (int index = 0; index < elements.size(); index++) {
+            JsonNode id = elements.get(index).get("id");
+            if (id == null || !id.isIntegralNumber() || !id.canConvertToLong()
+                    || id.longValue() <= 0 || id.longValue() > MAX_MOBILE_ELEMENT_ID) {
+                throw badRequest("elements[" + index + "].id muss fuer die iOS-Karte eine positive sichere Ganzzahl sein.");
+            }
+        }
+    }
 
     public void validate(JsonNode document) {
         if (document == null || !document.isObject()) {

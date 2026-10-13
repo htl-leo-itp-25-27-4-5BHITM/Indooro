@@ -1,4 +1,4 @@
-import type { LayoutElement } from "./model";
+import type { LayoutDocument, LayoutElement } from "./model";
 
 export interface ShelfMetadata { code: string; section: number | null }
 
@@ -21,6 +21,40 @@ export function shelfMetadataChanges(element: LayoutElement, changes: Partial<Sh
   if (!code) return { category: null, meter: section };
   if (section === null || !Number.isInteger(section) || section <= 0) return { category: code, meter: null };
   return { category: `${code}/${section}`, meter: section };
+}
+
+/** Repair incomplete or duplicate shelf addresses while preserving unique published sections. */
+export function assignShelfSections(document: LayoutDocument): LayoutDocument {
+  const groups = new Map<string, Array<{ element: LayoutElement; index: number }>>();
+  document.elements.forEach((element, index) => {
+    if (element.type !== "shelf") return;
+    const code = shelfMetadata(element).code.trim();
+    if (!/^\d{1,4}$/.test(code)) return;
+    const group = groups.get(code) ?? [];
+    group.push({ element, index });
+    groups.set(code, group);
+  });
+  const replacements = new Map<number, LayoutElement>();
+  for (const [code, group] of groups) {
+    const ordered = group.sort((a, b) => a.element.y - b.element.y || a.element.x - b.element.x || a.index - b.index);
+    const used = new Set<number>();
+    const pending: typeof ordered = [];
+    for (const entry of ordered) {
+      const section = shelfMetadata(entry.element).section;
+      if (section === null || used.has(section)) pending.push(entry);
+      else {
+        used.add(section);
+        replacements.set(entry.index, { ...entry.element, category: `${code}/${section}`, meter: section });
+      }
+    }
+    let next = 1;
+    for (const entry of pending) {
+      while (used.has(next)) next++;
+      used.add(next);
+      replacements.set(entry.index, { ...entry.element, category: `${code}/${next}`, meter: next });
+    }
+  }
+  return { ...document, elements: document.elements.map((element, index) => replacements.get(index) ?? element) };
 }
 
 const safeHex = /^#[\da-f]{3}(?:[\da-f]{3})?(?:[\da-f]{2})?$/i;

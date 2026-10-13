@@ -95,6 +95,7 @@ public class StoreLayoutAdminService {
                 || request.activate() == null && activeLayout == null;
 
         if (shouldActivate) {
+            layoutDocumentValidator.validateMobileElementIds(request.layout());
             validateAssignedBeacons(storeId, request.layout());
         }
 
@@ -129,6 +130,7 @@ public class StoreLayoutAdminService {
         LayoutVersionEntity entity = layoutVersionRepository.findByStoreAndId(storeId, layoutId)
                 .orElseThrow(() -> new NotFoundException("Layout-Version nicht gefunden."));
         layoutDocumentValidator.validate(entity.layoutJson);
+        layoutDocumentValidator.validateMobileElementIds(entity.layoutJson);
         validateAssignedBeacons(storeId, entity.layoutJson);
 
         layoutVersionRepository.findActiveByStoreId(storeId)

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { fitViewport, screenToWorld, worldToScreen, zoomAt } from "./geometry";
-import { applyCommand, createEditorState, isDirty, markSaved, parseImportedDocument, redo, replaceDocument, undo, type LayoutDocument } from "./model";
+import { assignShelfSections } from "./metadata";
+import { applyCommand, createEditorState, isDirty, isMobileElementId, markSaved, newElementId, parseImportedDocument, redo, repairMobileElementIds, replaceDocument, undo, type LayoutDocument } from "./model";
 import { validateLayout } from "./validation";
 
 const fixture = (): LayoutDocument => ({
@@ -60,13 +61,49 @@ test("old ids are normalized, created elements snap and stay in bounds", () => {
   const source = fixture();
   source.elements.push({ type: "counter", x: 1, y: 2, width: 2, height: 2 });
   let state = createEditorState(source);
-  assert.equal(state.document.elements[2].id, "legacy-3");
-  assert.equal(isDirty(state), false);
+  assert.ok(isMobileElementId(state.document.elements[2].id));
+  assert.equal(isDirty(state), true, "assigning an ID to an old document needs a save");
   state = applyCommand(state, { type: "create", element: { id: "new", type: "wall", x: 39.8, y: -2, width: 4, height: 2 } });
   assert.deepEqual([state.document.elements[3].x, state.document.elements[3].y], [36, 0]);
   state = applyCommand(state, { type: "delete", id: "new" });
   assert.equal(state.document.elements.length, 3);
-  assert.equal(isDirty(state), false);
+  assert.equal(isDirty(state), true);
+});
+
+test("new and repaired element IDs remain safe JSON integers for the existing iOS decoder", () => {
+  const source = fixture();
+  const created = newElementId(source);
+  assert.ok(isMobileElementId(created));
+  assert.equal(source.elements.some((element) => element.id === created), false);
+  const repaired = repairMobileElementIds(source);
+  assert.equal(repaired.elements[0].id, 7);
+  assert.ok(isMobileElementId(repaired.elements[1].id));
+  assert.equal(validateLayout(source).some((issue) => issue.code === "mobile-id"), true);
+  assert.equal(validateLayout(repaired).some((issue) => issue.code === "mobile-id"), false);
+  assert.deepEqual(undo(replaceDocument(createEditorState(source), repaired)).document, source);
+});
+
+test("shelf address repair preserves a unique section and resolves duplicates in map order", () => {
+  const source: LayoutDocument = { shopName: "Markt", gridSize: { width: 30, height: 30 }, elements: [
+    { id: 1, type: "entrance", x: 1, y: 0, width: 2, height: 1 },
+    { id: 2, type: "shelf", x: 1, y: 3, width: 2, height: 2, category: "310/1", meter: 1 },
+    { id: 3, type: "shelf", x: 5, y: 3, width: 2, height: 2, category: "310/1", meter: 1 },
+    { id: 4, type: "shelf", x: 1, y: 8, width: 2, height: 2, category: "310" },
+  ] };
+  assert.ok(validateLayout(source).some((issue) => issue.code === "shelf-address-duplicate"));
+  const repaired = assignShelfSections(source);
+  assert.deepEqual(repaired.elements.slice(1).map((element) => [element.category, element.meter]), [["310/1", 1], ["310/2", 2], ["310/3", 3]]);
+  assert.equal(validateLayout(repaired).some((issue) => ["shelf-category", "shelf-address-duplicate"].includes(issue.code)), false);
+  assert.deepEqual(undo(replaceDocument(createEditorState(source), repaired)).document, source);
+});
+
+test("product positions alone cannot make a shelf reachable to customer search", () => {
+  const source = fixture();
+  source.elements[1].category = null;
+  source.elements[1].productPositions = ["310-42"];
+  assert.ok(validateLayout(source).some((issue) => issue.code === "shelf-target-address" && issue.elementId === "s-1" && issue.severity === "error"));
+  source.elements[1].category = "310/1";
+  assert.equal(validateLayout(source).some((issue) => issue.code === "shelf-target-address"), false);
 });
 
 test("duplicate beacon clears hardware identity; locked elements resist edits but unlock", () => {

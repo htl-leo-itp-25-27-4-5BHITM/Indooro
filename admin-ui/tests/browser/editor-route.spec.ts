@@ -4,8 +4,8 @@ const document = {
   shopName: "Indooro Linz",
   gridSize: { width: 20, height: 20 },
   elements: [
-    { id: "entrance-1", type: "entrance", x: 1, y: 1, width: 2, height: 1, label: "Eingang" },
-    { id: "shelf-1", type: "shelf", x: 4, y: 4, width: 4, height: 2, label: "Obst", category: "310/1" }
+    { id: 1, type: "entrance", x: 1, y: 1, width: 2, height: 1, label: "Eingang" },
+    { id: 2, type: "shelf", x: 4, y: 4, width: 4, height: 2, label: "Obst", category: "310/1" }
   ]
 };
 

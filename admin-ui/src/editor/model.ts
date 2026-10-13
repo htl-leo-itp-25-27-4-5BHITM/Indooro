@@ -51,6 +51,18 @@ export interface EditorState {
 const MAX_HISTORY = 80;
 const clone = <T,>(value: T): T => structuredClone(value);
 
+/** Swift's existing LayoutElement decoder requires an Int64 JSON number. */
+export const isMobileElementId = (id: unknown): id is number => typeof id === "number" && Number.isSafeInteger(id) && id > 0;
+const freshNumericId = (used: Set<string>): number => {
+  let id: number;
+  do {
+    const random = crypto.getRandomValues(new Uint32Array(2));
+    id = (random[0] & 0x1fffff) * 0x100000000 + random[1];
+  } while (!isMobileElementId(id) || used.has(String(id)));
+  used.add(String(id));
+  return id;
+};
+
 export function documentSignature(document: LayoutDocument): string {
   // Export timestamps are metadata, not unsaved edits.
   const { exportDate: _exportDate, ...content } = document;
@@ -61,14 +73,11 @@ export function documentSignature(document: LayoutDocument): string {
 export function createEditorState(document: LayoutDocument): EditorState {
   const copy = clone(document);
   const ids = new Set(copy.elements.map((element) => String(element.id)));
-  copy.elements = copy.elements.map((element, index) => {
+  copy.elements = copy.elements.map((element) => {
     if (element.id !== undefined && element.id !== null) return element;
-    let id = `legacy-${index + 1}`;
-    while (ids.has(id)) id += "-";
-    ids.add(id);
-    return { ...element, id };
+    return { ...element, id: freshNumericId(ids) };
   });
-  return { document: copy, past: [], future: [], selectedId: null, savedSignature: documentSignature(copy) };
+  return { document: copy, past: [], future: [], selectedId: null, savedSignature: documentSignature(document) };
 }
 
 /** Import is one undoable edit and never changes the last server-saved signature. */
@@ -223,9 +232,13 @@ export function redo(state: EditorState): EditorState {
   return { ...state, document, past: [...state.past, state.document].slice(-MAX_HISTORY), future: state.future.slice(1), selectedId: document.elements.some((element) => element.id === state.selectedId) ? state.selectedId : null };
 }
 
-export function newElementId(document: LayoutDocument): string {
+export function newElementId(document: LayoutDocument): number {
   const ids = new Set(document.elements.map((element) => String(element.id)));
-  let id: string;
-  do { id = `el-${crypto.randomUUID()}`; } while (ids.has(id));
-  return id;
+  return freshNumericId(ids);
+}
+
+/** One undoable migration for candidate versions created before numeric IDs were enforced. */
+export function repairMobileElementIds(document: LayoutDocument): LayoutDocument {
+  const ids = new Set(document.elements.filter((element) => isMobileElementId(element.id)).map((element) => String(element.id)));
+  return { ...document, elements: document.elements.map((element) => isMobileElementId(element.id) ? element : { ...element, id: freshNumericId(ids) }) };
 }

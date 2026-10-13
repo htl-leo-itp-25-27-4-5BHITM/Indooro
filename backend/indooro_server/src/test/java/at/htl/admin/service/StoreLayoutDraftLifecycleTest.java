@@ -184,8 +184,25 @@ class StoreLayoutDraftLifecycleTest {
     }
 
     @Test
+    void legacyStringIdsRemainDraftsUntilRepairedBeforeActivation() throws Exception {
+        JsonNode layout = mapper.readTree("{\"shopName\":\"Testmarkt\",\"gridSize\":{\"width\":20,\"height\":20},\"elements\":[{\"id\":\"legacy-1\",\"type\":\"shelf\",\"x\":1,\"y\":1,\"width\":2,\"height\":2}]}");
+        LayoutDtos.LayoutSaveRequest immediate = new LayoutDtos.LayoutSaveRequest("Old", "Test", true, layout);
+        assertThrows(jakarta.ws.rs.WebApplicationException.class,
+                () -> adminService.saveLayoutVersion(storeId, immediate));
+        assertEquals(0, versions.size());
+
+        LayoutDtos.StoreLayoutResponse draft = adminService.saveLayoutVersion(storeId,
+                new LayoutDtos.LayoutSaveRequest("Old", "Test", false, layout));
+        assertEquals("DRAFT", draft.status());
+        assertThrows(jakarta.ws.rs.WebApplicationException.class,
+                () -> adminService.activateLayoutVersion(storeId, draft.layoutId()));
+        assertEquals("DRAFT", adminService.getLayoutVersion(storeId, draft.layoutId()).status());
+        assertEquals(0, activeCount());
+    }
+
+    @Test
     void publishingRejectsAStoreBeaconWithoutAnActiveAssignment() throws Exception {
-        JsonNode layout = mapper.readTree("{\"shopName\":\"Testmarkt\",\"gridSize\":{\"width\":20,\"height\":20},\"elements\":[{\"id\":\"b1\",\"type\":\"beacon\",\"x\":5,\"y\":5,\"beaconId\":\"B-404\"}]}");
+        JsonNode layout = mapper.readTree("{\"shopName\":\"Testmarkt\",\"gridSize\":{\"width\":20,\"height\":20},\"elements\":[{\"id\":1,\"type\":\"beacon\",\"x\":5,\"y\":5,\"beaconId\":\"B-404\"}]}");
         LayoutDtos.LayoutSaveRequest immediate = new LayoutDtos.LayoutSaveRequest("Beacon", "Test", true, layout);
         assertThrows(BadRequestException.class, () -> adminService.saveLayoutVersion(storeId, immediate));
         assertEquals(0, versions.size());
