@@ -11,7 +11,7 @@ test("admin product list pages through server results and opens a validated edit
     return route.fulfill({ json: { content: [{ id: 100 + pageNo, name: `Apfel ${pageNo}`, price: 1.5, layoutCode: "310/1/1/1", storeId: null, storeCode: null }], page: pageNo, size: 20, totalElements: 21 } });
   });
   await page.goto("/admin/next/products/?q=Apfel");
-  await expect(page.getByRole("heading", { name: "Produkte" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Produkte", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "21 Produkte" })).toBeVisible();
   await expect(page.getByText("Apfel 0")).toBeVisible();
   await page.getByRole("link", { name: "Weiter" }).click();

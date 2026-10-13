@@ -101,3 +101,5 @@ After global history republication, the candidate editor now replaces the histor
 Global layout history now loads older entries in groups of twelve. A browser fixture with fifteen versions confirms keyboard activation of “Weitere Versionen laden” and access to version 15; the grown local OpenSearch history confirms more than twelve entries render in the packaged UI. Both live workflows remain green.
 
 The complete candidate browser suite passes 66/66 after synchronizing the region retry fixture with its completed request and making the shell heading assertion exact.
+
+Store and global version histories now have independent retry controls. A failed history read can be retried without refetching the open layout or losing unsaved edits; browser regressions cover both modes. The packaged live run injected a single 503 into global history, retried through the UI, then confirmed the unsaved name remained. The full browser suite passes 68/68, and the ordinary live workflow remains green.

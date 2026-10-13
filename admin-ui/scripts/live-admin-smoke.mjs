@@ -567,6 +567,23 @@ try {
   assert.notEqual(globalRestored.layoutId, globalBefore.layoutId);
   assert.equal(globalRestored.shopName, globalBefore.shopName);
   assert.deepEqual(globalRestored.elements, globalBefore.elements);
+  const historyFaultPage = await login(adminUser, "/admin/next/editor/");
+  let injectHistoryFault = true;
+  await historyFaultPage.route("**/api/layout/history?*", (route) => {
+    if (injectHistoryFault) {
+      injectHistoryFault = false;
+      return route.fulfill({ status: 503, json: { error: "Injected local history failure" } });
+    }
+    return route.continue();
+  });
+  await historyFaultPage.reload();
+  await historyFaultPage.getByRole("region", { name: "Globale Layout-Historie" }).getByRole("alert").waitFor();
+  await historyFaultPage.getByLabel("Filialname").fill(`Unsaved history retry ${run}`);
+  await historyFaultPage.getByRole("button", { name: "Historie erneut laden" }).focus();
+  await historyFaultPage.keyboard.press("Enter");
+  await historyFaultPage.getByRole("region", { name: "Globale Layout-Historie" }).getByRole("link", { name: "Öffnen", exact: true }).first().waitFor();
+  assert.equal(await historyFaultPage.getByLabel("Filialname").inputValue(), `Unsaved history retry ${run}`);
+  await historyFaultPage.close();
 
   const saves = await Promise.all(Array.from({ length: 4 }, (_, index) =>
     api(admin, "POST", layoutPath, { layoutName: `Concurrent ${index}`, activate: false, layout: documentFor(`Concurrent ${index}`) })));
@@ -601,7 +618,7 @@ try {
   await admin.keyboard.press("Enter");
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, globalVersionRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateDiagnosticsReadRefresh: true, layoutJsonRoundTrip: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();

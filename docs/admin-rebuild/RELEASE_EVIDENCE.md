@@ -2,6 +2,8 @@
 
 ## 2026-10-13 editor recovery image
 
+The current local candidate image includes independent store/global history retry controls: tag `indooro-admin-rebuild:local-history-retry`, immutable image ID `sha256:f67c00d524245ef955da49389502584ea1a1bdd9f3e101fcf2fba57001b154ed`, runner SHA-256 `842f3dd64f387e6cce26a771a9fe61287941e7182795166437bba1e9bc26e3bd`. It was not pushed. The full packaged live workflow passed after one injected 503 on the global history endpoint, a keyboard retry, and confirmation that the unsaved editor field remained. Candidate typecheck, lint, and 68/68 browser tests passed. Strict OpenSpec validation passed 41/41.
+
 The latest local image also packages global history pagination: tag `indooro-admin-rebuild:local-history-pagination`, immutable image ID `sha256:e2efce0c82935f31f04e07217951cf4e891c5cd60aae98697a2905dfaeac620e`, runner SHA-256 `4c7b293e5779fc4613a72f44d2dad9c701384d44bbe883a582ba002c209ded68`. It remains local and unpushed. The live UI loaded older global versions beyond the first twelve, then restored a historical version; the full candidate workflow passed.
 
 The candidate browser suite passes 66/66, including the fifteen-version history fixture. `test:live:cutover` passed ten switch/rollback pairs on this image, and strict OpenSpec validation passed 41/41.

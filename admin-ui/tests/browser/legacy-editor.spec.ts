@@ -69,6 +69,25 @@ test("global history loads versions older than the first twelve", async ({ page 
   await expect(history.getByRole("button", { name: "Weitere Versionen laden" })).toHaveCount(0);
 });
 
+test("global history retries without replacing unsaved editor work", async ({ page }) => {
+  let fail = true;
+  let currentReads = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/layout/current", (route) => { currentReads += 1; return route.fulfill({ json: layout }); });
+  await page.route("**/api/layout/history?*", (route) => fail
+    ? route.fulfill({ status: 503, json: { error: "Unavailable" } })
+    : route.fulfill({ json: [{ layoutId: "old-1", shopName: "Earlier map", savedAt: "2026-10-13T12:00:00Z", elementCount: 3 }] }));
+  await page.goto("/admin/next/editor/");
+  await expect(page.getByRole("region", { name: "Globale Layout-Historie" }).getByRole("alert")).toContainText("Serverfehler");
+  await page.getByRole("textbox", { name: "Filialname" }).fill("Ungespeicherter Name");
+  fail = false;
+  await page.getByRole("button", { name: "Historie erneut laden" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("region", { name: "Globale Layout-Historie" }).getByRole("link", { name: "Öffnen", exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Filialname" })).toHaveValue("Ungespeicherter Name");
+  expect(currentReads).toBe(1);
+});
+
 test("non-admin cannot open global editor or call legacy layout APIs", async ({ page }) => {
   let legacyCalls = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "manager-1", username: "manager", email: null, role: "store-manager", scope: { storeId: "store-1" } } }));

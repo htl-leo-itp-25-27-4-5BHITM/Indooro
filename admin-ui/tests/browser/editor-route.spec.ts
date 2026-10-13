@@ -81,3 +81,26 @@ test("archived store version can be restored unchanged from its direct link", as
   await expect(page.getByRole("region", { name: "Aktuell mobiles Layout" })).toContainText("old-1");
   await expect(page.getByRole("button", { name: "Version wieder aktivieren" })).toHaveCount(0);
 });
+
+test("store version history retries without replacing unsaved editor work", async ({ page }) => {
+  let fail = true;
+  let contextReads = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/editor-context", (route) => {
+    contextReads += 1;
+    return route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: { layoutId: "active-1", versionNo: 1, status: "ACTIVE", layout: document }, assignedBeacons: [] } });
+  });
+  await page.route("**/api/stores/store-1/layout/versions", (route) => fail
+    ? route.fulfill({ status: 503, json: { error: "Unavailable" } })
+    : route.fulfill({ json: [{ layoutId: "active-1", versionNo: 1, layoutName: "Indooro Linz", status: "ACTIVE" }] }));
+  await page.route("**/api/mobile/stores/store-1/layout/current", (route) => route.fulfill({ json: { storeId: "store-1", layoutId: "active-1", source: "ACTIVE", fallback: false, layout: document } }));
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await expect(page.getByRole("alert")).toContainText("Versionsliste nicht verfügbar");
+  await page.getByRole("textbox", { name: "Filialname" }).fill("Ungespeicherter Name");
+  fail = false;
+  await page.getByRole("button", { name: "Versionen erneut laden" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("link", { name: "Öffnen", exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Filialname" })).toHaveValue("Ungespeicherter Name");
+  expect(contextReads).toBe(1);
+});

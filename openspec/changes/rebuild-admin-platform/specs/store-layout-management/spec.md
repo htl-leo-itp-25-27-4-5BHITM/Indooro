@@ -48,6 +48,11 @@ The editor and backend SHALL distinguish saved draft versions from the active mo
 - **WHEN** an admin requests additional versions from the history panel
 - **THEN** older versions become selectable while the newest versions remain visible
 
+#### Scenario: History loading is retried during an edit
+- **GIVEN** the store or global editor has unsaved changes and its version-history request fails
+- **WHEN** the user retries the history request
+- **THEN** the version list loads without replacing or saving the unsaved layout
+
 ### Requirement: Layout validation identifies actionable map problems
 Validation SHALL distinguish blocking errors from warnings and SHALL identify the affected element or map context for out-of-bounds geometry, missing entrance, duplicate or unassigned beacons, invalid shelf metadata, and unreachable product targets where routing data is available.
 

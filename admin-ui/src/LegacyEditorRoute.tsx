@@ -24,6 +24,7 @@ export function LegacyEditorRoute({ api, role }: { api: ApiClient; role: string 
   const [publishedId, setPublishedId] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   const [historyLimit, setHistoryLimit] = useState(12);
+  const [historyRevision, setHistoryRevision] = useState(0);
 
   useEffect(() => {
     if (role !== "admin") return;
@@ -37,11 +38,17 @@ export function LegacyEditorRoute({ api, role }: { api: ApiClient; role: string 
         setError(null);
       })
       .catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Globales Layout konnte nicht geladen werden."); });
+    return () => controller.abort();
+  }, [api, role, versionId, revision]);
+
+  useEffect(() => {
+    if (role !== "admin") return;
+    const controller = new AbortController();
     api.get<LegacyHistoryEntry[]>(`/api/layout/history?limit=${historyLimit}`, { signal: controller.signal })
       .then((response) => { if (!controller.signal.aborted) { setHistory(Array.isArray(response) ? response : []); setHistoryError(null); } })
       .catch((cause: unknown) => { if (!controller.signal.aborted) setHistoryError(cause instanceof Error ? cause.message : "Historie konnte nicht geladen werden."); });
     return () => controller.abort();
-  }, [api, role, versionId, revision, historyLimit]);
+  }, [api, role, historyLimit, historyRevision]);
 
   if (role !== "admin") return <section className="legacy-editor-route-error" role="alert"><h2>Zugriff verweigert</h2><p>Das globale Kundenlayout kann nur von Administratoren bearbeitet werden.</p></section>;
   if (error) return <section className="legacy-editor-route-error" role="alert"><h2>Globales Layout nicht verfügbar</h2><p>{error}</p><button type="button" onClick={() => { setError(null); setRevision((current) => current + 1); }}>Erneut versuchen</button></section>;
@@ -66,6 +73,6 @@ export function LegacyEditorRoute({ api, role }: { api: ApiClient; role: string 
     <div className="legacy-editor-route-intro"><div><p className="legacy-editor-route-kicker">GLOBALER KUNDENGRUNDRISS</p><h2>{versionId && !publishedId ? "Historische Version bearbeiten" : "Globales Layout"}</h2><p>Speichern veröffentlicht hier sofort für die Kundenansicht. Filiallayouts verwenden getrennte Entwürfe und Versionen.</p></div><a href="/admin/next/">Zur Administration</a></div>
     {publishedId && <p className="legacy-editor-route-published" role="status">Version {publishedId} ist jetzt das globale Layout.</p>}
     <LayoutEditor key={versionId ?? "current"} initialDocument={layout} mode="legacy" saveMode="immediate" onSaveCurrent={saveCurrent} allowUnchangedSave={!!versionId && !publishedId} onBack={() => { window.location.href = "/admin/next/"; }} />
-    <section className="legacy-editor-route-history" aria-label="Globale Layout-Historie"><div><h3>Vorherige Versionen</h3><a href="/admin/next/editor/">Aktuelles globales Layout öffnen</a></div>{historyError && <p role="alert">{historyError}</p>}{!historyError && (history.length ? <ul>{history.map((item) => <li key={item.layoutId}><span><strong>{item.shopName || "Globales Layout"}</strong><small>{item.savedAt ? new Date(item.savedAt).toLocaleString("de-AT") : "Ohne Zeitangabe"} · {item.elementCount} Elemente</small></span><a href={`/admin/next/editor/?layoutId=${encodeURIComponent(item.layoutId)}`}>Öffnen</a></li>)}</ul> : <p>Noch keine gespeicherten Versionen.</p>)}{!historyError && history.length === historyLimit && <button type="button" className="legacy-editor-route-more" onClick={() => setHistoryLimit((limit) => limit + 12)}>Weitere Versionen laden</button>}</section>
+    <section className="legacy-editor-route-history" aria-label="Globale Layout-Historie"><div><h3>Vorherige Versionen</h3><a href="/admin/next/editor/">Aktuelles globales Layout öffnen</a></div>{historyError && <div role="alert"><p>{historyError}</p><button type="button" className="legacy-editor-route-more" onClick={() => setHistoryRevision((value) => value + 1)}>Historie erneut laden</button></div>}{!historyError && (history.length ? <ul>{history.map((item) => <li key={item.layoutId}><span><strong>{item.shopName || "Globales Layout"}</strong><small>{item.savedAt ? new Date(item.savedAt).toLocaleString("de-AT") : "Ohne Zeitangabe"} · {item.elementCount} Elemente</small></span><a href={`/admin/next/editor/?layoutId=${encodeURIComponent(item.layoutId)}`}>Öffnen</a></li>)}</ul> : <p>Noch keine gespeicherten Versionen.</p>)}{!historyError && history.length === historyLimit && <button type="button" className="legacy-editor-route-more" onClick={() => setHistoryLimit((limit) => limit + 12)}>Weitere Versionen laden</button>}</section>
   </div>;
 }
