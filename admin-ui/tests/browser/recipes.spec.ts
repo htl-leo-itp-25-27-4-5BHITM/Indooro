@@ -70,6 +70,57 @@ test("partial recipe edit identifies the failed step and keeps local input recov
   expect(detail.steps[0].instruction).toBe("Backen");
 });
 
+test("recipe retry after mapping failure reuses the created ingredient", async ({ page }) => {
+  const tag = { id: "tag-1", code: "VEGAN", name: "Vegan" };
+  const product = { id: 23, name: "Birne", layoutCode: "310" };
+  const detail = { id: "recipe-1", slug: "apfel-hafer", title: "Apfel-Hafer", summary: "Kurz", description: "Beschreibung", servings: 4, status: "DRAFT", tags: [tag], ingredients: [{ id: "ingredient-1", position: 1, displayName: "Apfel", canonicalName: "Apfel", quantityText: "2 Stück", optional: false }], steps: [{ id: "step-1", position: 1, instruction: "Backen" }] };
+  let ingredientPosts = 0;
+  let mappingAttempts = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/admin/recipe-tags?*", (route) => route.fulfill({ json: [tag] }));
+  await page.route("**/api/admin/products**", (route) => route.fulfill({ json: [product] }));
+  await page.route("**/api/admin/recipes?*", (route) => route.fulfill({ json: { content: [detail], page: 0, size: 20, totalElements: 1 } }));
+  await page.route("**/api/admin/recipes/recipe-1", (route) => {
+    if (route.request().method() === "PUT") Object.assign(detail, route.request().postDataJSON());
+    return route.fulfill({ json: detail });
+  });
+  await page.route("**/api/admin/recipes/recipe-1/ingredients", (route) => {
+    ingredientPosts += 1;
+    detail.ingredients.push({ ...route.request().postDataJSON(), id: "ingredient-2" });
+    return route.fulfill({ json: { id: "ingredient-2" } });
+  });
+  await page.route("**/api/admin/recipes/recipe-1/ingredients/ingredient-1", (route) => {
+    Object.assign(detail.ingredients[0], route.request().postDataJSON());
+    return route.fulfill({ json: detail.ingredients[0] });
+  });
+  await page.route("**/api/admin/recipes/recipe-1/ingredients/ingredient-2", (route) => {
+    Object.assign(detail.ingredients[1], route.request().postDataJSON());
+    return route.fulfill({ json: detail.ingredients[1] });
+  });
+  await page.route("**/api/admin/recipes/recipe-1/ingredients/ingredient-2/product-mapping", (route) => {
+    mappingAttempts += 1;
+    return route.fulfill(mappingAttempts === 1 ? { status: 503, json: { error: "Unavailable" } } : { json: {} });
+  });
+
+  await page.goto("/admin/next/recipes/");
+  await page.getByRole("button", { name: "Bearbeiten" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "+ Zutat" }).click();
+  await dialog.getByRole("textbox", { name: "Produkt aus Katalog" }).fill("Birne");
+  await dialog.getByRole("button", { name: "Suchen" }).click();
+  await dialog.locator(".recipe-product-search select").selectOption("23");
+  await dialog.getByRole("textbox", { name: "Menge" }).last().fill("2 Stück");
+  await dialog.getByRole("button", { name: "Speichern" }).click();
+  await expect(dialog.getByRole("alert")).toContainText("Produktzuordnung für Zutat 2 speichern fehlgeschlagen");
+  await expect(dialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" })).toBeVisible();
+  await dialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+  await dialog.getByRole("button", { name: "Speichern" }).click();
+  await expect(dialog).toBeHidden();
+  expect(ingredientPosts).toBe(1);
+  expect(mappingAttempts).toBe(2);
+  expect(detail.ingredients.filter((item) => item.canonicalName === "Birne")).toHaveLength(1);
+});
+
 test("store manager cannot fetch candidate recipe data", async ({ page }) => {
   let calls = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "store-1", username: "manager", role: "store-manager", scope: { storeId: "store-1" } } }));

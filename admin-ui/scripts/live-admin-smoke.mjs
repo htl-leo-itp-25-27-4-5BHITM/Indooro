@@ -298,6 +298,30 @@ try {
   assert.equal(expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "retried recipe step post-state").steps[0].instruction, revisedStep);
   await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(candidateRecipeTitle)}`, { waitUntil: "domcontentloaded" });
   await admin.getByRole("row").filter({ hasText: candidateRecipeTitle }).getByRole("button", { name: "Bearbeiten" }).click();
+  const ingredientCountBefore = expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "ingredient pre-state").ingredients.length;
+  const ingredientDialog = admin.getByRole("dialog");
+  await ingredientDialog.getByRole("button", { name: "+ Zutat" }).click();
+  await ingredientDialog.getByRole("textbox", { name: "Produkt aus Katalog" }).fill(updatedProductName);
+  await ingredientDialog.getByRole("button", { name: "Suchen" }).click();
+  await ingredientDialog.locator(`.recipe-product-search select option[value='${productId}']`).waitFor({ state: "attached" });
+  await ingredientDialog.locator(".recipe-product-search select").selectOption(String(productId));
+  await ingredientDialog.getByRole("textbox", { name: "Menge" }).last().fill("1 Stück");
+  const mappingFailurePath = `**/api/admin/recipes/${recipe.id}/ingredients/*/product-mapping`;
+  const failRecipeMapping = (route) => route.fulfill({ status: 503, json: { error: "Injected recipe mapping failure" } });
+  await admin.route(mappingFailurePath, failRecipeMapping);
+  await ingredientDialog.getByRole("button", { name: "Speichern" }).click();
+  await ingredientDialog.getByRole("alert").getByText(/Produktzuordnung für Zutat 2 speichern fehlgeschlagen/).waitFor();
+  const afterMappingFailure = expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "ingredient partial post-state");
+  assert.equal(afterMappingFailure.ingredients.length, ingredientCountBefore + 1, "ingredient creation reached server before mapping failed");
+  await ingredientDialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+  await admin.unroute(mappingFailurePath, failRecipeMapping);
+  await ingredientDialog.getByRole("button", { name: "Speichern" }).click();
+  await ingredientDialog.waitFor({ state: "hidden" });
+  const afterMappingRetry = expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "ingredient mapping retry post-state");
+  assert.equal(afterMappingRetry.ingredients.length, ingredientCountBefore + 1, "mapping retry must reuse the existing ingredient");
+  assert.equal(afterMappingRetry.ingredients.filter((item) => item.canonicalName === updatedProductName).length, 1);
+  await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(candidateRecipeTitle)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: candidateRecipeTitle }).getByRole("button", { name: "Bearbeiten" }).click();
   admin.once("dialog", (dialog) => { void dialog.accept(); });
   await admin.getByRole("dialog").getByRole("button", { name: "Veröffentlichen" }).click();
   await admin.getByRole("dialog").locator(".status-pill").getByText("PUBLISHED").waitFor();
@@ -309,6 +333,14 @@ try {
   await admin.getByRole("dialog").locator(".status-pill").getByText("DRAFT").waitFor();
   assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
 
+  // Canonical product mappings are unique across recipes; use a separate product for the create path.
+  const recipeProductId = productId + 2;
+  const recipeProductName = `Rezept Produkt ${run}`;
+  expectOk(await api(admin, "POST", "/api/admin/products", { id: recipeProductId, name: recipeProductName, price: 1.99, layoutCode: "310/1/1/1", storeCode: store.storeCode }), "recipe product create");
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if ((await publicJson(`/api/products/search?q=${encodeURIComponent(recipeProductName)}&size=10`)).some((item) => item.id === recipeProductId)) break;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
   const uiRecipeTitle = `UI Rezept ${run}`;
   await admin.goto(`${base}/admin/next/recipes/`, { waitUntil: "domcontentloaded" });
   await admin.getByRole("button", { name: "Rezept anlegen" }).click();
@@ -316,19 +348,21 @@ try {
   await newRecipeDialog.getByRole("textbox", { name: "Slug" }).fill(`ui-recipe-${run.toLowerCase()}`);
   await newRecipeDialog.getByRole("textbox", { name: "Titel" }).fill(uiRecipeTitle);
   await newRecipeDialog.getByRole("button", { name: "+ Zutat" }).click();
-  await newRecipeDialog.getByRole("textbox", { name: "Produkt aus Katalog" }).fill(updatedProductName);
+  await newRecipeDialog.getByRole("textbox", { name: "Produkt aus Katalog" }).fill(recipeProductName);
   await newRecipeDialog.getByRole("button", { name: "Suchen" }).click();
-  await newRecipeDialog.locator(".recipe-product-search select").selectOption(String(productId));
+  await newRecipeDialog.locator(".recipe-product-search select").selectOption(String(recipeProductId));
   await newRecipeDialog.getByRole("textbox", { name: "Menge" }).fill("1 Stück");
   await newRecipeDialog.getByRole("button", { name: "+ Schritt" }).click();
   await newRecipeDialog.getByRole("textbox", { name: "Schritt 1" }).fill("Vorbereiten.");
   await newRecipeDialog.getByRole("button", { name: "Entwurf anlegen" }).click();
-  await newRecipeDialog.waitFor({ state: "hidden" });
+  await newRecipeDialog.waitFor({ state: "hidden", timeout: 5000 }).catch(async () => {
+    throw new Error(`Candidate recipe create remained open: ${(await newRecipeDialog.getByRole("alert").allTextContents()).join(" | ")}`);
+  });
   const uiRecipeList = expectOk(await api(admin, "GET", `/api/admin/recipes?q=${encodeURIComponent(uiRecipeTitle)}&page=0&size=20`), "candidate recipe create list");
   const uiRecipe = uiRecipeList.content.find((item) => item.title === uiRecipeTitle);
   assert.ok(uiRecipe, "candidate recipe create appears in admin list");
   const uiRecipeDetail = expectOk(await api(admin, "GET", `/api/admin/recipes/${uiRecipe.id}`), "candidate recipe create detail");
-  assert.equal(uiRecipeDetail.ingredients[0].displayName, updatedProductName);
+  assert.equal(uiRecipeDetail.ingredients[0].displayName, recipeProductName);
   assert.equal(uiRecipeDetail.steps[0].instruction, "Vorbereiten.");
   assert.equal((await fetch(`${base}/api/mobile/recipes/${uiRecipe.id}`)).status, 404);
   await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(uiRecipeTitle)}`, { waitUntil: "domcontentloaded" });
@@ -529,6 +563,12 @@ try {
   await manager.getByText("Noch keine Elemente").waitFor();
   await manager.getByRole("button", { name: "Rückgängig" }).click();
   assert.equal(await manager.locator(".le-layers button").count(), 2, "new-layout clear is undoable live");
+  manager.once("dialog", (dialog) => { void dialog.accept(); });
+  await manager.getByRole("button", { name: "Kleiner Laden 15 × 20 m" }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 0, "template clears elements after confirmation");
+  assert.ok((await manager.locator(".le-canvas-toolbar").textContent()).includes("15 × 20"));
+  await manager.getByRole("button", { name: "Rückgängig" }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 2, "template change is undoable live");
   const downloadPromise = manager.waitForEvent("download");
   await manager.getByRole("button", { name: "JSON exportieren" }).click();
   const exportedLayout = JSON.parse(readFileSync(await (await downloadPromise).path(), "utf8"));
@@ -821,7 +861,7 @@ try {
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByText("Keine Änderungen protokolliert.").waitFor();
   await admin.getByRole("region", { name: "Serverfehler" }).getByText("Keine Serverfehler protokolliert.").waitFor();
 
-  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, legacyDiagnosticsParity: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsWithoutTrace: true, candidateDiagnosticsFaultRecovery: true, candidateDiagnosticsEmptyState: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateRecipePartialMappingRecovery: true, candidateEditorTemplateUndo: true, legacyDiagnosticsParity: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsWithoutTrace: true, candidateDiagnosticsFaultRecovery: true, candidateDiagnosticsEmptyState: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
   await admin.close();
 } finally {
   await browser.close();

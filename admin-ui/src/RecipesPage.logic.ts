@@ -172,8 +172,46 @@ export function validateNewRecipe(draft: RecipeDetail): string | null {
   return null;
 }
 
+const ingredientKey = (name: string | null | undefined) => (name ?? "").trim().toLowerCase();
+
+function mappingBody(product: Product) {
+  return { productId: Number(product.id), storeId: product.storeId ?? null, storeCode: product.storeCode ?? null, mappingType: "MANUAL", confidence: 1, manuallyConfirmed: true };
+}
+
+/**
+ * A restored draft may contain "new" ingredients that a failed earlier save already created on the server
+ * (POST succeeded, product-mapping failed). Bind such new rows to the unclaimed server ingredient with the same
+ * product name so retry maps the existing row instead of deleting and recreating it. More server candidates than
+ * new rows for one name is ambiguous: refuse before any write.
+ */
+function adoptServerIngredients(original: RecipeDetail, draft: RecipeDetail): { draft: RecipeDetail; adopted: Map<string, Product> } {
+  const adopted = new Map<string, Product>();
+  const claimed = new Set(draft.ingredients.filter((item) => item.id).map((item) => String(item.id)));
+  const unclaimed = original.ingredients.filter((item) => item.id && !claimed.has(String(item.id)));
+  const newItems = draft.ingredients.filter((item) => !item.id && item.selectedProduct?.name);
+  const names = new Set(newItems.map((item) => ingredientKey(item.selectedProduct!.name)));
+  const pool = new Map<string, RecipeIngredient[]>();
+  for (const name of names) {
+    const candidates = unclaimed.filter((item) => ingredientKey(item.canonicalName ?? item.displayName) === name);
+    const wanted = newItems.filter((item) => ingredientKey(item.selectedProduct!.name) === name).length;
+    if (candidates.length > wanted) {
+      throw new Error(`Mehrdeutiger Serverstand für Zutat „${newItems.find((item) => ingredientKey(item.selectedProduct!.name) === name)!.selectedProduct!.name}“: ${candidates.length} vorhandene Zutaten passen. Bitte den Serverstand prüfen und Duplikate manuell entfernen, bevor Sie erneut speichern.`);
+    }
+    pool.set(name, [...candidates].sort((a, b) => a.position - b.position));
+  }
+  const ingredients = draft.ingredients.map((item) => {
+    if (item.id || !item.selectedProduct?.name) return item;
+    const match = pool.get(ingredientKey(item.selectedProduct.name))?.shift();
+    if (!match?.id) return item;
+    adopted.set(String(match.id), item.selectedProduct);
+    return { ...item, id: match.id };
+  });
+  return { draft: { ...draft, ingredients }, adopted };
+}
+
 /** Persist a recipe edit while avoiding unique-position conflicts during reorder. */
-export async function saveRecipeChanges(api: ApiClient, original: RecipeDetail, draft: RecipeDetail, tagIds: string[], onMetadataSaved?: () => void): Promise<RecipeDetail> {
+export async function saveRecipeChanges(api: ApiClient, original: RecipeDetail, requested: RecipeDetail, tagIds: string[], onMetadataSaved?: () => void): Promise<RecipeDetail> {
+  const { draft, adopted } = adoptServerIngredients(original, requested);
   const root = `/api/admin/recipes/${encodeURIComponent(original.id)}`;
   const stage = async <T>(label: string, operation: () => Promise<T>): Promise<T> => {
     try { return await operation(); }
@@ -209,16 +247,16 @@ export async function saveRecipeChanges(api: ApiClient, original: RecipeDetail, 
     if (item.id) {
       const itemId = item.id;
       const old = oldIngredients.get(String(item.id))!;
-      const body = ingredientBody(item, index + 1);
-      if (ingredientStructureChanged || JSON.stringify(body) !== JSON.stringify(ingredientBody(old, old.position))) await stage(`Zutat ${index + 1} speichern`, () => api.put(`${root}/ingredients/${encodeURIComponent(itemId)}`, body));
+      const adoptedProduct = adopted.get(String(itemId));
+      const body = adoptedProduct ? ingredientBody({ ...item, displayName: adoptedProduct.name, canonicalName: adoptedProduct.name, optional: false }, index + 1) : ingredientBody(item, index + 1);
+      if (adoptedProduct || ingredientStructureChanged || JSON.stringify(body) !== JSON.stringify(ingredientBody(old, old.position))) await stage(`Zutat ${index + 1} speichern`, () => api.put(`${root}/ingredients/${encodeURIComponent(itemId)}`, body));
+      if (adoptedProduct) await stage(`Produktzuordnung für Zutat ${index + 1} speichern`, () => api.put(`${root}/ingredients/${encodeURIComponent(itemId)}/product-mapping`, mappingBody(adoptedProduct)));
     } else {
       const product = item.selectedProduct;
       if (!product?.id) throw new Error("Neue Zutaten benötigen ein Produkt aus dem Katalog.");
       const created = await stage(`Zutat ${index + 1} anlegen`, () => api.post<{ id: string }>(`${root}/ingredients`, ingredientBody({ ...item, displayName: product.name, canonicalName: product.name, optional: false }, index + 1)));
-      await stage(`Produktzuordnung für Zutat ${index + 1} speichern`, () => api.put(`${root}/ingredients/${encodeURIComponent(created.id)}/product-mapping`, {
-        productId: Number(product.id), storeId: product.storeId ?? null, storeCode: product.storeCode ?? null,
-        mappingType: "MANUAL", confidence: 1, manuallyConfirmed: true
-      }));
+      if (!created?.id) throw new Error(`Zutat ${index + 1} anlegen fehlgeschlagen: Die Serverantwort enthält keine Zutaten-ID. Bitte den Serverstand prüfen.`);
+      await stage(`Produktzuordnung für Zutat ${index + 1} speichern`, () => api.put(`${root}/ingredients/${encodeURIComponent(created.id)}/product-mapping`, mappingBody(product)));
     }
   }
   for (let index = 0; index < draft.steps.length; index++) {

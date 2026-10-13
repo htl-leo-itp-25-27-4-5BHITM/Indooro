@@ -82,6 +82,59 @@ test("new ingredients require a selected product before mutation", async () => {
   assert.deepEqual(calls, []);
 });
 
+function statefulServer(failMappingOnce: boolean) {
+  const server: RecipeDetail = structuredClone(detail);
+  const calls: Array<{ method: string; path: string; body?: unknown }> = [];
+  let failMapping = failMappingOnce;
+  const api = {
+    put: async (path: string, body: unknown) => {
+      calls.push({ method: "PUT", path, body });
+      if (path.endsWith("/product-mapping") && failMapping) { failMapping = false; throw new Error("503 Service Unavailable"); }
+      const match = /\/ingredients\/([^/]+)$/.exec(path);
+      if (match) { const row = server.ingredients.find((item) => item.id === match[1]); if (row) Object.assign(row, body); }
+      return {};
+    },
+    post: async (path: string, body: unknown) => {
+      calls.push({ method: "POST", path, body });
+      if (path.endsWith("/ingredients")) { const id = `server-${server.ingredients.length + 1}`; server.ingredients.push({ ...(body as object), id } as RecipeDetail["ingredients"][number]); return { id }; }
+      return { id: "new-step" };
+    },
+    delete: async (path: string) => {
+      calls.push({ method: "DELETE", path });
+      const match = /\/ingredients\/([^/]+)$/.exec(path);
+      if (match) server.ingredients = server.ingredients.filter((item) => item.id !== match[1]);
+      return undefined;
+    },
+    get: async (path: string) => { calls.push({ method: "GET", path }); return structuredClone(server); }
+  } as unknown as ApiClient;
+  return { api, calls, server };
+}
+
+test("retry after created ingredient mapping failure maps the existing ingredient without duplicating", async () => {
+  const { api, calls, server } = statefulServer(true);
+  const draft: RecipeDetail = { ...detail, ingredients: [...detail.ingredients, { position: 3, displayName: "", quantityText: "1", selectedProduct: { id: 19, name: "Pear" } }] };
+  await assert.rejects(saveRecipeChanges(api, detail, draft, ["tag-1"]), /Produktzuordnung für Zutat 3 speichern fehlgeschlagen: 503 Service Unavailable/);
+  assert.equal(server.ingredients.filter((item) => item.canonicalName === "Pear").length, 1);
+
+  // UI reloads authoritative detail as `original` and restores the local draft (new row still without id).
+  const reloaded = structuredClone(server);
+  const postsBefore = calls.filter((call) => call.method === "POST" && call.path.endsWith("/ingredients")).length;
+  const saved = await saveRecipeChanges(api, reloaded, draft, ["tag-1"]);
+  assert.equal(calls.filter((call) => call.method === "POST" && call.path.endsWith("/ingredients")).length, postsBefore);
+  assert.equal(calls.some((call, index) => index > 0 && call.method === "DELETE" && call.path.includes("/ingredients/server-3")), false);
+  assert.equal(saved.ingredients.filter((item) => item.canonicalName === "Pear").length, 1);
+  assert.ok(calls.some((call) => call.method === "PUT" && call.path.endsWith("/ingredients/server-3/product-mapping") && (call.body as { productId: number }).productId === 19));
+});
+
+test("ambiguous server ingredients block retry before any write", async () => {
+  const { api, calls } = statefulServer(false);
+  const twin = (id: string, position: number) => ({ id, position, displayName: "Pear", canonicalName: "Pear" });
+  const reloaded: RecipeDetail = { ...detail, ingredients: [...detail.ingredients, twin("dup-1", 3), twin("dup-2", 4)] };
+  const draft: RecipeDetail = { ...detail, ingredients: [...detail.ingredients, { position: 3, displayName: "", selectedProduct: { id: 19, name: "Pear" } }] };
+  await assert.rejects(saveRecipeChanges(api, reloaded, draft, ["tag-1"]), /Mehrdeutiger Serverstand/);
+  assert.deepEqual(calls, []);
+});
+
 test("create recipe sends supported aggregate payload and confirms each product mapping", async () => {
   const calls: Array<{ method: string; path: string; body?: unknown }> = [];
   const created: RecipeDetail = { ...detail, id: "new-recipe", slug: "pear-oats", title: "Pear oats", tags: [], ingredients: [{ id: "new-ingredient", position: 1, displayName: "Pear", quantityText: "1" }], steps: [{ id: "new-step", position: 1, instruction: "Mix", durationMinutes: null }] };
