@@ -613,6 +613,13 @@ try {
   const unassignedDraft = expectOk(await api(admin, "POST", layoutPath, { layoutName: "Unassigned draft", activate: false, layout: unassignedBeaconLayout }), "unassigned beacon draft");
   assert.equal((await api(admin, "POST", `${layoutPath}/${unassignedDraft.layoutId}/activate`, {})).status, 400);
   assert.equal((await currentLayout(store.id)).layoutId, edited.layoutId);
+  const assignedBeaconLayout = documentFor("Assigned beacon");
+  assignedBeaconLayout.elements.push({ id: 3, type: "beacon", x: 10, y: 10, beaconId: ownBeacon.beaconCode });
+  const assignedDraft = expectOk(await api(admin, "POST", layoutPath, { layoutName: "Assigned beacon", activate: false, layout: assignedBeaconLayout }), "assigned beacon draft");
+  expectOk(await api(admin, "POST", `${layoutPath}/${assignedDraft.layoutId}/activate`, {}), "assigned beacon activation");
+  assert.equal((await currentLayout(store.id)).layout.elements[2].beaconId, ownBeacon.beaconCode);
+  expectOk(await api(admin, "POST", `${layoutPath}/${edited.layoutId}/activate`, {}), "restore editor version after assigned-beacon check");
+  assert.equal(activeCount(store.id), 1);
 
   const auditLogs = expectOk(await api(admin, "GET", "/api/admin/logs?limit=50"), "admin audit logs");
   const errorLogs = expectOk(await api(admin, "GET", "/api/admin/error-logs?limit=50"), "admin error logs");
