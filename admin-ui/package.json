@@ -16,6 +16,7 @@
     "verify:candidate": "node scripts/verify-candidate.mjs",
     "test:browser": "playwright test",
     "test:live": "node scripts/live-admin-smoke.mjs",
+    "test:live:dashboard": "node scripts/live-dashboard-parity.mjs",
     "test:live:cutover": "node scripts/live-route-cutover.mjs"
   },
   "dependencies": {

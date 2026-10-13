@@ -22,7 +22,7 @@ for (const [path, title] of routes) {
 
 test("logout uses the configured OIDC path", async ({ page }) => {
   await page.goto("/admin/");
-  await page.getByRole("button", { name: "Logout" }).click();
+  await page.getByRole("link", { name: "Logout" }).click();
   await expect(page).toHaveURL(/\/admin\/logout$/);
 });
 

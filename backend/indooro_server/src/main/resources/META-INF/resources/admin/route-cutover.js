@@ -4,7 +4,7 @@
  * that one value restores the original static page on the next build.
  */
 export const ROUTE_CUTOVER = Object.freeze({
-  dashboard: false,
+  dashboard: true,
   regions: false,
   stores: false,
   storeDetail: false,

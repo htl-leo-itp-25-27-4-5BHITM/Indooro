@@ -15,7 +15,7 @@ try {
   await page.locator("#username").fill(user.username);
   await page.locator("#password").fill(user.credentials.find((item) => item.type === "password").value);
   await page.locator("#kc-login").click();
-  await page.waitForURL("**/admin/");
+  await page.waitForURL((url) => url.pathname === "/admin/" || url.pathname === "/admin/next/");
 
   const entries = [
     ["dashboard", "/admin/", "/admin/next/"],
@@ -53,13 +53,12 @@ try {
   }
 
   override = null;
-  await page.goto(`${base}/admin/server-logs/?probe=committed#proof`, { waitUntil: "domcontentloaded" });
-  await page.waitForURL((url) => url.pathname === "/admin/next/server-logs/" && url.searchParams.get("probe") === "committed" && url.hash === "#proof");
-  await page.locator("#root").waitFor();
-  await page.goto(`${base}/admin/`, { waitUntil: "domcontentloaded" });
-  await page.locator("#admin-root .nav").waitFor();
-  assert.equal(new URL(page.url()).pathname, "/admin/");
-  console.log(JSON.stringify({ result: "PASS", switchedAndRolledBack: entries.length, committedDiagnosticsRedirect: true, committedFlagsChanged: false }));
+  for (const [legacy, candidate] of [["/admin/", "/admin/next/"], ["/admin/server-logs/", "/admin/next/server-logs/"]]) {
+    await page.goto(`${base}${legacy}?probe=committed#proof`, { waitUntil: "domcontentloaded" });
+    await page.waitForURL((url) => url.pathname === candidate && url.searchParams.get("probe") === "committed" && url.hash === "#proof");
+    await page.locator("#root").waitFor();
+  }
+  console.log(JSON.stringify({ result: "PASS", switchedAndRolledBack: entries.length, committedDashboardRedirect: true, committedDiagnosticsRedirect: true, committedFlagsChanged: false }));
 } finally {
   await browser.close();
 }
