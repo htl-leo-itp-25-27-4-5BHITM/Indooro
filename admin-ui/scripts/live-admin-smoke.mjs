@@ -560,6 +560,14 @@ try {
   await manager.getByRole("textbox", { name: "Layout-Code" }).fill("310/1/1/1");
   await manager.getByRole("textbox", { name: "Produktposition hinzufügen" }).fill("310-42");
   await manager.getByRole("button", { name: "Hinzufügen" }).click();
+  const failEditorSave = (route) => route.request().method() === "POST"
+    ? route.fulfill({ status: 503, json: { error: "Injected editor save failure" } }) : route.continue();
+  await manager.route(`**/api/stores/${store.id}/layout/versions`, failEditorSave);
+  await manager.getByRole("button", { name: "Entwurf speichern" }).click();
+  await manager.getByRole("status").getByText("Serverfehler. Bitte später erneut versuchen.").waitFor();
+  assert.ok((await manager.locator(".le-save-indicator").textContent()).includes("Ungespeicherte Änderungen"), "failed save preserves dirty editor state");
+  assert.equal((await currentLayout(store.id)).layoutId, draft.layoutId, "failed save preserves public layout");
+  await manager.unroute(`**/api/stores/${store.id}/layout/versions`, failEditorSave);
   await manager.getByRole("button", { name: "Entwurf speichern" }).click();
   await manager.getByText("Entwurf gespeichert.").waitFor();
   assert.equal((await currentLayout(store.id)).layoutId, draft.layoutId);
@@ -568,6 +576,13 @@ try {
   await mobilePreview.getByText("Gespeicherter Entwurf · nicht öffentlich").waitFor();
   await mobilePreview.getByRole("button", { name: "Öffentlich aktiv" }).click();
   await mobilePreview.getByText("Aktive Version").waitFor();
+  const failEditorPublish = (route) => route.fulfill({ status: 503, json: { error: "Injected editor publish failure" } });
+  await manager.route(`**/api/stores/${store.id}/layout/versions/*/activate`, failEditorPublish);
+  manager.once("dialog", (dialog) => void dialog.accept());
+  await manager.getByRole("button", { name: "Veröffentlichen", exact: true }).click();
+  await manager.getByRole("status").getByText("Serverfehler. Bitte später erneut versuchen.").waitFor();
+  assert.equal((await currentLayout(store.id)).layoutId, draft.layoutId, "failed activation preserves public layout");
+  await manager.unroute(`**/api/stores/${store.id}/layout/versions/*/activate`, failEditorPublish);
   manager.once("dialog", (dialog) => void dialog.accept());
   await manager.getByRole("button", { name: "Veröffentlichen", exact: true }).click();
   await manager.getByText("Layout veröffentlicht.").waitFor();
