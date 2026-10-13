@@ -697,6 +697,8 @@ try {
   assert.equal(Number(await selectedX.inputValue()), initialX + 1, "live editor redo restores selected shelf move");
   await manager.getByRole("textbox", { name: "Bezeichnung" }).fill("Published from live editor");
   await manager.getByRole("spinbutton", { name: "Zugriffswinkel" }).fill("135");
+  await manager.getByRole("textbox", { name: "Layout-Code" }).fill("525/2/1/1");
+  await manager.locator(".le-validation").getByText(/Layout-Code und Regal-Kategorie\/Abschnitt widersprechen sich/).waitFor();
   await manager.getByRole("textbox", { name: "Layout-Code" }).fill("310/1/1/1");
   await manager.getByRole("textbox", { name: "Produktposition hinzufügen" }).fill("310-42");
   await manager.getByRole("button", { name: "Hinzufügen" }).click();
@@ -741,6 +743,13 @@ try {
   assert.equal(publishedWall?.height, drawnWallHeight, "drawn wall height reaches the public layout");
   assert.ok(edited.layout.elements.every((element) => typeof element.id === "number" && Number.isSafeInteger(element.id)), "published store layout keeps iOS-decodable numeric element IDs");
   assert.equal(edited.layout.navigationMetadata.smokeMarker, run);
+  const mismatchedStoreLayout = structuredClone(edited.layout);
+  mismatchedStoreLayout.elements[1].layoutCode = "525/2/1/1";
+  assert.equal((await api(manager, "POST", `/api/stores/${store.id}/layout/versions`, { activate: true, layout: mismatchedStoreLayout })).status, 400, "store API blocks publication with a mismatched shelf target");
+  const mismatchedDraft = expectOk(await api(manager, "POST", `/api/stores/${store.id}/layout/versions`, { activate: false, layout: mismatchedStoreLayout }), "historical shelf draft remains editable");
+  assert.equal(mismatchedDraft.status, "DRAFT");
+  assert.equal((await api(manager, "POST", `/api/stores/${store.id}/layout/versions/${mismatchedDraft.layoutId}/activate`)).status, 400, "store API blocks later activation with a mismatched shelf target");
+  assert.equal((await currentLayout(store.id)).layoutId, edited.layoutId, "invalid shelf target never replaces the public store layout");
   await manager.goto(`${base}/admin/next/stores/detail/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
   await manager.getByRole("heading", { name: "Stammdaten" }).waitFor();
   await manager.getByText("Aktiv: Version", { exact: false }).waitFor();
@@ -794,6 +803,10 @@ try {
   assert.equal(expectOk(await api(admin, "GET", "/api/layout/current"), "global layout after rejected IDs").layoutId, globalAfter.layoutId);
   const customerShelf = globalAfter.elements.find((element) => element.type === "shelf" && element.category === "310/1");
   assert.ok(customerShelf, "global fixture has the customer product's shelf target");
+  const mismatchedGlobalLayout = structuredClone(globalAfter);
+  mismatchedGlobalLayout.elements.find((element) => element.id === customerShelf.id).layoutCode = "525/2/1/1";
+  assert.equal((await api(admin, "POST", "/api/layout/current", mismatchedGlobalLayout)).status, 400, "global API blocks a mismatched shelf target");
+  assert.equal(expectOk(await api(admin, "GET", "/api/layout/current"), "global layout after rejected shelf target").layoutId, globalAfter.layoutId);
   const customer = await browser.newPage();
   await customer.goto(`${base}/customer/`, { waitUntil: "domcontentloaded" });
   await customer.locator("#mapCanvas [data-element-id]").first().waitFor();

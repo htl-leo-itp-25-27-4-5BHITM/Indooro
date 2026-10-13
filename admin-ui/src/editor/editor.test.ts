@@ -167,6 +167,9 @@ test("editor validates shelf routing metadata while preserving valid customer po
   shelf.accessAngle = 90;
   assert.equal(validateLayout(source).some((issue) => ["layout-code", "product-positions", "access-angle"].includes(issue.code)), false);
 
+  shelf.layoutCode = "525/2/1/1";
+  assert.ok(validateLayout(source).some((issue) => issue.code === "shelf-target-mismatch" && issue.elementId === "s-1" && issue.severity === "error"));
+
   shelf.layoutCode = "310/1";
   shelf.productPositions = ["310-42", "310-42"];
   shelf.accessAngle = 361;

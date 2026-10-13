@@ -100,6 +100,7 @@ public class LayoutService {
     public LayoutHistoryEntry saveCurrentLayout(JsonNode layout) throws IOException {
         layoutDocumentValidator.validate(layout);
         layoutDocumentValidator.validateMobileElementIds(layout);
+        layoutDocumentValidator.validatePublishedShelfRouting(layout);
         ensureLayoutIndex();
 
         String layoutId = UUID.randomUUID().toString();

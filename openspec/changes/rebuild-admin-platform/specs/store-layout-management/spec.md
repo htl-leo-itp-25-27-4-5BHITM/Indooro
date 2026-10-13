@@ -86,3 +86,8 @@ Validation SHALL distinguish blocking errors from warnings and SHALL identify th
 #### Scenario: Product positions lack a navigable shelf address
 - **WHEN** a shelf has product positions or a layout code without a valid category and section
 - **THEN** validation blocks publication and explains that customer and mobile routes require the shelf address
+
+#### Scenario: Shelf layout code points to another shelf address
+- **GIVEN** a shelf has category and section `310/1`
+- **WHEN** its explicit layout code begins with another category or section, such as `525/2/1/1`
+- **THEN** the editor blocks publication and both store activation and global publication reject the document while an existing draft remains editable

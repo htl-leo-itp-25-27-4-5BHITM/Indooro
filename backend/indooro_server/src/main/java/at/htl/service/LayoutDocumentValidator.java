@@ -35,6 +35,35 @@ public class LayoutDocumentValidator {
         }
     }
 
+    /** Product layout codes must address the same shelf that the mobile client resolves by category and section. */
+    public void validatePublishedShelfRouting(JsonNode document) {
+        JsonNode elements = document == null ? null : document.get("elements");
+        if (elements == null || !elements.isArray()) {
+            throw badRequest("elements muss eine Liste sein.");
+        }
+        for (int index = 0; index < elements.size(); index++) {
+            JsonNode element = elements.get(index);
+            if (!"shelf".equals(element.path("type").asText())) {
+                continue;
+            }
+            String layoutCode = element.path("layoutCode").asText("").trim();
+            if (layoutCode.isEmpty()) {
+                continue;
+            }
+            String category = element.path("category").asText("");
+            if (!layoutCode.matches("\\d{1,4}/\\d{1,3}/\\d{1,2}/\\d{1,2}")
+                    || !category.matches("\\d{1,4}/\\d{1,3}")
+                    || !layoutCode.startsWith(category + "/")) {
+                throw badRequest("elements[" + index + "].layoutCode muss zur Regal-Kategorie und zum Abschnitt passen.");
+            }
+            JsonNode meter = element.get("meter");
+            if (meter != null && !meter.isNull()
+                    && (!meter.isIntegralNumber() || meter.intValue() != Integer.parseInt(category.split("/")[1]))) {
+                throw badRequest("elements[" + index + "].meter muss zum Regal-Abschnitt passen.");
+            }
+        }
+    }
+
     public void validate(JsonNode document) {
         if (document == null || !document.isObject()) {
             throw badRequest("Layout muss ein JSON-Objekt sein.");

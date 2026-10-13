@@ -574,8 +574,9 @@ paths:
       tags: [legacy-layout]
       operationId: saveLegacyCurrentLayout
       summary: Save a new global layout version and make it current.
-      description: Published elements require positive numeric IDs at most 9007199254740991 for iOS. Currently anonymous (finding SEC-06); scheduled to require role admin by change `protect-legacy-write-endpoints`.
-      x-indooro-access: public
+      description: Published elements require positive numeric IDs at most 9007199254740991 for iOS. A shelf layoutCode, when present, must begin with that shelf's category and section. Requires role admin.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
       x-indooro-consumers: [admin-ui]
       x-indooro-findings: [SEC-02, SEC-06, PERF-33, BUG-04]
       requestBody:
@@ -596,6 +597,7 @@ paths:
                   layoutId: { type: string, format: uuid }
                   savedAt: { type: string, format: date-time }
         "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/LegacyServerError" }
   /api/layout/history:
     get:
@@ -1624,7 +1626,7 @@ paths:
       tags: [store-layouts]
       operationId: saveStoreLayoutVersion
       summary: Save a new version. Explicit activate=false keeps a draft; true activates it. Omitted or null activates only when no active version exists for legacy clients.
-      description: Drafts may retain historical string or missing element IDs for repair. Activation requires positive numeric IDs at most 9007199254740991 for iOS.
+      description: Drafts may retain historical string or missing element IDs for repair. Activation requires positive numeric IDs at most 9007199254740991 for iOS and matching shelf category/section and layoutCode prefixes.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin|region-manager|store-manager
       x-indooro-consumers: [admin-ui]
@@ -1659,7 +1661,7 @@ paths:
       tags: [store-layouts]
       operationId: activateStoreLayoutVersion
       summary: Activate a version and archive the previously active one.
-      description: Rejects layouts whose element IDs cannot be decoded by iOS as positive numeric IDs at most 9007199254740991.
+      description: Rejects layouts whose element IDs cannot be decoded by iOS as positive numeric IDs at most 9007199254740991 or whose shelf layoutCode disagrees with its category and section.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin|region-manager|store-manager
       x-indooro-consumers: [admin-ui]
@@ -1669,6 +1671,7 @@ paths:
         - $ref: "#/components/parameters/LayoutIdPath"
       responses:
         "200": { $ref: "#/components/responses/StoreLayoutOk" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/stores/{storeId}/layout/editor-context:
@@ -2131,6 +2134,7 @@ components:
         label: { type: string, description: Untrusted text; clients must escape it (finding SEC-02). }
         category: { type: [string, integer] }
         meter: { type: [string, integer] }
+        layoutCode: { type: string, description: When published on a shelf, its category/section prefix must equal that shelf's category field. }
         color: { type: string }
         beaconId: { type: string, description: Untrusted text; clients must escape it. }
         beaconCode: { type: string }

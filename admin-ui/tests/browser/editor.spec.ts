@@ -164,6 +164,17 @@ test("editor assigns a distinct shelf section before saving product targets", as
   expect(saved[0].elements[3]).toMatchObject({ category: "310/2", meter: 2 });
 });
 
+test("editor blocks publication when a shelf layout code points to another category", async ({ page }) => {
+  await mockEditor(page, "DRAFT", []);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" }).click();
+  await page.getByLabel("Layout-Code").fill("525/2/1/1");
+  await expect(page.locator(".le-validation")).toContainText("Layout-Code und Regal-Kategorie/Abschnitt widersprechen sich");
+  await expect(page.getByRole("button", { name: "Veröffentlichen" })).toBeDisabled();
+  await page.getByLabel("Layout-Code").fill("310/1/1/1");
+  await expect(page.locator(".le-validation")).not.toContainText("widersprechen sich");
+});
+
 test("shelf inspector persists routing metadata and confirms critical deletion", async ({ page }) => {
   const saved: LayoutDocument[] = [];
   await mockEditor(page, "DRAFT", saved);

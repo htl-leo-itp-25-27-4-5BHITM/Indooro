@@ -49,6 +49,30 @@ class LayoutDocumentValidatorTest {
     }
 
     @Test
+    void publicationRejectsShelfLayoutCodesForAnotherCategoryOrSection() {
+        ObjectNode layout = layout();
+        ObjectNode shelf = elementWithoutId(1, 1);
+        shelf.put("id", 1);
+        shelf.put("category", "310/1");
+        shelf.put("meter", 1);
+        shelf.put("layoutCode", "310/1/1/1");
+        ((ArrayNode) layout.get("elements")).add(shelf);
+        assertDoesNotThrow(() -> validator.validatePublishedShelfRouting(layout));
+
+        shelf.put("layoutCode", "525/2/1/1");
+        assertDoesNotThrow(() -> validator.validate(layout)); // Historical drafts remain editable.
+        WebApplicationException mismatch = assertThrows(WebApplicationException.class,
+                () -> validator.validatePublishedShelfRouting(layout));
+        assertEquals(400, mismatch.getResponse().getStatus());
+
+        shelf.put("layoutCode", "310/1/1/1");
+        shelf.put("meter", 2);
+        WebApplicationException section = assertThrows(WebApplicationException.class,
+                () -> validator.validatePublishedShelfRouting(layout));
+        assertEquals(400, section.getResponse().getStatus());
+    }
+
+    @Test
     void acceptsBoundaryGridAndFiveThousandElementsWithOptionalLegacyIds() {
         ObjectNode layout = layout();
         ((ObjectNode) layout.get("gridSize")).put("width", 1_000);

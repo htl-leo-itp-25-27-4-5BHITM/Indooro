@@ -36,6 +36,8 @@ The 2026-10-13 keyboard/recipe recovery image passed the full `test:live` workfl
 
 After `test:live` prints a Store ID, `npm run test:swift-layout -- <store-id>` fetches its anonymous current-layout response and compiles the actual `LayoutData.swift` and `MobileStoreModels.swift` with `swiftc` to decode `MobileLayoutResponse`. This requires Xcode command-line tools. The 2026-10-13 local run decoded a published three-element layout with numeric IDs. It tests the Swift data contract on macOS; an iOS device rendering journey remains open.
 
+The later shelf-target-guard image passed the full live workflow and ten route switch/rollback pairs. The live script first entered a mismatched shelf `layoutCode` in the Editor and saw a blocking validation error, then corrected and published it. Direct Store immediate publication, saved-draft activation, and global publication with a mismatched category/section returned HTTP 400. Anonymous current layouts kept their prior IDs. The published Store response decoded through the actual Swift models.
+
 ## Observed 2026-10-12
 
 - Keycloak 26.2 required complete first and last names for imported demo users. Those fields are now in the local realm JSON.

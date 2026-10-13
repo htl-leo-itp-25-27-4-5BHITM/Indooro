@@ -98,6 +98,11 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
     if (element.layoutCode !== undefined && (typeof element.layoutCode !== "string" || (element.layoutCode.trim() !== "" && !/^\d{1,4}\/\d{1,3}\/\d{1,2}\/\d{1,2}$/.test(element.layoutCode.trim())))) {
       add("error", "layout-code", `${name} braucht einen Layout-Code im Format Kategorie/Abschnitt/Fach/Reihe.`, id);
     }
+    if (element.type === "shelf" && typeof element.layoutCode === "string" && /^\d{1,4}\/\d{1,3}\/\d{1,2}\/\d{1,2}$/.test(element.layoutCode.trim())
+      && typeof element.category === "string" && /^\d{1,4}\/\d{1,3}$/.test(element.category)
+      && !element.layoutCode.trim().startsWith(`${element.category}/`)) {
+      add("error", "shelf-target-mismatch", `${name}: Layout-Code und Regal-Kategorie/Abschnitt widersprechen sich. Produktziel korrigieren.`, id);
+    }
     if (element.productPositions !== undefined) {
       const positions = element.productPositions;
       if (!Array.isArray(positions) || positions.length > 500 || positions.some((position) => (typeof position !== "string" && typeof position !== "number") || !String(position).trim())
