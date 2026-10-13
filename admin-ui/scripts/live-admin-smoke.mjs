@@ -669,6 +669,11 @@ try {
   const errorLogs = expectOk(await api(admin, "GET", "/api/admin/error-logs?limit=50"), "admin error logs");
   assert.ok(Array.isArray(auditLogs.entries) && auditLogs.entries.length > 0);
   assert.ok(Array.isArray(errorLogs.entries));
+  const legacyDiagnosticsMap = async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace(/diagnostics: (true|false)/, "diagnostics: false") });
+  };
+  await admin.route("**/admin/route-cutover.js", legacyDiagnosticsMap);
   await admin.goto(`${base}/admin/server-logs/`, { waitUntil: "domcontentloaded" });
   await admin.getByText("Audit Events", { exact: true }).waitFor();
   const legacyTrace = admin.locator("details").filter({ hasText: diagnosticMarker }).filter({ hasNotText: "without trace" });
@@ -678,6 +683,7 @@ try {
   await admin.getByRole("button", { name: "Aktualisieren" }).focus();
   await admin.keyboard.press("Enter");
   await admin.getByText("Audit Events", { exact: true }).waitFor();
+  await admin.unroute("**/admin/route-cutover.js", legacyDiagnosticsMap);
   await admin.goto(`${base}/admin/next/server-logs/`, { waitUntil: "domcontentloaded" });
   await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
   const diagnosticRow = admin.getByRole("region", { name: "Serverfehler" }).getByRole("row").filter({ hasText: diagnosticMarker, hasNotText: "without trace" });

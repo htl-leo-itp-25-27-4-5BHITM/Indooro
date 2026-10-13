@@ -53,7 +53,13 @@ try {
   }
 
   override = null;
-  console.log(JSON.stringify({ result: "PASS", switchedAndRolledBack: entries.length, committedFlagsChanged: false }));
+  await page.goto(`${base}/admin/server-logs/?probe=committed#proof`, { waitUntil: "domcontentloaded" });
+  await page.waitForURL((url) => url.pathname === "/admin/next/server-logs/" && url.searchParams.get("probe") === "committed" && url.hash === "#proof");
+  await page.locator("#root").waitFor();
+  await page.goto(`${base}/admin/`, { waitUntil: "domcontentloaded" });
+  await page.locator("#admin-root .nav").waitFor();
+  assert.equal(new URL(page.url()).pathname, "/admin/");
+  console.log(JSON.stringify({ result: "PASS", switchedAndRolledBack: entries.length, committedDiagnosticsRedirect: true, committedFlagsChanged: false }));
 } finally {
   await browser.close();
 }

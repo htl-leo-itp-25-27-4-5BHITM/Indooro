@@ -5,21 +5,26 @@ import { cutoverTarget, ROUTE_CUTOVER } from "../../main/resources/META-INF/reso
 
 const paths = ["/admin/", "/admin/regions/", "/admin/stores/", "/admin/stores/detail/", "/admin/beacons/", "/admin/products/", "/admin/categories/", "/admin/recipes/", "/admin/editor/", "/admin/server-logs/"];
 
-test("current admin entries remain on the legacy pages before parity approval", () => {
-  assert.ok(Object.values(ROUTE_CUTOVER).every((enabled) => enabled === false));
+test("only diagnostics redirects after its parity approval", () => {
+  assert.deepEqual(ROUTE_CUTOVER, {
+    dashboard: false, regions: false, stores: false, storeDetail: false,
+    beacons: false, products: false, categories: false, recipes: false,
+    editor: false, diagnostics: true
+  });
   for (const path of paths) {
-    assert.equal(cutoverTarget(path), null, path);
+    assert.equal(cutoverTarget(path), path === "/admin/server-logs/" ? "/admin/next/server-logs/" : null, path);
     const page = readFileSync(new URL(`../../main/resources/META-INF/resources${path}index.html`, import.meta.url), "utf8");
     assert.match(page, /<script type="module" src="\/admin\/route-cutover\.js"><\/script>/, path);
   }
 });
 
 test("each route can switch and roll back independently without losing a deep link", () => {
+  const disabledFlags = Object.fromEntries(Object.keys(ROUTE_CUTOVER).map((key) => [key, false]));
   for (const path of paths) {
     const keys = Object.keys(ROUTE_CUTOVER);
-    const matching = keys.filter((key) => cutoverTarget(path, "?storeId=abc&layoutId=def", "#panel", { ...ROUTE_CUTOVER, [key]: true }));
+    const matching = keys.filter((key) => cutoverTarget(path, "?storeId=abc&layoutId=def", "#panel", { ...disabledFlags, [key]: true }));
     assert.equal(matching.length, 1, path);
-    const flags = { ...ROUTE_CUTOVER, [matching[0]]: true };
+    const flags = { ...disabledFlags, [matching[0]]: true };
     const target = cutoverTarget(path, "?storeId=abc&layoutId=def", "#panel", flags);
     assert.equal(target, path.replace("/admin/", "/admin/next/") + "?storeId=abc&layoutId=def#panel");
     assert.equal(cutoverTarget(path, "?storeId=abc", "", { ...flags, [matching[0]]: false }), null);

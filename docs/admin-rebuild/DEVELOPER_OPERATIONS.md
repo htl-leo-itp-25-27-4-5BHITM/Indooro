@@ -54,7 +54,7 @@ The live check covers local demo-role login, scoped denial, candidate direct lin
 
 ## Route operation and rollback
 
-Current `/admin/*` static pages remain the release path. Candidate React pages are served at `/admin/next/*`. Every flag in `backend/indooro_server/src/main/resources/META-INF/resources/admin/route-cutover.js` is currently `false`. The map keys are `dashboard`, `regions`, `stores`, `storeDetail`, `beacons`, `products`, `categories`, `recipes`, `editor`, and `diagnostics`; editor mode still depends on `storeId`.
+Candidate React pages are served at `/admin/next/*`. In the local branch, only `diagnostics` is `true`: `/admin/server-logs/` redirects to the candidate, while the other nine `/admin/*` entries retain their static pages. The map keys are `dashboard`, `regions`, `stores`, `storeDetail`, `beacons`, `products`, `categories`, `recipes`, `editor`, and `diagnostics`; editor mode still depends on `storeId`.
 
 Before changing any route flag, complete that route's parity record in [ROUTE_INVENTORY.md](ROUTE_INVENTORY.md): authenticated direct-link and refresh, role and foreign-scope denial, keyboard/accessibility, loading/empty/error/success, action parity and resulting server state, and exercised rollback. Complete applicable live-stack and customer/mobile contract checks. Then build/package and test the exact packaged artifact. A flag change alone is not a release gate.
 
@@ -62,7 +62,7 @@ For a route-level rollback, set only the affected map value to `false`, rebuild/
 
 ## Known limits
 
-- Route cutover is incomplete; current flags are all disabled. Candidate route presence does not establish parity.
+- Route cutover is incomplete; Diagnostics alone passed its parity gate and is enabled in the local branch. Candidate route presence does not establish parity for the other nine entries.
 - Candidate browser checks mock APIs. The live acceptance stack is local and uses disposable data.
 - Catalog bulk commit remains disabled: product/category bulk endpoints cannot prove per-row persistence or roll back partial OpenSearch writes.
 - Recipe edits span multiple API operations and may partially apply if one stage fails.
