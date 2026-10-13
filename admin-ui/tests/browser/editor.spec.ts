@@ -172,6 +172,24 @@ test("keyboard can place an element inside the grid and move the selected elemen
   await expect(x).toHaveValue(String(placedX + 1));
 });
 
+test("canvas drag draws a rectangular element to the dragged dimensions", async ({ page }) => {
+  await mockEditor(page, "DRAFT", []);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await page.getByRole("button", { name: "Regal", exact: true }).click();
+  const map = await page.locator(".le-canvas > g > rect").first().boundingBox();
+  expect(map).not.toBeNull();
+  // Draw in the lower-right quadrant, clear of the fixture's existing elements.
+  const start = { x: map!.x + map!.width * 0.55, y: map!.y + map!.height * 0.55 };
+  const end = { x: start.x + map!.width * 0.15, y: start.y + map!.height * 0.08 };
+  await page.mouse.move(start.x, start.y);
+  await page.mouse.down();
+  await page.mouse.move(end.x, end.y, { steps: 5 });
+  await page.mouse.up();
+  await expect(page.getByLabel("Breite", { exact: true })).toHaveValue("6");
+  await expect(page.getByLabel("Höhe", { exact: true })).toHaveValue("5");
+  await expect(page.locator(".le-layers button")).toHaveCount(layout.elements.length + 1);
+});
+
 test("pointer gestures move, resize, rotate and undo a shelf without losing metadata", async ({ page }) => {
   await mockEditor(page, "DRAFT", []);
   await page.goto("/admin/next/editor/?storeId=store-1");

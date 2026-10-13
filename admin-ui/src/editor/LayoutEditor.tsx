@@ -20,6 +20,7 @@ const TYPES = [
 type Tool = "select" | "pan" | "create";
 type Gesture =
   | { kind: "pan"; start: Point; viewport: Viewport }
+  | { kind: "create"; start: Point; element: LayoutElement }
   | { kind: "move" | "resize" | "rotate"; id: ElementId; start: Point; element: LayoutElement; initialAngle?: number };
 
 export interface LayoutEditorProps {
@@ -222,7 +223,12 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
     }
     if (tool === "create") {
       const world = screenToWorld(at, viewport);
-      createAtWorld(world, createType);
+      if (createType === "beacon") createAtWorld(world, createType);
+      else {
+        const definition = TYPES.find((item) => item.type === createType)!;
+        const element: LayoutElement = { id: newElementId(editorRef.current.document), type: createType, x: world.x - definition.width / 2, y: world.y - definition.height / 2, width: definition.width, height: definition.height, accessAngle: 90 };
+        startGesture(event, { kind: "create", start: world, element });
+      }
     } else setEditor((current) => selectElement(current, null));
   };
 
@@ -241,7 +247,15 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
     if (active.kind === "pan") { setViewport({ ...active.viewport, x: active.viewport.x + at.x - active.start.x, y: active.viewport.y + at.y - active.start.y }); return; }
     const world = screenToWorld(at, viewport);
     const setGesturePreview = (element: LayoutElement) => { previewRef.current = element; setPreview(element); };
-    if (active.kind === "move") {
+    if (active.kind === "create") {
+      const dx = world.x - active.start.x;
+      const dy = world.y - active.start.y;
+      if (Math.hypot(dx, dy) > 0.2) {
+        const width = snapping ? Math.max(1, Math.round(Math.abs(dx))) : Math.max(0.1, Math.abs(dx));
+        const height = snapping ? Math.max(1, Math.round(Math.abs(dy))) : Math.max(0.1, Math.abs(dy));
+        setGesturePreview({ ...active.element, x: Math.min(active.start.x, world.x), y: Math.min(active.start.y, world.y), width, height });
+      } else setGesturePreview(active.element);
+    } else if (active.kind === "move") {
       setGesturePreview({ ...active.element, x: active.element.x + world.x - active.start.x, y: active.element.y + world.y - active.start.y });
     } else if (active.kind === "resize") {
       const angle = (active.element.rotation || 0) * Math.PI / 180;
@@ -260,7 +274,15 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
     const active = gesture.current;
     if (!active) return;
     const finalPreview = previewRef.current;
-    if (active.kind !== "pan" && finalPreview) {
+    if (active.kind === "create") {
+      const end = screenToWorld(localPoint(event), viewport);
+      const dx = end.x - active.start.x;
+      const dy = end.y - active.start.y;
+      const element = Math.hypot(dx, dy) > 0.2
+        ? { ...active.element, x: Math.min(active.start.x, end.x), y: Math.min(active.start.y, end.y), width: snapping ? Math.max(1, Math.round(Math.abs(dx))) : Math.max(0.1, Math.abs(dx)), height: snapping ? Math.max(1, Math.round(Math.abs(dy))) : Math.max(0.1, Math.abs(dy)) }
+        : active.element;
+      dispatch({ type: "create", element });
+    } else if (active.kind !== "pan" && finalPreview) {
       if (active.kind === "move") dispatch({ type: "move", id: active.id, x: finalPreview.x, y: finalPreview.y });
       if (active.kind === "resize") dispatch({ type: "resize", id: active.id, width: finalPreview.width || 1, height: finalPreview.height || 1 });
       if (active.kind === "rotate") dispatch({ type: "rotate", id: active.id, rotation: finalPreview.rotation || 0 });
@@ -390,7 +412,7 @@ export function LayoutEditor({ initialDocument, mode, storeName, assignedBeacons
             {showGrid && <rect x={0} y={0} width={document.gridSize.width} height={document.gridSize.height} fill="url(#le-grid)" pointerEvents="none" />}
             {tool === "create" && createType !== "beacon" && <rect className="le-keyboard-preview" x={keyboardPoint.x - (TYPES.find((item) => item.type === createType)?.width || 0) / 2} y={keyboardPoint.y - (TYPES.find((item) => item.type === createType)?.height || 0) / 2} width={TYPES.find((item) => item.type === createType)?.width} height={TYPES.find((item) => item.type === createType)?.height} rx=".2" />}
             {tool === "create" && createType === "beacon" && <circle className="le-keyboard-preview" cx={keyboardPoint.x} cy={keyboardPoint.y} r=".35" />}
-            {document.elements.map((stored, index) => {
+            {[...document.elements, ...(preview && !document.elements.some((item) => item.id === preview.id) ? [preview] : [])].map((stored, index) => {
               const element = preview && preview.id === stored.id ? preview : stored;
               const definition = TYPES.find((item) => item.type === element.type);
               const active = element.id === editor.selectedId;
