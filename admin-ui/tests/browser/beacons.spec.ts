@@ -165,6 +165,98 @@ test("beacon assignment reaches a store beyond the first 100 results", async ({ 
   expect(assignedStoreId).toBe(target.id);
 });
 
+test("store deep link keeps free beacons visible and preselects its assignment target", async ({ page }) => {
+  const free = beacon("beacon-free", "FREE-1", 1);
+  const beaconQueries: string[] = [];
+  let assignedStoreId: string | null = null;
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [store], page: 0, size: 100, totalElements: 1 } }));
+  await page.route("**/api/beacons**", (route) => {
+    const request = route.request();
+    if (request.method() === "GET") {
+      beaconQueries.push(new URL(request.url()).search);
+      return route.fulfill({ json: [free] });
+    }
+    assignedStoreId = request.postDataJSON().storeId;
+    free.currentStore = store;
+    return route.fulfill({ json: { beaconId: free.id, storeId: store.id } });
+  });
+
+  await page.goto("/admin/next/beacons/?storeId=store-1");
+  await expect(page.getByRole("combobox", { name: "Store" })).toHaveValue("");
+  await expect(page.getByRole("cell", { name: "FREE-1" })).toBeVisible();
+  await expect.poll(() => beaconQueries.length > 0).toBe(true);
+  expect(beaconQueries.every((query) => !new URLSearchParams(query).has("storeId"))).toBe(true);
+  await page.getByRole("button", { name: "Zuweisen" }).click();
+  const target = page.getByRole("combobox", { name: "Ziel-Store" });
+  await expect(page.getByText("Aus Store-Detail: Ziel-Store LINZ-01 · Indooro Linz")).toBeVisible();
+  await expect(target).toHaveValue(store.id);
+  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
+  expect(assignedStoreId).toBe(store.id);
+});
+
+test("store deep link resolves an assignment target beyond the first 100 stores without filtering free beacons", async ({ page }) => {
+  const firstStores = Array.from({ length: 100 }, (_, index) => ({ ...store, id: `store-${index}`, storeCode: `S-${index}`, name: `Store ${index}` }));
+  const target = { ...store, id: "store-target", storeCode: "TARGET", name: "Target Store" };
+  const free = beacon("beacon-free", "FREE-1", 1);
+  const loadedStorePages: number[] = [];
+  let assignedStoreId: string | null = null;
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores?*", (route) => {
+    const pageNumber = Number(new URL(route.request().url()).searchParams.get("page") ?? 0);
+    loadedStorePages.push(pageNumber);
+    return route.fulfill({ json: { content: pageNumber === 0 ? firstStores : [target], page: pageNumber, size: 100, totalElements: 101 } });
+  });
+  await page.route("**/api/beacons**", (route) => {
+    const request = route.request();
+    if (request.method() === "GET") return route.fulfill({ json: [free] });
+    assignedStoreId = request.postDataJSON().storeId;
+    free.currentStore = target;
+    return route.fulfill({ json: { beaconId: free.id, storeId: target.id } });
+  });
+
+  await page.goto("/admin/next/beacons/?storeId=store-target");
+  const storeFilter = page.getByRole("combobox", { name: "Store" });
+  await expect(storeFilter).toHaveValue("");
+  await expect(page.getByRole("cell", { name: "FREE-1" })).toBeVisible();
+  await expect.poll(() => loadedStorePages.includes(1)).toBe(true);
+  await page.getByRole("button", { name: "Zuweisen" }).click();
+  const targetSelect = page.getByRole("combobox", { name: "Ziel-Store" });
+  await expect(page.getByText("Aus Store-Detail: Ziel-Store TARGET · Target Store")).toBeVisible();
+  await expect(targetSelect).toHaveValue(target.id);
+  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
+  expect(assignedStoreId).toBe(target.id);
+});
+
+test("unavailable store deep link requires an explicit accessible assignment target", async ({ page }) => {
+  const free = beacon("beacon-free", "FREE-1", 1);
+  let assignedStoreId: string | null = null;
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "region-1", username: "region-manager", role: "region-manager", scope: { regionId: "region-1", regionName: "Oberösterreich" } } }));
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [store], page: 0, size: 100, totalElements: 1 } }));
+  await page.route("**/api/beacons**", (route) => {
+    const request = route.request();
+    if (request.method() === "GET") return route.fulfill({ json: [free] });
+    assignedStoreId = request.postDataJSON().storeId;
+    free.currentStore = store;
+    return route.fulfill({ json: { beaconId: free.id, storeId: store.id } });
+  });
+
+  await page.goto("/admin/next/beacons/?storeId=foreign-store");
+  await page.getByRole("button", { name: "Zuweisen" }).click();
+  const target = page.getByRole("combobox", { name: "Ziel-Store" });
+  await expect(page.getByRole("status")).toContainText("Der Store aus dem Link ist nicht verfügbar oder liegt außerhalb Ihres Zugriffs");
+  await expect(target).toHaveValue("");
+  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
+  await expect(target).toHaveValue("");
+  expect(assignedStoreId).toBeNull();
+  await target.selectOption(store.id);
+  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
+  expect(assignedStoreId).toBe(store.id);
+});
+
 test("beacon inventory shows empty state and retries load failures", async ({ page }) => {
   let inventoryCalls = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));

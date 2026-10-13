@@ -58,6 +58,81 @@ test("store-scoped direct link blocks another store before loading editor data",
   expect(contextRequests).toBe(0);
 });
 
+test("editor load can be retried after a transient failure", async ({ page }) => {
+  let fail = true;
+  let reads = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/editor-context", (route) => {
+    reads += 1;
+    return fail ? route.fulfill({ status: 503, json: { error: "Unavailable" } }) : route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: { layoutId: "active-1", versionNo: 1, status: "ACTIVE", layout: document }, assignedBeacons: [] } });
+  });
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await expect(page.getByRole("alert")).toContainText("Serverfehler");
+  fail = false;
+  await page.getByRole("button", { name: "Erneut versuchen" }).click();
+  await expect(page.getByRole("heading", { name: "Layout Editor" })).toBeVisible();
+  expect(reads).toBe(2);
+});
+
+test("failed draft save keeps edits dirty and can be retried", async ({ page }) => {
+  let fail = true;
+  let saves = 0;
+  let savedLayout: typeof document | null = null;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/editor-context", (route) => route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: { layoutId: "active-1", versionNo: 1, status: "ACTIVE", layout: document }, assignedBeacons: [] } }));
+  await page.route("**/api/stores/store-1/layout/versions", (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: [{ layoutId: "active-1", versionNo: 1, status: "ACTIVE" }] });
+    saves += 1;
+    if (fail) return route.fulfill({ status: 503, json: { error: "Unavailable" } });
+    savedLayout = route.request().postDataJSON().layout as typeof document;
+    return route.fulfill({ json: { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layout: savedLayout } });
+  });
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const name = page.getByRole("textbox", { name: "Filialname" });
+  await name.fill("Retry Linz");
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.locator(".le-message")).toContainText("Serverfehler");
+  await expect(page.getByText("Ungespeicherte Änderungen")).toBeVisible();
+  expect(await name.inputValue()).toBe("Retry Linz");
+
+  fail = false;
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.locator(".le-message")).toContainText("Entwurf gespeichert");
+  await expect(page).toHaveURL(/layoutId=draft-2/);
+  expect(saves).toBe(2);
+  expect(savedLayout?.shopName).toBe("Retry Linz");
+});
+
+test("failed activation leaves the draft available for retry", async ({ page }) => {
+  let fail = true;
+  let activations = 0;
+  const draft = { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layout: document };
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/editor-context")) return route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: draft, assignedBeacons: [] } });
+    if (path.endsWith("/versions") && route.request().method() === "GET") return route.fulfill({ json: [draft] });
+    if (path.endsWith("/versions/draft-2")) return route.fulfill({ json: draft });
+    if (path.endsWith("/versions/draft-2/activate")) {
+      activations += 1;
+      return fail ? route.fulfill({ status: 503, json: { error: "Unavailable" } }) : route.fulfill({ json: { ...draft, status: "ACTIVE" } });
+    }
+    return route.fulfill({ status: 404 });
+  });
+  await page.goto("/admin/next/editor/?storeId=store-1&layoutId=draft-2");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Veröffentlichen" }).click();
+  await expect(page.locator(".le-message")).toContainText("Serverfehler");
+  await expect(page.getByRole("button", { name: "Veröffentlichen" })).toBeEnabled();
+  expect(activations).toBe(1);
+
+  fail = false;
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Veröffentlichen" }).click();
+  await expect(page.locator(".le-message")).toContainText("Layout veröffentlicht");
+  await expect.poll(() => activations).toBe(2);
+});
+
 test("archived store version can be restored unchanged from its direct link", async ({ page }) => {
   const archived = { layoutId: "old-1", versionNo: 1, layoutName: "Earlier map", status: "ARCHIVED", layout: document };
   const active = { ...archived, layoutId: "new-2", versionNo: 2, status: "ACTIVE", layout: { ...document, shopName: "Newer map" } };

@@ -83,6 +83,15 @@ test("dashboard uses scoped backend totals and only admin loads audit activity",
   await expect(metrics).toContainText("2");
   await expect(page.getByText("Layout veröffentlicht")).toBeVisible();
   await expect(page.getByRole("link", { name: "Layouts prüfen" })).toHaveAttribute("href", "/admin/next/stores/?layout=missing");
+  const manageStore = page.getByRole("link", { name: "Store verwalten" });
+  const createStore = page.getByRole("link", { name: "Store anlegen" });
+  await expect(createStore).toHaveAttribute("href", "/admin/next/stores/new/");
+  await manageStore.focus();
+  await page.keyboard.press("Tab");
+  await expect(createStore).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/admin\/next\/stores\/new\/$/);
+  await expect(page.getByRole("heading", { name: "Store anlegen" })).toBeVisible();
 });
 
 test("store manager dashboard omits admin activity and recovers from a failed request", async ({ page }) => {
@@ -99,10 +108,13 @@ test("store manager dashboard omits admin activity and recovers from a failed re
   await page.goto("/admin/next/");
   await expect(page.getByRole("alert")).toContainText("Daten konnten nicht geladen werden");
   fail = false;
-  await page.getByRole("button", { name: "Erneut versuchen" }).click();
+  const retryButton = page.getByRole("button", { name: "Erneut versuchen" });
+  await retryButton.focus();
+  await page.keyboard.press("Enter");
   await expect(page.getByRole("region", { name: "Kennzahlen" })).toContainText("1");
   await expect(page.getByRole("heading", { name: "Letzte Aktivitäten" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Produkte verwalten" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Store anlegen" })).toHaveCount(0);
   expect(auditRequests).toBe(0);
 });
 
@@ -118,6 +130,7 @@ test("region manager dashboard stays within scoped APIs without admin-only actio
   await expect(page.getByRole("navigation", { name: "Admin Navigation" }).getByRole("link", { name: "Regionen" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Admin Navigation" }).getByRole("link", { name: "Rezepte" })).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Kennzahlen" })).toContainText("3");
+  await expect(page.getByRole("link", { name: "Store anlegen" })).toHaveAttribute("href", "/admin/next/stores/new/");
   expect(auditRequests).toBe(0);
 });
 

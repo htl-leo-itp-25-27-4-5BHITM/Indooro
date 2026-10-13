@@ -167,6 +167,7 @@ function draftFromBeacon(beacon: Beacon): BeaconDraft {
 }
 
 export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }) {
+  const [contextStoreId] = useState(() => new URLSearchParams(window.location.search).get("storeId") ?? "");
   const [filters, setFilters] = useState<BeaconFilters>({ query: "", status: "ACTIVE", assigned: "all", storeId: "" });
   const [beacons, setBeacons] = useState<Beacon[]>([]);
   const [stores, setStores] = useState<BeaconStore[]>([]);
@@ -201,6 +202,7 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
   const [bulkSaving, setBulkSaving] = useState(false);
   const admin = user.role === "admin";
   const storesForUser = useMemo(() => assignableStores(user, stores), [user, stores]);
+  const contextStore = storesForUser.find((store) => store.id === contextStoreId);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -212,12 +214,38 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
     Promise.all([
       api.get<Beacon[]>(beaconListPath(filters), { signal: controller.signal }),
       api.get<{ content: BeaconStore[]; totalElements: number }>("/api/stores?status=ACTIVE&page=0&size=100", { signal: controller.signal })
-    ]).then(([beaconList, storePage]) => {
+    ]).then(async ([beaconList, storePage]) => {
       if (!Array.isArray(beaconList) || !Array.isArray(storePage?.content) || !Number.isFinite(storePage.totalElements)) throw new Error("Beacon- oder Store-Antwort ist unvollständig.");
       setBeacons(beaconList);
-      setStores(storePage.content);
-      setStorePage(0);
+      let loadedStores = storePage.content;
+      let loadedPage = 0;
+      let totalStores = storePage.totalElements;
+      setStores(loadedStores);
+      setStorePage(loadedPage);
       setStoreTotal(storePage.totalElements);
+      while (contextStoreId && !loadedStores.some((store) => store.id === contextStoreId) && loadedStores.length < totalStores) {
+        try {
+          const nextPage = loadedPage + 1;
+          const result = await api.get<{ content: BeaconStore[]; totalElements: number }>(`/api/stores?status=ACTIVE&page=${nextPage}&size=100`, { signal: controller.signal });
+          if (!Array.isArray(result?.content) || !Number.isFinite(result.totalElements)) throw new Error("Weitere Stores konnten nicht geladen werden.");
+          if (controller.signal.aborted) return;
+          if (result.content.length === 0) {
+            totalStores = loadedStores.length;
+            setStoreTotal(totalStores);
+            break;
+          }
+          loadedStores = [...loadedStores, ...result.content.filter((store) => !loadedStores.some((item) => item.id === store.id))];
+          loadedPage = nextPage;
+          totalStores = result.totalElements;
+          setStores(loadedStores);
+          setStorePage(loadedPage);
+          setStoreTotal(totalStores);
+        } catch (error) {
+          if (error instanceof DOMException && error.name === "AbortError") return;
+          setStorePageError(errorMessage(error));
+          break;
+        }
+      }
     }).catch((error: unknown) => {
       if (error instanceof DOMException && error.name === "AbortError") return;
       setLoadError(errorMessage(error));
@@ -348,7 +376,7 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
 
   function openAssignment(beacon: Beacon) {
     setAssignmentTarget(beacon);
-    setTargetStoreId(beacon.currentStore?.id ?? storesForUser[0]?.id ?? "");
+    setTargetStoreId(contextStoreId ? contextStore?.id ?? "" : beacon.currentStore?.id ?? storesForUser[0]?.id ?? "");
     setAssignmentError("");
   }
 
@@ -440,6 +468,8 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
     </section>}
 
     {assignmentTarget && <section className="panel" aria-labelledby="beacon-assignment-title"><div className="panel-header"><h3 id="beacon-assignment-title">Beacon zuweisen</h3></div>
+      {contextStore && <p>Aus Store-Detail: Ziel-Store {contextStore.storeCode} · {contextStore.name}</p>}
+      {contextStoreId && !contextStore && <p role="status" className="notice">Der Store aus dem Link ist nicht verfügbar oder liegt außerhalb Ihres Zugriffs. Bitte wählen Sie einen zugänglichen Ziel-Store.</p>}
       {assignmentError && <p role="alert" className="notice error">{assignmentError}</p>}
       <form className="toolbar" onSubmit={assignBeacon}><label>Ziel-Store<select required value={targetStoreId} onChange={(event) => setTargetStoreId(event.currentTarget.value)}><option value="">Store auswählen</option>{storesForUser.map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select></label>
         <button className="primary" type="submit" disabled={assigning || !storesForUser.length}>{assigning ? "Weist zu …" : "Zuweisung bestätigen"}</button><button type="button" onClick={() => setAssignmentTarget(null)} disabled={assigning}>Abbrechen</button></form>

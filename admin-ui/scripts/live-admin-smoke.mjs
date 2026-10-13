@@ -95,6 +95,8 @@ try {
   const foreignBeacon = expectOk(await api(admin, "POST", "/api/beacons", { beaconCode: `OTHER-B-${run}`, uuid: randomUUID(), major: 1, minor: 2 }), "foreign beacon create");
   expectOk(await api(admin, "POST", `/api/beacons/${foreignBeacon.id}/assign`, { storeId: foreignStore.id }), "foreign beacon assign");
   assignDemoScopes(region.id, store.id);
+  await admin.goto(`${base}/admin/next/`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("link", { name: "Store anlegen" }).waitFor();
   const uiRegionCode = `UI-${run}`;
   const uiRegionName = `UI Region ${run}`;
   await admin.goto(`${base}/admin/next/regions/`, { waitUntil: "domcontentloaded" });
@@ -134,8 +136,10 @@ try {
   await admin.getByRole("button", { name: "Speichern" }).click();
   await admin.getByRole("status").getByText("Beacon wurde gespeichert.").waitFor();
   assert.equal(expectOk(await api(admin, "GET", `/api/beacons/${uiBeacon.id}`), "candidate beacon edit").beaconCode, editedUiBeaconCode);
+  await admin.goto(`${base}/admin/next/beacons/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).waitFor();
   await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).getByRole("button", { name: "Zuweisen" }).click();
-  await admin.getByLabel("Ziel-Store").selectOption(store.id);
+  assert.equal(await admin.getByLabel("Ziel-Store").inputValue(), store.id, "store deep link preselects assignment destination");
   admin.once("dialog", (dialog) => { void dialog.accept(); });
   await admin.getByRole("button", { name: "Zuweisung bestätigen" }).click();
   await admin.getByRole("status").getByText(`${editedUiBeaconCode} wurde ${store.name} zugewiesen.`).waitFor();
@@ -367,6 +371,7 @@ try {
       ["Regionen", dashboardRegions.length], ["Stores", dashboardStores.totalElements],
       ["Freie Beacons", dashboardFreeBeacons.length], ["Layouts offen", dashboardMissingLayouts.totalElements]
     ]) assert.equal(Number(await metrics.locator(".metric").filter({ hasText: label }).locator("strong").textContent()), expected, `${role} dashboard metric ${label}`);
+    assert.equal(await page.getByRole("link", { name: "Store anlegen" }).count(), role === "region-manager" ? 1 : 0, `${role} dashboard store-create action`);
     assert.equal(await page.getByRole("heading", { name: "Letzte Aktivitäten" }).count(), 0);
     assert.equal((await api(page, "GET", `/api/stores/${store.id}`)).status, 200);
     assert.equal((await api(page, "GET", `/api/stores/${foreignStore.id}`)).status, 403);

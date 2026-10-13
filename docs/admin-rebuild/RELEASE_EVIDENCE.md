@@ -1,5 +1,9 @@
 # Local release artifact and rollout inputs
 
+## 2026-10-13 integrated dashboard, Beacon, and editor recovery image
+
+The latest local image is `indooro-admin-rebuild:local-integrated-parity`, immutable ID `sha256:0b6938d72de65450b1362c116fb79aa8836e474af9e31369f316eeb8e9f0cb8a`, runner SHA-256 `441a8c0df091d46b9a21ed627816601946ad904f2bd7a7cc8405fd98de3a86f5`. It remains local and unpushed. Candidate typecheck, lint, package verification, 60/60 unit tests, and 77/77 browser tests passed. Against this image, `test:live` passed the complete role, catalog, Beacon, editor, and public-contract workflow, including Store-context Beacon assignment and dashboard quick-link visibility; `test:live:cutover` passed ten simulated route switch/rollback pairs. Only Diagnostics is enabled in the committed route map. The preceding local editor image (`sha256:3c61d9bbd3e60d72f3f254393cb8e1207be44cc4fa6e72917ed0106124d1b779`) remains the local full-image rollback target.
+
 ## 2026-10-13 editor recovery image
 
 The current local image adds the candidate editor's undoable “Neues Layout” action: `indooro-admin-rebuild:local-editor-new-layout`, immutable ID `sha256:3c61d9bbd3e60d72f3f254393cb8e1207be44cc4fa6e72917ed0106124d1b779`, runner SHA-256 `b8f05ff2f204c4a1d8cb40a595f47bbf8c98e176cec9a173053d9d280c778607`. It remains local and unpushed. The full live workflow passed clear/undo and invalid-import preservation before valid import and publication. Candidate browser tests passed 69/69, including the mobile first-viewport regression. The sole enabled route flag remains Diagnostics.

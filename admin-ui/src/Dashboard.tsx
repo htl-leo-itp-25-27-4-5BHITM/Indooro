@@ -79,7 +79,7 @@ export function Dashboard({ api, user }: { api: ApiClient; user: CurrentUser }) 
           </ul>}
         </section>
         <section className="notice"><div className="section-heading"><h3>Schnellzugriff</h3></div><div className="quick-links">
-          <a href="/admin/next/stores/">Store verwalten</a><a href={user.role === "store-manager" && user.scope?.storeId ? `/admin/next/editor/?storeId=${encodeURIComponent(user.scope.storeId)}` : user.role === "region-manager" ? "/admin/next/stores/" : "/admin/next/editor/"}>Layout Editor öffnen</a><a href="/admin/next/beacons/">Beacons verwalten</a>
+          <a href="/admin/next/stores/">Store verwalten</a>{user.role !== "store-manager" && <a href="/admin/next/stores/new/">Store anlegen</a>}<a href={user.role === "store-manager" && user.scope?.storeId ? `/admin/next/editor/?storeId=${encodeURIComponent(user.scope.storeId)}` : user.role === "region-manager" ? "/admin/next/stores/" : "/admin/next/editor/"}>Layout Editor öffnen</a><a href="/admin/next/beacons/">Beacons verwalten</a>
           {user.role === "admin" && <><a href="/admin/next/products/">Produkte verwalten</a><a href="/admin/next/recipes/">Rezepte verwalten</a></>}
         </div></section>
       </div>

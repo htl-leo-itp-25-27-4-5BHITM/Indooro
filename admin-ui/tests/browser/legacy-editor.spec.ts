@@ -28,6 +28,59 @@ test("global editor sends raw layout JSON and confirms immediate publication", a
   expect(posted!.activate).toBeUndefined();
 });
 
+test("global editor load can be retried after a transient failure", async ({ page }) => {
+  let fail = true;
+  let reads = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/layout/current", (route) => {
+    reads += 1;
+    return fail ? route.fulfill({ status: 503, json: { error: "Unavailable" } }) : route.fulfill({ json: layout });
+  });
+  await page.route("**/api/layout/history?*", (route) => route.fulfill({ json: [] }));
+  await page.goto("/admin/next/editor/");
+  await expect(page.getByRole("alert")).toContainText("Serverfehler");
+  fail = false;
+  await page.getByRole("button", { name: "Erneut versuchen" }).click();
+  await expect(page.getByRole("heading", { name: "Globales Layout", exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Filialname" })).toHaveValue(layout.shopName);
+  expect(reads).toBe(2);
+});
+
+test("failed immediate publication keeps edits local and the prior global layout published", async ({ page }) => {
+  let fail = true;
+  let published = layout;
+  let attempts = 0;
+  let posted: LayoutDocument | null = null;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/layout/current", (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: published });
+    attempts += 1;
+    if (fail) return route.fulfill({ status: 503, json: { error: "Unavailable" } });
+    posted = route.request().postDataJSON() as LayoutDocument;
+    published = posted;
+    return route.fulfill({ json: { message: "Layout saved", layoutId: "published-3", savedAt: "2026-10-13T12:00:00Z" } });
+  });
+  await page.route("**/api/layout/history?*", (route) => route.fulfill({ json: [] }));
+  await page.goto("/admin/next/editor/");
+  const name = page.getByRole("textbox", { name: "Filialname" });
+  await name.fill("Noch nicht veröffentlicht");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Global veröffentlichen" }).click();
+  await expect(page.locator(".le-message")).toContainText("Serverfehler");
+  await expect(page.getByText("Ungespeicherte Änderungen")).toBeVisible();
+  await expect(name).toHaveValue("Noch nicht veröffentlicht");
+  expect(published.shopName).toBe(layout.shopName);
+  expect(attempts).toBe(1);
+
+  fail = false;
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Global veröffentlichen" }).click();
+  await expect(page.getByText("Globales Layout veröffentlicht.")).toBeVisible();
+  expect(attempts).toBe(2);
+  expect(posted?.shopName).toBe("Noch nicht veröffentlicht");
+  expect(published.shopName).toBe("Noch nicht veröffentlicht");
+});
+
 test("historical global version can be republished without a fake edit", async ({ page }) => {
   let posted: LayoutDocument | null = null;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
