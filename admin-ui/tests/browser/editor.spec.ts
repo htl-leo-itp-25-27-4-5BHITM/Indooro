@@ -239,3 +239,22 @@ test("JSON import validates, remains undoable, and export downloads the current 
   await expect(page.getByRole("status")).toContainText("Entwurf gespeichert");
   expect(saved[0].navigationMetadata).toEqual({ source: "fixture" });
 });
+
+test("new layout confirms before clearing elements and remains undoable", async ({ page }) => {
+  const saved: LayoutDocument[] = [];
+  await mockEditor(page, "ACTIVE", saved);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const layers = page.locator(".le-layers button");
+  await expect(layers).toHaveCount(layout.elements.length);
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.getByRole("button", { name: "Neues Layout" }).click();
+  await expect(layers).toHaveCount(layout.elements.length);
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Neues Layout" }).click();
+  await expect(page.getByText("Noch keine Elemente")).toBeVisible();
+  await expect(page.getByText("Ungespeicherte Änderungen")).toBeVisible();
+  expect(saved).toHaveLength(0);
+  await page.getByRole("button", { name: "Rückgängig" }).click();
+  await expect(layers).toHaveCount(layout.elements.length);
+  await expect(page.getByText("Ungespeicherte Änderungen")).toHaveCount(0);
+});

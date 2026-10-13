@@ -484,11 +484,22 @@ try {
 
   const manager = await login(storeUser, `/admin/next/editor/?storeId=${store.id}`);
   await manager.locator(".le-canvas").waitFor();
+  manager.once("dialog", (dialog) => { void dialog.accept(); });
+  await manager.getByRole("button", { name: "Neues Layout" }).click();
+  await manager.getByText("Noch keine Elemente").waitFor();
+  await manager.getByRole("button", { name: "Rückgängig" }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 2, "new-layout clear is undoable live");
   const downloadPromise = manager.waitForEvent("download");
   await manager.getByRole("button", { name: "JSON exportieren" }).click();
   const exportedLayout = JSON.parse(readFileSync(await (await downloadPromise).path(), "utf8"));
   assert.equal(exportedLayout.shopName, "First draft");
   assert.equal(exportedLayout.elements.length, 2);
+  await manager.getByLabel("Grundrissdatei importieren").setInputFiles({
+    name: "invalid-layout.json", mimeType: "application/json", buffer: Buffer.from('{"shopName":"incomplete"}')
+  });
+  await manager.getByRole("status").getByText(/Import fehlgeschlagen/).waitFor();
+  assert.ok((await manager.locator(".le-save-indicator").textContent()).includes("Gespeichert"), "invalid import preserves saved editor state");
+  assert.equal(await manager.locator(".le-layers button").count(), 2, "invalid import preserves canvas elements");
   delete exportedLayout.exportDate;
   exportedLayout.navigationMetadata = { ...(exportedLayout.navigationMetadata ?? {}), smokeMarker: run };
   await manager.getByLabel("Grundrissdatei importieren").setInputFiles({
