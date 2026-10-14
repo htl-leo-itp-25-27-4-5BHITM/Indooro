@@ -91,3 +91,8 @@ Validation SHALL distinguish blocking errors from warnings and SHALL identify th
 - **GIVEN** a shelf has category and section `310/1`
 - **WHEN** its explicit layout code begins with another category or section, such as `525/2/1/1`
 - **THEN** the editor blocks publication and both store activation and global publication reject the document while an existing draft remains editable
+
+#### Scenario: Direct publication cannot bypass the shelf address check
+- **GIVEN** a shelf has category and section `310/1` but its meter is `2`, another shelf uses `310/1`, or its address has a leading zero
+- **WHEN** an API client publishes or activates the layout without an explicit shelf layout code
+- **THEN** the backend rejects publication before replacing the public version, while a saved draft remains editable

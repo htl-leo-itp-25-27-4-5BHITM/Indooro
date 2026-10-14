@@ -112,6 +112,8 @@ test("product positions alone cannot make a shelf reachable to customer search",
   assert.ok(validateLayout(source).some((issue) => issue.code === "shelf-target-address" && issue.elementId === "s-1" && issue.severity === "error"));
   source.elements[1].category = "310/1";
   assert.equal(validateLayout(source).some((issue) => issue.code === "shelf-target-address"), false);
+  source.elements[1].category = "0310/1";
+  assert.ok(validateLayout(source).some((issue) => issue.code === "shelf-category" && issue.severity === "error"));
 });
 
 test("duplicate beacon clears hardware identity; locked elements resist edits but unlock", () => {

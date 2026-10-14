@@ -620,6 +620,9 @@ try {
   });
   await manager.getByRole("status").getByText("Grundriss importiert. Bitte prüfen und als Entwurf speichern.").waitFor();
   const editorCanvas = manager.getByRole("img", { name: "Interaktiver Grundriss" });
+  const canvasHelpId = await editorCanvas.getAttribute("aria-describedby");
+  assert.ok(canvasHelpId, "packaged editor canvas references keyboard help");
+  assert.match(await manager.locator(`#${canvasHelpId}`).textContent(), /Bei ausgewählter Ebene bewegen Pfeile das Element/, "canvas help describes keyboard movement");
   await manager.getByRole("button", { name: "POI", exact: true }).click();
   await editorCanvas.focus();
   await manager.keyboard.press("Enter");
@@ -752,6 +755,11 @@ try {
   assert.equal(mismatchedDraft.status, "DRAFT");
   assert.equal((await api(manager, "POST", `/api/stores/${store.id}/layout/versions/${mismatchedDraft.layoutId}/activate`)).status, 400, "store API blocks later activation with a mismatched shelf target");
   assert.equal((await currentLayout(store.id)).layoutId, edited.layoutId, "invalid shelf target never replaces the public store layout");
+  const inconsistentStoreSection = structuredClone(edited.layout);
+  delete inconsistentStoreSection.elements[1].layoutCode;
+  inconsistentStoreSection.elements[1].meter = 2;
+  assert.equal((await api(manager, "POST", `/api/stores/${store.id}/layout/versions`, { activate: true, layout: inconsistentStoreSection })).status, 400, "store API blocks mismatched shelf section without a layout code");
+  assert.equal((await currentLayout(store.id)).layoutId, edited.layoutId, "invalid shelf section preserves the public store layout");
   await manager.goto(`${base}/admin/next/stores/detail/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
   await manager.getByRole("heading", { name: "Stammdaten" }).waitFor();
   await manager.getByText("Aktiv: Version", { exact: false }).waitFor();
@@ -809,6 +817,12 @@ try {
   mismatchedGlobalLayout.elements.find((element) => element.id === customerShelf.id).layoutCode = "525/2/1/1";
   assert.equal((await api(admin, "POST", "/api/layout/current", mismatchedGlobalLayout)).status, 400, "global API blocks a mismatched shelf target");
   assert.equal(expectOk(await api(admin, "GET", "/api/layout/current"), "global layout after rejected shelf target").layoutId, globalAfter.layoutId);
+  const inconsistentGlobalSection = structuredClone(globalAfter);
+  const inconsistentGlobalShelf = inconsistentGlobalSection.elements.find((element) => element.id === customerShelf.id);
+  delete inconsistentGlobalShelf.layoutCode;
+  inconsistentGlobalShelf.meter = 2;
+  assert.equal((await api(admin, "POST", "/api/layout/current", inconsistentGlobalSection)).status, 400, "global API blocks mismatched shelf section without a layout code");
+  assert.equal(expectOk(await api(admin, "GET", "/api/layout/current"), "global layout after rejected section").layoutId, globalAfter.layoutId);
   const customer = await browser.newPage();
   await customer.goto(`${base}/customer/`, { waitUntil: "domcontentloaded" });
   await customer.locator("#mapCanvas [data-element-id]").first().waitFor();
@@ -817,6 +831,18 @@ try {
   await customerProduct.waitFor();
   await customerProduct.click();
   assert.equal(await customer.locator(".map-element.highlighted").getAttribute("data-element-id"), String(customerShelf.id), "customer search reaches the published shelf");
+  // A prefix category before the intended shelf must not steal the target.
+  const prefixShelf = { ...customerShelf, id: Math.max(...globalAfter.elements.map((element) => element.id)) + 1,
+    category: "3100/1", meter: 1, layoutCode: "3100/1/1/1", label: "Prefix collision shelf" };
+  const collisionLayout = { ...globalAfter, elements: [prefixShelf, ...globalAfter.elements] };
+  expectOk(await api(admin, "POST", "/api/layout/current", collisionLayout), "global prefix-collision layout publication");
+  await customer.reload();
+  await customer.locator("#mapCanvas [data-element-id]").first().waitFor();
+  await customer.locator("#search-input").fill(updatedProductName);
+  const collisionProduct = customer.locator(".search-result-item").filter({ hasText: updatedProductName });
+  await collisionProduct.waitFor();
+  await collisionProduct.click();
+  assert.equal(await customer.locator(".map-element.highlighted").getAttribute("data-element-id"), String(customerShelf.id), "customer search matches the exact category despite a prefix shelf appearing first");
   await customer.close();
   const history = expectOk(await api(admin, "GET", "/api/layout/history?limit=12"), "global layout history");
   assert.ok(history.some((entry) => entry.layoutId === globalAfter.layoutId));

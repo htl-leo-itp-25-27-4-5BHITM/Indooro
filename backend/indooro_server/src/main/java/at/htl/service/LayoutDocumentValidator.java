@@ -41,25 +41,37 @@ public class LayoutDocumentValidator {
         if (elements == null || !elements.isArray()) {
             throw badRequest("elements muss eine Liste sein.");
         }
+        Set<String> shelfAddresses = new HashSet<>();
         for (int index = 0; index < elements.size(); index++) {
             JsonNode element = elements.get(index);
             if (!"shelf".equals(element.path("type").asText())) {
                 continue;
             }
             String layoutCode = element.path("layoutCode").asText("").trim();
-            if (layoutCode.isEmpty()) {
+            String category = element.path("category").asText("").trim();
+            JsonNode positions = element.get("productPositions");
+            boolean hasProductTargets = !layoutCode.isEmpty() || (positions != null && positions.isArray() && positions.size() > 0);
+            if (category.isEmpty()) {
+                if (hasProductTargets) {
+                    throw badRequest("elements[" + index + "] braucht fuer Produktziele eine Regal-Kategorie und einen Abschnitt.");
+                }
                 continue;
             }
-            String category = element.path("category").asText("");
-            if (!layoutCode.matches("\\d{1,4}/\\d{1,3}/\\d{1,2}/\\d{1,2}")
-                    || !category.matches("\\d{1,4}/\\d{1,3}")
-                    || !layoutCode.startsWith(category + "/")) {
-                throw badRequest("elements[" + index + "].layoutCode muss zur Regal-Kategorie und zum Abschnitt passen.");
+            if (!category.matches("[1-9]\\d{0,3}/[1-9]\\d{0,2}")) {
+                throw badRequest("elements[" + index + "].category muss einen gueltigen Regal-Abschnitt enthalten.");
+            }
+            if (!shelfAddresses.add(category)) {
+                throw badRequest("elements[" + index + "].category ist bereits einem anderen Regal zugeordnet.");
             }
             JsonNode meter = element.get("meter");
             if (meter != null && !meter.isNull()
                     && (!meter.isIntegralNumber() || meter.intValue() != Integer.parseInt(category.split("/")[1]))) {
                 throw badRequest("elements[" + index + "].meter muss zum Regal-Abschnitt passen.");
+            }
+            if (!layoutCode.isEmpty()
+                    && (!layoutCode.matches("\\d{1,4}/\\d{1,3}/\\d{1,2}/\\d{1,2}")
+                    || !layoutCode.startsWith(category + "/"))) {
+                throw badRequest("elements[" + index + "].layoutCode muss zur Regal-Kategorie und zum Abschnitt passen.");
             }
         }
     }

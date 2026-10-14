@@ -89,7 +89,7 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
       add("warning", "metadata", `${name} hat keine Kategorie oder Layoutkennung.`, id);
     }
     if (element.type === "shelf" && shelfProductTargets(element).length > 0
-      && (typeof element.category !== "string" || !/^\d{1,4}\/\d{1,3}$/.test(element.category))) {
+      && (typeof element.category !== "string" || !/^[1-9]\d{0,3}\/[1-9]\d{0,2}$/.test(element.category))) {
       add("error", "shelf-target-address", `${name}: Produktpositionen und Layout-Code allein verknüpfen Produkte nicht mit der Karte. Kategorie und Abschnitt zuweisen.`, id);
     }
     if (element.accessAngle !== undefined && (!Number.isFinite(element.accessAngle) || element.accessAngle < 0 || element.accessAngle > 360)) {
@@ -99,7 +99,7 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
       add("error", "layout-code", `${name} braucht einen Layout-Code im Format Kategorie/Abschnitt/Fach/Reihe.`, id);
     }
     if (element.type === "shelf" && typeof element.layoutCode === "string" && /^\d{1,4}\/\d{1,3}\/\d{1,2}\/\d{1,2}$/.test(element.layoutCode.trim())
-      && typeof element.category === "string" && /^\d{1,4}\/\d{1,3}$/.test(element.category)
+      && typeof element.category === "string" && /^[1-9]\d{0,3}\/[1-9]\d{0,2}$/.test(element.category)
       && !element.layoutCode.trim().startsWith(`${element.category}/`)) {
       add("error", "shelf-target-mismatch", `${name}: Layout-Code und Regal-Kategorie/Abschnitt widersprechen sich. Produktziel korrigieren.`, id);
     }
@@ -113,7 +113,7 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
     if (element.type === "shelf" && typeof element.category === "string" && element.category.trim()) {
       const parts = element.category.split("/");
       const section = Number(parts[1]);
-      if (parts.length !== 2 || !/^\d{1,4}$/.test(parts[0]) || !Number.isInteger(section) || section <= 0) {
+      if (parts.length !== 2 || !/^[1-9]\d{0,3}$/.test(parts[0]) || !/^[1-9]\d{0,2}$/.test(parts[1])) {
         add("error", "shelf-category", `${name} braucht eine numerische Kategorie im Format Code/Abschnitt.`, id);
       } else if (element.meter !== null && element.meter !== undefined && element.meter !== section) {
         add("error", "shelf-section", `${name}: Kategorie-Abschnitt und Meterangabe widersprechen sich.`, id);

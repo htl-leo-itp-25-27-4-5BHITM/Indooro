@@ -73,6 +73,40 @@ class LayoutDocumentValidatorTest {
     }
 
     @Test
+    void publicationRejectsUnroutableShelfAddressesEvenWithoutLayoutCode() {
+        ObjectNode layout = layout();
+        ObjectNode shelf = elementWithoutId(1, 1);
+        shelf.put("id", 1);
+        shelf.put("category", "310/1");
+        shelf.put("meter", 1);
+        ((ArrayNode) layout.get("elements")).add(shelf);
+        assertDoesNotThrow(() -> validator.validatePublishedShelfRouting(layout));
+
+        shelf.put("meter", 2);
+        assertDoesNotThrow(() -> validator.validate(layout)); // Drafts remain repairable.
+        assertEquals(400, assertThrows(WebApplicationException.class,
+                () -> validator.validatePublishedShelfRouting(layout)).getResponse().getStatus());
+
+        shelf.put("meter", 1);
+        shelf.put("category", "0310/1");
+        assertEquals(400, assertThrows(WebApplicationException.class,
+                () -> validator.validatePublishedShelfRouting(layout)).getResponse().getStatus());
+
+        shelf.put("category", "310/1");
+        ObjectNode duplicate = shelf.deepCopy();
+        duplicate.put("id", 2);
+        ((ArrayNode) layout.get("elements")).add(duplicate);
+        assertEquals(400, assertThrows(WebApplicationException.class,
+                () -> validator.validatePublishedShelfRouting(layout)).getResponse().getStatus());
+
+        ((ArrayNode) layout.get("elements")).remove(1);
+        shelf.remove("category");
+        shelf.putArray("productPositions").add("310-42");
+        assertEquals(400, assertThrows(WebApplicationException.class,
+                () -> validator.validatePublishedShelfRouting(layout)).getResponse().getStatus());
+    }
+
+    @Test
     void acceptsBoundaryGridAndFiveThousandElementsWithOptionalLegacyIds() {
         ObjectNode layout = layout();
         ((ObjectNode) layout.get("gridSize")).put("width", 1_000);
