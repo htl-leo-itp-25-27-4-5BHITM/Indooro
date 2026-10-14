@@ -169,6 +169,7 @@ function draftFromBeacon(beacon: Beacon): BeaconDraft {
 export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }) {
   const [contextStoreId] = useState(() => new URLSearchParams(window.location.search).get("storeId") ?? "");
   const [filters, setFilters] = useState<BeaconFilters>({ query: "", status: "ACTIVE", assigned: "all", storeId: "" });
+  const [sort, setSort] = useState<"beaconCode" | "uuid" | "storeCode">("beaconCode");
   const [beacons, setBeacons] = useState<Beacon[]>([]);
   const [stores, setStores] = useState<BeaconStore[]>([]);
   const [storePage, setStorePage] = useState(0);
@@ -277,7 +278,14 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
     }
   }
 
-  const sortedBeacons = useMemo(() => [...beacons].sort((a, b) => a.beaconCode.localeCompare(b.beaconCode, "de", { sensitivity: "base" })), [beacons]);
+  const sortedBeacons = useMemo(() => [...beacons].sort((a, b) => {
+    const left = sort === "storeCode" ? a.currentStore?.storeCode : a[sort];
+    const right = sort === "storeCode" ? b.currentStore?.storeCode : b[sort];
+    if (left == null && right != null) return 1;
+    if (right == null && left != null) return -1;
+    const primary = String(left ?? "").localeCompare(String(right ?? ""), "de", { numeric: true, sensitivity: "base" });
+    return primary || a.beaconCode.localeCompare(b.beaconCode, "de", { numeric: true, sensitivity: "base" });
+  }), [beacons, sort]);
 
   function openCreate() {
     setEditing(null);
@@ -475,18 +483,19 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
         <button className="primary" type="submit" disabled={assigning || !storesForUser.length}>{assigning ? "Weist zu …" : "Zuweisung bestätigen"}</button><button type="button" onClick={() => setAssignmentTarget(null)} disabled={assigning}>Abbrechen</button></form>
     </section>}
 
-    <section className="panel" aria-labelledby="beacon-list-title"><div className="panel-header"><h3 id="beacon-list-title">Inventar</h3><span>{sortedBeacons.length} Beacons</span></div>
+    <section className="panel" aria-labelledby="beacon-list-title"><div className="panel-header"><h3 id="beacon-list-title">Inventar</h3><span>{loading || loadError ? "–" : sortedBeacons.length} Beacons</span></div>
       <form className="filters" role="search" onSubmit={(event) => event.preventDefault()}>
         <label>Suche<input type="search" value={filters.query} onChange={(event) => setFilters({ ...filters, query: event.currentTarget.value })} placeholder="Code oder UUID" /></label>
         <label>Status<select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.currentTarget.value as BeaconFilters["status"] })}><option value="ACTIVE">Aktiv</option><option value="ARCHIVED">Archiviert</option></select></label>
         <label>Zuweisung<select value={filters.assigned} onChange={(event) => setFilters({ ...filters, assigned: event.currentTarget.value as BeaconFilters["assigned"] })}><option value="all">Alle</option><option value="free">Frei</option><option value="assigned">Zugewiesen</option></select></label>
         <label>Store<select value={filters.storeId} onChange={(event) => setFilters({ ...filters, storeId: event.currentTarget.value })}><option value="">Alle im Zugriff</option>{storesForUser.map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select></label>
+        <label>Sortierung<select value={sort} onChange={(event) => setSort(event.currentTarget.value as typeof sort)}><option value="beaconCode">Code</option><option value="uuid">UUID</option><option value="storeCode">Store</option></select></label>
       </form>
       {stores.length < storeTotal && <button type="button" onClick={() => void loadMoreStores()} disabled={loadingMoreStores}>{loadingMoreStores ? "Lädt …" : `Weitere Stores laden (${stores.length} von ${storeTotal})`}</button>}
       {storePageError && <p role="alert" className="notice error">Weitere Stores konnten nicht geladen werden: {storePageError}</p>}
       {loading && <p role="status">Beacons werden geladen …</p>}
       {!loading && !loadError && sortedBeacons.length === 0 && <p className="empty-state">Keine Beacons passen zu Suche, Filtern oder Zugriff.</p>}
-      {!loading && sortedBeacons.length > 0 && <div className="table-scroll"><table><thead><tr><th>Code</th><th>Identität</th><th>Status</th><th>Store</th><th>Aktionen</th></tr></thead><tbody>{sortedBeacons.map((beacon) => {
+      {!loading && !loadError && sortedBeacons.length > 0 && <div className="table-scroll"><table><thead><tr><th>Code</th><th>Identität</th><th>Status</th><th>Store</th><th>Aktionen</th></tr></thead><tbody>{sortedBeacons.map((beacon) => {
         const manageable = canManageBeacon(user, beacon, stores);
         const canAssign = beacon.status === "ACTIVE" && (manageable || !beacon.currentStore) && storesForUser.length > 0;
         return <tr key={beacon.id}><td><strong>{beacon.beaconCode}</strong><small>{beacon.notes || ""}</small></td><td><code>{beacon.identityKey}</code></td><td><span className={`status-pill ${beacon.status === "ARCHIVED" ? "missing" : beacon.currentStore ? "info" : "ready"}`}>{statusLabel(beacon)}</span></td><td>{beacon.currentStore?.name ?? "–"}</td><td><div className="row-actions">

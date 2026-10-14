@@ -275,6 +275,47 @@ test("beacon inventory shows empty state and retries load failures", async ({ pa
   expect(inventoryCalls).toBe(2);
 });
 
+test("failed Beacon reload hides stale rows and mutation controls until retry", async ({ page }) => {
+  let inventoryCalls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [], page: 0, size: 100, totalElements: 0 } }));
+  await page.route("**/api/beacons?*", (route) => {
+    inventoryCalls += 1;
+    return inventoryCalls === 2
+      ? route.fulfill({ status: 503, json: { error: "Inventar vorübergehend nicht verfügbar" } })
+      : route.fulfill({ json: [beacon("stale-1", "STALE-1", 1)] });
+  });
+  await page.goto("/admin/next/beacons/");
+  await expect(page.getByRole("cell", { name: "STALE-1" })).toBeVisible();
+  await page.getByRole("searchbox", { name: "Suche" }).fill("STALE");
+  await expect(page.getByRole("alert")).toContainText("Serverfehler");
+  await expect(page.getByRole("cell", { name: "STALE-1" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Bearbeiten" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Erneut laden" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("cell", { name: "STALE-1" })).toBeVisible();
+  expect(inventoryCalls).toBe(3);
+});
+
+test("Beacon inventory preserves legacy Code, UUID, and Store sorting", async ({ page }) => {
+  const records = [
+    { ...beacon("sort-1", "B-1", 1), uuid: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+    { ...beacon("sort-2", "B-2", 2, { ...store, storeCode: "Z-01" }), uuid: "cccccccccccccccccccccccccccccccc" },
+    { ...beacon("sort-3", "B-10", 3, { ...store, storeCode: "A-01" }), uuid: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" }
+  ];
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [store], page: 0, size: 100, totalElements: 1 } }));
+  await page.route("**/api/beacons?*", (route) => route.fulfill({ json: records }));
+  await page.goto("/admin/next/beacons/");
+  const codes = () => page.locator(".beacons-page table tbody tr td:first-child strong").allTextContents();
+  await expect(page.getByRole("combobox", { name: "Sortierung" })).toHaveValue("beaconCode");
+  await expect.poll(codes).toEqual(["B-1", "B-2", "B-10"]);
+  await page.getByRole("combobox", { name: "Sortierung" }).selectOption("uuid");
+  await expect.poll(codes).toEqual(["B-10", "B-1", "B-2"]);
+  await page.getByRole("combobox", { name: "Sortierung" }).selectOption("storeCode");
+  await expect.poll(codes).toEqual(["B-10", "B-2", "B-1"]);
+});
+
 test("admin can create a beacon with keyboard controls and see the saved row", async ({ page }) => {
   const records: ReturnType<typeof beacon>[] = [];
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
