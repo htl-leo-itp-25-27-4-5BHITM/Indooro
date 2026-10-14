@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -53,16 +54,25 @@ class StoreAdminServiceTest {
         when(query.list()).thenReturn(List.of());
         when(query.count()).thenReturn(3L);
 
-        var result = service.listStores(null, null, RecordStatus.ACTIVE, hasActiveLayout, 1, 2);
+        var result = service.listStores(null, null, RecordStatus.ACTIVE, hasActiveLayout, "city", 1, 2);
 
         ArgumentCaptor<String> queryCaptor = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<Map<String, Object>> paramsCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(storeRepository).find(queryCaptor.capture(), any(Sort.class), paramsCaptor.capture());
+        ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+        verify(storeRepository).find(queryCaptor.capture(), sortCaptor.capture(), paramsCaptor.capture());
+        assertEquals(List.of("city", "storeCode"), sortCaptor.getValue().getColumns().stream().map(Sort.Column::getName).toList());
         assertTrue(queryCaptor.getValue().contains(expectedPredicate));
         assertTrue(queryCaptor.getValue().contains("lv.store.id = s.id"));
         assertEquals(LayoutVersionStatus.ACTIVE, paramsCaptor.getValue().get("layoutStatus"));
         assertEquals(3L, result.totalElements());
         assertEquals(1, result.page());
         assertEquals(2, result.size());
+    }
+
+    @Test
+    void rejectsUnknownSortFieldBeforeQueryExecution() {
+        StoreAdminService service = new StoreAdminService();
+        assertEquals(400, assertThrows(jakarta.ws.rs.WebApplicationException.class,
+                () -> service.listStores(null, null, null, null, "name; delete", 0, 20)).getResponse().getStatus());
     }
 }

@@ -61,8 +61,15 @@ public class StoreAdminService {
                                                                              UUID regionId,
                                                                              RecordStatus status,
                                                                              Boolean hasActiveLayout,
+                                                                             String sort,
                                                                              int page,
                                                                              int size) {
+        String sortField = switch (sort == null || sort.isBlank() ? "name" : sort) {
+            case "name" -> "name";
+            case "storeCode" -> "storeCode";
+            case "city" -> "city";
+            default -> throw new WebApplicationException("Ungültige Store-Sortierung.", Response.Status.BAD_REQUEST);
+        };
         StringBuilder hql = new StringBuilder("from StoreEntity s where 1 = 1");
         Map<String, Object> params = new HashMap<>();
 
@@ -95,7 +102,9 @@ public class StoreAdminService {
             params.put("layoutStatus", LayoutVersionStatus.ACTIVE);
         }
 
-        PanacheQuery<StoreEntity> panacheQuery = storeRepository.find(hql.toString(), Sort.by("name"), params);
+        Sort ordering = Sort.by(sortField);
+        if (!"storeCode".equals(sortField)) ordering.and("storeCode");
+        PanacheQuery<StoreEntity> panacheQuery = storeRepository.find(hql.toString(), ordering, params);
         panacheQuery.page(Page.of(Math.max(page, 0), Math.max(size, 1)));
 
         return new CommonDtos.PageResponse<>(

@@ -9,18 +9,20 @@ interface StoreSummary {
 }
 interface StorePageResponse { content: StoreSummary[]; page: number; size: number; totalElements: number }
 
-export interface StoreQuery { query: string; regionId: string; status: string; layout: string; page: number }
+export interface StoreQuery { query: string; regionId: string; status: string; layout: string; sort: "name" | "storeCode" | "city"; page: number }
 
 export function readStoreQuery(search: string): StoreQuery {
   const params = new URLSearchParams(search);
   const page = Number(params.get("page"));
   const status = params.get("status") ?? "ACTIVE";
   const layout = params.get("layout") ?? "";
+  const sort = params.get("sort") ?? "name";
   return {
     query: (params.get("query") ?? "").slice(0, 120),
     regionId: params.get("regionId") ?? "",
     status: status === "ARCHIVED" ? status : "ACTIVE",
     layout: layout === "ready" || layout === "missing" ? layout : "",
+    sort: sort === "storeCode" || sort === "city" ? sort : "name",
     page: Number.isInteger(page) && page > 0 ? page : 0
   };
 }
@@ -31,6 +33,7 @@ export function storeQueryString(query: StoreQuery): string {
   if (query.regionId) params.set("regionId", query.regionId);
   if (query.status !== "ACTIVE") params.set("status", query.status);
   if (query.layout) params.set("layout", query.layout);
+  if (query.sort !== "name") params.set("sort", query.sort);
   if (query.page) params.set("page", String(query.page));
   return params.toString();
 }
@@ -40,6 +43,7 @@ export function storeApiPath(query: StoreQuery): string {
   if (query.query) params.set("query", query.query);
   if (query.regionId) params.set("regionId", query.regionId);
   if (query.layout) params.set("hasActiveLayout", String(query.layout === "ready"));
+  if (query.sort !== "name") params.set("sort", query.sort);
   return `/api/stores?${params.toString()}`;
 }
 
@@ -76,6 +80,7 @@ export function StoresPage({ api, user }: { api: ApiClient; user: CurrentUser })
       <label>Region<select key={regions.length} name="regionId" defaultValue={query.regionId}><option value="">Alle Regionen</option>{regions.map((region) => <option key={region.id} value={region.id}>{region.code} · {region.name}</option>)}</select></label>
       <label>Status<select name="status" defaultValue={query.status}><option value="ACTIVE">Aktiv</option><option value="ARCHIVED">Archiviert</option></select></label>
       <label>Layout<select name="layout" defaultValue={query.layout}><option value="">Alle</option><option value="ready">Aktiv</option><option value="missing">Fehlt</option></select></label>
+      <label>Sortierung<select name="sort" defaultValue={query.sort}><option value="name">Name</option><option value="storeCode">Code</option><option value="city">Stadt</option></select></label>
       <button className="button primary" type="submit">Anwenden</button>
     </form>
     {error && <div className="notice error-state" role="alert"><h3>Stores konnten nicht geladen werden</h3><p>{error}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}

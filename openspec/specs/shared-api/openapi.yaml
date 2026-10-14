@@ -1458,7 +1458,7 @@ paths:
     get:
       tags: [stores]
       operationId: listStores
-      summary: Stores in scope (default status ACTIVE), sorted by name.
+      summary: Stores in scope (default status ACTIVE), sorted by name unless another supported field is requested.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin|region-manager|store-manager
       x-indooro-consumers: [admin-ui, api-tests]
@@ -1476,6 +1476,10 @@ paths:
           in: query
           description: Filters stores by whether they have an ACTIVE layout version.
           schema: { type: boolean }
+        - name: sort
+          in: query
+          description: Ascending sort field, with store code as a stable tie-breaker for name and city.
+          schema: { type: string, enum: [name, storeCode, city], default: name }
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/AdminPageSize"
       responses:

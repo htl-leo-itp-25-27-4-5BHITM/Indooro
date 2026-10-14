@@ -34,6 +34,7 @@ public class StoreAdminResource extends AdminApiSupport {
                                                                               @QueryParam("regionId") UUID regionId,
                                                                               @QueryParam("status") String status,
                                                                               @QueryParam("hasActiveLayout") Boolean hasActiveLayout,
+                                                                              @QueryParam("sort") String sort,
                                                                               @QueryParam("page") @DefaultValue("0") int page,
                                                                               @QueryParam("size") @DefaultValue("20") int size) {
         return storeAdminService.listStores(
@@ -41,6 +42,7 @@ public class StoreAdminResource extends AdminApiSupport {
                 regionId,
                 parseStatus(status),
                 hasActiveLayout,
+                sort,
                 normalizePage(page),
                 normalizeSize(size)
         );

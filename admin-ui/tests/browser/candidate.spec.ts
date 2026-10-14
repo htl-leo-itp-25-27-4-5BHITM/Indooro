@@ -146,18 +146,20 @@ test("candidate store list keeps server filters and paging in direct links", asy
       page: Number(url.searchParams.get("page")), size: 20, totalElements: 22
     } });
   });
-  await page.goto("/admin/next/stores/?query=Linz&regionId=region-1&layout=missing&page=1");
+  await page.goto("/admin/next/stores/?query=Linz&regionId=region-1&layout=missing&sort=city&page=1");
   await expect(page.getByRole("heading", { name: "Stores" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Store-Ergebnisse" })).toContainText("Seite 2 von 2");
   await expect(page.getByRole("link", { name: "Details" })).toHaveAttribute("href", "/admin/next/stores/detail/?storeId=store-21");
   expect(storeRequests.at(-1)).toContain("hasActiveLayout=false");
   expect(storeRequests.at(-1)).toContain("page=1");
-  await expect(page.getByRole("link", { name: "Zurück" })).toHaveAttribute("href", "/admin/next/stores/?query=Linz&regionId=region-1&layout=missing");
+  expect(storeRequests.at(-1)).toContain("sort=city");
+  await expect(page.getByRole("link", { name: "Zurück" })).toHaveAttribute("href", "/admin/next/stores/?query=Linz&regionId=region-1&layout=missing&sort=city");
   await page.getByRole("combobox", { name: "Layout" }).selectOption("ready");
   await page.getByRole("button", { name: "Anwenden" }).click();
   await expect(page).toHaveURL(/layout=ready/);
   await expect(page).not.toHaveURL(/page=1/);
   await expect.poll(() => storeRequests.at(-1)).toContain("hasActiveLayout=true");
+  expect(storeRequests.at(-1)).toContain("sort=city");
 });
 
 test("candidate stores exposes empty, load-error, and keyboard retry states", async ({ page }) => {
