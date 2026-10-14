@@ -179,7 +179,7 @@ export function applyCommand(state: EditorState, command: EditorCommand, snapSte
       if (selectedId === command.id) selectedId = null;
       break;
     case "duplicate": {
-      if (index < 0 || before.elements.length >= 5000 || before.elements.some((element) => element.id === command.duplicateId)) return state;
+      if (index < 0 || before.elements[index].locked || before.elements.length >= 5000 || before.elements.some((element) => element.id === command.duplicateId)) return state;
       const source = before.elements[index];
       const copy = constrainElement({ ...clone(source), id: command.duplicateId, x: source.x + 1, y: source.y + 1, locked: false,
         // Beacon hardware identity is unique to one placement.

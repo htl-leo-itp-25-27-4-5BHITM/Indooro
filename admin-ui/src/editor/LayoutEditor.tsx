@@ -222,7 +222,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
       } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "d") {
         event.preventDefault();
         const id = editorRef.current.selectedId;
-        if (id !== null) setEditor((current) => applyCommand(current, { type: "duplicate", id, duplicateId: newElementId(current.document) }));
+        if (id !== null && !editorRef.current.document.elements.find((item) => item.id === id)?.locked) setEditor((current) => applyCommand(current, { type: "duplicate", id, duplicateId: newElementId(current.document) }));
       } else if (event.key === "Escape") {
         setTool("select");
         setEditor((current) => selectElement(current, null));

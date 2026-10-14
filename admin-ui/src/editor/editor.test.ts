@@ -127,6 +127,7 @@ test("duplicate beacon clears hardware identity; locked elements resist edits bu
   state = applyCommand(state, { type: "patch", id: "b", changes: { locked: true } });
   const blocked = applyCommand(state, { type: "move", id: "b", x: 20, y: 20 });
   assert.equal(blocked, state);
+  assert.equal(applyCommand(state, { type: "duplicate", id: "b", duplicateId: "locked-copy" }), state);
   state = applyCommand(state, { type: "patch", id: "b", changes: { locked: false } });
   assert.equal(state.document.elements.find((element) => element.id === "b")!.locked, false);
 });

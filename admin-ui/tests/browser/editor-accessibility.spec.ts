@@ -109,3 +109,20 @@ test("Escape cancels an active create tool from the keyboard without adding an e
   await expect(page.getByRole("button", { name: "Auswählen", exact: false }).first()).toHaveAttribute("aria-pressed", "true");
   await expect(layers).toHaveCount(initialCount);
 });
+
+test("keyboard duplicate respects the selected element lock", async ({ page }) => {
+  await mockEditor(page, "DRAFT", []);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const layers = page.locator(".le-layers button");
+  await expect(layers).toHaveCount(layout.elements.length);
+  await layers.filter({ hasText: "Obst & Gemüse" }).click();
+  await page.getByRole("checkbox", { name: "Gesperrt" }).check();
+  await expect(page.getByRole("button", { name: "Duplizieren" })).toBeDisabled();
+  await page.getByRole("group", { name: "Interaktiver Grundriss" }).focus();
+  await page.keyboard.press("ControlOrMeta+D");
+  await expect(layers).toHaveCount(layout.elements.length);
+  await page.getByRole("checkbox", { name: "Gesperrt" }).uncheck();
+  await page.getByRole("group", { name: "Interaktiver Grundriss" }).focus();
+  await page.keyboard.press("ControlOrMeta+D");
+  await expect(layers).toHaveCount(layout.elements.length + 1);
+});
