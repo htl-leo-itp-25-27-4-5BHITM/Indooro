@@ -619,7 +619,7 @@ try {
     name: "live-layout.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(exportedLayout))
   });
   await manager.getByRole("status").getByText("Grundriss importiert. Bitte prüfen und als Entwurf speichern.").waitFor();
-  const editorCanvas = manager.getByRole("img", { name: "Interaktiver Grundriss" });
+  const editorCanvas = manager.getByRole("group", { name: "Interaktiver Grundriss" });
   const canvasHelpId = await editorCanvas.getAttribute("aria-describedby");
   assert.ok(canvasHelpId, "packaged editor canvas references keyboard help");
   assert.match(await manager.locator(`#${canvasHelpId}`).textContent(), /Bei ausgewählter Ebene bewegen Pfeile das Element/, "canvas help describes keyboard movement");

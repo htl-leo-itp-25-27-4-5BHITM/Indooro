@@ -1,5 +1,9 @@
 # Local release artifact and rollout inputs
 
+## 2026-10-14 Editor canvas group image
+
+The current local, unpushed image is `indooro-admin-rebuild:editor-canvas-group`, immutable ID `sha256:50f1832bc1949ed9c8f9dba1342a3bd29c5ca335c2da0d496048558ad804e963`, runner SHA-256 `30c318b20464a3bfce9039f9b9a553d94e0ed6dd78eec10fbaac856a425701d6`. The preceding complete Regions parity image `sha256:45abaa98d29154177883b96ffbe854653be4b483124209d5eb11d006c52b0cf6` remains the local rollback target. The focusable Editor canvas is now a named group with accessible keyboard instructions. Focused browser checks passed 21/21, the full freshly packaged suite passed 93/93, and the combined image passed the full three-role live workflow and ten route switch/rollback pairs, including the three committed redirects. Backend source remains at the 130-test checkpoint. Dashboard, Regions, and Diagnostics are enabled locally; the Editor and six other routes remain gated. No push or production rollout occurred.
+
 ## 2026-10-14 Regions parity and iOS Simulator checkpoint
 
 The current local, unpushed image is `indooro-admin-rebuild:regions-parity-final`, immutable ID `sha256:45abaa98d29154177883b96ffbe854653be4b483124209d5eb11d006c52b0cf6`, runner SHA-256 `34afc67d7a31f55a2b3cb012aa0018ddebcb2f693554b201425d907e3b695896`. The preceding full image `sha256:d7a6d2f635bf4a16579207090e3054ded9abccf823bfb3990caf5e361f267593` is retained locally as rollback target. Regions passed packaged legacy/candidate keyboard CRUD and API readback, three-role scope, conflict and fault recovery, committed old-URL redirect, and ten switch/rollback pairs. The full three-role `test:live` workflow also passed on this image with 12 candidate deep links and 15 scoped denials. Candidate typecheck/lint/package verification and 93 browser cases passed; backend source is unchanged from the 130-test checkpoint. Dashboard, Regions, and Diagnostics are locally enabled; seven routes remain gated.

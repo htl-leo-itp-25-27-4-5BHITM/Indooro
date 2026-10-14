@@ -44,7 +44,7 @@ test("Tab reaches the tool palette, canvas and layout actions from page load", a
   const shelfTool = page.getByRole("button", { name: "Regal", exact: true });
   await tabUntilFocused(page, shelfTool);
 
-  const canvas = page.getByRole("img", { name: "Interaktiver Grundriss" });
+  const canvas = page.getByRole("group", { name: "Interaktiver Grundriss" });
   await tabUntilFocused(page, canvas);
   await expect(canvas).toHaveAccessibleDescription(/Pfeile positionieren.*Bei ausgewählter Ebene bewegen Pfeile das Element/);
 
@@ -84,7 +84,7 @@ test("focused controls keep native Space and arrow behavior while canvas arrows 
   await page.keyboard.press("ArrowRight");
   await expect(x).toHaveValue(initialX);
 
-  await page.getByRole("img", { name: "Interaktiver Grundriss" }).focus();
+  await page.getByRole("group", { name: "Interaktiver Grundriss" }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(x).toHaveValue(String(Number(initialX) + 1));
 });
@@ -101,7 +101,7 @@ test("Escape cancels an active create tool from the keyboard without adding an e
   await page.keyboard.press("Enter");
   await expect(shelfTool).toHaveAttribute("aria-pressed", "true");
 
-  const canvas = page.getByRole("img", { name: "Interaktiver Grundriss" });
+  const canvas = page.getByRole("group", { name: "Interaktiver Grundriss" });
   await canvas.focus();
   await page.keyboard.press("Escape");
 

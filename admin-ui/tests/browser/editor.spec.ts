@@ -68,7 +68,7 @@ test("store editor edits metadata, undoes a move and publishes only the saved dr
   expect(handleStroke).toBeLessThan(0.5);
   await expect(page.getByLabel("Kategoriecode")).toHaveValue("310");
   await expect(page.getByLabel("Abschnitt")).toHaveValue("1");
-  await page.getByRole("img", { name: "Interaktiver Grundriss" }).focus();
+  await page.getByRole("group", { name: "Interaktiver Grundriss" }).focus();
   await page.keyboard.press("ArrowRight");
   await expect(page.getByLabel("X", { exact: true })).toHaveValue("10");
   await page.keyboard.press("ControlOrMeta+z");
@@ -231,7 +231,7 @@ test("mobile editor keeps the canvas in the first viewport and exposes compact p
   await mockEditor(page, "DRAFT", []);
   await page.goto("/admin/next/editor/?storeId=store-1");
 
-  const canvas = page.getByRole("img", { name: "Interaktiver Grundriss" });
+  const canvas = page.getByRole("group", { name: "Interaktiver Grundriss" });
   await expect(canvas).toBeVisible();
   expect((await canvas.boundingBox())?.y).toBeLessThan(844);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -255,7 +255,7 @@ test("desktop editor keeps its palette controls and hides mobile controls", asyn
 test("keyboard can place an element inside the grid and move the selected element", async ({ page }) => {
   await mockEditor(page, "DRAFT", []);
   await page.goto("/admin/next/editor/?storeId=store-1");
-  const canvas = page.getByRole("img", { name: "Interaktiver Grundriss" });
+  const canvas = page.getByRole("group", { name: "Interaktiver Grundriss" });
   await page.getByRole("button", { name: "Theke" }).click();
   await expect(page.locator(".le-canvas-footer")).toContainText("Theke platzieren");
   await canvas.focus();
