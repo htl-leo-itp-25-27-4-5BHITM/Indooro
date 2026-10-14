@@ -156,7 +156,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     // MARK: - Config
 
-    private let apiBase = "https://it220209.cloud.htl-leonding.ac.at/api"
+    private let apiBase = IndooroAPI.baseURL
     private let allowServerSearch = true
     private let layoutHistoryLimit = 12
     private let selectedLayoutModeDefaultsKey = "selectedLayoutMode"

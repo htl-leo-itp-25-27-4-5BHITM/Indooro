@@ -26,7 +26,7 @@ precondition(!response.layout.elements.isEmpty)
 precondition(response.layout.elements.allSatisfy { $0.id > 0 })
 print("Swift MobileLayoutResponse decoded \\(response.layout.elements.count) elements with numeric IDs")
 `);
-  execFileSync("swiftc", [join(models, "LayoutData.swift"), join(models, "MobileStoreModels.swift"), probe, "-o", executable], { stdio: "inherit" });
+  execFileSync("swiftc", [join(models, "../Managers/IndooroAPI.swift"), join(models, "LayoutData.swift"), join(models, "MobileStoreModels.swift"), probe, "-o", executable], { stdio: "inherit" });
   execFileSync(executable, [fixture], { stdio: "inherit" });
 } finally {
   rmSync(temporary, { recursive: true, force: true });

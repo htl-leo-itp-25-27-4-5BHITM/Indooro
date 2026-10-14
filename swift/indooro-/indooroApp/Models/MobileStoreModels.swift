@@ -75,7 +75,7 @@ final class MobileStoreListViewModel: ObservableObject {
     @Published private(set) var isLoading = false
     @Published private(set) var errorMessage: String?
 
-    private let storesURL = URL(string: "https://it220209.cloud.htl-leonding.ac.at/api/mobile/stores")
+    private let storesURL = URL(string: "\(IndooroAPI.baseURL)/mobile/stores")
 
     var storesWithCoordinates: [MobileStoreSummary] {
         stores.filter { store in

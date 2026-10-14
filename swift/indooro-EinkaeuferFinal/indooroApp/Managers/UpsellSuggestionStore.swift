@@ -47,7 +47,7 @@ final class UpsellSuggestionStore: ObservableObject {
         let opportunities: [OpportunitySignature]
     }
 
-    private let apiBase = "https://it220209.cloud.htl-leonding.ac.at/api"
+    private let apiBase = IndooroAPI.baseURL
     private let minSecondsBetweenPrompts: TimeInterval = 8
     private let maxPromptsPerSession = 10
     private let maxSuggestionsShown = 3

@@ -21,7 +21,9 @@
     "test:live:cutover": "node scripts/live-route-cutover.mjs",
     "test:live:catalog": "node scripts/live-catalog-bulk.mjs",
     "test:swift-layout": "node scripts/verify-swift-layout-decode.mjs",
-    "test:swift-routing": "node scripts/verify-swift-shelf-routing.mjs"
+    "test:swift-routing": "node scripts/verify-swift-shelf-routing.mjs",
+    "test:swift-endpoint": "node scripts/verify-swift-api-endpoint.mjs",
+    "seed:live:ios-map": "node scripts/live-ios-map-fixture.mjs"
   },
   "dependencies": {
     "react": "19.3.0",

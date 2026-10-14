@@ -62,7 +62,7 @@ try {
   for (const variant of variants) {
     const models = join(root, "swift", variant, "indooroApp", "Models");
     const executable = join(temporary, "routing-" + variant);
-    execFileSync("swiftc", [join(models, "LayoutData.swift"), join(models, "MobileStoreModels.swift"), probe, "-o", executable], { stdio: "inherit" });
+    execFileSync("swiftc", [join(models, "../Managers/IndooroAPI.swift"), join(models, "LayoutData.swift"), join(models, "MobileStoreModels.swift"), probe, "-o", executable], { stdio: "inherit" });
     execFileSync(executable, [fixture, ...(liveFixture ? [liveFixture] : [])], { stdio: "inherit" });
   }
 } finally {
