@@ -6,7 +6,7 @@
 export const ROUTE_CUTOVER = Object.freeze({
   dashboard: true,
   regions: true,
-  stores: false,
+  stores: true,
   storeDetail: false,
   beacons: false,
   products: false,

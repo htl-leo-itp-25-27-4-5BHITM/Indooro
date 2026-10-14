@@ -4,14 +4,14 @@
 
 ## Route topology and cutover status
 
-Legacy static entries live at `backend/indooro_server/src/main/resources/META-INF/resources/admin`. Their pages share `app.js`/`core.js`; the editor and diagnostics also have page-specific scripts. The React/Vite source is `admin-ui/`, and package output is installed under `admin/next/`. The route map currently sends Dashboard and Diagnostics to that candidate; the other entries remain legacy. Candidate evidence alone does not establish parity or justify additional cutovers.
+Legacy static entries live at `backend/indooro_server/src/main/resources/META-INF/resources/admin`. Their pages share `app.js`/`core.js`; the editor and diagnostics also have page-specific scripts. The React/Vite source is `admin-ui/`, and package output is installed under `admin/next/`. The route map currently sends Dashboard, Regions, Stores, and Diagnostics to the candidate; the other six entries remain legacy. The dated source inventory below is supplemented by the authenticated parity records in `ROUTE_PARITY_MATRIX.md`.
 
 | Workflow | Current protected static URL | Candidate URL | Candidate component | Direct-link/query contract |
 | --- | --- | --- | --- | --- |
 | Dashboard | `/admin/` | `/admin/next/` | `Dashboard` | Scoped counts and actions |
 | Regions | `/admin/regions/` | `/admin/next/regions/` | `RegionsPage` | list/detail/edit state in page |
-| Stores | `/admin/stores/` | `/admin/next/stores/` | `StoresPage` | list query in URL; server paging |
-| Store detail | `/admin/stores/detail/?storeId={uuid}` | `/admin/next/stores/detail/?storeId={uuid}` | `StoreDetailPage` | `storeId` required |
+| Stores | `/admin/stores/` | `/admin/next/stores/` | `StoresPage` | list query and Name/Code/Stadt sort in URL; server paging |
+| Store detail | `/admin/stores/detail/?storeId={uuid}` | `/admin/next/stores/detail/?storeId={uuid}` | `StoreDetailPage` | `storeId` required; `edit=1` opens the metadata form |
 | Store create | drawer on `/admin/stores/` | `/admin/next/stores/new/` | `StoreCreatePage` | dedicated guided form |
 | Beacons | `/admin/beacons/` | `/admin/next/beacons/` | `BeaconsPage` | optional `storeId` context |
 | Products | `/admin/products/` | `/admin/next/products/` | `ProductsPage` | query, paging, readiness |
@@ -79,7 +79,7 @@ The `legacy/` directory holds the ten current static-route captures from the 202
 | --- | --- | --- | --- |
 | Dashboard | [dashboard](screenshots/legacy/dashboard.png) | [candidate dashboard](screenshots/dashboard.png) | `/admin/`; `/admin/next/`; `admin-ui/tests/browser/candidate.spec.ts` |
 | Regions | [regions](screenshots/legacy/regions.png) | — | `/admin/regions/`; `/admin/next/regions/`; `admin-ui/tests/browser/regions.spec.ts` |
-| Stores | [stores](screenshots/legacy/stores.png) | — | `/admin/stores/`; `/admin/next/stores/`; `admin-ui/tests/browser/store-create.spec.ts` |
+| Stores | [stores](evidence/stores/legacy-admin.png) | [candidate stores](evidence/stores/candidate-admin.png) | `/admin/stores/`; `/admin/next/stores/`; `admin-ui/scripts/live-stores-list-parity.mjs` |
 | Store detail | [store detail](screenshots/legacy/store-detail.png) | — | `/admin/stores/detail/?storeId={storeId}` and `/admin/next/stores/detail/?storeId={storeId}`; `admin-ui/tests/browser/store-detail.spec.ts` |
 | Beacons | [beacons](screenshots/legacy/beacons.png) | — | `/admin/beacons/`; `/admin/next/beacons/`; `admin-ui/tests/browser/beacons.spec.ts` |
 | Products | [products](screenshots/legacy/products.png) | [candidate products](screenshots/products.png) | `/admin/products/`; `/admin/next/products/`; `admin-ui/tests/browser/products.spec.ts` |

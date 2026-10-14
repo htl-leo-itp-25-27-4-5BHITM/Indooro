@@ -14,9 +14,9 @@ test("candidate root and nested deep link load built assets on direct refresh", 
 
   const stores = await page.goto("/admin/next/stores/");
   expect(stores?.status()).toBe(200);
-  await expect(page.getByRole("heading", { name: "Stores" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Stores", exact: true })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Stores" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Stores", exact: true })).toBeVisible();
 
   const nested = await page.goto("/admin/next/stores/detail/?storeId=example");
   expect(nested?.status()).toBe(200);
@@ -147,9 +147,10 @@ test("candidate store list keeps server filters and paging in direct links", asy
     } });
   });
   await page.goto("/admin/next/stores/?query=Linz&regionId=region-1&layout=missing&sort=city&page=1");
-  await expect(page.getByRole("heading", { name: "Stores" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Stores", exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: "Store-Ergebnisse" })).toContainText("Seite 2 von 2");
   await expect(page.getByRole("link", { name: "Details" })).toHaveAttribute("href", "/admin/next/stores/detail/?storeId=store-21");
+  await expect(page.getByRole("link", { name: "Bearbeiten" })).toHaveAttribute("href", "/admin/next/stores/detail/?storeId=store-21&edit=1");
   expect(storeRequests.at(-1)).toContain("hasActiveLayout=false");
   expect(storeRequests.at(-1)).toContain("page=1");
   expect(storeRequests.at(-1)).toContain("sort=city");

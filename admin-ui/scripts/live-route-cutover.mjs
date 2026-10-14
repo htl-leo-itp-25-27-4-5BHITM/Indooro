@@ -53,12 +53,12 @@ try {
   }
 
   override = null;
-  for (const [legacy, candidate] of [["/admin/", "/admin/next/"], ["/admin/regions/", "/admin/next/regions/"], ["/admin/server-logs/", "/admin/next/server-logs/"]]) {
+  for (const [legacy, candidate] of [["/admin/", "/admin/next/"], ["/admin/regions/", "/admin/next/regions/"], ["/admin/stores/", "/admin/next/stores/"], ["/admin/server-logs/", "/admin/next/server-logs/"]]) {
     await page.goto(`${base}${legacy}?probe=committed#proof`, { waitUntil: "domcontentloaded" });
     await page.waitForURL((url) => url.pathname === candidate && url.searchParams.get("probe") === "committed" && url.hash === "#proof");
     await page.locator("#root").waitFor();
   }
-  console.log(JSON.stringify({ result: "PASS", switchedAndRolledBack: entries.length, committedDashboardRedirect: true, committedRegionsRedirect: true, committedDiagnosticsRedirect: true, committedFlagsChanged: false }));
+  console.log(JSON.stringify({ result: "PASS", switchedAndRolledBack: entries.length, committedDashboardRedirect: true, committedRegionsRedirect: true, committedStoresRedirect: true, committedDiagnosticsRedirect: true, committedFlagsChanged: false }));
 } finally {
   await browser.close();
 }

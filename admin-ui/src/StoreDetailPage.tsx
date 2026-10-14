@@ -28,7 +28,7 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(() => new URLSearchParams(window.location.search).get("edit") === "1");
   const [revision, setRevision] = useState(0);
   const [selectedBeacon, setSelectedBeacon] = useState("");
 
@@ -61,13 +61,21 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
 
   const { store, regions, beacons, versions, audit, free } = data;
   const path = `/api/stores/${encodeURIComponent(store.id)}`;
+  const leaveEditing = () => {
+    setEditing(false);
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("edit")) {
+      url.searchParams.delete("edit");
+      window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  };
   const mutate = async (action: () => Promise<unknown>, success: string) => {
     if (busy) return;
     setBusy(true); setMutationError(null); setFieldErrors({}); setNotice(null);
     try {
       await action();
       setNotice(success);
-      setEditing(false);
+      leaveEditing();
       setSelectedBeacon("");
       setRevision((value) => value + 1);
     } catch (cause) {
@@ -94,12 +102,12 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
     {notice && <p className="notice success-state" role="status">{notice}</p>}
     {mutationError && <div className="notice error-state" role="alert"><strong>Änderung nicht gespeichert</strong><p>{mutationError}</p></div>}
     <section className="notice detail-section" aria-labelledby="store-data-title"><div className="section-heading"><h3 id="store-data-title">Stammdaten</h3>{store.status === "ACTIVE" && !editing && <button className="button" onClick={() => setEditing(true)}>Bearbeiten</button>}</div>
-      {editing ? <form key={store.id} className="detail-form" onSubmit={submit}>
+      {editing && store.status === "ACTIVE" ? <form key={store.id} className="detail-form" onSubmit={submit}>
         <label>Region<select name="regionId" defaultValue={store.region.id} required disabled={user.role !== "admin"}>{regions.map((region) => <option key={region.id} value={region.id}>{region.code} · {region.name}</option>)}</select>{user.role !== "admin" && <input type="hidden" name="regionId" value={store.region.id} />}{fieldErrors.regionId && <small role="alert">{fieldErrors.regionId.join(" ")}</small>}</label>
         {([ ["storeCode", "Store-Code", store.storeCode, 50], ["name", "Name", store.name, 150], ["street", "Straße", store.street, 150], ["zipCode", "PLZ", store.zipCode, 20], ["city", "Ort", store.city, 100], ["country", "Land", store.country, 100] ] as const).map(([name, label, value, max]) => <label key={name}>{label}<input name={name} defaultValue={value} maxLength={max} required />{fieldErrors[name] && <small role="alert">{fieldErrors[name].join(" ")}</small>}</label>)}
         <label>Breitengrad<input name="latitude" type="number" step="any" min="-90" max="90" defaultValue={store.latitude ?? ""} /></label><label>Längengrad<input name="longitude" type="number" step="any" min="-180" max="180" defaultValue={store.longitude ?? ""} /></label>
         <label className="full">Notizen<textarea name="notes" rows={3} maxLength={2000} defaultValue={store.notes ?? ""} /></label>
-        <div className="form-actions"><button className="button primary" type="submit" disabled={busy}>{busy ? "Speichert …" : "Speichern"}</button><button className="button" type="button" onClick={() => { setEditing(false); setMutationError(null); }}>Abbrechen</button></div>
+        <div className="form-actions"><button className="button primary" type="submit" disabled={busy}>{busy ? "Speichert …" : "Speichern"}</button><button className="button" type="button" onClick={() => { leaveEditing(); setMutationError(null); }}>Abbrechen</button></div>
       </form> : <dl className="detail-facts"><div><dt>Region</dt><dd>{store.region.name}</dd></div><div><dt>Land</dt><dd>{store.country}</dd></div><div><dt>Koordinaten</dt><dd>{store.latitude == null || store.longitude == null ? "Nicht gesetzt" : `${store.latitude}, ${store.longitude}`}</dd></div><div><dt>Notizen</dt><dd>{store.notes || "–"}</dd></div></dl>}
     </section>
     <section className="notice detail-section" aria-labelledby="beacons-title"><div className="section-heading"><h3 id="beacons-title">Beacons ({beacons.length})</h3></div>

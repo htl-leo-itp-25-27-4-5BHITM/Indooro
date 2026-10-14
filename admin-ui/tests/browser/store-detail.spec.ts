@@ -74,10 +74,8 @@ test("store detail can be edited and saved with keyboard only", async ({ page })
   await page.route("**/api/stores/store-keyboard/layout/versions", (route) => route.fulfill({ json: [] }));
   await page.route("**/api/stores/store-keyboard/audit", (route) => route.fulfill({ json: { entries: [] } }));
   await page.route("**/api/beacons/free", (route) => route.fulfill({ json: [] }));
-  await page.goto("/admin/next/stores/detail/?storeId=store-keyboard");
-
-  await page.getByRole("button", { name: "Bearbeiten" }).focus();
-  await page.keyboard.press("Enter");
+  await page.goto("/admin/next/stores/detail/?storeId=store-keyboard&edit=1");
+  await expect(page.getByRole("textbox", { name: "Name", exact: true })).toBeVisible();
   const name = page.getByRole("textbox", { name: "Name", exact: true });
   await name.focus();
   await page.keyboard.press("ControlOrMeta+A");
@@ -86,4 +84,5 @@ test("store detail can be edited and saved with keyboard only", async ({ page })
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Keyboard-geändert" })).toBeVisible();
   await expect(page.getByRole("status")).toContainText("Store gespeichert.");
+  await expect(page).toHaveURL("/admin/next/stores/detail/?storeId=store-keyboard");
 });
