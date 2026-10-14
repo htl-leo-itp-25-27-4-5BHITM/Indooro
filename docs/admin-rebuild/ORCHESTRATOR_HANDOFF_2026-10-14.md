@@ -1,0 +1,50 @@
+# Indooro Admin rebuild — orchestrator handoff (2026-10-14)
+
+## Mandate and operating rules
+
+Continue the full Admin Platform and Store/Layout Editor rebuild until the OpenSpec acceptance gates are genuinely satisfied. The Editor is the user's highest priority. Read the original master prompt at `/Users/erikbergi/.codex/attachments/1c7d5e41-4989-48e4-a44f-6a33dac5392c/Eingefügter Text.txt` and the current OpenSpec change before work. The user explicitly requested a new orchestrator chat with **at most two subagents total**, no Claude agents or Claude CLI, and low token/limit use. Delegate only narrow, independent tasks when it saves work; use fewer, longer subagent sessions. Keep status updates short. Routine local commits are authorized and required. Do not push, deploy to production, merge, or modify unrelated work without the corresponding authorization.
+
+This is a continuation, not a new discovery phase. The earlier OpenSpec audit and plan exist. Reconcile any new findings with them; do not duplicate the change or mark incomplete tasks complete to improve the count.
+
+## Exact workspace and repository state
+
+- Use `/Users/erikbergi/.codex/worktrees/admin-rebuild/Indooro` for every shell command and edit. Branch: `codex/admin-platform-rebuild`, originally based on `origin/main` at `99b802b8`. The original checkout at `/Users/erikbergi/Documents/htl/Indooro` has unrelated work on `codex/indooro-v2-roughcut`; leave it alone.
+- The latest completed editor change is commit `0b1db8d` (`fix(editor): expose semantic layer controls`). Check `git status --short` and `git log -5 --oneline` immediately; the handoff document itself is committed separately after this checkpoint.
+- The current local, unpushed runtime image is `indooro-admin-rebuild:editor-semantic-layers`, immutable ID `sha256:a06a843f744039991161de4811c5ebc7658fdf1b8cdce46279341500b20e2621`; runner SHA-256 `608421dfac32601dee70dfbd64980077a3562f8419ba49961612d35a48e36466`. The preceding complete rollback image is `indooro-admin-rebuild:shelf-target-guard`, ID `sha256:ade0f6e562fb82a708fb0e04a1f5a8d21568897c7791af0586922ae006ded36f`.
+- Local dedicated stack: Quarkus image at `http://localhost:8080` in container `indooro-admin-image-smoke`; PostgreSQL port 55433, Keycloak 8180, OpenSearch 9200. The previous image container is stopped as `indooro-admin-image-smoke-prev`. Follow `LIVE_STACK.md` to start/repair it; use only the disposable data. Live scripts create records and versions.
+
+## Planning and implementation status
+
+- Active OpenSpec change: `openspec/changes/rebuild-admin-platform/` with proposal, design, seven delta specs, and 39 tasks. Strict validation passed 41/41. **33/39 tasks are checked; 6 remain open.** This is a task count, not a truthful percentage of production readiness.
+- Pending tasks: 1.1 preimplementation running-stack review (historical timing is impossible to recover; document honestly), 1.2 exhaustive route/action/role/state fixture and screenshot inventory, 3.10 parity gate for each migrated route, 5.3 final full test and API role matrix, 5.4 complete live workflows for all three staff roles, 5.7 final verify and archive.
+- Typed React/Vite candidate covers the Admin routes under `/admin/next/`. Only Dashboard and Diagnostics have enabled old-route redirects. Eight legacy route entries remain behind individual parity gates. `ROUTE_PARITY_MATRIX.md` is the route-by-route decision record; never switch a flag just because the page exists or the global smoke passes.
+- Store layouts live in PostgreSQL; legacy global layouts live in OpenSearch. Preserve public mobile/customer contracts and server-side Keycloak/Quarkus scope enforcement. Product/category bulk import commit is deliberately disabled because current endpoints lack reliable per-row persisted outcomes/atomic rollback; this is an explicit contract gap, not a UI omission to bypass.
+
+## Evidence already established
+
+- Latest editor change: native `<ul><li><button>` layer controls preserve list and button semantics. 92/92 freshly packaged candidate browser checks and the full packaged live workflow passed. The live Store-Manager run asserted the list items and buttons, exercised focused keyboard behavior, and checked scoped denials. Ten route-map switch/rollback pairs passed with committed flags unchanged. Lint passed.
+- Prior checkpoint: 66 frontend unit tests, 119 backend Maven tests, typecheck/lint, strict OpenSpec 41/41. Do not present those as freshly rerun on every later image when only older checkpoint evidence exists.
+- A live Store layout with three elements and numeric IDs decoded through the actual Swift `LayoutData.swift` and `MobileStoreModels.swift` models via `npm run test:swift-layout -- <storeId>`. Latest passing Store ID: `4f700c08-b9eb-4ae4-a6f3-2b1f606663f6`. This proves the response data contract on macOS, not iOS device rendering.
+- Editor and backend reject shelf `layoutCode` values whose category/section prefix differs from the shelf address. The packaged live run checked Editor blocking, immediate Store publication, saved draft activation, global publication, HTTP 400, and unchanged previously public versions. JSON round trip, undo/redo, keyboard geometry, version recovery, draft isolation, Beacon assignment validation, public customer highlighting, and scoped denials have representative live evidence.
+- Recipe UI has live create/edit/tag revision/publish/deactivate/archive and public post-state evidence. Injected step-save and status-transition 503 cases recover from persisted state and retry. Some other multi-stage failure boundaries remain.
+
+## What remains before claiming completion
+
+1. **Editor first:** establish broader customer routing and actual iOS device rendering, full keyboard/assistive-technology and responsive behavior, Store/global editor role and existing-action parity, every significant save/publication/history failure state, direct links, empty states, and data-version as well as route rollback. The current mobile preview's geometric routing warning is a heuristic, not proof of a path. Compare representative existing layouts with the legacy editor and customer behavior.
+2. **Other eight routes:** use `ROUTE_PARITY_MATRIX.md` to close each row's missing live role/scope, action persistence, keyboard, empty/error, deep-link/refresh, and legacy comparison evidence. Recipes need remaining partial-write boundaries and mapping revisions. Catalog imports need a backend contract before commit can be enabled. Only then change a route flag, test the committed old URL, and rerun rollback.
+3. Complete reproducible fixtures/screenshots for task 1.2, final API role matrix and live role workflows for 5.3/5.4. Keep 1.1 explicitly open because its timing condition cannot be fulfilled retroactively. Run OpenSpec verification and archive only after all applicable scenarios genuinely pass; explain the 1.1 exception instead of rewriting history.
+
+## Efficient next steps
+
+1. Read this file, `PROGRESS.md`, `ROUTE_PARITY_MATRIX.md`, `OPENSPEC_VERIFICATION.md`, `LIVE_STACK.md`, and `openspec/changes/rebuild-admin-platform/{proposal.md,design.md,tasks.md}` plus the relevant delta spec for the task selected. Inspect `git status --short` and the current runtime before editing.
+2. Pick **one concrete Editor parity blocker** from the matrix. Trace its legacy, candidate, backend, and customer/mobile execution paths. Add the smallest meaningful implementation and focused test. Avoid another broad refactor or superficial UI sweep.
+3. Run focused verification while iterating; run the browser suite/package, backend tests, and full live workflow when changed runtime or a route gate actually needs that evidence. Update the exact matrix row, OpenSpec tasks only when genuinely done, and release evidence. Commit each coherent result.
+4. After Editor parity is sound, work through remaining route gates in risk order. Make the route cutover reversible; keep the current two flags until their own gates are satisfied. Report what is complete and what is still unproven, rather than a guessed completion percentage.
+
+## Commands and references
+
+From `admin-ui/`: `npm run typecheck`, `npm run lint`, `npm test`, `npm run test:browser` (packages/verifies candidate automatically), `ADMIN_SMOKE_HOST_ALIAS=1 npm run test:live`, `ADMIN_SMOKE_HOST_ALIAS=1 npm run test:live:cutover`, and `npm run test:swift-layout -- <store-id>`. From `backend/indooro_server/`: `DB_PORT=55433 sh ./mvnw -q test`. From repo root: `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`. Use targeted suites during development; avoid repeating every full gate after documentation-only edits.
+
+For a changed runtime artifact, package the candidate with `npm run package:candidate && npm run verify:candidate`, build the backend with `DB_PORT=55433 sh ./mvnw -q package -DskipTests`, then build a tagged image from `backend/indooro_server/` using its `src/main/docker/Dockerfile`. Follow the existing local container/environment setup in `LIVE_STACK.md`; verify image ID and runner SHA in `RELEASE_EVIDENCE.md`. Preserve the previous immutable image for rollback. No production push or deployment is authorized.
+
+Key evidence files: `docs/admin-rebuild/BASELINE.md`, `OPENSPEC_AUDIT.md`, `ROUTE_INVENTORY.md`, `ROUTE_PARITY_MATRIX.md`, `RELEASE_EVIDENCE.md`, `LIVE_STACK.md`, `OPENSPEC_VERIFICATION.md`, and `DEVELOPER_OPERATIONS.md`. The older entries are dated checkpoints; current gate decisions are at the top of the matrix and release evidence. The user wants work to continue to completion in the new chat with **at most two subagents** and **no Claude agents**.
