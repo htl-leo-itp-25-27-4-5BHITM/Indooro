@@ -698,7 +698,7 @@ function openImportDrawer(kind) {
           <h3>Schritt 2: Review</h3>
           <p class="muted">${review.total} Zeilen · ${review.valid} gueltig · ${review.invalid} ungueltig</p>
           <div class="table-wrap"><table><thead><tr><th>Zeile</th><th>Status</th><th>Datensatz</th><th>Pruefung</th></tr></thead><tbody>${rows}</tbody></table></div>
-          <div class="notice warning" style="margin-top:12px"><strong>Commit gesperrt.</strong> Die vorhandenen Bulk-Endpunkte melden keine verifizierbaren Ergebnisse je Zeile. Produktfehler koennen teilweise gespeichert werden; Kategorien ignorieren Fehlerpositionen. Ein sicherer Commit braucht ein Backend-Ergebnis pro Zeile und definierte Teilfehler-/Transaktionssemantik. Es wurde nichts gesendet.</div>
+          <div class="notice warning" style="margin-top:12px"><strong>Commit gesperrt.</strong> Die Bulk-Endpunkte melden jetzt Ergebnisse je Zeile. Persistierte Ergebnisse bei Teilfehlern, ungewisse Transportantworten und das Ueberschreiben bestehender IDs sind im laufenden System noch nicht abgenommen. Es wurde nichts gesendet.</div>
           <div class="toolbar"><button type="button" disabled aria-disabled="true">Commit nicht verfuegbar</button></div>`;
       } catch (error) {
         reviewNode.innerHTML = `<div class="notice danger" role="alert">Import konnte nicht geprueft werden: ${escapeHtml(error.message)}</div>`;

@@ -71,7 +71,7 @@ export function reviewCatalogImport(kind: CatalogImportKind, rows: CatalogImport
   };
 }
 
-const limitation = "Commit gesperrt. Die vorhandenen Bulk-Endpunkte liefern keine verifizierbaren Ergebnisse je Zeile. Produktimporte können teilweise gespeichert werden; Kategorien verwerfen Fehlerpositionen. Ein sicherer Commit braucht definierte Teilfehler- und Transaktionssemantik. Diese Prüfung hat nichts gesendet.";
+const limitation = "Commit gesperrt. Die Bulk-Endpunkte liefern jetzt Ergebnisse je Zeile, aber die persistierten Ergebnisse bei Teilfehlern und die Behandlung ungewisser Transportantworten sind im laufenden System noch nicht abgenommen. Bestehende IDs würden überschrieben. Diese Prüfung hat nichts gesendet.";
 
 export function CatalogImportPanel({ kind }: { kind: CatalogImportKind }) {
   const [source, setSource] = useState("");

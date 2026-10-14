@@ -32,6 +32,18 @@ OpenSearch bulk alone cannot provide it.
 
 ## Evidence
 
+On 2026-10-14, `ADMIN_SMOKE_HOST_ALIAS=1 npm run test:live:catalog`
+passed against the packaged local image
+`sha256:afdd55f95e6784c79dc648abacd41c3951b4b8b0dea70aa1287060a80ab63a39`.
+The admin wrote category codes 903 and 904 and product IDs 901918478 and
+901918479 in two-row bulk requests. Each ordered API row reported `saved`,
+and subsequent anonymous GETs returned the exact names and product prices.
+Duplicate ID/code requests returned 400, and GET confirmed that their new
+target IDs had not been created. The focused backend tests injected a mixed
+BulkResponse and a transport IOException, but those two failure types have
+not been induced against the packaged OpenSearch service. This is not a
+candidate import Commit gate or route cutover approval.
+
 - Product validation and route response: `ProductResource.indexProducts`.
 - Product row-result handling: `OpenSearchService.indexProducts` and
   `CatalogBulkResult.fromResponse`.
