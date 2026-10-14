@@ -1,5 +1,7 @@
 # Admin route parity and acceptance matrix
 
+2026-10-14 Editor accessibility checkpoint: the layer picker now exposes a native list of items with individually focusable buttons. The packaged Store-Manager workflow verified the button role live; 92 browser checks and ten route switch/rollback pairs passed. This narrows the accessibility gap but does not establish a complete assistive-technology or route parity gate. The eight non-enabled routes remain gated.
+
 Evidence cut: 2026-10-13. Scope is the ten legacy route-map entries in [`ROUTE_CUTOVER.md`](ROUTE_CUTOVER.md); the editor entry includes both store and global modes. **Mocked** means candidate browser tests intercept APIs. **Live** means observed in the local packaged Quarkus/Keycloak stack described in [`LIVE_STACK.md`](LIVE_STACK.md). Source and spec references are not runtime proof. Dashboard and Diagnostics passed their parity gates and are the two committed `true` flags in this local branch; the other eight entries remain gated.
 
 | Legacy entry → candidate | Existing actions to preserve (legacy source inventory) | Candidate evidence (file/test; evidence type) | Role and scope evidence | Deep-link evidence | Keyboard evidence | Empty/error evidence | Rollback evidence | Exact remaining parity gaps |

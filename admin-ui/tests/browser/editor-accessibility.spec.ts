@@ -55,7 +55,9 @@ test("Enter on a focused layer selects it and Tab moves focus into the inspector
   await mockEditor(page, "DRAFT", []);
   await page.goto("/admin/next/editor/?storeId=store-1");
 
-  const shelfLayer = page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" });
+  const layers = page.locator(".le-layers");
+  await expect(layers.getByRole("listitem")).toHaveCount(layout.elements.length);
+  const shelfLayer = layers.getByRole("button", { name: /Obst & Gemüse/ });
   await tabUntilFocused(page, shelfLayer);
   await expect(shelfLayer).toHaveAttribute("aria-current", "false");
 

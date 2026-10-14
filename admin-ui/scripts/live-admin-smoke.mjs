@@ -644,6 +644,8 @@ try {
   assert.ok(drawnWallWidth > 1 && drawnWallHeight > 1, "live editor drag determines wall dimensions");
   await manager.getByRole("button", { name: "Auswählen", exact: false }).first().click();
   const shelfLayerButton = manager.locator(".le-layers button").nth(1);
+  assert.equal(await manager.locator(".le-layers").getByRole("listitem").count(), 3, "editor layers expose semantic list items");
+  assert.equal(await manager.locator(".le-layers").getByRole("listitem").nth(1).getByRole("button").count(), 1, "each layer keeps its button role");
   await shelfLayerButton.click();
   const keyboardControlX = await manager.getByLabel("X", { exact: true }).inputValue();
   await manager.keyboard.press("Space");
