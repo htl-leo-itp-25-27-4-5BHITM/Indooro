@@ -5,14 +5,14 @@ import { cutoverTarget, ROUTE_CUTOVER } from "../../main/resources/META-INF/reso
 
 const paths = ["/admin/", "/admin/regions/", "/admin/stores/", "/admin/stores/detail/", "/admin/beacons/", "/admin/products/", "/admin/categories/", "/admin/recipes/", "/admin/editor/", "/admin/server-logs/"];
 
-test("approved dashboard and diagnostics entries redirect independently", () => {
+test("approved dashboard, regions, and diagnostics entries redirect independently", () => {
   assert.deepEqual(ROUTE_CUTOVER, {
-    dashboard: true, regions: false, stores: false, storeDetail: false,
+    dashboard: true, regions: true, stores: false, storeDetail: false,
     beacons: false, products: false, categories: false, recipes: false,
     editor: false, diagnostics: true
   });
   for (const path of paths) {
-    assert.equal(cutoverTarget(path), path === "/admin/" ? "/admin/next/" : path === "/admin/server-logs/" ? "/admin/next/server-logs/" : null, path);
+    assert.equal(cutoverTarget(path), path === "/admin/" ? "/admin/next/" : path === "/admin/regions/" ? "/admin/next/regions/" : path === "/admin/server-logs/" ? "/admin/next/server-logs/" : null, path);
     const page = readFileSync(new URL(`../../main/resources/META-INF/resources${path}index.html`, import.meta.url), "utf8");
     assert.match(page, /<script type="module" src="\/admin\/route-cutover\.js"><\/script>/, path);
   }

@@ -124,3 +124,32 @@ test("regions exposes empty, load-error, and retry states through keyboard contr
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Region anlegen" })).toBeVisible();
 });
+
+test("failed region detail reload hides stale data and mutation controls until retry", async ({ page }) => {
+  let region = { id: "region-stale", code: "AT-X", name: "Before", description: null, status: "ACTIVE", createdAt: "2026-01-01", updatedAt: "2026-01-01" };
+  let detailReads = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/regions?status=ACTIVE", (route) => route.fulfill({ json: [region] }));
+  await page.route("**/api/regions/region-stale", (route) => {
+    if (route.request().method() === "PUT") {
+      region = { ...region, ...route.request().postDataJSON() };
+      return route.fulfill({ json: region });
+    }
+    detailReads += 1;
+    return detailReads === 2
+      ? route.fulfill({ status: 503, json: { error: "Reload failed" } })
+      : route.fulfill({ json: region });
+  });
+  await page.goto("/admin/next/regions/");
+  await page.getByRole("button", { name: "Details" }).click();
+  await page.getByRole("button", { name: "Bearbeiten" }).click();
+  await page.getByRole("textbox", { name: "Name", exact: true }).fill("After");
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await expect(page.getByRole("alert")).toContainText("Serverfehler");
+  await expect(page.getByRole("button", { name: "Archivieren" })).toHaveCount(0);
+  await expect(page.getByText("After", { exact: true }).last()).toBeVisible(); // list row remains authoritative
+  await page.getByRole("button", { name: "Erneut laden" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("button", { name: "Archivieren" })).toBeVisible();
+  await expect(page.getByLabel("Details").getByText("After", { exact: true })).toBeVisible();
+});

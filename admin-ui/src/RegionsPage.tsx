@@ -111,6 +111,7 @@ export function RegionsPage({ api, user }: { api: ApiClient; user: CurrentUser }
     const controller = new AbortController();
     setDetailLoading(true);
     setDetailError("");
+    setDetail(null);
     api.get<Region>(`/api/regions/${encodeURIComponent(selectedId)}`, { signal: controller.signal })
       .then(setDetail)
       .catch((error: unknown) => {
