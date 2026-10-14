@@ -317,6 +317,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             setTargetPosition(CGPoint(x: tx, y: ty))
         } else {
             print("⚠️ Kein Regal gefunden fuer \(product.name) (Code: \(product.layoutCode))")
+            clearRouteTarget()
         }
     }
 
