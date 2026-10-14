@@ -439,7 +439,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
         }}>Regalabschnitte zuweisen</button>}
         <h2>Vorlagen</h2>
         <div className="le-templates">{TEMPLATES.map((template) => <button type="button" key={template.label} disabled={!!working} onClick={() => applyTemplate(template)}>{template.label}<span>{template.width} × {template.height} m</span></button>)}</div>
-        <h2>Elemente</h2><p className="le-hint">Element wählen, dann im Grundriss platzieren. Tastatur: Element wählen, Tab zum Grundriss, Pfeile positionieren, Enter platzieren. Shift + Pfeil bewegt 5 Rastereinheiten.</p>
+        <h2>Elemente</h2><p id="le-keyboard-help" className="le-hint">Tastatur: Element wählen, Tab zum Grundriss, Pfeile positionieren, Enter platzieren. Bei ausgewählter Ebene bewegen Pfeile das Element; Shift + Pfeil bewegt schneller. Escape beendet das Werkzeug. Eigenschaften stehen rechts.</p>
         <div className="le-library">{TYPES.map((item) => <button type="button" key={item.type} aria-pressed={tool === "create" && createType === item.type} onClick={() => { setCreateType(item.type); setTool("create"); setKeyboardPoint({ x: document.gridSize.width / 2, y: document.gridSize.height / 2 }); }}><span className="le-swatch" style={{ background: item.color }} />{item.label}</button>)}</div>
         <h2>Ebenen <span>{document.elements.length}</span></h2>
         <ul className="le-layers">{document.elements.length ? document.elements.map((element, index) => <li key={`${element.id ?? "missing"}-${index}`}><button type="button" aria-current={editor.selectedId === element.id} onClick={() => setEditor((current) => selectElement(current, element.id ?? null))}><span className="le-layer-index">{String(index + 1).padStart(2, "0")}</span><span>{labelFor(element)}</span>{element.locked && <span title="Gesperrt">🔒</span>}{issueFor(element.id) && <span className="le-error-dot" title="Validierungsfehler">!</span>}</button></li>) : <li className="le-empty">Noch keine Elemente</li>}</ul>
@@ -455,7 +455,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
             {TYPES.map((item) => <option key={item.type} value={item.type}>{item.label}</option>)}
           </select></label>
         </div>
-        <svg ref={svgRef} tabIndex={0} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} aria-label="Interaktiver Grundriss" role="img">
+        <svg ref={svgRef} tabIndex={0} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} aria-label="Interaktiver Grundriss" aria-describedby="le-keyboard-help" role="img">
           <defs><pattern id="le-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#d9e2df" strokeWidth={0.045} /></pattern></defs>
           <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>
             <rect x={0} y={0} width={document.gridSize.width} height={document.gridSize.height} fill="#fff" stroke="#aabfba" strokeWidth={1 / viewport.scale} />

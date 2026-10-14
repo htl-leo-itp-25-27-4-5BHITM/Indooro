@@ -46,6 +46,7 @@ test("Tab reaches the tool palette, canvas and layout actions from page load", a
 
   const canvas = page.getByRole("img", { name: "Interaktiver Grundriss" });
   await tabUntilFocused(page, canvas);
+  await expect(canvas).toHaveAccessibleDescription(/Pfeile positionieren.*Bei ausgewählter Ebene bewegen Pfeile das Element/);
 
   const newLayout = page.getByRole("button", { name: "Neues Layout" });
   await tabUntilFocused(page, newLayout);
