@@ -4,6 +4,8 @@ Updated: 2026-10-14. Working branch: `codex/admin-platform-rebuild` in the isola
 
 ## Current checkpoint
 
+The 2026-10-14 iOS product-target check corrected prefix category matching in both Swift navigation consumers. A compiled collision fixture and the running image's anonymous Store layout passed in both app trees; both iOS Simulator builds succeeded. This reduces Editor/customer target risk without establishing a device route journey or permitting Editor cutover. OpenSpec remains 33/39.
+
 OpenSpec remains 33/39 checked. Dashboard and Diagnostics are the two enabled routes; eight legacy entries still require their own parity gates. The latest local unpushed image is `indooro-admin-rebuild:editor-semantic-layers` (`sha256:a06a843f744039991161de4811c5ebc7658fdf1b8cdce46279341500b20e2621`). Candidate lint, 66 unit tests, 92 freshly packaged browser tests, 119 backend tests, the full live workflow, ten route switch/rollback pairs, and strict OpenSpec validation 41/41 pass at their respective checkpoints. The Editor layer selector now exposes native list items with actual button controls; packaged live checks confirm button semantics. The packaged Store-Manager workflow confirms focused keyboard behavior, and actual Swift layout models decode a published three-element Store response. Recipe tag revision, archive, and two publication failure/retry stages pass live. Editor and backend publication reject mismatched shelf targets. Remaining work is recorded per route in `ROUTE_PARITY_MATRIX.md`; Editor still needs broader customer/iOS device, accessibility, role/action, and fault parity. The historical checkpoints below describe their state at the time and are not the current gate decision.
 
 ## Decisions and source of truth

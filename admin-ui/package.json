@@ -19,7 +19,8 @@
     "test:live": "node scripts/live-admin-smoke.mjs",
     "test:live:dashboard": "node scripts/live-dashboard-parity.mjs",
     "test:live:cutover": "node scripts/live-route-cutover.mjs",
-    "test:swift-layout": "node scripts/verify-swift-layout-decode.mjs"
+    "test:swift-layout": "node scripts/verify-swift-layout-decode.mjs",
+    "test:swift-routing": "node scripts/verify-swift-shelf-routing.mjs"
   },
   "dependencies": {
     "react": "19.3.0",

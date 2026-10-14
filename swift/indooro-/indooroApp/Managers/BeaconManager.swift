@@ -269,28 +269,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             return
         }
 
-        let parts = product.layoutCode.components(separatedBy: "/")
-        guard !parts.isEmpty else {
-            print("⚠️ Ungueltiger LayoutCode: \(product.layoutCode)")
-            return
-        }
-
-        let productCategory = parts[0]
-        let productMeter = parts.count > 1 ? Int(parts[1]) : nil
-
-        if let shelf = shelves.first(where: { element in
-            guard let elementCategory = element.category,
-                  elementCategory.starts(with: productCategory) else {
-                return false
-            }
-
-            if let elementMeter = element.meter {
-                guard let productMeter else { return false }
-                return elementMeter == productMeter
-            }
-
-            return true
-        }) {
+        if let shelf = shelves.first(where: { $0.matchesProductLayoutCode(product.layoutCode) }) {
             let tx = shelf.x + (shelf.width ?? 1) / 2
             let ty = shelf.y + (shelf.height ?? 1) / 2
             setTargetPosition(CGPoint(x: tx, y: ty))

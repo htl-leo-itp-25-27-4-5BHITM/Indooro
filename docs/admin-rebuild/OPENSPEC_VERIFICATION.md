@@ -1,5 +1,7 @@
 # OpenSpec implementation verification — rebuild-admin-platform
 
+2026-10-14 addendum: A customer-target audit found prefix matching in both iOS navigation consumers, which could confuse category `31` with `310`. The shared Swift layout element now matches complete category and section; both app trees passed a compiled collision fixture and a real anonymous current-layout response, and both iOS Simulator builds succeeded. This is source/contract evidence only; on-device route guidance and the remaining Editor parity row are still open. OpenSpec tasks remain 33/39.
+
 Evidence cut: 2026-10-13. This is a current implementation audit, not an archive approval. The change uses the `spec-driven` schema with proposal, design, seven delta specs, and 39 tasks. Strict OpenSpec validation passes 41/41 repository items; syntax validation does not prove runtime acceptance. See `ROUTE_PARITY_MATRIX.md` for route-specific evidence and `RELEASE_EVIDENCE.md` for the local immutable image.
 
 | Dimension | Current assessment |

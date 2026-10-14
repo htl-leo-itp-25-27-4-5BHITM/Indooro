@@ -1,5 +1,7 @@
 # Local admin acceptance stack
 
+On 2026-10-14, `npm run test:swift-routing -- 4f700c08-b9eb-4ae4-a6f3-2b1f606663f6` fetched the anonymous active Store layout from the running packaged image and compiled both Swift model variants. Each resolved its published `310/1` shelf and a separate `31` versus `310` collision fixture by exact category and section. Both iOS Simulator schemes built with code signing disabled. The Quarkus image itself was unchanged, and no iOS device navigation was observed.
+
 Latest 2026-10-14 packaged image: `indooro-admin-rebuild:editor-semantic-layers` (`sha256:a06a843f744039991161de4811c5ebc7658fdf1b8cdce46279341500b20e2621`). It passed the full local live workflow, the layer button-role assertion, and ten route switch/rollback pairs. The previous `shelf-target-guard` image remains the local rollback target. See `RELEASE_EVIDENCE.md` and `ORCHESTRATOR_HANDOFF_2026-10-14.md`.
 
 Run this only on a disposable local database. The smoke check creates regions, stores, layouts, and scope assignments.
