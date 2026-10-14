@@ -2018,6 +2018,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         activeStoreBeaconIdentityKey = nil
         activeLayoutStore = nil
         activeLayoutStoreSource = nil
+        clearRouteTarget()
         activeLayoutDescription = "\(store.name) erkannt • Layout nicht geladen: \(reason)"
         navigationStatusMessage = storeLayoutFailureStatusMessage
 
