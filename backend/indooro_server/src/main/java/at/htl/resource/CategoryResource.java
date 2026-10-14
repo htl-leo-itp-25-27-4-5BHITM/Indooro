@@ -3,6 +3,7 @@ package at.htl.resource;
 import at.htl.admin.service.AdminAccessService;
 import at.htl.model.Category;
 import at.htl.service.CategoryService;
+import at.htl.service.CatalogBulkResult;
 import io.smallrye.common.annotation.Blocking;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -64,7 +65,10 @@ public class CategoryResource {
     public Response upsertCategory(Category category) {
         adminAccessService.requireAdmin();
         try {
-            categoryService.bulkInsert(List.of(category));
+            CatalogBulkResult result = categoryService.bulkInsert(List.of(category));
+            if (result.failed() > 0 || result.unknown() > 0) {
+                return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(result).build();
+            }
             return Response.ok(category).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", e.getMessage())).build();
@@ -90,15 +94,18 @@ public class CategoryResource {
     public Response bulkInsert(List<Category> categories) {
         adminAccessService.requireAdmin();
         try {
-            categoryService.bulkInsert(categories);
-            return Response.ok(Map.of(
-                    "message", "Categories indexed",
-                    "count", categories.size()
-            )).build();
+            CatalogBulkResult result = categoryService.bulkInsert(categories);
+            return Response.ok(result).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", e.getMessage())).build();
         } catch (IOException e) {
-            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+            if (categories == null) {
+                return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+            }
+            return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                    .entity(CatalogBulkResult.unknown(categories.stream().map(category -> String.valueOf(category.getCategoryCode())).toList(),
+                            "Transport failed; some writes may have persisted. Verify before retrying."))
+                    .build();
         }
     }
 }

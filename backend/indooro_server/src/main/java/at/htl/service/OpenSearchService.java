@@ -11,6 +11,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Result;
+import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.query_dsl.Operator;
 import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -267,8 +268,8 @@ public class OpenSearchService {
     /**
      * Indexiert mehrere Produkte in einem Bulk-Request
      */
-    public void indexProducts(List<Product> products) throws IOException {
-        BulkRequest.Builder bulkBuilder = new BulkRequest.Builder();
+    public CatalogBulkResult indexProducts(List<Product> products) throws IOException {
+        BulkRequest.Builder bulkBuilder = new BulkRequest.Builder().refresh(Refresh.WaitFor);
 
         for (Product product : products) {
             bulkBuilder.operations(op -> op
@@ -281,17 +282,7 @@ public class OpenSearchService {
         }
 
         BulkResponse response = client.bulk(bulkBuilder.build());
-
-        if (response.errors()) {
-            LOG.error("Bulk indexing had errors");
-            response.items().forEach(item -> {
-                if (item.error() != null) {
-                    LOG.error("Error: " + item.error().reason());
-                }
-            });
-        } else {
-            LOG.info("Successfully indexed " + products.size() + " products");
-        }
+        return CatalogBulkResult.fromResponse(products.stream().map(product -> String.valueOf(product.getId())).toList(), response);
     }
 
     /**

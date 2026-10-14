@@ -8,36 +8,36 @@ finite nonnegative prices, four-part numeric layout codes, category codes and
 names, and duplicate IDs/codes in the submitted file. Invalid rows and their
 reasons remain visible in the review. Parsing and review do not write data.
 
-Commit is intentionally disabled. The current product endpoint,
-`POST /api/products/bulk`, requires the `admin` role and validates every
-product before sending one OpenSearch bulk request. However,
-`OpenSearchService.indexProducts` only logs item-level failures from the
-`BulkResponse`; `ProductResource` returns a success message based on the input
-size regardless. OpenSearch bulk requests can partially succeed, so the
-response does not prove that all rows were stored and there is no rollback.
+Commit is intentionally disabled in the candidate UI. Both legacy bulk routes
+now expose one ordered result per submitted item (`row`, `id`, `status`,
+`reason`), with `saved`, `failed`, and `unknown` counts. A 200 response can
+contain failed rows. Product writes request an OpenSearch refresh before the
+response. Duplicate IDs/codes in the same request are rejected before writing.
+The routes remain admin-only, and existing documents with the same ID are
+upserted rather than treated as conflicts. Bulk writes have no rollback.
 
-The category endpoint, `POST /api/categories/bulk`, also requires `admin`.
-`CategoryService` validates required fields before indexing, but
-`CategoryRepository.bulkIndex` discards the returned `BulkResponse`. The route
-then reports the input count. Duplicate codes in one file are not identified
-by the backend, and indexing uses the code as the document ID, so repeated
-codes overwrite one another. There is no preview/conflict endpoint or
-transaction/rollback behavior for either catalog.
+On an I/O failure after submission, either route returns 503 with every row
+`unknown`. This does not assert that no write occurred. Staff must inspect the
+affected IDs before any retry. There is no server preview, existing-record
+conflict check, idempotency key, or atomic transaction for either catalog.
 
 ## Capability needed to enable commit
 
-Add reviewed backend import semantics that return a result for each input row,
-including saved, skipped/conflicted, and failed outcomes. Define duplicate
-handling and whether updates are allowed. If all-or-nothing behavior is
-required, implement it with storage that can guarantee rollback; an OpenSearch
-bulk request alone does not provide that guarantee. Only then should the UI
-submit the reviewed set and summarize persisted outcomes from the backend.
+Verify the new contract against a packaged live image with successful,
+partial-failure, and ambiguous-transport cases plus per-row readback. Define
+whether candidate imports intentionally overwrite existing documents and how
+staff reconcile unknown rows. Only then enable the candidate commit control
+and summarize the backend results. If all-or-nothing behavior is required,
+OpenSearch bulk alone cannot provide it.
 
 ## Evidence
 
 - Product validation and route response: `ProductResource.indexProducts`.
-- Product partial-error handling: `OpenSearchService.indexProducts`.
+- Product row-result handling: `OpenSearchService.indexProducts` and
+  `CatalogBulkResult.fromResponse`.
 - Category validation: `CategoryService.bulkInsert`.
-- Category response handling: `CategoryResource.bulkInsert` and
+- Category row-result handling: `CategoryResource.bulkInsert` and
   `CategoryRepository.bulkIndex`.
+- Focused tests: `CatalogBulkResultTest`, `CategoryServiceBulkTest`,
+  `ProductResourceBulkTest`, and `CategoryResourceSecurityTest`.
 - Admin review and blocked commit: `META-INF/resources/admin/app.js`.

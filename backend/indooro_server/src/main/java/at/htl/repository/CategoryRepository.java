@@ -7,6 +7,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.CountResponse;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -69,7 +70,7 @@ public class CategoryRepository {
         return response.found() ? response.source() : null;
     }
 
-    public void bulkIndex(List<Category> categories) throws IOException {
+    public BulkResponse bulkIndex(List<Category> categories) throws IOException {
         BulkRequest.Builder bulkBuilder = new BulkRequest.Builder().refresh(Refresh.True);
 
         for (Category category : categories) {
@@ -80,6 +81,6 @@ public class CategoryRepository {
             ));
         }
 
-        client.bulk(bulkBuilder.build());
+        return client.bulk(bulkBuilder.build());
     }
 }

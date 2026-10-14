@@ -418,7 +418,7 @@ paths:
     post:
       tags: [catalog]
       operationId: indexProductsBulk
-      summary: Bulk index products (used by the admin import drawer).
+      summary: Bulk upsert products with ordered row outcomes; writes are not atomic.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
       x-indooro-consumers: [admin-ui, api-tests]
@@ -433,13 +433,18 @@ paths:
               items: { $ref: "#/components/schemas/Product" }
       responses:
         "200":
-          description: Summary message. Per-item OpenSearch errors are only logged.
+          description: Ordered results for each submitted row. A 200 can include failed or unknown rows.
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/MessageResponse" }
+              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "503":
+          description: Transport outcome is ambiguous; verify affected document IDs before retrying.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
   /api/categories:
     get:
       tags: [catalog]
@@ -527,7 +532,7 @@ paths:
     post:
       tags: [catalog]
       operationId: indexCategoriesBulk
-      summary: Bulk index categories.
+      summary: Bulk upsert categories with ordered row outcomes; writes are not atomic.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
       x-indooro-consumers: [admin-ui]
@@ -541,18 +546,18 @@ paths:
               items: { $ref: "#/components/schemas/Category" }
       responses:
         "200":
-          description: Summary.
+          description: Ordered results for each submitted row. A 200 can include failed or unknown rows.
           content:
             application/json:
-              schema:
-                type: object
-                required: [message, count]
-                properties:
-                  message: { type: string, const: Categories indexed }
-                  count: { type: integer }
+              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
         "400": { $ref: "#/components/responses/LegacyBadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "503":
+          description: Transport outcome is ambiguous; verify affected category codes before retrying.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
 
   # ---------------------------------------------------------------- legacy layout
   /api/layout/current:
@@ -2074,6 +2079,26 @@ components:
       required: [message]
       properties:
         message: { type: string }
+    CatalogBulkResult:
+      type: object
+      required: [message, count, saved, failed, unknown, rows]
+      properties:
+        message: { type: string }
+        count: { type: integer, minimum: 0 }
+        saved: { type: integer, minimum: 0 }
+        failed: { type: integer, minimum: 0 }
+        unknown: { type: integer, minimum: 0 }
+        rows:
+          type: array
+          description: One result per submitted operation, in request order. Row numbers are one-based.
+          items:
+            type: object
+            required: [row, id, status]
+            properties:
+              row: { type: integer, minimum: 1 }
+              id: { type: string }
+              status: { type: string, enum: [saved, failed, unknown] }
+              reason: { type: [string, "null"] }
     RecordStatus:
       type: string
       enum: [ACTIVE, ARCHIVED]
