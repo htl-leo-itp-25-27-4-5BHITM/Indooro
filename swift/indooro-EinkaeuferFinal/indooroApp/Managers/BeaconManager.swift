@@ -180,10 +180,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private var isScanningBeacons = false
     private var rssiBuffer: [String: [Int]] = [:]
     private var beaconLastSeenAt: [String: TimeInterval] = [:]
-    private var beaconMeasurementQuality: [String: Float] = [:]
     private var beaconAdvertisementTxPower: [String: Float] = [:]
-    private var beaconRangedAccuracyMeters: [String: Double] = [:]
-    private var kalmanFilters: [String: KalmanFilter] = [:]
+    private let measurementStore = BeaconMeasurementStore(config: StabilizedNavigationConfig.default.beacon)
     private var updateTimer: Timer?
     private let startTime = Date()
     private let locationManager = CLLocationManager()
@@ -567,33 +565,49 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             let name = beacon.name
             let values = rssiBuffer[name] ?? []
 
-            if values.isEmpty {
-                if isMeasurementStale(for: name, timestamp: timestamp) {
-                    kalmanFilters[name]?.reset()
-                    beaconMeasurementQuality[name] = 0
-                    updateBeaconUI(name: name, rssi: 0, distance: 0, timestamp: nil, quality: 0, txPower: nil)
-                }
+            // Pro Beacon genau eine Quelle: mit frischem Ranging werden RSSI-Samples verworfen.
+            guard !values.isEmpty,
+                  measurementStore.shouldUseRSSI(for: name, at: timestamp) else {
                 continue
             }
 
-            let processed = processRSSIWindow(values, for: name, timestamp: timestamp)
-            updateBeaconUI(
-                name: name,
-                rssi: processed.rssi,
-                distance: processed.distanceMeters,
-                timestamp: timestamp,
-                quality: processed.quality,
-                txPower: beaconAdvertisementTxPower[name].map(Double.init)
-            )
+            processRSSIWindow(values, for: name, timestamp: timestamp)
         }
 
         rssiBuffer.removeAll()
-        clearStaleBeaconMeasurements(at: timestamp)
+        measurementStore.expireStaleMeasurements(at: timestamp)
+        refreshBeaconUI(at: timestamp)
         calculateLocation(timestamp: timestamp)
     }
 
+    /// Spiegelt die je Tick gewaehlte Quelle (Ranging vor RSSI) in die Beacon-Anzeige.
+    private func refreshBeaconUI(at timestamp: TimeInterval) {
+        for beacon in beacons {
+            if let selected = measurementStore.selection(for: beacon.name, at: timestamp) {
+                let measurement = selected.measurement
+                updateBeaconUI(
+                    name: beacon.name,
+                    rssi: measurement.rssi,
+                    distance: measurement.distanceMeters,
+                    timestamp: measurement.lastSeenAt,
+                    quality: Double(measurement.quality),
+                    txPower: selected.source == .rssi
+                        ? beaconAdvertisementTxPower[beacon.name].map(Double.init)
+                        : nil
+                )
+            } else {
+                updateBeaconUI(name: beacon.name, rssi: 0, distance: 0, timestamp: nil, quality: 0, txPower: nil)
+            }
+        }
+    }
+
     private func calculateLocation(timestamp: TimeInterval) {
-        let measurements = activeBeaconMeasurements(at: timestamp)
+        measurementStore.solveTick(at: timestamp) { measurements in
+            solveLocation(measurements: measurements, timestamp: timestamp)
+        }
+    }
+
+    private func solveLocation(measurements: [BeaconAnchorMeasurement], timestamp: TimeInterval) {
         let baseConfidence = calculateTrackingConfidence(activeMeasurements: measurements)
         let confidence: Float
 
@@ -900,7 +914,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         _ values: [Int],
         for beaconName: String,
         timestamp: TimeInterval
-    ) -> (rssi: Int, distanceMeters: Double, quality: Double) {
+    ) {
         let sorted = values.sorted()
         let filtered: [Int]
         if sorted.count >= 5 {
@@ -913,7 +927,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         let measurementStdDev = standardDeviation(of: filtered, mean: averageRSSI)
         let txPower = Double(beaconAdvertisementTxPower[beaconName] ?? Float(defaultTxPower))
         let rawDistance = calculateDistance(rssi: averageRSSI, txPower: txPower)
-        let smoothedDistance = kalmanFilters[beaconName]?.filter(rawDistance) ?? rawDistance
         let sampleScore = clamp(Float(filtered.count) / 6.0, min: 0.2, max: 1)
         let stabilityScore = clamp(1 - Float(measurementStdDev / 9.0), min: 0.08, max: 1)
         let freshnessScore = clamp(
@@ -928,32 +941,13 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 max: 1
             )
         )
-        beaconMeasurementQuality[beaconName] = Float(quality)
-        return (Int(averageRSSI.rounded()), smoothedDistance, quality)
-    }
-
-    private func activeBeaconMeasurements(at timestamp: TimeInterval) -> [BeaconAnchorMeasurement] {
-        beacons.compactMap { beacon in
-            let ageSeconds = Float(timestamp - (beacon.lastSeenAt ?? 0))
-            guard beacon.distance > 0,
-                  ageSeconds <= Float(navigationConfig.beacon.staleMeasurementSeconds),
-                  beacon.distance < Double(navigationConfig.beacon.maxDistanceMeters) else {
-                return nil
-            }
-
-            let quality = beaconMeasurementQuality[beacon.name] ?? Float(beacon.measurementQuality)
-            guard quality > 0 else {
-                return nil
-            }
-
-            return BeaconAnchorMeasurement(
-                beaconName: beacon.name,
-                anchorPoint: SIMD2<Float>(Float(beacon.positionX), Float(beacon.positionY)),
-                distanceMeters: Float(beacon.distance),
-                quality: quality,
-                ageSeconds: ageSeconds
-            )
-        }
+        measurementStore.recordRSSI(
+            beaconName: beaconName,
+            rawDistance: rawDistance,
+            rssi: Int(averageRSSI.rounded()),
+            quality: Float(quality),
+            timestamp: timestamp
+        )
     }
 
     private func calculateTrackingConfidence(activeMeasurements: [BeaconAnchorMeasurement]) -> Float {
@@ -1161,8 +1155,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         // Keep the general BLE scan running in parallel so store beacons with
         // a different UUID can still be discovered via manufacturer data.
 
-        var matchedNames: Set<String> = []
-
         for rangedBeacon in rangedBeacons {
             let detectedBeacon = DetectedStoreBeacon(rangedBeacon: rangedBeacon)
             let lookupRSSI = rangedBeacon.rssi < 0 ? rangedBeacon.rssi : minimumStoreLookupRSSI
@@ -1177,35 +1169,15 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 continue
             }
 
-            let accuracy = rangedBeacon.accuracy
-            let clampedDistance = stabilizedIBeaconDistance(
-                for: beaconName,
-                accuracy: accuracy,
-                rssi: rangedBeacon.rssi
-            )
-            let quality = iBeaconQuality(for: rangedBeacon)
-            beaconMeasurementQuality[beaconName] = quality
-            beaconLastSeenAt[beaconName] = timestamp
-
-            updateBeaconUI(
-                name: beaconName,
+            // Nur speichern: Position wird ausschliesslich vom Timer geloest.
+            measurementStore.recordRanging(
+                beaconName: beaconName,
+                accuracy: rangedBeacon.accuracy,
                 rssi: rangedBeacon.rssi,
-                distance: clampedDistance,
-                timestamp: clampedDistance > 0 ? timestamp : nil,
-                quality: Double(quality),
-                txPower: nil
+                quality: iBeaconQuality(for: rangedBeacon),
+                timestamp: timestamp
             )
-            matchedNames.insert(beaconName)
         }
-
-        for beacon in beacons where !matchedNames.contains(beacon.name) {
-            if isMeasurementStale(for: beacon.name, timestamp: timestamp) {
-                updateBeaconUI(name: beacon.name, rssi: 0, distance: 0, timestamp: nil, quality: 0, txPower: nil)
-                beaconMeasurementQuality[beacon.name] = 0
-            }
-        }
-
-        calculateLocation(timestamp: timestamp)
     }
 
     private func matchingBeaconName(for rangedBeacon: CLBeacon) -> String? {
@@ -1278,51 +1250,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         )
     }
 
-    private func stabilizedIBeaconDistance(for beaconName: String, accuracy: CLLocationAccuracy, rssi: Int) -> Double {
-        guard accuracy.isFinite, accuracy > 0, rssi < 0 else {
-            return beaconRangedAccuracyMeters[beaconName] ?? 0
-        }
-
-        let boundedAccuracy = min(
-            Double(navigationConfig.beacon.maxDistanceMeters),
-            max(Double(navigationConfig.beacon.minDistanceMeters), accuracy)
-        )
-
-        let previousAccuracy = beaconRangedAccuracyMeters[beaconName]
-        let jumpLimit = Double(navigationConfig.beacon.maxAcceptedAccuracyJumpMeters)
-        let acceptedAccuracy: Double
-        if let previousAccuracy, abs(boundedAccuracy - previousAccuracy) > jumpLimit {
-            acceptedAccuracy = previousAccuracy + (boundedAccuracy - previousAccuracy) * 0.18
-        } else {
-            acceptedAccuracy = boundedAccuracy
-        }
-
-        let kalmanDistance = kalmanFilters[beaconName]?.filter(acceptedAccuracy) ?? acceptedAccuracy
-        let blendAlpha = Double(navigationConfig.beacon.iBeaconAccuracyBlendAlpha)
-        let smoothedDistance: Double
-        if let previousAccuracy {
-            smoothedDistance = previousAccuracy + (kalmanDistance - previousAccuracy) * blendAlpha
-        } else {
-            smoothedDistance = kalmanDistance
-        }
-
-        let clampedDistance = min(
-            Double(navigationConfig.beacon.maxDistanceMeters),
-            max(Double(navigationConfig.beacon.minDistanceMeters), smoothedDistance)
-        )
-        beaconRangedAccuracyMeters[beaconName] = clampedDistance
-        return clampedDistance
-    }
-
-    private func clearStaleBeaconMeasurements(at timestamp: TimeInterval) {
-        for beacon in beacons {
-            if isMeasurementStale(for: beacon.name, timestamp: timestamp) {
-                beaconMeasurementQuality[beacon.name] = 0
-                updateBeaconUI(name: beacon.name, rssi: 0, distance: 0, timestamp: nil, quality: 0, txPower: nil)
-            }
-        }
-    }
-
     private func normalizeAngle(_ angle: Float) -> Float {
         var value = angle
         while value > .pi {
@@ -1348,13 +1275,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             return partialResult + (delta * delta)
         } / Double(values.count)
         return sqrt(variance)
-    }
-
-    private func isMeasurementStale(for beaconName: String, timestamp: TimeInterval) -> Bool {
-        guard let lastSeen = beaconLastSeenAt[beaconName] else {
-            return true
-        }
-        return (timestamp - lastSeen) >= navigationConfig.beacon.staleMeasurementSeconds
     }
 
     private func trailingInteger(in value: String) -> Int? {
@@ -1836,7 +1756,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         appendDebugLog(
             "applyLayout shop=\(layout.shopName) grid=\(gridWidth)x\(gridHeight) shelves=\(shelves.count) beacons=\(beacons.count)"
         )
-        syncKalmanFiltersWithBeacons()
+        syncMeasurementStoreWithBeacons()
         clearBeaconMeasurements()
         rssiBuffer.removeAll()
         resetDisplayPositionFilter()
@@ -1867,15 +1787,10 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             }
     }
 
-    private func syncKalmanFiltersWithBeacons() {
-        var updatedFilters: [String: KalmanFilter] = [:]
-
-        for beacon in beacons {
-            updatedFilters[beacon.name] = kalmanFilters[beacon.name]
-                ?? KalmanFilter(processNoise: 0.02, measurementNoise: 4.0)
-        }
-
-        kalmanFilters = updatedFilters
+    private func syncMeasurementStoreWithBeacons() {
+        measurementStore.syncBeacons(
+            beacons.map { (name: $0.name, point: SIMD2<Float>(Float($0.positionX), Float($0.positionY))) }
+        )
     }
 
     private func mergeLayoutHistory(_ incomingHistory: [LayoutVersionSummary]) -> [LayoutVersionSummary] {
@@ -2323,11 +2238,20 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     ) {
         if let index = beacons.firstIndex(where: { $0.name == name }) {
             var updated = beacons[index]
+            let current = updated
             updated.rssi = rssi
             updated.distance = distance
             updated.lastSeenAt = timestamp
             updated.measurementQuality = quality
             updated.txPower = txPower
+            // Nur veroeffentlichen, wenn sich die Anzeige aendert (Tick laeuft fuer alle Beacons).
+            guard updated.rssi != current.rssi
+                || updated.distance != current.distance
+                || updated.lastSeenAt != current.lastSeenAt
+                || updated.measurementQuality != current.measurementQuality
+                || updated.txPower != current.txPower else {
+                return
+            }
             beacons[index] = updated
         }
     }
@@ -2476,9 +2400,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             beacons[index].measurementQuality = 0
         }
         beaconLastSeenAt.removeAll()
-        beaconMeasurementQuality.removeAll()
         beaconAdvertisementTxPower.removeAll()
-        beaconRangedAccuracyMeters.removeAll()
+        measurementStore.clearMeasurements()
         lastSolvedRawPoint = nil
         lastIBeaconRangingUpdateAt = nil
         lastHeadingRadians = nil

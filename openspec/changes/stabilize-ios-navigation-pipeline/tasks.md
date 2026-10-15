@@ -38,12 +38,12 @@
 
 ## 5. Measurement Layer
 
-- [ ] 5.1 Key Kalman filters by `(beaconName, source)`; create both lazily in `syncKalmanFiltersWithBeacons`.
-- [ ] 5.2 Store the last ranging timestamp per beacon; in `processBufferAndCalculate` skip RSSI processing for beacons with ranging data younger than the stale age.
-- [ ] 5.3 Remove the 18 % jump clamp and the 0.28 blend from `stabilizedIBeaconDistance`; keep clamping and the ranging Kalman filter.
-- [ ] 5.4 Remove the `calculateLocation` call from `handleRangedIBeacons`; position solving runs only from the timer.
-- [ ] 5.5 Remove `iBeaconAccuracyBlendAlpha` and `maxAcceptedAccuracyJumpMeters` from `StabilizedNavigationConfig`.
-- [ ] 5.6 Add tests: both sources fresh uses ranging only; ranging stale for 2.5 s uses RSSI; one tick with three ranging callbacks yields one solution.
+- [x] 5.1 Key Kalman filters by `(beaconName, source)`; create both lazily in `syncKalmanFiltersWithBeacons`.
+- [x] 5.2 Store the last ranging timestamp per beacon; in `processBufferAndCalculate` skip RSSI processing for beacons with ranging data younger than the stale age.
+- [x] 5.3 Remove the 18 % jump clamp and the 0.28 blend from `stabilizedIBeaconDistance`; keep clamping and the ranging Kalman filter.
+- [x] 5.4 Remove the `calculateLocation` call from `handleRangedIBeacons`; position solving runs only from the timer.
+- [x] 5.5 Remove `iBeaconAccuracyBlendAlpha` and `maxAcceptedAccuracyJumpMeters` from `StabilizedNavigationConfig`.
+- [x] 5.6 Add tests: both sources fresh uses ranging only; ranging stale for 2.5 s uses RSSI; one tick with three ranging callbacks yields one solution.
 
 ## 6. Estimator And Projection
 

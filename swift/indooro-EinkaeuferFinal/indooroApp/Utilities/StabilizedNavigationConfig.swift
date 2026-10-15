@@ -21,8 +21,6 @@ struct BeaconPositioningConfig {
     var pathLossExponent: Float = 2.8
     var solverResidualScaleMeters: Float = 0.85
     var solverDamping: Float = 0.55
-    var iBeaconAccuracyBlendAlpha: Float = 0.28
-    var maxAcceptedAccuracyJumpMeters: Float = 2.2
 }
 
 struct PoseFusionConfig {

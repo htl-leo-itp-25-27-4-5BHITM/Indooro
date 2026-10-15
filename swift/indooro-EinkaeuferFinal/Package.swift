@@ -21,6 +21,7 @@ let package = Package(
                 "Utilities/KalmanFilter.swift",
                 "Utilities/BeaconPositionSolver.swift",
                 "Utilities/PoseFusionService.swift",
+                "Utilities/BeaconMeasurementStore.swift",
                 "Utilities/MapMatcher.swift",
                 "Utilities/RouteManager.swift",
                 "Utilities/StabilizedNavigationConfig.swift"
