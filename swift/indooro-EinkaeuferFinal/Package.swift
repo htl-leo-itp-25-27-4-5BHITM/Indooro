@@ -23,6 +23,7 @@ let package = Package(
                 "Utilities/WalkableProjector.swift",
                 "Utilities/BeaconMeasurementStore.swift",
                 "Utilities/NavigationSessionCore.swift",
+                "Utilities/TourPlanner.swift",
                 "Utilities/StabilizedNavigationConfig.swift"
             ]
         ),

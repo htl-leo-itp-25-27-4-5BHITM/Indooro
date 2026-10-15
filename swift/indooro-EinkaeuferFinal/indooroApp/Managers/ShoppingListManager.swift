@@ -101,14 +101,32 @@ private func movedItems<T>(_ items: [T], fromOffsets: IndexSet, toOffset: Int) -
     return reordered
 }
 
+/// Aufgeloeste Liste: Stopps (ungeordnet, in Listenreihenfolge), unaufloesbare und erledigte Artikel.
+struct ResolvedShoppingList {
+    let listID: UUID
+    let listName: String
+    let stops: [ShoppingStop]
+    let unresolvedItems: [ShoppingListItem]
+    let completedItems: [ShoppingListItem]
+    let totalStopCount: Int
+    let totalProductCount: Int
+}
+
+extension ShoppingRouteMode {
+    var planningMode: TourPlanningMode {
+        self == .optimized ? .optimized : .listOrder
+    }
+}
+
+extension ShoppingStop {
+    var planStop: TourPlanStop {
+        TourPlanStop(id: id, title: title, mapPoint: SIMD2<Float>(mapPoint), orderSeed: orderSeed)
+    }
+}
+
 enum ShoppingStopResolver {
-    static func makeSnapshot(
-        for list: ShoppingList,
-        routeMode: ShoppingRouteMode,
-        userPosition: CGPoint?,
-        graph: IndoorGraph?,
-        layoutElements: [LayoutElement]
-    ) -> ShoppingRouteSnapshot {
+    /// Loest die offenen Artikel zu Stopps auf, ohne zu ordnen oder zu planen.
+    static func resolve(for list: ShoppingList, layoutElements: [LayoutElement]) -> ResolvedShoppingList {
         let completedItems = list.items
             .filter { $0.status.isCompleted }
             .sorted { $0.updatedAt > $1.updatedAt }
@@ -145,13 +163,6 @@ enum ShoppingStopResolver {
             )
         }
 
-        let orderedStops = MultiStopRoutePlanner.order(
-            stops: stops,
-            startingAt: userPosition,
-            graph: graph,
-            mode: routeMode
-        )
-
         let totalStopCount = Set<Int64>(
             list.items.compactMap { item in
                 guard let layoutCode = item.layoutCode else {
@@ -161,16 +172,91 @@ enum ShoppingStopResolver {
             }
         ).count
 
-        return ShoppingRouteSnapshot(
+        return ResolvedShoppingList(
             listID: list.id,
             listName: list.name,
-            routeMode: routeMode,
-            orderedStops: orderedStops,
+            stops: listOrdered(stops),
             unresolvedItems: unresolvedItems,
             completedItems: completedItems,
             totalStopCount: totalStopCount,
             totalProductCount: list.items.reduce(0) { $0 + $1.quantity }
         )
+    }
+
+    /// Stopps in Listenreihenfolge (orderSeed, Titel).
+    static func listOrdered(_ stops: [ShoppingStop]) -> [ShoppingStop] {
+        let byID = Dictionary(stops.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return TourPlanner.listOrder(stops.map(\.planStop)).compactMap { byID[$0.id] }
+    }
+
+    /// Planungsstart: projizierte Position, sonst Mitte des Eingangs, sonst `nil` (Listenreihenfolge).
+    static func planningStart(position: CGPoint?, layoutElements: [LayoutElement]) -> SIMD2<Float>? {
+        if let position {
+            return SIMD2<Float>(position)
+        }
+        return entrancePoint(in: layoutElements)
+    }
+
+    static func entrancePoint(in layoutElements: [LayoutElement]) -> SIMD2<Float>? {
+        guard let entrance = layoutElements.first(where: { $0.type == "entrance" }) else {
+            return nil
+        }
+        return SIMD2<Float>(
+            Float(entrance.x + (entrance.width ?? 1) / 2),
+            Float(entrance.y + (entrance.height ?? 1) / 2)
+        )
+    }
+
+    /// Ordnet Stopps mit dem `TourPlanner` (nur bei Planungsereignissen aufrufen).
+    static func orderedStops(
+        _ stops: [ShoppingStop],
+        start: SIMD2<Float>?,
+        graph: IndoorGraph?,
+        mode: ShoppingRouteMode
+    ) -> [ShoppingStop] {
+        let byID = Dictionary(stops.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let ordered = TourPlanner.order(
+            stops: stops.map(\.planStop),
+            start: start,
+            graph: graph,
+            mode: mode.planningMode
+        )
+        return ordered.compactMap { byID[$0.id] }
+    }
+
+    static func makeSnapshot(
+        from resolved: ResolvedShoppingList,
+        routeMode: ShoppingRouteMode,
+        orderedStops: [ShoppingStop]
+    ) -> ShoppingRouteSnapshot {
+        ShoppingRouteSnapshot(
+            listID: resolved.listID,
+            listName: resolved.listName,
+            routeMode: routeMode,
+            orderedStops: orderedStops,
+            unresolvedItems: resolved.unresolvedItems,
+            completedItems: resolved.completedItems,
+            totalStopCount: resolved.totalStopCount,
+            totalProductCount: resolved.totalProductCount
+        )
+    }
+
+    /// Vorschau fuer Listen ohne Tour: plant einmal ab Start (projizierte Position, sonst Eingang).
+    static func makeSnapshot(
+        for list: ShoppingList,
+        routeMode: ShoppingRouteMode,
+        userPosition: CGPoint?,
+        graph: IndoorGraph?,
+        layoutElements: [LayoutElement]
+    ) -> ShoppingRouteSnapshot {
+        let resolved = resolve(for: list, layoutElements: layoutElements)
+        let ordered = orderedStops(
+            resolved.stops,
+            start: planningStart(position: userPosition, layoutElements: layoutElements),
+            graph: graph,
+            mode: routeMode
+        )
+        return makeSnapshot(from: resolved, routeMode: routeMode, orderedStops: ordered)
     }
 
     private static func resolveShelf(
@@ -203,73 +289,6 @@ enum ShoppingStopResolver {
                 y: shelf.y + (shelf.height ?? 1) / 2
             )
         )
-    }
-}
-
-enum MultiStopRoutePlanner {
-    static func order(
-        stops: [ShoppingStop],
-        startingAt userPosition: CGPoint?,
-        graph: IndoorGraph?,
-        mode: ShoppingRouteMode
-    ) -> [ShoppingStop] {
-        let listOrderedStops = stops.sorted { lhs, rhs in
-            if lhs.orderSeed == rhs.orderSeed {
-                return lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
-            }
-            return lhs.orderSeed < rhs.orderSeed
-        }
-
-        // Der Graph gehoert BeaconManager (einmal je Layout-Revision); hier wird er nur gelesen.
-        guard mode == .optimized,
-              let userPosition,
-              let graph,
-              listOrderedStops.count > 1 else {
-            return listOrderedStops
-        }
-
-        var remainingStops = listOrderedStops
-        var orderedStops: [ShoppingStop] = []
-        var currentPoint = SIMD2<Float>(userPosition)
-
-        while !remainingStops.isEmpty {
-            let nextIndex = remainingStops.indices.min { lhs, rhs in
-                let lhsDistance = routeDistance(
-                    from: currentPoint,
-                    to: remainingStops[lhs].mapPoint,
-                    graph: graph
-                )
-                let rhsDistance = routeDistance(
-                    from: currentPoint,
-                    to: remainingStops[rhs].mapPoint,
-                    graph: graph
-                )
-
-                if lhsDistance == rhsDistance {
-                    return remainingStops[lhs].orderSeed < remainingStops[rhs].orderSeed
-                }
-                return lhsDistance < rhsDistance
-            }
-
-            guard let nextIndex else {
-                break
-            }
-
-            let nextStop = remainingStops.remove(at: nextIndex)
-            orderedStops.append(nextStop)
-            currentPoint = SIMD2<Float>(nextStop.mapPoint)
-        }
-
-        return orderedStops
-    }
-
-    private static func routeDistance(
-        from start: SIMD2<Float>,
-        to endPoint: CGPoint,
-        graph: IndoorGraph
-    ) -> Float {
-        let end = SIMD2<Float>(endPoint)
-        return graph.plannedRouteCost(from: start, to: end, floor: 0)
     }
 }
 
@@ -947,39 +966,18 @@ final class ShoppingListManager: ObservableObject {
     }
 }
 
-/// Ereignis, das einen neuen Plan an die Navigations-Session meldet.
+/// Ereignis, das einen neuen Plan an die Navigations-Session meldet (design.md D1). Positionsupdates
+/// sind kein Ereignis.
 enum ShoppingSyncEvent {
     case listChanged
     case routeModeToggled
+    case replanRequested
+    case layoutChanged
 }
 
 extension ShoppingStop {
     var navigationStop: NavigationStop {
         NavigationStop(id: id, title: title, mapPoint: SIMD2<Float>(mapPoint))
-    }
-}
-
-extension ShoppingRouteSnapshot {
-    /// Setzt den Stopp mit dieser ID an die erste Stelle (der aktive Stopp gehoert der Session).
-    func promoting(stopID: String?) -> ShoppingRouteSnapshot {
-        guard let stopID,
-              let index = orderedStops.firstIndex(where: { $0.id == stopID }),
-              index > 0 else {
-            return self
-        }
-        var stops = orderedStops
-        let active = stops.remove(at: index)
-        stops.insert(active, at: 0)
-        return ShoppingRouteSnapshot(
-            listID: listID,
-            listName: listName,
-            routeMode: routeMode,
-            orderedStops: stops,
-            unresolvedItems: unresolvedItems,
-            completedItems: completedItems,
-            totalStopCount: totalStopCount,
-            totalProductCount: totalProductCount
-        )
     }
 }
 
@@ -1010,7 +1008,7 @@ final class ShoppingSessionManager: ObservableObject {
         activeListID != nil
     }
 
-    /// Verbindet die Einkaufs-Session mit der Navigations-Session, die Route und aktiven Stopp besitzt.
+    /// Verbindet die Einkaufs-Session mit der Navigations-Session, die Plan, Route und aktiven Stopp besitzt.
     func bind(navigationSession: NavigationSession) {
         self.navigationSession = navigationSession
     }
@@ -1042,6 +1040,16 @@ final class ShoppingSessionManager: ObservableObject {
         sync(listManager: listManager, beaconManager: beaconManager, event: .routeModeToggled)
     }
 
+    /// „Neu planen“: Reihenfolge der offenen Stopps ab der aktuellen Position, der aktive Stopp darf wechseln.
+    func replan(
+        listManager: ShoppingListManager,
+        beaconManager: BeaconManager
+    ) {
+        sync(listManager: listManager, beaconManager: beaconManager, event: .replanRequested)
+    }
+
+    /// Meldet ein Planungsereignis. Der Plan wird nur hier (und nie bei Positionsupdates) berechnet; der
+    /// Snapshot entsteht immer aus dem in der Navigations-Session gespeicherten Plan.
     func sync(
         listManager: ShoppingListManager,
         beaconManager: BeaconManager,
@@ -1057,31 +1065,22 @@ final class ShoppingSessionManager: ObservableObject {
             return
         }
 
-        let snapshot = ShoppingStopResolver.makeSnapshot(
-            for: list,
-            routeMode: routeMode,
-            userPosition: beaconManager.userPosition ?? beaconManager.rawUserPosition,
-            graph: beaconManager.navigationGraph,
-            layoutElements: beaconManager.shelves
-        )
+        let resolved = ShoppingStopResolver.resolve(for: list, layoutElements: beaconManager.shelves)
 
-        // Die Session behaelt den aktiven Stopp, solange er im Plan vorkommt; ein erneutes Setzen
-        // desselben Ziels baut keine Route neu.
-        let plan = snapshot.orderedStops.map(\.navigationStop)
-        if let navigationSession {
-            if plan.isEmpty {
-                navigationSession.stopTour()
-            } else if navigationSession.mode != .tour {
-                navigationSession.startTour(plan: plan)
-            } else if event == .routeModeToggled {
-                navigationSession.routeModeToggled(plan: plan)
-            } else {
-                navigationSession.listChanged(plan: plan)
-            }
-            self.snapshot = snapshot.promoting(stopID: navigationSession.activeStopID)
-        } else {
-            self.snapshot = snapshot
+        guard let session = navigationSession else {
+            let ordered = ShoppingStopResolver.orderedStops(
+                resolved.stops,
+                start: planningStart(beaconManager: beaconManager),
+                graph: beaconManager.navigationGraph,
+                mode: routeMode
+            )
+            snapshot = ShoppingStopResolver.makeSnapshot(from: resolved, routeMode: routeMode, orderedStops: ordered)
+            revision += 1
+            return
         }
+
+        apply(event: event, resolved: resolved, session: session, beaconManager: beaconManager)
+        snapshot = storedSnapshot(resolved: resolved, session: session)
         revision += 1
     }
 
@@ -1098,7 +1097,7 @@ final class ShoppingSessionManager: ObservableObject {
         return ShoppingStopResolver.makeSnapshot(
             for: list,
             routeMode: mode ?? routeMode,
-            userPosition: beaconManager.userPosition ?? beaconManager.rawUserPosition,
+            userPosition: beaconManager.userPosition,
             graph: beaconManager.navigationGraph,
             layoutElements: beaconManager.shelves
         )
@@ -1126,29 +1125,15 @@ final class ShoppingSessionManager: ObservableObject {
         )
     }
 
+    /// Erledigt/uebersprungen wirkt auf den gespeicherten aktiven Stopp. Die Session rueckt auf den
+    /// naechsten Stopp des gespeicherten Plans vor; es wird nichts neu optimiert.
     private func advanceCurrentStop(
         status: ShoppingListItemStatus,
         listManager: ShoppingListManager,
         beaconManager: BeaconManager
     ) {
         guard let activeListID,
-              let list = listManager.list(with: activeListID) else {
-            return
-        }
-
-        let freshSnapshot = ShoppingStopResolver.makeSnapshot(
-            for: list,
-            routeMode: routeMode,
-            userPosition: beaconManager.userPosition ?? beaconManager.rawUserPosition,
-            graph: beaconManager.navigationGraph,
-            layoutElements: beaconManager.shelves
-        )
-
-        // Erledigt/uebersprungen wirkt auf den gespeicherten aktiven Stopp der Session, nicht auf
-        // den Stopp, der gerade am naechsten liegt.
-        let activeID = navigationSession?.activeStopID
-        guard let currentStop = freshSnapshot.orderedStops.first(where: { $0.id == activeID })
-            ?? freshSnapshot.currentStop else {
+              let currentStop = snapshot?.currentStop else {
             sync(listManager: listManager, beaconManager: beaconManager)
             return
         }
@@ -1158,8 +1143,79 @@ final class ShoppingSessionManager: ObservableObject {
         } else {
             navigationSession?.stopCompleted()
         }
-        listManager.markItems(currentStop.itemIDs, in: freshSnapshot.listID, status: status)
+        listManager.markItems(currentStop.itemIDs, in: activeListID, status: status)
+        // Die Stoppmenge entspricht jetzt dem gespeicherten Plan: nur der Snapshot wird neu aufgebaut.
         sync(listManager: listManager, beaconManager: beaconManager)
+    }
+
+    // MARK: - Planung
+
+    private func planningStart(beaconManager: BeaconManager) -> SIMD2<Float>? {
+        ShoppingStopResolver.planningStart(position: beaconManager.userPosition, layoutElements: beaconManager.shelves)
+    }
+
+    private func apply(
+        event: ShoppingSyncEvent,
+        resolved: ResolvedShoppingList,
+        session: NavigationSession,
+        beaconManager: BeaconManager
+    ) {
+        func fullPlan() -> [NavigationStop] {
+            ShoppingStopResolver.orderedStops(
+                resolved.stops,
+                start: planningStart(beaconManager: beaconManager),
+                graph: beaconManager.navigationGraph,
+                mode: routeMode
+            ).map(\.navigationStop)
+        }
+
+        switch event {
+        case .routeModeToggled:
+            if session.mode == .tour {
+                session.routeModeToggled(plan: fullPlan())
+            } else {
+                session.startTour(plan: fullPlan())
+            }
+        case .replanRequested:
+            if session.mode == .tour {
+                session.replanRequested(plan: fullPlan())
+            } else {
+                session.startTour(plan: fullPlan())
+            }
+        case .layoutChanged:
+            session.layoutChanged(plan: fullPlan())
+        case .listChanged:
+            guard session.mode == .tour else {
+                session.startTour(plan: fullPlan())
+                return
+            }
+            let planStops = resolved.stops.map(\.planStop)
+            let entrance = ShoppingStopResolver.entrancePoint(in: beaconManager.shelves)
+            let projected = beaconManager.userPosition.map { SIMD2<Float>($0) }
+            if let plan = TourPlanner.planAfterListChange(
+                resolved: planStops,
+                storedPlanIDs: session.plan.map(\.id),
+                activeStopID: session.activeStopID,
+                projectedStart: projected,
+                entranceStart: entrance,
+                graph: beaconManager.navigationGraph,
+                mode: routeMode.planningMode
+            ) {
+                session.listChanged(plan: plan.map(\.navigationStop))
+            }
+        }
+    }
+
+    /// Snapshot aus dem gespeicherten Plan der Session: gleiche Reihenfolge, aktiver Stopp zuerst.
+    private func storedSnapshot(
+        resolved: ResolvedShoppingList,
+        session: NavigationSession
+    ) -> ShoppingRouteSnapshot {
+        let byID = Dictionary(resolved.stops.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        var ordered = session.plan.compactMap { byID[$0.id] }
+        let plannedIDs = Set(ordered.map(\.id))
+        ordered.append(contentsOf: resolved.stops.filter { !plannedIDs.contains($0.id) })
+        return ShoppingStopResolver.makeSnapshot(from: resolved, routeMode: routeMode, orderedStops: ordered)
     }
 
     func banner() -> ShoppingSessionBanner? {

@@ -145,16 +145,6 @@ final class NavigationSession: ObservableObject {
         publish()
     }
 
-    /// Hilfe fuer die Einkaufs-Session, bis die Planung (Gruppe 9) Ereignisse einzeln sendet:
-    /// laeuft schon eine Tour, wirkt der neue Plan als `listChanged`, sonst als `startTour`.
-    func syncTour(plan: [NavigationStop]) {
-        if core.mode == .tour {
-            listChanged(plan: plan)
-        } else {
-            startTour(plan: plan)
-        }
-    }
-
     // MARK: - Intern
 
     private func handle(_ sample: NavigationSample) {

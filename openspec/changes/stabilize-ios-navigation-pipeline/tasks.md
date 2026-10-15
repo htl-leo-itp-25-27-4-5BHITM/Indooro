@@ -84,16 +84,16 @@
 
 ## 9. Shopping Planning
 
-- [ ] 9.1 Add `TourPlanner` (pure, package source): distance matrix from start and stops via 8.5, nearest neighbor with tie-break order seed then title, 2-opt on the open path with minimum gain 0.01 m and at most 50 passes (provisional).
-- [ ] 9.2 Replace `MultiStopRoutePlanner.order` with `TourPlanner`; list-order mode bypasses it.
-- [ ] 9.3 Resolve the planning start point: projected position, else entrance element center, else list order.
-- [ ] 9.4 Change `ShoppingSessionManager` to persist active list and route mode only, and to build `ShoppingRouteSnapshot` from the session's stored plan and active stop; `currentStop` returns the active stop.
-- [ ] 9.5 Remove `onChange(of: beaconManager.userPosition)` and `onChange(of: beaconManager.rawUserPosition)` from `Views/Main/ContentView.swift`.
-- [ ] 9.6 Map remaining triggers to session events: list revision → `listChanged`, layout revision → `layoutChanged`, tour start/stop, route mode toggle, done/skip.
-- [ ] 9.7 Implement `listChanged` re-planning from the active stop's map point; rebuild the route only if the active stop changed or moved.
-- [ ] 9.8 Implement `advanceCurrentStop` without a fresh snapshot: mark items of the stored active stop and advance to the next planned stop.
-- [ ] 9.9 Replace `selectedPreview` in `Views/Main/ShoppingFeatureViews.swift` with a stored preview that is recomputed only when the selected list, its open items, the route mode, or the layout revision changes.
-- [ ] 9.10 Add tests: 2-opt result never longer than nearest neighbor; crossing example improves; 100 position changes without event leave the plan untouched; skip advances to the stored next stop even if another stop is closer; adding a product keeps the active stop and route; removing the active stop's items re-plans from the projected position; planning time for 25 stops is recorded.
+- [x] 9.1 Add `TourPlanner` (pure, package source): distance matrix from start and stops via 8.5, nearest neighbor with tie-break order seed then title, 2-opt on the open path with minimum gain 0.01 m and at most 50 passes (provisional).
+- [x] 9.2 Replace `MultiStopRoutePlanner.order` with `TourPlanner`; list-order mode bypasses it.
+- [x] 9.3 Resolve the planning start point: projected position, else entrance element center, else list order.
+- [x] 9.4 Change `ShoppingSessionManager` to persist active list and route mode only, and to build `ShoppingRouteSnapshot` from the session's stored plan and active stop; `currentStop` returns the active stop.
+- [x] 9.5 Remove `onChange(of: beaconManager.userPosition)` and `onChange(of: beaconManager.rawUserPosition)` from `Views/Main/ContentView.swift`.
+- [x] 9.6 Map remaining triggers to session events: list revision → `listChanged`, layout revision → `layoutChanged`, tour start/stop, route mode toggle, done/skip.
+- [x] 9.7 Implement `listChanged` re-planning from the active stop's map point; rebuild the route only if the active stop changed or moved.
+- [x] 9.8 Implement `advanceCurrentStop` without a fresh snapshot: mark items of the stored active stop and advance to the next planned stop.  (Umgesetzt: Der Stopp kommt aus dem gespeicherten Snapshot, die Session rueckt vor; das folgende `sync` plant nichts neu, weil die Stoppmenge dem gespeicherten Plan entspricht, und baut nur den Snapshot aus dem Plan neu.)
+- [x] 9.9 Replace `selectedPreview` in `Views/Main/ShoppingFeatureViews.swift` with a stored preview that is recomputed only when the selected list, its open items, the route mode, or the layout revision changes.
+- [x] 9.10 Add tests (`TourPlannerTests`; Nearest-Neighbour-Baseline invertiert, `BaselineDefectTests.swift` entfernt): 2-opt result never longer than nearest neighbor; crossing example improves; 100 position changes without event leave the plan untouched; skip advances to the stored next stop even if another stop is closer; adding a product keeps the active stop and route; removing the active stop's items re-plans from the projected position; planning time for 25 stops is recorded.
 
 ## 10. Map UI
 

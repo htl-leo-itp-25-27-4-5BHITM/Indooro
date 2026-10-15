@@ -59,7 +59,7 @@ struct ContentView: View {
                 sessionManager: shoppingSessionManager,
                 beaconManager: beaconManager,
                 onOpenShopping: { selectedSection = .shopping },
-                onRecipeItemsAdded: syncShoppingSession
+                onRecipeItemsAdded: { syncShoppingSession() }
             )
             .tabItem {
                 Label("Rezepte", systemImage: "fork.knife")
@@ -112,18 +112,10 @@ struct ContentView: View {
         }
         .onChange(of: beaconManager.layoutRevision) { _, _ in
             if shoppingSessionManager.isActive {
-                syncShoppingSession()
+                syncShoppingSession(event: .layoutChanged)
             } else if let targetProduct {
                 beaconManager.setTargetProduct(targetProduct)
             }
-        }
-        .onChange(of: beaconManager.userPosition) { _, _ in
-            guard shoppingSessionManager.isActive else { return }
-            syncShoppingSession()
-        }
-        .onChange(of: beaconManager.rawUserPosition) { _, _ in
-            guard shoppingSessionManager.isActive else { return }
-            syncShoppingSession()
         }
         .onChange(of: shoppingListManager.revision) { _, _ in
             guard shoppingSessionManager.isActive else { return }
@@ -212,10 +204,11 @@ struct ContentView: View {
         shoppingSessionManager.stopSession(beaconManager: beaconManager)
     }
 
-    private func syncShoppingSession() {
+    private func syncShoppingSession(event: ShoppingSyncEvent = .listChanged) {
         shoppingSessionManager.sync(
             listManager: shoppingListManager,
-            beaconManager: beaconManager
+            beaconManager: beaconManager,
+            event: event
         )
     }
 

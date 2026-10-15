@@ -5,6 +5,7 @@ struct StabilizedNavigationConfig {
     var poseFusion = PoseFusionConfig()
     var route = RouteStabilityConfig()
     var confidence = ConfidenceConfig()
+    var planning = PlanningConfig()
 
     static let `default` = StabilizedNavigationConfig()
 }
@@ -50,4 +51,10 @@ struct ConfidenceConfig {
     var lowThreshold: Float = 0.35
     var recoverThreshold: Float = 0.55
     var minBeaconCountForTracking: Int = 3
+}
+
+struct PlanningConfig {
+    // 2-opt auf dem offenen Pfad: ein Zug wird nur angewendet, wenn er mehr als dieses Minimum spart.
+    var twoOptMinimumGainMeters: Float = 0.01 // provisional
+    var twoOptMaxPasses: Int = 50 // provisional
 }

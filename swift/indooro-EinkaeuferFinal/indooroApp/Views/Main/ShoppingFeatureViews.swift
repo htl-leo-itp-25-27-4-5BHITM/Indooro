@@ -1159,6 +1159,7 @@ struct ShoppingListsPage: View {
     @State private var sharePresentation: ShoppingSharePresentation?
     @State private var showsCompletedItems = false
     @State private var showsUnresolvedItems = false
+    @State private var storedPreview: ShoppingRouteSnapshot?
 
     private let accent = Color(red: 0.12, green: 0.50, blue: 0.39)
 
@@ -1178,16 +1179,57 @@ struct ShoppingListsPage: View {
         beaconManager.activeLayoutStore ?? beaconManager.detectedStore
     }
 
+    /// Vorschau der gewaehlten Liste. Die aktive Tour-Liste liest den gespeicherten Snapshot der
+    /// Einkaufs-Session; andere Listen nutzen `storedPreview`, das nur bei Aenderung von Liste,
+    /// offenen Artikeln, Fahrmodus oder Layout-Revision neu berechnet wird (nie im View-Body).
     private var selectedPreview: ShoppingRouteSnapshot? {
         guard let selectedList else {
             return nil
         }
+        if selectedList.id == sessionManager.activeListID,
+           let snapshot = sessionManager.snapshot,
+           snapshot.listID == selectedList.id {
+            return snapshot
+        }
+        return storedPreview
+    }
 
-        return sessionManager.previewSnapshot(
+    private struct PreviewKey: Equatable {
+        struct Item: Equatable {
+            let id: UUID
+            let layoutCode: String?
+            let sortOrder: Int
+        }
+
+        let listID: UUID?
+        let openItems: [Item]
+        let routeMode: ShoppingRouteMode
+        let layoutRevision: Int
+        let isActiveList: Bool
+    }
+
+    private var previewKey: PreviewKey {
+        PreviewKey(
+            listID: selectedList?.id,
+            openItems: openItems.map {
+                PreviewKey.Item(id: $0.id, layoutCode: $0.layoutCode, sortOrder: $0.effectiveSortOrder)
+            },
+            routeMode: sessionManager.routeMode,
+            layoutRevision: beaconManager.layoutRevision,
+            isActiveList: selectedList?.id == sessionManager.activeListID
+        )
+    }
+
+    private func recomputeStoredPreview() {
+        guard let selectedList, selectedList.id != sessionManager.activeListID else {
+            storedPreview = nil
+            return
+        }
+        storedPreview = sessionManager.previewSnapshot(
             for: selectedList.id,
             listManager: listManager,
             beaconManager: beaconManager,
-            mode: selectedList.id == sessionManager.activeListID ? sessionManager.routeMode : .optimized
+            mode: .optimized
         )
     }
 
@@ -1304,6 +1346,9 @@ struct ShoppingListsPage: View {
             ShareSheet(activityItems: [presentation.fileURL]) { completed in
                 completeShare(presentation, completed: completed)
             }
+        }
+        .onChange(of: previewKey, initial: true) { _, _ in
+            recomputeStoredPreview()
         }
         .onAppear {
             preloadUpcomingUpsells()
