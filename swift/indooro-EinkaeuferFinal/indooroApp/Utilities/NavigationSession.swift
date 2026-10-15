@@ -13,6 +13,8 @@ final class NavigationSession: ObservableObject {
     @Published private(set) var plan: [NavigationStop] = []
     @Published private(set) var activeStopID: String?
     @Published private(set) var navigationRoute: NavigationRoute = .empty
+    /// Nur der Rest der Route (vom Fortschrittspunkt bis zum Ziel); die Karte zeichnet diese Polylinie.
+    @Published private(set) var remainingRoute: NavigationRoute = .empty
     @Published private(set) var routeProgress: Float = 0
     @Published private(set) var remainingRouteLength: Float = 0
     @Published private(set) var isLowConfidence = false
@@ -172,6 +174,7 @@ final class NavigationSession: ObservableObject {
 
         let route = core.activeRoute.map { NavigationRoute(points: $0.points) } ?? .empty
         assign(\.navigationRoute, route)
+        assign(\.remainingRoute, NavigationRoute(points: core.remainingRoutePolyline))
 
         let target = core.activeStop.map { CGPoint(x: CGFloat($0.mapPoint.x), y: CGFloat($0.mapPoint.y)) }
         assign(\.targetPosition, target)

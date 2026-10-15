@@ -547,6 +547,12 @@ struct StoreMapPage: View {
                         listManager: shoppingListManager,
                         beaconManager: beaconManager
                     )
+                },
+                onReplan: {
+                    shoppingSessionManager.replan(
+                        listManager: shoppingListManager,
+                        beaconManager: beaconManager
+                    )
                 }
             )
             .padding(.horizontal, 16)
@@ -682,13 +688,8 @@ struct StoreMapPage: View {
     }
 
     private var activeRouteDistanceMeters: Double? {
-        let routePoints = navigationSession.navigationRoute.points
-        if routePoints.count > 1 {
-            return zip(routePoints, routePoints.dropFirst()).reduce(0) { partialResult, segment in
-                let deltaX = Double(segment.1.x - segment.0.x)
-                let deltaY = Double(segment.1.y - segment.0.y)
-                return partialResult + hypot(deltaX, deltaY)
-            }
+        if navigationSession.remainingRoute.pointCount > 1 {
+            return Double(navigationSession.remainingRouteLength)
         }
 
         guard let user = displayUserPosition, let target = navigationSession.targetPosition else {

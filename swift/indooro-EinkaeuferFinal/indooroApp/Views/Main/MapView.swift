@@ -32,7 +32,7 @@ struct MapView: View {
             let fittedPixelsPerMeter = pixelsPerMeter * Double(fitScale)
             let mapWidth = CGFloat(beaconManager.gridWidth * fittedPixelsPerMeter)
             let mapHeight = CGFloat(beaconManager.gridHeight * fittedPixelsPerMeter)
-            let routePoints = navigationSession.navigationRoute.cgPoints.map {
+            let routePoints = navigationSession.remainingRoute.cgPoints.map {
                 CGPoint(x: $0.x * fittedPixelsPerMeter, y: $0.y * fittedPixelsPerMeter)
             }
             let allowsManualMapTap = showsDebugMapElements || !beaconManager.tapSetsTarget

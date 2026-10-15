@@ -10,8 +10,8 @@ Gemessen mit `swift test` (`BaselineDefectTests`) vor jeder Verhaltensaenderung.
   Laeufen (12 Laeufe: Sprungverschiebung 0 bis 2 m, Routenformen 4 bis 8); die Tabelle zeigt den haeufigsten Wert
 - Quelle der Defekte: `docs/NAVIGATION_REVIEW.md` C.1-C.13
 
-Die Tests bestehen heute, weil sie den Defekt behaupten. Sie werden in den Tasks
-6.10 (PoseFusion, MapMatcher), 8.6 (Routenform) und 9.10 (Nearest-Neighbour) invertiert.
+Die Tests bestanden zum Messzeitpunkt, weil sie den Defekt behaupteten. Sie wurden in den Tasks
+6.10 (PoseFusion, MapMatcher), 8.6 (Routenform) und 9.10 (Nearest-Neighbour) invertiert; `BaselineDefectTests.swift` existiert nicht mehr.
 
 | Kennzahl | Wert |
 | --- | --- |
@@ -79,3 +79,20 @@ Hinweise:
   „identisch nach dem ersten Knoten“ gilt je Startknoten (ein Start im selben Knoten ergibt immer dieselbe Kantenfolge).
   Der invertierte Test prueft deshalb an einer Zellmitte (1 Form) und an der Zellecke je Startknoten (1 Form).
 - Abbiegestrafe 1.5 m, Off-Route 4.0 m / 2.5 s, Backtrack 3.0 m, Konfidenz 0.35/0.55 sind provisional (Kalibrierung Gruppe 12).
+
+## Nach den Gruppen 9-10 (Tourenplanung, Karten-UI)
+
+Gemessen mit `swift test` (`TourPlannerTests`; Ausgabe `AFTER910 key=value`), Debug-Build, M-Serie.
+Stichprobe: 10 Touren mit je 25 zufaelligen Stopps im Demo-Layout (40 x 60), Start (20.5, 8.5), Seeds 500-509.
+
+| Kennzahl | Baseline | Nach 9-10 |
+| --- | --- | --- |
+| Erster Stopp kippt bei Jitter <= 0.85 m um den Startpunkt (`routing.nearestNeighbour.distinctFirstStops`) | 2 | entfaellt: geplant wird nur bei Ereignissen; 100 Jitter-Updates aendern Plan und aktiven Stopp nie (0 Planwechsel) |
+| Mittlere Pfadlaenge Nearest Neighbor, 25 Stopps | - | 271.8 m |
+| Mittlere Pfadlaenge Nearest Neighbor + 2-opt, 25 Stopps | - | 251.3 m (-7.6 %) |
+| Planungszeit 25 Stopps (Distanzmatrix + NN + 2-opt, Maximum aus 10 Laeufen) | A* je Vergleich (~25^2/2 Routen a ~4.9 ms) | 55.8 ms |
+
+Hinweise:
+
+- Die Planungszeit ist ein Debug-Wert und fast vollstaendig Dijkstra (26 Laeufe ueber den Graphen); sie faellt nur bei Planungsereignissen an.
+- 2-opt-Parameter (Mindestgewinn 0.01 m, 50 Durchgaenge) sind provisional.

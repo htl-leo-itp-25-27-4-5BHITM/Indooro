@@ -563,23 +563,43 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     /// Spiegelt die je Tick gewaehlte Quelle (Ranging vor RSSI) in die Beacon-Anzeige.
+    /// Das Array wird einmal je Tick als Ganzes zugewiesen und nur, wenn sich die Anzeige aendert.
     private func refreshBeaconUI(at timestamp: TimeInterval) {
-        for beacon in beacons {
+        var updatedBeacons = beacons
+        var didChange = false
+
+        for index in updatedBeacons.indices {
+            let beacon = updatedBeacons[index]
+            var updated = beacon
             if let selected = measurementStore.selection(for: beacon.name, at: timestamp) {
                 let measurement = selected.measurement
-                updateBeaconUI(
-                    name: beacon.name,
-                    rssi: measurement.rssi,
-                    distance: measurement.distanceMeters,
-                    timestamp: measurement.lastSeenAt,
-                    quality: Double(measurement.quality),
-                    txPower: selected.source == .rssi
-                        ? beaconAdvertisementTxPower[beacon.name].map(Double.init)
-                        : nil
-                )
+                updated.rssi = measurement.rssi
+                updated.distance = measurement.distanceMeters
+                updated.lastSeenAt = measurement.lastSeenAt
+                updated.measurementQuality = Double(measurement.quality)
+                updated.txPower = selected.source == .rssi
+                    ? beaconAdvertisementTxPower[beacon.name].map(Double.init)
+                    : nil
             } else {
-                updateBeaconUI(name: beacon.name, rssi: 0, distance: 0, timestamp: nil, quality: 0, txPower: nil)
+                updated.rssi = 0
+                updated.distance = 0
+                updated.lastSeenAt = nil
+                updated.measurementQuality = 0
+                updated.txPower = nil
             }
+
+            if updated.rssi != beacon.rssi
+                || updated.distance != beacon.distance
+                || updated.lastSeenAt != beacon.lastSeenAt
+                || updated.measurementQuality != beacon.measurementQuality
+                || updated.txPower != beacon.txPower {
+                updatedBeacons[index] = updated
+                didChange = true
+            }
+        }
+
+        if didChange {
+            beacons = updatedBeacons
         }
     }
 
@@ -611,7 +631,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             )
 
             DispatchQueue.main.async {
-                self.rawUserPosition = CGPoint(estimate.point)
+                self.publishRawUserPosition(CGPoint(estimate.point))
             }
 
             processSensorSample(
@@ -666,7 +686,20 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         )
 
         DispatchQueue.main.async {
-            self.userPosition = CGPoint(projection.projectedPoint)
+            self.publishUserPosition(CGPoint(projection.projectedPoint))
+        }
+    }
+
+    /// Veroeffentlicht Positionen nur bei Aenderung, damit unveraenderte Ticks keine Views neu auswerten.
+    private func publishUserPosition(_ point: CGPoint) {
+        if userPosition != point {
+            userPosition = point
+        }
+    }
+
+    private func publishRawUserPosition(_ point: CGPoint) {
+        if rawUserPosition != point {
+            rawUserPosition = point
         }
     }
 
@@ -700,9 +733,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         manualCalibrations.send(event)
 
         DispatchQueue.main.async {
-            self.userPosition = CGPoint(effectivePoint)
-            self.rawUserPosition = CGPoint(effectivePoint)
-            self.userHeadingRadians = nil
+            self.publishUserPosition(CGPoint(effectivePoint))
+            self.publishRawUserPosition(CGPoint(effectivePoint))
+            self.publishUserHeading(nil)
             self.isUserHeadingReliable = false
             self.manualCalibrationEvent = event
         }
@@ -888,7 +921,22 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             smoothedDisplayHeadingRadians = preferredHeading
         }
 
-        userHeadingRadians = smoothedDisplayHeadingRadians
+        publishUserHeading(smoothedDisplayHeadingRadians)
+    }
+
+    /// Mindestaenderung der angezeigten Blickrichtung (1 Grad), damit die Karte nicht bei jedem Tick neu zeichnet.
+    private static let minimumPublishedHeadingChangeRadians: Float = .pi / 180
+
+    private func publishUserHeading(_ heading: Float?) {
+        switch (userHeadingRadians, heading) {
+        case (nil, nil):
+            return
+        case let (current?, new?):
+            guard abs(normalizeAngle(new - current)) >= Self.minimumPublishedHeadingChangeRadians else { return }
+        default:
+            break
+        }
+        userHeadingRadians = heading
     }
 
     private func alignedDeviceHeadingInMapCoordinates() -> Float? {
@@ -1967,34 +2015,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     // MARK: - RSSI helpers
 
-    private func updateBeaconUI(
-        name: String,
-        rssi: Int,
-        distance: Double,
-        timestamp: TimeInterval?,
-        quality: Double,
-        txPower: Double?
-    ) {
-        if let index = beacons.firstIndex(where: { $0.name == name }) {
-            var updated = beacons[index]
-            let current = updated
-            updated.rssi = rssi
-            updated.distance = distance
-            updated.lastSeenAt = timestamp
-            updated.measurementQuality = quality
-            updated.txPower = txPower
-            // Nur veroeffentlichen, wenn sich die Anzeige aendert (Tick laeuft fuer alle Beacons).
-            guard updated.rssi != current.rssi
-                || updated.distance != current.distance
-                || updated.lastSeenAt != current.lastSeenAt
-                || updated.measurementQuality != current.measurementQuality
-                || updated.txPower != current.txPower else {
-                return
-            }
-            beacons[index] = updated
-        }
-    }
-
     private func calculateDistance(rssi: Double, txPower: Double) -> Double {
         let exponent = (txPower - rssi) / (10.0 * pathLossExp)
         let distance = pow(10.0, exponent)
@@ -2146,7 +2166,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         lastHeadingRadians = nil
         lastHeadingTimestamp = nil
         smoothedDisplayHeadingRadians = nil
-        userHeadingRadians = nil
+        publishUserHeading(nil)
         isUserHeadingReliable = false
     }
 

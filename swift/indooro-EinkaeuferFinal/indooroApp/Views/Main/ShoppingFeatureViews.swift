@@ -38,6 +38,7 @@ struct ShoppingSessionPanel: View {
     let onMarkCurrentStopDone: () -> Void
     let onSkipCurrentStop: () -> Void
     let onToggleMode: () -> Void
+    let onReplan: () -> Void
 
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
 
@@ -65,6 +66,13 @@ struct ShoppingSessionPanel: View {
                     VStack(alignment: .trailing, spacing: 3) {
                         Button(snapshot.routeMode.title) {
                             onToggleMode()
+                        }
+                        .font(.caption2.weight(.semibold))
+                        .buttonStyle(.plain)
+                        .foregroundStyle(accent)
+
+                        Button("Neu planen") {
+                            onReplan()
                         }
                         .font(.caption2.weight(.semibold))
                         .buttonStyle(.plain)

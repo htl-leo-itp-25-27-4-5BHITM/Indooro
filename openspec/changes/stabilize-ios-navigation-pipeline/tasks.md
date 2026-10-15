@@ -97,10 +97,10 @@
 
 ## 10. Map UI
 
-- [ ] 10.1 Draw only `remainingRoutePolyline` in `Views/Main/MapView.swift` and compute the distance pill from `remainingRouteLength` in `Views/Main/StoreMapPage.swift`.
-- [ ] 10.2 Add the „Neu planen“ button to the tour panel in `StoreMapPage.swift` and send `replanRequested`.
-- [ ] 10.3 Reduce `BeaconManager` publish frequency: set `userHeadingRadians` only when it changes by at least 1 degree, update `beacons` once per tick as a whole array, and publish `isLowConfidence` only on change.
-- [ ] 10.4 Verify with the SwiftUI instrument or `Self._printChanges()` in DEBUG that idle standing does not re-evaluate `ContentView` more than once per tick.
+- [x] 10.1 Draw only `remainingRoutePolyline` in `Views/Main/MapView.swift` and compute the distance pill from `remainingRouteLength` in `Views/Main/StoreMapPage.swift`.
+- [x] 10.2 Add the „Neu planen“ button to the tour panel in `StoreMapPage.swift` and send `replanRequested`.
+- [x] 10.3 Reduce `BeaconManager` publish frequency: set `userHeadingRadians` only when it changes by at least 1 degree, update `beacons` once per tick as a whole array, and publish `isLowConfidence` only on change.
+- [ ] 10.4 Verify with the SwiftUI instrument or `Self._printChanges()` in DEBUG that idle standing does not re-evaluate `ContentView` more than once per tick.  (Offen: nicht im Simulator gemessen. Aus dem Code: `ContentView` haelt `beaconManager` und `navigationSession` als `@StateObject`; unveraenderte Werte (`userPosition`, `rawUserPosition`, `userHeadingRadians` unter 1 Grad, `beacons`, `isLowConfidence`) werden nicht mehr veroeffentlicht, `beacons` hoechstens einmal je Tick. Im Stand aendert sich die geglaettete Position jedoch weiter je Tick, daher bleibt bis zu eine Auswertung je Tick je Objekt (BeaconManager- und Session-Publish laufen in getrennten Main-Queue-Bloecken, also bis zu zwei). Nachmessen mit `_printChanges()` auf dem Geraet/Simulator.)
 
 ## 11. Documentation And Change Coordination
 
