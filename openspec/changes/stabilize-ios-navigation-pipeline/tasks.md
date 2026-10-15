@@ -30,11 +30,11 @@
 
 ## 4. Shelf Matching
 
-- [ ] 4.1 Port `LayoutElement.matchesProductLayoutCode` (exact category base, numeric meter, element meter optional) into `Models/LayoutData.swift`.
-- [ ] 4.2 Use it in `BeaconManager.setTargetProduct` and `ShoppingStopResolver.resolveShelf`; remove the `starts(with:)` matching.
-- [ ] 4.3 Clear target and route when a single target does not resolve; clear the route target on store switch and on store layout failure.
-- [ ] 4.4 Port the matching shelf lookup used by the target card in `Views/Main/StoreMapPage.swift` (`matchingShelf`) to the same function.
-- [ ] 4.5 Add tests: `520/2/3/1` resolves to `520/2`; `31/1/1/1` does not resolve to `310`; element without meter matches any meter; layout code with one segment does not resolve.
+- [x] 4.1 Port `LayoutElement.matchesProductLayoutCode` (exact category base, numeric meter, element meter optional) into `Models/LayoutData.swift`.
+- [x] 4.2 Use it in `BeaconManager.setTargetProduct` and `ShoppingStopResolver.resolveShelf`; remove the `starts(with:)` matching.
+- [x] 4.3 Clear target and route when a single target does not resolve; clear the route target on store switch and on store layout failure.
+- [x] 4.4 Port the matching shelf lookup used by the target card in `Views/Main/StoreMapPage.swift` (`matchingShelf`) to the same function.
+- [x] 4.5 Add tests: `520/2/3/1` resolves to `520/2`; `31/1/1/1` does not resolve to `310`; element without meter matches any meter; layout code with one segment does not resolve.
 
 ## 5. Measurement Layer
 
