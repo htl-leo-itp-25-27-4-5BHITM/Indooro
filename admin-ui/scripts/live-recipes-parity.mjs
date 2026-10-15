@@ -217,6 +217,54 @@ try {
     return { legacyCreate: true, legacyListVisible, candidateCreate: true, keyboardSubmit: true, persistedAfterReload: true };
   });
 
+  await check("create-stage mapping failure keeps one draft for keyboard recovery", async () => {
+    const title = `${recipeTitle} Mapping Recovery`;
+    const slug = `parity-create-mapping-${stamp}`;
+    await admin.goto(`${base}/admin/next/recipes/`, { waitUntil: "domcontentloaded" });
+    await admin.getByRole("button", { name: "Rezept anlegen" }).click();
+    const dialog = admin.getByRole("dialog");
+    await dialog.getByRole("textbox", { name: "Slug" }).fill(slug);
+    await dialog.getByRole("textbox", { name: "Titel" }).fill(title);
+    await dialog.getByRole("button", { name: "+ Zutat" }).click();
+    await dialog.getByRole("textbox", { name: "Produkt aus Katalog" }).fill(productNames[1]);
+    await dialog.getByRole("button", { name: "Suchen" }).click();
+    await dialog.locator(`.recipe-product-search select option[value='${productIds[1]}']`).waitFor({ state: "attached" });
+    await dialog.locator(".recipe-product-search select").selectOption(String(productIds[1]));
+    await dialog.getByRole("button", { name: "+ Schritt" }).click();
+    await dialog.getByRole("textbox", { name: "Schritt 1" }).fill("Mappingfehler prüfen.");
+    const mappingRoute = "**/api/admin/recipes/*/ingredients/*/product-mapping";
+    const failMapping = (route) => route.fulfill({ status: 503, json: { error: "Injected create mapping failure" } });
+    await admin.route(mappingRoute, failMapping);
+    await dialog.getByRole("button", { name: "Entwurf anlegen" }).focus();
+    await admin.keyboard.press("Enter");
+    await dialog.getByRole("alert").getByText(/Rezept wurde angelegt, aber das Mapping/).waitFor();
+    const list = ok(await api(admin, "GET", `/api/admin/recipes?q=${encodeURIComponent(slug)}&page=0&size=20`), "created draft after mapping failure");
+    assert.equal(list.content.length, 1, "a failed mapping must leave exactly one recipe");
+    const createdId = list.content[0].id;
+    recipeIds.push(createdId);
+    const detail = ok(await api(admin, "GET", `/api/admin/recipes/${createdId}`), "created draft detail");
+    assert.equal(detail.status, "DRAFT");
+    assert.equal(detail.ingredients.length, 1);
+    await admin.unroute(mappingRoute, failMapping);
+    await dialog.getByRole("button", { name: "Mapping" }).focus();
+    await admin.keyboard.press("Enter");
+    const mapping = dialog.locator(".recipe-mapping-panel");
+    await mapping.getByRole("textbox", { name: "Produkt suchen" }).fill(productNames[1]);
+    await mapping.getByRole("button", { name: "Suchen" }).focus();
+    await admin.keyboard.press("Enter");
+    const product = mapping.getByRole("radio", { name: new RegExp(productNames[1]) });
+    await product.focus();
+    await admin.keyboard.press("Space");
+    await mapping.getByRole("button", { name: "Mapping bestätigen" }).focus();
+    await admin.keyboard.press("Enter");
+    await mapping.waitFor({ state: "hidden" });
+    const status = ok(await api(admin, "GET", `/api/admin/recipes/${createdId}/mapping-status`), "recovered create mapping");
+    assert.equal(status.ingredients[0]?.product?.id, productIds[1]);
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes?q=${encodeURIComponent(slug)}&page=0&size=20`), "single recovered recipe").content.length, 1);
+    await dialog.getByRole("button", { name: "Schließen" }).click();
+    return { createdDrafts: 1, ingredients: 1, keyboardMappingRecovery: true, productId: productIds[1] };
+  });
+
   await check("legacy recipe direct-link query", async () => {
     await forceLegacy(admin);
     const response = await admin.goto(`${base}/admin/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
@@ -527,5 +575,5 @@ try {
     results.push({ check: "product fixture cleanup", result: "SKIPPED", reason: "recipe cleanup was not verified; preserve referenced products" });
   }
   await browser.close();
-  console.log(JSON.stringify({ result: process.exitCode === 1 ? "FAIL" : "PASS", scope: "local-stack-only", failedAt: process.exitCode === 1 ? failedAt : null, error: failure, failures: parityFailures, checks: results, openParity: ["legacy list filters only the first API page; late draft direct links can be missing", "legacy and candidate creation-stage mapping failures are not injected", "metadata-write failure, ingredient-create failure, and step-create/delete fault stages remain unverified", "mobile list filtering by store/tag and mapping behavior across stores are not exercised"] }));
+  console.log(JSON.stringify({ result: process.exitCode === 1 ? "FAIL" : "PASS", scope: "local-stack-only", failedAt: process.exitCode === 1 ? failedAt : null, error: failure, failures: parityFailures, checks: results, openParity: ["legacy list filters only the first API page; late draft direct links can be missing", "metadata-write failure, ingredient-create failure, and step-create/delete fault stages remain unverified", "unknown create-response outcomes and mobile store/tag mapping variants are not exercised"] }));
 }
