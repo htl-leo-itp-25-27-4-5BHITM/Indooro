@@ -1,5 +1,7 @@
 # OpenSpec implementation verification — rebuild-admin-platform
 
+2026-10-15 Categories cutover addendum: `categories` is the seventh locally enabled route. The packaged legacy/candidate probe passed list and keyboard create/edit parity with readback, exact duplicate conflict, import review without writes, scoped denials, direct refresh, empty/503 recovery, committed redirect, and fixture cleanup. The same image passed full three-role live and ten rollback pairs with seven redirects. Frontend lint, 66 unit, 97 browser, backend 135 and strict OpenSpec 41/41 passed at the source checkpoint. Products, Recipes, and Editor remain gated; import Commit remains blocked pending partial failure and overwrite reconciliation. Tasks stay 33/39 and archive is not approved.
+
 2026-10-15 atomic Category addendum: candidate create uses a separate `createOnly=true` contract with OpenSearch create semantics; legacy POST/PUT upsert remains supported. The packaged live stack returned 409 for duplicate code `310`, preserved its stored name, and then passed category create/edit. Frontend lint, 66 unit, 97 browser and backend 135 tests passed; full three-role live, ten rollback pairs, six committed redirects, and strict OpenSpec 41/41 passed. Categories still needs complete route parity and import policy, while Products, Recipes, and Editor remain gated. OpenSpec tasks remain 33/39 and archive is not approved.
 
 2026-10-15 Categories addendum: the candidate now checks an exact category code before create. Browser tests cover an existing code, 503 lookup, and absent code; the packaged live workflow confirmed category `310` was unchanged and a separate create/edit persisted. The current local image passed lint, 66 unit, 97 browser, full three-role live, ten rollback pairs, and six committed redirects. The backend POST remains an upsert, and the preflight is not atomic. Categories, Products, Recipes, and Editor remain gated; tasks stay 33/39 and archive is not approved.
@@ -28,7 +30,7 @@ Evidence cut: 2026-10-13. This is a current implementation audit, not an archive
 
 | Dimension | Current assessment |
 | --- | --- |
-| Completeness | 33/39 tasks checked; four of ten legacy routes remain gated. |
+| Completeness | 33/39 tasks checked; three of ten legacy routes remain gated. |
 | Correctness | All 14 delta requirements have implementation references; staff capability parity, multi-stage recipe failures, and complete map-routing proof still need scenario evidence. |
 | Coherence | Typed React candidate, Quarkus packaging, backend authorization, unchanged layout JSON, staged route flags, and local rollback follow `design.md`. |
 

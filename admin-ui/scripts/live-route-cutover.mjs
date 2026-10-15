@@ -53,13 +53,13 @@ try {
   }
 
   override = null;
-  for (const [legacy, candidate] of [["/admin/", "/admin/next/"], ["/admin/regions/", "/admin/next/regions/"], ["/admin/stores/", "/admin/next/stores/"], ["/admin/stores/detail/?storeId=00000000-0000-0000-0000-000000000000", "/admin/next/stores/detail/"], ["/admin/beacons/", "/admin/next/beacons/"], ["/admin/server-logs/", "/admin/next/server-logs/"]]) {
+  for (const [legacy, candidate] of [["/admin/", "/admin/next/"], ["/admin/regions/", "/admin/next/regions/"], ["/admin/stores/", "/admin/next/stores/"], ["/admin/stores/detail/?storeId=00000000-0000-0000-0000-000000000000", "/admin/next/stores/detail/"], ["/admin/beacons/", "/admin/next/beacons/"], ["/admin/categories/", "/admin/next/categories/"], ["/admin/server-logs/", "/admin/next/server-logs/"]]) {
     const probe = legacy.includes("?") ? "&probe=committed#proof" : "?probe=committed#proof";
     await page.goto(`${base}${legacy}${probe}`, { waitUntil: "domcontentloaded" });
     await page.waitForURL((url) => url.pathname === candidate && url.searchParams.get("probe") === "committed" && url.hash === "#proof" && (!legacy.includes("storeId=") || url.searchParams.get("storeId") === "00000000-0000-0000-0000-000000000000"));
     await page.locator("#root").waitFor();
   }
-  console.log(JSON.stringify({ result: "PASS", switchedAndRolledBack: entries.length, committedDashboardRedirect: true, committedRegionsRedirect: true, committedStoresRedirect: true, committedStoreDetailRedirect: true, committedBeaconsRedirect: true, committedDiagnosticsRedirect: true, committedFlagsChanged: false }));
+  console.log(JSON.stringify({ result: "PASS", switchedAndRolledBack: entries.length, committedDashboardRedirect: true, committedRegionsRedirect: true, committedStoresRedirect: true, committedStoreDetailRedirect: true, committedBeaconsRedirect: true, committedCategoriesRedirect: true, committedDiagnosticsRedirect: true, committedFlagsChanged: false }));
 } finally {
   await browser.close();
 }
