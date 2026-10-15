@@ -19,6 +19,7 @@
     "test:live": "node scripts/live-admin-smoke.mjs",
     "test:live:dashboard": "node scripts/live-dashboard-parity.mjs",
     "test:live:stores": "node scripts/live-stores-list-parity.mjs",
+    "test:live:beacons": "node scripts/live-beacons-parity.mjs",
     "test:live:cutover": "node scripts/live-route-cutover.mjs",
     "test:live:catalog": "node scripts/live-catalog-bulk.mjs",
     "test:swift-layout": "node scripts/verify-swift-layout-decode.mjs",

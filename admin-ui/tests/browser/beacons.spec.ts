@@ -307,6 +307,11 @@ test("Beacon inventory preserves legacy Code, UUID, and Store sorting", async ({
   await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [store], page: 0, size: 100, totalElements: 1 } }));
   await page.route("**/api/beacons?*", (route) => route.fulfill({ json: records }));
   await page.goto("/admin/next/beacons/");
+  await expect(page.getByRole("button", { name: "Bulk anlegen" })).toBeInViewport();
+  await expect.poll(() => page.evaluate(() => {
+    const panel = document.querySelector(".beacons-page .panel");
+    return panel ? panel.getBoundingClientRect().right <= window.innerWidth : false;
+  })).toBe(true);
   const codes = () => page.locator(".beacons-page table tbody tr td:first-child strong").allTextContents();
   await expect(page.getByRole("combobox", { name: "Sortierung" })).toHaveValue("beaconCode");
   await expect.poll(codes).toEqual(["B-1", "B-2", "B-10"]);

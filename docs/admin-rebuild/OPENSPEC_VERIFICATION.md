@@ -1,5 +1,7 @@
 # OpenSpec implementation verification — rebuild-admin-platform
 
+2026-10-15 Beacon cutover addendum: `beacons` is the sixth locally enabled route. The dedicated packaged legacy/candidate probe passed sorting, three staff scopes, manager edit/release, Store-context assignment, Code/identity conflict retention, 503/keyboard retry, legacy create/edit/assign/release/archive/bulk, and a committed old-URL redirect. Full three-role live, Store detail/list parity, and ten switch/rollback pairs with six committed redirects also passed. The legacy create drawer's null dereference was fixed. Candidate lint, 66 unit and 96 browser tests passed on the final candidate assets; backend Java remains at its 131-test checkpoint. Products, Categories, Recipes, and Editor remain gated, OpenSpec tasks stay 33/39, and archive is not approved. The candidate Beacon panel now stays inside the 1280px viewport; its wide inventory table scrolls within the panel, and the layout has a browser regression.
+
 2026-10-14 Beacon candidate addendum: Code/UUID/Store sort parity and stale-row suppression after a failed inventory reload passed focused browser regressions. The packaged image passed 66 unit, 96 browser, full three-role live, Store list/detail parity, and ten switch/rollback checks. Beacon remains gated pending a dedicated live legacy/candidate role/action/fault matrix. Five routes are enabled and five gated; OpenSpec remains 33/39.
 
 2026-10-14 Store-detail cutover addendum: `storeDetail` is the fifth locally enabled route. The packaged legacy/candidate detail probe passed three roles, keyboard edit/conflict/cancel, Beacon assign/release, published and empty Layout states, direct refresh, detail 503/retry, and archive API/audit readback. The same image passed the full live workflow, 66 unit, 94 browser, route-map Node tests, ten rollback pairs, and five committed redirects. Backend Java source is unchanged from the 131-test checkpoint. Five routes, including Editor, remain gated; OpenSpec stays 33/39 and archive is not approved.
@@ -22,7 +24,7 @@ Evidence cut: 2026-10-13. This is a current implementation audit, not an archive
 
 | Dimension | Current assessment |
 | --- | --- |
-| Completeness | 33/39 tasks checked; seven of ten legacy routes remain gated. |
+| Completeness | 33/39 tasks checked; four of ten legacy routes remain gated. |
 | Correctness | All 14 delta requirements have implementation references; staff capability parity, multi-stage recipe failures, and complete map-routing proof still need scenario evidence. |
 | Coherence | Typed React candidate, Quarkus packaging, backend authorization, unchanged layout JSON, staged route flags, and local rollback follow `design.md`. |
 

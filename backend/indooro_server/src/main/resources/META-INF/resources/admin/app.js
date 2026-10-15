@@ -308,7 +308,7 @@ async function renderBeacons() {
   setPage("Beacons", "Inventar, freie/zugewiesene Geraete und gefuehrte Assignment-Flows.", `<button class="primary" data-open-beacon>Beacon anlegen</button><button data-open-beacon-bulk>Bulk anlegen</button>`);
   const [beacons, stores] = await Promise.all([safeGet(API.beacons, []), safeGet(API.stores, [])]);
   renderBeaconPage(normalizeList(beacons), normalizeList(stores));
-  document.querySelector("[data-open-beacon]")?.addEventListener("click", () => openBeaconDrawer(null, normalizeList(beacons)));
+  document.querySelector("[data-open-beacon]")?.addEventListener("click", () => openBeaconDrawer({}, normalizeList(beacons)));
   document.querySelector("[data-open-beacon-bulk]")?.addEventListener("click", () => openBeaconBulkDrawer());
 }
 

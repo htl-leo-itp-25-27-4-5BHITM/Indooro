@@ -8,7 +8,7 @@ export const ROUTE_CUTOVER = Object.freeze({
   regions: true,
   stores: true,
   storeDetail: true,
-  beacons: false,
+  beacons: true,
   products: false,
   categories: false,
   recipes: false,
