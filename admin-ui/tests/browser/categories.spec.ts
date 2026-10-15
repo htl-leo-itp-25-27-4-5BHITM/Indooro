@@ -6,7 +6,7 @@ test("category create keeps input after conflict and reloads confirmed list", as
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
   await page.route("**/api/categories?size=500", (route) => route.fulfill({ json: categories }));
   await page.route("**/api/categories/310", (route) => route.fulfill({ status: 404, json: { error: "Category not found" } }));
-  await page.route("**/api/categories", (route) => {
+  await page.route("**/api/categories?createOnly=true", (route) => {
     if (conflict) return route.fulfill({ status: 409, json: { error: "Code existiert bereits" } });
     const created = route.request().postDataJSON() as { categoryCode: number; categoryName: string };
     categories.push(created);
@@ -31,7 +31,7 @@ test("category create checks the exact code before a legacy upsert can overwrite
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
   await page.route("**/api/categories?size=500", (route) => route.fulfill({ json: categories }));
   await page.route("**/api/categories/310", (route) => route.fulfill({ status: lookupStatus, json: lookupStatus === 200 ? { categoryCode: 310, categoryName: "Bestehend" } : { error: "Lookup failed" } }));
-  await page.route("**/api/categories", (route) => {
+  await page.route("**/api/categories?createOnly=true", (route) => {
     writes += 1;
     const created = route.request().postDataJSON() as { categoryCode: number; categoryName: string };
     categories.push(created);

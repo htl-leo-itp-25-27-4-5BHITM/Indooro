@@ -470,10 +470,15 @@ paths:
     post:
       tags: [catalog]
       operationId: upsertCategory
-      summary: Create or replace one category.
+      summary: Create or replace one category; createOnly performs an atomic create that rejects existing codes.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
       x-indooro-consumers: [admin-ui]
+      parameters:
+        - name: createOnly
+          in: query
+          description: When true, use OpenSearch create semantics and return 409 if the code exists. Omitted or false retains legacy upsert behavior.
+          schema: { type: boolean, default: false }
       requestBody:
         required: true
         content:
@@ -486,6 +491,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Category" }
         "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
   /api/categories/{categoryCode}:

@@ -7,6 +7,10 @@ import at.htl.service.CatalogBulkResult;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.ResponseException;
+import org.apache.http.RequestLine;
+import org.apache.http.StatusLine;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -15,6 +19,8 @@ import java.util.List;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -63,6 +69,51 @@ class CategoryResourceSecurityTest {
                 .body("categoryName", equalTo("Obst"));
         verify(access).requireAdmin();
         verify(categories).bulkInsert(anyList());
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void createOnlyUsesAtomicWrite() throws IOException {
+        when(categories.create(any(Category.class))).thenReturn(new Category(312, "Neu"));
+        given().contentType("application/json").queryParam("createOnly", true)
+                .body("{\"categoryCode\":312,\"categoryName\":\"Neu\"}")
+                .post("/api/categories").then().statusCode(200)
+                .body("categoryCode", equalTo(312));
+        verify(categories).create(any(Category.class));
+        verify(categories, never()).bulkInsert(anyList());
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void createOnlyConflictDoesNotFallBackToUpsert() throws IOException {
+        OpenSearchException conflict = mock(OpenSearchException.class);
+        when(conflict.status()).thenReturn(409);
+        when(categories.create(any(Category.class))).thenThrow(conflict);
+        given().contentType("application/json").queryParam("createOnly", true)
+                .body("{\"categoryCode\":310,\"categoryName\":\"Ersetzen\"}")
+                .post("/api/categories").then().statusCode(409)
+                .body("error", equalTo("Kategorie-Code existiert bereits."));
+        verify(categories, never()).bulkInsert(anyList());
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void lowLevelOpenSearchConflictIsAlsoMappedTo409() throws IOException {
+        org.opensearch.client.Response response = mock(org.opensearch.client.Response.class);
+        RequestLine requestLine = mock(RequestLine.class);
+        StatusLine statusLine = mock(StatusLine.class);
+        when(response.getRequestLine()).thenReturn(requestLine);
+        when(requestLine.getMethod()).thenReturn("PUT");
+        when(requestLine.getUri()).thenReturn("/categories/_create/310");
+        when(response.getStatusLine()).thenReturn(statusLine);
+        when(statusLine.getStatusCode()).thenReturn(409);
+        ResponseException conflict = new ResponseException(response);
+        when(categories.create(any(Category.class))).thenThrow(conflict);
+        given().contentType("application/json").queryParam("createOnly", true)
+                .body("{\"categoryCode\":310,\"categoryName\":\"Ersetzen\"}")
+                .post("/api/categories").then().statusCode(409)
+                .body("error", equalTo("Kategorie-Code existiert bereits."));
+        verify(categories, never()).bulkInsert(anyList());
     }
 
     @Test

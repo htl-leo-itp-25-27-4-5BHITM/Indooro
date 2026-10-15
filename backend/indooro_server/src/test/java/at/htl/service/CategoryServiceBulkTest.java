@@ -24,4 +24,14 @@ class CategoryServiceBulkTest {
 
         verify(service.categoryRepository, never()).bulkIndex(anyList());
     }
+
+    @Test
+    void createOnlyValidatesBeforeAtomicWrite() throws IOException {
+        CategoryService service = new CategoryService();
+        service.categoryRepository = mock(CategoryRepository.class);
+        assertThrows(IllegalArgumentException.class, () -> service.create(new Category(0, "Invalid")));
+        verify(service.categoryRepository, never()).create(org.mockito.ArgumentMatchers.any(Category.class));
+        service.create(new Category(312, "Neu"));
+        verify(service.categoryRepository).create(org.mockito.ArgumentMatchers.any(Category.class));
+    }
 }

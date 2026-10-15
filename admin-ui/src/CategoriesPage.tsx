@@ -46,7 +46,7 @@ export function CategoriesPage({ api }: { api: ApiClient }) {
         }
       }
       if (selected) await api.put(`/api/categories/${selected.categoryCode}`, payload);
-      else await api.post("/api/categories", payload);
+      else await api.post("/api/categories?createOnly=true", payload);
       setSelected(false); setNotice(`Kategorie ${parsedCode} gespeichert.`); setRevision((value) => value + 1);
     } catch (cause) { setFormError(cause instanceof Error ? cause.message : "Kategorie konnte nicht gespeichert werden."); }
     finally { setSaving(false); }

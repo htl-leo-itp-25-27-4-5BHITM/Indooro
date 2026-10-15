@@ -238,6 +238,9 @@ try {
   assert.ok(liveCategoryCode, "a free local category code is available");
   await admin.goto(`${base}/admin/next/categories/`, { waitUntil: "domcontentloaded" });
   const existingCategory = await publicJson("/api/categories/310");
+  const atomicCollision = await api(admin, "POST", "/api/categories?createOnly=true", { categoryCode: 310, categoryName: `Nicht überschreiben ${run}` });
+  assert.equal(atomicCollision.status, 409, `atomic category create rejects an existing code: ${JSON.stringify(atomicCollision.body).slice(0, 400)}`);
+  assert.equal((await publicJson("/api/categories/310")).categoryName, existingCategory.categoryName, "atomic conflict preserves existing category");
   await admin.getByRole("button", { name: "Kategorie anlegen" }).click();
   await admin.getByRole("spinbutton", { name: "Kategorie-Code" }).fill("310");
   await admin.getByRole("textbox", { name: "Name" }).fill(`Nicht überschreiben ${run}`);

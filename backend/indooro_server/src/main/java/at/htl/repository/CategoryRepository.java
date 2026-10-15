@@ -70,6 +70,13 @@ public class CategoryRepository {
         return response.found() ? response.source() : null;
     }
 
+    public void create(Category category) throws IOException {
+        client.create(c -> c.index(indexName)
+                .id(String.valueOf(category.getCategoryCode()))
+                .document(category)
+                .refresh(Refresh.True));
+    }
+
     public BulkResponse bulkIndex(List<Category> categories) throws IOException {
         BulkRequest.Builder bulkBuilder = new BulkRequest.Builder().refresh(Refresh.True);
 

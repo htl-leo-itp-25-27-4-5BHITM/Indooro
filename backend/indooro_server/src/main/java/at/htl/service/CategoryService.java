@@ -42,6 +42,13 @@ public class CategoryService {
                 categoryRepository.bulkIndex(categories));
     }
 
+    public Category create(Category category) throws IOException {
+        validate(java.util.Collections.singletonList(category));
+        categoryRepository.ensureIndex();
+        categoryRepository.create(category);
+        return category;
+    }
+
     private void ensureSeeded() throws IOException {
         categoryRepository.ensureIndex();
         if (categoryRepository.count() > 0) {
