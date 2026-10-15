@@ -2,19 +2,19 @@
 
 - [ ] 1.1 Run `npx -y @fission-ai/openspec@1.3.1 validate stabilize-ios-navigation-pipeline --strict` and fix every reported issue in the change artifacts.
 - [ ] 1.2 Re-read `docs/NAVIGATION_REVIEW.md` sections C.1–C.12 and confirm each defect still exists on the implementation branch; note any drift in `design.md`.
-- [ ] 1.3 Create the implementation branch from the current base; do not work on `main`.
-- [ ] 1.4 Ask the user whether `fix-ios-contract-and-spec-drift` lands first; record the decision and the resulting merge order in `design.md` under „Change ordering and ownership“.
-- [ ] 1.5 Ask the user for approval to port the Swift hunks of `5936ed4`, `d8aa91b`, `f118e20`, and `eb4d3e8` from `codex/admin-platform-rebuild`; record the answer.
+- [x] 1.3 Create the implementation branch from the current base; do not work on `main`.
+- [x] 1.4 Ask the user whether `fix-ios-contract-and-spec-drift` lands first; record the decision and the resulting merge order in `design.md` under „Change ordering and ownership“.
+- [x] 1.5 Ask the user for approval to port the Swift hunks of `5936ed4`, `d8aa91b`, `f118e20`, and `eb4d3e8` from `codex/admin-platform-rebuild`; record the answer.
 
 ## 2. Test Package And Baseline (no behavior change)
 
-- [ ] 2.1 Add `swift/indooro-EinkaeuferFinal/Package.swift` (swift-tools-version 5.10, macOS 14 and iOS 17 platforms) with library target `IndooroNavigationCore` (`path: "indooroApp"`, explicit `sources:` list: `Models/LayoutData.swift`, `Utilities/Pathfinder.swift`, `Utilities/IndoorGraph.swift`, `Utilities/KalmanFilter.swift`, `Utilities/BeaconPositionSolver.swift`, `Utilities/PoseFusionService.swift`, `Utilities/MapMatcher.swift`, `Utilities/RouteManager.swift`, `Utilities/StabilizedNavigationConfig.swift`) and test target `IndooroNavigationCoreTests`.
-- [ ] 2.2 Make the listed sources compile in the package without changing behavior (only `public`/`internal` visibility or `import` fixes); confirm the Xcode app target still builds.
-- [ ] 2.3 Copy `indooroApp/Resources/layout-demosupermarkt.json` into `IndooroNavigationCoreTests/Resources/` and add a `TestLayouts` helper that injects a configurable beacon grid (default: one beacon per 8 m × 8 m cell) into the decoded layout.
-- [ ] 2.4 Add `SyntheticWalk` test support: generates solved points or beacon distances along a polyline with configurable speed, tick 0.35 s, Gaussian noise, outliers, and beacon dropouts; seedable random generator for determinism.
-- [ ] 2.5 Port the review harness checks as baseline tests marked „documents defect“ (expected to fail after the fix, then inverted): PoseFusion lag at 1.3 m/s, stationary jitter with 20 Hz predict, MapMatcher jump lock at 2/4/8/20 m, aisle change through a shelf, left-walking heading snap, route-shape count for ±0.4 m starts, nearest-neighbor flips for 0.85 m jitter.
-- [ ] 2.6 Run `swift test` in `swift/indooro-EinkaeuferFinal` and save the baseline numbers in `swift/indooro-EinkaeuferFinal/NavigationFixtures/BASELINE.md` with commit hash and date.
-- [ ] 2.7 Update `swift/indooro-EinkaeuferFinal/TESTING.md` with the `swift test` command and the purpose of the package.
+- [x] 2.1 Add `swift/indooro-EinkaeuferFinal/Package.swift` (swift-tools-version 5.10, macOS 14 and iOS 17 platforms) with library target `IndooroNavigationCore` (`path: "indooroApp"`, explicit `sources:` list: `Models/LayoutData.swift`, `Utilities/Pathfinder.swift`, `Utilities/IndoorGraph.swift`, `Utilities/KalmanFilter.swift`, `Utilities/BeaconPositionSolver.swift`, `Utilities/PoseFusionService.swift`, `Utilities/MapMatcher.swift`, `Utilities/RouteManager.swift`, `Utilities/StabilizedNavigationConfig.swift`) and test target `IndooroNavigationCoreTests`.
+- [x] 2.2 Make the listed sources compile in the package without changing behavior (only `public`/`internal` visibility or `import` fixes); confirm the Xcode app target still builds.
+- [x] 2.3 Copy `indooroApp/Resources/layout-demosupermarkt.json` into `IndooroNavigationCoreTests/Resources/` and add a `TestLayouts` helper that injects a configurable beacon grid (default: one beacon per 8 m × 8 m cell) into the decoded layout.
+- [x] 2.4 Add `SyntheticWalk` test support: generates solved points or beacon distances along a polyline with configurable speed, tick 0.35 s, Gaussian noise, outliers, and beacon dropouts; seedable random generator for determinism.
+- [x] 2.5 Port the review harness checks as baseline tests marked „documents defect“ (expected to fail after the fix, then inverted): PoseFusion lag at 1.3 m/s, stationary jitter with 20 Hz predict, MapMatcher jump lock at 2/4/8/20 m, aisle change through a shelf, left-walking heading snap, route-shape count for ±0.4 m starts, nearest-neighbor flips for 0.85 m jitter.
+- [x] 2.6 Run `swift test` in `swift/indooro-EinkaeuferFinal` and save the baseline numbers in `swift/indooro-EinkaeuferFinal/NavigationFixtures/BASELINE.md` with commit hash and date.
+- [x] 2.7 Update `swift/indooro-EinkaeuferFinal/TESTING.md` with the `swift test` command and the purpose of the package.
 
 ## 3. Replay Infrastructure
 

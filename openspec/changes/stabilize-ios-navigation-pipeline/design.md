@@ -141,6 +141,8 @@ Port `LayoutElement.matchesProductLayoutCode` from commit `5936ed4`: the layout 
 
 ## Change ordering and ownership
 
+0. Decision (user, task 1.4): this change does NOT wait for `fix-ios-contract-and-spec-drift`; both proceed independently and whichever lands second rebases.
+0. Decision (user, task 1.5): the Swift hunks of `5936ed4`, `d8aa91b`, `f118e20`, and `eb4d3e8` from `codex/admin-platform-rebuild` may be ported. Only the EinkaeuferFinal shelf-matching and target-clearing changes are ported by hand; IndooroAPI/baseURL refactors, admin-ui, and docs are not.
 1. `fix-ios-contract-and-spec-drift` may land before or in parallel. Overlap: `IndoorGraph.swift` (it changes blocking; this change changes A* only), `BeaconManager.swift` (it adds `isPositionTrusted`; this change keeps `isLowConfidence`), `MapView.swift`/`StoreMapPage.swift` (marker style versus route trimming).
 2. This change must land before `modernize-ios-client-architecture` tasks 5.3–5.5 and 9.x, because those characterization tests would otherwise freeze the defective behavior. Task 11.3 updates that change's tasks to reference this change's behavior and test package.
 3. Spec deltas touch different requirements than the other open changes; no requirement is modified twice.
