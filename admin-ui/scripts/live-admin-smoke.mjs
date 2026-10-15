@@ -237,6 +237,14 @@ try {
   const liveCategoryCode = Array.from({ length: 500 }, (_, index) => 500 + index).find((code) => !usedCategoryCodes.has(code));
   assert.ok(liveCategoryCode, "a free local category code is available");
   await admin.goto(`${base}/admin/next/categories/`, { waitUntil: "domcontentloaded" });
+  const existingCategory = await publicJson("/api/categories/310");
+  await admin.getByRole("button", { name: "Kategorie anlegen" }).click();
+  await admin.getByRole("spinbutton", { name: "Kategorie-Code" }).fill("310");
+  await admin.getByRole("textbox", { name: "Name" }).fill(`Nicht überschreiben ${run}`);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("alert").filter({ hasText: "existiert bereits" }).waitFor();
+  assert.equal((await publicJson("/api/categories/310")).categoryName, existingCategory.categoryName, "candidate create does not overwrite an existing category");
+  await admin.getByRole("button", { name: "Abbrechen" }).click();
   await admin.getByRole("button", { name: "Kategorie anlegen" }).click();
   await admin.getByRole("spinbutton", { name: "Kategorie-Code" }).fill(String(liveCategoryCode));
   await admin.getByRole("textbox", { name: "Name" }).fill(`Live Kategorie ${run}`);

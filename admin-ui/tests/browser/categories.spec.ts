@@ -5,6 +5,7 @@ test("category create keeps input after conflict and reloads confirmed list", as
   let conflict = true;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
   await page.route("**/api/categories?size=500", (route) => route.fulfill({ json: categories }));
+  await page.route("**/api/categories/310", (route) => route.fulfill({ status: 404, json: { error: "Category not found" } }));
   await page.route("**/api/categories", (route) => {
     if (conflict) return route.fulfill({ status: 409, json: { error: "Code existiert bereits" } });
     const created = route.request().postDataJSON() as { categoryCode: number; categoryName: string };
@@ -21,6 +22,37 @@ test("category create keeps input after conflict and reloads confirmed list", as
   conflict = false;
   await page.getByRole("button", { name: "Speichern" }).click();
   await expect(page.getByRole("cell", { name: "Obst & Gemüse" })).toBeVisible();
+});
+
+test("category create checks the exact code before a legacy upsert can overwrite it", async ({ page }) => {
+  const categories: Array<{ categoryCode: number; categoryName: string }> = [];
+  let lookupStatus = 200;
+  let writes = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/categories?size=500", (route) => route.fulfill({ json: categories }));
+  await page.route("**/api/categories/310", (route) => route.fulfill({ status: lookupStatus, json: lookupStatus === 200 ? { categoryCode: 310, categoryName: "Bestehend" } : { error: "Lookup failed" } }));
+  await page.route("**/api/categories", (route) => {
+    writes += 1;
+    const created = route.request().postDataJSON() as { categoryCode: number; categoryName: string };
+    categories.push(created);
+    return route.fulfill({ json: created });
+  });
+  await page.goto("/admin/next/categories/");
+  await page.getByRole("button", { name: "Kategorie anlegen" }).click();
+  await page.getByRole("spinbutton", { name: "Kategorie-Code" }).fill("310");
+  await page.getByRole("textbox", { name: "Name" }).fill("Neuer Name");
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await expect(page.getByRole("alert")).toContainText("existiert bereits");
+  expect(writes).toBe(0);
+  await expect(page.getByRole("textbox", { name: "Name" })).toHaveValue("Neuer Name");
+  lookupStatus = 503;
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await expect(page.getByRole("alert")).toContainText("Serverfehler");
+  expect(writes).toBe(0);
+  lookupStatus = 404;
+  await page.getByRole("button", { name: "Speichern" }).click();
+  await expect(page.getByRole("cell", { name: "Neuer Name" })).toBeVisible();
+  expect(writes).toBe(1);
 });
 
 test("scoped user cannot load category candidate", async ({ page }) => {

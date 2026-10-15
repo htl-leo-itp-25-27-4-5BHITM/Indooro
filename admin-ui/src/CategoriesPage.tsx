@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
-import type { ApiClient } from "./api/client";
+import { ApiClientError, type ApiClient } from "./api/client";
 import { CatalogImportPanel } from "./CatalogImport";
 
 interface Category { categoryCode: number; categoryName: string }
@@ -36,6 +36,15 @@ export function CategoriesPage({ api }: { api: ApiClient }) {
     setSaving(true); setFormError(null);
     try {
       const payload = { categoryCode: parsedCode, categoryName: name.trim() };
+      if (!selected) {
+        try {
+          await api.get<Category>(`/api/categories/${parsedCode}`);
+          setFormError(`Kategorie-Code ${parsedCode} existiert bereits. Zum Ändern die bestehende Kategorie bearbeiten.`);
+          return;
+        } catch (cause) {
+          if (!(cause instanceof ApiClientError && cause.status === 404)) throw cause;
+        }
+      }
       if (selected) await api.put(`/api/categories/${selected.categoryCode}`, payload);
       else await api.post("/api/categories", payload);
       setSelected(false); setNotice(`Kategorie ${parsedCode} gespeichert.`); setRevision((value) => value + 1);
