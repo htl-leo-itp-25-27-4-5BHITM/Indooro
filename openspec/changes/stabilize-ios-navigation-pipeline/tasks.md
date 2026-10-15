@@ -18,15 +18,15 @@
 
 ## 3. Replay Infrastructure
 
-- [ ] 3.1 Define `NavigationRecordLine` (`measurement`, `layout`, `event`, `truth`) as `Codable` JSON Lines types in `Utilities/NavigationReplay.swift` and add it to the package sources.
-- [ ] 3.2 Add a `NavigationRecorder` (DEBUG only, `#if DEBUG`) that appends lines to `Documents/NavigationRecordings/<ISO timestamp>.jsonl` with buffered writes flushed at least every 2 s and on stop.
-- [ ] 3.3 Hook the recorder into `BeaconManager` at the raw input points: `recordBeaconSample`, `handleRangedIBeacons` (per beacon), `applyLayout`, and the tour/session event entry points.
-- [ ] 3.4 Add the DEBUG-only settings toggle „Messungen aufzeichnen“ to `Views/Main/SettingsSheet.swift` and a share action that uses `Views/Components/ShareSheet.swift`.
-- [ ] 3.5 In debug tracking mode, let a long-press on the map write a `truth` line at the pressed point without changing the position.
-- [ ] 3.6 Implement `NavigationReplay.run(recording:layout:config:) -> ReplayMetrics` with a virtual clock that drives the update tick every 0.35 s.
-- [ ] 3.7 Implement `ReplayMetrics`: reroutes per minute, active-stop changes without event, projected jumps above jump margin, mean and 95th-percentile lag to truth, off-route detection delay, low-confidence toggles, planning time per event.
-- [ ] 3.8 Add a test that replays one fixture twice and asserts identical metrics.
-- [ ] 3.9 Confirm with `nm`/build settings or a Release build that no recorder symbols exist in Release.
+- [x] 3.1 Define `NavigationRecordLine` (`measurement`, `layout`, `event`, `truth`) as `Codable` JSON Lines types in `Utilities/NavigationReplay.swift` and add it to the package sources.
+- [x] 3.2 Add a `NavigationRecorder` (DEBUG only, `#if DEBUG`) that appends lines to `Documents/NavigationRecordings/<ISO timestamp>.jsonl` with buffered writes flushed at least every 2 s and on stop.
+- [x] 3.3 Hook the recorder into `BeaconManager` at the raw input points: `recordBeaconSample`, `handleRangedIBeacons` (per beacon), `applyLayout`, and the tour/session event entry points.  (`recordBeaconSample`, Ranging je Beacon in `handleRangedIBeacons`, `applyLayout`, `runManualCalibration` und die Session-Ereignisse `startTour`, `setSingleTarget`, `stopCompleted`, `stopSkipped`, `listChanged`, `routeModeToggled`, `replanRequested`, `stopTour`, `clearTarget`; jeweils ein `#if DEBUG`-Einzeiler. Dafuer wurde die Pro-Tick-Kette als `PositioningPipeline` aus `BeaconManager` ins Package extrahiert, Verhalten unveraendert.)
+- [x] 3.4 Add the DEBUG-only settings toggle „Messungen aufzeichnen“ to `Views/Main/SettingsSheet.swift` and a share action that uses `Views/Components/ShareSheet.swift`.
+- [x] 3.5 In debug tracking mode, let a long-press on the map write a `truth` line at the pressed point without changing the position.  (Langer Druck >= 0,6 s auf die Karte, solange die Tap-Flaeche aktiv ist (Debug-Tracking oder Tippen setzt Position); der folgende Tap wird ignoriert.)
+- [x] 3.6 Implement `NavigationReplay.run(recording:layout:config:) -> ReplayMetrics` with a virtual clock that drives the update tick every 0.35 s.  (Ruft `PositioningPipeline.tick`, `NavigationSessionCore` und `TourPlanner` wie die App; die Tick-Uhr startet an der ersten Zeile, die Aufwaermzeit entfaellt.)
+- [x] 3.7 Implement `ReplayMetrics`: reroutes per minute, active-stop changes without event, projected jumps above jump margin, mean and 95th-percentile lag to truth, off-route detection delay, low-confidence toggles, planning time per event.  (`projectedJumps` zaehlt Schritte ueber `maxPlausibleSpeed * dt + jumpMargin`, nicht ueber `jumpMargin` allein, weil der Graph 1-m-Raster hat und seitliche Kantenwechsel sonst jeden Tick treffen; `maxProjectedStepMeters` weist den groessten Schritt aus. Lag in Metern zur Wahrheit.)
+- [x] 3.8 Add a test that replays one fixture twice and asserts identical metrics.
+- [x] 3.9 Confirm with `nm`/build settings or a Release build that no recorder symbols exist in Release.  (Release fuer Simulator gebaut: `nm`/`strings` am Binary ergeben 0 Treffer fuer `NavigationRecorder`, „Messungen aufzeichnen“ und `NavigationRecordings`; Debug-Binary enthaelt 133 Symbole. Die Aufzeichnungs-Typen und der Replay-Treiber liegen in `NavigationReplay.swift` ohne `#if DEBUG`; sie sind ohne Aufrufer vom Linker entfernt.)
 
 ## 4. Shelf Matching
 

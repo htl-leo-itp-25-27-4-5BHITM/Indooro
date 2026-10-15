@@ -81,6 +81,9 @@ final class NavigationSession: ObservableObject {
     // MARK: - Ereignisse (design.md D1)
 
     func startTour(plan: [NavigationStop]) {
+        #if DEBUG
+        NavigationRecorder.shared.recordEvent(.startTour, plan: plan)
+        #endif
         seedPosition()
         core.startTour(plan: plan)
         publish()
@@ -91,36 +94,54 @@ final class NavigationSession: ObservableObject {
     }
 
     func setSingleTarget(_ point: SIMD2<Float>) {
+        #if DEBUG
+        NavigationRecorder.shared.recordEvent(.setTarget, x: point.x, y: point.y)
+        #endif
         seedPosition()
         core.setSingleTarget(point)
         publish()
     }
 
     func stopCompleted() {
+        #if DEBUG
+        NavigationRecorder.shared.recordEvent(.stopDone)
+        #endif
         seedPosition()
         core.stopCompleted()
         publish()
     }
 
     func stopSkipped() {
+        #if DEBUG
+        NavigationRecorder.shared.recordEvent(.stopSkipped)
+        #endif
         seedPosition()
         core.stopSkipped()
         publish()
     }
 
     func listChanged(plan: [NavigationStop]) {
+        #if DEBUG
+        NavigationRecorder.shared.recordEvent(.listChanged, plan: plan)
+        #endif
         seedPosition()
         core.listChanged(plan: plan)
         publish()
     }
 
     func routeModeToggled(plan: [NavigationStop]) {
+        #if DEBUG
+        NavigationRecorder.shared.recordEvent(.routeModeToggled, plan: plan)
+        #endif
         seedPosition()
         core.routeModeToggled(plan: plan)
         publish()
     }
 
     func replanRequested(plan: [NavigationStop]) {
+        #if DEBUG
+        NavigationRecorder.shared.recordEvent(.replan, plan: plan)
+        #endif
         seedPosition()
         core.replanRequested(plan: plan)
         publish()
@@ -138,11 +159,17 @@ final class NavigationSession: ObservableObject {
     }
 
     func stopTour() {
+        #if DEBUG
+        NavigationRecorder.shared.recordEvent(.stopTour)
+        #endif
         core.stopTour()
         publish()
     }
 
     func clearTarget() {
+        #if DEBUG
+        NavigationRecorder.shared.recordEvent(.clearTarget)
+        #endif
         core.clearTarget()
         publish()
     }
@@ -150,11 +177,7 @@ final class NavigationSession: ObservableObject {
     // MARK: - Intern
 
     private func handle(_ sample: NavigationSample) {
-        if let position = sample.projectedPosition {
-            core.positionUpdated(position, confidence: sample.confidence, at: sample.timestamp)
-        } else {
-            core.confidenceUpdated(sample.confidence)
-        }
+        core.tickUpdated(projected: sample.projectedPosition, confidence: sample.confidence, at: sample.timestamp)
         publish()
     }
 

@@ -182,16 +182,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let storeDetectionRefreshInterval: TimeInterval = 60
     private var latestSearchRequestID = UUID()
 
-    private let defaultTxPower = -72.0
-    private var pathLossExp: Double { Double(navigationConfig.beacon.pathLossExponent) }
-
     // MARK: - Bluetooth internals
 
     private var centralManager: CBCentralManager?
     private var isScanningBeacons = false
-    private var rssiBuffer: [String: [Int]] = [:]
-    private var beaconLastSeenAt: [String: TimeInterval] = [:]
-    private var beaconAdvertisementTxPower: [String: Float] = [:]
+    private var rssiSamples = RSSISampleBuffer()
     private let measurementStore = BeaconMeasurementStore(config: StabilizedNavigationConfig.default.beacon)
     private var updateTimer: Timer?
     private let startTime = Date()
@@ -227,15 +222,13 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     let manualCalibrations = PassthroughSubject<ManualCalibrationEvent, Never>()
     /// Wird einmal je Layout-Revision gebaut und von Session und Planer nur gelesen.
     private(set) var navigationGraph: IndoorGraph?
-    private var poseFusionService: PoseFusionService?
-    private var walkableProjector: WalkableProjector?
-    private var beaconPositionSolver: BeaconPositionSolver?
+    /// Pro-Tick-Kette (Solver, Schaetzer, Projektion), gemeinsam mit `NavigationReplay`.
+    private var positioningPipeline: PositioningPipeline?
 
     private var lastRawPosePoint: SIMD2<Float>?
     private var lastRawPoseTimestamp: TimeInterval?
     private var lastHeadingRadians: Float?
     private var lastHeadingTimestamp: TimeInterval?
-    private var lastSolvedRawPoint: SIMD2<Float>?
 
     private let motionManager = CMMotionManager()
     private var rawDeviceHeadingRadians: Float?
@@ -274,6 +267,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     override init() {
         super.init()
         appendDebugLog("BeaconManager init")
+        #if DEBUG
+        NavigationRecorder.shared.layoutProvider = { [weak self] in self?.currentLayoutRecord }
+        #endif
         loadBundleLayoutFallback()
         startMotionUpdates()
 
@@ -293,6 +289,18 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         motionManager.stopDeviceMotionUpdates()
         locationManager.stopUpdatingHeading()
     }
+
+    #if DEBUG
+    /// Identitaet des aktiven Layouts fuer die erste Zeile einer Aufzeichnung.
+    fileprivate var currentLayoutRecord: LayoutRecord {
+        LayoutRecord(
+            t: Date().timeIntervalSince1970,
+            layoutId: nil,
+            revision: layoutRevision,
+            shopName: activeLayoutStoreName ?? selectedLayoutName
+        )
+    }
+    #endif
 
     // MARK: - Public controls
 
@@ -433,7 +441,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             stopIBeaconRanging()
             stopBeaconScan()
             clearBeaconMeasurements()
-            rssiBuffer.removeAll()
+            rssiSamples.removeSamples()
             tapSetsTarget = false
             navigationSamples.send(
                 NavigationSample(
@@ -529,7 +537,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     private func processBufferAndCalculate() {
         guard trackingMode == .beacon else {
-            rssiBuffer.removeAll()
+            rssiSamples.removeSamples()
             return
         }
 
@@ -543,23 +551,19 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }
         refreshStoreDetectionBeaconsIfNeeded()
 
-        for beacon in beacons {
-            let name = beacon.name
-            let values = rssiBuffer[name] ?? []
-
-            // Pro Beacon genau eine Quelle: mit frischem Ranging werden RSSI-Samples verworfen.
-            guard !values.isEmpty,
-                  measurementStore.shouldUseRSSI(for: name, at: timestamp) else {
-                continue
-            }
-
-            processRSSIWindow(values, for: name, timestamp: timestamp)
+        guard let positioningPipeline else {
+            rssiSamples.removeSamples()
+            return
         }
 
-        rssiBuffer.removeAll()
-        measurementStore.expireStaleMeasurements(at: timestamp)
+        let tick = positioningPipeline.tick(
+            beaconNames: beacons.map(\.name),
+            samples: rssiSamples,
+            at: timestamp
+        )
+        rssiSamples.removeSamples()
         refreshBeaconUI(at: timestamp)
-        calculateLocation(timestamp: timestamp)
+        publish(tick)
     }
 
     /// Spiegelt die je Tick gewaehlte Quelle (Ranging vor RSSI) in die Beacon-Anzeige.
@@ -578,7 +582,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 updated.lastSeenAt = measurement.lastSeenAt
                 updated.measurementQuality = Double(measurement.quality)
                 updated.txPower = selected.source == .rssi
-                    ? beaconAdvertisementTxPower[beacon.name].map(Double.init)
+                    ? rssiSamples.txPower[beacon.name].map(Double.init)
                     : nil
             } else {
                 updated.rssi = 0
@@ -603,90 +607,34 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }
     }
 
-    private func calculateLocation(timestamp: TimeInterval) {
-        measurementStore.solveTick(at: timestamp) { measurements in
-            solveLocation(measurements: measurements, timestamp: timestamp)
-        }
-    }
-
-    private func solveLocation(measurements: [BeaconAnchorMeasurement], timestamp: TimeInterval) {
-        let baseConfidence = calculateTrackingConfidence(activeMeasurements: measurements)
-        let confidence: Float
-
-        if let estimate = beaconPositionSolver?.solve(
-            measurements: measurements,
-            previousEstimate: lastSolvedRawPoint
-        ) {
-            confidence = clamp(
-                0.45 * baseConfidence + 0.55 * estimate.confidence,
-                min: 0,
-                max: 1
-            )
-            lastSolvedRawPoint = estimate.point
-            let movementHeading = estimateHeading(currentPoint: estimate.point, timestamp: timestamp)
-            let reliableHeading = movementHeading ?? recentReliableMovementHeading(at: timestamp)
+    /// Veroeffentlicht das Ergebnis eines Ticks: Rohposition und Blickrichtung aus dem geloesten Punkt,
+    /// projizierte Position bei jedem Tick (die Glaettung fuer die Darstellung uebernimmt die Marker-Animation).
+    private func publish(_ tick: PositioningTick) {
+        if let solvedPoint = tick.solvedPoint {
+            let movementHeading = estimateHeading(currentPoint: solvedPoint, timestamp: tick.timestamp)
+            let reliableHeading = movementHeading ?? recentReliableMovementHeading(at: tick.timestamp)
             updateDisplayedUserHeading(
                 movementHeading: reliableHeading,
                 movementHeadingIsFresh: movementHeading != nil
             )
 
             DispatchQueue.main.async {
-                self.publishRawUserPosition(CGPoint(estimate.point))
+                self.publishRawUserPosition(CGPoint(solvedPoint))
             }
-
-            processSensorSample(
-                solvedPoint: estimate.point,
-                confidence: confidence,
-                timestamp: timestamp
-            )
-            return
-        } else {
-            confidence = baseConfidence
-        }
-
-        navigationSamples.send(
-            NavigationSample(projectedPosition: nil, confidence: confidence, timestamp: timestamp)
-        )
-    }
-
-    /// Pro Tick: Schaetzer (Sprung-Gate + EMA), dann history-freie Projektion auf den
-    /// begehbaren Graphen. Die projizierte Position wird bei jedem Tick veroeffentlicht;
-    /// die Glaettung fuer die Darstellung uebernimmt die Marker-Animation in der Karte.
-    private func processSensorSample(
-        solvedPoint: SIMD2<Float>,
-        confidence: Float,
-        timestamp: TimeInterval
-    ) {
-        guard let poseFusionService,
-              let walkableProjector else {
-            navigationSamples.send(
-                NavigationSample(projectedPosition: nil, confidence: confidence, timestamp: timestamp)
-            )
-            return
-        }
-
-        guard let estimate = poseFusionService.update(
-            solvedPoint: solvedPoint,
-            confidence: confidence,
-            timestamp: timestamp
-        ),
-        let projection = walkableProjector.project(estimate.point) else {
-            navigationSamples.send(
-                NavigationSample(projectedPosition: nil, confidence: confidence, timestamp: timestamp)
-            )
-            return
         }
 
         navigationSamples.send(
             NavigationSample(
-                projectedPosition: projection.projectedPoint,
-                confidence: confidence,
-                timestamp: timestamp
+                projectedPosition: tick.projectedPoint,
+                confidence: tick.confidence,
+                timestamp: tick.timestamp
             )
         )
 
-        DispatchQueue.main.async {
-            self.publishUserPosition(CGPoint(projection.projectedPoint))
+        if let projectedPoint = tick.projectedPoint {
+            DispatchQueue.main.async {
+                self.publishUserPosition(CGPoint(projectedPoint))
+            }
         }
     }
 
@@ -711,11 +659,12 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     private func runManualCalibration(_ mapPoint: SIMD2<Float>) {
         let timestamp = Date().timeIntervalSince1970
+        #if DEBUG
+        NavigationRecorder.shared.recordEvent(.calibrate, x: mapPoint.x, y: mapPoint.y)
+        #endif
 
         // Projizieren, Schaetzer auf den projizierten Punkt setzen (verwirft Sprung-Kandidaten).
-        let effectivePoint = walkableProjector?.project(mapPoint)?.projectedPoint ?? mapPoint
-        poseFusionService?.reset(to: effectivePoint, timestamp: timestamp)
-        lastSolvedRawPoint = effectivePoint
+        let effectivePoint = positioningPipeline?.calibrate(to: mapPoint, at: timestamp) ?? mapPoint
         lastRawPosePoint = effectivePoint
         lastRawPoseTimestamp = timestamp
         lastHeadingRadians = nil
@@ -742,73 +691,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     // MARK: - Confidence + heading
-
-    private func processRSSIWindow(
-        _ values: [Int],
-        for beaconName: String,
-        timestamp: TimeInterval
-    ) {
-        let sorted = values.sorted()
-        let filtered: [Int]
-        if sorted.count >= 5 {
-            filtered = Array(sorted.dropFirst().dropLast())
-        } else {
-            filtered = sorted
-        }
-
-        let averageRSSI = Double(filtered.reduce(0, +)) / Double(filtered.count)
-        let measurementStdDev = standardDeviation(of: filtered, mean: averageRSSI)
-        let txPower = Double(beaconAdvertisementTxPower[beaconName] ?? Float(defaultTxPower))
-        let rawDistance = calculateDistance(rssi: averageRSSI, txPower: txPower)
-        let sampleScore = clamp(Float(filtered.count) / 6.0, min: 0.2, max: 1)
-        let stabilityScore = clamp(1 - Float(measurementStdDev / 9.0), min: 0.08, max: 1)
-        let freshnessScore = clamp(
-            1 - Float((timestamp - (beaconLastSeenAt[beaconName] ?? timestamp)) / navigationConfig.beacon.staleMeasurementSeconds),
-            min: 0,
-            max: 1
-        )
-        let quality = Double(
-            clamp(
-                0.42 * stabilityScore + 0.33 * sampleScore + 0.25 * freshnessScore,
-                min: 0,
-                max: 1
-            )
-        )
-        measurementStore.recordRSSI(
-            beaconName: beaconName,
-            rawDistance: rawDistance,
-            rssi: Int(averageRSSI.rounded()),
-            quality: Float(quality),
-            timestamp: timestamp
-        )
-    }
-
-    private func calculateTrackingConfidence(activeMeasurements: [BeaconAnchorMeasurement]) -> Float {
-        guard !activeMeasurements.isEmpty else {
-            return 0
-        }
-
-        let countScore = clamp(Float(activeMeasurements.count - 2) / 3.0, min: 0, max: 1)
-        let qualityScore = activeMeasurements.reduce(0 as Float) { $0 + $1.quality } / Float(activeMeasurements.count)
-        let freshnessScore = activeMeasurements.reduce(0 as Float) { partialResult, measurement in
-            let freshness = clamp(
-                1 - (measurement.ageSeconds / Float(navigationConfig.beacon.staleMeasurementSeconds)),
-                min: 0,
-                max: 1
-            )
-            return partialResult + freshness
-        } / Float(activeMeasurements.count)
-        let proximityScore = clamp(
-            1 - (activeMeasurements.map(\.distanceMeters).min() ?? navigationConfig.beacon.maxDistanceMeters) / 12.0,
-            min: 0,
-            max: 1
-        )
-        return clamp(
-            0.30 * countScore + 0.30 * qualityScore + 0.20 * freshnessScore + 0.20 * proximityScore,
-            min: 0,
-            max: 1
-        )
-    }
 
     private func estimateHeading(currentPoint: SIMD2<Float>, timestamp: TimeInterval) -> Float? {
         defer {
@@ -972,6 +854,15 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 continue
             }
 
+            #if DEBUG
+            NavigationRecorder.shared.recordRanging(
+                beacon: beaconName,
+                rssi: rangedBeacon.rssi,
+                accuracy: rangedBeacon.accuracy,
+                proximity: BeaconProximityClass(rangedBeacon.proximity),
+                at: timestamp
+            )
+            #endif
             // Nur speichern: Position wird ausschliesslich vom Timer geloest.
             measurementStore.recordRanging(
                 beaconName: beaconName,
@@ -1022,34 +913,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func iBeaconQuality(for rangedBeacon: CLBeacon) -> Float {
-        let rssi = rangedBeacon.rssi
-        guard rssi < 0 else {
-            return 0.1
-        }
-
-        let signalScore = clamp((Float(rssi) + 92) / 34.0, min: 0.03, max: 1)
-        let accuracyMeters = rangedBeacon.accuracy.isFinite && rangedBeacon.accuracy > 0
-            ? Float(rangedBeacon.accuracy)
-            : navigationConfig.beacon.maxDistanceMeters
-        let distanceScore = clamp(1 - accuracyMeters / 6.0, min: 0.03, max: 1)
-        let proximityScore: Float
-        switch rangedBeacon.proximity {
-        case .immediate:
-            proximityScore = 1
-        case .near:
-            proximityScore = 0.8
-        case .far:
-            proximityScore = 0.28
-        case .unknown:
-            proximityScore = 0.05
-        @unknown default:
-            proximityScore = 0.08
-        }
-
-        return clamp(
-            0.42 * signalScore + 0.38 * distanceScore + 0.20 * proximityScore,
-            min: 0,
-            max: 1
+        PositioningPipeline.rangingQuality(
+            rssi: rangedBeacon.rssi,
+            accuracy: rangedBeacon.accuracy,
+            proximity: BeaconProximityClass(rangedBeacon.proximity),
+            config: navigationConfig.beacon
         )
     }
 
@@ -1066,18 +934,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     private func clamp(_ value: Float, min: Float, max: Float) -> Float {
         Swift.max(min, Swift.min(max, value))
-    }
-
-    private func standardDeviation(of values: [Int], mean: Double) -> Double {
-        guard values.count > 1 else {
-            return 0
-        }
-
-        let variance = values.reduce(0.0) { partialResult, value in
-            let delta = Double(value) - mean
-            return partialResult + (delta * delta)
-        } / Double(values.count)
-        return sqrt(variance)
     }
 
     private func trailingInteger(in value: String) -> Int? {
@@ -1561,9 +1417,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         )
         syncMeasurementStoreWithBeacons()
         clearBeaconMeasurements()
-        rssiBuffer.removeAll()
+        rssiSamples.removeSamples()
         rebuildNavigationPipeline()
         layoutRevision += 1
+        #if DEBUG
+        NavigationRecorder.shared.recordLayout(
+            id: layout.layoutId, revision: layoutRevision, shopName: layout.shopName
+        )
+        #endif
         setFixedTargetIfNeeded()
         configureBeaconScanningForCurrentMode()
     }
@@ -1923,9 +1784,12 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         )
 
         navigationGraph = graph
-        poseFusionService = PoseFusionService(config: navigationConfig.poseFusion)
-        walkableProjector = WalkableProjector(graph: graph)
-        beaconPositionSolver = BeaconPositionSolver(bounds: mapBounds, config: navigationConfig.beacon)
+        positioningPipeline = PositioningPipeline(
+            store: measurementStore,
+            graph: graph,
+            bounds: mapBounds,
+            config: navigationConfig
+        )
         rangingConstraints = buildRangingConstraints()
     }
 
@@ -2014,15 +1878,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     // MARK: - RSSI helpers
-
-    private func calculateDistance(rssi: Double, txPower: Double) -> Double {
-        let exponent = (txPower - rssi) / (10.0 * pathLossExp)
-        let distance = pow(10.0, exponent)
-        return min(
-            Double(navigationConfig.beacon.maxDistanceMeters),
-            max(Double(navigationConfig.beacon.minDistanceMeters), distance)
-        )
-    }
 
     private func requestLocationAuthorizationIfNeeded() {
         guard CLLocationManager.locationServicesEnabled() else {
@@ -2158,10 +2013,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             beacons[index].lastSeenAt = nil
             beacons[index].measurementQuality = 0
         }
-        beaconLastSeenAt.removeAll()
-        beaconAdvertisementTxPower.removeAll()
+        rssiSamples.removeAll()
         measurementStore.clearMeasurements()
-        lastSolvedRawPoint = nil
+        positioningPipeline?.clearSolverSeed()
         lastIBeaconRangingUpdateAt = nil
         lastHeadingRadians = nil
         lastHeadingTimestamp = nil
@@ -2337,17 +2191,10 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func recordBeaconSample(name: String, rssi: Int, timestamp: TimeInterval, txPower: Float?) {
-        beaconLastSeenAt[name] = timestamp
-        if let txPower {
-            beaconAdvertisementTxPower[name] = txPower
-        }
-        if rssiBuffer[name] == nil {
-            rssiBuffer[name] = []
-        }
-        rssiBuffer[name]?.append(rssi)
-        if let sampleCount = rssiBuffer[name]?.count, sampleCount > 12 {
-            rssiBuffer[name]?.removeFirst(sampleCount - 12)
-        }
+        rssiSamples.record(name: name, rssi: rssi, timestamp: timestamp, txPower: txPower)
+        #if DEBUG
+        NavigationRecorder.shared.recordRSSI(beacon: name, rssi: rssi, txPower: txPower, at: timestamp)
+        #endif
     }
 }
 
@@ -2393,5 +2240,17 @@ private struct DetectedStoreBeacon {
 
     var uuidLookupKey: String {
         uuid.uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+    }
+}
+
+private extension BeaconProximityClass {
+    init(_ proximity: CLProximity) {
+        switch proximity {
+        case .immediate: self = .immediate
+        case .near: self = .near
+        case .far: self = .far
+        case .unknown: self = .unknown
+        @unknown default: self = .unknown
+        }
     }
 }

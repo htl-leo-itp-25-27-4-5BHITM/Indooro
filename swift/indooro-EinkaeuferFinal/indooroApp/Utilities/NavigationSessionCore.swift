@@ -183,6 +183,15 @@ struct NavigationSessionCore {
         beginRoute()
     }
 
+    /// Ein Positionierungs-Tick: mit Position wie `positionUpdated`, ohne Loesung nur die Konfidenz.
+    mutating func tickUpdated(projected: SIMD2<Float>?, confidence: Float, at now: TimeInterval) {
+        if let projected {
+            positionUpdated(projected, confidence: confidence, at: now)
+        } else {
+            confidenceUpdated(confidence)
+        }
+    }
+
     mutating func positionUpdated(_ projected: SIMD2<Float>, confidence: Float, at now: TimeInterval) {
         lastPosition = projected
         confidenceUpdated(confidence)

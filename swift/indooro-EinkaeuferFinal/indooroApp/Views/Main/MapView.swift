@@ -13,6 +13,11 @@ struct MapView: View {
     let bottomInset: CGFloat
     let showsDebugMapElements: Bool
 
+    #if DEBUG
+    /// Waehrend eines langen Drucks (Wahrheitsmarkierung) wird der folgende Tap ignoriert.
+    @State private var truthPressActive = false
+    #endif
+
     private let routeAccent = Color(red: 0.15, green: 0.57, blue: 0.88)
     private let minimumMapScale: CGFloat = 0.65
     private let maximumMapScale: CGFloat = 2.5
@@ -126,6 +131,9 @@ struct MapView: View {
                                 .frame(width: mapWidth, height: mapHeight)
                                 .contentShape(Rectangle())
                                 .onTapGesture { location in
+                                    #if DEBUG
+                                    if truthPressActive { return }
+                                    #endif
                                     let xMeter = Double(location.x) / fittedPixelsPerMeter
                                     let yMeter = Double(location.y) / fittedPixelsPerMeter
                                     let point = CGPoint(x: xMeter, y: yMeter)
@@ -135,6 +143,26 @@ struct MapView: View {
                                         beaconManager.setManualUserPosition(point)
                                     }
                                 }
+                                #if DEBUG
+                                .simultaneousGesture(
+                                    LongPressGesture(minimumDuration: 0.6)
+                                        .sequenced(before: DragGesture(minimumDistance: 0))
+                                        .onChanged { value in
+                                            guard !truthPressActive,
+                                                  case .second(true, let drag?) = value else { return }
+                                            truthPressActive = true
+                                            NavigationRecorder.shared.recordTruth(
+                                                x: Float(drag.location.x / fittedPixelsPerMeter),
+                                                y: Float(drag.location.y / fittedPixelsPerMeter)
+                                            )
+                                        }
+                                        .onEnded { _ in
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                                truthPressActive = false
+                                            }
+                                        }
+                                )
+                                #endif
                         }
                     }
                     .frame(width: mapWidth, height: mapHeight)

@@ -18,6 +18,7 @@ struct BeaconPositioningConfig {
     var minDistanceMeters: Float = 0.35
     var maxDistanceMeters: Float = 11.0
     var pathLossExponent: Float = 2.8
+    var defaultTxPowerDBm: Float = -72
     var solverResidualScaleMeters: Float = 0.85
     var solverDamping: Float = 0.55
 }

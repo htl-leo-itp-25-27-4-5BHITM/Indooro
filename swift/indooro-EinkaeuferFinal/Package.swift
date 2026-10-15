@@ -24,6 +24,8 @@ let package = Package(
                 "Utilities/BeaconMeasurementStore.swift",
                 "Utilities/NavigationSessionCore.swift",
                 "Utilities/TourPlanner.swift",
+                "Utilities/PositioningPipeline.swift",
+                "Utilities/NavigationReplay.swift",
                 "Utilities/StabilizedNavigationConfig.swift"
             ]
         ),
