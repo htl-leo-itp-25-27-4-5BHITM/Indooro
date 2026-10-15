@@ -89,16 +89,17 @@ public class RecipeService {
                                                                                        int page,
                                                                                        int size,
                                                                                        UUID storeId) {
-        return listRecipes(query, tag, RecipeStatus.PUBLISHED, page, Math.min(size, 50), storeId);
+        return listRecipes(query, tag, RecipeStatus.PUBLISHED, page, Math.min(size, 50), storeId, null);
     }
 
     public CommonDtos.PageResponse<RecipeDtos.RecipeSummaryResponse> listAdminRecipes(String query,
                                                                                       String tag,
                                                                                       RecipeStatus status,
                                                                                       int page,
-                                                                                      int size) {
+                                                                                      int size,
+                                                                                      String sort) {
         adminAccessService.requireAdmin();
-        return listRecipes(query, tag, status, page, Math.min(size, 100), null);
+        return listRecipes(query, tag, status, page, Math.min(size, 100), null, sort);
     }
 
     public RecipeDtos.RecipeDetailResponse getMobileRecipe(UUID recipeId) {
@@ -388,7 +389,8 @@ public class RecipeService {
                                                                                   RecipeStatus status,
                                                                                   int page,
                                                                                   int size,
-                                                                                  UUID storeId) {
+                                                                                  UUID storeId,
+                                                                                  String sort) {
         StringBuilder hql = new StringBuilder("1 = 1");
         Map<String, Object> params = new HashMap<>();
         if (status != null) {
@@ -396,7 +398,7 @@ public class RecipeService {
             params.put("status", status);
         }
         if (query != null && !query.isBlank()) {
-            hql.append(" and (lower(title) like :query or lower(summary) like :query or lower(description) like :query)");
+            hql.append(" and (lower(title) like :query or lower(slug) like :query or lower(summary) like :query or lower(description) like :query)");
             params.put("query", "%" + query.trim().toLowerCase(Locale.ROOT) + "%");
         }
         if (tag != null && !tag.isBlank()) {
@@ -409,6 +411,19 @@ public class RecipeService {
                 Sort.descending("publishedAt").and("title"),
                 params
         );
+        if (sort != null) {
+            // Sort the complete filtered result before taking a page. Sorting a page would
+            // produce incorrect cross-page order for the legacy numeric-aware Title sort.
+            List<RecipeEntity> sorted = new ArrayList<>(panacheQuery.list());
+            sorted.sort(RecipeSort.comparator(sort));
+            int normalizedPage = Math.max(page, 0);
+            int normalizedSize = Math.max(size, 1);
+            long start = (long) normalizedPage * normalizedSize;
+            List<RecipeEntity> slice = start >= sorted.size() ? List.of()
+                    : sorted.subList((int) start, (int) Math.min(start + normalizedSize, sorted.size()));
+            return new CommonDtos.PageResponse<>(slice.stream().map(recipe -> toSummary(recipe, storeId)).toList(),
+                    normalizedPage, normalizedSize, sorted.size());
+        }
         panacheQuery.page(Page.of(Math.max(page, 0), Math.max(size, 1)));
         return new CommonDtos.PageResponse<>(
                 panacheQuery.list().stream().map(recipe -> toSummary(recipe, storeId)).toList(),

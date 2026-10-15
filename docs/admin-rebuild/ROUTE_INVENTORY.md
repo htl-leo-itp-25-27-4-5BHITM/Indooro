@@ -1,6 +1,6 @@
 # Admin route, action, API, role, scope, and state inventory
 
-**Recipe fixture update:** 2026-10-15 `admin-ui/scripts/live-recipes-parity.mjs` supplies disposable packaged-stack legacy/candidate create/edit, role/direct-link, retry, and partial-write fixtures. It archives its three recipes and deletes its two products. The old client filters only its first API page, so late Draft search is an observed legacy limit; the Recipe gate still needs the missing action/fault variants in `ROUTE_PARITY_MATRIX.md`.
+**Recipe fixture update:** 2026-10-15 `admin-ui/scripts/live-recipes-parity.mjs` supplies disposable packaged-stack legacy/candidate create/edit and mapping, role/direct-link, retry, partial-write, publication visibility and numeric title sort fixtures. It archives six recipes and deletes two products. The old client filters only its first API page, so late Draft search is an observed legacy limit; the fixture uses a decreasing numeric title key to keep current test rows on that page; the Recipe gate still needs the missing action/fault variants in `ROUTE_PARITY_MATRIX.md`.
 
 **Inventory update:** 2026-10-15 Product actions/states have a reproducible disposable packaged-stack fixture in `admin-ui/scripts/live-products-parity.mjs` and screenshots in `evidence/products/`. The rest of task 1.2 still lacks every-action/state fixtures.
 

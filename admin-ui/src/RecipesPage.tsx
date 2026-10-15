@@ -198,6 +198,7 @@ export function RecipesPage({ api }: { api: ApiClient }) {
       <label>Suche<input type="search" name="q" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Titel oder Slug" /></label>
       <label>Status<select name="status" defaultValue={filters.status}><option value="">Alle</option><option value="DRAFT">Entwurf</option><option value="PUBLISHED">Veröffentlicht</option><option value="ARCHIVED">Archiviert</option></select></label>
       <label>Tag<select name="tag" defaultValue={filters.tag}><option value="">Alle Tags</option>{tags.map((tag) => <option key={tag.id} value={tag.code}>{tag.name}</option>)}</select></label>
+      <label>Sortierung<select name="sort" defaultValue={filters.sort}><option value="title">Titel</option><option value="status">Status</option><option value="publishedAt">Publiziert</option></select></label>
       <button className="button primary" type="submit">Anwenden</button>
     </form>
     {error && <div className="notice error-state" role="alert"><h3>Rezepte konnten nicht geladen werden</h3><p>{error}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}

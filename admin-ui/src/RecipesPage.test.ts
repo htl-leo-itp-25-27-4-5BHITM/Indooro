@@ -16,9 +16,10 @@ const detail: RecipeDetail = {
 };
 
 test("recipe filters are validated and sent as server-side query parameters", () => {
-  assert.deepEqual(readRecipeFilters("?q=apple&status=PUBLISHED&tag=QUICK&page=2"), { q: "apple", status: "PUBLISHED", tag: "QUICK", page: 2 });
-  assert.equal(recipeListPath(readRecipeFilters("?q=apple&status=PUBLISHED&tag=QUICK&page=2")), "/api/admin/recipes?page=2&size=20&q=apple&status=PUBLISHED&tag=QUICK");
-  assert.deepEqual(readRecipeFilters("?status=wrong&page=-1"), { q: "", status: "", tag: "", page: 0 });
+  assert.deepEqual(readRecipeFilters("?q=apple&status=PUBLISHED&tag=QUICK&page=2"), { q: "apple", status: "PUBLISHED", tag: "QUICK", sort: "title", page: 2 });
+  assert.equal(recipeListPath(readRecipeFilters("?q=apple&status=PUBLISHED&tag=QUICK&page=2")), "/api/admin/recipes?page=2&size=20&q=apple&status=PUBLISHED&tag=QUICK&sort=title");
+  assert.deepEqual(readRecipeFilters("?status=wrong&sort=wrong&page=-1"), { q: "", status: "", tag: "", sort: "title", page: 0 });
+  assert.equal(recipeListPath(readRecipeFilters("?sort=publishedAt")), "/api/admin/recipes?page=0&size=20&sort=publishedAt");
 });
 
 test("metadata-only edit preserves image, description, current tags, and skips content writes", async () => {

@@ -10,9 +10,11 @@ const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-real
 const [adminUser, regionUser, storeUser] = realm.users;
 const browser = await chromium.launch({ args: process.env.ADMIN_SMOKE_HOST_ALIAS ? ["--host-resolver-rules=MAP host.docker.internal 127.0.0.1"] : [] });
 const stamp = randomUUID().replaceAll("-", "").slice(0, 10).toLowerCase();
-// The old page filters only the API's first twenty rows; an early title keeps
-// disposable draft fixtures reachable there for action comparison.
-const recipeTitle = `000 Parity Rezept ${stamp}`;
+// The old page filters only the API's first twenty rows. A decreasing numeric
+// prefix keeps the newest disposable draft ahead of archived fixtures from
+// earlier probe runs without changing the legacy request or its page size.
+const legacyOrderRank = String(9_999_999_999_999 - Date.now());
+const recipeTitle = `000 0 ${legacyOrderRank} Parity Rezept ${stamp}`;
 const recipeSlug = `parity-rezept-${stamp}`;
 const results = [];
 const parityFailures = [];
@@ -109,6 +111,43 @@ try {
       assert.ok(indexed, `fixture product ${productNames[index]} must be searchable before recipe creation`);
     }
     return { products: productIds.length, fixtureNamesAreUnique: true };
+  });
+
+  await check("numeric recipe title sorting is global before pagination", async () => {
+    const prefix = `000 0 ${legacyOrderRank} Parity Sort ${stamp}`;
+    const sortIds = new Map();
+    for (const number of [10, 2]) {
+      const fixture = ok(await api(admin, "POST", "/api/admin/recipes", {
+        recipe: { slug: `parity-sort-${stamp}-${number}`, title: `${prefix} ${number}`, summary: "Sortierprobe", description: "", imageUrl: "", imageAlt: "", servings: 2, status: "DRAFT", tagIds: [] },
+        ingredients: [{ position: 1, displayName: "Sortierzutat", canonicalName: "Sortierzutat", quantityText: "1 Stück", optional: false }],
+        steps: [{ position: 1, instruction: "Sortierprobe vorbereiten.", durationMinutes: null }]
+      }), `sort fixture ${number}`);
+      recipeIds.push(fixture.id);
+      sortIds.set(number, fixture.id);
+    }
+    const sorted = [];
+    for (const page of [0, 1]) {
+      const result = ok(await api(admin, "GET", `/api/admin/recipes?q=${encodeURIComponent(prefix)}&sort=title&page=${page}&size=1`), `sort page ${page}`);
+      assert.equal(result.totalElements, 2);
+      sorted.push(result.content[0]?.title);
+    }
+    assert.deepEqual(sorted, [`${prefix} 2`, `${prefix} 10`], "numeric title order must cross the page boundary");
+    assert.equal((await api(admin, "GET", `/api/admin/recipes?sort=invalid&page=0&size=1`)).status, 400, "invalid sort is rejected");
+    ok(await api(admin, "PATCH", `/api/admin/recipes/${sortIds.get(10)}/publish`, {}), "publish sort fixture");
+    const legacyDefault = ok(await api(admin, "GET", `/api/admin/recipes?q=${encodeURIComponent(prefix)}&page=0&size=2`), "legacy API order without sort");
+    assert.deepEqual(legacyDefault.content.map((recipe) => recipe.title), sorted, "omitting sort keeps the existing null-first publishedAt DESC API order");
+    const statuses = ok(await api(admin, "GET", `/api/admin/recipes?q=${encodeURIComponent(prefix)}&sort=status&page=0&size=2`), "status sort");
+    assert.deepEqual(statuses.content.map((recipe) => recipe.title), sorted, "DRAFT sorts before PUBLISHED");
+    const published = ok(await api(admin, "GET", `/api/admin/recipes?q=${encodeURIComponent(prefix)}&sort=publishedAt&page=0&size=2`), "publication sort");
+    assert.deepEqual(published.content.map((recipe) => recipe.title), [...sorted].reverse(), "null publication date sorts last");
+    await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(prefix)}&sort=title`, { waitUntil: "domcontentloaded" });
+    await admin.getByRole("row").filter({ hasText: prefix }).first().waitFor();
+    assert.deepEqual(await admin.getByRole("row").filter({ hasText: prefix }).locator("strong").allTextContents(), sorted);
+    await admin.getByLabel("Sortierung").selectOption("publishedAt");
+    await admin.getByRole("button", { name: "Anwenden" }).click();
+    await admin.getByRole("row").filter({ hasText: prefix }).first().waitFor();
+    assert.deepEqual(await admin.getByRole("row").filter({ hasText: prefix }).locator("strong").allTextContents(), [...sorted].reverse());
+    return { pageSize: 1, totalElements: 2, titleOrder: sorted, statusOrder: sorted, publicationOrder: [...sorted].reverse(), legacyDefaultPreserved: true, candidateRowsAgree: true, invalidSortRejected: true };
   });
 
   await check("legacy and candidate create workflows persist after reload", async () => {
@@ -323,6 +362,60 @@ try {
     return { injectedStage: "product mapping after ingredient create", reusedIngredient: true, mappingPersistedAfterRetry: true };
   });
 
+  await check("legacy and candidate mapping suggestions and confirmation persist", async () => {
+    const legacyTitle = `000 0 ${legacyOrderRank} Parity Mapping Legacy ${stamp}`;
+    const legacySlug = `parity-mapping-legacy-${stamp}`;
+    const legacyFixture = ok(await api(admin, "POST", "/api/admin/recipes", {
+      recipe: { slug: legacySlug, title: legacyTitle, summary: "Lokaler Mapping-Test", description: "", imageUrl: "", imageAlt: "", servings: 2, status: "DRAFT", tagIds: [] },
+      ingredients: [{ position: 1, displayName: "Legacy Mapping Zutat", canonicalName: "Apfel", quantityText: "1 Stück", optional: false }],
+      steps: [{ position: 1, instruction: "Für den Mapping-Test schneiden.", durationMinutes: null }]
+    }), "legacy mapping fixture create");
+    recipeIds.push(legacyFixture.id);
+    const legacyIngredientId = legacyFixture.ingredients[0].id;
+
+    await forceLegacy(admin);
+    await admin.goto(`${base}/admin/recipes/?q=${encodeURIComponent(legacyTitle)}`, { waitUntil: "domcontentloaded" });
+    const legacyRow = admin.locator("#page-content tbody tr").filter({ hasText: legacySlug });
+    await legacyRow.getByRole("button", { name: "Mapping" }).click();
+    const legacyInput = admin.locator(`.drawer [data-product-search="${legacyIngredientId}"]`);
+    const legacySuggestionsResponse = admin.waitForResponse((response) => response.url().includes(`/ingredients/${legacyIngredientId}/mapping-suggestions`));
+    await legacyInput.fill(productNames[0]);
+    const legacySuggestions = await legacySuggestionsResponse;
+    assert.equal(legacySuggestions.status(), 200, "legacy suggestion request succeeds");
+    const legacyProducts = await legacySuggestions.json();
+    assert.ok(legacyProducts.some((product) => product.id === productIds[0]), "legacy suggestions include the isolated fixture product");
+    const legacyOption = admin.locator(`.drawer [data-select-product="${legacyIngredientId}"][data-product-id="${productIds[0]}"]`);
+    await legacyOption.waitFor();
+    await legacyOption.click();
+    await admin.locator(`.drawer [data-save-mapping="${legacyIngredientId}"]`).click();
+    await admin.locator(".drawer").getByText("Aktuell zugeordnet").waitFor();
+    const legacyStatus = ok(await api(admin, "GET", `/api/admin/recipes/${legacyFixture.id}/mapping-status`), "legacy mapping confirmation readback");
+    assert.equal(legacyStatus.ingredients.find((item) => item.ingredientId === legacyIngredientId)?.product?.id, productIds[0]);
+
+    const candidateDetail = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "candidate mapping detail");
+    const candidateIngredientId = candidateDetail.ingredients[0].id;
+    await admin.unroute("**/admin/route-cutover.js");
+    await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
+    const candidateRow = admin.getByRole("row").filter({ hasText: recipeSlug });
+    await candidateRow.getByRole("button", { name: "Bearbeiten" }).click();
+    const dialog = admin.getByRole("dialog");
+    await dialog.locator(".recipe-mapping-controls").first().getByRole("button", { name: "Mapping" }).click();
+    await dialog.getByRole("textbox", { name: "Produkt suchen" }).fill(productNames[1]);
+    const candidateSuggestionsResponse = admin.waitForResponse((response) => response.url().includes(`/ingredients/${candidateIngredientId}/mapping-suggestions`));
+    await dialog.getByRole("button", { name: "Suchen" }).click();
+    const candidateSuggestions = await candidateSuggestionsResponse;
+    assert.equal(candidateSuggestions.status(), 200, "candidate suggestion request succeeds");
+    const candidateProducts = await candidateSuggestions.json();
+    assert.ok(candidateProducts.some((product) => product.id === productIds[1]), "candidate suggestions include the isolated fixture product");
+    await dialog.getByRole("radio", { name: new RegExp(productNames[1]) }).check();
+    await dialog.getByRole("button", { name: "Mapping bestätigen" }).click();
+    await dialog.locator(".recipe-mapping-panel").waitFor({ state: "hidden" });
+    const candidateStatus = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}/mapping-status`), "candidate mapping confirmation readback");
+    assert.equal(candidateStatus.ingredients.find((item) => item.ingredientId === candidateIngredientId)?.product?.id, productIds[1]);
+    await dialog.getByRole("button", { name: "Schließen" }).click();
+    return { legacySuggestions: true, legacyConfirmedProductId: productIds[0], candidateSuggestions: true, candidateConfirmedProductId: productIds[1], apiReadback: true };
+  });
+
   await check("list empty state and injected 503 keyboard retry", async () => {
     let failOnce = true;
     const route = "**/api/admin/recipes?*";
@@ -360,7 +453,18 @@ try {
     await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
     await dialog.locator(".status-pill").getByText("PUBLISHED").waitFor();
     assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "published status readback").status, "PUBLISHED");
-    return { injectedStage: "publication action", retryPersisted: true };
+    assert.equal((await api(admin, "GET", `/api/mobile/recipes/${recipeId}`)).status, 200, "published recipe is visible to mobile clients");
+    admin.once("dialog", (confirmation) => void confirmation.accept());
+    await dialog.getByRole("button", { name: "Deaktivieren" }).click();
+    await dialog.locator(".status-pill").getByText("DRAFT").waitFor();
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "deactivated recipe status").status, "DRAFT");
+    assert.equal((await api(admin, "GET", `/api/mobile/recipes/${recipeId}`)).status, 404, "deactivated recipe is hidden from mobile clients");
+    admin.once("dialog", (confirmation) => void confirmation.accept());
+    await dialog.getByRole("button", { name: "Archivieren" }).click();
+    await dialog.locator(".status-pill").getByText("ARCHIVED").waitFor();
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "archived recipe status").status, "ARCHIVED");
+    assert.equal((await api(admin, "GET", `/api/mobile/recipes/${recipeId}`)).status, 404, "archived recipe stays hidden from mobile clients");
+    return { injectedStage: "publication action", retryPersisted: true, publicVisibility: true, deactivate: true, archive: true };
   });
 
   // Recipes have no hard-delete route. Archiving the random fixture is the supported cleanup path.
@@ -423,5 +527,5 @@ try {
     results.push({ check: "product fixture cleanup", result: "SKIPPED", reason: "recipe cleanup was not verified; preserve referenced products" });
   }
   await browser.close();
-  console.log(JSON.stringify({ result: process.exitCode === 1 ? "FAIL" : "PASS", scope: "local-stack-only", failedAt: process.exitCode === 1 ? failedAt : null, error: failure, failures: parityFailures, checks: results, openParity: ["legacy list filters only the first API page; late draft direct links can be missing", "ingredient mapping suggestions and confirmation are not exercised", "deactivate parity is not exercised", "fault injection covers step update, list load, and publication; other write stages remain unverified"] }));
+  console.log(JSON.stringify({ result: process.exitCode === 1 ? "FAIL" : "PASS", scope: "local-stack-only", failedAt: process.exitCode === 1 ? failedAt : null, error: failure, failures: parityFailures, checks: results, openParity: ["legacy list filters only the first API page; late draft direct links can be missing", "legacy and candidate creation-stage mapping failures are not injected", "metadata-write failure, ingredient-create failure, and step-create/delete fault stages remain unverified", "mobile list filtering by store/tag and mapping behavior across stores are not exercised"] }));
 }

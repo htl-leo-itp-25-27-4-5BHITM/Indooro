@@ -96,9 +96,36 @@ class RecipeServiceTest {
         when(query.list()).thenReturn(List.of(recipe));
         when(query.count()).thenReturn(1L);
 
-        CommonDtos.PageResponse<RecipeDtos.RecipeSummaryResponse> response = service.listAdminRecipes(null, null, null, 0, 20);
+        CommonDtos.PageResponse<RecipeDtos.RecipeSummaryResponse> response = service.listAdminRecipes(null, null, null, 0, 20, "title");
 
         assertEquals(3, response.content().get(0).stepCount());
+    }
+
+    @Test
+    void recipeSortIsAppliedBeforePagingAcrossNumericTitles() {
+        RecipeEntity ten = recipeWithTitle("Rezept 10");
+        RecipeEntity two = recipeWithTitle("Rezept 2");
+        RecipeEntity one = recipeWithTitle("Rezept 1");
+        PanacheQuery<RecipeEntity> query = mock(PanacheQuery.class);
+        when(recipeRepository.find(anyString(), any(Sort.class), anyMap())).thenReturn(query);
+        when(query.list()).thenReturn(List.of(ten, two, one));
+
+        var first = service.listAdminRecipes(null, null, null, 0, 1, "title");
+        var second = service.listAdminRecipes(null, null, null, 1, 1, "title");
+        var third = service.listAdminRecipes(null, null, null, 2, 1, "title");
+
+        assertEquals(3, first.totalElements());
+        assertEquals("Rezept 1", first.content().get(0).title());
+        assertEquals("Rezept 2", second.content().get(0).title());
+        assertEquals("Rezept 10", third.content().get(0).title());
+    }
+
+    private RecipeEntity recipeWithTitle(String title) {
+        RecipeEntity recipe = new RecipeEntity();
+        recipe.id = UUID.randomUUID();
+        recipe.slug = title.toLowerCase().replace(' ', '-');
+        recipe.title = title;
+        return recipe;
     }
 
     @Test

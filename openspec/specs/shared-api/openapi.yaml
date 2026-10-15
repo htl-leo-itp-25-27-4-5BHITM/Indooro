@@ -936,6 +936,10 @@ paths:
         - name: status
           in: query
           schema: { $ref: "#/components/schemas/RecipeStatus" }
+        - name: sort
+          in: query
+          description: When set, sorts the complete filtered result before pagination; title uses German numeric-aware ordering and null publication dates sort last. Omitting sort preserves the existing publishedAt DESC then title API order for older consumers.
+          schema: { type: string, enum: [title, status, publishedAt] }
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/AdminPageSize"
       responses:

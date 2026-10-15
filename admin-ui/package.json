@@ -23,6 +23,7 @@
     "test:live:categories": "node scripts/live-categories-parity.mjs",
     "test:live:products": "node scripts/live-products-parity.mjs",
     "test:live:recipes": "node scripts/live-recipes-parity.mjs",
+    "test:live:roles": "node scripts/live-api-role-matrix.mjs",
     "test:live:cutover": "node scripts/live-route-cutover.mjs",
     "test:live:catalog": "node scripts/live-catalog-bulk.mjs",
     "test:swift-layout": "node scripts/verify-swift-layout-decode.mjs",

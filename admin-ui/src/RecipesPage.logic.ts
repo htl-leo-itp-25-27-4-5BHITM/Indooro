@@ -45,16 +45,18 @@ export class RecipeCreatePartialError extends Error {
   constructor(message: string, public readonly created: RecipeDetail) { super(message); this.name = "RecipeCreatePartialError"; }
 }
 export interface RecipePageResponse { content: RecipeSummary[]; page: number; size: number; totalElements: number }
-export interface RecipeFilters { q: string; status: string; tag: string; page: number }
+export interface RecipeFilters { q: string; status: string; tag: string; sort: "title" | "status" | "publishedAt"; page: number }
 
 export function readRecipeFilters(search: string): RecipeFilters {
   const params = new URLSearchParams(search);
   const page = Number(params.get("page"));
   const status = params.get("status") ?? "";
+  const sort = params.get("sort") ?? "title";
   return {
     q: (params.get("q") ?? "").slice(0, 120),
     status: ["DRAFT", "PUBLISHED", "ARCHIVED"].includes(status) ? status : "",
     tag: params.get("tag") ?? "",
+    sort: sort === "status" || sort === "publishedAt" ? sort : "title",
     page: Number.isInteger(page) && page > 0 ? page : 0
   };
 }
@@ -64,6 +66,7 @@ export function recipeListPath(filters: RecipeFilters): string {
   if (filters.q) params.set("q", filters.q);
   if (filters.status) params.set("status", filters.status);
   if (filters.tag) params.set("tag", filters.tag);
+  params.set("sort", filters.sort);
   return `/api/admin/recipes?${params.toString()}`;
 }
 
@@ -72,6 +75,7 @@ export function recipeFiltersQuery(filters: RecipeFilters): string {
   if (filters.q) params.set("q", filters.q);
   if (filters.status) params.set("status", filters.status);
   if (filters.tag) params.set("tag", filters.tag);
+  if (filters.sort !== "title") params.set("sort", filters.sort);
   if (filters.page) params.set("page", String(filters.page));
   return params.toString();
 }
