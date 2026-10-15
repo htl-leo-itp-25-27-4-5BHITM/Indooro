@@ -3,8 +3,6 @@ import Foundation
 struct StabilizedNavigationConfig {
     var beacon = BeaconPositioningConfig()
     var poseFusion = PoseFusionConfig()
-    var displayPosition = DisplayPositionConfig()
-    var mapMatcher = MapMatcherConfig()
     var route = RouteStabilityConfig()
     var confidence = ConfidenceConfig()
 
@@ -24,40 +22,15 @@ struct BeaconPositioningConfig {
 }
 
 struct PoseFusionConfig {
-    var basePositionSmoothingAlpha: Float = 0.28
-    var lowConfidenceSmoothingAlpha: Float = 0.08
-    var headingSmoothingAlpha: Float = 0.28
-    var maxAcceptedSpeedMetersPerSecond: Float = 1.45
-    var staleRadioFixSeconds: TimeInterval = 1.8
-    var radioAccuracyForFullTrust: Float = 1.0
-    var radioAccuracyForZeroTrust: Float = 8.0
-    var maxPredictionWindowSeconds: TimeInterval = 0.45
-    var movingVelocityRetentionPerSecond: Float = 0.78
-    var stationaryVelocityRetentionPerSecond: Float = 0.12
-    var motionPredictionAccelerationThresholdG: Float = 0.05
-    var headingPredictionBlendAlpha: Float = 0.2
-    var confidenceDecayPerPredictionSecond: Float = 0.38
-}
-
-struct DisplayPositionConfig {
-    var displayPositionUpdateIntervalSeconds: TimeInterval = 1.0
-    var minDisplayPositionChangeMeters: Float = 0.85
-    var maxDisplayPositionStalenessSeconds: TimeInterval = 3.0
-    var maxReasonableMovementMetersPerSecond: Float = 2.5
-    var requiredJumpConfirmations: Int = 3
-    var smoothingAlpha: Float = 0.35
-}
-
-struct MapMatcherConfig {
-    var candidateSearchRadius: Float = 2.4
-    var maxProjectionDistance: Float = 3.8
-    var distanceWeight: Float = 1.0
-    var headingWeight: Float = 0.65
-    var continuityWeight: Float = 1.25
-    var routeBiasWeight: Float = 0.55
-    var disconnectedEdgePenalty: Float = 7.0
-    var preferredEdgeBonus: Float = 0.45
-    var requiredScoreImprovementForDisconnectedSwitch: Float = 2.2
+    // Glaettung: estimate += alpha * (punkt - estimate), alpha linear nach Konfidenz.
+    var estimatorHighConfidenceAlpha: Float = 0.46 // provisional
+    var estimatorLowConfidenceAlpha: Float = 0.18 // provisional
+    // Sprung-Gate: Punkt wird gehalten, wenn er weiter als
+    // maxPlausibleSpeed * dt + jumpMargin vom Schaetzwert entfernt ist.
+    var maxPlausibleSpeed: Float = 2.5 // provisional (m/s)
+    var jumpMargin: Float = 0.85 // provisional (m)
+    var jumpConfirmations: Int = 3 // provisional
+    var jumpClusterRadius: Float = 1.275 // provisional (m)
 }
 
 struct RouteStabilityConfig {

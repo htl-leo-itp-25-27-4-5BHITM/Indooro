@@ -116,7 +116,7 @@ struct MapView: View {
                                 y: CGFloat(position.y * fittedPixelsPerMeter)
                             )
                             .zIndex(130)
-                            .animation(.easeInOut(duration: 0.5), value: position)
+                            .animation(.linear(duration: StabilizedNavigationConfig.default.beacon.updateIntervalSeconds), value: position)
                             .animation(.easeInOut(duration: 0.16), value: beaconManager.userHeadingRadians)
                         }
 

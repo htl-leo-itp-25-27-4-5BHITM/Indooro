@@ -47,16 +47,16 @@
 
 ## 6. Estimator And Projection
 
-- [ ] 6.1 Rewrite `PoseFusionService` as the estimator: jump gate at tick rate (`maxPlausibleSpeed`, `jumpMargin`, `jumpConfirmations`, `jumpClusterRadius`) followed by confidence-interpolated EMA; remove speed division, velocity, prediction, heading blending, and radio-fix fusion.
-- [ ] 6.2 Replace the pose-fusion config with `estimatorHighConfidenceAlpha 0.46`, `estimatorLowConfidenceAlpha 0.18`, `maxPlausibleSpeed 2.5`, `jumpMargin 0.85`, `jumpConfirmations 3`, `jumpClusterRadius 1.275`, each with a `// provisional` comment.
-- [ ] 6.3 Add `Utilities/WalkableProjector.swift` that returns `graph.nearestProjection(for:)` without distance limit, history, heading, or route bias; add it to the package sources.
-- [ ] 6.4 In `BeaconManager.processSensorSample`, run estimator then projector; publish `userPosition` from the projected point on every tick; keep `rawUserPosition` for the debug overlay only.
-- [ ] 6.5 Delete `filteredDisplayPosition`, `shouldHoldForJumpConfirmation`, `resetDisplayPositionFilter`, their state variables, and `DisplayPositionConfig`.
-- [ ] 6.6 Delete `publishPredictedPose` and its calls in the motion handler and `didUpdateHeading`; keep motion updates only for the heading display path.
-- [ ] 6.7 Delete `MapMatcher.swift` and `MapMatcherConfig`; remove all references.
-- [ ] 6.8 Update `runManualCalibration`: project the point, reset the estimator to it, clear jump candidates, publish projected point, and forward a calibration event to the navigation session (task 7.8).
-- [ ] 6.9 Animate the user marker between published positions in `Views/Main/MapView.swift` (linear animation with the tick duration).
-- [ ] 6.10 Invert the baseline tests from 2.5 for PoseFusion and MapMatcher and add spec scenario tests: single outlier never accepted; confirmed relocation after three points; walking 0.45 m per tick never held; 1.3 m/s lag below 1.0 m at confidence 1.0; aisle change through a shelf ends in the new aisle; left-walking projection stays on the horizontal line; estimate unchanged without ticks.
+- [x] 6.1 Rewrite `PoseFusionService` as the estimator: jump gate at tick rate (`maxPlausibleSpeed`, `jumpMargin`, `jumpConfirmations`, `jumpClusterRadius`) followed by confidence-interpolated EMA; remove speed division, velocity, prediction, heading blending, and radio-fix fusion.
+- [x] 6.2 Replace the pose-fusion config with `estimatorHighConfidenceAlpha 0.46`, `estimatorLowConfidenceAlpha 0.18`, `maxPlausibleSpeed 2.5`, `jumpMargin 0.85`, `jumpConfirmations 3`, `jumpClusterRadius 1.275`, each with a `// provisional` comment.
+- [x] 6.3 Add `Utilities/WalkableProjector.swift` that returns `graph.nearestProjection(for:)` without distance limit, history, heading, or route bias; add it to the package sources.
+- [x] 6.4 In `BeaconManager.processSensorSample`, run estimator then projector; publish `userPosition` from the projected point on every tick; keep `rawUserPosition` for the debug overlay only.
+- [x] 6.5 Delete `filteredDisplayPosition`, `shouldHoldForJumpConfirmation`, `resetDisplayPositionFilter`, their state variables, and `DisplayPositionConfig`.
+- [x] 6.6 Delete `publishPredictedPose` and its calls in the motion handler and `didUpdateHeading`; keep motion updates only for the heading display path.
+- [x] 6.7 Delete `MapMatcher.swift` and `MapMatcherConfig`; remove all references.
+- [x] 6.8 Update `runManualCalibration`: project the point, reset the estimator to it, clear jump candidates, publish projected point, and forward a calibration event to the navigation session (task 7.8).
+- [x] 6.9 Animate the user marker between published positions in `Views/Main/MapView.swift` (linear animation with the tick duration).
+- [x] 6.10 Invert the baseline tests from 2.5 for PoseFusion and MapMatcher and add spec scenario tests: single outlier never accepted; confirmed relocation after three points; walking 0.45 m per tick never held; 1.3 m/s lag below 1.0 m at confidence 1.0; aisle change through a shelf ends in the new aisle; left-walking projection stays on the horizontal line; estimate unchanged without ticks.
 
 ## 7. Navigation Session
 

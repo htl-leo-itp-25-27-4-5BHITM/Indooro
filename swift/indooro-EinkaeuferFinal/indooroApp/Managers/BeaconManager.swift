@@ -211,7 +211,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let navigationConfig = StabilizedNavigationConfig.default
     private var indoorGraph: IndoorGraph?
     private var poseFusionService: PoseFusionService?
-    private var mapMatcher: MapMatcher?
+    private var walkableProjector: WalkableProjector?
     private var routeManager: RouteManager?
     private var navigationStateMachine: NavigationStateMachine?
     private var beaconPositionSolver: BeaconPositionSolver?
@@ -221,7 +221,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private var lastHeadingRadians: Float?
     private var lastHeadingTimestamp: TimeInterval?
     private var lastSolvedRawPoint: SIMD2<Float>?
-    private var lastMotionIntensityG: Float = 0
 
     private let motionManager = CMMotionManager()
     private var rawDeviceHeadingRadians: Float?
@@ -229,12 +228,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let headingDisplaySmoothingAlpha: Float = 0.24
     private let headingReliabilityTimeout: TimeInterval = 1.4
 
-    private var lastMatchedPose: MapMatchedPose?
-    private var smoothedDisplayPositionPoint: SIMD2<Float>?
-    private var lastPublishedDisplayPositionPoint: SIMD2<Float>?
-    private var lastPublishedDisplayPositionTimestamp: TimeInterval?
-    private var pendingJumpPoint: SIMD2<Float>?
-    private var pendingJumpConfirmations = 0
     private var manualCalibrationRevision: Int = 0
     private var isUpdatingHeading = false
     private var latestHeadingAccuracyDegrees: CLLocationDirection = -1
@@ -634,11 +627,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             }
 
             processSensorSample(
-                rawPoint: estimate.point,
-                headingRadians: reliableHeading,
+                solvedPoint: estimate.point,
                 confidence: confidence,
-                timestamp: timestamp,
-                source: .ble
+                timestamp: timestamp
             )
             return
         } else {
@@ -648,39 +639,33 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         applyStateActions(navigationStateMachine?.handle(.sensorUpdate(confidence: confidence)) ?? [])
     }
 
+    /// Pro Tick: Schaetzer (Sprung-Gate + EMA), dann history-freie Projektion auf den
+    /// begehbaren Graphen. Die projizierte Position wird bei jedem Tick veroeffentlicht;
+    /// die Glaettung fuer die Darstellung uebernimmt die Marker-Animation in der Karte.
     private func processSensorSample(
-        rawPoint: SIMD2<Float>,
-        headingRadians: Float?,
+        solvedPoint: SIMD2<Float>,
         confidence: Float,
-        timestamp: TimeInterval,
-        source: PoseSource
+        timestamp: TimeInterval
     ) {
         guard let poseFusionService,
-              let mapMatcher,
+              let walkableProjector,
               let routeManager else {
             return
         }
 
-        let rawSample = RawPoseSample(
-            mapPoint: rawPoint,
-            headingRadians: headingRadians,
+        guard let estimate = poseFusionService.update(
+            solvedPoint: solvedPoint,
             confidence: confidence,
-            timestamp: timestamp,
-            source: source
-        )
-
-        let fusedPose = poseFusionService.update(rawPose: rawSample, radioFix: nil)
-        guard let matched = mapMatcher.match(
-            pose: fusedPose,
-            floor: 0,
-            preferredRouteEdgeIDs: routeManager.preferredEdgeIDs
-        ) else {
+            timestamp: timestamp
+        ),
+        let projection = walkableProjector.project(estimate.point) else {
             return
         }
 
-        lastMatchedPose = matched
-
-        let routeUpdate = routeManager.update(with: matched, timestamp: timestamp)
+        let routeUpdate = routeManager.update(
+            with: RouteInputPose(projection: projection, estimate: estimate.point),
+            timestamp: timestamp
+        )
         if routeUpdate.isOffRouteStable {
             applyStateActions(navigationStateMachine?.handle(.routeDeviationDetected(timestamp: timestamp)) ?? [])
         } else {
@@ -691,104 +676,10 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             applyStateActions(navigationStateMachine?.handle(.rerouteFinished(timestamp: timestamp)) ?? [])
         }
 
-        let displayPoint = filteredDisplayPosition(for: matched.snappedPosition, timestamp: timestamp)
-
         DispatchQueue.main.async {
-            if let displayPoint {
-                self.userPosition = CGPoint(displayPoint)
-            }
+            self.userPosition = CGPoint(projection.projectedPoint)
             self.setNavigationRouteIfNeeded(NavigationRoute(points: routeUpdate.routePolyline))
         }
-    }
-
-    private func filteredDisplayPosition(for candidatePoint: SIMD2<Float>, timestamp: TimeInterval) -> SIMD2<Float>? {
-        guard candidatePoint.x.isFinite, candidatePoint.y.isFinite else {
-            return nil
-        }
-
-        let config = navigationConfig.displayPosition
-
-        if shouldHoldForJumpConfirmation(candidatePoint: candidatePoint, timestamp: timestamp, config: config) {
-            return nil
-        }
-
-        let smoothedPoint: SIMD2<Float>
-        if let previous = smoothedDisplayPositionPoint {
-            smoothedPoint = previous + (candidatePoint - previous) * config.smoothingAlpha
-        } else {
-            smoothedPoint = candidatePoint
-        }
-        smoothedDisplayPositionPoint = smoothedPoint
-
-        guard let lastPublishedPoint = lastPublishedDisplayPositionPoint,
-              let lastPublishedTimestamp = lastPublishedDisplayPositionTimestamp else {
-            lastPublishedDisplayPositionPoint = smoothedPoint
-            lastPublishedDisplayPositionTimestamp = timestamp
-            return smoothedPoint
-        }
-
-        let elapsed = timestamp - lastPublishedTimestamp
-        guard elapsed >= config.displayPositionUpdateIntervalSeconds else {
-            return nil
-        }
-
-        let movedEnough = simd_length(smoothedPoint - lastPublishedPoint) >= config.minDisplayPositionChangeMeters
-        let staleEnough = elapsed >= config.maxDisplayPositionStalenessSeconds
-        guard movedEnough || staleEnough else {
-            return nil
-        }
-
-        lastPublishedDisplayPositionPoint = smoothedPoint
-        lastPublishedDisplayPositionTimestamp = timestamp
-        return smoothedPoint
-    }
-
-    private func shouldHoldForJumpConfirmation(
-        candidatePoint: SIMD2<Float>,
-        timestamp: TimeInterval,
-        config: DisplayPositionConfig
-    ) -> Bool {
-        guard let stablePoint = smoothedDisplayPositionPoint ?? lastPublishedDisplayPositionPoint else {
-            pendingJumpPoint = nil
-            pendingJumpConfirmations = 0
-            return false
-        }
-
-        let referenceTimestamp = lastPublishedDisplayPositionTimestamp ?? timestamp
-        let elapsed = max(0.05, timestamp - referenceTimestamp)
-        let allowedMovement = config.maxReasonableMovementMetersPerSecond * Float(elapsed)
-            + config.minDisplayPositionChangeMeters
-        let distance = simd_length(candidatePoint - stablePoint)
-
-        guard distance > allowedMovement else {
-            pendingJumpPoint = nil
-            pendingJumpConfirmations = 0
-            return false
-        }
-
-        if let pendingJumpPoint,
-           simd_length(candidatePoint - pendingJumpPoint) <= max(0.5, config.minDisplayPositionChangeMeters * 1.5) {
-            pendingJumpConfirmations += 1
-        } else {
-            pendingJumpPoint = candidatePoint
-            pendingJumpConfirmations = 1
-        }
-
-        if pendingJumpConfirmations >= max(1, config.requiredJumpConfirmations) {
-            pendingJumpPoint = nil
-            pendingJumpConfirmations = 0
-            return false
-        }
-
-        return true
-    }
-
-    private func resetDisplayPositionFilter(to mapPoint: SIMD2<Float>? = nil, timestamp: TimeInterval? = nil) {
-        smoothedDisplayPositionPoint = mapPoint
-        lastPublishedDisplayPositionPoint = mapPoint
-        lastPublishedDisplayPositionTimestamp = timestamp
-        pendingJumpPoint = nil
-        pendingJumpConfirmations = 0
     }
 
     // MARK: - Manual calibration
@@ -804,22 +695,17 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private func runManualCalibration(_ mapPoint: SIMD2<Float>) {
         let timestamp = Date().timeIntervalSince1970
 
-        poseFusionService?.reset(to: mapPoint, timestamp: timestamp)
-        mapMatcher?.resetHistory()
-        lastSolvedRawPoint = mapPoint
-        lastRawPosePoint = mapPoint
+        // Projizieren, Schaetzer auf den projizierten Punkt setzen (verwirft Sprung-Kandidaten).
+        let effectivePoint = walkableProjector?.project(mapPoint)?.projectedPoint ?? mapPoint
+        poseFusionService?.reset(to: effectivePoint, timestamp: timestamp)
+        lastSolvedRawPoint = effectivePoint
+        lastRawPosePoint = effectivePoint
         lastRawPoseTimestamp = timestamp
         lastHeadingRadians = nil
         lastHeadingTimestamp = nil
         smoothedDisplayHeadingRadians = nil
 
-        let snapped = mapMatcher?.snapToNearestEdge(point: mapPoint)
-        let effectivePoint = snapped?.snappedPosition ?? mapPoint
-
-        if let snapped {
-            lastMatchedPose = snapped
-        }
-
+        // TODO(7.8): Kalibrierungs-Ereignis an die Navigations-Session weiterleiten.
         if routeManager?.handleManualCalibration(at: effectivePoint, timestamp: timestamp) == true {
             if let route = routeManager?.currentRoute?.polyline {
                 DispatchQueue.main.async {
@@ -834,7 +720,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             mapPoint: CGPoint(effectivePoint),
             timestamp: timestamp
         )
-        resetDisplayPositionFilter(to: effectivePoint, timestamp: timestamp)
 
         DispatchQueue.main.async {
             self.userPosition = CGPoint(effectivePoint)
@@ -1014,24 +899,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         motionManager.deviceMotionUpdateInterval = 1.0 / 20.0
         motionManager.startDeviceMotionUpdates(to: .main) { [weak self] motion, _ in
             guard let self else { return }
-            guard let motion else { return }
+            guard motion != nil else { return }
 
-            let accelerationX = motion.userAcceleration.x
-            let accelerationY = motion.userAcceleration.y
-            let accelerationZ = motion.userAcceleration.z
-            self.lastMotionIntensityG = Float(
-                sqrt(
-                    accelerationX * accelerationX
-                        + accelerationY * accelerationY
-                        + accelerationZ * accelerationZ
-                )
-            )
+            // Motion-Updates speisen nur die Blickrichtungs-Anzeige, nie die Position.
             let now = Date().timeIntervalSince1970
             self.updateDisplayedUserHeading(
                 movementHeading: self.recentReliableMovementHeading(at: now),
                 movementHeadingIsFresh: false
             )
-            self.publishPredictedPose(timestamp: now)
         }
     }
 
@@ -1113,41 +988,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }
 
         return lastHeadingRadians
-    }
-
-    private func publishPredictedPose(timestamp: TimeInterval) {
-        guard trackingMode == .beacon,
-              let poseFusionService,
-              let mapMatcher,
-              let routeManager,
-              let predictedPose = poseFusionService.predict(
-                to: timestamp,
-                headingRadians: recentReliableMovementHeading(at: timestamp),
-                motionIntensityG: lastMotionIntensityG
-              ) else {
-            return
-        }
-
-        let matched = mapMatcher.match(
-            pose: predictedPose,
-            floor: 0,
-            preferredRouteEdgeIDs: routeManager.preferredEdgeIDs
-        )
-
-        let displayPoint = matched?.snappedPosition ?? predictedPose.mapPoint
-        if let matched {
-            lastMatchedPose = matched
-        }
-        let filteredDisplayPoint = filteredDisplayPosition(for: displayPoint, timestamp: timestamp)
-
-        DispatchQueue.main.async {
-            if let filteredDisplayPoint {
-                self.userPosition = CGPoint(filteredDisplayPoint)
-            }
-            if self.rawUserPosition == nil {
-                self.rawUserPosition = CGPoint(predictedPose.mapPoint)
-            }
-        }
     }
 
     private func handleRangedIBeacons(_ rangedBeacons: [CLBeacon], timestamp: TimeInterval) {
@@ -1759,7 +1599,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         syncMeasurementStoreWithBeacons()
         clearBeaconMeasurements()
         rssiBuffer.removeAll()
-        resetDisplayPositionFilter()
         targetPosition = nil
         rebuildNavigationPipeline()
         setNavigationRouteIfNeeded(.empty)
@@ -2125,7 +1964,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         indoorGraph = graph
         poseFusionService = PoseFusionService(config: navigationConfig.poseFusion)
-        mapMatcher = MapMatcher(graph: graph, config: navigationConfig.mapMatcher)
+        walkableProjector = WalkableProjector(graph: graph)
         routeManager = RouteManager(graph: graph, config: navigationConfig.route)
         navigationStateMachine = NavigationStateMachine(config: navigationConfig.confidence)
         beaconPositionSolver = BeaconPositionSolver(bounds: mapBounds, config: navigationConfig.beacon)
@@ -2521,7 +2360,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             movementHeading: lastHeadingRadians,
             movementHeadingIsFresh: false
         )
-        publishPredictedPose(timestamp: Date().timeIntervalSince1970)
     }
 
     func locationManagerShouldDisplayHeadingCalibration(_ manager: CLLocationManager) -> Bool {

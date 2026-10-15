@@ -11,6 +11,22 @@ struct RouteUpdateResult {
     let triggeredReroute: Bool
 }
 
+/// Eingang von `RouteManager.update`: projizierte Position plus Rohschaetzung.
+/// Wird mit der Navigations-Session (Gruppe 7) durch deren eigene Logik ersetzt.
+struct RouteInputPose {
+    let rawPosition: SIMD2<Float>
+    let snappedPosition: SIMD2<Float>
+    let edgeID: Int
+    let distanceToRaw: Float
+
+    init(projection: IndoorEdgeProjection, estimate: SIMD2<Float>) {
+        rawPosition = estimate
+        snappedPosition = projection.projectedPoint
+        edgeID = projection.edgeID
+        distanceToRaw = projection.distanceToPoint
+    }
+}
+
 final class RouteManager {
     private let graph: IndoorGraph
     private let config: RouteStabilityConfig
@@ -33,10 +49,6 @@ final class RouteManager {
     init(graph: IndoorGraph, config: RouteStabilityConfig) {
         self.graph = graph
         self.config = config
-    }
-
-    var preferredEdgeIDs: Set<Int> {
-        Set(currentRoute?.edgeIDs ?? [])
     }
 
     func setRouteFrozen(_ frozen: Bool) {
@@ -79,7 +91,7 @@ final class RouteManager {
         return didUpdate
     }
 
-    func update(with matchedPose: MapMatchedPose, timestamp: TimeInterval) -> RouteUpdateResult {
+    func update(with matchedPose: RouteInputPose, timestamp: TimeInterval) -> RouteUpdateResult {
         guard let route = currentRoute, !route.edgeIDs.isEmpty else {
             return RouteUpdateResult(
                 routePolyline: [],
@@ -256,7 +268,7 @@ final class RouteManager {
         return nil
     }
 
-    private func nearestRouteEdge(to matchedPose: MapMatchedPose) -> (edgeIndex: Int, distance: Float, progress: Float) {
+    private func nearestRouteEdge(to matchedPose: RouteInputPose) -> (edgeIndex: Int, distance: Float, progress: Float) {
         guard let route = currentRoute, !route.edgeIDs.isEmpty else {
             return (0, 0, 0)
         }
@@ -288,7 +300,7 @@ final class RouteManager {
 
     private func updateProgressLock(
         nearestRouteEdgeIndex: Int,
-        matchedPose: MapMatchedPose,
+        matchedPose: RouteInputPose,
         nearestDistance: Float,
         progressAlongRoute: Float
     ) -> Int {
@@ -338,7 +350,7 @@ final class RouteManager {
         return projection.distanceToPoint
     }
 
-    private func alternativeEdgeGain(matchedPose: MapMatchedPose, activeEdgeID: Int?) -> Float {
+    private func alternativeEdgeGain(matchedPose: RouteInputPose, activeEdgeID: Int?) -> Float {
         guard let activeEdgeID,
               matchedPose.edgeID != activeEdgeID,
               let activeProjection = graph.project(point: matchedPose.rawPosition, onto: activeEdgeID) else {

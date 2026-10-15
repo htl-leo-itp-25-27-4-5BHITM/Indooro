@@ -146,7 +146,15 @@ final class IndoorGraph {
                 continue
             }
 
-            if best == nil || projection.distanceToPoint < (best?.distanceToPoint ?? .greatestFiniteMagnitude) {
+            // Gleiche Distanz: kleinere Kanten-ID gewinnt, damit das Ergebnis nicht von der
+            // Hash-Reihenfolge des Dictionarys abhaengt.
+            if let current = best {
+                let isCloser = projection.distanceToPoint < current.distanceToPoint - 1e-5
+                let isTie = abs(projection.distanceToPoint - current.distanceToPoint) <= 1e-5
+                if isCloser || (isTie && projection.edgeID < current.edgeID) {
+                    best = projection
+                }
+            } else {
                 best = projection
             }
         }

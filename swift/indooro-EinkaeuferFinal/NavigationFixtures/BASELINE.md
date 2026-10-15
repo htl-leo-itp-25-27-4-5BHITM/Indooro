@@ -32,3 +32,30 @@ Die Tests bestehen heute, weil sie den Defekt behaupten. Sie werden in den Tasks
 | `posefusion.stationary27s_sigma1.path.ratio` | 4.659 |
 | `routing.distinctEdgeSequencesFor40Starts` | 4.000 (Bereich 4-8) |
 | `routing.nearestNeighbour.distinctFirstStops` | 2.000 |
+
+## Nach den Gruppen 5-6 (Messschicht, Schaetzer, Projektion)
+
+Gemessen mit `swift test` (`PoseEstimatorTests`, `WalkableProjectorTests`; Ausgabe `AFTER56 key=value`).
+Gleiche Szenarien wie oben, Tick 0.35 s, exakte Messpunkte beim Lag-Test, Seed 42 beim Stand-Test.
+Alle Schaetzer-Werte sind provisional (Spec-Defaults, Kalibrierung in Gruppe 12).
+
+| Kennzahl | Baseline | Nach 5-6 |
+| --- | --- | --- |
+| Lag 20 s, 1.3 m/s, Konfidenz 1.0 | 5.942 m | 0.534 m |
+| Lag 20 s, 1.3 m/s, Konfidenz 0.5 | 8.942 m | 0.967 m |
+| Lag 20 s, 1.3 m/s, Konfidenz 0.2 | 12.099 m | 0.816 m (Sprung-Gate greift, siehe unten) |
+| Lag 10 s, 1.2 m/s, Konfidenz 0.7 (ohne Prediction) | 5.676 m | 0.697 m |
+| Pfadlaenge im Stand 27 s, sigma 1 m (Rohpunkte) | - | 128.634 m |
+| Pfadlaenge im Stand 27 s, sigma 1 m (Schaetzwert) | 8.182 m ohne / 38.122 m mit 20-Hz-Prediction | 23.716 m (keine Prediction, kein Mehrfach-Update je Tick) |
+| Bestaetigter 20-m-Sprung, projizierte Verschiebung x | 0.000 m (MapMatcher haengt am alten Segment) | 20.000 m |
+| Gangwechsel durch Regal, projiziertes y (Zielgang y = 59.5) | 55.500 m (alter Gang) | 59.500 m |
+| Links gehen, Abweichung von der horizontalen Gangmitte | Kante hing von der Blickrichtung ab | 0.000 m |
+
+Hinweise:
+
+- Der Stand-Pfad liegt ueber dem Baseline-Wert ohne Prediction (8.2 m), weil alpha jetzt 0.376 statt 0.22 betraegt
+  (Konfidenz 0.7); gegenueber den Rohpunkten wird der Jitter um 82 % reduziert, und die 20-Hz-Verstaerkung (38 m) entfaellt.
+  Ob 0.46/0.18 im Stand zu unruhig sind, entscheidet die Kalibrierung (Task 12.4).
+- Bei Konfidenz 0.2 und 1.3 m/s liegt der stationaere Lag (v * dt * (1 - a) / a, ca. 1.5 m) plus ein Tick Weg ueber dem Gate
+  (2.5 * 0.35 + 0.85 = 1.725 m). Folgepunkte werden gehalten und nach drei Bestaetigungen uebernommen (Sagezahn); der gemessene
+  Lag ist dort kleiner, die Anzeige springt aber periodisch. Kandidat fuer die Kalibrierung (maxPlausibleSpeed / jumpMargin).
