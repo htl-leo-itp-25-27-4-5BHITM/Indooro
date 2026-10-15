@@ -23,7 +23,7 @@ Now that the as-is behavior is specified (`2026-09-17-integrate-ios-client-specs
 - Read the API base URL from build configuration (`Debug-Local`, `Debug-LeoCloud`, `Release` xcconfig files); remove `NSAllowsArbitraryLoads` and allow insecure loads only for `localhost` in `Debug-Local`.
 - Export the backend OpenAPI document, commit a filtered mobile contract, and generate or verify Swift wire models with `swift-openapi-generator`; keep domain models separate from wire models.
 - Replace the `UserDefaults` list blob with a versioned file repository (`schemaVersion 2`) with atomic writes, backup, corruption quarantine, and one-time migration from `shoppingListStore.v1`.
-- Cache the walkable graph per layout revision, use a binary-heap A*, and compute multi-stop order from a per-snapshot distance matrix; rebuild tour snapshots only on relevant changes.
+- Share the walkable graph per layout revision as an immutable `LayoutGraphSnapshot`; the binary-heap A*, the per-revision graph, and the distance-matrix tour planner already exist in `IndooroNavigationCore` (`stabilize-ios-navigation-pipeline`) and are moved, not re-implemented.
 - Replace `print` debug logging with `os.Logger` (privacy-aware); keep the in-app debug log only in DEBUG builds.
 - Add Swift Testing unit tests, fixture-based contract tests, and XCUITest smoke tests; add `.github/workflows/ios.yaml`; make backend CI run tests with JDK 21.
 - Add `Assets.xcassets` (AppIcon, AccentColor), a German String Catalog, VoiceOver labels for map and tour, and Dynamic Type support; move unused layouts and presentation files out of the app target.

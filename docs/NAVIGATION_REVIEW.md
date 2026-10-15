@@ -13,6 +13,35 @@ Einordnung der Aussagen:
 
 ---
 
+## Status (Umsetzung `stabilize-ios-navigation-pipeline`)
+
+Stand: Branch `codex/stabilize-ios-navigation`. Die Befunde unten beschreiben den Zustand beim Review (`c2809a1`); diese Tabelle zeigt, welche Aufgabe in `openspec/changes/stabilize-ios-navigation-pipeline/tasks.md` sie behebt und in welchem Commit.
+
+| Befund | Status | Aufgaben | Commit / Folgearbeit |
+| --- | --- | --- | --- |
+| C.1 Positions-Updates lösen Neu-Optimierung und Neu-Routing aus | behoben | 7.1–7.9, 9.1–9.9 | `9e9a448` (Navigation-Session), `910bf50` (Planung nur bei Ereignissen, `onChange` entfernt) |
+| C.2 MapMatcher-Dauer-Lock | behoben | 6.3, 6.7, 6.10 | `231e989` (`WalkableProjector` ohne Verlauf, `MapMatcher` gelöscht) |
+| C.3 PoseFusion: Geschwindigkeitsbremse gegen Prädiktion | behoben | 6.1, 6.2, 6.6, 6.10 | `231e989` (Sprung-Gate plus EMA, keine Prädiktion) |
+| C.4 Heading-Vergleich ignoriert ungerichtete Kanten | behoben (entfällt) | 6.3, 6.7 | `231e989` (Projektion ohne Heading) |
+| C.5 Routing-Graph ohne Turn-Penalty | behoben für A*; Raster bleibt | 8.1–8.7 | `94ffb77` (Heap, Turn-Penalty, Tie-Break, ein Graph je Layout-Revision). Das 1-m-Raster mit 4-Nachbarschaft bleibt bewusst; Graph-Verfeinerung ist kein Teil dieses Changes |
+| C.6 Zu viele gestapelte Filter | behoben | 5.1–5.5, 6.4–6.7 | `dbd0054`, `231e989`. Verbleibend: Kalman je (Beacon, Quelle), Sprung-Gate, EMA, Projektion |
+| C.7 Zwei Messpfade speisen denselben Kalman-Filter | behoben | 5.1–5.6 | `dbd0054` (Filter je Beacon und Quelle, Lösung nur im Tick) |
+| C.8 RouteManager: doppelte Schwellen, Off-Route gegen biasierte Position | behoben | 7.4, 7.9 | `9e9a448` (eine Off-Route-Regel auf der projizierten Position) |
+| C.9 NavigationStateMachine wirkungslos | behoben | 7.5, 7.9, 7.10 | `9e9a448` (Low-Confidence-Hysterese in der Session, State Machine gelöscht) |
+| C.10 Main-Thread-Last und SwiftUI-Invalidierung | teilweise | 9.9, 10.1, 10.3 | `910bf50`, `8df1324`. Offen: 10.4 (Messung mit Instruments/`_printChanges()`), 13.3 (Strict-Concurrency-Prüfung); A* und Planung laufen weiter synchron auf Main |
+| C.11 Nur Nearest Neighbor, kein gespeichertes aktives Ziel | behoben | 9.1–9.10 | `910bf50` (Distanzmatrix, NN plus 2-opt, gespeicherter Plan) |
+| C.12 Regal-Zuordnung per Präfix | behoben | 4.1–4.5 | `59c8d22` (`matchesProductLayoutCode`) |
+| C.13 Kleinere Punkte | Kompass-Ausrichtung, Kalman-Benennung: offen; Demo-Layout ohne Beacons: durch Testhelfer gelöst | 2.3 | `72ba0f4` (`TestLayouts` injiziert Beacons). Offen: Kompass-Heading zum Layout-Norden ausrichten, `KalmanFilter` R/Q umbenennen (Folge-Change); Stale-Result-Schutz entfällt, weil alles synchron läuft |
+
+Weitere Verweise:
+
+- Replay-Infrastruktur (Aufzeichnung, Replay, Metriken, Abschnitt „Teststrategie“): Aufgaben 3.1–3.9, Commit `19f7d7c`.
+- Feldkalibrierung der provisorischen Werte und die offenen Fragen aus Abschnitt H: Aufgabengruppe 12 (Aufnahmen im Geschäft), noch nicht begonnen.
+- Der AR-Container zeichnet weiterhin die volle Route (`navigationRoute`) statt der Restroute; nur die Karte nutzt `remainingRoutePolyline`.
+- Bekannt aus dem Replay mit synthetischen Läufen: Beim Gehen liegt die Schätzung durch die Kalman-Glättung (Prozessrauschen 0,02, Messrauschen 4,0) mehrere Meter hinter der Wahrheit und die projizierte Position springt beim Wechsel der sichtbaren Beacons; die Werte werden in Gruppe 12 mit echten Aufnahmen bewertet.
+
+---
+
 ## A. Executive Summary
 
 1. **Die Route und das nächste Produkt werden bei jedem rohen Positions-Update komplett neu berechnet.** `ContentView` beobachtet `userPosition` *und* `rawUserPosition` und ruft bei jeder Änderung `ShoppingSessionManager.sync` auf. Das führt die Nearest-Neighbor-Optimierung der ganzen Einkaufsliste neu aus und setzt über `setRouteTargetPosition` ein neues A*-Ziel. `rawUserPosition` ist die *ungefilterte* Solver-Ausgabe. Damit wird die gesamte Stabilisierungslogik im `RouteManager` (Off-Route-Hold, Cooldown, Relevanzprüfung) während einer Einkaufssession umgangen. Das ist die direkte Ursache für Problem B und C. **[Nachgewiesen]**

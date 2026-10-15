@@ -104,10 +104,10 @@
 
 ## 11. Documentation And Change Coordination
 
-- [ ] 11.1 Update `StabilizedNavigationConfig.swift` so it matches the requirement „Positioning pipeline parameters have documented defaults“ exactly, including `// provisional` markers.
-- [ ] 11.2 Add a „Status“ section to `docs/NAVIGATION_REVIEW.md` that maps each finding C.1–C.13 to the task that fixed it or to the follow-up that owns it.
-- [ ] 11.3 Update `openspec/changes/modernize-ios-client-architecture/tasks.md` tasks 5.1–5.6 and 9.x to start from `IndooroNavigationCore`, reuse its tests as characterization tests, and drop work already done here (binary heap, graph per revision, distance matrix); update its `design.md` reference list.
-- [ ] 11.4 Update `swift/indooro-EinkaeuferFinal/TESTING.md` with the replay workflow: record, share, add fixture, run `swift test`.
+- [x] 11.1 Update `StabilizedNavigationConfig.swift` so it matches the requirement „Positioning pipeline parameters have documented defaults“ exactly, including `// provisional` markers.  (Abweichung gefunden und behoben: Der Standard-TX-Power-Wert −72 dBm lag als private Konstante in `BeaconManager`; er steht jetzt als `defaultTxPowerDBm` in `BeaconPositioningConfig`. Alle uebrigen Werte stimmen Wert fuer Wert mit der Spec ueberein; die Spec-Zahlen blieben unveraendert. `// provisional` steht an Schaetzer-, Routen- und 2-opt-Werten, nicht an den Beacon-/Konfidenzwerten, weil die Spec sie dort nicht verlangt.)
+- [x] 11.2 Add a „Status“ section to `docs/NAVIGATION_REVIEW.md` that maps each finding C.1–C.13 to the task that fixed it or to the follow-up that owns it.  (Abschnitt „Status“ am Anfang von `docs/NAVIGATION_REVIEW.md`.)
+- [x] 11.3 Update `openspec/changes/modernize-ios-client-architecture/tasks.md` tasks 5.1–5.6 and 9.x to start from `IndooroNavigationCore`, reuse its tests as characterization tests, and drop work already done here (binary heap, graph per revision, distance matrix); update its `design.md` reference list.  (Auch `proposal.md` und die Szenario-Zeile „Order is unchanged by the optimization“ im Spec-Delta von `modernize-ios-client-architecture` wurden angepasst, weil sie sonst den Nearest-Neighbor-Stand vor diesem Change festschrieben.)
+- [x] 11.4 Update `swift/indooro-EinkaeuferFinal/TESTING.md` with the replay workflow: record, share, add fixture, run `swift test`.  (Abschnitte „Navigation test package“ und „Recording and replaying a store walk“ in `swift/indooro-EinkaeuferFinal/TESTING.md`.)
 
 ## 12. Calibration With Recorded Walks
 

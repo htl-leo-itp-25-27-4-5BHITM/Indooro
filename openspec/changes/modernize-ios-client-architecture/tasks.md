@@ -27,12 +27,12 @@
 
 ## 5. Navigation Extraction
 
-- [ ] 5.1 Move graph, solver, fusion, matcher, route manager, state machine, Kalman filter, config, stop resolver, and multi-stop planner to `IndooroNavigation`.
-- [ ] 5.2 Delete `Utilities/Pathfinder.swift`.
-- [ ] 5.3 Add characterization tests for the current routing and stop-ordering results on `layout.json` and `layout-demosupermarkt.json`.
-- [ ] 5.4 Implement `BinaryHeap` and switch A* to it; tests must match the characterization results.
-- [ ] 5.5 Add `LayoutGraphSnapshot` and the distance-matrix planner; tests must match nearest-neighbor results.
-- [ ] 5.6 Add a performance test for snapshot rebuild with 25 stops (budget 16 ms on CI simulator × 3 tolerance).
+- [ ] 5.1 Move the sources of the local `IndooroNavigationCore` package (`swift/indooro-EinkaeuferFinal/Package.swift`, delivered by `stabilize-ios-navigation-pipeline`: `IndoorGraph` with binary heap, turn-averse A*, `distances(from:)`; `BeaconPositionSolver`, `BeaconMeasurementStore`, `PoseFusionService` estimator, `WalkableProjector`, `PositioningPipeline`, `NavigationSessionCore`, `TourPlanner`, `NavigationReplay`, `KalmanFilter`, `StabilizedNavigationConfig`, `LayoutData`) into `IndooroNavigation`; `ShoppingStopResolver` and the planning-side stop mapping move with them. `Pathfinder`, `MapMatcher`, `RouteManager`, and `NavigationStateMachine` no longer exist.
+- [ ] 5.2 Remove the `IndooroNavigationCore` target from `Package.swift` once its sources live in `IndooroNavigation`; keep the file list and test target mapping equivalent.
+- [ ] 5.3 Move `Tests/IndooroNavigationCoreTests` (graph, routing, estimator, projector, measurement store, session, tour planner, replay tests and `Resources/layout-demosupermarkt.json`) into the `IndooroNavigation` test target as the characterization tests; add a `layout.json` fixture next to the demo layout where a test needs it. Do not re-record expectations; they encode the behavior of `stabilize-ios-navigation-pipeline`.
+- [ ] 5.4 Replace `NavigationSession.attach(to:)`'s dependency on `BeaconManager` by the `PositionSnapshot` stream of task 9.3 without changing `NavigationSessionCore`; session tests must keep passing unchanged.
+- [ ] 5.5 Add a `LayoutGraphSnapshot` (`Sendable`, immutable) wrapping the graph that `stabilize-ios-navigation-pipeline` already builds once per layout revision, so `PositioningEngine` and `ShoppingSessionModel` share it. No new graph or planner logic.
+- [ ] 5.6 Keep the planning-time measurement of `NavigationReplay` (`planningSeconds`) and add a performance test for the 25-stop tour planning (budget 16 ms on CI simulator × 3 tolerance).
 
 ## 6. Networking
 
@@ -58,10 +58,10 @@
 
 - [ ] 9.1 Implement `BeaconRadio` protocol and `CoreLocationBeaconRadio` (ranging, BLE scan, authorization) emitting `AsyncStream<BeaconSample>`.
 - [ ] 9.2 Implement `HeadingProvider` and `MotionProvider` with background delivery.
-- [ ] 9.3 Implement `PositioningEngine` actor with tick loop, pipeline, and `AsyncStream<PositionSnapshot>`.
+- [ ] 9.3 Implement `PositioningEngine` actor with tick loop and `AsyncStream<PositionSnapshot>`; the tick calls the existing `PositioningPipeline.tick` (measurement store, solver, estimator, projector) from `IndooroNavigation` and does not re-implement it.
 - [ ] 9.4 Implement `StoreDetectionService` actor with identity refresh, lookup de-duplication, and cooldown.
 - [ ] 9.5 Implement `LayoutRepository` with the server → cache → history → bundle chain.
-- [ ] 9.6 Add engine tests with a fake radio and `TestClock` for warm-up, stale beacons, low confidence, jump suppression, and manual calibration.
+- [ ] 9.6 Add engine tests with a fake radio and `TestClock` for warm-up, stale beacons, low confidence, jump suppression, and manual calibration; the expected values come from the `NavigationReplay` metrics of the recorded fixtures (`NavigationFixtures/`) so engine and replay agree.
 - [ ] 9.7 Delete `Managers/BeaconManager.swift`.
 
 ## 10. Observable Models And Views

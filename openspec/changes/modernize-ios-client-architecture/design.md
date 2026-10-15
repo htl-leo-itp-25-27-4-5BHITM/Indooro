@@ -25,7 +25,7 @@ As-is structure (commit `63a42d4`, see `docs/specs/AUDIT.md` §1.2): one app tar
 | --- | --- | --- |
 | `IndooroModels` | – | `Product`, `MobileStoreSummary`, `LayoutData`, `LayoutElement`, `ShoppingList*`, `Recipe*`, `Upsell*`, `ShoppingTransferPackage`, `BeaconUUIDNormalizer`; all `Sendable`, `Hashable`, `Codable` |
 | `IndooroNetworking` | Models | `APIEnvironment`, `Endpoint`, `APIClient` (actor), `APIError`, `RetryPolicy`, `JSONCoding`, endpoint definitions, generated OpenAPI wire types + mappers |
-| `IndooroNavigation` | Models | `IndoorGraph`, `IndoorGraphBuilder`, `BinaryHeap`, `AStar`, `RouteManager`, `MapMatcher`, `PoseFusionService`, `BeaconPositionSolver`, `KalmanFilter`, `NavigationStateMachine`, `StabilizedNavigationConfig`, `MultiStopRoutePlanner`, `ShoppingStopResolver` (pure, no Apple UI frameworks) |
+| `IndooroNavigation` | Models | Sources of the `IndooroNavigationCore` package from `stabilize-ios-navigation-pipeline`: `IndoorGraph`, `IndoorGraphBuilder` (binary heap, turn-averse A*, `distances(from:)`), `BeaconPositionSolver`, `BeaconMeasurementStore`, `KalmanFilter`, `PoseFusionService` (estimator), `WalkableProjector`, `PositioningPipeline`, `NavigationSessionCore`, `TourPlanner`, `NavigationReplay`, `StabilizedNavigationConfig`, plus `ShoppingStopResolver` (pure, no Apple UI frameworks) |
 | `IndooroPositioning` | Models, Navigation | `BeaconRadio` protocol + `CoreLocationBeaconRadio`, `HeadingProvider`, `MotionProvider`, `PositioningEngine` (actor), `StoreDetectionService` (actor) |
 | `IndooroPersistence` | Models | `ShoppingListRepository` (file, schema v2, migration), `LayoutCacheStore`, `SettingsStore` |
 | `IndooroDesignSystem` | – | colors, typography, `MapFloatingSurface`, `ProductSearchRow`, markers, state views |
@@ -107,10 +107,9 @@ public enum APIError: Error, Sendable, Equatable {
 
 ### 8. Route planning performance
 
-- `IndoorGraph` is built once per `layoutRevision` inside `PositioningEngine` and shared read-only with `ShoppingSessionModel` through a `LayoutGraphSnapshot` (`Sendable`, immutable).
-- A* uses a binary min-heap with lazy deletion; closed set as `Set<Int>`; expected complexity O(E log V).
-- Multi-stop ordering: one Dijkstra run per stop plus one from the user position (k + 1 runs) → distance matrix → nearest-neighbor order (unchanged semantics) → optional 2-opt improvement for k ≤ 12 behind a feature flag (default off to keep behavior).
-- Snapshot rebuild triggers: list revision change, route mode change, layout revision change, or displayed position moved ≥ 1.0 m since the last rebuild.
+- Already delivered by `stabilize-ios-navigation-pipeline` and only moved by this change: the graph is built once per layout revision, A* uses a binary heap with turn penalty, and `TourPlanner` orders stops from a distance matrix (nearest neighbor plus 2-opt) only on planning events, never on position updates.
+- This change wraps the shared graph in a `LayoutGraphSnapshot` (`Sendable`, immutable) built inside `PositioningEngine` and read by `ShoppingSessionModel`.
+- Planning triggers are the session events of `NavigationSessionCore` (list, route mode, layout, replan); the old trigger "displayed position moved ≥ 1.0 m" does not exist.
 - Performance budget: snapshot rebuild ≤ 16 ms for a 40 × 30 m layout with 25 stops on iPhone 12.
 
 ### 9. Security
@@ -128,7 +127,7 @@ public enum APIError: Error, Sendable, Equatable {
 
 ### 11. Tests and CI
 
-- Swift Testing suites: `LayoutDecodingTests`, `StoreDecodingTests`, `BeaconUUIDNormalizerTests`, `IndoorGraphTests`, `AStarTests`, `RouteManagerTests`, `NavigationStateMachineTests`, `BeaconPositionSolverTests`, `ShoppingStopResolverTests`, `MultiStopRoutePlannerTests`, `ShoppingListRepositoryTests`, `ShoppingListMergeTests`, `TransferPackageTests`, `APIClientRetryTests`, `UpsellModelTests`.
+- Swift Testing suites: `LayoutDecodingTests`, `StoreDecodingTests`, `BeaconUUIDNormalizerTests`, the moved `IndooroNavigationCoreTests` (`LayoutAndGraphTests`, `RoutingTests`, `BeaconMeasurementStoreTests`, `PoseEstimatorTests`, `WalkableProjectorTests`, `NavigationSessionTests`, `TourPlannerTests`, `ShelfMatchingTests`, `NavigationReplayTests`), `ShoppingStopResolverTests`, `ShoppingListRepositoryTests`, `ShoppingListMergeTests`, `TransferPackageTests`, `APIClientRetryTests`, `UpsellModelTests`.
 - XCUITest smoke: add product and start tour in debug mode; open recipe and add to list; import `.indoorolist` fixture.
 - Coverage target (report-only first): ≥ 70 % line coverage for `IndooroNavigation`, `IndooroPersistence`, `IndooroNetworking`.
 - `.github/workflows/ios.yaml`: `macos-15` runner, Xcode 16.4 or later, `xcodebuild -scheme MCindooroApp -destination 'platform=iOS Simulator,name=iPhone 16' test`, SwiftLint optional.

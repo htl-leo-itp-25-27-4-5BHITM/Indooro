@@ -46,11 +46,11 @@ calls.
 
 `swift/indooro-EinkaeuferFinal/Package.swift` defines the SwiftPM package
 `IndooroNavigationCore`. It compiles only the platform-independent navigation
-sources from `indooroApp/` (layout model, graph, pathfinder, Kalman filter,
-beacon solver, pose fusion, map matcher, route manager, navigation config) and
-adds the test target `IndooroNavigationCoreTests`. The Xcode app target is not
-affected; the package exists so navigation logic can be tested on macOS without
-a simulator.
+sources from `indooroApp/` (layout model, graph, Kalman filter, beacon solver,
+measurement store, estimator, walkable projector, positioning pipeline, navigation
+session core, tour planner, navigation config, record/replay types) and adds the
+test target `IndooroNavigationCoreTests`. The Xcode app target is not affected;
+the package exists so navigation logic can be tested on macOS without a simulator.
 
 Run from `swift/indooro-EinkaeuferFinal`:
 
@@ -64,9 +64,40 @@ Test support lives in `Tests/IndooroNavigationCoreTests/`:
   beacon grid (default one beacon per 8 m x 8 m cell).
 - `SyntheticWalk`: walks a polyline with configurable speed, noise, outliers and
   dropouts, tick 0.35 s, seedable (`SplitMix64`).
-- `BaselineDefectTests`: `testBaseline_*` tests document known navigation defects
-  (see `docs/NAVIGATION_REVIEW.md`) and pass while the defect exists. The measured
-  numbers are in `NavigationFixtures/BASELINE.md`. The fix tasks invert them.
+- `SyntheticRecording`: builds replayable `NavigationRecordLine`s (measurements,
+  truth, events) from truth movements on the demo layout.
+- The measured baseline numbers (before the fixes) are in `NavigationFixtures/BASELINE.md`.
+
+## Recording and replaying a store walk
+
+DEBUG builds can record raw measurements and replay them offline against the
+production pipeline (`PositioningPipeline`, `NavigationSessionCore`, `TourPlanner`).
+Release builds contain no recorder.
+
+1. **Record**: in a DEBUG build open Einstellungen -> Debug and switch on
+   „Messungen aufzeichnen“. The app writes JSON Lines to
+   `Documents/NavigationRecordings/<ISO timestamp>.jsonl` (measurements, layout
+   identity, tour events, calibrations). Nothing is sent to a server. A long press
+   (0.6 s) on the map writes a `truth` line at that point without moving the
+   position; use it to mark where you actually stand. Switch the toggle off to
+   flush and close the file.
+2. **Share**: the same section offers „Aufzeichnung teilen“ (system share sheet,
+   e.g. AirDrop to the Mac). The file name is a timestamp; it contains no device
+   identifier. Check it before committing.
+3. **Add a fixture**: copy the file to
+   `NavigationFixtures/recordings/<name>.jsonl` (real walks) and add a test that
+   loads it with `NavigationRecordLine.parse(jsonl:)` and calls
+   `NavigationReplay.run(recording:layout:config:)` with the matching layout
+   (bundle the layout JSON under `Tests/IndooroNavigationCoreTests/Resources/`).
+   Replays run against one layout; the `layout` line only documents which one was
+   active. Small synthetic fixtures are generated in tests instead (see
+   `NavigationReplayTests`).
+4. **Run**: `swift test --filter NavigationReplayTests`. `ReplayMetrics` reports
+   reroutes per minute, active-stop changes without an event, projected jumps,
+   mean and 95th-percentile lag to truth (meters), off-route detection delay,
+   low-confidence toggles and planning time per event. Two replays of the same
+   file must give identical metrics (planning wall time excluded); a metric that
+   differs is a determinism bug. Metrics are printed as `REPLAY <name> ...` lines.
 
 The app build is still verified with:
 
