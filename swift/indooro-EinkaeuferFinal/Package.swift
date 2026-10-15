@@ -22,7 +22,7 @@ let package = Package(
                 "Utilities/PoseFusionService.swift",
                 "Utilities/WalkableProjector.swift",
                 "Utilities/BeaconMeasurementStore.swift",
-                "Utilities/RouteManager.swift",
+                "Utilities/NavigationSessionCore.swift",
                 "Utilities/StabilizedNavigationConfig.swift"
             ]
         ),

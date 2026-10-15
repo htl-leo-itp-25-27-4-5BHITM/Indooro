@@ -10,6 +10,7 @@ private enum AppSection: Hashable {
 
 struct ContentView: View {
     @StateObject var beaconManager = BeaconManager()
+    @StateObject private var navigationSession = NavigationSession()
     @StateObject private var shoppingListManager = ShoppingListManager()
     @StateObject private var shoppingSessionManager = ShoppingSessionManager()
     @StateObject private var mapProductSearch = ProductSearchStore()
@@ -82,6 +83,7 @@ struct ContentView: View {
 
             StoreMapPage(
                 beaconManager: beaconManager,
+                navigationSession: navigationSession,
                 shoppingListManager: shoppingListManager,
                 shoppingSessionManager: shoppingSessionManager,
                 productSearch: mapProductSearch,
@@ -100,6 +102,8 @@ struct ContentView: View {
         .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
         .preferredColorScheme(.light)
         .onAppear {
+            navigationSession.attach(to: beaconManager)
+            shoppingSessionManager.bind(navigationSession: navigationSession)
             syncShoppingSession()
         }
         .onChange(of: targetProduct, initial: false) { _, newProduct in

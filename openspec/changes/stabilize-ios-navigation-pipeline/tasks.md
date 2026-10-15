@@ -60,17 +60,17 @@
 
 ## 7. Navigation Session
 
-- [ ] 7.1 Add `Utilities/NavigationSession.swift` (`final class`, `ObservableObject`, `@MainActor`) with state `mode`, `plan`, `activeStopID`, `activeRoute`, `routeProgress`, `maxRouteProgress`, `offRouteSince`, `isLowConfidence`, `statusMessage`; add the pure logic parts to the package sources.
-- [ ] 7.2 Implement events `startTour`, `setSingleTarget`, `positionUpdated`, `stopCompleted`, `stopSkipped`, `listChanged`, `routeModeToggled`, `replanRequested`, `layoutChanged`, `manualCalibration`, `stopTour`, `clearTarget` exactly as in `design.md` D1.
-- [ ] 7.3 Implement monotonic progress with `progressBacktrackTolerance` and expose `remainingRoutePolyline` and `remainingRouteLength`.
-- [ ] 7.4 Implement the single off-route rule with `offRouteDistance 4.0` and `offRouteHold 2.5` (provisional) measured from the projected position to the route polyline; rebuild only the route to the active stop.
-- [ ] 7.5 Implement low-confidence entry below 0.35 and exit at 0.55 or above; clear off-route evidence while low; publish `isLowConfidence` and „Signal schwach - Kalibrierung empfohlen“.
-- [ ] 7.6 Create the session once in `ContentView` as `@StateObject` and inject it into `StoreMapPage`, `MapView`, `ShoppingFeatureViews`, and the AR container (route polyline only).
-- [ ] 7.7 Move route ownership from `BeaconManager` to the session: remove `routeManager`, `setTargetPosition`, `setRouteTargetPosition`, `setManualTargetPosition`, `clearRouteTarget`, `navigationRoute`, and `targetPosition` publishing from `BeaconManager`, and forward map taps and product targets to the session.
-- [ ] 7.8 Subscribe the session to `BeaconManager` projected positions and confidence (one Combine subscription in the session, not in a view).
-- [ ] 7.9 Delete `NavigationStateMachine.swift`, `RouteManager.swift` (logic moved into the session), and the `RouteStabilityConfig` fields for cooldown, minimum movement, alternative gain, segment lock, decision unlock, and relevance.
-- [ ] 7.10 Keep `isLowConfidence` and `navigationStatusMessage` available to views under the same names so `fix-ios-contract-and-spec-drift` degraded rendering still binds.
-- [ ] 7.11 Add tests: 60 s noisy stationary updates near two equidistant stops keep the active stop and build no route; short detour of 2.0 s causes no reroute; wrong aisle for 2.5 s causes exactly one reroute to the same stop; low confidence for 10 s at 6 m distance causes no reroute; jitter back 1.5 m keeps progress; turning back 4 m lowers progress; manual calibration keeps the stop order.
+- [x] 7.1 Add `Utilities/NavigationSession.swift` (`final class`, `ObservableObject`, `@MainActor`) with state `mode`, `plan`, `activeStopID`, `activeRoute`, `routeProgress`, `maxRouteProgress`, `offRouteSince`, `isLowConfidence`, `statusMessage`; add the pure logic parts to the package sources.
+- [x] 7.2 Implement events `startTour`, `setSingleTarget`, `positionUpdated`, `stopCompleted`, `stopSkipped`, `listChanged`, `routeModeToggled`, `replanRequested`, `layoutChanged`, `manualCalibration`, `stopTour`, `clearTarget` exactly as in `design.md` D1.
+- [x] 7.3 Implement monotonic progress with `progressBacktrackTolerance` and expose `remainingRoutePolyline` and `remainingRouteLength`.
+- [x] 7.4 Implement the single off-route rule with `offRouteDistance 4.0` and `offRouteHold 2.5` (provisional) measured from the projected position to the route polyline; rebuild only the route to the active stop.
+- [x] 7.5 Implement low-confidence entry below 0.35 and exit at 0.55 or above; clear off-route evidence while low; publish `isLowConfidence` and „Signal schwach - Kalibrierung empfohlen“.
+- [x] 7.6 Create the session once in `ContentView` as `@StateObject` and inject it into `StoreMapPage`, `MapView`, `ShoppingFeatureViews`, and the AR container (route polyline only).  (Umgesetzt fuer `StoreMapPage`, `MapView`, AR-Container; `ShoppingFeatureViews` liest keinen Navigationszustand und erreicht die Session ueber `ShoppingSessionManager.bind(navigationSession:)`.)
+- [x] 7.7 Move route ownership from `BeaconManager` to the session: remove `routeManager`, `setTargetPosition`, `setRouteTargetPosition`, `setManualTargetPosition`, `clearRouteTarget`, `navigationRoute`, and `targetPosition` publishing from `BeaconManager`, and forward map taps and product targets to the session.
+- [x] 7.8 Subscribe the session to `BeaconManager` projected positions and confidence (one Combine subscription in the session, not in a view).
+- [x] 7.9 Delete `NavigationStateMachine.swift`, `RouteManager.swift` (logic moved into the session), and the `RouteStabilityConfig` fields for cooldown, minimum movement, alternative gain, segment lock, decision unlock, and relevance.
+- [x] 7.10 Keep `isLowConfidence` and `navigationStatusMessage` available to views under the same names so `fix-ios-contract-and-spec-drift` degraded rendering still binds.
+- [x] 7.11 Add tests: 60 s noisy stationary updates near two equidistant stops keep the active stop and build no route; short detour of 2.0 s causes no reroute; wrong aisle for 2.5 s causes exactly one reroute to the same stop; low confidence for 10 s at 6 m distance causes no reroute; jitter back 1.5 m keeps progress; turning back 4 m lowers progress; manual calibration keeps the stop order.
 
 ## 8. Routing
 

@@ -40,9 +40,6 @@ struct IndoorRoute {
 }
 
 final class IndoorGraph {
-    /// Abbiegestrafe in Metern pro Richtungswechsel.
-    static let defaultTurnPenalty: Float = 1.5 // provisional
-
     private let nodesByID: [Int: IndoorGraphNode]
     private let edgesByID: [Int: IndoorGraphEdge]
     private let adjacencyByNode: [Int: [(neighborNodeID: Int, edgeID: Int, cost: Float)]]
@@ -216,13 +213,24 @@ final class IndoorGraph {
         )
     }
 
-    func shortestRoute(from startPoint: SIMD2<Float>, to endPoint: SIMD2<Float>, floor: Int = 0) -> IndoorRoute? {
+    func shortestRoute(
+        from startPoint: SIMD2<Float>,
+        to endPoint: SIMD2<Float>,
+        floor: Int = 0,
+        turnPenalty: Float = RouteStabilityConfig.defaultTurnPenaltyMeters
+    ) -> IndoorRoute? {
         guard let startNode = nearestNode(to: startPoint, floor: floor),
               let endNode = nearestNode(to: endPoint, floor: floor) else {
             return nil
         }
 
-        return shortestRoute(fromNodeID: startNode.id, toNodeID: endNode.id, startPoint: startPoint, endPoint: endPoint)
+        return shortestRoute(
+            fromNodeID: startNode.id,
+            toNodeID: endNode.id,
+            startPoint: startPoint,
+            endPoint: endPoint,
+            turnPenalty: turnPenalty
+        )
     }
 
     func plannedRoute(from startPoint: SIMD2<Float>, to endPoint: SIMD2<Float>, floor: Int = 0) -> IndoorRoute? {
@@ -245,7 +253,7 @@ final class IndoorGraph {
         toNodeID endNodeID: Int,
         startPoint: SIMD2<Float>? = nil,
         endPoint: SIMD2<Float>? = nil,
-        turnPenalty: Float = IndoorGraph.defaultTurnPenalty
+        turnPenalty: Float = RouteStabilityConfig.defaultTurnPenaltyMeters
     ) -> IndoorRoute? {
         guard nodesByID[startNodeID] != nil, nodesByID[endNodeID] != nil else { return nil }
 

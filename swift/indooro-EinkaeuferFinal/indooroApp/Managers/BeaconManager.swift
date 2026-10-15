@@ -6,6 +6,20 @@ import CoreLocation
 import CoreMotion
 import simd
 
+/// Ein Tick der Ortung fuer die Navigations-Session: projizierte Position (falls es eine
+/// Loesung gab) und Konfidenz. Kommt ueber ein Subject, damit Views nicht pro Tick neu rendern.
+struct NavigationSample {
+    let projectedPosition: SIMD2<Float>?
+    let confidence: Float
+    let timestamp: TimeInterval
+}
+
+/// Zielwunsch von BeaconManager (Produkt-Ziel, Storewechsel) an die Navigations-Session.
+enum NavigationTargetRequest {
+    case set(SIMD2<Float>)
+    case clear
+}
+
 struct ManualCalibrationEvent: Equatable {
     let revision: Int
     let mapPoint: CGPoint
@@ -125,13 +139,10 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     @Published var rawUserPosition: CGPoint?
     @Published var userPosition: CGPoint?
-    @Published private(set) var navigationRoute: NavigationRoute = .empty
-    @Published var targetPosition: CGPoint?
     @Published var userHeadingRadians: Float?
     @Published var isUserHeadingReliable = false
 
     @Published var navigationStatusMessage: String?
-    @Published var isLowConfidence = false
     @Published var manualCalibrationEvent: ManualCalibrationEvent?
 
     @Published var searchResults: [Product] = []
@@ -209,12 +220,15 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     // MARK: - Stabilized navigation pipeline
 
     private let navigationConfig = StabilizedNavigationConfig.default
+
+    /// Ausgang zur Navigations-Session (Abonnement in `NavigationSession.attach`).
+    let navigationSamples = PassthroughSubject<NavigationSample, Never>()
+    let navigationTargetRequests = PassthroughSubject<NavigationTargetRequest, Never>()
+    let manualCalibrations = PassthroughSubject<ManualCalibrationEvent, Never>()
     /// Wird einmal je Layout-Revision gebaut und von Session und Planer nur gelesen.
     private(set) var navigationGraph: IndoorGraph?
     private var poseFusionService: PoseFusionService?
     private var walkableProjector: WalkableProjector?
-    private var routeManager: RouteManager?
-    private var navigationStateMachine: NavigationStateMachine?
     private var beaconPositionSolver: BeaconPositionSolver?
 
     private var lastRawPosePoint: SIMD2<Float>?
@@ -283,33 +297,18 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     // MARK: - Public controls
 
     func setTargetProduct(_ product: Product?) {
-        if !allowServerSearch {
-            if product == nil {
-                DispatchQueue.main.async {
-                    self.targetPosition = nil
-                    self.setNavigationRouteIfNeeded(.empty)
-                    self.routeManager?.clearRoute()
-                }
-            }
-            return
-        }
-
-        guard let product else {
-            DispatchQueue.main.async {
-                self.targetPosition = nil
-                self.setNavigationRouteIfNeeded(.empty)
-                self.routeManager?.clearRoute()
-            }
+        guard allowServerSearch, let product else {
+            navigationTargetRequests.send(.clear)
             return
         }
 
         if let shelf = shelves.first(where: { $0.matchesProductLayoutCode(product.layoutCode) }) {
             let tx = shelf.x + (shelf.width ?? 1) / 2
             let ty = shelf.y + (shelf.height ?? 1) / 2
-            setTargetPosition(CGPoint(x: tx, y: ty))
+            navigationTargetRequests.send(.set(SIMD2<Float>(Float(tx), Float(ty))))
         } else {
             print("⚠️ Kein Regal gefunden fuer \(product.name) (Code: \(product.layoutCode))")
-            clearRouteTarget()
+            navigationTargetRequests.send(.clear)
         }
     }
 
@@ -436,27 +435,16 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             clearBeaconMeasurements()
             rssiBuffer.removeAll()
             tapSetsTarget = false
-            applyStateActions(navigationStateMachine?.handle(.confidenceRecovered) ?? [])
+            navigationSamples.send(
+                NavigationSample(
+                    projectedPosition: nil,
+                    confidence: 1,
+                    timestamp: Date().timeIntervalSince1970
+                )
+            )
             DispatchQueue.main.async {
-                self.isLowConfidence = false
                 self.navigationStatusMessage = nil
             }
-        }
-    }
-
-    func setManualTargetPosition(_ point: CGPoint) {
-        setTargetPosition(point)
-    }
-
-    func setRouteTargetPosition(_ point: CGPoint) {
-        setTargetPosition(point)
-    }
-
-    func clearRouteTarget() {
-        DispatchQueue.main.async {
-            self.targetPosition = nil
-            self.setNavigationRouteIfNeeded(.empty)
-            self.routeManager?.clearRoute()
         }
     }
 
@@ -614,7 +602,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 min: 0,
                 max: 1
             )
-            applyStateActions(navigationStateMachine?.handle(.sensorUpdate(confidence: confidence)) ?? [])
             lastSolvedRawPoint = estimate.point
             let movementHeading = estimateHeading(currentPoint: estimate.point, timestamp: timestamp)
             let reliableHeading = movementHeading ?? recentReliableMovementHeading(at: timestamp)
@@ -637,7 +624,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             confidence = baseConfidence
         }
 
-        applyStateActions(navigationStateMachine?.handle(.sensorUpdate(confidence: confidence)) ?? [])
+        navigationSamples.send(
+            NavigationSample(projectedPosition: nil, confidence: confidence, timestamp: timestamp)
+        )
     }
 
     /// Pro Tick: Schaetzer (Sprung-Gate + EMA), dann history-freie Projektion auf den
@@ -649,8 +638,10 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         timestamp: TimeInterval
     ) {
         guard let poseFusionService,
-              let walkableProjector,
-              let routeManager else {
+              let walkableProjector else {
+            navigationSamples.send(
+                NavigationSample(projectedPosition: nil, confidence: confidence, timestamp: timestamp)
+            )
             return
         }
 
@@ -660,37 +651,29 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             timestamp: timestamp
         ),
         let projection = walkableProjector.project(estimate.point) else {
+            navigationSamples.send(
+                NavigationSample(projectedPosition: nil, confidence: confidence, timestamp: timestamp)
+            )
             return
         }
 
-        let routeUpdate = routeManager.update(
-            with: RouteInputPose(projection: projection, estimate: estimate.point),
-            timestamp: timestamp
+        navigationSamples.send(
+            NavigationSample(
+                projectedPosition: projection.projectedPoint,
+                confidence: confidence,
+                timestamp: timestamp
+            )
         )
-        if routeUpdate.isOffRouteStable {
-            applyStateActions(navigationStateMachine?.handle(.routeDeviationDetected(timestamp: timestamp)) ?? [])
-        } else {
-            applyStateActions(navigationStateMachine?.handle(.routeRecovered) ?? [])
-        }
-
-        if routeUpdate.triggeredReroute {
-            applyStateActions(navigationStateMachine?.handle(.rerouteFinished(timestamp: timestamp)) ?? [])
-        }
 
         DispatchQueue.main.async {
             self.userPosition = CGPoint(projection.projectedPoint)
-            self.setNavigationRouteIfNeeded(NavigationRoute(points: routeUpdate.routePolyline))
         }
     }
 
     // MARK: - Manual calibration
 
     private func performManualCalibration(to mapPoint: SIMD2<Float>) {
-        let timestamp = Date().timeIntervalSince1970
-        applyStateActions(
-            navigationStateMachine?.handle(.manualSetPosition(mapPoint: mapPoint, timestamp: timestamp)) ?? []
-        )
-        applyStateActions(navigationStateMachine?.handle(.manualCalibrationApplied) ?? [])
+        runManualCalibration(mapPoint)
     }
 
     private func runManualCalibration(_ mapPoint: SIMD2<Float>) {
@@ -706,15 +689,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         lastHeadingTimestamp = nil
         smoothedDisplayHeadingRadians = nil
 
-        // TODO(7.8): Kalibrierungs-Ereignis an die Navigations-Session weiterleiten.
-        if routeManager?.handleManualCalibration(at: effectivePoint, timestamp: timestamp) == true {
-            if let route = routeManager?.currentRoute?.polyline {
-                DispatchQueue.main.async {
-                    self.setNavigationRouteIfNeeded(NavigationRoute(points: route))
-                }
-            }
-        }
-
         manualCalibrationRevision += 1
         let event = ManualCalibrationEvent(
             revision: manualCalibrationRevision,
@@ -722,75 +696,15 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             timestamp: timestamp
         )
 
+        // Die Session baut nur die Route zum aktiven Stopp von hier neu (Plan bleibt).
+        manualCalibrations.send(event)
+
         DispatchQueue.main.async {
             self.userPosition = CGPoint(effectivePoint)
             self.rawUserPosition = CGPoint(effectivePoint)
             self.userHeadingRadians = nil
             self.isUserHeadingReliable = false
             self.manualCalibrationEvent = event
-        }
-    }
-
-    // MARK: - State actions
-
-    private func applyStateActions(_ actions: [NavigationAction]) {
-        for action in actions {
-            switch action {
-            case .freezeRoute(let shouldFreeze):
-                routeManager?.setRouteFrozen(shouldFreeze)
-
-            case .runManualCalibration(let mapPoint):
-                runManualCalibration(mapPoint)
-
-            case .triggerReroute:
-                break
-
-            case .publishStatus(let status):
-                DispatchQueue.main.async {
-                    self.navigationStatusMessage = status
-                }
-            }
-        }
-
-        DispatchQueue.main.async {
-            let mode = self.navigationStateMachine?.state.mode
-            self.isLowConfidence = mode == .lowConfidence
-        }
-    }
-
-    // MARK: - Target/route
-
-    private func setTargetPosition(_ point: CGPoint) {
-        DispatchQueue.main.async {
-            self.targetPosition = point
-        }
-
-        guard let routeManager else {
-            return
-        }
-
-        let startPoint = SIMD2<Float>(
-            Float((userPosition ?? rawUserPosition ?? point).x),
-            Float((userPosition ?? rawUserPosition ?? point).y)
-        )
-
-        let destination = SIMD2<Float>(Float(point.x), Float(point.y))
-        if routeManager.setDestination(destination, from: startPoint) {
-            DispatchQueue.main.async {
-                self.setNavigationRouteIfNeeded(
-                    NavigationRoute(points: routeManager.currentRoute?.polyline ?? [])
-                )
-            }
-        } else {
-            DispatchQueue.main.async {
-                self.setNavigationRouteIfNeeded(.empty)
-            }
-        }
-    }
-
-    private func setNavigationRouteIfNeeded(_ route: NavigationRoute) {
-        if navigationRoute != route {
-            navigationRoute = route
         }
     }
 
@@ -1600,12 +1514,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         syncMeasurementStoreWithBeacons()
         clearBeaconMeasurements()
         rssiBuffer.removeAll()
-        targetPosition = nil
         rebuildNavigationPipeline()
-        setNavigationRouteIfNeeded(.empty)
-        routeManager?.clearRoute()
-        setFixedTargetIfNeeded()
         layoutRevision += 1
+        setFixedTargetIfNeeded()
         configureBeaconScanningForCurrentMode()
     }
 
@@ -1773,7 +1684,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         activeStoreBeaconIdentityKey = nil
         activeLayoutStore = nil
         activeLayoutStoreSource = nil
-        clearRouteTarget()
+        navigationTargetRequests.send(.clear)
         activeLayoutDescription = "\(store.name) erkannt • Layout nicht geladen: \(reason)"
         navigationStatusMessage = storeLayoutFailureStatusMessage
 
@@ -1966,30 +1877,18 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         navigationGraph = graph
         poseFusionService = PoseFusionService(config: navigationConfig.poseFusion)
         walkableProjector = WalkableProjector(graph: graph)
-        routeManager = RouteManager(graph: graph, config: navigationConfig.route)
-        navigationStateMachine = NavigationStateMachine(config: navigationConfig.confidence)
         beaconPositionSolver = BeaconPositionSolver(bounds: mapBounds, config: navigationConfig.beacon)
         rangingConstraints = buildRangingConstraints()
-
-        if let targetPosition {
-            setTargetPosition(targetPosition)
-        }
     }
 
     private func setFixedTargetIfNeeded() {
         guard let fixedTargetCategory else { return }
 
-        if let shelf = shelves.first(where: { $0.category == fixedTargetCategory }) {
-            let tx = shelf.x + (shelf.width ?? 1) / 2
-            let ty = shelf.y + (shelf.height ?? 1) / 2
-            targetPosition = CGPoint(x: tx, y: ty)
-            setNavigationRouteIfNeeded(.empty)
-        } else if let fallback = shelves.first {
-            let tx = fallback.x + (fallback.width ?? 1) / 2
-            let ty = fallback.y + (fallback.height ?? 1) / 2
-            targetPosition = CGPoint(x: tx, y: ty)
-            setNavigationRouteIfNeeded(.empty)
-        }
+        let shelf = shelves.first(where: { $0.category == fixedTargetCategory }) ?? shelves.first
+        guard let shelf else { return }
+        let tx = shelf.x + (shelf.width ?? 1) / 2
+        let ty = shelf.y + (shelf.height ?? 1) / 2
+        navigationTargetRequests.send(.set(SIMD2<Float>(Float(tx), Float(ty))))
     }
 
     private func beaconUUID(for element: LayoutElement) -> UUID? {

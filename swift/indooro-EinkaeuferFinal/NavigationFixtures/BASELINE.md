@@ -59,3 +59,23 @@ Hinweise:
 - Bei Konfidenz 0.2 und 1.3 m/s liegt der stationaere Lag (v * dt * (1 - a) / a, ca. 1.5 m) plus ein Tick Weg ueber dem Gate
   (2.5 * 0.35 + 0.85 = 1.725 m). Folgepunkte werden gehalten und nach drei Bestaetigungen uebernommen (Sagezahn); der gemessene
   Lag ist dort kleiner, die Anzeige springt aber periodisch. Kandidat fuer die Kalibrierung (maxPlausibleSpeed / jumpMargin).
+
+## Nach den Gruppen 7-8 (Routing, Navigations-Session)
+
+Gemessen mit `swift test` (`RoutingTests`, `NavigationSessionTests`; Ausgabe `AFTER78 key=value`), Debug-Build.
+
+| Kennzahl | Baseline | Nach 7-8 |
+| --- | --- | --- |
+| Verschiedene Kantenfolgen fuer 40 Starts innerhalb +-0.4 m (Zellmitte, ein Startknoten) | 4 (Bereich 4-8, Startpunkt an der Zellecke) | 1 |
+| Verschiedene Kantenfolgen je Startknoten, Starts an der Zellecke (4 Startknoten) | - | 1 je Startknoten |
+| A* auf `layout-demosupermarkt` (40 x 60), 50 Routen quer durch den Laden | Linearsuche im offenen Set (nicht gemessen) | ca. 4.9 ms je Route (Debug, M-Serie) |
+| Neu gebaute Routen bei 60 s Rauschen im Stand zwischen zwei gleich weit entfernten Stopps | Route und Stopp wechselten je Positionsupdate | 0 (aktiver Stopp bleibt) |
+| Neu gebaute Routen bei 3.5 s Aufenthalt in falscher Gasse (> 4 m) | Cooldown 20 s, 6 s Hold, 8 m | genau 1 (Hold 2.5 s) |
+| Nearest-Neighbour-Test (`routing.nearestNeighbour.distinctFirstStops`) | 2 | 2 (wird in Gruppe 9 invertiert) |
+
+Hinweise:
+
+- Der Baseline-Test startete bei (20, 8), einer Zellecke: vier Startknoten sind moeglich, daher zaehlte er 4 Formen. Die Zielvorgabe
+  „identisch nach dem ersten Knoten“ gilt je Startknoten (ein Start im selben Knoten ergibt immer dieselbe Kantenfolge).
+  Der invertierte Test prueft deshalb an einer Zellmitte (1 Form) und an der Zellecke je Startknoten (1 Form).
+- Abbiegestrafe 1.5 m, Off-Route 4.0 m / 2.5 s, Backtrack 3.0 m, Konfidenz 0.35/0.55 sind provisional (Kalibrierung Gruppe 12).

@@ -947,12 +947,50 @@ final class ShoppingListManager: ObservableObject {
     }
 }
 
+/// Ereignis, das einen neuen Plan an die Navigations-Session meldet.
+enum ShoppingSyncEvent {
+    case listChanged
+    case routeModeToggled
+}
+
+extension ShoppingStop {
+    var navigationStop: NavigationStop {
+        NavigationStop(id: id, title: title, mapPoint: SIMD2<Float>(mapPoint))
+    }
+}
+
+extension ShoppingRouteSnapshot {
+    /// Setzt den Stopp mit dieser ID an die erste Stelle (der aktive Stopp gehoert der Session).
+    func promoting(stopID: String?) -> ShoppingRouteSnapshot {
+        guard let stopID,
+              let index = orderedStops.firstIndex(where: { $0.id == stopID }),
+              index > 0 else {
+            return self
+        }
+        var stops = orderedStops
+        let active = stops.remove(at: index)
+        stops.insert(active, at: 0)
+        return ShoppingRouteSnapshot(
+            listID: listID,
+            listName: listName,
+            routeMode: routeMode,
+            orderedStops: stops,
+            unresolvedItems: unresolvedItems,
+            completedItems: completedItems,
+            totalStopCount: totalStopCount,
+            totalProductCount: totalProductCount
+        )
+    }
+}
+
+@MainActor
 final class ShoppingSessionManager: ObservableObject {
     @Published private(set) var activeListID: UUID?
     @Published private(set) var routeMode: ShoppingRouteMode = .optimized
     @Published private(set) var snapshot: ShoppingRouteSnapshot?
     @Published private(set) var revision = 0
 
+    private weak var navigationSession: NavigationSession?
     private let activeListKey = "shoppingSession.activeListID"
     private let routeModeKey = "shoppingSession.routeMode"
 
@@ -972,6 +1010,11 @@ final class ShoppingSessionManager: ObservableObject {
         activeListID != nil
     }
 
+    /// Verbindet die Einkaufs-Session mit der Navigations-Session, die Route und aktiven Stopp besitzt.
+    func bind(navigationSession: NavigationSession) {
+        self.navigationSession = navigationSession
+    }
+
     func startSession(
         for listID: UUID,
         listManager: ShoppingListManager,
@@ -985,7 +1028,7 @@ final class ShoppingSessionManager: ObservableObject {
     func stopSession(beaconManager: BeaconManager) {
         activeListID = nil
         snapshot = nil
-        beaconManager.clearRouteTarget()
+        navigationSession?.stopTour()
         persistState()
         revision += 1
     }
@@ -996,18 +1039,19 @@ final class ShoppingSessionManager: ObservableObject {
     ) {
         routeMode = routeMode == .optimized ? .listOrder : .optimized
         persistState()
-        sync(listManager: listManager, beaconManager: beaconManager)
+        sync(listManager: listManager, beaconManager: beaconManager, event: .routeModeToggled)
     }
 
     func sync(
         listManager: ShoppingListManager,
-        beaconManager: BeaconManager
+        beaconManager: BeaconManager,
+        event: ShoppingSyncEvent = .listChanged
     ) {
         guard let activeListID,
               let list = listManager.list(with: activeListID) else {
             if snapshot != nil {
                 snapshot = nil
-                beaconManager.clearRouteTarget()
+                navigationSession?.stopTour()
                 revision += 1
             }
             return
@@ -1021,11 +1065,22 @@ final class ShoppingSessionManager: ObservableObject {
             layoutElements: beaconManager.shelves
         )
 
-        self.snapshot = snapshot
-        if let currentStop = snapshot.currentStop {
-            beaconManager.setRouteTargetPosition(currentStop.mapPoint)
+        // Die Session behaelt den aktiven Stopp, solange er im Plan vorkommt; ein erneutes Setzen
+        // desselben Ziels baut keine Route neu.
+        let plan = snapshot.orderedStops.map(\.navigationStop)
+        if let navigationSession {
+            if plan.isEmpty {
+                navigationSession.stopTour()
+            } else if navigationSession.mode != .tour {
+                navigationSession.startTour(plan: plan)
+            } else if event == .routeModeToggled {
+                navigationSession.routeModeToggled(plan: plan)
+            } else {
+                navigationSession.listChanged(plan: plan)
+            }
+            self.snapshot = snapshot.promoting(stopID: navigationSession.activeStopID)
         } else {
-            beaconManager.clearRouteTarget()
+            self.snapshot = snapshot
         }
         revision += 1
     }
@@ -1089,11 +1144,20 @@ final class ShoppingSessionManager: ObservableObject {
             layoutElements: beaconManager.shelves
         )
 
-        guard let currentStop = freshSnapshot.currentStop else {
+        // Erledigt/uebersprungen wirkt auf den gespeicherten aktiven Stopp der Session, nicht auf
+        // den Stopp, der gerade am naechsten liegt.
+        let activeID = navigationSession?.activeStopID
+        guard let currentStop = freshSnapshot.orderedStops.first(where: { $0.id == activeID })
+            ?? freshSnapshot.currentStop else {
             sync(listManager: listManager, beaconManager: beaconManager)
             return
         }
 
+        if status == .skipped {
+            navigationSession?.stopSkipped()
+        } else {
+            navigationSession?.stopCompleted()
+        }
         listManager.markItems(currentStop.itemIDs, in: freshSnapshot.listID, status: status)
         sync(listManager: listManager, beaconManager: beaconManager)
     }

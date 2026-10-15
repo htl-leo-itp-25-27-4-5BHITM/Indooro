@@ -34,16 +34,16 @@ struct PoseFusionConfig {
 }
 
 struct RouteStabilityConfig {
-    var offRouteDistanceMeters: Float = 8.0
-    var offRouteHoldSeconds: TimeInterval = 6.0
-    var rerouteCooldownSeconds: TimeInterval = 20.0
-    var minReroutePositionChangeMeters: Float = 5.0
-    var minRouteDifferenceToReplace: Float = 6.0
-    var activeSegmentLockDistanceMeters: Float = 2.4
-    var decisionUnlockDistanceMeters: Float = 2.6
-    var progressBacktrackToleranceMeters: Float = 3.0
-    var rerouteRequiresAlternativeEdgeScoreGain: Float = 2.0
-    var manualCalibrationTriggersReroute: Bool = true
+    /// Abbiegestrafe der Routensuche in Metern pro Richtungswechsel.
+    static let defaultTurnPenaltyMeters: Float = 1.5 // provisional
+
+    var turnPenaltyMeters: Float = RouteStabilityConfig.defaultTurnPenaltyMeters // provisional
+    // Fortschritt faellt nur, wenn die Projektion weiter als diese Toleranz hinter dem Maximum liegt.
+    var progressBacktrackToleranceMeters: Float = 3.0 // provisional
+    // Eine Off-Route-Evidenz gilt, solange die projizierte Position weiter als
+    // offRouteDistanceMeters von der Route entfernt ist; nach offRouteHoldSeconds wird neu geroutet.
+    var offRouteDistanceMeters: Float = 4.0 // provisional
+    var offRouteHoldSeconds: TimeInterval = 2.5 // provisional
 }
 
 struct ConfidenceConfig {

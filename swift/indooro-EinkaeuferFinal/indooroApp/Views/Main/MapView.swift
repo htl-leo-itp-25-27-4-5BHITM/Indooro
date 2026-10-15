@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MapView: View {
     @ObservedObject var beaconManager: BeaconManager
+    @ObservedObject var navigationSession: NavigationSession
     let pixelsPerMeter: Double
     @Binding var mapScale: Double
     let targetProduct: Product?
@@ -31,7 +32,7 @@ struct MapView: View {
             let fittedPixelsPerMeter = pixelsPerMeter * Double(fitScale)
             let mapWidth = CGFloat(beaconManager.gridWidth * fittedPixelsPerMeter)
             let mapHeight = CGFloat(beaconManager.gridHeight * fittedPixelsPerMeter)
-            let routePoints = beaconManager.navigationRoute.cgPoints.map {
+            let routePoints = navigationSession.navigationRoute.cgPoints.map {
                 CGPoint(x: $0.x * fittedPixelsPerMeter, y: $0.y * fittedPixelsPerMeter)
             }
             let allowsManualMapTap = showsDebugMapElements || !beaconManager.tapSetsTarget
@@ -67,7 +68,7 @@ struct MapView: View {
                             ShelfView(element: element, pixelsPerMeter: fittedPixelsPerMeter)
                         }
 
-                        if !showsShoppingSession, let targetPosition = beaconManager.targetPosition {
+                        if !showsShoppingSession, let targetPosition = navigationSession.targetPosition {
                             TargetMapMarker()
                                 .position(
                                     x: CGFloat(targetPosition.x * fittedPixelsPerMeter),
@@ -129,7 +130,7 @@ struct MapView: View {
                                     let yMeter = Double(location.y) / fittedPixelsPerMeter
                                     let point = CGPoint(x: xMeter, y: yMeter)
                                     if beaconManager.tapSetsTarget {
-                                        beaconManager.setManualTargetPosition(point)
+                                        navigationSession.setSingleTarget(point)
                                     } else {
                                         beaconManager.setManualUserPosition(point)
                                     }

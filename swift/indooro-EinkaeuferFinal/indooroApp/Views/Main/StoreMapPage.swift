@@ -3,6 +3,7 @@ import MapKit
 
 struct StoreMapPage: View {
     @ObservedObject var beaconManager: BeaconManager
+    @ObservedObject var navigationSession: NavigationSession
     @ObservedObject var shoppingListManager: ShoppingListManager
     @ObservedObject var shoppingSessionManager: ShoppingSessionManager
     @ObservedObject var productSearch: ProductSearchStore
@@ -146,7 +147,7 @@ struct StoreMapPage: View {
             searchText = ""
         }
         .fullScreenCover(isPresented: $showARRoute) {
-            ARRouteContainerView(beaconManager: beaconManager)
+            ARRouteContainerView(beaconManager: beaconManager, navigationSession: navigationSession)
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet(
@@ -156,7 +157,7 @@ struct StoreMapPage: View {
                     get: { beaconManager.tapSetsTarget },
                     set: { beaconManager.tapSetsTarget = $0 }
                 ),
-                canShowAR: beaconManager.navigationRoute.pointCount >= 2,
+                canShowAR: navigationSession.navigationRoute.pointCount >= 2,
                 userPosition: displayUserPosition,
                 onShowAR: {
                     showSettings = false
@@ -201,6 +202,7 @@ struct StoreMapPage: View {
 
                     MapView(
                         beaconManager: beaconManager,
+                        navigationSession: navigationSession,
                         pixelsPerMeter: basePixelsPerMeter,
                         mapScale: $mapScale,
                         targetProduct: targetProduct,
@@ -680,7 +682,7 @@ struct StoreMapPage: View {
     }
 
     private var activeRouteDistanceMeters: Double? {
-        let routePoints = beaconManager.navigationRoute.points
+        let routePoints = navigationSession.navigationRoute.points
         if routePoints.count > 1 {
             return zip(routePoints, routePoints.dropFirst()).reduce(0) { partialResult, segment in
                 let deltaX = Double(segment.1.x - segment.0.x)
@@ -689,7 +691,7 @@ struct StoreMapPage: View {
             }
         }
 
-        guard let user = displayUserPosition, let target = beaconManager.targetPosition else {
+        guard let user = displayUserPosition, let target = navigationSession.targetPosition else {
             return nil
         }
         return hypot(target.x - user.x, target.y - user.y)
@@ -712,7 +714,7 @@ struct StoreMapPage: View {
         upsellStore.authorizePlanPreloading(for: store, reason: "manual_store_tap")
         pendingStoreSelectionID = store.id
         targetProduct = nil
-        beaconManager.clearRouteTarget()
+        navigationSession.clearTarget()
         beaconManager.loadStoreLayout(storeId: store.id)
     }
 
