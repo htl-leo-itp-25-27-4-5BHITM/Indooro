@@ -106,8 +106,7 @@ enum ShoppingStopResolver {
         for list: ShoppingList,
         routeMode: ShoppingRouteMode,
         userPosition: CGPoint?,
-        gridWidth: Double,
-        gridHeight: Double,
+        graph: IndoorGraph?,
         layoutElements: [LayoutElement]
     ) -> ShoppingRouteSnapshot {
         let completedItems = list.items
@@ -149,9 +148,7 @@ enum ShoppingStopResolver {
         let orderedStops = MultiStopRoutePlanner.order(
             stops: stops,
             startingAt: userPosition,
-            gridWidth: gridWidth,
-            gridHeight: gridHeight,
-            layoutElements: layoutElements,
+            graph: graph,
             mode: routeMode
         )
 
@@ -213,9 +210,7 @@ enum MultiStopRoutePlanner {
     static func order(
         stops: [ShoppingStop],
         startingAt userPosition: CGPoint?,
-        gridWidth: Double,
-        gridHeight: Double,
-        layoutElements: [LayoutElement],
+        graph: IndoorGraph?,
         mode: ShoppingRouteMode
     ) -> [ShoppingStop] {
         let listOrderedStops = stops.sorted { lhs, rhs in
@@ -225,17 +220,13 @@ enum MultiStopRoutePlanner {
             return lhs.orderSeed < rhs.orderSeed
         }
 
+        // Der Graph gehoert BeaconManager (einmal je Layout-Revision); hier wird er nur gelesen.
         guard mode == .optimized,
               let userPosition,
+              let graph,
               listOrderedStops.count > 1 else {
             return listOrderedStops
         }
-
-        let graph = IndoorGraphBuilder.fromLayout(
-            gridWidth: Int(gridWidth),
-            gridHeight: Int(gridHeight),
-            elements: layoutElements
-        )
 
         var remainingStops = listOrderedStops
         var orderedStops: [ShoppingStop] = []
@@ -1026,8 +1017,7 @@ final class ShoppingSessionManager: ObservableObject {
             for: list,
             routeMode: routeMode,
             userPosition: beaconManager.userPosition ?? beaconManager.rawUserPosition,
-            gridWidth: beaconManager.gridWidth,
-            gridHeight: beaconManager.gridHeight,
+            graph: beaconManager.navigationGraph,
             layoutElements: beaconManager.shelves
         )
 
@@ -1054,8 +1044,7 @@ final class ShoppingSessionManager: ObservableObject {
             for: list,
             routeMode: mode ?? routeMode,
             userPosition: beaconManager.userPosition ?? beaconManager.rawUserPosition,
-            gridWidth: beaconManager.gridWidth,
-            gridHeight: beaconManager.gridHeight,
+            graph: beaconManager.navigationGraph,
             layoutElements: beaconManager.shelves
         )
     }
@@ -1096,8 +1085,7 @@ final class ShoppingSessionManager: ObservableObject {
             for: list,
             routeMode: routeMode,
             userPosition: beaconManager.userPosition ?? beaconManager.rawUserPosition,
-            gridWidth: beaconManager.gridWidth,
-            gridHeight: beaconManager.gridHeight,
+            graph: beaconManager.navigationGraph,
             layoutElements: beaconManager.shelves
         )
 

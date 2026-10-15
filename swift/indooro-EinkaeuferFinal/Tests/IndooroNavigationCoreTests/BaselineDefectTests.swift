@@ -5,8 +5,8 @@ import simd
 /// Baseline-Tests (Task 2.5): Jeder Test dokumentiert einen BEKANNTEN DEFEKT des
 /// aktuellen Verhaltens (docs/NAVIGATION_REVIEW.md C.9/C.10) und besteht, solange
 /// der Defekt existiert. Die Zahlen werden mit `BASELINE key=value` ausgegeben und
-/// stehen in NavigationFixtures/BASELINE.md. Die Assertions werden in den
-/// Tasks 8.6 / 9.10 invertiert. PoseFusion- und MapMatcher-Tests (C.1/C.2) wurden in
+/// stehen in NavigationFixtures/BASELINE.md. Die Routenform-Assertion wurde in Task 8.6 invertiert,
+/// der Nearest-Neighbour-Test wird in Task 9.10 invertiert. PoseFusion- und MapMatcher-Tests (C.1/C.2) wurden in
 /// Task 6.10 durch `PoseEstimatorTests` / `WalkableProjectorTests` ersetzt.
 final class BaselineDefectTests: XCTestCase {
     private let tick = 0.35
@@ -16,27 +16,6 @@ final class BaselineDefectTests: XCTestCase {
     }
 
     // MARK: - Routing
-
-    func testBaseline_routeShapeVariesForStartsWithinFortyCentimeters() throws {
-        let layout = try TestLayouts.demoSupermarket(beaconSpacing: nil)
-        let graph = TestLayouts.demoGraph(layout: layout)
-        var rng = SplitMix64(seed: 7)
-        let destination = SIMD2<Float>(26.5, 4.5)
-        var sequences = Set<[Int]>()
-        for _ in 0..<40 {
-            let start = SIMD2<Float>(
-                20 + Float(rng.nextUnit() * 0.8 - 0.4),
-                8 + Float(rng.nextUnit() * 0.8 - 0.4)
-            )
-            if let route = graph.shortestRoute(from: start, to: destination) {
-                sequences.insert(route.edgeIDs)
-            }
-        }
-        report("routing.distinctEdgeSequencesFor40Starts", Double(sequences.count))
-        // Defekt C.9/C.10: kleine Startverschiebungen erzeugen unterschiedliche Routenformen.
-        // Inverted in task 8.6
-        XCTAssertGreaterThan(sequences.count, 1)
-    }
 
     func testBaseline_nearestNeighbourFirstStopFlipsWithJitter() throws {
         let layout = try TestLayouts.demoSupermarket(beaconSpacing: nil)

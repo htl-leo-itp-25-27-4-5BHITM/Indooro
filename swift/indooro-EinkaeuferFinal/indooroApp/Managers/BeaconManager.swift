@@ -209,7 +209,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     // MARK: - Stabilized navigation pipeline
 
     private let navigationConfig = StabilizedNavigationConfig.default
-    private var indoorGraph: IndoorGraph?
+    /// Wird einmal je Layout-Revision gebaut und von Session und Planer nur gelesen.
+    private(set) var navigationGraph: IndoorGraph?
     private var poseFusionService: PoseFusionService?
     private var walkableProjector: WalkableProjector?
     private var routeManager: RouteManager?
@@ -1962,7 +1963,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             elements: shelves
         )
 
-        indoorGraph = graph
+        navigationGraph = graph
         poseFusionService = PoseFusionService(config: navigationConfig.poseFusion)
         walkableProjector = WalkableProjector(graph: graph)
         routeManager = RouteManager(graph: graph, config: navigationConfig.route)

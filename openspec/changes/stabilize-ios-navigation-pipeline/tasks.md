@@ -74,13 +74,13 @@
 
 ## 8. Routing
 
-- [ ] 8.1 Add a `BinaryHeap` to `Utilities/IndoorGraph.swift` and switch A* to it.
-- [ ] 8.2 Extend A* state to `(nodeID, incomingDirection)` with `turnPenalty 1.5` (provisional) added on direction change; keep heuristic admissible (Euclidean).
-- [ ] 8.3 Implement the deterministic tie-break order: f, g, node id, direction order.
-- [ ] 8.4 Build the graph once per `layoutRevision` in `BeaconManager.rebuildNavigationPipeline` and expose it read-only to the session and planner; remove graph construction from `MultiStopRoutePlanner`.
-- [ ] 8.5 Add `IndoorGraph.distances(from:)` (Dijkstra over plain edge costs) for planning.
-- [ ] 8.6 Add tests: identical edge sequence for 40 starts within ±0.4 m after the first node; one-turn path preferred over five-turn path of equal length; route unchanged across repeated calls; existing „destination inside a shelf“ and „no path“ scenarios still pass.
-- [ ] 8.7 Delete `Pathfinder.findPath` and its helpers; keep `GridPoint` (move it into `IndoorGraph.swift` if `Pathfinder.swift` becomes empty).
+- [x] 8.1 Add a `BinaryHeap` to `Utilities/IndoorGraph.swift` and switch A* to it.
+- [x] 8.2 Extend A* state to `(nodeID, incomingDirection)` with `turnPenalty 1.5` (provisional) added on direction change; keep heuristic admissible (Euclidean).
+- [x] 8.3 Implement the deterministic tie-break order: f, g, node id, direction order.
+- [x] 8.4 Build the graph once per `layoutRevision` in `BeaconManager.rebuildNavigationPipeline` and expose it read-only to the session and planner; remove graph construction from `MultiStopRoutePlanner`.
+- [x] 8.5 Add `IndoorGraph.distances(from:)` (Dijkstra over plain edge costs) for planning.
+- [x] 8.6 Add tests: identical edge sequence for 40 starts within ±0.4 m after the first node; one-turn path preferred over five-turn path of equal length; route unchanged across repeated calls; existing „destination inside a shelf“ and „no path“ scenarios still pass.
+- [x] 8.7 Delete `Pathfinder.findPath` and its helpers; keep `GridPoint` (move it into `IndoorGraph.swift` if `Pathfinder.swift` becomes empty).
 
 ## 9. Shopping Planning
 

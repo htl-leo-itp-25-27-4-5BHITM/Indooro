@@ -40,6 +40,9 @@ struct IndoorRoute {
 }
 
 final class IndoorGraph {
+    /// Abbiegestrafe in Metern pro Richtungswechsel.
+    static let defaultTurnPenalty: Float = 1.5 // provisional
+
     private let nodesByID: [Int: IndoorGraphNode]
     private let edgesByID: [Int: IndoorGraphEdge]
     private let adjacencyByNode: [Int: [(neighborNodeID: Int, edgeID: Int, cost: Float)]]
@@ -234,51 +237,139 @@ final class IndoorGraph {
         return simd_length(endPoint - startPoint)
     }
 
+    /// A* ueber Zustaenden (Knoten, Eingangsrichtung). Jeder Richtungswechsel kostet
+    /// `turnPenalty` zusaetzlich, damit lange Geraden bevorzugt werden. Gleiche Kosten werden
+    /// ueber f, g, Knoten-ID und Richtungsreihenfolge entschieden: gleiche Eingabe, gleiche Route.
     func shortestRoute(
         fromNodeID startNodeID: Int,
         toNodeID endNodeID: Int,
         startPoint: SIMD2<Float>? = nil,
-        endPoint: SIMD2<Float>? = nil
+        endPoint: SIMD2<Float>? = nil,
+        turnPenalty: Float = IndoorGraph.defaultTurnPenalty
     ) -> IndoorRoute? {
         guard nodesByID[startNodeID] != nil, nodesByID[endNodeID] != nil else { return nil }
 
-        var openSet: Set<Int> = [startNodeID]
-        var cameFromNode: [Int: Int] = [:]
-        var cameFromEdge: [Int: Int] = [:]
+        struct State: Hashable {
+            let node: Int
+            let direction: Int // 0 = Start, 1...8 = Richtungssektor
+        }
+        struct OpenEntry {
+            let f: Float
+            let g: Float
+            let state: State
+        }
+        struct Link {
+            let previous: State
+            let edgeID: Int
+        }
 
-        var gScore: [Int: Float] = [startNodeID: 0]
-        var fScore: [Int: Float] = [startNodeID: heuristicCost(from: startNodeID, to: endNodeID)]
+        func isOrderedBefore(_ lhs: OpenEntry, _ rhs: OpenEntry) -> Bool {
+            if lhs.f != rhs.f { return lhs.f < rhs.f }
+            if lhs.g != rhs.g { return lhs.g < rhs.g }
+            if lhs.state.node != rhs.state.node { return lhs.state.node < rhs.state.node }
+            return lhs.state.direction < rhs.state.direction
+        }
 
-        while !openSet.isEmpty {
-            guard let current = openSet.min(by: { (fScore[$0] ?? .greatestFiniteMagnitude) < (fScore[$1] ?? .greatestFiniteMagnitude) }) else {
-                break
-            }
+        var open = BinaryHeap<OpenEntry>(areInIncreasingOrder: isOrderedBefore)
+        var gScore: [State: Float] = [:]
+        var cameFrom: [State: Link] = [:]
+        var closed: Set<State> = []
 
-            if current == endNodeID {
-                return reconstructRoute(
-                    cameFromNode: cameFromNode,
-                    cameFromEdge: cameFromEdge,
-                    endNodeID: endNodeID,
-                    totalCost: gScore[endNodeID] ?? 0,
+        let startState = State(node: startNodeID, direction: 0)
+        gScore[startState] = 0
+        open.push(OpenEntry(f: heuristicCost(from: startNodeID, to: endNodeID), g: 0, state: startState))
+
+        while let entry = open.pop() {
+            let current = entry.state
+            if closed.contains(current) { continue }
+            closed.insert(current)
+
+            if current.node == endNodeID {
+                var nodePath: [Int] = [current.node]
+                var edgePath: [Int] = []
+                var cursor = current
+                while let link = cameFrom[cursor] {
+                    edgePath.append(link.edgeID)
+                    nodePath.append(link.previous.node)
+                    cursor = link.previous
+                }
+                nodePath.reverse()
+                edgePath.reverse()
+                return buildRoute(
+                    nodePath: nodePath,
+                    edgePath: edgePath,
+                    totalCost: entry.g,
                     startPoint: startPoint,
                     endPoint: endPoint
                 )
             }
 
-            openSet.remove(current)
-            for neighbor in adjacencyByNode[current] ?? [] {
-                let tentative = (gScore[current] ?? .greatestFiniteMagnitude) + neighbor.cost
-                if tentative < (gScore[neighbor.neighborNodeID] ?? .greatestFiniteMagnitude) {
-                    cameFromNode[neighbor.neighborNodeID] = current
-                    cameFromEdge[neighbor.neighborNodeID] = neighbor.edgeID
-                    gScore[neighbor.neighborNodeID] = tentative
-                    fScore[neighbor.neighborNodeID] = tentative + heuristicCost(from: neighbor.neighborNodeID, to: endNodeID)
-                    openSet.insert(neighbor.neighborNodeID)
+            let currentG = gScore[current] ?? .greatestFiniteMagnitude
+            for neighbor in adjacencyByNode[current.node] ?? [] {
+                let direction = directionSector(from: current.node, to: neighbor.neighborNodeID)
+                let penalty = (current.direction != 0 && current.direction != direction) ? turnPenalty : 0
+                let tentative = currentG + neighbor.cost + penalty
+                let next = State(node: neighbor.neighborNodeID, direction: direction)
+                if closed.contains(next) { continue }
+                if tentative < (gScore[next] ?? .greatestFiniteMagnitude) {
+                    gScore[next] = tentative
+                    cameFrom[next] = Link(previous: current, edgeID: neighbor.edgeID)
+                    open.push(
+                        OpenEntry(
+                            f: tentative + heuristicCost(from: next.node, to: endNodeID),
+                            g: tentative,
+                            state: next
+                        )
+                    )
                 }
             }
         }
 
         return nil
+    }
+
+    /// Dijkstra ueber reine Kantenkosten (ohne Abbiegestrafe) von einem Startknoten zu allen
+    /// erreichbaren Knoten. Grundlage der Distanzmatrix der Tourenplanung.
+    func distances(fromNodeID startNodeID: Int) -> [Int: Float] {
+        guard nodesByID[startNodeID] != nil else { return [:] }
+
+        struct Entry {
+            let cost: Float
+            let node: Int
+        }
+        var open = BinaryHeap<Entry>(areInIncreasingOrder: { lhs, rhs in
+            lhs.cost != rhs.cost ? lhs.cost < rhs.cost : lhs.node < rhs.node
+        })
+        var best: [Int: Float] = [startNodeID: 0]
+        var settled: Set<Int> = []
+        open.push(Entry(cost: 0, node: startNodeID))
+
+        while let entry = open.pop() {
+            if !settled.insert(entry.node).inserted { continue }
+            for neighbor in adjacencyByNode[entry.node] ?? [] {
+                let tentative = entry.cost + neighbor.cost
+                if tentative < (best[neighbor.neighborNodeID] ?? .greatestFiniteMagnitude) {
+                    best[neighbor.neighborNodeID] = tentative
+                    open.push(Entry(cost: tentative, node: neighbor.neighborNodeID))
+                }
+            }
+        }
+        return best
+    }
+
+    /// Distanzen vom naechsten Knoten des Punktes zu allen erreichbaren Knoten.
+    func distances(from point: SIMD2<Float>, floor: Int = 0) -> [Int: Float] {
+        guard let node = nearestNode(to: point, floor: floor) else { return [:] }
+        return distances(fromNodeID: node.id)
+    }
+
+    /// Richtung einer Kante als Sektor 1...8 (45-Grad-Raster, feste Reihenfolge).
+    private func directionSector(from nodeID: Int, to otherNodeID: Int) -> Int {
+        guard let a = nodesByID[nodeID], let b = nodesByID[otherNodeID] else { return 0 }
+        let delta = b.mapPoint - a.mapPoint
+        let angle = atan2(delta.y, delta.x) // -pi...pi
+        let sector = Int((angle / (.pi / 4)).rounded())
+        return ((sector % 8) + 8) % 8 + 1
     }
 
     private func heuristicCost(from nodeID: Int, to otherNodeID: Int) -> Float {
@@ -288,29 +379,13 @@ final class IndoorGraph {
         return simd_length(a.mapPoint - b.mapPoint)
     }
 
-    private func reconstructRoute(
-        cameFromNode: [Int: Int],
-        cameFromEdge: [Int: Int],
-        endNodeID: Int,
+    private func buildRoute(
+        nodePath: [Int],
+        edgePath: [Int],
         totalCost: Float,
         startPoint: SIMD2<Float>?,
         endPoint: SIMD2<Float>?
     ) -> IndoorRoute? {
-        var nodePath: [Int] = [endNodeID]
-        var edgePath: [Int] = []
-
-        var current = endNodeID
-        while let parent = cameFromNode[current] {
-            nodePath.append(parent)
-            if let edgeID = cameFromEdge[current] {
-                edgePath.append(edgeID)
-            }
-            current = parent
-        }
-
-        nodePath.reverse()
-        edgePath.reverse()
-
         guard !nodePath.isEmpty else { return nil }
 
         var polyline: [SIMD2<Float>] = []
@@ -457,5 +532,58 @@ enum IndoorGraphBuilder {
 extension CGPoint {
     init(_ vector: SIMD2<Float>) {
         self.init(x: CGFloat(vector.x), y: CGFloat(vector.y))
+    }
+}
+
+/// Binaerer Min-Heap mit frei waehlbarer Ordnung.
+struct BinaryHeap<Element> {
+    private var storage: [Element] = []
+    private let areInIncreasingOrder: (Element, Element) -> Bool
+
+    init(areInIncreasingOrder: @escaping (Element, Element) -> Bool) {
+        self.areInIncreasingOrder = areInIncreasingOrder
+    }
+
+    var isEmpty: Bool { storage.isEmpty }
+    var count: Int { storage.count }
+
+    mutating func push(_ element: Element) {
+        storage.append(element)
+        var child = storage.count - 1
+        while child > 0 {
+            let parent = (child - 1) / 2
+            guard areInIncreasingOrder(storage[child], storage[parent]) else { break }
+            storage.swapAt(child, parent)
+            child = parent
+        }
+    }
+
+    mutating func pop() -> Element? {
+        guard let first = storage.first else { return nil }
+        let last = storage.removeLast()
+        if !storage.isEmpty {
+            storage[0] = last
+            var parent = 0
+            while true {
+                let left = 2 * parent + 1
+                let right = left + 1
+                var smallest = parent
+                if left < storage.count, areInIncreasingOrder(storage[left], storage[smallest]) { smallest = left }
+                if right < storage.count, areInIncreasingOrder(storage[right], storage[smallest]) { smallest = right }
+                if smallest == parent { break }
+                storage.swapAt(parent, smallest)
+                parent = smallest
+            }
+        }
+        return first
+    }
+}
+
+struct GridPoint: Hashable, Equatable, CustomStringConvertible {
+    let x: Int
+    let y: Int
+
+    var description: String {
+        "(\(x), \(y))"
     }
 }
