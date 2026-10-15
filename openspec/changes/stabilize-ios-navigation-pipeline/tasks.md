@@ -1,7 +1,7 @@
 ## 1. OpenSpec And Preparation
 
-- [ ] 1.1 Run `npx -y @fission-ai/openspec@1.3.1 validate stabilize-ios-navigation-pipeline --strict` and fix every reported issue in the change artifacts.
-- [ ] 1.2 Re-read `docs/NAVIGATION_REVIEW.md` sections C.1–C.12 and confirm each defect still exists on the implementation branch; note any drift in `design.md`.
+- [x] 1.1 Run `npx -y @fission-ai/openspec@1.3.1 validate stabilize-ios-navigation-pipeline --strict` and fix every reported issue in the change artifacts.
+- [x] 1.2 Re-read `docs/NAVIGATION_REVIEW.md` sections C.1–C.12 and confirm each defect still exists on the implementation branch; note any drift in `design.md`. (Bestaetigt durch die Baseline-Tests in Commit `72ba0f4`, siehe `NavigationFixtures/BASELINE.md`.)
 - [x] 1.3 Create the implementation branch from the current base; do not work on `main`.
 - [x] 1.4 Ask the user whether `fix-ios-contract-and-spec-drift` lands first; record the decision and the resulting merge order in `design.md` under „Change ordering and ownership“.
 - [x] 1.5 Ask the user for approval to port the Swift hunks of `5936ed4`, `d8aa91b`, `f118e20`, and `eb4d3e8` from `codex/admin-platform-rebuild`; record the answer.
@@ -119,13 +119,13 @@
 
 ## 13. Verification
 
-- [ ] 13.1 Run `swift test` in `swift/indooro-EinkaeuferFinal`; all tests pass.
-- [ ] 13.2 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme MCindooroApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO`.
-- [ ] 13.3 Run the same build with `SWIFT_STRICT_CONCURRENCY=complete` and confirm at most 120 unique concurrency diagnostics.
-- [ ] 13.4 Run a Release build and confirm the recorder and the „Messungen aufzeichnen“ toggle are absent.
+- [x] 13.1 Run `swift test` in `swift/indooro-EinkaeuferFinal`; all tests pass.
+- [x] 13.2 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme MCindooroApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO`.
+- [x] 13.3 Run the same build with `SWIFT_STRICT_CONCURRENCY=complete` and confirm at most 120 unique concurrency diagnostics. (Gemessen auf `c0d6666`: BUILD SUCCEEDED, 106 eindeutige Concurrency-Diagnosen.)
+- [x] 13.4 Run a Release build and confirm the recorder and the „Messungen aufzeichnen“ toggle are absent.
 - [ ] 13.5 Simulator check in debug tracking mode: start a tour, tap positions along the route, confirm no stop changes and no route rebuild; tap into a parallel aisle for more than 2.5 s and confirm one reroute to the same stop; „Erledigt“ advances to the planned next stop; „Neu planen“ re-plans.
 - [ ] 13.6 Device check in the store: walk one tour with the recorder on; confirm the replay metrics meet the scenario expectations (0 active-stop changes without event, 0 reroutes while on route, 1 reroute for the wrong aisle).
-- [ ] 13.7 Run `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
+- [x] 13.7 Run `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
 
 ## 14. Archive
 
