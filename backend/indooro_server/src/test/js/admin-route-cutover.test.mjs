@@ -5,10 +5,10 @@ import { cutoverTarget, ROUTE_CUTOVER } from "../../main/resources/META-INF/reso
 
 const paths = ["/admin/", "/admin/regions/", "/admin/stores/", "/admin/stores/detail/", "/admin/beacons/", "/admin/products/", "/admin/categories/", "/admin/recipes/", "/admin/editor/", "/admin/server-logs/"];
 
-test("approved dashboard, regions, stores, store detail, beacons, categories, and diagnostics entries redirect independently", () => {
+test("approved dashboard, regions, stores, store detail, beacons, products, categories, and diagnostics entries redirect independently", () => {
   assert.deepEqual(ROUTE_CUTOVER, {
     dashboard: true, regions: true, stores: true, storeDetail: true,
-    beacons: true, products: false, categories: true, recipes: false,
+    beacons: true, products: true, categories: true, recipes: false,
     editor: false, diagnostics: true
   });
   const expectedTargets = {
@@ -17,6 +17,7 @@ test("approved dashboard, regions, stores, store detail, beacons, categories, an
     "/admin/stores/": "/admin/next/stores/",
     "/admin/stores/detail/": "/admin/next/stores/detail/",
     "/admin/beacons/": "/admin/next/beacons/",
+    "/admin/products/": "/admin/next/products/",
     "/admin/categories/": "/admin/next/categories/",
     "/admin/server-logs/": "/admin/next/server-logs/"
   };

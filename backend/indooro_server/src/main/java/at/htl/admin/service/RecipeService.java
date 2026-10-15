@@ -351,7 +351,10 @@ public class RecipeService {
 
         IngredientProductMappingEntity mapping = new IngredientProductMappingEntity();
         mapping.recipeIngredient = ingredient;
-        mapping.canonicalName = normalizeIngredientName(ingredient);
+        // Ingredient-scoped mappings already have a unique ingredient/product key.
+        // canonicalName is reserved for reusable mappings without a recipe ingredient;
+        // setting both keys prevents two recipes from using the same named product.
+        mapping.canonicalName = null;
         mapping.store = store;
         mapping.storeCode = firstNonBlank(product.getStoreCode(), request.storeCode(), store == null ? null : store.storeCode);
         mapping.productId = product.getId();
@@ -811,11 +814,6 @@ public class RecipeService {
         } catch (IllegalArgumentException exception) {
             throw badRequest("Ungueltiger Mapping-Typ.");
         }
-    }
-
-    private String normalizeIngredientName(RecipeIngredientEntity ingredient) {
-        String canonical = normalizeOptional(ingredient.canonicalName);
-        return canonical == null ? ingredient.displayName.trim().toLowerCase(Locale.ROOT) : canonical;
     }
 
     private String normalizeSlug(String value) {

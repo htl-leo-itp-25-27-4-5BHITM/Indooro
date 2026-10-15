@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { FormEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { FormEvent, KeyboardEvent } from "react";
 import type { ApiClient } from "./api/client";
 import { changeRecipePublication, cloneDetail, createRecipeWithContent, numeric, readRecipeFilters, recipeFiltersQuery, recipeListPath, RecipeCreatePartialError, saveRecipeChanges, type Product, type RecipeDetail, type RecipeIngredient, type RecipeIngredientMapping, type RecipeMappingResponse, type RecipePageResponse, type RecipeStep, type RecipeTag, validateDraft, validateNewRecipe } from "./RecipesPage.logic";
 import "./RecipesPage.css";
@@ -28,6 +28,22 @@ export function RecipesPage({ api }: { api: ApiClient }) {
   const [mappingSelection, setMappingSelection] = useState<Product | null>(null);
   const [mappingError, setMappingError] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
+  const dialogRef = useRef<HTMLElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const initialFocusPending = useRef(false);
+
+  const dialogOpen = editor !== null;
+  useLayoutEffect(() => {
+    if (!dialogOpen) {
+      openerRef.current?.focus();
+      return;
+    }
+    if (busy) { dialogRef.current?.focus(); return; }
+    if (!initialFocusPending.current) return;
+    const first = dialogRef.current?.querySelector<HTMLElement>("button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]");
+    (first ?? dialogRef.current)?.focus();
+    initialFocusPending.current = false;
+  }, [dialogOpen, busy]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -43,6 +59,8 @@ export function RecipesPage({ api }: { api: ApiClient }) {
   }, [api, revision]);
 
   const loadDetail = useCallback(async (id: string, preview = false) => {
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    initialFocusPending.current = true;
     setEditorError(null); setRecoveryDraft(null); setBusy(true); setCreating(false); setPreviewMode(preview); setMappingFor(null);
     try {
       const detail = await api.get<RecipeDetail>(`/api/admin/recipes/${encodeURIComponent(id)}`);
@@ -54,6 +72,8 @@ export function RecipesPage({ api }: { api: ApiClient }) {
   }, [api]);
 
   const startCreate = () => {
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    initialFocusPending.current = true;
     const blank: RecipeDetail = { id: "", slug: "", title: "", summary: "", description: "", imageUrl: "", imageAlt: "", servings: 2, prepTimeMinutes: null, cookTimeMinutes: null, totalTimeMinutes: null, status: "DRAFT", stepCount: 0, mappedIngredientCount: 0, totalIngredientCount: 0, tags: [], ingredients: [], steps: [] };
     setEditor(blank); setOriginal(blank); setSelectedTagIds([]); setEditorError(null); setRecoveryDraft(null); setCreating(true); setPreviewMode(false); setMappingFor(null);
   };
@@ -162,6 +182,16 @@ export function RecipesPage({ api }: { api: ApiClient }) {
 
   const totalPages = page ? Math.ceil(page.totalElements / Math.max(1, page.size)) : 0;
   const pageUrl = (next: number) => `/admin/next/recipes/${recipeFiltersQuery({ ...filters, page: next }) ? `?${recipeFiltersQuery({ ...filters, page: next })}` : ""}`;
+  const handleDialogKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+    if (event.key === "Escape" && !busy) { setEditor(null); setOriginal(null); setCreating(false); setPreviewMode(false); return; }
+    if (event.key !== "Tab") return;
+    const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]") ?? []);
+    if (!focusable.length) { event.preventDefault(); return; }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  };
   return <div className="recipes-page">
     <div className="page-intro"><div><p className="eyebrow">Inhalte</p><h2>Rezepte</h2><p>Rezeptdaten, Zutaten, Schritte und Mapping-Readiness.</p></div><button className="button primary" type="button" onClick={startCreate}>Rezept anlegen</button></div>
     <form className="notice recipe-filters" action="/admin/next/recipes/" method="get" role="search">
@@ -183,7 +213,7 @@ export function RecipesPage({ api }: { api: ApiClient }) {
       <div className="pager"><span>{page.totalElements ? `${page.page * page.size + 1}–${Math.min((page.page + 1) * page.size, page.totalElements)} von ${page.totalElements}` : "0 Ergebnisse"}</span><div>{page.page > 0 && <a className="button" href={pageUrl(page.page - 1)}>Zurück</a>}{page.page + 1 < totalPages && <a className="button" href={pageUrl(page.page + 1)}>Weiter</a>}</div></div>
     </section>}
     {editor && original && <div className="recipe-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) { setEditor(null); setOriginal(null); } }}>
-      <section className="recipe-drawer" role="dialog" aria-modal="true" aria-labelledby="recipe-editor-title">
+      <section ref={dialogRef} onKeyDown={handleDialogKeyDown} className="recipe-drawer" role="dialog" aria-modal="true" aria-labelledby="recipe-editor-title" tabIndex={-1}>
         <div className="recipe-drawer-head"><div><p className="eyebrow">{creating ? "Neues Rezept" : previewMode ? "Rezept-Vorschau" : "Rezept bearbeiten"}</p><h2 id="recipe-editor-title">{editor.title || "Rezept anlegen"}</h2></div><div className="recipe-drawer-controls"><span className={`status-pill ${editor.status === "PUBLISHED" ? "ready" : "missing"}`}>{editor.status}</span>{!creating && !previewMode && editor.status !== "PUBLISHED" && <button className="button" type="button" disabled={busy} onClick={() => void updatePublication("publish")}>Veröffentlichen</button>}{!creating && !previewMode && editor.status === "PUBLISHED" && <button className="button" type="button" disabled={busy} onClick={() => void updatePublication("deactivate")}>Deaktivieren</button>}{!creating && !previewMode && editor.status !== "ARCHIVED" && <button className="button danger-button" type="button" disabled={busy} onClick={() => void updatePublication("archive")}>Archivieren</button>}<button className="button" type="button" disabled={busy} onClick={() => { setEditor(null); setOriginal(null); setCreating(false); setPreviewMode(false); }}>Schließen</button></div></div>
         {editorError && <div className="notice error-state" role="alert">{editorError}{recoveryDraft && <button className="button" type="button" disabled={busy} onClick={() => { setEditor(cloneDetail(recoveryDraft.detail)); setSelectedTagIds([...recoveryDraft.tagIds]); setRecoveryDraft(null); setEditorError("Ihre Eingaben wurden wiederhergestellt. Prüfen Sie bereits gespeicherte Zutaten und Schritte vor einem erneuten Speichern."); }}>Meine Eingaben wiederherstellen</button>}</div>}
         <form className="recipe-edit-form" onSubmit={(event) => void save(event)}>

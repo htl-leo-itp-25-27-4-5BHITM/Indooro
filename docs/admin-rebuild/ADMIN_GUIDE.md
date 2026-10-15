@@ -2,7 +2,7 @@
 
 ## Which page to use
 
-The existing admin pages remain the normal entry points. The React rebuild is available to authorized staff as a candidate under `/admin/next/`; no current route has been switched. Sign in through the same Keycloak session. Your role and assigned region/store determine which data and actions the server allows.
+The normal `/admin/*` links use the rebuilt pages for Dashboard, Regions, Stores, Store detail, Beacons, Products, Categories, and Diagnostics in the local cutover image. Recipes and the Layout editor still use the existing pages. The React candidate remains directly available under `/admin/next/`. Sign in through the same Keycloak session. Your role and assigned region/store determine which data and actions the server allows.
 
 | Workflow | Current page | Candidate page |
 | --- | --- | --- |
@@ -10,7 +10,7 @@ The existing admin pages remain the normal entry points. The React rebuild is av
 | Regions | `/admin/regions/` | `/admin/next/regions/` |
 | Stores | `/admin/stores/` | `/admin/next/stores/` |
 | Store detail | `/admin/stores/detail/?storeId={uuid}` | `/admin/next/stores/detail/?storeId={uuid}` |
-| Create store | Create drawer in `/admin/stores/` | `/admin/next/stores/new/` |
+| Create store | From `/admin/stores/` to `/admin/next/stores/new/` | `/admin/next/stores/new/` |
 | Beacons | `/admin/beacons/` | `/admin/next/beacons/` |
 | Products | `/admin/products/` | `/admin/next/products/` |
 | Categories | `/admin/categories/` | `/admin/next/categories/` |
@@ -32,7 +32,7 @@ The editor supports layout element editing, undo/redo, validation, version histo
 
 - **Stores and regions:** use list filters and detail pages to inspect scope, metadata, assigned beacons, layout versions, and audit information. Region creation and changes are admin-only.
 - **Beacons:** review identity values before creating or assigning; UUID/major/minor identities must be valid and unique. Store managers are limited to their assigned store.
-- **Products and categories:** create or edit individual records and inspect product readiness/category context. Catalog bulk import currently supports parsing and row review only; its commit action is disabled because the APIs cannot report reliable per-row saved outcomes or undo partial writes.
+- **Products and categories:** create or edit individual records and inspect product readiness/category context. Product search, readiness filtering, and Name/ID/Layout-Code sorting run across the full server result before pagination. “Routbar” here means only that the Layout-Code has the legacy four-part numeric format; it does not prove a reachable shelf or route in the published mobile map. Catalog bulk import currently supports parsing and row review only; its commit action is disabled because partial writes, ambiguous transport responses, and overwrites are not yet safely reconciled.
 - **Recipes:** review metadata, tags, ingredients, steps, product mappings, and preview before publishing or deactivating. Recipe updates may involve several API writes; a failure partway through can leave some stages saved, so reload and inspect the recipe before retrying.
 - **Diagnostics:** admin-only audit and error-log views.
 

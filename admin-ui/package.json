@@ -21,6 +21,8 @@
     "test:live:stores": "node scripts/live-stores-list-parity.mjs",
     "test:live:beacons": "node scripts/live-beacons-parity.mjs",
     "test:live:categories": "node scripts/live-categories-parity.mjs",
+    "test:live:products": "node scripts/live-products-parity.mjs",
+    "test:live:recipes": "node scripts/live-recipes-parity.mjs",
     "test:live:cutover": "node scripts/live-route-cutover.mjs",
     "test:live:catalog": "node scripts/live-catalog-bulk.mjs",
     "test:swift-layout": "node scripts/verify-swift-layout-decode.mjs",

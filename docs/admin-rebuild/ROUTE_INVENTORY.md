@@ -1,10 +1,14 @@
 # Admin route, action, API, role, scope, and state inventory
 
+**Recipe fixture update:** 2026-10-15 `admin-ui/scripts/live-recipes-parity.mjs` supplies disposable packaged-stack legacy/candidate create/edit, role/direct-link, retry, and partial-write fixtures. It archives its three recipes and deletes its two products. The old client filters only its first API page, so late Draft search is an observed legacy limit; the Recipe gate still needs the missing action/fault variants in `ROUTE_PARITY_MATRIX.md`.
+
+**Inventory update:** 2026-10-15 Product actions/states have a reproducible disposable packaged-stack fixture in `admin-ui/scripts/live-products-parity.mjs` and screenshots in `evidence/products/`. The rest of task 1.2 still lacks every-action/state fixtures.
+
 **Evidence cut:** repository checkout on 2026-10-12. This is a source and test inventory, not a claim that all routes/actions were exercised against a running stack. The local stack prerequisites and runtime evidence are tracked in [`LIVE_STACK.md`](LIVE_STACK.md) and [`BASELINE.md`](BASELINE.md). Captured screens are linked below; they document rendered routes, not every action or state.
 
 ## Route topology and cutover status
 
-Legacy static entries live at `backend/indooro_server/src/main/resources/META-INF/resources/admin`. Their pages share `app.js`/`core.js`; the editor and diagnostics also have page-specific scripts. The React/Vite source is `admin-ui/`, and package output is installed under `admin/next/`. The route map currently sends Dashboard, Regions, Stores, and Diagnostics to the candidate; the other six entries remain legacy. The dated source inventory below is supplemented by the authenticated parity records in `ROUTE_PARITY_MATRIX.md`.
+Legacy static entries live at `backend/indooro_server/src/main/resources/META-INF/resources/admin`. Their pages share `app.js`/`core.js`; the editor and diagnostics also have page-specific scripts. The React/Vite source is `admin-ui/`, and package output is installed under `admin/next/`. The route map currently sends Dashboard, Regions, Stores, Store detail, Beacons, Products, Categories, and Diagnostics to the candidate; Recipes and Editor remain legacy. The dated source inventory below is supplemented by the authenticated parity records in `ROUTE_PARITY_MATRIX.md`.
 
 | Workflow | Current protected static URL | Candidate URL | Candidate component | Direct-link/query contract |
 | --- | --- | --- | --- | --- |
@@ -14,7 +18,7 @@ Legacy static entries live at `backend/indooro_server/src/main/resources/META-IN
 | Store detail | `/admin/stores/detail/?storeId={uuid}` | `/admin/next/stores/detail/?storeId={uuid}` | `StoreDetailPage` | `storeId` required; `edit=1` opens the metadata form |
 | Store create | drawer on `/admin/stores/` | `/admin/next/stores/new/` | `StoreCreatePage` | dedicated guided form |
 | Beacons | `/admin/beacons/` | `/admin/next/beacons/` | `BeaconsPage` | optional `storeId` context |
-| Products | `/admin/products/` | `/admin/next/products/` | `ProductsPage` | query, paging, readiness |
+| Products | `/admin/products/` | `/admin/next/products/` | `ProductsPage` | query, server paging, global readiness filter, Name/ID/Layout-Code sort |
 | Categories | `/admin/categories/` | `/admin/next/categories/` | `CategoriesPage` | catalog/import workflow |
 | Recipes | `/admin/recipes/` | `/admin/next/recipes/` | `RecipesPage` | filters and editor state |
 | Diagnostics | `/admin/server-logs/` | `/admin/next/server-logs/` | `DiagnosticsPage` | admin-only logs |

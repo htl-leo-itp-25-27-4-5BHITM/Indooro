@@ -16,6 +16,7 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.BadRequestException;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
@@ -38,14 +39,20 @@ public class AdminProductResource extends AdminApiSupport {
     @GET
     public Object listProducts(@QueryParam("page") Integer page,
                                @QueryParam("size") Integer size,
-                               @QueryParam("q") String query) {
+                               @QueryParam("q") String query,
+                               @QueryParam("sort") String sort,
+                               @QueryParam("routable") Boolean routable) {
         adminAccessService.requireAdmin();
 
         try {
             if (page != null) {
                 int normalizedPage = normalizePage(page);
                 int normalizedSize = normalizePageSize(size);
-                return openSearchService.searchAdminProductsPage(query, normalizedPage, normalizedSize);
+                String normalizedSort = normalizeProductSort(sort);
+                return openSearchService.searchAdminProductsPage(query, normalizedPage, normalizedSize, normalizedSort, routable);
+            }
+            if (sort != null || routable != null) {
+                throw new BadRequestException("Sortierung und Routbar-Filter erfordern paginierte Produktlisten.");
             }
             // Preserve the array response for existing clients that have not adopted paging yet.
             int legacySize = normalizeProductListSize(size);
@@ -60,6 +67,14 @@ public class AdminProductResource extends AdminApiSupport {
                     Response.Status.INTERNAL_SERVER_ERROR
             );
         }
+    }
+
+    private String normalizeProductSort(String sort) {
+        if (sort == null || sort.isBlank()) return "id";
+        return switch (sort) {
+            case "name", "id", "layoutCode" -> sort;
+            default -> throw new BadRequestException("sort muss name, id oder layoutCode sein.");
+        };
     }
 
     @POST

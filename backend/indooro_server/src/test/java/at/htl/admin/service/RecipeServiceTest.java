@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -123,6 +124,7 @@ class RecipeServiceTest {
         assertEquals("310/1", response.product().layoutCode());
         assertEquals("demo-store", response.product().storeCode());
         assertNotNull(savedMapping.get());
+        assertNull(savedMapping.get().canonicalName, "recipe-specific mappings must not occupy the global canonical mapping key");
         assertEquals("Katalog Tomaten", savedMapping.get().productNameSnapshot);
         assertEquals("310/1", savedMapping.get().layoutCodeSnapshot);
         assertEquals("demo-store", savedMapping.get().storeCode);

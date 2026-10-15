@@ -32,6 +32,28 @@ test("candidate recipe edit reads full detail and preserves image, tags, ingredi
   expect(itemWrites).toBe(0);
 });
 
+test("recipe dialog keeps keyboard focus inside and restores it to the opener", async ({ page }) => {
+  const detail = { id: "recipe-1", slug: "apfel", title: "Apfel", summary: "Kurz", servings: 2, status: "DRAFT", mappedIngredientCount: 0, totalIngredientCount: 0, stepCount: 0, tags: [], ingredients: [], steps: [] };
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/admin/recipe-tags?*", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/admin/recipes?*", (route) => route.fulfill({ json: { content: [detail], page: 0, size: 20, totalElements: 1 } }));
+  await page.route("**/api/admin/recipes/recipe-1", (route) => route.fulfill({ json: detail }));
+
+  await page.goto("/admin/next/recipes/");
+  const opener = page.getByRole("button", { name: "Bearbeiten" });
+  await opener.click();
+  const dialog = page.getByRole("dialog");
+  const publish = dialog.getByRole("button", { name: "Veröffentlichen" });
+  await expect(publish).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(dialog.getByRole("button", { name: "Speichern" })).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(publish).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(opener).toBeFocused();
+});
+
 test("partial recipe edit identifies the failed step and keeps local input recoverable", async ({ page }) => {
   const tag = { id: "tag-1", code: "VEGAN", name: "Vegan" };
   const detail = { id: "recipe-1", slug: "apfel-hafer", title: "Apfel-Hafer", summary: "Kurz", description: "Beschreibung", imageUrl: "/apfel.jpg", imageAlt: "Apfel", servings: 4, prepTimeMinutes: 10, cookTimeMinutes: 20, totalTimeMinutes: 30, status: "DRAFT", mappedIngredientCount: 1, totalIngredientCount: 1, stepCount: 1, tags: [tag], ingredients: [{ id: "ingredient-1", position: 1, displayName: "Apfel", quantityText: "2 Stück", canonicalName: "Apfel", optional: false }], steps: [{ id: "step-1", position: 1, instruction: "Backen", durationMinutes: 20 }] };

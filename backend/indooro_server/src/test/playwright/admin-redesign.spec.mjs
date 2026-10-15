@@ -1,5 +1,16 @@
 import { expect, test } from "@playwright/test";
 
+async function useLegacyRoute(page, routeKey) {
+  await page.route("**/admin/route-cutover.js", async (route) => {
+    const response = await route.fetch();
+    const body = (await response.text()).replace(
+      new RegExp(`(${routeKey}: )true\\b`),
+      "$1false"
+    );
+    await route.fulfill({ response, body });
+  });
+}
+
 const routes = [
   ["/admin/", "Dashboard"],
   ["/admin/regions/", "Regionen"],
@@ -14,6 +25,7 @@ const routes = [
 
 for (const [path, title] of routes) {
   test(`renders ${path}`, async ({ page }) => {
+    if (path.startsWith("/admin/stores/detail/")) await useLegacyRoute(page, "storeDetail");
     await page.goto(path);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Admin Navigation" })).toBeVisible();
@@ -27,6 +39,7 @@ test("logout uses the configured OIDC path", async ({ page }) => {
 });
 
 test("store layout version badges use status", async ({ page }) => {
+  await useLegacyRoute(page, "storeDetail");
   await page.route("**/api/stores/store-1/layout/versions", (route) => route.fulfill({
     json: [
       { layoutId: "layout-1", versionNo: 1, status: "ARCHIVED" },
@@ -53,6 +66,7 @@ test("product form shows the documented layout code", async ({ page }) => {
 });
 
 test("bulk beacons send null for an empty major", async ({ page }) => {
+  await useLegacyRoute(page, "beacons");
   let requestBody;
   await page.route("**/api/beacons/bulk", (route) => {
     requestBody = route.request().postDataJSON();

@@ -46,8 +46,30 @@ test("product search submits with the keyboard and list failures can be retried"
   await search.fill("Birne");
   await search.press("Enter");
   await expect(page).toHaveURL(/q=Birne/);
-  await expect(page.getByText("Keine Produkte zur Suche gefunden.")).toBeVisible();
+  await expect(page.getByText("Keine Produkte zu Suche oder Filter gefunden.")).toBeVisible();
   expect(queries.at(-1)).toBe("Birne");
+});
+
+test("product sort and readiness filter are requested from the server before paging", async ({ page }) => {
+  const requests: URL[] = [];
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/categories?*", (route) => route.fulfill({ json: [{ categoryCode: 310, categoryName: "Obst" }] }));
+  await page.route("**/api/admin/products?*", (route) => {
+    const url = new URL(route.request().url());
+    requests.push(url);
+    const pageNo = Number(url.searchParams.get("page"));
+    return route.fulfill({ json: { content: [{ id: pageNo + 1, name: `Apfel ${pageNo}`, price: 1, layoutCode: "310/1/1/1", storeId: null, storeCode: null }], page: pageNo, size: 20, totalElements: 21 } });
+  });
+  await page.goto("/admin/next/products/");
+  await page.getByLabel("Sortierung").selectOption("layoutCode");
+  await page.getByLabel("Readiness").selectOption("ready");
+  await expect(page).toHaveURL(/sort=layoutCode.*readiness=ready/);
+  await expect(page.getByText("Apfel 0")).toBeVisible();
+  await page.getByRole("link", { name: "Weiter" }).click();
+  await expect(page.getByText("Apfel 1")).toBeVisible();
+  expect(requests.at(-1)?.searchParams.get("page")).toBe("1");
+  expect(requests.at(-1)?.searchParams.get("sort")).toBe("layoutCode");
+  expect(requests.at(-1)?.searchParams.get("routable")).toBe("true");
 });
 
 test("region manager product direct link calls no product API", async ({ page }) => {

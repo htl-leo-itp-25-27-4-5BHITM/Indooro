@@ -27,6 +27,8 @@ export interface ProductFilters {
   q: string;
   page: number;
   size: number;
+  sort: "name" | "id" | "layoutCode";
+  readiness: "" | "ready" | "warning";
 }
 
 export interface ProductDraft {
@@ -55,13 +57,17 @@ export function readProductFilters(search: string): ProductFilters {
   return {
     q: (params.get("q") ?? "").slice(0, 120),
     page: Number.isInteger(rawPage) && rawPage >= 0 ? rawPage : 0,
-    size: Number.isInteger(rawSize) && rawSize >= 1 && rawSize <= 100 ? rawSize : 20
+    size: Number.isInteger(rawSize) && rawSize >= 1 && rawSize <= 100 ? rawSize : 20,
+    sort: params.get("sort") === "id" || params.get("sort") === "layoutCode" ? params.get("sort") as ProductFilters["sort"] : "name",
+    readiness: params.get("readiness") === "ready" || params.get("readiness") === "warning" ? params.get("readiness") as ProductFilters["readiness"] : ""
   };
 }
 
 export function productListPath(filters: ProductFilters): string {
   const params = new URLSearchParams({ page: String(filters.page), size: String(filters.size) });
   if (filters.q.trim()) params.set("q", filters.q.trim());
+  params.set("sort", filters.sort);
+  if (filters.readiness) params.set("routable", filters.readiness === "ready" ? "true" : "false");
   return `/api/admin/products?${params.toString()}`;
 }
 
@@ -79,6 +85,8 @@ export function productPageUrl(filters: ProductFilters): string {
   if (filters.q.trim()) params.set("q", filters.q.trim());
   if (filters.page) params.set("page", String(filters.page));
   if (filters.size !== 20) params.set("size", String(filters.size));
+  if (filters.sort !== "name") params.set("sort", filters.sort);
+  if (filters.readiness) params.set("readiness", filters.readiness);
   return `/admin/next/products/${params.size ? `?${params.toString()}` : ""}`;
 }
 
@@ -101,14 +109,16 @@ export function parseProductPrice(value: string): number {
 
 export function productReadiness(product: Product, categories: Category[]): { ready: boolean; label: string; detail: string; categoryName: string } {
   const location = parseLayoutCode(product.layoutCode);
-  if (!location) return { ready: false, label: "Layout prüfen", detail: "Layout-Code fehlt oder liegt außerhalb des Formats 310/1/1/1.", categoryName: "Unbekannte Kategorie" };
-  const category = categories.find((item) => item.categoryCode === location.categoryCode);
-  if (!category) return { ready: false, label: "Kategorie fehlt", detail: `Kategorie ${location.categoryCode} ist im Katalog nicht vorhanden.`, categoryName: `Kategorie ${location.categoryCode}` };
+  const code = String(product.layoutCode ?? "").trim();
+  const ready = /^\d{1,4}\/\d{1,3}\/\d{1,2}\/\d{1,2}$/.test(code);
+  if (!ready) return { ready: false, label: "Layout prüfen", detail: "Layout-Code fehlt oder hat nicht das erwartete vierteilige Zahlenformat.", categoryName: "Unbekannte Kategorie" };
+  const categoryCode = Number(code.split("/")[0]);
+  const category = categories.find((item) => item.categoryCode === categoryCode);
   return {
     ready: true,
     label: product.storeId || product.storeCode ? "Routbar" : "Global routbar",
-    detail: `${location.meter}. Regalabschnitt · Fach ${location.shelf} · Position ${location.position}`,
-    categoryName: category.categoryName
+    detail: location ? `${location.meter}. Regalabschnitt · Fach ${location.shelf} · Position ${location.position}` : "Layout-Code hat das erwartete Format; Zielposition bitte im Store-Layout prüfen.",
+    categoryName: category?.categoryName ?? `Kategorie ${categoryCode}`
   };
 }
 
@@ -313,16 +323,16 @@ export function ProductsPage({ api }: { api: ApiClient }) {
       </form>
     </section>}
 
-    <form className="filters" role="search" onSubmit={submitSearch}><label>Suche<input type="search" value={searchInput} maxLength={120} onChange={(event) => setSearchInput(event.currentTarget.value)} placeholder="Name, ID, Layout-Code oder Store-Code" /></label><button type="submit" className="primary">Suchen</button></form>
+    <form className="filters" role="search" onSubmit={submitSearch}><label>Suche<input type="search" value={searchInput} maxLength={120} onChange={(event) => setSearchInput(event.currentTarget.value)} placeholder="Name, ID, Layout-Code oder Store-Code" /></label><label>Readiness<select value={filters.readiness} onChange={(event) => changeFilters({ ...filters, readiness: event.currentTarget.value as ProductFilters["readiness"], page: 0 })}><option value="">Alle</option><option value="ready">Routbar</option><option value="warning">Nicht routbar</option></select></label><label>Sortierung<select value={filters.sort} onChange={(event) => changeFilters({ ...filters, sort: event.currentTarget.value as ProductFilters["sort"], page: 0 })}><option value="name">Name</option><option value="id">ID</option><option value="layoutCode">Layout-Code</option></select></label><button type="submit" className="primary">Suchen</button></form>
+    <p className="help-text">Readiness prüft hier nur das vierteilige Zahlenformat des Layout-Codes. Ob ein Produkt im mobilen Store tatsächlich erreichbar ist, hängt vom veröffentlichten Store-Layout ab.</p>
     {loadError && <div role="alert" className="notice error"><p>{loadError}</p><button type="button" onClick={() => setRevision((value) => value + 1)}>Erneut laden</button></div>}
     {loading && <p role="status">Produkte werden geladen …</p>}
     {!loading && !loadError && pageData && <section className="panel" aria-labelledby="product-list-title">
       <div className="panel-header"><h3 id="product-list-title">{pageData.totalElements.toLocaleString("de-AT")} Produkte</h3><span>Seite {pageData.page + 1} von {Math.max(totalPages, 1)}</span></div>
-      {pageItems.length === 0 ? <p className="empty-state">{filters.q ? "Keine Produkte zur Suche gefunden." : "Der Produktkatalog ist leer."}</p> : <div className="table-scroll"><table><thead><tr><th>ID</th><th>Produkt</th><th>Preis</th><th>Kategorie</th><th>Regalposition</th><th>Store</th><th>Readiness</th><th>Aktionen</th></tr></thead><tbody>{pageItems.map((product) => {
+      {pageItems.length === 0 ? <p className="empty-state">{filters.q || filters.readiness ? "Keine Produkte zu Suche oder Filter gefunden." : "Der Produktkatalog ist leer."}</p> : <div className="table-scroll"><table><thead><tr><th>ID</th><th>Produkt</th><th>Preis</th><th>Kategorie</th><th>Regalposition</th><th>Store</th><th>Readiness</th><th>Aktionen</th></tr></thead><tbody>{pageItems.map((product) => {
         const readiness = productReadiness(product, categories);
-        const location = parseLayoutCode(product.layoutCode);
         return <tr key={product.id}><td>{product.id}</td><td><strong>{product.name}</strong></td><td>{product.price == null ? "–" : `${Number(product.price).toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}</td>
-          <td>{readiness.categoryName}</td><td><code>{product.layoutCode || "–"}</code>{location && <small>{readiness.detail}</small>}</td><td>{product.storeCode || product.storeId || "Global"}</td>
+          <td>{readiness.categoryName}</td><td><code>{product.layoutCode || "–"}</code>{readiness.ready && <small>{readiness.detail}</small>}</td><td>{product.storeCode || product.storeId || "Global"}</td>
           <td><span className={`status-pill ${readiness.ready ? "ready" : "missing"}`}>{readiness.label}</span>{!readiness.ready && <small>{readiness.detail}</small>}</td>
           <td><div className="row-actions"><button type="button" onClick={() => startEdit(product)}>Bearbeiten</button><button type="button" className="danger" onClick={() => deleteProduct(product)} disabled={deletingId !== null}>{deletingId === product.id ? "Löscht …" : "Löschen"}</button></div></td></tr>;
       })}</tbody></table></div>}

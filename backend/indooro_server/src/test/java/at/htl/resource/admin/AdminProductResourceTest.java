@@ -40,7 +40,7 @@ class AdminProductResourceTest {
     @TestSecurity(user = "admin", roles = "admin")
     void returnsPagedProductSearchAndClampsSizeToMaximum() throws Exception {
         doNothing().when(adminAccessService).requireAdmin();
-        when(openSearchService.searchAdminProductsPage("pear", 2, 100))
+        when(openSearchService.searchAdminProductsPage("pear", 2, 100, "id", null))
                 .thenReturn(new CommonDtos.PageResponse<>(List.of(product(17, "Pear")), 2, 100, 201));
 
         given()
@@ -55,14 +55,14 @@ class AdminProductResourceTest {
                 .body("size", equalTo(100))
                 .body("totalElements", equalTo(201));
 
-        verify(openSearchService).searchAdminProductsPage("pear", 2, 100);
+        verify(openSearchService).searchAdminProductsPage("pear", 2, 100, "id", null);
     }
 
     @Test
     @TestSecurity(user = "admin", roles = "admin")
     void pagedSearchUsesDefaultsAndClampsNegativePage() throws Exception {
         doNothing().when(adminAccessService).requireAdmin();
-        when(openSearchService.searchAdminProductsPage(null, 0, 20))
+        when(openSearchService.searchAdminProductsPage(null, 0, 20, "id", null))
                 .thenReturn(new CommonDtos.PageResponse<>(List.of(), 0, 20, 0));
 
         given()
@@ -74,7 +74,26 @@ class AdminProductResourceTest {
                 .body("size", equalTo(20))
                 .body("totalElements", equalTo(0));
 
-        verify(openSearchService).searchAdminProductsPage(null, 0, 20);
+        verify(openSearchService).searchAdminProductsPage(null, 0, 20, "id", null);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void passesSortAndRoutableFilterToPagedSearch() throws Exception {
+        doNothing().when(adminAccessService).requireAdmin();
+        when(openSearchService.searchAdminProductsPage(null, 1, 20, "layoutCode", false))
+                .thenReturn(new CommonDtos.PageResponse<>(List.of(), 1, 20, 0));
+        given().queryParam("page", 1).queryParam("sort", "layoutCode").queryParam("routable", false)
+                .when().get("/api/admin/products").then().statusCode(200);
+        verify(openSearchService).searchAdminProductsPage(null, 1, 20, "layoutCode", false);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void rejectsUnknownSortValue() {
+        doNothing().when(adminAccessService).requireAdmin();
+        given().queryParam("page", 0).queryParam("sort", "price")
+                .when().get("/api/admin/products").then().statusCode(400);
     }
 
     @Test

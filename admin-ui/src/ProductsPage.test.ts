@@ -23,11 +23,12 @@ const baseDraft: ProductDraft = {
 const product: Product = { id: 42, name: "Tomaten", price: 1.99, layoutCode: "310/1/1/1", storeId: null, storeCode: null };
 
 test("product query uses server-side paging and search with stable page links", () => {
-  assert.deepEqual(readProductFilters("?q=Tomaten&page=3&size=40"), { q: "Tomaten", page: 3, size: 40 });
-  assert.deepEqual(readProductFilters("?page=-2&size=1000"), { q: "", page: 0, size: 20 });
-  assert.equal(productListPath({ q: " Tomaten ", page: 2, size: 20 }), "/api/admin/products?page=2&size=20&q=Tomaten");
-  assert.equal(productPageUrl({ q: "Tomaten", page: 2, size: 20 }), "/admin/next/products/?q=Tomaten&page=2");
-  assert.equal(productPageUrl({ q: "", page: 0, size: 20 }), "/admin/next/products/");
+  assert.deepEqual(readProductFilters("?q=Tomaten&page=3&size=40&sort=layoutCode&readiness=warning"), { q: "Tomaten", page: 3, size: 40, sort: "layoutCode", readiness: "warning" });
+  assert.deepEqual(readProductFilters("?page=-2&size=1000&sort=bad&readiness=bad"), { q: "", page: 0, size: 20, sort: "name", readiness: "" });
+  assert.equal(productListPath({ q: " Tomaten ", page: 2, size: 20, sort: "name", readiness: "" }), "/api/admin/products?page=2&size=20&q=Tomaten&sort=name");
+  assert.equal(productListPath({ q: "", page: 2, size: 20, sort: "id", readiness: "warning" }), "/api/admin/products?page=2&size=20&sort=id&routable=false");
+  assert.equal(productPageUrl({ q: "Tomaten", page: 2, size: 20, sort: "name", readiness: "" }), "/admin/next/products/?q=Tomaten&page=2");
+  assert.equal(productPageUrl({ q: "", page: 0, size: 20, sort: "name", readiness: "" }), "/admin/next/products/");
 });
 
 test("accepts the backend PageResponse contract and rejects legacy arrays or invalid metadata", () => {
@@ -79,7 +80,9 @@ test("readiness shows named category and distinguishes global from store-scoped 
     categoryName: "Obst & Gemüse"
   });
   assert.equal(productReadiness({ ...product, storeId: "store-1" }, categories).label, "Routbar");
-  assert.equal(productReadiness({ ...product, layoutCode: "310/6/1/1" }, categories).ready, false);
+  assert.equal(productReadiness({ ...product, layoutCode: "310/6/1/1" }, categories).ready, true);
   assert.equal(productReadiness({ ...product, layoutCode: "420/1/1/1" }, categories).categoryName, "Konserven & Saucen");
-  assert.equal(productReadiness({ ...product, layoutCode: "999/1/1/1" }, categories).label, "Kategorie fehlt");
+  assert.equal(productReadiness({ ...product, layoutCode: "999/1/1/1" }, categories).label, "Global routbar");
+  assert.equal(productReadiness({ ...product, layoutCode: "999/1/1/1" }, categories).categoryName, "Kategorie 999");
+  assert.equal(productReadiness({ ...product, layoutCode: "bad" }, categories).ready, false);
 });
