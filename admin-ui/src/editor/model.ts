@@ -15,6 +15,8 @@ export interface LayoutElement {
   accessAngle?: number;
   beaconId?: string;
   beaconCode?: string;
+  /** QR anchor id printed on the sticker; unique per layout, `[A-Z0-9-]{1,12}`. */
+  anchorId?: string;
   identityKey?: string;
   locked?: boolean;
   [field: string]: unknown;

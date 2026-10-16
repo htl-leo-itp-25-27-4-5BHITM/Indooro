@@ -443,7 +443,8 @@ enum IndoorGraphBuilder {
         var blockedCells: Set<GridPoint> = []
 
         for element in elements {
-            if element.type == "beacon" || element.type == "entrance" {
+            // QR-Anker sind Positionsmarken auf dem Boden und blockieren keine Zellen.
+            if element.type == "beacon" || element.type == "entrance" || element.isAnchor {
                 continue
             }
 
@@ -748,7 +749,7 @@ extension IndoorGraph {
     /// nil bedeutet: keine Route. Reine Funktion fuer die DEBUG-Diagnose.
     func unreachableShelves(in elements: [LayoutElement], from entrance: SIMD2<Float>) -> [LayoutElement] {
         elements.filter { element in
-            guard element.type != "beacon", element.type != "entrance" else { return false }
+            guard element.type != "beacon", element.type != "entrance", !element.isAnchor else { return false }
             let center = SIMD2<Float>(
                 Float(element.x + (element.width ?? 1) / 2),
                 Float(element.y + (element.height ?? 1) / 2)

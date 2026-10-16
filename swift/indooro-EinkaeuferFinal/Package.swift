@@ -35,7 +35,8 @@ let package = Package(
                 "Utilities/TourPlanner.swift",
                 "Utilities/PositioningPipeline.swift",
                 "Utilities/NavigationReplay.swift",
-                "Utilities/StabilizedNavigationConfig.swift"
+                "Utilities/StabilizedNavigationConfig.swift",
+                "Utilities/AnchorPayload.swift"
             ]
         ),
         .testTarget(

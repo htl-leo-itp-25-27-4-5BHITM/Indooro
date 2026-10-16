@@ -69,6 +69,14 @@ export function assignShelfSections(document: LayoutDocument): LayoutDocument {
   return { ...document, elements: document.elements.map((element, index) => replacements.get(index) ?? element) };
 }
 
+/** A new QR anchor gets the next free `A<n>` id so that printed codes stay unique by default. */
+export function nextAnchorId(document: LayoutDocument): string {
+  const used = new Set(document.elements.filter((element) => element.type === "anchor").map((element) => String(element.anchorId ?? "")));
+  let number = 1;
+  while (used.has(`A${number}`)) number++;
+  return `A${number}`;
+}
+
 const safeHex = /^#[\da-f]{3}(?:[\da-f]{3})?(?:[\da-f]{2})?$/i;
 export function elementFill(element: LayoutElement, fallback: string): string {
   return typeof element.color === "string" && safeHex.test(element.color) ? element.color : fallback;

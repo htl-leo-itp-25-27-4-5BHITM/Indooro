@@ -97,6 +97,7 @@ public class StoreLayoutAdminService {
         if (shouldActivate) {
             layoutDocumentValidator.validateMobileElementIds(request.layout());
             layoutDocumentValidator.validatePublishedShelfRouting(request.layout());
+            layoutDocumentValidator.validateAnchors(request.layout());
             validateAssignedBeacons(storeId, request.layout());
         }
 
@@ -133,6 +134,7 @@ public class StoreLayoutAdminService {
         layoutDocumentValidator.validate(entity.layoutJson);
         layoutDocumentValidator.validateMobileElementIds(entity.layoutJson);
         layoutDocumentValidator.validatePublishedShelfRouting(entity.layoutJson);
+        layoutDocumentValidator.validateAnchors(entity.layoutJson);
         validateAssignedBeacons(storeId, entity.layoutJson);
 
         layoutVersionRepository.findActiveByStoreId(storeId)

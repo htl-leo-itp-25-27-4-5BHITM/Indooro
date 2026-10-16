@@ -101,6 +101,7 @@ public class LayoutService {
         layoutDocumentValidator.validate(layout);
         layoutDocumentValidator.validateMobileElementIds(layout);
         layoutDocumentValidator.validatePublishedShelfRouting(layout);
+        layoutDocumentValidator.validateAnchors(layout);
         ensureLayoutIndex();
 
         String layoutId = UUID.randomUUID().toString();

@@ -22,6 +22,12 @@ struct StoreMapPage: View {
     @State private var showSettings = false
     @State private var isShowingStoreOverview = true
     @State private var nextTapSetsPosition = false
+    @State private var showAnchorScanner = false
+    @State private var anchorScanStatusMessage: String?
+    /// Payload eines Scans einer anderen Filiale; solange gesetzt, zeigt ein Alert den Wechsel an.
+    @State private var pendingStoreSwitchPayload: AnchorPayload?
+    /// Gescannter Anker, der nach dem Store-Wechsel automatisch gesetzt wird.
+    @State private var pendingAnchorScan: PendingAnchorScan?
     @State private var pendingStoreSelectionID: UUID?
     @State private var storeCameraPosition: MapCameraPosition = .region(
         MKCoordinateRegion(
@@ -101,6 +107,9 @@ struct StoreMapPage: View {
                 }
             }
         }
+        .onChange(of: beaconManager.activeLayoutStore?.id, initial: false) { _, _ in
+            resolvePendingAnchorScan()
+        }
         .onChange(of: beaconManager.activeLayoutStoreSource, initial: false) { _, newValue in
             guard newValue == .beacon, beaconManager.activeLayoutStore != nil else { return }
             pendingStoreSelectionID = nil
@@ -176,6 +185,118 @@ struct StoreMapPage: View {
                 }
             )
             .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showAnchorScanner) {
+            AnchorScannerView(
+                statusMessage: anchorScanStatusMessage,
+                onPayload: handleScannedAnchorPayload,
+                onClose: {
+                    pendingAnchorScan = nil
+                    showAnchorScanner = false
+                }
+            )
+            .presentationDetents([.large])
+            .alert(
+                storeSwitchAlertTitle,
+                isPresented: Binding(
+                    get: { pendingStoreSwitchPayload != nil },
+                    set: { if !$0 { pendingStoreSwitchPayload = nil } }
+                )
+            ) {
+                if let target = storeSwitchTargetStore {
+                    Button("Wechseln") {
+                        // Der Scan wird nach dem Laden des Stores automatisch gesetzt; der Scanner bleibt offen.
+                        if let payload = pendingStoreSwitchPayload {
+                            pendingAnchorScan = PendingAnchorScan(payload: payload)
+                        }
+                        pendingStoreSwitchPayload = nil
+                        anchorScanStatusMessage = "Filiale wird geladen …"
+                        beaconManager.loadStoreLayout(storeId: target.id)
+                    }
+                    Button("Abbrechen", role: .cancel) {
+                        pendingStoreSwitchPayload = nil
+                    }
+                } else {
+                    Button("OK", role: .cancel) {
+                        pendingStoreSwitchPayload = nil
+                    }
+                }
+            } message: {
+                if storeSwitchTargetStore == nil {
+                    Text("Bitte wechsle zuerst in die passende Filiale.")
+                }
+            }
+        }
+    }
+
+    private var storeSwitchTargetStore: MobileStoreSummary? {
+        guard let code = pendingStoreSwitchPayload?.storeCode else { return nil }
+        return beaconManager.mobileStores.first { $0.storeCode.lowercased() == code.lowercased() }
+    }
+
+    private var storeSwitchAlertTitle: String {
+        if let target = storeSwitchTargetStore {
+            return "Dieser Code gehört zu \(target.name). Wechseln?"
+        }
+        return "Dieser Code gehört zu einer anderen Filiale."
+    }
+
+    private func openAnchorScanner() {
+        anchorScanStatusMessage = nil
+        pendingAnchorScan = nil
+        showAnchorScanner = true
+    }
+
+    private func handleScannedAnchorPayload(_ text: String) {
+        // Waehrend der Wechsel-Abfrage und waehrend der Zielstore laedt, werden weitere Scans ignoriert
+        // (der Scanner kann denselben Code erneut melden). Schliessen des Scanners hebt das auf.
+        guard pendingStoreSwitchPayload == nil, pendingAnchorScan == nil else { return }
+
+        let outcome = AnchorPayload.resolve(
+            text,
+            activeStoreCode: beaconManager.activeLayoutStore?.storeCode,
+            anchors: beaconManager.shelves.filter(\.isAnchor)
+        )
+
+        switch outcome {
+        case .setPosition(_, let point):
+            anchorScanStatusMessage = nil
+            nextTapSetsPosition = false
+            beaconManager.setManualUserPosition(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+            showAnchorScanner = false
+        case .storeMismatch:
+            anchorScanStatusMessage = nil
+            pendingStoreSwitchPayload = AnchorPayload.parse(text)
+        case .unknownAnchor, .invalid:
+            anchorScanStatusMessage = "Unbekannter Code – bitte anderen Code scannen"
+        }
+    }
+
+    /// Wertet einen wartenden Store-Wechsel-Scan aus, sobald das Layout der Ziel-Filiale aktiv ist.
+    private func resolvePendingAnchorScan() {
+        guard let pending = pendingAnchorScan else { return }
+        // Scanner wurde zwischenzeitlich geschlossen: nichts mehr setzen.
+        guard showAnchorScanner else {
+            pendingAnchorScan = nil
+            return
+        }
+
+        guard let outcome = pending.resolve(
+            activeStoreCode: beaconManager.activeLayoutStore?.storeCode,
+            anchors: beaconManager.shelves.filter(\.isAnchor)
+        ) else {
+            return
+        }
+        pendingAnchorScan = nil
+
+        switch outcome {
+        case .setPosition(_, let point):
+            anchorScanStatusMessage = nil
+            nextTapSetsPosition = false
+            beaconManager.setManualUserPosition(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+            showAnchorScanner = false
+        case .unknownAnchor, .invalid, .storeMismatch:
+            anchorScanStatusMessage = "Unbekannter Code – bitte anderen Code scannen"
         }
     }
 
@@ -481,7 +602,7 @@ struct StoreMapPage: View {
 
     private var indoorPositionControls: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 0) {
+            HStack(spacing: 8) {
                 Button {
                     nextTapSetsPosition.toggle()
                 } label: {
@@ -497,6 +618,19 @@ struct StoreMapPage: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Ich bin hier")
+
+                Button {
+                    openAnchorScanner()
+                } label: {
+                    Label("QR-Code scannen", systemImage: "qrcode.viewfinder")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(accent)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background(accent.opacity(0.11), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("QR-Code scannen")
 
                 Spacer(minLength: 0)
             }
@@ -520,6 +654,13 @@ struct StoreMapPage: View {
                 .lineLimit(2)
 
             Spacer(minLength: 0)
+
+            Button("QR-Code scannen") {
+                openAnchorScanner()
+            }
+            .font(.caption.weight(.semibold))
+            .buttonStyle(.plain)
+            .foregroundStyle(accent)
 
             Button("Position setzen") {
                 nextTapSetsPosition = true
