@@ -74,6 +74,7 @@ struct SettingsSheet: View {
                 }
                 #endif
 
+                if AppEnvironment.allowsExtendedFeatures {
                 Section("AR") {
                     Button {
                         onShowAR()
@@ -87,6 +88,7 @@ struct SettingsSheet: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                }
                 }
             }
             #if DEBUG
