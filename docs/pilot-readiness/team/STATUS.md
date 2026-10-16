@@ -7,7 +7,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Person | Aktuelle Change | Branch | Erledigte Tasks | Nächste Tasks | Prüfungen zuletzt | Aktualisiert |
 |---|---|---|---|---|---|---|
 | Erik (Mac) | `add-pilot-guided-tour-fallbacks` | `pilot/erik-guided-tour` | 7.1–7.4 | 1.1–2.7 | `swift test` 77/77 (2026-10-15) | 2026-10-16 |
-| Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | 24/35; Code + PR-Entwurf in evidence/prepare-pilot-ios-build | Rest: Eigentums-Gates und Menschen; danach B | 86 Tests/0; Build grün; UI-Smoke 1/0; OpenSpec 64/0 | 2026-10-16 |
+| Person A (Mac) | A + B reviewbar; C/D Gates | `pilot/ios-study-mode` | A 24/35, B 16/17; PR-Texte + Evidence vorhanden | Erik-Integration/Freigaben, C Kit-Übernahme; C wartet auf A-Merge; D Messdaten | 91 Tests/0; Build grün; B UI 2/0; OpenSpec 64/0 | 2026-10-16 |
 | Person B (Windows) | `release-pilot-backend` Phase A | `pilot/release-backend` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person C (Windows) | `prepare-pilot-store-operations` | `pilot/store-operations` | – | 1.1–3.5 | – | 2026-10-16 |
 | Admin-Agent | Welle 2: `complete-admin-parity-evidence`, `add-editor-floorplan-underlay` | `pilot/admin-parity`, `pilot/editor-underlay` | Pilot-Cut erledigt, live | laut `PROMPT_ADMIN_AGENT_WAVE2.md` | Backend 142/0 (2026-10-16) | 2026-10-16 |
@@ -42,9 +42,8 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | 2026-10-16 | Person A | A 5.4: PermissionBanner und Suchfehler über ContentView integriert; StoreMapPage unverändert. | gelöst ohne Änderung an Eriks Datei |
 | 2026-10-16 | Person A | A 6.5: explizite Freigabe von Erik zum Entfernen der vier toten Views fehlt. | offen |
 | 2026-10-16 | Person A | D: wartet auf docs/pilot-readiness/hardware/RESULT_SUMMARY.md; keine Schwellen ohne Messdaten. | offen |
-
 | 2026-10-16 | Person A | B: Erik muss routeBuildCount, rerouteCount, stopChangeWithoutEventCount und manualPositionCount an NavigationSession monoton veröffentlichen. Bis dahin Zeit/Ergebnis, fehlende Navigationswerte „-“. | offen |
-| 2026-10-16 | Person A | B 4.1: kit/study-export-sample gehört Person C. Eigenes synthetisches Export-Beispiel wird unter evidence/add-pilot-study-mode bereitgestellt; C muss es in den Kit-Pfad übernehmen. | offen |
+| 2026-10-16 | Person A | B 4.1: kit/study-export-sample gehört Person C. Person C: fertiger synthetischer Export (3 Zeilen, 6 Events) liegt unter evidence/add-pilot-study-mode/study-export-sample auf pilot/ios-study-mode; bitte CSV + JSONL in den Kit-Pfad übernehmen. Simulator/Formatprüfung erledigt. | offen |
 | 2026-10-16 | Person A | C: Start-Gate „A in pilot/first-store gemergt“ noch nicht erfüllt; zudem Accessibility-Modifier an MapView/StoreMapPage nur nach Absprache. | offen |
 
 ## Entscheidungen

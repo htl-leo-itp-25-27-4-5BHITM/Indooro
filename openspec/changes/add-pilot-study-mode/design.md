@@ -44,3 +44,5 @@ Flag off = feature invisible.
 
 - Lesender Gegencheck, Korrekturrunde 1: ältere Sitzungen waren gespeichert, aber nicht mehr auswählbar. Gespeicherte Sitzungen werden jetzt angeboten und können vor dem Export ausgewählt werden; zusätzlicher Persistenztest mit zwei Sitzungen innerhalb derselben Sekunde. Persistierte und exportierte Zeitstempel behalten Millisekunden.
 - Export-Diagnose: DEBUG protokolliert nur Methode/Pfad der gemeinsamen Backend-Session (keine Querywerte/Bodys) und markiert Beginn/Ende des lokalen Exports. Der Beobachter übernimmt keinen Transport.
+
+- Studienstart nutzt in ContentView den bestehenden pendingLastStoreLayoutOpenRequest-Einstieg: aktive Filiale öffnen, sonst Übersicht beibehalten. Lesender Gegencheck ohne Befund; StoreMapPage bleibt unverändert.

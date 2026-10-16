@@ -1,0 +1,17 @@
+// !$*UTF8*$!
+{archiveVersion=1; classes={}; objectVersion=56; objects={
+AA0000000000000000000001={isa=PBXProject; buildConfigurationList=AA0000000000000000000010; compatibilityVersion="Xcode 14.0"; mainGroup=AA0000000000000000000002; productRefGroup=AA0000000000000000000003; projectDirPath=""; targets=(AA0000000000000000000004,);};
+AA0000000000000000000002={isa=PBXGroup; children=(AA0000000000000000000005,AA0000000000000000000003,); sourceTree="<group>";};
+AA0000000000000000000003={isa=PBXGroup; children=(AA0000000000000000000006,); name=Products; sourceTree="<group>";};
+AA0000000000000000000004={isa=PBXNativeTarget; buildConfigurationList=AA0000000000000000000011; buildPhases=(AA0000000000000000000007,AA0000000000000000000008,AA0000000000000000000009,); buildRules=(); dependencies=(); name=PilotSmoke; productName=PilotSmoke; productReference=AA0000000000000000000006; productType="com.apple.product-type.bundle.ui-testing";};
+AA0000000000000000000005={isa=PBXFileReference; lastKnownFileType=sourcecode.swift; path=Smoke.swift; sourceTree="<group>";};
+AA0000000000000000000006={isa=PBXFileReference; explicitFileType="wrapper.cfbundle"; path=PilotSmoke.xctest; sourceTree=BUILT_PRODUCTS_DIR;};
+AA0000000000000000000007={isa=PBXSourcesBuildPhase; buildActionMask=2147483647; files=(AA0000000000000000000012,); runOnlyForDeploymentPostprocessing=0;};
+AA0000000000000000000008={isa=PBXFrameworksBuildPhase; buildActionMask=2147483647; files=(); runOnlyForDeploymentPostprocessing=0;};
+AA0000000000000000000009={isa=PBXResourcesBuildPhase; buildActionMask=2147483647; files=(); runOnlyForDeploymentPostprocessing=0;};
+AA0000000000000000000012={isa=PBXBuildFile; fileRef=AA0000000000000000000005;};
+AA0000000000000000000010={isa=XCConfigurationList; buildConfigurations=(AA0000000000000000000013,); defaultConfigurationIsVisible=0; defaultConfigurationName=Debug;};
+AA0000000000000000000011={isa=XCConfigurationList; buildConfigurations=(AA0000000000000000000014,); defaultConfigurationIsVisible=0; defaultConfigurationName=Debug;};
+AA0000000000000000000013={isa=XCBuildConfiguration; buildSettings={SDKROOT=iphoneos; IPHONEOS_DEPLOYMENT_TARGET=18.5; SWIFT_VERSION=5.0;}; name=Debug;};
+AA0000000000000000000014={isa=XCBuildConfiguration; buildSettings={PRODUCT_BUNDLE_IDENTIFIER=at.ac.htl.indooro.PersonASmoke; PRODUCT_NAME="$(TARGET_NAME)"; GENERATE_INFOPLIST_FILE=YES; SWIFT_VERSION=5.0; IPHONEOS_DEPLOYMENT_TARGET=18.5; TARGETED_DEVICE_FAMILY="1,2"; SUPPORTED_PLATFORMS=iphonesimulator; CODE_SIGNING_ALLOWED=NO;}; name=Debug;};
+}; rootObject=AA0000000000000000000001;}

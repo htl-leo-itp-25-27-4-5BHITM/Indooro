@@ -1,0 +1,4 @@
+test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count
+T01,F9FBDD35-3D0C-4187-BB68-B529BD48BDBF,,1,90001,Testprodukt A,app,ohne_ortung,2026-10-16T16:58:23.732Z,2026-10-16T16:58:26.895Z,3.2,gefunden,-,-,-,0
+T01,F9FBDD35-3D0C-4187-BB68-B529BD48BDBF,,2,90002,Testprodukt B,app,ohne_ortung,2026-10-16T16:58:29.246Z,2026-10-16T16:58:32.129Z,2.9,hilfe,-,-,-,0
+T01,F9FBDD35-3D0C-4187-BB68-B529BD48BDBF,,3,90003,Testprodukt C,ohne_app,-,2026-10-16T16:58:34.529Z,2026-10-16T16:58:36.046Z,1.5,gefunden,-,-,-,0
