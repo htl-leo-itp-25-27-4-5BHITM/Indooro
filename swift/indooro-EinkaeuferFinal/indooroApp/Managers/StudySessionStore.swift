@@ -115,6 +115,10 @@ final class StudySessionStore: ObservableObject {
     func exportURLs() throws -> [URL] {
         guard let session else { throw StudyFailure.invalidTask }
         guard running == nil else { throw StudyFailure.busy }
+        #if DEBUG
+        NSLog("[StudyExport] begin")
+        defer { NSLog("[StudyExport] end") }
+        #endif
         try persist(session)
         let dir = directory(session)
         let name = StudyFormat.fileStem(session)

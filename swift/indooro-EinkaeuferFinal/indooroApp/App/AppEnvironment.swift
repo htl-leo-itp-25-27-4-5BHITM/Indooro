@@ -47,8 +47,24 @@ enum AppEnvironment {
 
     static let session: URLSession = {
         let config = URLSessionConfiguration.default
+        #if DEBUG
+        config.protocolClasses = [PilotRequestObserver.self] + (config.protocolClasses ?? [])
+        #endif
         config.timeoutIntervalForRequest = requestTimeout
         config.timeoutIntervalForResource = requestTimeout
         return URLSession(configuration: config)
     }()
 }
+
+#if DEBUG
+/// Observe request creation without intercepting transport. Never log query values or bodies.
+private final class PilotRequestObserver: URLProtocol {
+    override class func canInit(with request: URLRequest) -> Bool {
+        NSLog("[PilotNetwork] %@ %@", request.httpMethod ?? "GET", request.url?.path ?? "")
+        return false
+    }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {}
+    override func stopLoading() {}
+}
+#endif
