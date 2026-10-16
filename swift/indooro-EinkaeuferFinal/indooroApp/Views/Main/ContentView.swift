@@ -104,6 +104,13 @@ struct ContentView: View {
         }
         .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
         .preferredColorScheme(.light)
+        .alert("Filiale erkannt: \(beaconManager.suggestedPilotStore?.name ?? "") – öffnen?", isPresented: Binding(
+            get: { beaconManager.suggestedPilotStore != nil },
+            set: { if !$0 { beaconManager.suggestedPilotStore = nil } }
+        )) {
+            Button("Öffnen") { beaconManager.openSuggestedPilotStore() }
+            Button("Abbrechen", role: .cancel) { beaconManager.suggestedPilotStore = nil }
+        }
         .onAppear {
             navigationSession.attach(to: beaconManager)
             shoppingSessionManager.bind(navigationSession: navigationSession)

@@ -1108,7 +1108,20 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }.resume()
     }
 
+    @Published var suggestedPilotStore: MobileStoreSummary?
+
+    func openSuggestedPilotStore() {
+        guard let store = suggestedPilotStore else { return }
+        suggestedPilotStore = nil
+        detectedStore = store
+        loadStoreLayout(storeId: store.id)
+    }
+
     private func applyDetectedStore(_ detection: StoreByBeaconResponse, identityKey: String) {
+        if !AppEnvironment.allowsExtendedFeatures {
+            if activeLayoutStore == nil && detectedStore == nil { suggestedPilotStore = detection.store }
+            return
+        }
         let hasAppliedStoreLayout = activeLayoutStore?.id == detection.store.id
         let shouldLoadStoreLayout = !hasAppliedStoreLayout || selectedLayoutMode != .currentServer
 
