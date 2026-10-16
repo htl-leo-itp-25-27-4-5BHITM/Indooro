@@ -17,6 +17,13 @@ let package = Package(
             sources: [
                 "Models/LayoutData.swift",
                 "Models/ShelfLocationDescriptor.swift",
+                "Models/MobileStoreModels.swift",
+                "Models/Product.swift",
+                "Models/RecipeModels.swift",
+                "Models/UpsellModels.swift",
+                "Models/ShoppingModels.swift",
+                "Models/ShoppingTransferModels.swift",
+                "Models/IndooroBeacon.swift",
                 "Utilities/IndoorGraph.swift",
                 "Utilities/KalmanFilter.swift",
                 "Utilities/LayoutCacheStore.swift",

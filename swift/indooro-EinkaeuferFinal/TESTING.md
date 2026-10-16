@@ -42,6 +42,25 @@ The tests should use local JSON fixtures only and must not perform real network
 calls.
 
 
+## Fixtures, contract tests and CI (add-ios-app-test-target)
+
+- `Fixtures/` holds anonymous live responses captured from LeoCloud with `curl`
+  (`stores.json`, `store-layout-current.json`, `products-search-milch.json`, `recipes.json`,
+  `recipe-detail.json`, `recipe-product-mapping.json`) and hand-made edge cases
+  (malformed product list, rotated shelf without label, shopping list v1, upsell plan).
+  Refresh a live fixture with the same `curl` call; never put credentials or personal data into it.
+- The pure Foundation models from `indooroApp/Models/` are part of the SwiftPM target, so
+  `swift test` also checks the backend contract (decoding of the fixtures) and the shopping list model.
+- The unit test bundle `MCindooroAppTests` (host app `MCindooroApp`, synchronized folder
+  `MCindooroAppTests/`, shared scheme `MCindooroApp`) covers what does not build in the package
+  (`ShoppingListManager`, later `AppEnvironment`). It was created by `scripts/ios/add_unit_test_target.rb`
+  (xcodeproj gem, idempotent), not by hand. Run it with
+  `xcodebuild test -project MCindooroApp.xcodeproj -scheme MCindooroApp -destination 'platform=iOS Simulator,name=iPhone 16 Pro' CODE_SIGNING_ALLOWED=NO`.
+- `scripts/ios/install-debug-on-device.sh` builds the Debug app for a connected iPhone and installs it
+  with `devicectl` (device must be plugged in, unlocked and trusted).
+- `.github/workflows/ios.yaml` runs on pull requests to `pilot/first-store` and `main`
+  (`swift test`, simulator build, and `xcodebuild test` as soon as `MCindooroAppTests/` contains Swift files).
+
 ## Navigation test package (`swift test`)
 
 `swift/indooro-EinkaeuferFinal/Package.swift` defines the SwiftPM package

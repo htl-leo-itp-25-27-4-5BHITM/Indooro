@@ -298,8 +298,10 @@ final class ShoppingListManager: ObservableObject {
     @Published private(set) var revision = 0
 
     private let storeKey = "shoppingListStore.v1"
+    private let defaults: UserDefaults
 
-    init() {
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         load()
         ensureDefaultListExists()
     }
@@ -948,7 +950,7 @@ final class ShoppingListManager: ObservableObject {
     }
 
     private func load() {
-        guard let data = UserDefaults.standard.data(forKey: storeKey),
+        guard let data = defaults.data(forKey: storeKey),
               let store = try? JSONDecoder().decode(ShoppingListStore.self, from: data) else {
             return
         }
@@ -961,7 +963,7 @@ final class ShoppingListManager: ObservableObject {
         revision += 1
         let store = ShoppingListStore(lists: lists, selectedListID: selectedListID)
         if let data = try? JSONEncoder().encode(store) {
-            UserDefaults.standard.set(data, forKey: storeKey)
+            defaults.set(data, forKey: storeKey)
         }
     }
 }
