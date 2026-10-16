@@ -29,7 +29,7 @@ codex -m <stärkstes-codex-modell> -c model_reasoning_effort="high"
 ## Prompt (komplett in Codex einfügen)
 
 ```text
-Du arbeitest autonom im Repository Indooro (HTL-Diplomarbeit: SwiftUI-iOS-App für Indoor-Navigation im Supermarkt mit BLE-iBeacons, Quarkus-Backend, Web-Admin). Ziel ist der erste echte Supermarkt-Pilot. Du bist der Agent von Person A (iOS, macOS mit Xcode).
+Du arbeitest autonom im Repository Indooro (HTL-Schulprojekt: SwiftUI-iOS-App für Indoor-Navigation im Supermarkt mit BLE-iBeacons, Quarkus-Backend, Web-Admin). Ziel ist der erste echte Supermarkt-Pilot. Du bist der Agent von Person A (iOS, macOS mit Xcode).
 
 LIES ZUERST, in dieser Reihenfolge:
 1. docs/pilot-readiness/team/AGENT_RULES.md – verbindlich (Git, Dateibesitz, Prüfungen, Stopp-Regeln, Modelle)
@@ -40,6 +40,9 @@ LIES ZUERST, in dieser Reihenfolge:
 DEINE CHANGES, STRIKT IN DIESER REIHENFOLGE:
 A) openspec/changes/prepare-pilot-ios-build/            Branch pilot/ios-pilot-build   (inkl. fix-ios-contract-and-spec-drift 3, 4, 5, 6, 10)
 B) openspec/changes/add-pilot-study-mode/               Branch pilot/ios-study-mode   (erst wenn A in pilot/first-store gemergt ist; sonst A auf diesem Branch mergen: git merge origin/pilot/ios-pilot-build)
+WELLE 2 (danach, gleiche Arbeitsweise):
+C) openspec/changes/improve-ios-accessibility/   Branch pilot/ios-accessibility
+D) openspec/changes/add-arrival-suggestion/      Branch pilot/arrival-suggestion – nur wenn docs/pilot-readiness/hardware/RESULT_SUMMARY.md existiert, sonst überspringen und in STATUS.md vermerken
 
 ABLAUF JE CHANGE:
 1. `git fetch origin`, auf den Branch wechseln (`git switch <branch>` oder `git switch --track origin/<branch>`), `git merge origin/pilot/first-store`.
@@ -57,7 +60,7 @@ WICHTIGE GRENZEN:
 - Keine neuen Features außerhalb der Changes. Alle Texte deutsch mit „…“-Anführungszeichen wie im Code.
 - Ein schreibender Agent (du). Für reine Code-Suche optional bis zu 2 lesende Subagenten mit kleinerem Modell.
 
-FERTIG, WENN beide Changes bis auf Human steps erledigt, geprüft, gepusht und als PR vorbereitet sind – oder alle verbleibenden Tasks blockiert sind. Schreibe dann eine Zusammenfassung: fertig / rot / was ein Mensch tun muss. Archiviere keine Change.
+FERTIG, WENN alle deine Changes (A–D) bis auf Human steps und Gates erledigt, geprüft, gepusht und als PR vorbereitet sind – oder alle verbleibenden Tasks blockiert sind. Schreibe dann eine Zusammenfassung: fertig / rot / was ein Mensch tun muss. Archiviere keine Change.
 ```
 
 ## Abnahme (Erik prüft)

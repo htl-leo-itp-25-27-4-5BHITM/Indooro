@@ -6,10 +6,10 @@ Stand: 16.10.2026. Gesamtplan aller Changes: [ROADMAP.md](ROADMAP.md). Regeln f�
 
 | Person | Rechner | Bereich | Changes in dieser Reihenfolge | Prompt |
 |---|---|---|---|---|
-| **Erik** | Mac | Admin-Abschluss, Integration, Navigation, Mess-Replay, App-Tests/CI, Pilot-Bereitschaftsseite, Releases, Partner | Admin-Pilot-Cut → `add-pilot-guided-tour-fallbacks` → `add-ios-app-test-target` → `establish-pilot-field-measurement` [E] → `add-store-pilot-readiness-check` | [PROMPT_ERIK.md](PROMPT_ERIK.md), [PROMPT_ADMIN_AGENT.md](PROMPT_ADMIN_AGENT.md) |
-| **Person A** | Mac | iOS-App | `prepare-pilot-ios-build` → `add-pilot-study-mode` | [PROMPT_PERSON_A_IOS.md](PROMPT_PERSON_A_IOS.md) |
-| **Person B** | Windows | Backend, Betrieb, Sicherheit | `release-pilot-backend` (Phase A, dann Phase B) | [PROMPT_PERSON_B_BACKEND.md](PROMPT_PERSON_B_BACKEND.md) |
-| **Person C** | Windows | Feld, Hardware, Daten, Pilot-Kit, Auswertung | `prepare-pilot-store-operations` → `add-beacon-placement-planner` → `establish-pilot-field-measurement` [C] → `prepare-pilot-evaluation` | [PROMPT_PERSON_C_FIELD_DATA.md](PROMPT_PERSON_C_FIELD_DATA.md) |
+| **Erik** | Mac | Admin-Abschluss, Integration, Navigation, Mess-Replay, App-Tests/CI, Pilot-Bereitschaftsseite, Releases, Partner | Welle 1: Admin-Release → `add-pilot-guided-tour-fallbacks` → `add-ios-app-test-target` → `establish-pilot-field-measurement` [E] → `add-store-pilot-readiness-check`. Welle 2: `add-qr-anchor-positioning` → `complete-admin-parity-evidence` + `add-editor-floorplan-underlay` (Admin-Agent) → `add-ios-pilot-ui-tests` → `improve-positioning-with-motion` | [PROMPT_ERIK.md](PROMPT_ERIK.md), [PROMPT_ADMIN_AGENT.md](PROMPT_ADMIN_AGENT.md) |
+| **Person A** | Mac | iOS-App | `prepare-pilot-ios-build` → `add-pilot-study-mode` → `improve-ios-accessibility` → `add-arrival-suggestion` | [PROMPT_PERSON_A_IOS.md](PROMPT_PERSON_A_IOS.md) |
+| **Person B** | Windows | Backend, Katalog, Suche, Betrieb, Sicherheit | `release-pilot-backend` (A, dann B) → `add-store-scoped-catalog` → `improve-product-search-quality` → `add-admin-catalog-spreadsheet-import` | [PROMPT_PERSON_B_BACKEND.md](PROMPT_PERSON_B_BACKEND.md) |
+| **Person C** | Windows | Feld, Hardware, Daten, Pilot-Kit, Web-Finder, Auswertung | `prepare-pilot-store-operations` → `add-beacon-placement-planner` → `establish-pilot-field-measurement` [C] → `upgrade-customer-web-product-finder` → `prepare-pilot-evaluation` → `add-editor-beacon-coverage-overlay` | [PROMPT_PERSON_C_FIELD_DATA.md](PROMPT_PERSON_C_FIELD_DATA.md) |
 
 Person A = die zweite Person mit MacBook. B und C = die beiden mit Windows. Welche konkreten Teammitglieder das sind, entscheidet ihr; Vorschlag nach Projektauftrag: B = einer der beiden „Server“-Leute, C = „Ortungshardware“.
 
@@ -29,6 +29,11 @@ Person A = die zweite Person mit MacBook. B und C = die beiden mit Windows. Welc
 | `pilot/beacon-planner` | `pilot/first-store` | Person C, Change 8 | `pilot/first-store` |
 | `pilot/field-measurement` | `pilot/first-store` | Person C, Change 7 [C] | `pilot/first-store` |
 | `pilot/pilot-evaluation` | `pilot/first-store` | Person C, Change 10 | `pilot/first-store` |
+| `pilot/qr-anchors`, `pilot/ios-ui-tests`, `pilot/motion-positioning` | `pilot/first-store` | Erik, Welle 2 | `pilot/first-store` |
+| `pilot/ios-accessibility`, `pilot/arrival-suggestion` | `pilot/first-store` | Person A, Welle 2 | `pilot/first-store` |
+| `pilot/store-catalog`, `pilot/search-quality`, `pilot/catalog-import` | **nach Admin-Merge** von `main` anlegen | Person B, Welle 2 | `main` |
+| `pilot/web-finder`, `pilot/editor-coverage` | **nach Admin-Merge** von `main` anlegen | Person C, Welle 2 | `main` |
+| `pilot/editor-underlay`, Parität-Nachweise | **nach Admin-Merge** von `main` anlegen | Erik (Admin-Agent), Welle 2 | `main` |
 
 Alle Branches außer `pilot/store-readiness` sind auf GitHub. `codex/admin-platform-rebuild` pusht Erik nach dem Pilot-Cut.
 

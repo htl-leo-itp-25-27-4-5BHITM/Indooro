@@ -8,7 +8,7 @@ Grundregel für alle Texte: **Wir versprechen nichts, was wir nicht in einem ech
 
 ## A. Elevator Pitch (ca. 30 Sekunden)
 
-> „Wir sind fünf Schüler der HTL Leonding und entwickeln in unserer Diplomarbeit Indooro, eine App, mit der Kundinnen und Kunden Produkte im Supermarkt selbst finden. Man tippt ein, was man sucht, und sieht sofort, in welchem Gang und an welchem Regal es steht, und auf Wunsch den Weg dorthin. Die Idee kommt aus unserer Samstagsarbeit im Handel: Dort fragen uns jeden Tag Leute, wo etwas steht. Wir möchten in einem echten Markt testen, ob das den Kunden wirklich hilft und Ihr Personal entlastet. Für Sie kostenlos, zeitlich begrenzt und so, dass Ihr Betrieb nicht gestört wird. Dürfen wir Ihnen das in zehn Minuten zeigen?“
+> „Wir sind fünf Schüler der HTL Leonding und entwickeln in einem Schulprojekt Indooro, eine App, mit der Kundinnen und Kunden Produkte im Supermarkt selbst finden. Man tippt ein, was man sucht, und sieht sofort, in welchem Gang und an welchem Regal es steht, und auf Wunsch den Weg dorthin. Die Idee kommt aus unserer Samstagsarbeit im Handel: Dort fragen uns jeden Tag Leute, wo etwas steht. Wir möchten in einem echten Markt testen, ob das den Kunden wirklich hilft und Ihr Personal entlastet. Für Sie kostenlos, zeitlich begrenzt und so, dass Ihr Betrieb nicht gestört wird. Dürfen wir Ihnen das in zehn Minuten zeigen?“
 
 Hinweise für den Vortrag:
 
@@ -22,7 +22,7 @@ Hinweise für den Vortrag:
 
 **Indooro – Produkte im Supermarkt schneller finden**
 
-Indooro ist eine iPhone-App, die im Rahmen einer Diplomarbeit an der HTL Leonding (Abteilung Informationstechnologie) von fünf Schülern entwickelt wird. Kundinnen und Kunden suchen ein Produkt oder legen eine Einkaufsliste an. Die App zeigt auf einem Grundriss des Marktes, wo die Produkte stehen, und schlägt einen sinnvollen Weg durch das Geschäft vor. In einer erweiterten Variante bestimmen kleine, batteriebetriebene Bluetooth-Sender („Beacons“) ungefähr, wo im Markt sich die Kundin befindet.
+Indooro ist eine iPhone-App, die im Rahmen eines Schulprojekts an der HTL Leonding (Abteilung Informationstechnologie) von fünf Schülern entwickelt wird. Kundinnen und Kunden suchen ein Produkt oder legen eine Einkaufsliste an. Die App zeigt auf einem Grundriss des Marktes, wo die Produkte stehen, und schlägt einen sinnvollen Weg durch das Geschäft vor. In einer erweiterten Variante bestimmen kleine, batteriebetriebene Bluetooth-Sender („Beacons“) ungefähr, wo im Markt sich die Kundin befindet.
 
 Die Daten zum Markt (Grundriss, Regale, Produktpositionen) werden über eine Web-Verwaltung gepflegt, die wir ebenfalls entwickelt haben.
 
@@ -39,7 +39,7 @@ Betreuung: [Name der Betreuungslehrkraft], HTL Leonding · Kontakt: [Teamkontakt
 ### Indooro – Pilotvorschlag für [Marktname]
 
 **Was ist Indooro?**
-Eine App, die zeigt, wo ein Produkt im Markt steht, und auf Wunsch den Weg dorthin anzeigt. Entwickelt von fünf Schülern der HTL Leonding als Diplomarbeit.
+Eine App, die zeigt, wo ein Produkt im Markt steht, und auf Wunsch den Weg dorthin anzeigt. Entwickelt von fünf Schülern der HTL Leonding als Schulprojekt.
 
 **Welches Problem soll es lösen?**
 Kundinnen und Kunden suchen Produkte und fragen dafür das Personal. Das kostet beiden Zeit. Besonders betroffen: seltene Artikel, neue Kundschaft, ältere Menschen, Aushilfen beim Einkaufen für andere.
@@ -152,7 +152,7 @@ Vor der ersten Aussendung mit der Schule (Betreuung, Direktion) abstimmen, unter
 >
 > Sehr geehrte Frau [Name] / Sehr geehrter Herr [Name],
 >
-> wir sind fünf Schüler der HTL Leonding und entwickeln im Rahmen unserer Diplomarbeit die App „Indooro“. Sie zeigt Kundinnen und Kunden, in welchem Gang und an welchem Regal ein gesuchtes Produkt steht, und auf Wunsch den Weg dorthin.
+> wir sind fünf Schüler der HTL Leonding und entwickeln im Rahmen eines Schulprojekts die App „Indooro“. Sie zeigt Kundinnen und Kunden, in welchem Gang und an welchem Regal ein gesuchtes Produkt steht, und auf Wunsch den Weg dorthin.
 >
 > Wir würden Indooro gerne in einem echten Markt testen und fragen deshalb bei Ihnen an. Der Test wäre für Sie kostenlos, auf einen kleinen Bereich beschränkt und so geplant, dass Ihr Betrieb nicht gestört wird. Den technischen Aufwand übernehmen wir vollständig. Sie können den Test jederzeit beenden.
 >
@@ -179,7 +179,7 @@ Vor der ersten Aussendung mit der Schule (Betreuung, Direktion) abstimmen, unter
 
 ### Vorlage 3 – Bitte um Vermittlung (an Lehrkräfte, Familie, Bekannte)
 
-> Hallo [Name], wir suchen für unsere Diplomarbeit Indooro einen Supermarkt im Raum Linz, in dem wir unsere App für ein paar Termine testen dürfen. Kennst du jemanden, der einen Markt leitet oder besitzt? Wenn ja: Könntest du ihn oder sie fragen, ob wir uns melden dürfen? Eine Seite mit allen Infos hängt an.
+> Hallo [Name], wir suchen für unser Schulprojekt Indooro einen Supermarkt im Raum Linz, in dem wir unsere App für ein paar Termine testen dürfen. Kennst du jemanden, der einen Markt leitet oder besitzt? Wenn ja: Könntest du ihn oder sie fragen, ob wir uns melden dürfen? Eine Seite mit allen Infos hängt an.
 
 ---
 

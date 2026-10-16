@@ -40,7 +40,7 @@ codex -m <stärkstes-codex-modell> -c model_reasoning_effort="high"
 ## Prompt (komplett in Codex einfügen)
 
 ```text
-Du arbeitest autonom im Repository Indooro (HTL-Diplomarbeit: iOS-App für Indoor-Navigation im Supermarkt mit BLE-iBeacons, Quarkus-Backend, Web-Admin). Ziel ist der erste echte Supermarkt-Pilot. Du bist der Agent von Person C (Feld, Daten, Pilot-Kit; Windows/WSL2, KEIN Mac – Swift kann hier weder gebaut noch getestet werden).
+Du arbeitest autonom im Repository Indooro (HTL-Schulprojekt: iOS-App für Indoor-Navigation im Supermarkt mit BLE-iBeacons, Quarkus-Backend, Web-Admin). Ziel ist der erste echte Supermarkt-Pilot. Du bist der Agent von Person C (Feld, Daten, Pilot-Kit; Windows/WSL2, KEIN Mac – Swift kann hier weder gebaut noch getestet werden).
 
 LIES ZUERST:
 1. docs/pilot-readiness/team/AGENT_RULES.md – verbindlich
@@ -52,7 +52,10 @@ DEINE CHANGES, IN DIESER REIHENFOLGE:
 A) openspec/changes/prepare-pilot-store-operations/      Branch pilot/store-operations
 B) openspec/changes/add-beacon-placement-planner/       Branch pilot/beacon-planner
 C) openspec/changes/establish-pilot-field-measurement/  Branch pilot/field-measurement – NUR Tasks mit [C]; Tasks mit [E] gehören Erik, nicht anfassen
-D) openspec/changes/prepare-pilot-evaluation/           Branch pilot/pilot-evaluation
+D) openspec/changes/prepare-pilot-evaluation/           Branch pilot/pilot-evaluation (prüfe in STATUS.md, ob Person B sie übernommen hat)
+WELLE 2 (NUR nach dem Admin-Merge in main; Branch `git switch -c <branch> origin/main`, Change-Ordner mit `git checkout origin/pilot/first-store -- openspec/changes/<change> docs/pilot-readiness/team` übernehmen und committen; Pull Request nach main):
+E) openspec/changes/upgrade-customer-web-product-finder/  Branch pilot/web-finder – darf als einzige Ausnahme backend/indooro_server/src/main/resources/META-INF/resources/customer/** ändern; Tests mit `node --test`
+F) openspec/changes/add-editor-beacon-coverage-overlay/   Branch pilot/editor-coverage – nach Merge von add-beacon-placement-planner; nur admin-ui/src/editor/coverage.ts und das Overlay
 
 ABLAUF JE CHANGE:
 1. `git fetch origin`, Branch wechseln (`git switch --track origin/<branch>` bzw. `git switch <branch>`), `git merge origin/pilot/first-store`.
@@ -69,7 +72,7 @@ HARTE GRENZEN:
 - Das Exportformat des iOS-Studienmodus ist in openspec/changes/add-pilot-study-mode/design.md Entscheidung 4 festgelegt; daran hältst du dich exakt.
 - Ein schreibender Agent (du); optional bis zu 2 lesende Subagenten mit kleinerem Modell.
 
-FERTIG, WENN alle vier Changes bis auf Human steps und [E]-Tasks erledigt, geprüft, gepusht und als PR vorbereitet sind – oder alle restlichen Tasks blockiert sind. Zusammenfassung: fertig / rot / welche Messung oder Organisation als Nächstes ein Mensch erledigen muss. Archiviere nichts.
+FERTIG, WENN alle deine Changes (A–F, Welle 2 erst nach dem Admin-Merge) bis auf Human steps und [E]-Tasks erledigt, geprüft, gepusht und als PR vorbereitet sind – oder alle restlichen Tasks blockiert sind. Zusammenfassung: fertig / rot / welche Messung oder Organisation als Nächstes ein Mensch erledigen muss. Archiviere nichts.
 ```
 
 ## Abnahme (Erik prüft)

@@ -36,7 +36,7 @@ codex -m <stärkstes-codex-modell> -c model_reasoning_effort="high"
 ## Prompt (komplett in Codex einfügen)
 
 ```text
-Du arbeitest autonom im Repository Indooro (HTL-Diplomarbeit: Quarkus-3-Backend mit PostgreSQL, OpenSearch, Keycloak, React-Admin; iOS-App für Indoor-Navigation im Supermarkt). Ziel ist der erste echte Supermarkt-Pilot. Du bist der Agent von Person B (Backend & Betrieb, Windows/WSL2, kein Mac).
+Du arbeitest autonom im Repository Indooro (HTL-Schulprojekt: Quarkus-3-Backend mit PostgreSQL, OpenSearch, Keycloak, React-Admin; iOS-App für Indoor-Navigation im Supermarkt). Ziel ist der erste echte Supermarkt-Pilot. Du bist der Agent von Person B (Backend & Betrieb, Windows/WSL2, kein Mac).
 
 LIES ZUERST:
 1. docs/pilot-readiness/team/AGENT_RULES.md – verbindlich
@@ -50,6 +50,11 @@ DEINE CHANGES:
 A) openspec/changes/release-pilot-backend/   Branch pilot/release-backend (Basis main)
    - Phase A = tasks.md Abschnitte 1–4: SOFORT.
    - Phase B = Abschnitte 5–6: NUR wenn `git log origin/main --oneline` den Merge von codex/admin-platform-rebuild enthält. Prüfe das zu Beginn jeder Sitzung.
+WELLE 2 (nach Phase A bzw. B, NUR nach dem Admin-Merge in main; Branches jeweils `git switch -c <branch> origin/main`, Change-Ordner mit `git checkout origin/pilot/first-store -- openspec/changes/<change> docs/pilot-readiness/team` übernehmen und committen):
+B) openspec/changes/add-store-scoped-catalog/              Branch pilot/store-catalog
+C) openspec/changes/improve-product-search-quality/        Branch pilot/search-quality
+D) openspec/changes/add-admin-catalog-spreadsheet-import/  Branch pilot/catalog-import (nach B)
+Falls Welle 2 noch blockiert ist und Zeit übrig bleibt: openspec/changes/prepare-pilot-evaluation/ (Branch pilot/pilot-evaluation, reines Python) – vorher in STATUS.md prüfen, dass Person C es nicht schon begonnen hat, und dich dort als Bearbeiter eintragen.
 
 ABLAUF:
 1. `git fetch origin`; auf dem Branch `git merge origin/main`.
@@ -67,7 +72,7 @@ HARTE GRENZEN:
 - Wenn ./mvnw test lokale Dienste braucht, die fehlen: Ursache in design.md dokumentieren, Blocker eintragen, mit unabhängigen Tasks weitermachen.
 - Ein schreibender Agent (du); optional bis zu 2 lesende Subagenten mit kleinerem Modell.
 
-FERTIG, WENN Phase A gepusht und als PR vorbereitet ist und – falls der Admin-Merge schon da ist – auch Phase B; sonst alle Phase-B-Tasks als „wartet auf Admin-Merge“ in STATUS.md stehen. Zusammenfassung: fertig / rot / was Erik auf LeoCloud ausführen muss. Archiviere nichts.
+FERTIG, WENN Phase A gepusht (und, sobald der Admin-Merge da ist, Phase B und Welle 2 abgearbeitet) und als PR vorbereitet ist und – falls der Admin-Merge schon da ist – auch Phase B; sonst alle Phase-B-Tasks als „wartet auf Admin-Merge“ in STATUS.md stehen. Zusammenfassung: fertig / rot / was Erik auf LeoCloud ausführen muss. Archiviere nichts.
 ```
 
 ## Abnahme (Erik prüft)

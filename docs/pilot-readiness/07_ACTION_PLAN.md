@@ -14,7 +14,7 @@ Aufwand: **S** < 0,5 Tag · **M** 1–2 Tage · **L** 3–5 Tage (Personentage).
 
 - **Herbstferien** (voraussichtlich 26.10.–31.10.2026, in Oberösterreich bitte im Schulkalender prüfen): Schule und Testraum eventuell nicht zugänglich; gute Zeit für Marktbesuche, wenn das Team verfügbar ist.
 - **Weihnachtsgeschäft ab Ende November:** Supermärkte haben im Dezember wenig Zeit und volle Gänge. **Phase 2 sollte vor ca. 28.11. stattfinden** oder bewusst auf Mitte Jänner verschoben werden.
-- **Projektende Mitte Schuljahr 2026/27** (README): Phase 3 muss spätestens im Jänner/Februar 2027 laufen, damit Ergebnisse in die Diplomarbeit einfließen.
+- **Projektende Mitte Schuljahr 2026/27** (README): Phase 3 muss spätestens im Jänner/Februar 2027 laufen, damit Ergebnisse noch ins Projekt einfließen.
 - Kritischer Pfad ist **die Partnerzusage**, nicht der Code.
 
 ---
@@ -152,7 +152,7 @@ Ab sofort bis zum Abschluss von Phase 2 **nicht** mehr:
 | 12 | **Große Commits mit unklaren Nachrichten** („zweite App“, „restore“, „JaCoCo“ mit Navigationsänderungen) | Erschweren jede Fehlersuche. Eine Änderung = ein Commit mit ehrlicher Nachricht. |
 | 13 | **Pixelarbeit an der UI**, die nicht in T-3/T-4/T-7 steht | Kunde braucht lesbare Ortsangabe, nicht Animationen. |
 
-**Erlaubt bleibt:** alles in Abschnitt 3 dieses Plans, Bugfixes, die ein Testlauf zeigt, und die Diplomarbeitsdokumentation.
+**Erlaubt bleibt:** alles in Abschnitt 3 dieses Plans, Bugfixes, die ein Testlauf zeigt, und die Projektdokumentation.
 
 ---
 

@@ -202,7 +202,7 @@ Trennung: **(G)** = rechtlich klar bzw. gesetzlich vorgegeben, **(K)** = vor dem
 | 10 | Backend und Upsell mit KI | (K) | Für den Pilot keine Funktionen nutzen, die Nutzereingaben an externe KI-Dienste senden. Upsell im Pilot-Build abschalten. |
 | 11 | Haftung, Versicherung | (K) | Mit Schule klären: Gilt der Pilot als schulbezogene Veranstaltung (Schülerunfallversicherung)? Wer haftet für Schäden an Regalen oder Waren? Betreuungslehrkraft informieren. |
 | 12 | Kennzeichnung Testsystem | (P) | Hinweisschild, Namensschilder, in der App Hinweis „Testversion“. |
-| 13 | Rechte an Code und Diplomarbeit | (K) | Mit Betreuung klären, welche Rechte Schule und Team haben und ob dem Markt Nutzungsrechte eingeräumt werden dürfen. Im Pilot keine Rechte übertragen. |
+| 13 | Rechte an Code und Projektergebnissen | (K) | Mit Betreuung klären, welche Rechte Schule und Team haben und ob dem Markt Nutzungsrechte eingeräumt werden dürfen. Im Pilot keine Rechte übertragen. |
 | 14 | Kontaktaufnahme, Direktwerbung | (G) | § 174 TKG 2021: keine Werbeanrufe, keine Werbe-E-Mails ohne Einwilligung, auch an Unternehmen. Persönlicher Besuch, Brief, Vermittlung. Details in [06_BUSINESS_OUTREACH.md](06_BUSINESS_OUTREACH.md). |
 | 15 | Vereinbarung mit dem Markt | (P) | **Eine Seite**, kein Vertragswerk: Zeitraum, Bereich, Leistungen beider Seiten, keine Kosten, jederzeitige Beendigung, Demontage, Datenumgang, Ansprechpersonen, Unterschrift Markt + Team + Betreuung. |
 
@@ -210,7 +210,7 @@ Trennung: **(G)** = rechtlich klar bzw. gesetzlich vorgegeben, **(K)** = vor dem
 
 > **Vereinbarung über einen Testbetrieb der App „Indooro“**
 >
-> Zwischen [Markt, Adresse, vertreten durch] und dem Diplomarbeitsteam Indooro der HTL Leonding (betreut von [Lehrkraft]).
+> Zwischen [Markt, Adresse, vertreten durch] und dem Projektteam Indooro der HTL Leonding (betreut von [Lehrkraft]).
 >
 > 1. Zeitraum: [von] bis [bis]. Bereich: [Gänge / Abteilungen laut Plan].
 > 2. Das Team montiert bis zu [Anzahl] Bluetooth-Sender rückstandsfrei an den im Plan markierten Stellen und entfernt sie spätestens am [Datum].
@@ -238,7 +238,7 @@ Trennung: **(G)** = rechtlich klar bzw. gesetzlich vorgegeben, **(K)** = vor dem
 | **Summe Sachkosten** | **ca. 150–500 €** | **ca. 100–350 €** |
 | Arbeitszeit Team | ca. 35–55 Personenstunden | ca. 40–80 Personenstunden |
 
-Finanzierung: Projektbudget der Schule bzw. Diplomarbeitsbudget anfragen. Keine Kosten an den Markt weitergeben.
+Finanzierung: Projektbudget der Schule anfragen. Keine Kosten an den Markt weitergeben.
 
 ---
 

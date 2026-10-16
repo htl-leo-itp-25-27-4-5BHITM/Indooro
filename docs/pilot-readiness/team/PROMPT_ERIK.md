@@ -22,7 +22,7 @@ Für die Mess-Replay-Aufgaben später im selben Ordner: `git switch --track orig
 ## Prompt (komplett in deinen Agenten einfügen)
 
 ```text
-Du arbeitest autonom im Repository Indooro (HTL-Diplomarbeit: SwiftUI-iOS-App für Indoor-Navigation im Supermarkt mit BLE-iBeacons). Ziel ist der erste echte Supermarkt-Pilot. Die App muss auch funktionieren, wenn die Bluetooth-Ortung ungenau ist oder fehlt. Du bist der Agent von Erik (Navigation und Integration, macOS mit Xcode).
+Du arbeitest autonom im Repository Indooro (HTL-Schulprojekt: SwiftUI-iOS-App für Indoor-Navigation im Supermarkt mit BLE-iBeacons). Ziel ist der erste echte Supermarkt-Pilot. Die App muss auch funktionieren, wenn die Bluetooth-Ortung ungenau ist oder fehlt. Du bist der Agent von Erik (Navigation und Integration, macOS mit Xcode).
 
 LIES ZUERST:
 1. docs/pilot-readiness/team/AGENT_RULES.md – verbindlich
@@ -41,6 +41,12 @@ B) openspec/changes/add-ios-app-test-target/  Branch pilot/ios-test-target
 C) openspec/changes/establish-pilot-field-measurement/  Branch pilot/field-replay – NUR Tasks mit [E]. Tasks mit [C] gehören Person C. Aufnahmen kommen über NavigationFixtures/incoming/ (gitignored); fehlen sie, die Tasks als „wartet auf Messung (Person C)“ eintragen und nur die vorbereitenden [E]-Tasks (1.2, 3.3 sobald layout-testraum.json da ist, 4.3, 6.1) erledigen.
 D) openspec/changes/add-store-pilot-readiness-check/  Branch pilot/store-readiness – NUR nach dem Admin-Merge in main: `git switch -c pilot/store-readiness origin/main`, Change-Ordner übernehmen (`git checkout origin/pilot/first-store -- openspec/changes/add-store-pilot-readiness-check docs/pilot-readiness/team`), committen, umsetzen. Backend-Tests mit `sh ./mvnw test` (mvnw hat kein Execute-Bit). Pull Request nach main. Fasse dabei nur die neuen Readiness-Dateien und die nötigen Routen an; der Rest von backend/** gehört Person B.
 
+WELLE 2 (danach):
+E) openspec/changes/add-qr-anchor-positioning/      Branch pilot/qr-anchors – erst wenn main (Admin) in pilot/first-store gemergt ist; iOS + Editor + Backend-Validierung
+F) openspec/changes/add-ios-pilot-ui-tests/         Branch pilot/ios-ui-tests – wenn prepare-pilot-ios-build, add-ios-app-test-target und A gemergt sind
+G) openspec/changes/improve-positioning-with-motion/ Branch pilot/motion-positioning – nur wenn ≥ 5 echte Aufnahmen mit Truth-Markern aus zwei Orten existieren
+(complete-admin-parity-evidence und add-editor-floorplan-underlay laufen über den Admin-Agenten mit eigenem Prompt.)
+
 ABLAUF JE CHANGE:
 1. `git fetch origin`, Branch wechseln, `git merge origin/pilot/first-store`.
 2. Baseline: `cd swift/indooro-EinkaeuferFinal && swift test` (77 grün) und xcodebuild (Befehl in AGENT_RULES.md).
@@ -55,7 +61,7 @@ GRENZEN:
 - UI-Texte exakt wie in den Specs („Ich bin hier“, „Tippe auf deinen Standort“, „Route ab Eingang“, „Nicht im Testbereich – bitte Personal fragen“).
 - Ein schreibender Agent (du); optional bis zu 2 lesende Subagenten mit kleinerem Modell.
 
-FERTIG, WENN A (Abschnitt 7 nur bei Admin-Merge), B, C (so weit ohne echte Aufnahmen möglich) und D (nur bei Admin-Merge) erledigt und als PRs vorbereitet sind. Zusammenfassung: fertig / rot / was Erik als Mensch tun muss. Archiviere nichts.
+FERTIG, WENN A–G so weit erledigt und als PRs vorbereitet sind, wie ihre Voraussetzungen (Admin-Merge, echte Aufnahmen, gemergte Vorgänger) es erlauben. Zusammenfassung: fertig / rot / was Erik als Mensch tun muss. Archiviere nichts.
 ```
 
 ## Merge-Checkliste für `pilot/first-store`

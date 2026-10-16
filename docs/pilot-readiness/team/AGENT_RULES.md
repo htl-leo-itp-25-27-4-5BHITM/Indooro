@@ -55,6 +55,10 @@ Pfade relativ zu `swift/indooro-EinkaeuferFinal/indooroApp/`, wenn nicht anders 
 | `swift/indooro-EinkaeuferFinal/Tests/**` | Erik (bestehende Dateien); jeder darf neue eigene Testdateien anlegen | – |
 | `k8s/**`, `docker-compose.yml`, `.env.example`, `DEPLOYMENT.md`, `.github/workflows/ci.yaml`, `scripts/ops/**`, `docs/pilot-readiness/operations/{BACKUP_RESTORE,SECRET_ROTATION,RELEASE_RUNBOOK,RELEASES}.md`; nach dem Admin-Merge `backend/**`, `admin-ui/**`, `keycloak/**` (außer Erik’s Readiness-Dateien) | **Person B** | lesen |
 | `docs/pilot-readiness/hardware/**`, `docs/pilot-readiness/kit/**`, `docs/pilot-readiness/evaluation/**`, übrige `docs/pilot-readiness/operations/**`, `scripts/pilot-data/**`, `scripts/field/**`, `scripts/beacon-planner/**`, `scripts/pilot-eval/**` | **Person C** | lesen |
+| Welle 2 Erik: `Views/Scan/**`, `Utilities/AnchorPayload.swift`, `MCindooroAppUITests/**`, Grundriss-Unterlage (Backend `layout_underlays`, Editor-Ebene), Anker-Werkzeug im Editor | **Erik** | lesen |
+| Welle 2 B: Produktindex/Suche (`OpenSearchService`, `ProductResource`, `AdminProductResource`, `src/main/resources/opensearch/**`), Katalog-Import-Seite in `admin-ui` | **Person B** | lesen |
+| Welle 2 C: `backend/indooro_server/src/main/resources/META-INF/resources/customer/**` (Web-Finder), `admin-ui/src/editor/coverage.ts` + Abdeckungs-Overlay | **Person C** | lesen |
+| Welle 2 A: Accessibility-Modifier in Erik-Views nur nach Absprache; `ArrivalSuggestionDetector` und Overlay | **Person A** | lesen |
 | `docs/pilot-readiness/team/STATUS.md` | alle: nur eigene Zeile und eigene Blocker | – |
 | `tasks.md` älterer Changes | alle: nur Checkboxen der eigenen zugewiesenen Aufgaben | – |
 | `backend/**`, `admin-ui/**`, `keycloak/**` **vor** dem Admin-Merge in `main` | **niemand** außer dem Admin-Agenten | – |

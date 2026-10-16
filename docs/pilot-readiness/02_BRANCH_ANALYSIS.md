@@ -34,7 +34,7 @@ Weitere Worktrees: `.codex/worktrees/fix-planning-audit` (detached `6d65bf4`), `
 | Fabian Joos (zwei Schreibweisen) | 14 |
 | Erik Bergi | 4 |
 
-Spitze: Oktober 2026 mit 187 Commits (184 von bico37), September 52. **Beobachtung:** Der Großteil der jüngsten Entwicklung entsteht in einer Person und in KI-Sessions. Für Pilot und Diplomarbeit ist das ein Wissens- und Verteilungsrisiko im Team (siehe [07_ACTION_PLAN.md](07_ACTION_PLAN.md), Teamaufteilung).
+Spitze: Oktober 2026 mit 187 Commits (184 von bico37), September 52. **Beobachtung:** Der Großteil der jüngsten Entwicklung entsteht in einer Person und in KI-Sessions. Für Pilot und Projekt ist das ein Wissens- und Verteilungsrisiko im Team (siehe [07_ACTION_PLAN.md](07_ACTION_PLAN.md), Teamaufteilung).
 
 ---
 

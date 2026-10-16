@@ -111,7 +111,7 @@ Unser Hebel ist nicht der Business Case, sondern: **regionale Schule, ehrlicher 
 
 Wenn ich ab morgen für Indooro verantwortlich wäre, würde ich Folgendes tun:
 
-**1. Das Ziel umformulieren.** Nicht „Wir navigieren Kunden per Beacon zum Regal“, sondern „Wir zeigen in einem echten Markt, ob Kunden mit Indooro seltene Produkte schneller und ohne Nachfrage finden – und wir messen ehrlich, wie gut Bluetooth-Ortung dabei hilft.“ Diese Fragestellung ist mit unserem Stand beantwortbar, für einen Betreiber verständlich und für die Diplomarbeit wertvoller als eine Navigation, die im Markt vielleicht nicht funktioniert.
+**1. Das Ziel umformulieren.** Nicht „Wir navigieren Kunden per Beacon zum Regal“, sondern „Wir zeigen in einem echten Markt, ob Kunden mit Indooro seltene Produkte schneller und ohne Nachfrage finden – und wir messen ehrlich, wie gut Bluetooth-Ortung dabei hilft.“ Diese Fragestellung ist mit unserem Stand beantwortbar, für einen Betreiber verständlich und für das Projekt wertvoller als eine Navigation, die im Markt vielleicht nicht funktioniert.
 
 **2. Den Code einfrieren und zusammenführen.** Der Stabilisierungs-Branch ist der wertvollste Stand des Projekts. Ich würde ihn diese Woche pushen, mit den iOS-Fixes des Admin-Branches zusammenführen und ab dann nur noch die sieben Pilot-Aufgaben umsetzen (Regaltext, Startpunkt ohne Ortung, „Ich bin hier“, Offline-Daten, Suche, Pilot-Konfiguration, Verteilung). Kein neuer Filter, keine neue Architektur, kein Werbefilm, kein Android, kein Upsell, kein AR bis nach Phase 2.
 
@@ -119,7 +119,7 @@ Wenn ich ab morgen für Indooro verantwortlich wäre, würde ich Folgendes tun:
 
 **4. Gleichzeitig mit Märkten reden – ab nächster Woche.** Zuerst mit dem SPAR-Markt, den das Team schon kennt, dann mit zwei bis drei selbstständigen Kaufleuten im Raum Leonding/Linz-Süd. Persönlich, mit Betreuung im Rücken, mit einer kleinen Bitte (10 Minuten Demo) und einem kostenlosen, auf drei Termine begrenzten technischen Test. Eine Person im Team macht ausschließlich das.
 
-**5. Den Pilot so bauen, dass er nicht an der Ortung scheitern kann.** Die App muss auch ohne Bluetooth nützlich sein: markiertes Regal, Ortsangabe in Worten, Liste in Laufreihenfolge, Route vom Eingang und vom zuletzt erledigten Produkt. Die Ortung ist Zusatz und Messobjekt. Funktioniert sie gut – großartig. Funktioniert sie nicht – haben wir trotzdem einen Pilot, echte Nutzerdaten und eine ehrliche, messbare Erkenntnis für die Diplomarbeit.
+**5. Den Pilot so bauen, dass er nicht an der Ortung scheitern kann.** Die App muss auch ohne Bluetooth nützlich sein: markiertes Regal, Ortsangabe in Worten, Liste in Laufreihenfolge, Route vom Eingang und vom zuletzt erledigten Produkt. Die Ortung ist Zusatz und Messobjekt. Funktioniert sie gut – großartig. Funktioniert sie nicht – haben wir trotzdem einen Pilot, echte Nutzerdaten und eine ehrliche, messbare Erkenntnis für das Projekt.
 
 **6. Den Weihnachtskalender respektieren.** Technischer Test bis Ende November, sonst Mitte Jänner. Praxistest im Jänner. Nicht im Dezember in einen vollen Supermarkt drängen.
 

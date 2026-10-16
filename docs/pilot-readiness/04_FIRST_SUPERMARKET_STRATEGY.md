@@ -91,7 +91,7 @@ Belegt sind nur:
 1. **Samstagsarbeit von Teammitgliedern bei SPAR** (README). Welcher Markt, ob Filiale oder Kaufmann, ist im Projekt nicht dokumentiert. → **Sofort im Team klären.** Das ist der wahrscheinlich schnellste Weg zu einem ersten Gespräch.
    Zusätzlich liegt im Repository bereits ein nachgezeichnetes Layout `SparSupermarkt_Posttrasse` (40 × 60 Einheiten, 48 Regale) sowie ein eingescannter Belegplan mit SPAR-Eigenmarken (`backend/indooro_server/Belegplan_ocr.pdf`, `regalplan_export.csv`). Das deutet darauf hin, dass das Team einen konkreten SPAR-Markt schon kennt und Daten daraus hat. Welcher Markt das ist und ob die Daten mit Erlaubnis verwendet werden, ist nicht dokumentiert (Aufgabe O-2 in [07_ACTION_PLAN.md](07_ACTION_PLAN.md)). **Dieser Markt ist Kandidat Nummer 1** – mit dem Vorbehalt, dass bei einer SPAR-AG-Filiale die Zentrale zustimmen muss.
 2. **Projektauftraggeber und Betreuung:** Dietmar Steiner, Christian Aberger, Dejan Sivak (README). Ob sie Kontakte in den Handel haben, ist unbekannt. → Fragen.
-3. **HTL Leonding** als Institution, mit Absolventen- und Firmennetzwerk (z. B. Firmenkontakte für Praktika und Diplomarbeiten). Konkrete Handelspartner sind im Projekt nicht dokumentiert. → Bei Abteilungsvorstand bzw. Betreuung nachfragen.
+3. **HTL Leonding** als Institution, mit Absolventen- und Firmennetzwerk (z. B. Firmenkontakte für Praktika und Projekte). Konkrete Handelspartner sind im Projekt nicht dokumentiert. → Bei Abteilungsvorstand bzw. Betreuung nachfragen.
 
 Weitere Kontakte behauptet dieses Dokument nicht.
 
@@ -155,7 +155,7 @@ Aber **begrenzt**:
 ### 4.3 Gegenleistungen, die wir anbieten können
 
 - Abschlussbericht: Welche Produkte werden gesucht? Wie lange dauert die Suche? Wo verlaufen sich Testpersonen? (Nur aggregiert, keine Personendaten.)
-- Erwähnung als Partner in Diplomarbeit, Präsentation, Website und bei Jugend Innovativ (nur mit Zustimmung).
+- Erwähnung als Partner in Projektdokumentation, Präsentation, Website und bei Jugend Innovativ (nur mit Zustimmung).
 - Lokale Pressemeldung über Schule und Markt (nur mit Zustimmung).
 - Digitaler Grundriss des Marktes (für eigene Zwecke des Betreibers verwendbar).
 

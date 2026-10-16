@@ -7,6 +7,7 @@
 | **Person B** (Windows, Backend) | Link zu [PROMPT_PERSON_B_BACKEND.md](PROMPT_PERSON_B_BACKEND.md) + [AGENT_RULES.md](AGENT_RULES.md) | Team-Chat |
 | **Person C** (Windows, Feld/Daten) | Link zu [PROMPT_PERSON_C_FIELD_DATA.md](PROMPT_PERSON_C_FIELD_DATA.md) + [AGENT_RULES.md](AGENT_RULES.md) | Team-Chat |
 | **Erik** (selbst) | [PROMPT_ERIK.md](PROMPT_ERIK.md) | eigener Agent |
+| **Admin-Agent, Welle 2** | [PROMPT_ADMIN_AGENT_WAVE2.md](PROMPT_ADMIN_AGENT_WAVE2.md) | erst nach erfolgreichem Merge und Rollout von PR #105 |
 | **Alle** | [ROADMAP.md](ROADMAP.md), [README.md](README.md), [STATUS.md](STATUS.md) | Team-Chat, einmal kurz in der nächsten Besprechung erklären |
 | **Betreuung** | `docs/pilot-readiness/08_EXECUTIVE_SUMMARY.md` | Termin |
 

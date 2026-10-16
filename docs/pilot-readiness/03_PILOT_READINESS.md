@@ -180,7 +180,7 @@ Supermarktgänge sind typischerweise 2–3 m breit, Regalreihen ca. 1–2 m tief
 | Abhängigkeit von Ortungsqualität | vollständig | keine | teilweise, mit Rückfallebene |
 | Entwicklungsaufwand bis Pilot | hoch (Kalibrierung, viele Feldtage) | niedrig (K2–K7) | mittel (K1–K7) |
 | Risiko, dass Pilot scheitert | **hoch** | niedrig | mittel-niedrig |
-| Aussagekraft für die Diplomarbeit | hoch, *wenn* es funktioniert | mittel (Produktfinder, nicht Navigation) | **hoch**: Nutzen messbar *und* Ortung gemessen |
+| Aussagekraft für das Projekt | hoch, *wenn* es funktioniert | mittel (Produktfinder, nicht Navigation) | **hoch**: Nutzen messbar *und* Ortung gemessen |
 | Aufwand für den Markt | Montage im ganzen Markt | fast keiner | Montage in einem Bereich |
 
 **Empfehlung: Variante C**, mit **B als jederzeit schaltbarer Rückfallebene** (gleicher Build, Ortung aus). Variante A erst, wenn die Messungen aus Phase 2 zeigen, dass der Gang zuverlässig erkannt wird.
@@ -191,7 +191,7 @@ Die Phase-2-Messungen entscheiden über den Modus in Phase 3:
 |---|---|
 | ≤ 2,5 m / ≤ 4 m, Gang korrekt ≥ 80 % | C mit Rerouting, Ausblick auf A |
 | ≤ 4 m / ≤ 6 m, Gang korrekt ≥ 60 % | C ohne automatisches Rerouting |
-| schlechter | B (Ortung aus), Messdaten als Ergebnis der Diplomarbeit |
+| schlechter | B (Ortung aus), Messdaten als Projektergebnis |
 
 ### 4.4 Kann die App ohne exakte Positionierung sinnvoll navigieren?
 
@@ -278,7 +278,7 @@ Bei manueller Erfassung für einen ganzen Markt: wahrscheinlich ja. Ein mittelgr
 Nicht belegt. Öffentliche Akzeptanzdaten zu Indoor-Navigation im Lebensmittelhandel sind rar; frühere Beacon-Pilotprojekte im Handel haben sich nicht breit durchgesetzt. Ein Schulprojekt hat aber einen eigenen Hebel: regionale Unterstützung des Nachwuchses.
 
 **Woran kann es scheitern?**
-Am wahrscheinlichsten nicht an der Software, sondern an (1) keinem Partner, (2) zu ungenauer Ortung ohne Rückfallebene, (3) zu hohem Erfassungsaufwand, (4) Zeitmangel kurz vor Abgabe der Diplomarbeit.
+Am wahrscheinlichsten nicht an der Software, sondern an (1) keinem Partner, (2) zu ungenauer Ortung ohne Rückfallebene, (3) zu hohem Erfassungsaufwand, (4) Zeitmangel kurz vor Projektende.
 
 **Was haben wir unterschätzt?**
 - Dass Feldtests der eigentliche Engpass sind, nicht Algorithmen.
