@@ -402,7 +402,10 @@ public class RecipeService {
             params.put("query", "%" + query.trim().toLowerCase(Locale.ROOT) + "%");
         }
         if (tag != null && !tag.isBlank()) {
-            hql.append(" and exists (select 1 from RecipeTagAssignmentEntity assignment where assignment.recipe.id = id and lower(assignment.tag.code) = :tag)");
+            // Panache supplies the outer RecipeEntity alias. An unqualified `id`
+            // inside the subquery resolves to the assignment instead and fails HQL
+            // interpretation. Keep the tag predicate as a non-correlated ID set.
+            hql.append(" and id in (select assignment.recipe.id from RecipeTagAssignmentEntity assignment where lower(assignment.tag.code) = :tag)");
             params.put("tag", tag.trim().toLowerCase(Locale.ROOT));
         }
 

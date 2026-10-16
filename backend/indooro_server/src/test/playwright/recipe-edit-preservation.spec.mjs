@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/admin/route-cutover.js", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace(/recipes: true\b/, "recipes: false") });
+  });
+});
+
 const recipeDetail = {
   id: "recipe-1",
   slug: "apfel-hafer-crumble",

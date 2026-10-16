@@ -2,7 +2,7 @@
 
 ## Which page to use
 
-The normal `/admin/*` links use the rebuilt pages for Dashboard, Regions, Stores, Store detail, Beacons, Products, Categories, and Diagnostics in the local cutover image. Recipes and the Layout editor still use the existing pages. The React candidate remains directly available under `/admin/next/`. Sign in through the same Keycloak session. Your role and assigned region/store determine which data and actions the server allows.
+The normal `/admin/*` links use the rebuilt pages for Dashboard, Regions, Stores, Store detail, Beacons, Products, Categories, Recipes, and Diagnostics in the local cutover image. The Layout editor still uses its existing page. The React candidate remains directly available under `/admin/next/`. Sign in through the same Keycloak session. Your role and assigned region/store determine which data and actions the server allows.
 
 | Workflow | Current page | Candidate page |
 | --- | --- | --- |

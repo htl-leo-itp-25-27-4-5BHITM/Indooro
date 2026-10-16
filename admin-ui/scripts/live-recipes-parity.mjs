@@ -21,8 +21,9 @@ const parityFailures = [];
 const recipeIds = [];
 const productCandidates = [1_800_000_000 + Math.floor(Math.random() * 100_000), 1_900_000_000 + Math.floor(Math.random() * 100_000)];
 const productIds = [];
-const productNames = [`${recipeTitle} Legacy Produkt`, `${recipeTitle} Candidate Produkt`];
+const productNames = [`Parity Legacy Produkt ${stamp}`, `Parity Candidate Produkt ${stamp}`];
 let recipeId = null;
+let tagId = null;
 let failedAt = "authentication";
 let failure = null;
 
@@ -265,6 +266,52 @@ try {
     return { createdDrafts: 1, ingredients: 1, keyboardMappingRecovery: true, productId: productIds[1] };
   });
 
+  await check("lost successful create response reopens the existing draft", async () => {
+    const slug = `parity-lost-create-${stamp}`;
+    const title = `${recipeTitle} Lost Response`;
+    await admin.goto(`${base}/admin/next/recipes/`, { waitUntil: "domcontentloaded" });
+    await admin.getByRole("button", { name: "Rezept anlegen" }).click();
+    const dialog = admin.getByRole("dialog");
+    await dialog.getByRole("textbox", { name: "Slug" }).fill(slug);
+    await dialog.getByRole("textbox", { name: "Titel" }).fill(title);
+    await dialog.getByRole("button", { name: "+ Zutat" }).click();
+    await dialog.getByRole("textbox", { name: "Produkt aus Katalog" }).fill(productNames[0]);
+    await dialog.getByRole("button", { name: "Suchen" }).click();
+    await dialog.locator(`.recipe-product-search select option[value='${productIds[0]}']`).waitFor({ state: "attached" });
+    await dialog.locator(".recipe-product-search select").selectOption(String(productIds[0]));
+    await dialog.getByRole("button", { name: "+ Schritt" }).click();
+    await dialog.getByRole("textbox", { name: "Schritt 1" }).fill("Verlorene Antwort prüfen.");
+    const route = "**/api/admin/recipes";
+    const loseResponse = async (request) => {
+      if (request.request().method() !== "POST") return request.continue();
+      const upstream = await request.fetch();
+      assert.equal(upstream.status(), 200, "upstream recipe create really succeeded");
+      return request.fulfill({ status: 503, json: { error: "Injected lost create response" } });
+    };
+    await admin.route(route, loseResponse);
+    await dialog.getByRole("button", { name: "Entwurf anlegen" }).click();
+    await dialog.getByRole("alert").getByText(/Rezept wurde auf dem Server angelegt, aber die Antwort ging verloren/).waitFor();
+    await admin.unroute(route, loseResponse);
+    const list = ok(await api(admin, "GET", `/api/admin/recipes?q=${encodeURIComponent(slug)}&page=0&size=20`), "lost-response recipe lookup");
+    assert.equal(list.content.length, 1, "the request must not create a second recipe");
+    const id = list.content[0].id;
+    recipeIds.push(id);
+    const detail = ok(await api(admin, "GET", `/api/admin/recipes/${id}`), "lost-response recipe detail");
+    assert.equal(detail.ingredients.length, 1);
+    assert.equal(detail.steps.length, 1);
+    await dialog.getByRole("button", { name: "Mapping" }).click();
+    const mapping = dialog.locator(".recipe-mapping-panel");
+    await mapping.getByRole("textbox", { name: "Produkt suchen" }).fill(productNames[0]);
+    await mapping.getByRole("button", { name: "Suchen" }).click();
+    await mapping.getByRole("radio", { name: new RegExp(productNames[0]) }).check();
+    await mapping.getByRole("button", { name: "Mapping bestätigen" }).click();
+    await mapping.waitFor({ state: "hidden" });
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${id}/mapping-status`), "lost-response mapping readback").ingredients[0]?.product?.id, productIds[0]);
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes?q=${encodeURIComponent(slug)}&page=0&size=20`), "single lost-response recipe").content.length, 1);
+    await dialog.getByRole("button", { name: "Schließen" }).click();
+    return { upstreamCreated: true, browserSaw503: true, recoveredExistingDraft: true, duplicateRecipes: 0, mappingCompleted: true };
+  });
+
   await check("legacy recipe direct-link query", async () => {
     await forceLegacy(admin);
     const response = await admin.goto(`${base}/admin/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
@@ -348,6 +395,29 @@ try {
     return { candidateEdit: true, keyboardSubmit: true, persistedAfterReload: true, untouchedContentPreserved: true };
   });
 
+  await check("failed recipe metadata write retains input and retries without data loss", async () => {
+    await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
+    await admin.getByRole("row").filter({ hasText: recipeSlug }).getByRole("button", { name: "Bearbeiten" }).click();
+    const dialog = admin.getByRole("dialog");
+    const before = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "metadata pre-state");
+    const attempted = `${recipeTitle} Metadata Retry`;
+    await dialog.getByRole("textbox", { name: "Titel" }).fill(attempted);
+    const route = `**/api/admin/recipes/${recipeId}`;
+    const fail = (request) => request.request().method() === "PUT"
+      ? request.fulfill({ status: 503, json: { error: "Injected recipe metadata failure" } }) : request.continue();
+    await admin.route(route, fail);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await dialog.getByRole("alert").getByText(/Rezeptdaten speichern fehlgeschlagen/).waitFor();
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "failed metadata server state").title, before.title);
+    assert.equal(await dialog.getByRole("textbox", { name: "Titel" }).inputValue(), attempted);
+    await admin.unroute(route, fail);
+    await dialog.getByRole("button", { name: "Speichern" }).focus();
+    await admin.keyboard.press("Enter");
+    await dialog.waitFor({ state: "hidden" });
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "retried metadata state").title, attempted);
+    return { injectedStage: "metadata PUT", inputRetained: true, serverUnchangedOnFailure: true, keyboardRetryPersisted: true };
+  });
+
   await check("multi-step save failure retains and retries draft", async () => {
     await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
     await admin.getByRole("row").filter({ hasText: recipeSlug }).getByRole("button", { name: "Bearbeiten" }).click();
@@ -408,6 +478,124 @@ try {
     const row = mapped.ingredients.find((item) => item.ingredientName === productNames[0]);
     assert.equal(row?.product?.id, productIds[0]);
     return { injectedStage: "product mapping after ingredient create", reusedIngredient: true, mappingPersistedAfterRetry: true };
+  });
+
+  await check("failed ingredient creation can be retried without duplicates", async () => {
+    await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
+    await admin.getByRole("row").filter({ hasText: recipeSlug }).getByRole("button", { name: "Bearbeiten" }).click();
+    const dialog = admin.getByRole("dialog");
+    const before = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "ingredient-create pre-state");
+    await dialog.getByRole("button", { name: "+ Zutat" }).click();
+    await dialog.getByRole("textbox", { name: "Produkt aus Katalog" }).fill(productNames[1]);
+    await dialog.getByRole("button", { name: "Suchen" }).click();
+    await dialog.locator(`.recipe-product-search select option[value='${productIds[1]}']`).waitFor({ state: "attached" });
+    await dialog.locator(".recipe-product-search select").last().selectOption(String(productIds[1]));
+    const route = `**/api/admin/recipes/${recipeId}/ingredients`;
+    const fail = (request) => request.request().method() === "POST"
+      ? request.fulfill({ status: 503, json: { error: "Injected ingredient create failure" } }) : request.continue();
+    await admin.route(route, fail);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await dialog.getByRole("alert").getByText(/Zutat 3 anlegen fehlgeschlagen/).waitFor();
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "failed ingredient create server state").ingredients.length, before.ingredients.length);
+    await dialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+    await admin.unroute(route, fail);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await dialog.waitFor({ state: "hidden" });
+    const after = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "retried ingredient create state");
+    assert.equal(after.ingredients.length, before.ingredients.length + 1);
+    const mapping = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}/mapping-status`), "retried ingredient mapping status");
+    assert.ok(mapping.ingredients.some((item) => item.product?.id === productIds[1]));
+    return { injectedStage: "ingredient POST after metadata", retryCreatedExactlyOne: true, mappingPersisted: true };
+  });
+
+  await check("failed ingredient deletion preserves the row until retry", async () => {
+    await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
+    await admin.getByRole("row").filter({ hasText: recipeSlug }).getByRole("button", { name: "Bearbeiten" }).click();
+    const dialog = admin.getByRole("dialog");
+    const before = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "ingredient-delete pre-state");
+    const removedId = before.ingredients.at(-1).id;
+    await dialog.locator(".recipe-section").first().locator(".recipe-item").last().getByRole("button", { name: "Entfernen" }).click();
+    const route = `**/api/admin/recipes/${recipeId}/ingredients/*`;
+    const fail = (request) => request.request().method() === "DELETE"
+      ? request.fulfill({ status: 503, json: { error: "Injected ingredient delete failure" } }) : request.continue();
+    await admin.route(route, fail);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await dialog.getByRole("alert").getByText(/Zutat 3 entfernen fehlgeschlagen/).waitFor();
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "failed ingredient-delete server state").ingredients.length, before.ingredients.length);
+    await dialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+    await admin.unroute(route, fail);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await dialog.waitFor({ state: "hidden" });
+    const after = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "retried ingredient delete state");
+    assert.equal(after.ingredients.length, before.ingredients.length - 1);
+    assert.ok(!after.ingredients.some((item) => item.id === removedId));
+    return { injectedStage: "ingredient DELETE after temporary positions", rowRetainedOnFailure: true, retryRemovedExactlyOne: true };
+  });
+
+  await check("failed temporary ingredient position write leaves a recoverable draft", async () => {
+    await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
+    await admin.getByRole("row").filter({ hasText: recipeSlug }).getByRole("button", { name: "Bearbeiten" }).click();
+    const dialog = admin.getByRole("dialog");
+    const before = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "temporary-position pre-state");
+    assert.equal(before.ingredients.length, 2, "two ingredients are required for a structural edit");
+    await dialog.locator(".recipe-section").first().locator(".recipe-item").last().getByRole("button", { name: "Entfernen" }).click();
+    const route = `**/api/admin/recipes/${recipeId}/ingredients/*`;
+    const fail = (request) => request.request().method() === "PUT"
+      ? request.fulfill({ status: 503, json: { error: "Injected temporary ingredient-position failure" } }) : request.continue();
+    await admin.route(route, fail);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await dialog.getByRole("alert").getByText(/Zutat 1 vorübergehend umordnen fehlgeschlagen/).waitFor();
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "failed temporary-position server state").ingredients.length, before.ingredients.length);
+    await dialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+    await admin.unroute(route, fail);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await dialog.waitFor({ state: "hidden" });
+    const after = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "retried structural edit");
+    assert.equal(after.ingredients.length, 1);
+    assert.equal(after.ingredients[0].id, before.ingredients[0].id);
+    return { injectedStage: "temporary ingredient-position PUT", serverRowsRetained: true, retryAppliedStructuralEdit: true };
+  });
+
+  await check("failed step create and delete recover without content loss", async () => {
+    await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
+    await admin.getByRole("row").filter({ hasText: recipeSlug }).getByRole("button", { name: "Bearbeiten" }).click();
+    let dialog = admin.getByRole("dialog");
+    const before = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "step-create pre-state");
+    await dialog.getByRole("button", { name: "+ Schritt" }).click();
+    await dialog.getByRole("textbox", { name: `Schritt ${before.steps.length + 1}` }).fill("Zusätzlichen Schritt sicher speichern.");
+    const createRoute = `**/api/admin/recipes/${recipeId}/steps`;
+    const failCreate = (request) => request.request().method() === "POST"
+      ? request.fulfill({ status: 503, json: { error: "Injected step create failure" } }) : request.continue();
+    await admin.route(createRoute, failCreate);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await dialog.getByRole("alert").getByText(/Schritt 2 anlegen fehlgeschlagen/).waitFor();
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "failed step-create server state").steps.length, before.steps.length);
+    await dialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+    await admin.unroute(createRoute, failCreate);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await dialog.waitFor({ state: "hidden" });
+    let after = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "retried step create state");
+    assert.equal(after.steps.length, before.steps.length + 1);
+
+    await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
+    await admin.getByRole("row").filter({ hasText: recipeSlug }).getByRole("button", { name: "Bearbeiten" }).click();
+    dialog = admin.getByRole("dialog");
+    await dialog.locator(".recipe-section").last().locator(".recipe-item").last().getByRole("button", { name: "Entfernen" }).click();
+    const deleteRoute = `**/api/admin/recipes/${recipeId}/steps/*`;
+    const failDelete = (request) => request.request().method() === "DELETE"
+      ? request.fulfill({ status: 503, json: { error: "Injected step delete failure" } }) : request.continue();
+    await admin.route(deleteRoute, failDelete);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await dialog.getByRole("alert").getByText(/Schritt 2 entfernen fehlgeschlagen/).waitFor();
+    assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "failed step-delete server state").steps.length, before.steps.length + 1);
+    await dialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+    await admin.unroute(deleteRoute, failDelete);
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await dialog.waitFor({ state: "hidden" });
+    after = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "retried step delete state");
+    assert.equal(after.steps.length, before.steps.length);
+    assert.equal(after.steps[0].instruction, before.steps[0].instruction);
+    return { injectedStages: ["step POST", "step DELETE"], recoveredCreate: true, recoveredDelete: true, originalStepPreserved: true };
   });
 
   await check("legacy and candidate mapping suggestions and confirmation persist", async () => {
@@ -485,10 +673,28 @@ try {
     return { status503: true, keyboardRetry: true, emptyState: true };
   });
 
+  await check("candidate preview shows persisted content without write actions", async () => {
+    const persisted = ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "preview server detail");
+    await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
+    await admin.getByRole("row").filter({ hasText: recipeSlug }).getByRole("button", { name: "Vorschau" }).focus();
+    await admin.keyboard.press("Enter");
+    const preview = admin.getByRole("dialog");
+    await preview.getByText("Rezept-Vorschau").waitFor();
+    assert.equal(await preview.getByRole("button", { name: "Speichern" }).count(), 0, "preview must not offer a save action");
+    assert.equal(await preview.getByRole("button", { name: "Veröffentlichen" }).count(), 0, "preview must not offer publication");
+    assert.equal(await preview.getByRole("textbox", { name: "Schritt 1" }).inputValue(), persisted.steps[0].instruction, "preview displays the persisted first step");
+    await preview.getByRole("button", { name: "Schließen" }).click();
+    return { keyboardOpen: true, persistedStepVisible: true, readOnly: true };
+  });
+
   await check("failed publication is recoverable and retryable", async () => {
+    const tagCode = `parity-${stamp}`;
+    const tag = ok(await api(admin, "POST", "/api/admin/recipe-tags", { code: tagCode, name: `Parity ${stamp}`, kind: "TEST", status: "ACTIVE" }), "disposable recipe tag create");
+    tagId = tag.id;
     await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipeTitle)}`, { waitUntil: "domcontentloaded" });
     await admin.getByRole("row").filter({ hasText: recipeSlug }).getByRole("button", { name: "Bearbeiten" }).click();
     const dialog = admin.getByRole("dialog");
+    await dialog.getByLabel("Tags").selectOption([tagId]);
     const route = `**/api/admin/recipes/${recipeId}/publish`;
     const fail = (request) => request.fulfill({ status: 503, json: { error: "Injected recipe publish failure" } });
     await admin.route(route, fail);
@@ -502,17 +708,32 @@ try {
     await dialog.locator(".status-pill").getByText("PUBLISHED").waitFor();
     assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "published status readback").status, "PUBLISHED");
     assert.equal((await api(admin, "GET", `/api/mobile/recipes/${recipeId}`)).status, 200, "published recipe is visible to mobile clients");
+    const mobileStores = ok(await api(admin, "GET", "/api/mobile/stores"), "public store list");
+    assert.ok(mobileStores.length > 0, "a public store is available for scoped mobile recipe checks");
+    const storeId = mobileStores[0].id;
+    const mobileSearch = ok(await api(admin, "GET", `/api/mobile/recipes/search?q=${encodeURIComponent(recipeSlug)}&tag=${tagCode}&storeId=${storeId}`), "public tag/store recipe search");
+    assert.ok(mobileSearch.content.some((item) => item.id === recipeId && item.tags.some((entry) => entry.code === tagCode)), "published recipe is present with its assigned tag in the store-filtered public list");
+    const excluded = ok(await api(admin, "GET", `/api/mobile/recipes/search?q=${encodeURIComponent(recipeSlug)}&tag=parity-absent-${stamp}&storeId=${storeId}`), "public nonmatching tag search");
+    assert.ok(!excluded.content.some((item) => item.id === recipeId), "nonmatching mobile tag excludes the recipe");
+    const mobileMapping = ok(await api(admin, "GET", `/api/mobile/recipes/${recipeId}/product-mapping?storeId=${storeId}`), "public store-scoped product mapping");
+    assert.equal(mobileMapping.storeId, storeId);
+    assert.ok(mobileMapping.ingredients.some((item) => item.product?.id === productIds[1]), "public store-scoped mapping resolves the candidate-confirmed product");
+    await dialog.getByRole("button", { name: "Schließen" }).click();
+    await admin.goto(`${base}/admin/next/recipes/?tag=${tagCode}&status=PUBLISHED`, { waitUntil: "domcontentloaded" });
+    await admin.getByRole("row").filter({ hasText: recipeSlug }).waitFor();
+    await admin.getByRole("row").filter({ hasText: recipeSlug }).getByRole("button", { name: "Bearbeiten" }).click();
+    const publishedDialog = admin.getByRole("dialog");
     admin.once("dialog", (confirmation) => void confirmation.accept());
-    await dialog.getByRole("button", { name: "Deaktivieren" }).click();
-    await dialog.locator(".status-pill").getByText("DRAFT").waitFor();
+    await publishedDialog.getByRole("button", { name: "Deaktivieren" }).click();
+    await publishedDialog.locator(".status-pill").getByText("DRAFT").waitFor();
     assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "deactivated recipe status").status, "DRAFT");
     assert.equal((await api(admin, "GET", `/api/mobile/recipes/${recipeId}`)).status, 404, "deactivated recipe is hidden from mobile clients");
     admin.once("dialog", (confirmation) => void confirmation.accept());
-    await dialog.getByRole("button", { name: "Archivieren" }).click();
-    await dialog.locator(".status-pill").getByText("ARCHIVED").waitFor();
+    await publishedDialog.getByRole("button", { name: "Archivieren" }).click();
+    await publishedDialog.locator(".status-pill").getByText("ARCHIVED").waitFor();
     assert.equal(ok(await api(admin, "GET", `/api/admin/recipes/${recipeId}`), "archived recipe status").status, "ARCHIVED");
     assert.equal((await api(admin, "GET", `/api/mobile/recipes/${recipeId}`)).status, 404, "archived recipe stays hidden from mobile clients");
-    return { injectedStage: "publication action", retryPersisted: true, publicVisibility: true, deactivate: true, archive: true };
+    return { injectedStage: "publication action", retryPersisted: true, publicVisibility: true, mobileTagAndStoreSearch: true, mobileStoreMapping: true, candidateTagStatusFilter: true, deactivate: true, archive: true };
   });
 
   // Recipes have no hard-delete route. Archiving the random fixture is the supported cleanup path.
@@ -574,6 +795,21 @@ try {
   } else if (productIds.length) {
     results.push({ check: "product fixture cleanup", result: "SKIPPED", reason: "recipe cleanup was not verified; preserve referenced products" });
   }
+  if (tagId) {
+    try {
+      const admin = await login(adminUser);
+      const archived = await api(admin, "PATCH", `/api/admin/recipe-tags/${tagId}/archive`, {});
+      if (archived.status !== 200 || archived.body.status !== "ARCHIVED") {
+        failure = [failure, `recipe tag cleanup: HTTP ${archived.status}`].filter(Boolean).join("; ");
+        process.exitCode = 1;
+        results.push({ check: "recipe tag fixture cleanup", result: "FAIL", status: archived.status });
+      } else results.push({ check: "recipe tag fixture cleanup", result: "PASS", archivedTag: tagId });
+      await admin.context().close();
+    } catch (error) {
+      failure = [failure, `recipe tag cleanup: ${error instanceof Error ? error.message : String(error)}`].filter(Boolean).join("; ");
+      process.exitCode = 1;
+    }
+  }
   await browser.close();
-  console.log(JSON.stringify({ result: process.exitCode === 1 ? "FAIL" : "PASS", scope: "local-stack-only", failedAt: process.exitCode === 1 ? failedAt : null, error: failure, failures: parityFailures, checks: results, openParity: ["legacy list filters only the first API page; late draft direct links can be missing", "metadata-write failure, ingredient-create failure, and step-create/delete fault stages remain unverified", "unknown create-response outcomes and mobile store/tag mapping variants are not exercised"] }));
+  console.log(JSON.stringify({ result: process.exitCode === 1 ? "FAIL" : "PASS", scope: "local-stack-only", failedAt: process.exitCode === 1 ? failedAt : null, error: failure, failures: parityFailures, checks: results, openParity: ["legacy list filters only the first API page; late draft direct links can be missing", "physical mobile navigation and assistive-technology review beyond the tested keyboard paths are not complete"] }));
 }

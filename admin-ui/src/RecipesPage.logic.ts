@@ -1,4 +1,4 @@
-import type { ApiClient } from "./api/client";
+import { ApiClientError, type ApiClient } from "./api/client";
 
 const PAGE_SIZE = 20;
 
@@ -24,7 +24,7 @@ export interface RecipeSummary {
   stepCount: number; status: string; mappedIngredientCount: number; totalIngredientCount: number; tags: RecipeTag[];
 }
 export interface RecipeDetail extends RecipeSummary {
-  description?: string | null; imageAlt?: string | null; publishedAt?: string | null; archivedAt?: string | null;
+  description?: string | null; imageAlt?: string | null; publishedAt?: string | null; archivedAt?: string | null; createdAt?: string | null;
   ingredients: RecipeIngredient[]; steps: RecipeStep[];
 }
 export interface Product { id: number; name: string; price?: number | null; layoutCode?: string | null; storeId?: string | null; storeCode?: string | null }
@@ -120,17 +120,41 @@ export async function createRecipeWithContent(api: ApiClient, draft: RecipeDetai
   if (!draft.steps.length || draft.steps.some((item) => !item.instruction.trim())) throw new Error("Mindestens ein vollständiger Zubereitungsschritt ist erforderlich.");
   if (draft.ingredients.some((item) => !item.selectedProduct?.id || !item.selectedProduct.name)) throw new Error("Neue Zutaten benötigen ein Produkt aus dem Katalog.");
 
-  const created = await api.post<RecipeDetail>("/api/admin/recipes", {
-    recipe: recipeBody(draft, tagIds),
-    ingredients: draft.ingredients.map((item, index) => ({
-      position: index + 1,
-      displayName: item.selectedProduct!.name,
-      canonicalName: item.selectedProduct!.name,
-      quantityText: item.quantityText?.trim() || null,
-      optional: Boolean(item.optional)
-    })),
-    steps: draft.steps.map((item, index) => stepBody(item, index + 1))
-  });
+  let created: RecipeDetail;
+  const createStartedAt = Date.now();
+  try {
+    created = await api.post<RecipeDetail>("/api/admin/recipes", {
+      recipe: recipeBody(draft, tagIds),
+      ingredients: draft.ingredients.map((item, index) => ({
+        position: index + 1,
+        displayName: item.selectedProduct!.name,
+        canonicalName: item.selectedProduct!.name,
+        quantityText: item.quantityText?.trim() || null,
+        optional: Boolean(item.optional)
+      })),
+      steps: draft.steps.map((item, index) => stepBody(item, index + 1))
+    });
+  } catch (cause) {
+    if (!(cause instanceof ApiClientError) || !["network", "server", "invalid-response"].includes(cause.kind)) throw cause;
+    const slug = draft.slug.trim().toLowerCase();
+    try {
+      const found = await api.get<RecipePageResponse>(`/api/admin/recipes?q=${encodeURIComponent(slug)}&page=0&size=20`);
+      const exact = found.content?.filter((item) => item.slug === slug) ?? [];
+      if (exact.length === 1) {
+        const recovered = await api.get<RecipeDetail>(`/api/admin/recipes/${encodeURIComponent(exact[0].id)}`);
+        const createdAt = Date.parse(recovered?.createdAt ?? "");
+        if (recovered?.id && recovered.slug === slug && recovered.title === draft.title.trim()
+          && Array.isArray(recovered.ingredients) && recovered.ingredients.length === draft.ingredients.length
+          && Array.isArray(recovered.steps) && recovered.steps.length === draft.steps.length
+          && Number.isFinite(createdAt) && createdAt >= createStartedAt - 30_000 && createdAt <= Date.now() + 30_000) {
+          throw new RecipeCreatePartialError("Rezept wurde auf dem Server angelegt, aber die Antwort ging verloren. Prüfen und ergänzen Sie die Produktzuordnungen.", recovered);
+        }
+      }
+    } catch (lookupError) {
+      if (lookupError instanceof RecipeCreatePartialError) throw lookupError;
+    }
+    throw new Error("Das Ergebnis der Rezeptanlage ist unklar. Bitte die Rezeptliste nach dem Slug durchsuchen, bevor Sie erneut anlegen.", { cause });
+  }
   if (!created?.id) throw new Error("Die Serverantwort enthält keine Rezept-ID. Bitte zuerst die Liste aktualisieren, bevor Sie erneut anlegen.");
   if (!Array.isArray(created.ingredients) || created.ingredients.length !== draft.ingredients.length) {
     throw new RecipeCreatePartialError("Rezept wurde angelegt, aber die gespeicherten Zutaten konnten nicht bestätigt werden.", created);

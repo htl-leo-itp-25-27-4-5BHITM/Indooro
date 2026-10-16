@@ -1,6 +1,6 @@
 # Admin route, action, API, role, scope, and state inventory
 
-**Recipe fixture update:** 2026-10-15 `admin-ui/scripts/live-recipes-parity.mjs` supplies disposable packaged-stack legacy/candidate create/edit and mapping, role/direct-link, retry, partial-write, publication visibility and numeric title sort fixtures. It archives seven recipes and deletes two products. The old client filters only its first API page, so late Draft search is an observed legacy limit; the fixture uses a decreasing numeric title key to keep current test rows on that page; the Recipe gate still needs the missing action/fault variants in `ROUTE_PARITY_MATRIX.md`.
+**Recipe cutover fixture update:** 2026-10-16 `admin-ui/scripts/live-recipes-parity.mjs` supplies disposable packaged-stack legacy/candidate create/edit and mapping, role/direct-link, keyboard preview/retry, multi-stage partial-write, publication visibility, tag/store mobile query and numeric title sort fixtures. It archives eight recipes and one tag and deletes two products. The old client filters only its first API page, so late Draft search is an observed legacy limit; the fixture uses a decreasing numeric title key to keep current test rows on that page. Recipe is enabled locally after its documented gate; Editor remains gated.
 
 **Inventory update:** 2026-10-15 Product actions/states have a reproducible disposable packaged-stack fixture in `admin-ui/scripts/live-products-parity.mjs` and screenshots in `evidence/products/`. The rest of task 1.2 still lacks every-action/state fixtures.
 
@@ -8,7 +8,7 @@
 
 ## Route topology and cutover status
 
-Legacy static entries live at `backend/indooro_server/src/main/resources/META-INF/resources/admin`. Their pages share `app.js`/`core.js`; the editor and diagnostics also have page-specific scripts. The React/Vite source is `admin-ui/`, and package output is installed under `admin/next/`. The route map currently sends Dashboard, Regions, Stores, Store detail, Beacons, Products, Categories, and Diagnostics to the candidate; Recipes and Editor remain legacy. The dated source inventory below is supplemented by the authenticated parity records in `ROUTE_PARITY_MATRIX.md`.
+Legacy static entries live at `backend/indooro_server/src/main/resources/META-INF/resources/admin`. Their pages share `app.js`/`core.js`; the editor and diagnostics also have page-specific scripts. The React/Vite source is `admin-ui/`, and package output is installed under `admin/next/`. The route map currently sends Dashboard, Regions, Stores, Store detail, Beacons, Products, Categories, Recipes, and Diagnostics to the candidate; Editor remains legacy. The dated source inventory below is supplemented by the authenticated parity records in `ROUTE_PARITY_MATRIX.md`.
 
 | Workflow | Current protected static URL | Candidate URL | Candidate component | Direct-link/query contract |
 | --- | --- | --- | --- | --- |
@@ -109,10 +109,10 @@ Recommended route evidence row before cutover: legacy URL and candidate URL; old
 
 ## Concrete parity gaps / acceptance follow-ups
 
-1. Candidate remains under `/admin/next/`; Dashboard and Diagnostics have cut over through their existing URLs. The other eight routes retain legacy entries. Packaged Quarkus direct-link/refresh and route-map rollback were exercised live, but per-route action/state parity for those eight remains incomplete.
+1. Candidate remains under `/admin/next/`; nine current entries redirect there through the local route map. Editor retains its legacy entry while its full gate remains open. The packaged direct-link, refresh, action and rollback evidence for each enabled route is recorded in `ROUTE_PARITY_MATRIX.md` and `ROUTE_CUTOVER.md`.
 2. Old list implementations use local filtering and paging (stores 25, products 30) over broad fetches; candidate stores/products/recipes use server query/page. Compare totals, filters and scope under >page-size fixtures.
 3. Legacy `safeGet` fallback can mask fetch failures as empty data. Candidate per-page error states improve observability; verify all failed requests expose retry and preserve enough form state.
-4. Recipe writes span metadata/tags and per-ingredient/per-step operations. Verify success and failure at every stage and no loss of image, tags, ingredients, steps after reload; no atomic transaction is evidenced by these resources.
+4. Recipe writes span metadata/tags and per-ingredient/per-step operations. The 2026-10-16 probe covers successful reads and representative failure/retry stages, including an ambiguous successful create response; no cross-request atomic transaction is evidenced by these resources. When a create result cannot be reconciled uniquely, the UI requires manual list inspection before retry.
 5. Bulk product/category import must not report durable commit or transaction/preview guarantees absent from the protected endpoint behavior. Evidence is in `CATALOG_BULK.md`; carry unsupported cases as blocked UI/API gaps.
 6. Legacy static navigation presents some actions to roles whose endpoint method is admin-only (notably region mutations); candidate should be checked against actual REST annotations, not copied affordance-for-affordance.
 7. Layout editor parity is mode-sensitive: store draft save should not alter public mobile current layout; activation is separate; global layout save is immediate. Verify none/one/multiple version fixtures and anonymous mobile reads, plus history, import/export and tool behavior claimed by legacy UI.

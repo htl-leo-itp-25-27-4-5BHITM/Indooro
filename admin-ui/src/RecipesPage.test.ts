@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { ApiClient } from "./api/client";
-import { changeRecipePublication, createRecipeWithContent, readRecipeFilters, recipeListPath, saveRecipeChanges, type RecipeDetail } from "./RecipesPage.logic";
+import { ApiClientError, type ApiClient } from "./api/client";
+import { changeRecipePublication, createRecipeWithContent, readRecipeFilters, recipeListPath, RecipeCreatePartialError, saveRecipeChanges, type RecipeDetail } from "./RecipesPage.logic";
 
 const detail: RecipeDetail = {
   id: "recipe-1", slug: "apple-oats", title: "Apple oats", summary: "Warm", description: "Full instructions", imageUrl: "/apple.jpg", imageAlt: "Apple bowl",
@@ -159,6 +159,43 @@ test("create recipe sends supported aggregate payload and confirms each product 
   });
   assert.deepEqual(calls[1], { method: "PUT", path: "/api/admin/recipes/new-recipe/ingredients/new-ingredient/product-mapping", body: { productId: 23, storeId: null, storeCode: null, mappingType: "MANUAL", confidence: 1, manuallyConfirmed: true } });
   assert.deepEqual(calls[2], { method: "GET", path: "/api/admin/recipes/new-recipe" });
+});
+
+test("lost create response finds the one persisted slug without posting again", async () => {
+  const calls: string[] = [];
+  const recovered: RecipeDetail = { ...detail, id: "server-created", slug: "lost-response", createdAt: new Date().toISOString(), ingredients: [{ id: "saved-ingredient", position: 1, displayName: "Pear" }], steps: [{ id: "saved-step", position: 1, instruction: "Mix" }] };
+  const api = {
+    post: async (path: string) => { calls.push(`POST ${path}`); throw new ApiClientError("network", null, "Connection lost"); },
+    get: async (path: string) => {
+      calls.push(`GET ${path}`);
+      return path.includes("?q=") ? { content: [{ id: recovered.id, slug: recovered.slug }], page: 0, size: 20, totalElements: 1 } : recovered;
+    },
+    put: async () => { throw new Error("mapping must wait for confirmed create recovery"); }
+  } as unknown as ApiClient;
+  const draft: RecipeDetail = { ...detail, id: "", slug: "lost-response", ingredients: [{ position: 1, displayName: "", selectedProduct: { id: 23, name: "Pear" } }], steps: [{ position: 1, instruction: "Mix" }] };
+  await assert.rejects(createRecipeWithContent(api, draft, []), (error: unknown) => error instanceof RecipeCreatePartialError && error.created.id === recovered.id);
+  assert.deepEqual(calls, ["POST /api/admin/recipes", "GET /api/admin/recipes?q=lost-response&page=0&size=20", "GET /api/admin/recipes/server-created"]);
+});
+
+test("duplicate slug conflict never adopts an existing recipe", async () => {
+  const api = {
+    post: async () => { throw new ApiClientError("conflict", 409, "Slug exists"); },
+    get: async () => { throw new Error("conflict must not trigger recovery lookup"); }
+  } as unknown as ApiClient;
+  const draft: RecipeDetail = { ...detail, id: "", ingredients: [{ position: 1, displayName: "", selectedProduct: { id: 23, name: "Pear" } }], steps: [{ position: 1, instruction: "Mix" }] };
+  await assert.rejects(createRecipeWithContent(api, draft, []), /Slug exists/);
+});
+
+test("ambiguous create response does not adopt a stale matching slug", async () => {
+  const stale: RecipeDetail = { ...detail, id: "old-recipe", createdAt: "2020-01-01T00:00:00Z" };
+  const api = {
+    post: async () => { throw new ApiClientError("server", 503, "Unknown result"); },
+    get: async (path: string) => path.includes("?q=")
+      ? { content: [{ id: stale.id, slug: stale.slug }], page: 0, size: 20, totalElements: 1 }
+      : stale
+  } as unknown as ApiClient;
+  const draft: RecipeDetail = { ...detail, id: "", ingredients: [{ position: 1, displayName: "", selectedProduct: { id: 23, name: "Pear" } }], steps: [{ position: 1, instruction: "Mix" }] };
+  await assert.rejects(createRecipeWithContent(api, draft, []), /Ergebnis der Rezeptanlage ist unklar/);
 });
 
 test("publication controls use the protected recipe status actions", async () => {

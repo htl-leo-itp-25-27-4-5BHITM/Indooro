@@ -9,9 +9,9 @@ import { chromium } from "@playwright/test";
 const base = process.env.ADMIN_SMOKE_BASE_URL || "http://localhost:8080";
 assert.ok(["localhost", "127.0.0.1", "host.docker.internal"].includes(new URL(base).hostname), "editor parity probe only permits the disposable local stack");
 const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8"));
-const [adminUser, , storeUser] = realm.users;
+const [adminUser, regionUser, storeUser] = realm.users;
 const browser = await chromium.launch({ args: process.env.ADMIN_SMOKE_HOST_ALIAS ? ["--host-resolver-rules=MAP host.docker.internal 127.0.0.1"] : [] });
-const created = { region: null, store: null };
+const created = { region: null, store: null, foreignStore: null };
 let admin = null;
 let globalBefore = null;
 let globalChanged = false;
@@ -27,12 +27,20 @@ const evidence = {
   storeDirectLinkAndReload: false,
   draftIsNotPublic: false,
   activationAndRollback: false,
+  candidateUiDraftPersistence: false,
+  candidateUiActivationAndRollback: false,
   scopedDenial: false,
   roleDenial: false,
+  regionManagerOwnScope: false,
+  regionManagerOwnDraftWrite: false,
+  foreignWriteDenied: false,
+  storeManagerOwnScope: false,
   keyboard: false,
   injectedLoadErrorRetry: false,
   anonymousCurrentLayout: false,
   fixtureCleanup: false,
+  foreignFixtureCleanup: false,
+  regionFixtureCleanup: false,
   remainingGates: ["real iOS/Android device rendering and navigation are not exercised by this browser/API probe"],
 };
 
@@ -95,6 +103,12 @@ try {
   admin = await login(adminUser);
   admin.on("dialog", (dialog) => void dialog.accept().catch(() => {}));
   assert.equal(ok(await api(admin, "GET", "/api/admin/me"), "admin identity").role, "admin");
+  const regionManager = await login(regionUser);
+  const regionMe = ok(await api(regionManager, "GET", "/api/admin/me"), "region manager identity");
+  assert.equal(regionMe.role, "region-manager");
+  const regionScopeId = regionMe.scope?.regionId;
+  assert.ok(regionScopeId, "region manager has an assigned region");
+  await regionManager.close();
   globalBefore = ok(await api(admin, "GET", "/api/layout/current"), "global layout snapshot");
   const stamp = randomUUID().slice(0, 8).toUpperCase();
   // Existing demo layouts can contain legacy validation blockers. Start from a
@@ -103,13 +117,18 @@ try {
   ok(await api(admin, "POST", "/api/layout/current", documentFor(`Seed ${stamp}`)), "seed valid global layout");
   created.region = ok(await api(admin, "POST", "/api/regions", { code: `ED-${stamp}`, name: `Editor Probe ${stamp}` }), "create fixture region");
   created.store = ok(await api(admin, "POST", "/api/stores", {
-    regionId: created.region.id, storeCode: `ED-${stamp}`, name: `Editor Probe ${stamp}`,
+    regionId: regionScopeId, storeCode: `ED-${stamp}`, name: `Editor Probe ${stamp}`,
     street: "Testgasse 1", zipCode: "4020", city: "Linz", country: "AT",
   }), "create fixture Store");
+  created.foreignStore = ok(await api(admin, "POST", "/api/stores", {
+    regionId: created.region.id, storeCode: `EF-${stamp}`, name: `Foreign Editor Probe ${stamp}`,
+    street: "Testgasse 2", zipCode: "4020", city: "Linz", country: "AT",
+  }), "create foreign fixture Store");
 
   const suffix = `Probe ${stamp}`;
   await admin.goto(`${base}/admin/editor/?probe=${stamp}`, { waitUntil: "domcontentloaded" });
   await admin.locator("#toolSelect").waitFor();
+  await waitInputValue(admin.locator("#shopName"), `Seed ${stamp}`, "legacy global seed load");
   await admin.locator("#shopName").fill(`Legacy ${suffix}`);
   await admin.locator("#publishBtn").focus();
   await admin.keyboard.press("Enter");
@@ -138,20 +157,32 @@ try {
   const initialPublic = await anonymousCurrent(created.store.id);
   assert.equal(initialPublic.layoutId, initial.layoutId);
   evidence.anonymousCurrentLayout = true;
-  const draft = ok(await api(admin, "POST", path, { layoutName: `Draft ${suffix}`, activate: false, layout: documentFor(`Draft ${suffix}`) }), "save fixture draft");
+  // Save through the candidate UI, then verify the persisted version and that
+  // the anonymous endpoint still serves the prior active layout.
+  await admin.goto(`${base}/admin/next/editor/?storeId=${created.store.id}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("heading", { name: "Layout Editor" }).waitFor();
+  await admin.getByRole("textbox", { name: "Filialname" }).fill(`Draft ${suffix}`);
+  await admin.getByRole("button", { name: "Entwurf speichern" }).click();
+  await admin.getByText("Entwurf gespeichert.").waitFor();
+  const draftUrl = new URL(admin.url());
+  const draftId = draftUrl.searchParams.get("layoutId");
+  assert.ok(draftId, "candidate UI save writes a version URL");
+  const draft = ok(await api(admin, "GET", `${path}/${draftId}`), "candidate UI saved draft readback");
   assert.equal(draft.status, "DRAFT");
+  assert.equal(draft.layout.shopName, `Draft ${suffix}`);
+  evidence.candidateUiDraftPersistence = true;
   const stillInitial = await anonymousCurrent(created.store.id);
   assert.equal(stillInitial.layoutId, initial.layoutId, "draft must not replace the public active version");
   assert.equal(stillInitial.layout.shopName, `Initial ${suffix}`);
   evidence.draftIsNotPublic = true;
-  await admin.goto(`${base}/admin/editor/?storeId=${created.store.id}&layoutId=${draft.layoutId}`, { waitUntil: "domcontentloaded" });
+  await admin.goto(`${base}/admin/editor/?storeId=${created.store.id}&layoutId=${draftId}`, { waitUntil: "domcontentloaded" });
   await admin.locator("#storeContextBox").waitFor();
   await admin.locator("#shopName").waitFor();
   await waitInputValue(admin.locator("#shopName"), `Draft ${suffix}`, "legacy store direct link opens the selected draft");
   await admin.reload({ waitUntil: "domcontentloaded" });
   await waitInputValue(admin.locator("#shopName"), `Draft ${suffix}`, "legacy store direct link survives refresh");
   evidence.legacyStoreDirectLinkAndReload = true;
-  const opened = `${base}/admin/next/editor/?storeId=${created.store.id}&layoutId=${draft.layoutId}`;
+  const opened = `${base}/admin/next/editor/?storeId=${created.store.id}&layoutId=${draftId}`;
   await admin.goto(opened, { waitUntil: "domcontentloaded" });
   await admin.getByRole("heading", { name: "Layout Editor" }).waitFor();
   await admin.reload({ waitUntil: "domcontentloaded" });
@@ -170,15 +201,24 @@ try {
   await admin.goto(opened, { waitUntil: "domcontentloaded" });
   await admin.getByRole("textbox", { name: "Filialname" }).waitFor();
 
-  const activeDraft = ok(await api(admin, "POST", `${path}/${draft.layoutId}/activate`, {}), "activate saved draft");
+  // Activate via the candidate UI, then reopen the archived version and use
+  // its explicit restore action. Read both transitions back from API/mobile.
+  await admin.getByRole("button", { name: "Veröffentlichen" }).click();
+  await admin.getByText("Layout veröffentlicht.").waitFor();
+  const activeDraft = ok(await api(admin, "GET", `${path}/${draftId}`), "candidate UI activation readback");
   assert.equal(activeDraft.status, "ACTIVE");
-  assert.equal((await anonymousCurrent(created.store.id)).layoutId, draft.layoutId);
-  const rolledBack = ok(await api(admin, "POST", `${path}/${initial.layoutId}/activate`, {}), "rollback to prior version");
+  assert.equal((await anonymousCurrent(created.store.id)).layoutId, draftId);
+  await admin.goto(`${base}/admin/next/editor/?storeId=${created.store.id}&layoutId=${initial.layoutId}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("heading", { name: "Layout Editor" }).waitFor();
+  await admin.getByRole("button", { name: "Version wieder aktivieren" }).click();
+  await admin.getByText("Layout veröffentlicht.").waitFor();
+  const rolledBack = ok(await api(admin, "GET", `${path}/${initial.layoutId}`), "candidate UI rollback readback");
   assert.equal(rolledBack.status, "ACTIVE");
   const afterRollback = await anonymousCurrent(created.store.id);
   assert.equal(afterRollback.layoutId, initial.layoutId);
   assert.equal(afterRollback.layout.shopName, `Initial ${suffix}`);
   evidence.activationAndRollback = true;
+  evidence.candidateUiActivationAndRollback = true;
 
   let failOnce = true;
   const fault = (route) => {
@@ -202,14 +242,42 @@ try {
   const me = ok(await api(manager, "GET", "/api/admin/me"), "store manager identity");
   assert.equal(me.role, "store-manager");
   assert.notEqual(me.scope?.storeId, created.store.id);
-  assert.equal((await api(manager, "GET", `/api/stores/${created.store.id}/layout/editor-context`)).status, 403);
-  await manager.goto(`${base}/admin/next/editor/?storeId=${created.store.id}`, { waitUntil: "domcontentloaded" });
+  assert.equal((await api(manager, "GET", `/api/stores/${created.foreignStore.id}/layout/editor-context`)).status, 403);
+  const foreignVersionPath = `/api/stores/${created.foreignStore.id}/layout/versions`;
+  const deniedVersion = { layoutName: `Denied ${suffix}`, activate: false, layout: documentFor(`Denied ${suffix}`) };
+  assert.equal((await api(manager, "POST", foreignVersionPath, deniedVersion)).status, 403, "store manager cannot write a foreign Store layout");
+  assert.equal((await api(manager, "POST", "/api/layout/current", globalBefore)).status, 403, "store manager cannot publish the global layout");
+  await manager.goto(`${base}/admin/next/editor/?storeId=${created.foreignStore.id}`, { waitUntil: "domcontentloaded" });
   await manager.getByRole("heading", { name: "Zugriff verweigert" }).waitFor();
   await manager.goto(`${base}/admin/next/editor/`, { waitUntil: "domcontentloaded" });
   await manager.getByRole("heading", { name: "Zugriff verweigert" }).waitFor();
   evidence.scopedDenial = true;
   evidence.roleDenial = true;
+  const ownStore = me.scope?.storeId;
+  if (ownStore) {
+    assert.equal((await api(manager, "GET", `/api/stores/${ownStore}/layout/editor-context`)).status, 200, "store manager can read own editor context");
+    await manager.goto(`${base}/admin/next/editor/?storeId=${ownStore}`, { waitUntil: "domcontentloaded" });
+    await manager.getByRole("heading", { name: "Layout Editor" }).waitFor();
+    evidence.storeManagerOwnScope = true;
+  }
   await manager.close();
+
+  const regionPage = await login(regionUser);
+  assert.equal((await api(regionPage, "GET", `/api/stores/${created.store.id}/layout/editor-context`)).status, 200, "region manager can read fixture Store in assigned Region");
+  assert.equal((await api(regionPage, "GET", `/api/stores/${created.foreignStore.id}/layout/editor-context`)).status, 403, "region manager cannot read out-of-region fixture Store");
+  assert.equal((await api(regionPage, "POST", foreignVersionPath, deniedVersion)).status, 403, "region manager cannot write an out-of-region Store layout");
+  assert.equal((await api(regionPage, "POST", "/api/layout/current", globalBefore)).status, 403, "region manager cannot publish the global layout");
+  evidence.foreignWriteDenied = true;
+  await regionPage.goto(`${base}/admin/next/editor/?storeId=${created.store.id}`, { waitUntil: "domcontentloaded" });
+  await regionPage.getByRole("heading", { name: "Layout Editor" }).waitFor();
+  const regionDraft = ok(await api(regionPage, "POST", path, { layoutName: `Region ${suffix}`, activate: false, layout: documentFor(`Region ${suffix}`) }), "region manager saves an in-region draft");
+  assert.equal(regionDraft.status, "DRAFT");
+  assert.equal((await anonymousCurrent(created.store.id)).layoutId, initial.layoutId, "region manager draft leaves public layout unchanged");
+  evidence.regionManagerOwnDraftWrite = true;
+  evidence.regionManagerOwnScope = true;
+  await regionPage.goto(`${base}/admin/next/editor/?storeId=${created.foreignStore.id}`, { waitUntil: "domcontentloaded" });
+  await regionPage.getByRole("heading", { name: "Zugriff verweigert" }).waitFor();
+  await regionPage.close();
 } catch (error) {
   evidence.result = "FAIL";
   evidence.error = error instanceof Error ? error.message : String(error);
@@ -240,12 +308,25 @@ try {
       evidence.cleanupError = error instanceof Error ? error.message : String(error);
     }
   }
+  if (admin && created.foreignStore) {
+    try {
+      const archived = await api(admin, "PATCH", `/api/stores/${created.foreignStore.id}/archive`, {});
+      evidence.foreignFixtureCleanup = archived.status === 200;
+      if (archived.status !== 200) { evidence.result = "FAIL"; evidence.cleanupError ||= `foreign fixture archive HTTP ${archived.status}`; }
+    } catch (error) {
+      evidence.result = "FAIL";
+      evidence.foreignFixtureCleanup = false;
+      evidence.cleanupError ||= error instanceof Error ? error.message : String(error);
+    }
+  }
   if (admin && created.region) {
     try {
       const archived = await api(admin, "PATCH", `/api/regions/${created.region.id}/archive`, {});
+      evidence.regionFixtureCleanup = archived.status === 200;
       if (archived.status !== 200) { evidence.result = "FAIL"; evidence.cleanupError ||= `fixture region archive HTTP ${archived.status}`; }
     } catch (error) {
       evidence.result = "FAIL";
+      evidence.regionFixtureCleanup = false;
       evidence.cleanupError ||= error instanceof Error ? error.message : String(error);
     }
   }

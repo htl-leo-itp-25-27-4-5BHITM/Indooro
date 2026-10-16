@@ -26,6 +26,7 @@ const routes = [
 for (const [path, title] of routes) {
   test(`renders ${path}`, async ({ page }) => {
     if (path.startsWith("/admin/stores/detail/")) await useLegacyRoute(page, "storeDetail");
+    if (path.startsWith("/admin/recipes/")) await useLegacyRoute(page, "recipes");
     await page.goto(path);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Admin Navigation" })).toBeVisible();
@@ -52,6 +53,7 @@ test("store layout version badges use status", async ({ page }) => {
 });
 
 test("recipe list shows missing steps from summary stepCount", async ({ page }) => {
+  await useLegacyRoute(page, "recipes");
   await page.route("**/api/admin/recipes", (route) => route.fulfill({
     json: [{ id: "recipe-1", slug: "apfelkuchen", title: "Apfelkuchen", status: "DRAFT", totalIngredientCount: 1, mappedIngredientCount: 1, stepCount: 0, tags: [] }]
   }));
@@ -92,6 +94,7 @@ test("renders layout editor canvas and professional tool panels", async ({ page 
 });
 
 test("renders recipe list controls and edit entry points", async ({ page }) => {
+  await useLegacyRoute(page, "recipes");
   await page.goto("/admin/recipes/");
   await expect(page.getByRole("heading", { name: "Rezepte" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Rezept anlegen" })).toBeVisible();
@@ -111,6 +114,7 @@ test("renders recipe list controls and edit entry points", async ({ page }) => {
 });
 
 test("recipe create form offers product dropdown for ingredients", async ({ page }) => {
+  await useLegacyRoute(page, "recipes");
   await page.goto("/admin/recipes/");
   await page.getByRole("button", { name: "Rezept anlegen" }).click();
   await expect(page.getByRole("heading", { name: "Rezept anlegen" })).toBeVisible();
