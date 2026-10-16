@@ -58,7 +58,7 @@
 
 - [x] 9.1 Replace axis-aligned blocking in `IndoorGraphBuilder.fromLayout` with rotated-rectangle cell coverage. (implemented in add-pilot-guided-tour-fallbacks)
 - [x] 9.2 Add unit-testable geometry helpers for rotated-rectangle cell coverage (cell center inside, edge intersection). (implemented in add-pilot-guided-tour-fallbacks)
-- [ ] 9.3 Log shelves whose nearest free node is unreachable from the layout entrance in DEBUG builds.
+- [x] 9.3 Log shelves whose nearest free node is unreachable from the layout entrance in DEBUG builds. (implemented in add-pilot-guided-tour-fallbacks)
 - [x] 9.4 Record in `docs/specs/ROADMAP.md` that `accessAngle` semantics must be defined in `store-layout-management` and the editor before the client uses it.
 
 ## 10. Cleanup And Copy

@@ -1984,6 +1984,15 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         )
 
         navigationGraph = graph
+        #if DEBUG
+        if let entrance = IndoorGraph.entrancePoint(in: shelves) {
+            let unreachable = graph.unreachableShelves(in: shelves, from: entrance)
+            if !unreachable.isEmpty {
+                let described = unreachable.map { "\($0.id)(\($0.label ?? "-"))" }
+                appendDebugLog("Unerreichbare Regale: \(described.joined(separator: ", "))")
+            }
+        }
+        #endif
         positioningPipeline = PositioningPipeline(
             store: measurementStore,
             graph: graph,

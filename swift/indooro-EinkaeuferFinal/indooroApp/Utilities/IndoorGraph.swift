@@ -741,3 +741,19 @@ struct GridPoint: Hashable, Equatable, CustomStringConvertible {
         "(\(x), \(y))"
     }
 }
+
+extension IndoorGraph {
+    /// Elemente (ohne Beacon und Eingang), deren Mittelpunkt auf einen Knoten projiziert wird, der vom Eingang
+    /// aus nicht erreichbar ist. `shortestRoute` projiziert Start und Ziel selbst auf den naechsten freien Knoten;
+    /// nil bedeutet: keine Route. Reine Funktion fuer die DEBUG-Diagnose.
+    func unreachableShelves(in elements: [LayoutElement], from entrance: SIMD2<Float>) -> [LayoutElement] {
+        elements.filter { element in
+            guard element.type != "beacon", element.type != "entrance" else { return false }
+            let center = SIMD2<Float>(
+                Float(element.x + (element.width ?? 1) / 2),
+                Float(element.y + (element.height ?? 1) / 2)
+            )
+            return shortestRoute(from: entrance, to: center, floor: 0, turnPenalty: 0) == nil
+        }
+    }
+}

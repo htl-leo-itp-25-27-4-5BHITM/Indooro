@@ -61,7 +61,7 @@
 
 - [x] 9.1 Check whether the pilot layouts use rotated shelves (editor field „Winkel“); the admin rebuild found that both Swift navigation variants ignore element rotation when blocking grid cells (`docs/admin-rebuild/PROGRESS.md` on `codex/admin-platform-rebuild`).
 - [x] 9.2 Implement rotated-rectangle cell coverage in `IndoorGraphBuilder.fromLayout` with unit-testable geometry helpers (cell center inside, edge intersection) in the SwiftPM target; tests with 0°, 45°, 90° shelves; mark `fix-ios-contract-and-spec-drift` 9.1, 9.2.
-- [ ] 9.3 In DEBUG, log shelves whose nearest free node is unreachable from the entrance; mark 9.3 there.
+- [x] 9.3 In DEBUG, log shelves whose nearest free node is unreachable from the entrance; mark 9.3 there.
 - [x] 9.4 Re-run all replay and routing tests; update `NavigationFixtures/BASELINE.md` if route lengths change.
 
 ## 10. Counters for the Study Mode (consumer: add-pilot-study-mode)
