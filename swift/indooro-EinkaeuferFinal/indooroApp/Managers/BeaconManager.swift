@@ -83,9 +83,9 @@ enum TrackingMode: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .beacon:
-            return "Beacon"
+            return "Mit Ortung"
         case .debugNoBeacons:
-            return "Debug (ohne Beacons)"
+            return "Ohne Ortung"
         }
     }
 }
