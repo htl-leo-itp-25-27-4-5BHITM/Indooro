@@ -5,6 +5,7 @@ on:
     branches: [ "main", "master" ] # Führt den Build aus, wenn du auf main/master pushst
     paths:
       - 'backend/indooro_server/**' # Nur wenn sich was im Backend ändert
+      - 'admin-ui/**' # Neues Admin-Frontend wird ins Backend-Image gepackt
       - '.github/workflows/ci.yaml'
 
 env:
@@ -28,6 +29,20 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
+
+      - name: Set up Node.js for admin UI
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'admin-ui/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: admin-ui/package-lock.json
+
+      - name: Build admin UI into backend resources (/admin/next/)
+        working-directory: admin-ui
+        run: |
+          npm ci --no-audit --no-fund
+          npm run package:candidate
+          test -f ../backend/indooro_server/src/main/resources/META-INF/resources/admin/next/index.html
 
       - name: Build with Maven
         working-directory: backend/indooro_server
