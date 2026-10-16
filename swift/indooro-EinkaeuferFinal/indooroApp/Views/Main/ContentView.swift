@@ -144,6 +144,7 @@ struct ContentView: View {
         .onAppear {
             studyStore.onStartAppTask = { task in
                 showsStudySession = false
+                pendingLastStoreLayoutOpenRequest = UUID()
                 focusProductOnMap(Product(id: task.productId, name: task.productName, price: 0, layoutCode: task.layoutCode ?? ""))
             }
             showsIntroduction = !introductionCompleted
