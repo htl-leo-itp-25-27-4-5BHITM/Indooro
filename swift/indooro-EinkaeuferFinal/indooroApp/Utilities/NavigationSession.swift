@@ -21,6 +21,13 @@ final class NavigationSession: ObservableObject {
     @Published private(set) var statusMessage: String?
     /// Kartenpunkt des aktiven Stopps (Zielmarker im Einzelziel-Modus).
     @Published private(set) var targetPosition: CGPoint?
+    /// Herkunft des Routenursprungs (Position, Eingang oder erledigter Stopp).
+    @Published private(set) var routeOriginKind: NavigationRouteOriginKind = .position
+    /// Zaehler fuer Tests und Replay-Auswertung (Section 10.1/10.2).
+    @Published private(set) var routeBuildCount = 0
+    @Published private(set) var rerouteCount = 0
+    @Published private(set) var stopChangeWithoutEventCount = 0
+    @Published private(set) var manualPositionCount = 0
 
     /// Name aus der alten Schnittstelle; Views binden weiter daran.
     var navigationStatusMessage: String? { statusMessage }
@@ -38,7 +45,7 @@ final class NavigationSession: ObservableObject {
         self.beaconManager = beaconManager
         cancellables.removeAll()
 
-        core.layoutChanged(graph: beaconManager.navigationGraph)
+        core.layoutChanged(graph: beaconManager.navigationGraph, entrance: entranceOfLayout())
         publish()
 
         beaconManager.navigationSamples
@@ -149,7 +156,7 @@ final class NavigationSession: ObservableObject {
 
     func layoutChanged(plan: [NavigationStop]? = nil) {
         seedPosition()
-        core.layoutChanged(graph: beaconManager?.navigationGraph, plan: plan)
+        core.layoutChanged(graph: beaconManager?.navigationGraph, entrance: entranceOfLayout(), plan: plan)
         publish()
     }
 
@@ -177,13 +184,26 @@ final class NavigationSession: ObservableObject {
     // MARK: - Intern
 
     private func handle(_ sample: NavigationSample) {
-        core.tickUpdated(projected: sample.projectedPosition, confidence: sample.confidence, at: sample.timestamp)
+        core.tickUpdated(
+            projected: sample.projectedPosition,
+            confidence: sample.confidence,
+            at: sample.timestamp,
+            trusted: sample.isTrusted
+        )
         publish()
     }
 
     private func seedPosition() {
         guard let position = beaconManager?.userPosition else { return }
-        core.seedPosition(SIMD2<Float>(Float(position.x), Float(position.y)))
+        core.seedPosition(
+            SIMD2<Float>(Float(position.x), Float(position.y)),
+            trusted: beaconManager?.isPositionTrusted ?? false
+        )
+    }
+
+    /// Eingang des aktuellen Layouts (Layout-Elemente ohne Beacons; `shelves` enthaelt auch Eingaenge).
+    private func entranceOfLayout() -> SIMD2<Float>? {
+        IndoorGraph.entrancePoint(in: beaconManager?.shelves ?? [])
     }
 
     private func publish() {
@@ -201,6 +221,12 @@ final class NavigationSession: ObservableObject {
 
         let target = core.activeStop.map { CGPoint(x: CGFloat($0.mapPoint.x), y: CGFloat($0.mapPoint.y)) }
         assign(\.targetPosition, target)
+
+        assign(\.routeOriginKind, core.routeOriginKind)
+        assign(\.routeBuildCount, core.routeBuildCount)
+        assign(\.rerouteCount, core.rerouteCount)
+        assign(\.stopChangeWithoutEventCount, core.stopChangeWithoutEventCount)
+        assign(\.manualPositionCount, core.manualPositionCount)
     }
 
     private func assign<Value: Equatable>(_ keyPath: ReferenceWritableKeyPath<NavigationSession, Value>, _ value: Value) {

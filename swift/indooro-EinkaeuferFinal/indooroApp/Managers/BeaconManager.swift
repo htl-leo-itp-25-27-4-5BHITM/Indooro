@@ -12,6 +12,8 @@ struct NavigationSample {
     let projectedPosition: SIMD2<Float>?
     let confidence: Float
     let timestamp: TimeInterval
+    /// Position ist vertraut: Beacon-Tracking aktiv, Solver-Loesung vorhanden, Konfidenz nicht niedrig.
+    let isTrusted: Bool
 }
 
 /// Zielwunsch von BeaconManager (Produkt-Ziel, Storewechsel) an die Navigations-Session.
@@ -129,6 +131,45 @@ private struct LayoutHistoryEnvelope: Decodable {
     let data: [LayoutVersionSummary]?
 }
 
+/// Persistierbare Kopie von `MobileStoreSummary` (dort nur `Decodable`), fuer den Offline-Start.
+private struct PersistedStoreSummary: Codable {
+    let id: UUID
+    let storeCode: String
+    let name: String
+    let city: String
+    let street: String?
+    let zipCode: String?
+    let country: String?
+    let latitude: Double?
+    let longitude: Double?
+
+    init(_ store: MobileStoreSummary) {
+        id = store.id
+        storeCode = store.storeCode
+        name = store.name
+        city = store.city
+        street = store.street
+        zipCode = store.zipCode
+        country = store.country
+        latitude = store.latitude
+        longitude = store.longitude
+    }
+
+    var store: MobileStoreSummary {
+        MobileStoreSummary(
+            id: id,
+            storeCode: storeCode,
+            name: name,
+            city: city,
+            street: street,
+            zipCode: zipCode,
+            country: country,
+            latitude: latitude,
+            longitude: longitude
+        )
+    }
+}
+
 final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate, CLLocationManagerDelegate {
     // MARK: - Public state
 
@@ -139,6 +180,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     @Published var rawUserPosition: CGPoint?
     @Published var userPosition: CGPoint?
+    /// Vertrauenswuerdigkeit von `userPosition` (Solver-Tick oder manuell gesetzte Position).
+    @Published private(set) var isPositionTrusted = false
     @Published var userHeadingRadians: Float?
     @Published var isUserHeadingReliable = false
 
@@ -173,6 +216,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let layoutHistoryLimit = 12
     private let selectedLayoutModeDefaultsKey = "selectedLayoutMode"
     private let selectedLayoutIdDefaultsKey = "selectedLayoutId"
+    private let lastSelectedStoreIDDefaultsKey = "lastSelectedStoreID"
+    private let lastSelectedStoreSummaryDefaultsKey = "lastSelectedStoreSummary"
+    private let layoutCache = LayoutCacheStore()
     private let fixedTargetCategory: String? = nil
     private let preferIBeaconRanging = true
     private let minimumStoreLookupRSSI = -95
@@ -212,6 +258,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         return formatter
     }()
 
+    private static let offlineCopyDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "de_AT")
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        return formatter
+    }()
+
     // MARK: - Stabilized navigation pipeline
 
     private let navigationConfig = StabilizedNavigationConfig.default
@@ -237,6 +291,10 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let headingReliabilityTimeout: TimeInterval = 1.4
 
     private var manualCalibrationRevision: Int = 0
+    /// Manuelle Kalibrierung gilt als vertraut, bis ein sicherer Solver-Tick eintrifft.
+    private var manualPositionHolds = false
+    /// Nach Wechsel zu `.beacon` endet die manuelle Haltung erst mit dem naechsten Tick.
+    private var resetManualHoldOnNextTick = false
     private var isUpdatingHeading = false
     private var latestHeadingAccuracyDegrees: CLLocationDirection = -1
     private let reliableHeadingAccuracyThreshold: CLLocationDirection = 25
@@ -435,6 +493,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         switch mode {
         case .beacon:
+            resetManualHoldOnNextTick = true
             configureBeaconScanningForCurrentMode()
 
         case .debugNoBeacons:
@@ -443,11 +502,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             clearBeaconMeasurements()
             rssiSamples.removeSamples()
             tapSetsTarget = false
+            // Ohne Beacons gibt es keine Solver-Position; nur eine manuelle Position bleibt vertraut.
+            setPositionTrusted(manualPositionHolds)
             navigationSamples.send(
                 NavigationSample(
                     projectedPosition: nil,
                     confidence: 1,
-                    timestamp: Date().timeIntervalSince1970
+                    timestamp: Date().timeIntervalSince1970,
+                    isTrusted: false
                 )
             )
             DispatchQueue.main.async {
@@ -610,6 +672,19 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     /// Veroeffentlicht das Ergebnis eines Ticks: Rohposition und Blickrichtung aus dem geloesten Punkt,
     /// projizierte Position bei jedem Tick (die Glaettung fuer die Darstellung uebernimmt die Marker-Animation).
     private func publish(_ tick: PositioningTick) {
+        let isTrusted = trackingMode == .beacon
+            && tick.projectedPoint != nil
+            && tick.confidence >= navigationConfig.confidence.lowThreshold
+
+        if resetManualHoldOnNextTick {
+            resetManualHoldOnNextTick = false
+            manualPositionHolds = false
+        }
+        if isTrusted {
+            manualPositionHolds = false
+        }
+        setPositionTrusted(isTrusted || manualPositionHolds)
+
         if let solvedPoint = tick.solvedPoint {
             let movementHeading = estimateHeading(currentPoint: solvedPoint, timestamp: tick.timestamp)
             let reliableHeading = movementHeading ?? recentReliableMovementHeading(at: tick.timestamp)
@@ -627,7 +702,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             NavigationSample(
                 projectedPosition: tick.projectedPoint,
                 confidence: tick.confidence,
-                timestamp: tick.timestamp
+                timestamp: tick.timestamp,
+                isTrusted: isTrusted
             )
         )
 
@@ -635,6 +711,17 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             DispatchQueue.main.async {
                 self.publishUserPosition(CGPoint(projectedPoint))
             }
+        }
+    }
+
+    /// Setzt `isPositionTrusted` nur bei Aenderung und immer auf dem Main-Thread.
+    private func setPositionTrusted(_ trusted: Bool) {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { self.setPositionTrusted(trusted) }
+            return
+        }
+        if isPositionTrusted != trusted {
+            isPositionTrusted = trusted
         }
     }
 
@@ -677,6 +764,10 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             mapPoint: CGPoint(effectivePoint),
             timestamp: timestamp
         )
+
+        // Manuelle Position gilt als vertraut, bis ein sicherer Solver-Tick eintrifft.
+        manualPositionHolds = true
+        setPositionTrusted(true)
 
         // Die Session baut nur die Route zum aktiven Stopp von hier neu (Plan bleibt).
         manualCalibrations.send(event)
@@ -1214,16 +1305,17 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                         self.activeLayoutDescription = self.currentLayoutDescription(for: layout)
                         self.isLoadingLayout = false
                         self.persistLayoutSelection()
+                        self.layoutCache.save(data, storeID: nil)
                         self.appendDebugLog("Default-Layout angewendet shop=\(layout.shopName)")
                     } catch {
                         print("❌ Aktuelles Server-Layout konnte nicht decodiert werden: \(error.localizedDescription)")
                         self.appendDebugLog("Default-Layout Decode-Fehler: \(error.localizedDescription)")
-                        self.loadLatestHistoryVersionFallback(reason: "Server-Layout nicht lesbar")
+                        self.loadOfflineFallbackAfterDefaultLayoutFailure(reason: "Server-Layout nicht lesbar")
                     }
                 case .failure(let error):
                     print("❌ Aktuelles Server-Layout konnte nicht geladen werden: \(error.localizedDescription)")
                     self.appendDebugLog("Default-Layout Fehler: \(error.localizedDescription)")
-                    self.loadLatestHistoryVersionFallback(reason: "Server momentan nicht erreichbar")
+                    self.loadOfflineFallbackAfterDefaultLayoutFailure(reason: "Server momentan nicht erreichbar")
                 }
             }
         }
@@ -1266,29 +1358,137 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                         )
                         self.isLoadingLayout = false
                         self.persistLayoutSelection()
+                        self.layoutCache.save(data, storeID: store.id.uuidString)
+                        self.rememberLastSelectedStore(store)
                         self.appendDebugLog(
                             "Store-Layout angewendet shop=\(layout.shopName) grid=\(layout.gridSize.width)x\(layout.gridSize.height) elements=\(layout.elements.count) beacons=\(layout.elements.filter { $0.type == "beacon" }.count)"
                         )
                     } catch {
                         print("❌ Store-Layout konnte nicht decodiert werden: \(error.localizedDescription)")
                         self.appendDebugLog("Store-Layout Decode-Fehler: \(error.localizedDescription)")
-                        self.markDetectedStoreLayoutFailed(
-                            store: store,
-                            identityKey: identityKey,
-                            reason: "Store-Layout nicht lesbar"
-                        )
+                        if !self.applyOfflineStoreLayoutIfAvailable(store: store, source: source) {
+                            self.markDetectedStoreLayoutFailed(
+                                store: store,
+                                identityKey: identityKey,
+                                reason: "Store-Layout nicht lesbar"
+                            )
+                        }
                     }
                 case .failure(let error):
                     print("❌ Store-Layout konnte nicht geladen werden: \(error.localizedDescription)")
                     self.appendDebugLog("Store-Layout Fehler: \(error.localizedDescription)")
-                    self.markDetectedStoreLayoutFailed(
-                        store: store,
-                        identityKey: identityKey,
-                        reason: error.localizedDescription
-                    )
+                    if !self.applyOfflineStoreLayoutIfAvailable(store: store, source: source) {
+                        self.markDetectedStoreLayoutFailed(
+                            store: store,
+                            identityKey: identityKey,
+                            reason: error.localizedDescription
+                        )
+                    }
                 }
             }
         }
+    }
+
+    /// Store-Layout fehlgeschlagen: vorhandene, decodierbare Offline-Kopie dieses Stores anwenden.
+    /// Liefert `false`, wenn keine nutzbare Kopie existiert (dann bleibt das Fehlerverhalten).
+    private func applyOfflineStoreLayoutIfAvailable(
+        store: MobileStoreSummary,
+        source: StoreLayoutActivationSource
+    ) -> Bool {
+        guard let cached = layoutCache.load(storeID: store.id.uuidString) else {
+            return false
+        }
+        return applyOfflineStoreLayout(
+            data: cached.data,
+            savedAt: cached.savedAt,
+            store: store,
+            source: source
+        )
+    }
+
+    /// Offline-Kopie eines Stores anwenden; wie der Erfolgsfall, nur mit Offline-Beschreibung.
+    private func applyOfflineStoreLayout(
+        data: Data,
+        savedAt: Date,
+        store: MobileStoreSummary,
+        source: StoreLayoutActivationSource
+    ) -> Bool {
+        guard let layout = try? decodeMobileLayout(from: data) else {
+            appendDebugLog("Store-Offline-Kopie nicht lesbar store=\(store.name)")
+            return false
+        }
+
+        applyLayout(layout)
+        activeLayoutStore = store
+        activeLayoutStoreSource = source
+        clearStoreLayoutFailureMessageIfNeeded()
+        selectedLayoutMode = .currentServer
+        selectedLayoutId = nil
+        selectedLayoutName = store.name
+        activeLayoutDescription = "\(store.name) • Offline-Kopie vom \(offlineCopyDate(savedAt))"
+        isLoadingLayout = false
+        persistLayoutSelection()
+        appendDebugLog("Store-Layout aus Offline-Kopie angewendet store=\(store.name)")
+        return true
+    }
+
+    /// Default-Layout fehlgeschlagen (6.4): Cache des zuletzt gewaehlten Stores -> `default.json`
+    /// -> History-Fallback -> Bundle-Layout (letzter Ausweg).
+    private func loadOfflineFallbackAfterDefaultLayoutFailure(reason: String) {
+        if let lastStore = lastSelectedStoreFromDefaults(),
+           applyOfflineStoreLayoutIfAvailable(store: lastStore, source: .manual) {
+            return
+        }
+
+        if let cached = layoutCache.load(storeID: nil),
+           applyOfflineDefaultLayout(data: cached.data, savedAt: cached.savedAt) {
+            return
+        }
+
+        loadLatestHistoryVersionFallback(reason: reason)
+    }
+
+    private func applyOfflineDefaultLayout(data: Data, savedAt: Date) -> Bool {
+        guard let layout = try? decodeLayout(from: data) else {
+            appendDebugLog("Default-Offline-Kopie nicht lesbar")
+            return false
+        }
+
+        applyLayout(layout)
+        activeLayoutStore = nil
+        activeLayoutStoreSource = nil
+        clearStoreLayoutFailureMessageIfNeeded()
+        selectedLayoutMode = .currentServer
+        selectedLayoutId = nil
+        selectedLayoutName = "Aktuelles Server-Layout"
+        activeLayoutDescription = "\(layout.shopName) • Offline-Kopie vom \(offlineCopyDate(savedAt))"
+        isLoadingLayout = false
+        persistLayoutSelection()
+        appendDebugLog("Default-Layout aus Offline-Kopie angewendet shop=\(layout.shopName)")
+        return true
+    }
+
+    private func rememberLastSelectedStore(_ store: MobileStoreSummary) {
+        let defaults = UserDefaults.standard
+        defaults.set(store.id.uuidString, forKey: lastSelectedStoreIDDefaultsKey)
+        if let summaryData = try? JSONEncoder().encode(PersistedStoreSummary(store)) {
+            defaults.set(summaryData, forKey: lastSelectedStoreSummaryDefaultsKey)
+        }
+    }
+
+    private func lastSelectedStoreFromDefaults() -> MobileStoreSummary? {
+        let defaults = UserDefaults.standard
+        guard let storeIDString = defaults.string(forKey: lastSelectedStoreIDDefaultsKey),
+              let summaryData = defaults.data(forKey: lastSelectedStoreSummaryDefaultsKey),
+              let summary = try? JSONDecoder().decode(PersistedStoreSummary.self, from: summaryData),
+              summary.id.uuidString == storeIDString else {
+            return nil
+        }
+        return summary.store
+    }
+
+    private func offlineCopyDate(_ date: Date) -> String {
+        BeaconManager.offlineCopyDateFormatter.string(from: date)
     }
 
     private func loadLayoutVersion(withId layoutId: String) {
@@ -1784,6 +1984,15 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         )
 
         navigationGraph = graph
+        #if DEBUG
+        if let entrance = IndoorGraph.entrancePoint(in: shelves) {
+            let unreachable = graph.unreachableShelves(in: shelves, from: entrance)
+            if !unreachable.isEmpty {
+                let described = unreachable.map { "\($0.id)(\($0.label ?? "-"))" }
+                appendDebugLog("Unerreichbare Regale: \(described.joined(separator: ", "))")
+            }
+        }
+        #endif
         positioningPipeline = PositioningPipeline(
             store: measurementStore,
             graph: graph,

@@ -27,6 +27,25 @@ final class NavigationReplayTests: XCTestCase {
         RecordedStop(id: id, title: id, x: x, y: y)
     }
 
+    // MARK: - Task 2.7: Start ab Eingang ohne Messungen
+
+    func testTourStartedAtEntranceWithoutMeasurementsRebuildsRouteOnceWhenMeasurementsStart() throws {
+        let layout = try layout()
+        let entrance = SIMD2<Float>(5.5, 56.5)
+        var recording = SyntheticRecording(layout: layout, seed: 61)
+        recording.event(.startTour, plan: [stop("A", 30.5, 9.5)])
+        // Zehn Sekunden ohne jede Messung (Beacons stumm), der Kunde steht am Eingang.
+        recording.blackout(seconds: 10, truth: entrance)
+        recording.stand(at: entrance, seconds: 20)
+
+        let metrics = NavigationReplay.run(recording: try roundTrip(recording.lines), layout: layout, entrance: entrance)
+        report("entranceStart", metrics)
+        XCTAssertEqual(metrics.activeStopChangesWithoutEvent, 0)
+        XCTAssertEqual(metrics.rerouteCount, 0)
+        // Ein Bau beim Start ab Eingang, genau ein Neubau von der vertrauten Position sobald Messungen laufen.
+        XCTAssertEqual(metrics.routeBuildCount, 2)
+    }
+
     // MARK: - Format
 
     func testRecordLinesRoundTripThroughJSONLines() throws {
