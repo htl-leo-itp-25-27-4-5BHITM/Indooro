@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   buildRecipeProductMappingPayload,
+  buildProductPayload,
   canAccessRoute,
+  isActiveLayoutVersion,
+  nullableNumber,
   parseImportText,
   readinessForProduct,
   recipeMappingProductReadiness,
@@ -50,7 +53,26 @@ test("product readiness reports missing route metadata", () => {
   const readiness = readinessForProduct({ id: 1, name: "Apfel" });
   assert.equal(readiness.status, "warning");
   assert.ok(readiness.problems.includes("Layout-Code fehlt"));
-  assert.equal(readinessForProduct({ id: 2, name: "Milch", layoutCode: "A-01", storeCode: "LNZ" }).label, "Routbar");
+  assert.deepEqual(readinessForProduct({ id: 2, name: "Milch", layoutCode: "310/1/1/1", storeCode: "LNZ" }), {
+    status: "ready",
+    label: "Routbar",
+    problems: []
+  });
+  assert.ok(readinessForProduct({ layoutCode: "A-01", storeCode: "LNZ" }).problems.includes("Layout-Code ist unklar"));
+  assert.ok(readinessForProduct({ layoutCode: "310/1/1", storeCode: "LNZ" }).problems.includes("Layout-Code ist unklar"));
+});
+
+test("empty numeric form values remain null in product and beacon payloads", () => {
+  assert.equal(nullableNumber(""), null);
+  assert.equal(nullableNumber(null), null);
+  assert.equal(nullableNumber("2"), 2);
+  assert.equal(buildProductPayload({ id: "7", name: "Apfel", price: "", layoutCode: "310/1/1/1" }).price, null);
+});
+
+test("layout and recipe readiness use backend summary fields", () => {
+  assert.equal(isActiveLayoutVersion({ status: "ACTIVE" }), true);
+  assert.equal(isActiveLayoutVersion({ status: "ARCHIVED", active: true }), false);
+  assert.ok(recipeReadiness({ totalIngredientCount: 1, mappedIngredientCount: 1, stepCount: 0 }).warnings.includes("Keine Schritte"));
 });
 
 test("recipe form validation catches publish blockers early", () => {

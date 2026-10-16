@@ -180,28 +180,7 @@ enum ShoppingStopResolver {
         for layoutCode: String,
         elements: [LayoutElement]
     ) -> ResolvedShoppingShelf? {
-        let parts = layoutCode.components(separatedBy: "/")
-        guard let category = parts.first, !category.isEmpty else {
-            return nil
-        }
-
-        let meter = parts.count > 1 ? Int(parts[1]) : nil
-        let shelf = elements.first { element in
-            guard element.type != "beacon",
-                  let elementCategory = element.category,
-                  elementCategory.starts(with: category) else {
-                return false
-            }
-
-            if let elementMeter = element.meter {
-                guard let meter else {
-                    return false
-                }
-                return elementMeter == meter
-            }
-
-            return true
-        }
+        let shelf = elements.first { $0.type != "beacon" && $0.matchesProductLayoutCode(layoutCode) }
 
         guard let shelf else {
             return nil

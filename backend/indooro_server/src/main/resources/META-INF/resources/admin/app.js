@@ -9,9 +9,12 @@ import {
   escapeHtml,
   formatDate,
   includesText,
+  isActiveLayoutVersion,
   normalizeList,
+  nullableNumber,
   paginateRows,
   parseImportText,
+  reviewCatalogImport,
   recipeMappingProductMeta,
   recipeMappingProductReadiness,
   readinessForProduct,
@@ -90,7 +93,7 @@ function renderShell() {
     </main>
     <div class="toast-region" id="toasts" aria-live="polite"></div>
   `;
-  root.querySelector("[data-action='logout']").addEventListener("click", () => location.href = "/logout");
+  root.querySelector("[data-action='logout']").addEventListener("click", () => location.href = "/admin/logout");
 }
 
 async function renderRoute() {
@@ -305,7 +308,7 @@ async function renderBeacons() {
   setPage("Beacons", "Inventar, freie/zugewiesene Geraete und gefuehrte Assignment-Flows.", `<button class="primary" data-open-beacon>Beacon anlegen</button><button data-open-beacon-bulk>Bulk anlegen</button>`);
   const [beacons, stores] = await Promise.all([safeGet(API.beacons, []), safeGet(API.stores, [])]);
   renderBeaconPage(normalizeList(beacons), normalizeList(stores));
-  document.querySelector("[data-open-beacon]")?.addEventListener("click", () => openBeaconDrawer(null, normalizeList(beacons)));
+  document.querySelector("[data-open-beacon]")?.addEventListener("click", () => openBeaconDrawer({}, normalizeList(beacons)));
   document.querySelector("[data-open-beacon-bulk]")?.addEventListener("click", () => openBeaconBulkDrawer());
 }
 
@@ -440,10 +443,10 @@ function renderRecipeList(recipes) {
           return [
             `<strong>${escapeHtml(recipe.title)}</strong><br><span class="muted mono">${escapeHtml(recipe.slug)}</span>`,
             badge(recipe.status || "DRAFT", recipe.status === "PUBLISHED" ? "success" : recipe.status === "ARCHIVED" ? "muted" : "warning"),
-            `${badge(readiness.label, readiness.status)}<br><span class="muted">${recipe.mappedIngredientCount ?? 0}/${recipe.totalIngredientCount ?? 0} Zutaten</span>`,
+            `${badge(readiness.label, readiness.status)}<br><span class="muted">${recipe.mappedIngredientCount ?? 0}/${recipe.totalIngredientCount ?? 0} Zutaten${readiness.warnings.length ? ` · ${escapeHtml(readiness.warnings.join(", "))}` : ""}</span>`,
             escapeHtml((recipe.tags || []).map((tag) => tag.name).join(", ") || "-"),
             actions([
-              ["Bearbeiten", () => openRecipeDrawer(recipe)],
+              ["Bearbeiten", () => openRecipeForEdit(recipe.id)],
               ["Mapping", () => openMappingDrawer(recipe)],
               ["Publish", () => confirmMutation(`${recipe.title} publizieren?`, "Das Rezept wird fuer mobile Nutzer sichtbar.", () => apiPatch(`${API.recipes}/${recipe.id}/publish`, {}), renderRecipes)],
               ["Deaktivieren", () => confirmMutation(`${recipe.title} deaktivieren?`, "Das Rezept bleibt erhalten, ist aber nicht aktiv.", () => apiPatch(`${API.recipes}/${recipe.id}/deactivate`, {}), renderRecipes)],
@@ -577,13 +580,13 @@ function openBeaconBulkDrawer() {
       const values = formValues(event.currentTarget);
       const items = values.items.split(/\r?\n/).filter(Boolean).map((line) => {
         const [beaconCode, minor] = line.split(",").map((part) => part.trim());
-        return { beaconCode, minor: Number(minor) };
+        return { beaconCode, minor: nullableNumber(minor) };
       });
-      if (!values.uuid || !items.length || items.some((item) => !item.beaconCode || Number.isNaN(item.minor))) {
+      if (!values.uuid || !items.length || items.some((item) => !item.beaconCode || item.minor == null || Number.isNaN(item.minor))) {
         toast("Bulk-Review fehlgeschlagen: UUID und gueltige Zeilen sind erforderlich.", "danger");
         return;
       }
-      await apiPost(`${API.beacons}/bulk`, { uuid: values.uuid, major: Number(values.major), items });
+      await apiPost(`${API.beacons}/bulk`, { uuid: values.uuid, major: nullableNumber(values.major), items });
       closeDrawer();
       toast(`${items.length} Beacon(s) angelegt.`);
       renderBeacons();
@@ -617,7 +620,7 @@ function openProductDrawer(product = {}) {
         ${field("id", "Produkt-ID", product.id ?? "", "number", "", "101")}
         ${field("name", "Name", product.name || "", "text", "", "Apfel")}
         ${field("price", "Preis", product.price ?? "", "number", "0.01", "1.99")}
-        ${field("layoutCode", "Layout-Code", product.layoutCode || "", "text", "", "A-01")}
+        ${field("layoutCode", "Layout-Code", product.layoutCode || "", "text", "", "310/1/1/1")}
         ${field("storeId", "Store-ID optional", product.storeId || "", "text", "", "ad61389a-7486-48fa-afa2-9b5e4132f6a8")}
         ${field("storeCode", "Store-Code optional", product.storeCode || "", "text", "", "SPAR-Leonding-001")}
       </div>
@@ -671,43 +674,71 @@ function openImportDrawer(kind) {
   const title = kind === "category" ? "Kategorie-Import" : "Produkt-Import";
   openDrawer(title, `
     <form class="stack">
-      ${textarea("payload", "JSON Array oder NDJSON", "", kind === "category" ? '[{"categoryCode":310,"categoryName":"Obst & Gemüse"}]' : '[{"id":101,"name":"Apfel","price":1.99,"layoutCode":"A-01","storeCode":"SPAR-Leonding-001"}]')}
-      <div class="notice">Schritt 1 Parse, Schritt 2 Review, Schritt 3 Commit. Der Commit nutzt nur vorhandene Backend-Endpunkte.</div>
-      <div class="toolbar"><button class="primary">Parsen und committen</button></div>
+      ${textarea("payload", "JSON Array oder NDJSON", "", kind === "category" ? '[{"categoryCode":310,"categoryName":"Obst & Gemüse"}]' : '[{"id":101,"name":"Apfel","price":1.99,"layoutCode":"310/1/1/1","storeCode":"SPAR-Leonding-001"}]')}
+      <div class="notice">Schritt 1: Eingabe parsen. Danach werden alle Zeilen geprueft und vor jeder Mutation angezeigt.</div>
+      <div class="toolbar"><button class="primary">Parsen und pruefen</button></div>
+      <section data-import-review aria-live="polite"></section>
     </form>
   `, (drawer) => {
     drawer.querySelector("form").addEventListener("submit", async (event) => {
       event.preventDefault();
+      const reviewNode = drawer.querySelector("[data-import-review]");
       try {
         const items = parseImportText(formValues(event.currentTarget).payload);
         if (!items.length) throw new Error("Keine Datensaetze gefunden.");
-        await apiPost(kind === "category" ? API.categoryBulk : API.productBulk, items);
-        closeDrawer();
-        toast(`${items.length} Datensatz/Datensaetze importiert.`);
-        kind === "category" ? renderCategories() : renderProducts();
+        const review = reviewCatalogImport(kind, items);
+        const rows = review.rows.map(({ row, item, errors }) => `
+          <tr>
+            <td>${row}</td>
+            <td><span class="badge ${errors.length ? "danger" : "success"}">${errors.length ? "Ungueltig" : "Gueltig"}</span></td>
+            <td><code>${escapeHtml(JSON.stringify(item))}</code></td>
+            <td>${errors.length ? errors.map(escapeHtml).join("<br>") : "—"}</td>
+          </tr>`).join("");
+        reviewNode.innerHTML = `
+          <h3>Schritt 2: Review</h3>
+          <p class="muted">${review.total} Zeilen · ${review.valid} gueltig · ${review.invalid} ungueltig</p>
+          <div class="table-wrap"><table><thead><tr><th>Zeile</th><th>Status</th><th>Datensatz</th><th>Pruefung</th></tr></thead><tbody>${rows}</tbody></table></div>
+          <div class="notice warning" style="margin-top:12px"><strong>Commit gesperrt.</strong> Die Bulk-Endpunkte melden jetzt Ergebnisse je Zeile. Persistierte Ergebnisse bei Teilfehlern, ungewisse Transportantworten und das Ueberschreiben bestehender IDs sind im laufenden System noch nicht abgenommen. Es wurde nichts gesendet.</div>
+          <div class="toolbar"><button type="button" disabled aria-disabled="true">Commit nicht verfuegbar</button></div>`;
       } catch (error) {
-        toast(`Import abgebrochen: ${error.message}`, "danger");
+        reviewNode.innerHTML = `<div class="notice danger" role="alert">Import konnte nicht geprueft werden: ${escapeHtml(error.message)}</div>`;
       }
     });
   });
 }
 
+async function openRecipeForEdit(recipeId) {
+  try {
+    const recipe = await apiGet(`${API.recipes}/${encodeURIComponent(recipeId)}`);
+    const required = ["summary", "description", "imageUrl", "imageAlt", "tags", "ingredients", "steps"];
+    if (String(recipe?.id) !== String(recipeId) || required.some((fieldName) => !(fieldName in recipe)) || !Array.isArray(recipe.tags) || !Array.isArray(recipe.ingredients) || !Array.isArray(recipe.steps)) {
+      throw new Error("Rezeptdetails sind unvollstaendig.");
+    }
+    openRecipeDrawer(recipe);
+  } catch (error) {
+    toast(`Rezept konnte nicht geladen werden: ${error.message}`, "danger");
+  }
+}
+
 function openRecipeDrawer(recipe = {}) {
+  const existingRecipe = Boolean(recipe.id);
+  const tags = normalizeList(recipe.tags);
+  const currentTagIds = tags.every((tag) => tag.id) ? tags.map((tag) => tag.id) : null;
   const initialIngredients = normalizeList(recipe.ingredients).length
-    ? normalizeList(recipe.ingredients).map((item, index) => ({
+    ? normalizeList(recipe.ingredients).map((item, index) => ({ ...item,
       id: item.id || null,
       position: item.position || index + 1,
       quantityText: item.quantityText || "",
       selectedProduct: item.product || null,
       displayName: item.displayName || ""
     }))
-    : [{ id: null, position: 1, quantityText: "", selectedProduct: null, displayName: "" }];
+    : existingRecipe ? [] : [{ id: null, position: 1, quantityText: "", selectedProduct: null, displayName: "" }];
   const initialSteps = normalizeList(recipe.steps).length
-    ? normalizeList(recipe.steps).map((item, index) => ({ id: item.id || null, position: item.position || index + 1, instruction: item.instruction || "" }))
-    : [{ id: null, position: 1, instruction: "" }];
+    ? normalizeList(recipe.steps).map((item, index) => ({ ...item, id: item.id || null, position: item.position || index + 1, instruction: item.instruction || "" }))
+    : existingRecipe ? [] : [{ id: null, position: 1, instruction: "" }];
 
   openDrawer(recipe.id ? "Rezept bearbeiten" : "Rezept anlegen", `
-    <div class="stepper"><div class="step active">1 Metadata</div><div class="step active">2 Zutaten</div><div class="step active">3 Schritte</div><div class="step">4 Publish</div></div>
+    ${existingRecipe ? '<div class="notice">Rezeptdaten, Zutaten und Schritte bearbeiten. Tags und Produktzuordnungen bleiben erhalten.</div>' : '<div class="stepper"><div class="step active">1 Metadata</div><div class="step active">2 Zutaten</div><div class="step active">3 Schritte</div><div class="step">4 Publish</div></div>'}
     <form class="stack">
       <div class="form-grid">
         ${field("slug", "Slug", recipe.slug || "", "text", "", "apfel-hafer-crumble")}
@@ -718,11 +749,14 @@ function openRecipeDrawer(recipe = {}) {
         ${field("totalTimeMinutes", "Gesamt min", recipe.totalTimeMinutes ?? "", "number", "", "37")}
         <div class="span-2">${textarea("summary", "Summary", recipe.summary || "", "Warmer Crumble mit Apfel, Hafer und Butter.")}</div>
         <div class="span-2">${textarea("description", "Beschreibung", recipe.description || "", "Ein einfaches Ofenrezept fuer 4 Portionen.")}</div>
+        ${field("imageUrl", "Bild-URL", recipe.imageUrl || "", "text", "", "https://example.com/rezept.jpg")}
+        ${field("imageAlt", "Bildbeschreibung", recipe.imageAlt || "", "text", "", "Apfel-Hafer-Crumble in einer Auflaufform")}
+        ${existingRecipe ? `<div class="span-2 field"><label>Tags</label><div class="toolbar">${tags.length ? tags.map((tag) => badge(tag.name || tag.code || "Tag", "info")).join("") : '<span class="muted">Keine Tags</span>'}</div><p class="muted">Bestehende Tags bleiben bei Metadaten-Aenderungen erhalten.</p></div>` : ""}
         <div class="span-2 recipe-builder">
           <div class="split">
             <div>
               <label>Zutaten</label>
-              <p class="muted">Produkt aus dem Katalog suchen und auswaehlen. Freitext wird hier nicht als Produkt-Mapping gespeichert.</p>
+            <p class="muted">${existingRecipe ? "Mengen bearbeiten oder Zutaten entfernen. Neue Zutaten werden einem vorhandenen Produkt zugeordnet." : "Produkt aus dem Katalog suchen und auswaehlen. Freitext wird hier nicht als Produkt-Mapping gespeichert."}</p>
             </div>
             <button type="button" class="small" data-add-ingredient>+ Zutat</button>
           </div>
@@ -745,54 +779,83 @@ function openRecipeDrawer(recipe = {}) {
     let productOptions = [];
 
     const renderRecipeBuilder = () => {
-      drawer.querySelector("[data-recipe-ingredients]").innerHTML = ingredientState.map((item, index) => renderRecipeIngredientRow(item, index)).join("");
-      drawer.querySelector("[data-recipe-steps]").innerHTML = stepState.map((item, index) => renderRecipeStepRow(item, index)).join("");
-      hydrateRecipeBuilder(drawer, ingredientState, stepState, () => {
-        renderRecipeBuilder();
-      }, () => productOptions);
+      drawer.querySelector("[data-recipe-ingredients]").innerHTML = ingredientState.length ? ingredientState.map((item, index) => existingRecipe && item.id ? renderRecipeExistingIngredientRow(item, index) : renderRecipeIngredientRow(item, index)).join("") : '<span class="muted">Keine Zutaten.</span>';
+      drawer.querySelector("[data-recipe-steps]").innerHTML = stepState.length ? stepState.map((item, index) => existingRecipe && item.id ? renderRecipeExistingStepRow(item, index) : renderRecipeStepRow(item, index)).join("") : '<span class="muted">Keine Schritte.</span>';
+      hydrateRecipeBuilder(drawer, ingredientState, stepState, () => renderRecipeBuilder(), () => productOptions, existingRecipe);
     };
 
-    loadRecipeProductOptions().then((products) => {
-      productOptions = products;
-      renderRecipeBuilder();
-    }).catch((error) => {
-      productOptions = [];
-      toast(`Produkte konnten nicht geladen werden: ${error.message}`, "danger");
-      renderRecipeBuilder();
-    });
+    {
+      loadRecipeProductOptions().then((products) => {
+        productOptions = products;
+        renderRecipeBuilder();
+      }).catch((error) => {
+        productOptions = [];
+        toast(`Produkte konnten nicht geladen werden: ${error.message}`, "danger");
+        renderRecipeBuilder();
+      });
+    }
     renderRecipeBuilder();
 
     drawer.querySelector("form").addEventListener("submit", async (event) => {
       event.preventDefault();
-      const values = formValues(event.currentTarget);
+      const form = event.currentTarget;
+      const values = formValues(form);
       const errors = validateRecipeForm(values);
       const ingredients = ingredientState
         .map((item, index) => ({ ...item, position: index + 1, quantityText: String(item.quantityText || "").trim() }))
-        .filter((item) => item.selectedProduct);
+        .filter((item) => item.id || item.selectedProduct);
       const steps = stepState
         .map((item, index) => ({ position: index + 1, instruction: String(item.instruction || "").trim() }))
         .filter((item) => item.instruction);
-      if (!ingredients.length) {
+      if (ingredients.some((item) => !item.id && !item.selectedProduct)) errors.ingredients = "Neue Zutaten muessen einem Produkt aus dem Katalog zugeordnet werden.";
+      if (!existingRecipe && !ingredients.length) {
         errors.ingredients = "Mindestens eine Zutat mit Produkt auswaehlen.";
       }
-      if (!steps.length) {
+      if (!existingRecipe && !steps.length) {
         errors.steps = "Mindestens einen Zubereitungsschritt eintragen.";
       }
-      if (showErrors(event.currentTarget, errors)) return;
+      if (showErrors(form, errors)) return;
       const recipePayload = {
         slug: values.slug,
         title: values.title,
         summary: values.summary || null,
         description: values.description || null,
+        imageUrl: values.imageUrl || null,
+        imageAlt: values.imageAlt || null,
         servings: Number(values.servings),
         prepTimeMinutes: numberOrNull(values.prepTimeMinutes),
         cookTimeMinutes: numberOrNull(values.cookTimeMinutes),
         totalTimeMinutes: numberOrNull(values.totalTimeMinutes),
         status: recipe.status || "DRAFT",
-        tagIds: []
+        tagIds: existingRecipe ? currentTagIds : []
       };
-      if (recipe.id) {
-        await apiPut(`${API.recipes}/${recipe.id}`, recipePayload);
+      if (existingRecipe) {
+        let metadataSaved = false;
+        try {
+          await apiPut(`${API.recipes}/${recipe.id}`, recipePayload);
+          metadataSaved = true;
+          await saveRecipeContentDiff(recipe, ingredientState, stepState);
+          await apiGet(`${API.recipes}/${encodeURIComponent(recipe.id)}`);
+          closeDrawer();
+          toast("Rezept gespeichert.");
+          renderRecipes();
+          return;
+        } catch (error) {
+          if (!metadataSaved) {
+            showErrors(form, { save: error.message });
+            toast(`Rezept konnte nicht gespeichert werden: ${error.message}`, "danger");
+            return;
+          }
+          try {
+            const latest = await apiGet(`${API.recipes}/${encodeURIComponent(recipe.id)}`);
+            openRecipeDrawer(latest);
+            document.querySelector(".drawer [data-error-summary]")?.replaceChildren(Object.assign(document.createElement("div"), { className: "notice danger", textContent: `Speichern teilweise fehlgeschlagen. Aktueller Serverstand wurde geladen: ${error.message}` }));
+          } catch (_) {
+            showErrors(form, { save: `Speichern fehlgeschlagen; aktueller Stand konnte nicht neu geladen werden: ${error.message}` });
+          }
+          toast(`Rezept konnte nicht gespeichert werden: ${error.message}`, "danger");
+          return;
+        }
       } else {
         const savedRecipe = await apiPost(API.recipes, {
           recipe: recipePayload,
@@ -812,6 +875,14 @@ function openRecipeDrawer(recipe = {}) {
       renderRecipes();
     });
   });
+}
+
+function renderRecipeExistingIngredientRow(item, index) {
+  return `<div class="recipe-ingredient-row" data-recipe-ingredient-row="${index}"><div class="recipe-row-number">${index + 1}</div><div class="field"><label for="ingredient-quantity-${index}">Menge</label><input id="ingredient-quantity-${index}" data-ingredient-quantity="${index}" value="${escapeHtml(item.quantityText || "")}"></div><div><strong>${escapeHtml(item.displayName || "Zutat")}</strong></div><button type="button" class="small ghost" data-remove-ingredient="${index}">Entfernen</button></div>`;
+}
+
+function renderRecipeExistingStepRow(item, index) {
+  return `<div class="recipe-step-row" data-recipe-step-row="${index}"><div class="recipe-row-number">${index + 1}</div><div class="field"><label for="recipe-step-${index}">Schritt</label><textarea id="recipe-step-${index}" data-step-instruction="${index}">${escapeHtml(item.instruction || "")}</textarea></div><button type="button" class="small ghost" data-remove-step="${index}">Entfernen</button></div>`;
 }
 
 function renderRecipeIngredientRow(item, index) {
@@ -878,15 +949,69 @@ function renderRecipeStepRow(item, index) {
   `;
 }
 
-function hydrateRecipeBuilder(drawer, ingredientState, stepState, render, productsProvider) {
-  drawer.querySelector("[data-add-ingredient]")?.addEventListener("click", () => {
+async function saveRecipeContentDiff(recipe, ingredientState, stepState) {
+  const recipeUrl = `${API.recipes}/${encodeURIComponent(recipe.id)}`;
+  const keptIngredients = ingredientState.filter((item) => item.id);
+  const keptSteps = stepState.filter((item) => item.id);
+  const tempIngredientBase = Math.max(0, ...normalizeList(recipe.ingredients).map((item) => Number(item.position) || 0)) + ingredientState.length + 1000;
+  const tempStepBase = Math.max(0, ...normalizeList(recipe.steps).map((item) => Number(item.position) || 0)) + stepState.length + 1000;
+  const ingredientPayload = (item, position) => ({
+    position,
+    displayName: item.displayName,
+    canonicalName: item.canonicalName ?? null,
+    quantity: item.quantity ?? null,
+    quantityText: String(item.quantityText || "").trim() || null,
+    unitCode: item.unit?.code ?? item.unitCode ?? null,
+    preparationNote: item.preparationNote ?? null,
+    optional: Boolean(item.optional)
+  });
+  const stepPayload = (item, position) => ({ position, instruction: String(item.instruction || "").trim(), durationMinutes: item.durationMinutes ?? null });
+  const ingredientOriginals = new Map(normalizeList(recipe.ingredients).map((item) => [String(item.id), item]));
+  const stepOriginals = new Map(normalizeList(recipe.steps).map((item) => [String(item.id), item]));
+  const ingredientStructureChanged = ingredientState.length !== ingredientOriginals.size || ingredientState.some((item, index) => String(item.id || "new") !== String(normalizeList(recipe.ingredients)[index]?.id || "new") || Number(item.position) !== index + 1);
+  const stepStructureChanged = stepState.length !== stepOriginals.size || stepState.some((item, index) => String(item.id || "new") !== String(normalizeList(recipe.steps)[index]?.id || "new") || Number(item.position) !== index + 1);
+  if (ingredientStructureChanged) for (let index = 0; index < keptIngredients.length; index++) await apiPut(`${recipeUrl}/ingredients/${encodeURIComponent(keptIngredients[index].id)}`, ingredientPayload(keptIngredients[index], tempIngredientBase + index));
+  if (stepStructureChanged) for (let index = 0; index < keptSteps.length; index++) await apiPut(`${recipeUrl}/steps/${encodeURIComponent(keptSteps[index].id)}`, stepPayload(keptSteps[index], tempStepBase + index));
+  const wantedIngredients = new Set(keptIngredients.map((item) => String(item.id)));
+  const wantedSteps = new Set(keptSteps.map((item) => String(item.id)));
+  for (const item of normalizeList(recipe.ingredients)) if (!wantedIngredients.has(String(item.id))) await apiDelete(`${recipeUrl}/ingredients/${encodeURIComponent(item.id)}`);
+  for (const item of normalizeList(recipe.steps)) if (!wantedSteps.has(String(item.id))) await apiDelete(`${recipeUrl}/steps/${encodeURIComponent(item.id)}`);
+
+  for (let index = 0; index < ingredientState.length; index++) {
+    const item = ingredientState[index];
+    if (item.id) {
+      const original = ingredientOriginals.get(String(item.id));
+      const payload = ingredientPayload(item, index + 1);
+      if (ingredientStructureChanged || JSON.stringify(payload) !== JSON.stringify(ingredientPayload(original, Number(original.position)))) await apiPut(`${recipeUrl}/ingredients/${encodeURIComponent(item.id)}`, payload);
+    }
+    else {
+      const product = item.selectedProduct;
+      const created = await apiPost(`${recipeUrl}/ingredients`, ingredientPayload({ ...item, displayName: product.name, canonicalName: product.name, optional: false }, index + 1));
+      if (product?.id) await apiPut(`${recipeUrl}/ingredients/${encodeURIComponent(created.id)}/product-mapping`, buildRecipeProductMappingPayload(product));
+    }
+  }
+  for (let index = 0; index < stepState.length; index++) {
+    const item = stepState[index];
+    if (item.id) {
+      const original = stepOriginals.get(String(item.id));
+      const payload = stepPayload(item, index + 1);
+      if (stepStructureChanged || JSON.stringify(payload) !== JSON.stringify(stepPayload(original, Number(original.position)))) await apiPut(`${recipeUrl}/steps/${encodeURIComponent(item.id)}`, payload);
+    }
+    else await apiPost(`${recipeUrl}/steps`, stepPayload(item, index + 1));
+  }
+}
+
+function hydrateRecipeBuilder(drawer, ingredientState, stepState, render, productsProvider, existingRecipe = false) {
+  const addIngredientButton = drawer.querySelector("[data-add-ingredient]");
+  if (addIngredientButton) addIngredientButton.onclick = () => {
     ingredientState.push({ id: null, position: ingredientState.length + 1, quantityText: "", selectedProduct: null, displayName: "", query: "", results: [], loading: false, error: null, timer: null });
     render();
-  });
-  drawer.querySelector("[data-add-step]")?.addEventListener("click", () => {
+  };
+  const addStepButton = drawer.querySelector("[data-add-step]");
+  if (addStepButton) addStepButton.onclick = () => {
     stepState.push({ id: null, position: stepState.length + 1, instruction: "" });
     render();
-  });
+  };
   drawer.querySelectorAll("[data-ingredient-quantity]").forEach((input) => {
     input.addEventListener("input", () => {
       ingredientState[Number(input.dataset.ingredientQuantity)].quantityText = input.value;
@@ -1394,7 +1519,7 @@ function renderBeaconMiniList(beacons) {
 
 function renderLayoutList(layouts, storeId) {
   if (!layouts.length) return empty("Keine Layout-Versionen.", "Oeffne den Editor und speichere eine erste Version.");
-  return `<div class="stack">${layouts.map((layout) => `<div class="split"><span>Version ${escapeHtml(layout.versionNo || layout.layoutName || layout.layoutId)}</span><span>${badge(layout.active ? "Aktiv" : "Version", layout.active ? "success" : "muted")} <a class="button small" href="/admin/editor/?storeId=${storeId}&layoutId=${layout.layoutId || layout.id}">Oeffnen</a></span></div>`).join("")}</div>`;
+  return `<div class="stack">${layouts.map((layout) => `<div class="split"><span>Version ${escapeHtml(layout.versionNo || layout.layoutName || layout.layoutId)}</span><span>${badge(isActiveLayoutVersion(layout) ? "Aktiv" : "Version", isActiveLayoutVersion(layout) ? "success" : "muted")} <a class="button small" href="/admin/editor/?storeId=${storeId}&layoutId=${layout.layoutId || layout.id}">Oeffnen</a></span></div>`).join("")}</div>`;
 }
 
 function rowsFromText(text) {

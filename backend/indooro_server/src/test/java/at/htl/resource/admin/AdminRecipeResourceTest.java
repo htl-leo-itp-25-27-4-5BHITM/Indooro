@@ -54,7 +54,7 @@ class AdminRecipeResourceTest {
     @Test
     @TestSecurity(user = "admin", roles = "admin")
     void listsRecipesForAdmin() {
-        when(recipeService.listAdminRecipes(eq(null), eq(null), eq(null), eq(0), eq(20)))
+        when(recipeService.listAdminRecipes(eq(null), eq(null), eq(null), eq(0), eq(20), eq(null)))
                 .thenReturn(new CommonDtos.PageResponse<>(List.of(summary("DRAFT")), 0, 20, 1));
 
         given()
@@ -62,6 +62,15 @@ class AdminRecipeResourceTest {
                 .then()
                 .statusCode(200)
                 .body("content[0].status", equalTo("DRAFT"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void rejectsUnknownRecipeSort() {
+        given()
+                .queryParam("sort", "random")
+                .when().get("/api/admin/recipes")
+                .then().statusCode(400);
     }
 
     @Test

@@ -1,4 +1,4 @@
-import { validateLayoutDocument } from './editor-core.js';
+import { createHistory, escapeHtml, pushHistory, redoHistory, undoHistory, validateLayoutDocument } from './editor-core.js';
 
 /* ----- Data (aus React übernommen) ----- */
 let PRODUCT_CATEGORIES = []; // Will be loaded from JSON
@@ -25,6 +25,7 @@ let selectedElement = null;
 let isDrawing = false;
 let drawStart = null;
 let isDragging = false;
+let dragMoved = false;
 let dragOffset = { x: 0, y: 0 };
 
 let currentTool = 'select';
@@ -46,44 +47,88 @@ let editorLayoutId = null;
 const cellSize = 20; // pixels per meter cell
 
 /* ----- Undo/Redo System ----- */
-let history = [];
-let historyIndex = -1;
-const MAX_HISTORY = 50;
+let history = null;
+let pendingHistoryTimer = null;
+let savedStateSignature = null;
 
-function saveState() {
-  // Remove any future states if we're not at the end
-  history = history.slice(0, historyIndex + 1);
-  
-  // Deep clone current state
-  const state = JSON.parse(JSON.stringify(elements));
-  history.push(state);
-  
-  // Limit history size
-  if (history.length > MAX_HISTORY) {
-    history.shift();
-  } else {
-    historyIndex++;
-  }
+function captureState() {
+  return {
+    elements: JSON.parse(JSON.stringify(elements)),
+    gridSize: { ...gridSize },
+    shopName: shopNameInput.value
+  };
 }
 
+function currentStateSignature() {
+  return JSON.stringify(captureState());
+}
+
+function hasUnsavedChanges() {
+  return savedStateSignature !== null && currentStateSignature() !== savedStateSignature;
+}
+
+function showUnsavedStatus() {
+  setSaveStatus(hasUnsavedChanges() ? 'Ungespeicherte Änderungen' : 'Keine ungespeicherten Änderungen');
+}
+
+function restoreState(snapshot) {
+  elements = JSON.parse(JSON.stringify(snapshot.elements));
+  gridSize = { ...snapshot.gridSize };
+  shopName = snapshot.shopName;
+  shopNameInput.value = snapshot.shopName;
+  gridWidthInput.value = gridSize.width;
+  gridHeightInput.value = gridSize.height;
+  selectedElement = null;
+  renderCanvas();
+  renderProperties();
+  showUnsavedStatus();
+}
+
+function saveState() {
+  const snapshot = captureState();
+  history = history ? pushHistory(history, snapshot) : createHistory(snapshot);
+  if (savedStateSignature !== null) showUnsavedStatus();
+}
+
+function queueHistorySave() {
+  showUnsavedStatus();
+  clearTimeout(pendingHistoryTimer);
+  pendingHistoryTimer = setTimeout(() => {
+    pendingHistoryTimer = null;
+    saveState();
+  }, 500);
+}
+
+function flushHistorySave() {
+  if (pendingHistoryTimer == null) return;
+  clearTimeout(pendingHistoryTimer);
+  pendingHistoryTimer = null;
+  saveState();
+}
+
+window.addEventListener('pointerdown', flushHistorySave, { capture: true });
+window.addEventListener('beforeunload', (event) => {
+  if (!hasUnsavedChanges()) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
+
 function undo() {
-  if (historyIndex > 0) {
-    historyIndex--;
-    elements = JSON.parse(JSON.stringify(history[historyIndex]));
-    selectedElement = null;
-    renderCanvas();
-    renderProperties();
-  }
+  flushHistorySave();
+  if (!history) return;
+  const next = undoHistory(history);
+  if (next === history) return;
+  history = next;
+  restoreState(history.present);
 }
 
 function redo() {
-  if (historyIndex < history.length - 1) {
-    historyIndex++;
-    elements = JSON.parse(JSON.stringify(history[historyIndex]));
-    selectedElement = null;
-    renderCanvas();
-    renderProperties();
-  }
+  flushHistorySave();
+  if (!history) return;
+  const next = redoHistory(history);
+  if (next === history) return;
+  history = next;
+  restoreState(history.present);
 }
 
 /* ----- Collision Detection Helper ----- */
@@ -276,15 +321,15 @@ function renderStoreContext() {
   const freeCount = assignedBeacons.filter(beacon => !usedCodes.has(beacon.beaconCode)).length;
 
   storeContextBox.innerHTML = `
-    <strong>${storeContext?.store?.name || 'Filialeditor'}</strong><br>
-    Store-Code: ${storeContext?.store?.storeCode || '-'} · Zugewiesene Beacons: ${assignedBeacons.length} · Noch frei im Layout: ${freeCount}
+    <strong>${escapeHtml(storeContext?.store?.name || 'Filialeditor')}</strong><br>
+    Store-Code: ${escapeHtml(storeContext?.store?.storeCode || '-')} · Zugewiesene Beacons: ${assignedBeacons.length} · Noch frei im Layout: ${freeCount}
   `;
 
   assignedBeaconsList.innerHTML = assignedBeacons.length
     ? assignedBeacons.map(beacon => `
         <div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
-          <div class="font-semibold">${beacon.beaconCode}</div>
-          <div class="text-xs text-gray-500">${beacon.identityKey}</div>
+          <div class="font-semibold">${escapeHtml(beacon.beaconCode)}</div>
+          <div class="text-xs text-gray-500">${escapeHtml(beacon.identityKey)}</div>
           <div class="text-xs ${usedCodes.has(beacon.beaconCode) ? 'text-emerald-700' : 'text-amber-700'}">
             ${usedCodes.has(beacon.beaconCode) ? 'Bereits im Layout platziert' : 'Noch nicht im Layout verwendet'}
           </div>
@@ -343,6 +388,7 @@ function buildLayoutPayload() {
 }
 
 async function saveLayoutToServer(layoutData, activate = true) {
+  const submittedStateSignature = currentStateSignature();
   const response = await fetch(getSaveLayoutEndpoint(), {
     method: 'POST',
     credentials: 'same-origin',
@@ -374,7 +420,9 @@ async function saveLayoutToServer(layoutData, activate = true) {
 
   const savedLayout = await response.json();
   editorLayoutId = savedLayout.layoutId || editorLayoutId;
-  setSaveStatus(hasStoreContext() ? (activate ? 'Filiallayout publiziert' : 'Layout-Draft gespeichert') : 'Layout am Server gespeichert', 'success');
+  savedStateSignature = submittedStateSignature;
+  if (hasUnsavedChanges()) showUnsavedStatus();
+  else setSaveStatus(hasStoreContext() ? (activate ? 'Filiallayout publiziert' : 'Layout-Draft gespeichert') : 'Layout am Server gespeichert', 'success');
   renderValidation();
 }
 
@@ -507,10 +555,12 @@ async function initUI() {
   gridHeightInput.value = gridSize.height;
   gridWidthInput.addEventListener('change', () => {
     gridSize.width = Math.max(1, parseInt(gridWidthInput.value) || 1);
+    saveState();
     renderCanvas();
   });
   gridHeightInput.addEventListener('change', () => {
     gridSize.height = Math.max(1, parseInt(gridHeightInput.value) || 1);
+    saveState();
     renderCanvas();
   });
 
@@ -534,8 +584,12 @@ async function initUI() {
   fileInput.onchange = importLayout;
   validateBtn.onclick = () => renderValidation(true);
   saveDraftBtn.onclick = async () => {
-    const layoutData = buildLayoutPayload();
-    await saveLayoutToServer(layoutData, false);
+    try {
+      const layoutData = buildLayoutPayload();
+      await saveLayoutToServer(layoutData, false);
+    } catch (error) {
+      setSaveStatus(error.message, 'error');
+    }
   };
   publishBtn.onclick = async () => {
     const layoutData = buildLayoutPayload();
@@ -547,12 +601,17 @@ async function initUI() {
     if (validation.warningCount && !window.confirm(`${validation.warningCount} Warnung(en) bleiben bestehen. Trotzdem publizieren?`)) {
       return;
     }
-    await saveLayoutToServer(layoutData, true);
+    try {
+      await saveLayoutToServer(layoutData, true);
+    } catch (error) {
+      setSaveStatus(error.message, 'error');
+    }
   };
   document.getElementById('newBtn').onclick = () => {
   if (confirm('Möchtest du wirklich ein neues Layout starten? Alle aktuellen Elemente gehen verloren.')) {
     elements = [];
     selectedElement = null;
+    saveState();
     renderProperties();
     renderCanvas();
   }
@@ -560,20 +619,21 @@ async function initUI() {
 
 
   // shop name
-  shopNameInput.addEventListener('input', () => shopName = shopNameInput.value);
+  shopNameInput.addEventListener('input', () => { shopName = shopNameInput.value; queueHistorySave(); });
 
   // Launch button
   launchBtn.onclick = launchSimulation;
 
   // Keyboard shortcuts for undo/redo
   window.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
     // Undo: Ctrl+Z or Cmd+Z
-    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+    if ((e.ctrlKey || e.metaKey) && key === 'z' && !e.shiftKey) {
       e.preventDefault();
       undo();
     }
     // Redo: Ctrl+Y or Ctrl+Shift+Z or Cmd+Shift+Z
-    else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && e.key === 'z'))) {
+    else if ((e.ctrlKey || e.metaKey) && (key === 'y' || (e.shiftKey && key === 'z'))) {
       e.preventDefault();
       redo();
     }
@@ -592,8 +652,7 @@ async function initUI() {
     // Only process arrow keys if not typing and an element is selected
     if (!isTyping && selectedElement && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
       e.preventDefault();
-      saveState(); // Save state before movement
-      
+      flushHistorySave();
       const el = selectedElement;
       
       switch(e.key) {
@@ -613,6 +672,7 @@ async function initUI() {
       
       // Update element in array
       elements = elements.map(it => it.id === el.id ? el : it);
+      saveState();
       renderCanvas();
       renderProperties();
     }
@@ -621,7 +681,8 @@ async function initUI() {
   // initial render
   await loadSavedLayout();
   setTool('select');
-  saveState(); // Initial state
+  saveState(); // Initial state after loading
+  savedStateSignature = currentStateSignature();
   renderCanvas();
 }
 
@@ -786,7 +847,7 @@ function renderBeaconElement(el) {
   inner.className = 'flex flex-col items-center justify-center gap-0';
   inner.innerHTML = `
     <div class="beacon-icon">📡</div>
-    <div class="beacon-label">${el.beaconId || ''}</div>
+    <div class="beacon-label">${escapeHtml(el.beaconId || '')}</div>
   `;
   div.appendChild(inner);
 
@@ -797,13 +858,12 @@ function renderBeaconElement(el) {
       deleteSelectedElement(el);
       return;
     }
-    saveState();
-    
     const rect = canvasContainer.getBoundingClientRect();
     const x = (ev.clientX - rect.left) / (cellSize * zoom);
     const y = (ev.clientY - rect.top) / (cellSize * zoom);
     selectedElement = el;
     isDragging = true;
+    dragMoved = false;
     dragOffset = { x: x - el.x, y: y - el.y };
     renderCanvas();
     renderProperties();
@@ -868,19 +928,19 @@ function renderRegularElement(el) {
   const isNarrow = el.width < 2 || el.height < 2;
   
   if (isNarrow) {
-    inner.innerHTML = `<div class="text-lg">${icon}</div>`;
+    inner.innerHTML = `<div class="text-lg">${escapeHtml(icon)}</div>`;
   } else {
     inner.innerHTML = `
       <div class="font-bold text-[11px] mb-0.5 px-1.5 py-0.5 bg-white bg-opacity-70 rounded">
-        ${elementType.name}
+        ${escapeHtml(elementType.name)}
       </div>
 
-      <div class="text-lg">${icon}</div>
+      <div class="text-lg">${escapeHtml(icon)}</div>
 
-      <div class="text-[10px] leading-tight">${el.label}</div>
+      <div class="text-[10px] leading-tight">${escapeHtml(el.label)}</div>
 
       <div class="text-[9px] text-gray-700 font-semibold">
-        ${meterText}
+        ${escapeHtml(meterText)}
       </div>
     `;
   }
@@ -893,13 +953,12 @@ function renderRegularElement(el) {
       deleteSelectedElement(el);
       return;
     }
-    saveState();
-    
     const rect = canvasContainer.getBoundingClientRect();
     const x = Math.round((ev.clientX - rect.left) / (cellSize * zoom));
     const y = Math.round((ev.clientY - rect.top) / (cellSize * zoom));
     selectedElement = el;
     isDragging = true;
+    dragMoved = false;
     dragOffset = { x: x - el.x, y: y - el.y };
     renderCanvas();
     renderProperties();
@@ -1019,6 +1078,7 @@ function renderRegularElement(el) {
   e.preventDefault();  // verhindert Fokus-Probleme
 
   el.locked = !el.locked;
+  saveState();
 
   lockBtn.style.transform = 'scale(1.3)';
   setTimeout(() => {
@@ -1085,10 +1145,12 @@ function renderRegularElement(el) {
       let val = parseFloat(e.target.value);
       if (!isNaN(val)) {
         el.rotation = Math.round(val * 100) / 100;
+        queueHistorySave();
       }
     });
 
     input.addEventListener('change', () => {
+      flushHistorySave();
       renderCanvas();
     });
 
@@ -1122,8 +1184,6 @@ canvasContainer.addEventListener('mousedown', (e) => {
       // handled by element mousedown handler (stops propagation)
     }
   } else if (currentTool === 'draw') {
-    // Save state before drawing
-    saveState();
     isDrawing = true;
     drawStart = { x, y };
     currentMouseCell = { x, y };
@@ -1147,6 +1207,8 @@ window.addEventListener('mousemove', (e) => {
   if (isDragging && selectedElement && !selectedElement.locked) {
     if (!['select', 'move', 'edit'].includes(currentTool)) return;
     const isBeacon = selectedElement.type === 'beacon';
+    const previousX = selectedElement.x;
+    const previousY = selectedElement.y;
     
     if (isBeacon) {
       // Beacons snap to grid intersections (whole numbers)
@@ -1161,6 +1223,7 @@ window.addEventListener('mousemove', (e) => {
       selectedElement.x = Math.max(0, Math.min(selectedElement.x, gridSize.width - selectedElement.width));
       selectedElement.y = Math.max(0, Math.min(selectedElement.y, gridSize.height - selectedElement.height));
     }
+    dragMoved ||= selectedElement.x !== previousX || selectedElement.y !== previousY;
     
     elements = elements.map(el => el.id === selectedElement.id ? selectedElement : el);
     renderCanvas();
@@ -1208,18 +1271,21 @@ window.addEventListener('mouseup', (e) => {
     }
     
     renderProperties();
+    saveState();
     renderCanvas();
   }
 
-  const wasDragging = isDragging;
+  const wasDragging = isDragging && dragMoved;
 
   isDrawing = false;
   drawStart = null;
   isDragging = false;
+  dragMoved = false;
 
   // Nur wenn wirklich gezogen wurde:
   if (wasDragging) {
     recalcMeters();
+    saveState();
     renderCanvas();
     renderProperties();
   }
@@ -1231,15 +1297,15 @@ function deleteSelectedElement(el) {
   if (critical && !window.confirm(`${el.label || el.beaconId || el.type} wirklich entfernen?`)) {
     return;
   }
-  saveState();
   elements = elements.filter(item => item.id !== el.id);
   selectedElement = null;
+  saveState();
   renderProperties();
   renderCanvas();
 }
 
 /* clicking outside canvas should stop dragging/drawing */
-window.addEventListener('blur', () => { isDrawing = false; isDragging = false; renderCanvas(); });
+window.addEventListener('blur', () => { isDrawing = false; isDragging = false; dragMoved = false; renderCanvas(); });
 
 /* delete key support */
 window.addEventListener('keydown', (e) => {
@@ -1255,9 +1321,10 @@ window.addEventListener('keydown', (e) => {
     // Only delete element if not typing in a text field
     if (!isTyping && selectedElement) {
       e.preventDefault(); // Prevent browser back navigation
-      saveState(); // Save state before deletion
+      flushHistorySave();
       elements = elements.filter(el => el.id !== selectedElement.id);
       selectedElement = null;
+      saveState();
       renderProperties();
       renderCanvas();
     }
@@ -1299,7 +1366,7 @@ function renderLayers() {
     <div class="layer-group">
       <h3>${escapeHtml(type)} (${items.length})</h3>
       ${items.map((element) => `
-        <button class="layer-item ${selectedElement?.id === element.id ? 'active' : ''}" data-layer-id="${element.id}">
+        <button class="layer-item ${selectedElement?.id === element.id ? 'active' : ''}" data-layer-id="${escapeHtml(element.id)}">
           <span>${escapeHtml(element.label || element.beaconId || element.type)}</span>
           <span>${element.locked ? 'Locked' : 'Visible'}</span>
         </button>
@@ -1333,7 +1400,7 @@ function renderValidation(explicit = false) {
   }
   validationPanel.innerHTML = validation.issues.length
     ? validation.issues.map(issue => `
-        <button class="validation-item ${issue.severity}" ${issue.elementId ? `data-validation-element="${issue.elementId}"` : ''}>
+        <button class="validation-item ${escapeHtml(issue.severity)}" ${issue.elementId ? `data-validation-element="${escapeHtml(issue.elementId)}"` : ''}>
           <strong>${issue.severity === 'error' ? 'Fehler' : 'Warnung'}</strong><br>${escapeHtml(issue.message)}
         </button>
       `).join('')
@@ -1365,13 +1432,13 @@ function renderBeaconProperties(el) {
   duplicateBtn.title = 'Duplizieren';
   duplicateBtn.innerHTML = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke-width="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke-width="2"/></svg>';
   duplicateBtn.onclick = () => {
-    saveState();
     const duplicate = createBeaconElement(Math.min(el.x + 2, gridSize.width), el.y, el.id);
     if (!duplicate) {
       return;
     }
     elements.push(duplicate);
     selectedElement = duplicate;
+    saveState();
     renderCanvas();
     renderProperties();
   };
@@ -1381,9 +1448,9 @@ function renderBeaconProperties(el) {
   delBtn.title = 'Löschen';
   delBtn.innerHTML = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
   delBtn.onclick = () => {
-    saveState();
     elements = elements.filter(it => it.id !== el.id);
     selectedElement = null;
+    saveState();
     renderProperties();
     renderCanvas();
   };
@@ -1460,7 +1527,6 @@ function renderBeaconProperties(el) {
   const beaconIdInput = document.getElementById('propBeaconId');
   if (hasStoreContext()) {
     beaconIdInput.addEventListener('change', (ev) => {
-      saveState();
       const selectedBeacon = findAssignedBeaconByCode(ev.target.value);
       if (!selectedBeacon) {
         return;
@@ -1472,32 +1538,31 @@ function renderBeaconProperties(el) {
       el.major = selectedBeacon.major;
       el.minor = selectedBeacon.minor;
       elements = elements.map(it => it.id === el.id ? el : it);
+      saveState();
       renderCanvas();
       renderProperties();
     });
   } else {
-    let idTimeout;
     beaconIdInput.addEventListener('input', (ev) => {
-      clearTimeout(idTimeout);
       el.beaconId = ev.target.value;
       elements = elements.map(it => it.id === el.id ? el : it);
       renderCanvas();
-      idTimeout = setTimeout(() => saveState(), 500);
+      queueHistorySave();
     });
   }
 
   document.getElementById('propBeaconX').addEventListener('change', (ev) => {
-    saveState();
     el.x = Math.max(0, Math.min(Math.round(parseFloat(ev.target.value) || 0), gridSize.width));
     elements = elements.map(it => it.id === el.id ? el : it);
+    saveState();
     renderCanvas();
     renderProperties();
   });
 
   document.getElementById('propBeaconY').addEventListener('change', (ev) => {
-    saveState();
     el.y = Math.max(0, Math.min(Math.round(parseFloat(ev.target.value) || 0), gridSize.height));
     elements = elements.map(it => it.id === el.id ? el : it);
+    saveState();
     renderCanvas();
     renderProperties();
   });
@@ -1523,7 +1588,6 @@ function renderRegularProperties(el) {
   duplicateBtn.title = 'Duplizieren';
   duplicateBtn.innerHTML = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke-width="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke-width="2"/></svg>';
   duplicateBtn.onclick = () => {
-    saveState();
     const duplicate = JSON.parse(JSON.stringify(el));
     duplicate.id = Date.now() + Math.floor(Math.random() * 1000);
     
@@ -1547,6 +1611,7 @@ function renderRegularProperties(el) {
     
     elements.push(duplicate);
     selectedElement = duplicate;
+    saveState();
     
     renderCanvas();
     renderProperties();
@@ -1557,9 +1622,9 @@ function renderRegularProperties(el) {
   delBtn.title = 'Löschen';
   delBtn.innerHTML = '<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>';
   delBtn.onclick = () => {
-    saveState();
     elements = elements.filter(it => it.id !== el.id);
     selectedElement = null;
+    saveState();
     renderProperties();
     renderCanvas();
   };
@@ -1593,13 +1658,13 @@ function renderRegularProperties(el) {
     const btn = document.createElement('button');
     btn.className = `w-full px-2 py-1.5 rounded text-left text-xs flex items-center gap-2 ${el.category === c.id ? 'ring-2 ring-blue-500' : 'hover:bg-gray-50'}`;
     btn.style.backgroundColor = el.category === c.id ? c.color : 'transparent';
-    btn.innerHTML = `<span>${c.icon}</span><span class="flex-1">${c.name}</span>`;
+    btn.innerHTML = `<span>${escapeHtml(c.icon)}</span><span class="flex-1">${escapeHtml(c.name)}</span>`;
     btn.onclick = () => {
-      saveState();
       el.category = c.id;
       el.color = c.color;
       el.label = c.name;
       elements = elements.map(it => it.id === el.id ? el : it);
+      saveState();
       renderCanvas();
       renderProperties();
     };
@@ -1634,41 +1699,33 @@ function renderRegularProperties(el) {
   propertiesWrapper.appendChild(container);
 
   // listeners
-  let labelTimeout;
   document.getElementById('propLabel').addEventListener('input', (ev) => {
-    // Debounce state saving for input events
-    clearTimeout(labelTimeout);
     el.label = ev.target.value;
     elements = elements.map(it => it.id === el.id ? el : it);
     renderCanvas();
-    
-    labelTimeout = setTimeout(() => {
-      saveState();
-    }, 500);
+    queueHistorySave();
   });
 
   document.getElementById('propW').addEventListener('change', (ev) => {
-    saveState(); // Save state before dimension change
     el.width = Math.max(1, Math.round(parseFloat(ev.target.value)) || 1);
     el.width = Math.min(el.width, gridSize.width - el.x);
     elements = elements.map(it => it.id === el.id ? el : it);
+    saveState();
     renderCanvas();
     renderProperties();
   });
 
   document.getElementById('propH').addEventListener('change', (ev) => {
-    saveState(); // Save state before dimension change
     el.height = Math.max(1, Math.round(parseFloat(ev.target.value)) || 1);
     el.height = Math.min(el.height, gridSize.height - el.y);
     elements = elements.map(it => it.id === el.id ? el : it);
+    saveState();
     renderCanvas();
     renderProperties();
   });
 
   // Rotate button handler
   document.getElementById('rotateBtn').addEventListener('click', () => {
-    saveState(); // Save state before rotation
-    
     // Swap width and height
     const newWidth = el.height;
     const newHeight = el.width;
@@ -1696,25 +1753,21 @@ function renderRegularProperties(el) {
     el.y = newY;
     
     elements = elements.map(it => it.id === el.id ? el : it);
+    saveState();
     renderCanvas();
     renderProperties();
   });
 }
 
-/* escaping helper */
-function escapeHtml(s) {
-  return (s+'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
-
 /* ----- Templates ----- */
 function applyTemplate(t) {
-  saveState(); // Save state before applying template
   gridSize.width = t.width;
   gridSize.height = t.height;
   gridWidthInput.value = gridSize.width;
   gridHeightInput.value = gridSize.height;
   elements = [];
   selectedElement = null;
+  saveState();
   renderProperties();
   renderCanvas();
 }
@@ -1755,6 +1808,7 @@ function importLayout(e) {
       recalcMeters();
 
       selectedElement = null;
+      saveState();
       renderProperties();
       renderCanvas();
     } catch (err) {

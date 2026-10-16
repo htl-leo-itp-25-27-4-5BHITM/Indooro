@@ -20,6 +20,8 @@
 
 ## 4. Generated Clients
 
+Coordination (2026-10-12): `docs/admin-rebuild/CHANGE_COORDINATION.md` records that the TypeScript client and compiler in `rebuild-admin-platform` can replace the legacy Admin `core.js`/`app.js` JSDoc portion of 4.2 after route cutover. Task 4.2 stays open while the old static routes run. Reviewed-schema generation, generated-file freshness, mobile export, contract parity, and CI remain owned by this change; the React client does not satisfy them.
+
 - [ ] 4.1 Make `scripts/export-mobile-openapi.mjs` (planned in `modernize-ios-client-architecture` task 7.2) read the reviewed contract, filter by `x-indooro-consumers: ios`, and write `api/openapi/indooro-mobile.yaml`; the Swift type generation itself stays in `modernize-ios-client-architecture` task 7.3.
 - [ ] 4.2 Generate `admin/types/api.d.ts`, add `// @ts-check` and JSDoc types to `core.js` and `app.js`, and change `admin:typecheck` to `tsc --noEmit`.
 - [ ] 4.3 Add an up-to-date check for generated files.

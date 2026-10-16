@@ -33,12 +33,16 @@ public class StoreAdminResource extends AdminApiSupport {
     public CommonDtos.PageResponse<StoreDtos.StoreSummaryResponse> listStores(@QueryParam("query") String query,
                                                                               @QueryParam("regionId") UUID regionId,
                                                                               @QueryParam("status") String status,
+                                                                              @QueryParam("hasActiveLayout") Boolean hasActiveLayout,
+                                                                              @QueryParam("sort") String sort,
                                                                               @QueryParam("page") @DefaultValue("0") int page,
                                                                               @QueryParam("size") @DefaultValue("20") int size) {
         return storeAdminService.listStores(
                 query,
                 regionId,
                 parseStatus(status),
+                hasActiveLayout,
+                sort,
                 normalizePage(page),
                 normalizeSize(size)
         );

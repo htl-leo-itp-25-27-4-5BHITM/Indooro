@@ -5,21 +5,23 @@
 
 ## 2. Backend
 
-- [ ] 2.1 Change `RecipeService.assignTags` so that `null` keeps assignments and add `RecipeServiceTest` cases for `null`, `[]`, and replacement.
-- [ ] 2.2 Add `stepCount` to `RecipeDtos.RecipeSummaryResponse` and the OpenAPI schema.
-- [ ] 2.3 Add `page`, `size`, and `q` to `GET /api/admin/products` with a paged OpenSearch query returning `totalElements`.
-- [ ] 2.4 Add the `hasActiveLayout` filter to `GET /api/stores` (EXISTS subquery on active layout versions).
-- [ ] 2.5 Update `openspec/specs/shared-api/openapi.yaml` for 2.2–2.4.
+- [x] 2.1 Change `RecipeService.assignTags` so that `null` keeps assignments and add `RecipeTagAssignmentTest` cases for `null`, `[]`, and replacement.
+- [x] 2.2 Add `stepCount` to `RecipeDtos.RecipeSummaryResponse` and the OpenAPI schema.
+- [x] 2.3 Add `page`, `size`, and `q` to `GET /api/admin/products` with a paged OpenSearch query returning `totalElements`.
+- [x] 2.4 Add the `hasActiveLayout` filter to `GET /api/stores` (EXISTS subquery on active layout versions).
+- [x] 2.5 Update `openspec/specs/shared-api/openapi.yaml` for 2.2–2.4.
 
 ## 3. Admin UI
 
-- [ ] 3.1 Change the logout target to `/admin/logout`.
-- [ ] 3.2 Load the recipe detail before editing; pre-fill image, description, tags, ingredients, and steps; send all fields and current `tagIds`.
-- [ ] 3.3 Implement the ingredient/step diff with temporary positions and reload after saving.
+Coordination (2026-10-12): `docs/admin-rebuild/CHANGE_COORDINATION.md` maps each UI item below to a current static-route fix or a replacement-route acceptance check. Items 3.4–3.5 and 3.8–3.11 remain open for the active static pages. The React candidate implements related behavior under `/admin/next/*`, but its presence does not close these items until route-specific parity and rollback are accepted in `rebuild-admin-platform` task 3.10. Backend/API items in section 2, customer item 4.1, and the contract/test gates remain owned here.
+
+- [x] 3.1 Change the logout target to `/admin/logout`.
+- [x] 3.2 Load the recipe detail before editing; pre-fill image, description, tags, ingredients, and steps; send all fields and current `tagIds`.
+- [x] 3.3 Implement the ingredient/step diff with temporary positions and reload after saving.
 - [ ] 3.4 Introduce per-route query state and server-side paging/search/filter for Stores, Rezepte, and Produkte; switch the recipe product picker to paged search.
 - [ ] 3.5 Request categories with `size=500` and show a limit notice when 500 are returned.
-- [ ] 3.6 Fix `readinessForProduct` to the documented format; change placeholders to `310/1/1/1`; send `null` for empty numeric fields.
-- [ ] 3.7 Use `status === "ACTIVE"` for layout versions and `stepCount` in `recipeReadiness`.
+- [x] 3.6 Fix `readinessForProduct` to the documented format; change placeholders to `310/1/1/1`; send `null` for empty numeric fields.
+- [x] 3.7 Use `status === "ACTIVE"` for layout versions and `stepCount` in `recipeReadiness`.
 - [ ] 3.8 Add `submitWithFeedback` and use it in all drawers and `confirmMutation`; add `data-error-summary` to region and store drawers.
 - [ ] 3.9 Debounce filters, render only the table region, clear `actionRegistry` per render, and paginate client-side sections without re-fetching.
 - [ ] 3.10 Add dialog roles, focus handling, Escape handling, associated filter labels; remove the non-functional store-detail tabs.

@@ -20,6 +20,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -40,9 +41,14 @@ public class AdminRecipeResource extends AdminApiSupport {
     public CommonDtos.PageResponse<RecipeDtos.RecipeSummaryResponse> listRecipes(@QueryParam("q") String query,
                                                                                  @QueryParam("tag") String tag,
                                                                                  @QueryParam("status") String status,
+                                                                                 @QueryParam("sort") String sort,
                                                                                  @QueryParam("page") @DefaultValue("0") int page,
                                                                                  @QueryParam("size") @DefaultValue("20") int size) {
-        return recipeService.listAdminRecipes(query, tag, parseRecipeStatus(status), normalizePage(page), normalizeSize(size));
+        String normalizedSort = sort == null || sort.isBlank() ? null : sort;
+        if (normalizedSort != null && !List.of("title", "status", "publishedAt").contains(normalizedSort)) {
+            throw new BadRequestException("sort muss title, status oder publishedAt sein.");
+        }
+        return recipeService.listAdminRecipes(query, tag, parseRecipeStatus(status), normalizePage(page), normalizeSize(size), normalizedSort);
     }
 
     @POST

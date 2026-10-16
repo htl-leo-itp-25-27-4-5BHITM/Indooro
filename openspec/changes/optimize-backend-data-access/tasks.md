@@ -37,7 +37,7 @@
 ## 6. Schema, Concurrency, Retention
 
 - [ ] 6.1 Write `V14__persistence_indexes_and_constraints.sql` (functional unique indexes, guarded `pg_trgm`, audit and cache indexes, major/minor checks, dropped unused index).
-- [ ] 6.2 Lock the store row in `saveLayoutVersion` and `activateLayoutVersion`.
+- [x] 6.2 Lock the store row in `saveLayoutVersion` and `activateLayoutVersion`.
 - [ ] 6.3 Map unique-constraint violations to 409.
 - [ ] 6.4 Add `@Min(0) @Max(65535)` to beacon DTOs and restrict the UUID-only fallback.
 - [ ] 6.5 Add daily retention jobs for upsell cache, events, dismissals, and legacy layout versions.

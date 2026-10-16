@@ -85,3 +85,5 @@ xcuserdata/
 
 # Swift project archives
 swift/*.zip
+backend/indooro_server/src/main/resources/META-INF/resources/admin/next/
+test-results/

@@ -59,12 +59,30 @@ public final class RecipeDtos {
             Integer prepTimeMinutes,
             Integer cookTimeMinutes,
             Integer totalTimeMinutes,
+            int stepCount,
             String status,
             Instant publishedAt,
             int mappedIngredientCount,
             int totalIngredientCount,
             List<RecipeTagResponse> tags
     ) {
+        public RecipeSummaryResponse(UUID id,
+                                     String slug,
+                                     String title,
+                                     String summary,
+                                     String imageUrl,
+                                     int servings,
+                                     Integer prepTimeMinutes,
+                                     Integer cookTimeMinutes,
+                                     Integer totalTimeMinutes,
+                                     String status,
+                                     Instant publishedAt,
+                                     int mappedIngredientCount,
+                                     int totalIngredientCount,
+                                     List<RecipeTagResponse> tags) {
+            this(id, slug, title, summary, imageUrl, servings, prepTimeMinutes, cookTimeMinutes,
+                    totalTimeMinutes, 0, status, publishedAt, mappedIngredientCount, totalIngredientCount, tags);
+        }
     }
 
     public record RecipeDetailResponse(

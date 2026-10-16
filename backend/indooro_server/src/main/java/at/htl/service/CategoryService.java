@@ -10,6 +10,8 @@ import jakarta.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @ApplicationScoped
 public class CategoryService {
@@ -32,10 +34,19 @@ public class CategoryService {
         return categoryRepository.findByCode(categoryCode);
     }
 
-    public void bulkInsert(List<Category> categories) throws IOException {
+    public CatalogBulkResult bulkInsert(List<Category> categories) throws IOException {
         validate(categories);
         categoryRepository.ensureIndex();
-        categoryRepository.bulkIndex(categories);
+        return CatalogBulkResult.fromResponse(
+                categories.stream().map(category -> String.valueOf(category.getCategoryCode())).toList(),
+                categoryRepository.bulkIndex(categories));
+    }
+
+    public Category create(Category category) throws IOException {
+        validate(java.util.Collections.singletonList(category));
+        categoryRepository.ensureIndex();
+        categoryRepository.create(category);
+        return category;
     }
 
     private void ensureSeeded() throws IOException {
@@ -66,9 +77,14 @@ public class CategoryService {
             throw new IllegalArgumentException("At least one category is required");
         }
 
+        Set<Integer> codes = new HashSet<>();
         for (Category category : categories) {
-            if (category.getCategoryCode() == null || category.getCategoryName() == null || category.getCategoryName().isBlank()) {
+            if (category == null || category.getCategoryCode() == null || category.getCategoryCode() < 1 || category.getCategoryCode() > 999
+                    || category.getCategoryName() == null || category.getCategoryName().isBlank()) {
                 throw new IllegalArgumentException("Each category needs categoryCode and categoryName");
+            }
+            if (!codes.add(category.getCategoryCode())) {
+                throw new IllegalArgumentException("Duplicate categoryCode: " + category.getCategoryCode());
             }
         }
     }

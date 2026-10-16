@@ -1,0 +1,52 @@
+{
+  "name": "indooro-admin-ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": "^22.13.0 || ^24.0.0"
+  },
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "node --import tsx --test src/api/*.test.ts src/*.test.ts src/editor/*.test.ts",
+    "build": "npm run typecheck && vite build",
+    "package:candidate": "npm run build && node scripts/package-candidate.mjs",
+    "verify:candidate": "node scripts/verify-candidate.mjs",
+    "pretest:browser": "npm run package:candidate && npm run verify:candidate",
+    "test:browser": "playwright test",
+    "test:live": "node scripts/live-admin-smoke.mjs",
+    "test:live:dashboard": "node scripts/live-dashboard-parity.mjs",
+    "test:live:stores": "node scripts/live-stores-list-parity.mjs",
+    "test:live:beacons": "node scripts/live-beacons-parity.mjs",
+    "test:live:categories": "node scripts/live-categories-parity.mjs",
+    "test:live:products": "node scripts/live-products-parity.mjs",
+    "test:live:recipes": "node scripts/live-recipes-parity.mjs",
+    "test:live:roles": "node scripts/live-api-role-matrix.mjs",
+    "test:live:cutover": "node scripts/live-route-cutover.mjs",
+    "test:live:catalog": "node scripts/live-catalog-bulk.mjs",
+    "test:swift-layout": "node scripts/verify-swift-layout-decode.mjs",
+    "test:swift-routing": "node scripts/verify-swift-shelf-routing.mjs",
+    "test:swift-endpoint": "node scripts/verify-swift-api-endpoint.mjs",
+    "seed:live:ios-map": "node scripts/live-ios-map-fixture.mjs"
+  },
+  "dependencies": {
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@playwright/test": "1.60.0",
+    "@types/node": "22.20.5",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "5.2.0",
+    "eslint": "9.39.5",
+    "globals": "17.13.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.1",
+    "vite": "7.3.7"
+  }
+}

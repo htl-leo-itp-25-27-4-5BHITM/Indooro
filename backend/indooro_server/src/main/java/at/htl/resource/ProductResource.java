@@ -4,6 +4,7 @@ package at.htl.resource;
 import at.htl.admin.service.AdminAccessService;
 import at.htl.model.Product;
 import at.htl.service.OpenSearchService;
+import at.htl.service.CatalogBulkResult;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -13,6 +14,8 @@ import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Path("/api/products")
 @Produces(MediaType.APPLICATION_JSON)
@@ -133,15 +136,22 @@ public class ProductResource {
             throw new WebApplicationException("Produktliste ist erforderlich.", Response.Status.BAD_REQUEST);
         }
         products.forEach(this::validateProduct);
+        Set<Integer> ids = new HashSet<>();
+        for (Product product : products) {
+            if (product.getId() < 1 || !ids.add(product.getId())) {
+                throw new WebApplicationException("Produkt-IDs müssen positiv und eindeutig sein.", Response.Status.BAD_REQUEST);
+            }
+        }
         products.forEach(this::normalizeProductScope);
 
         try {
-            openSearchService.indexProducts(products);
-            return Response.ok("{\"message\": \"Successfully indexed " + products.size() + " products\"}").build();
+            CatalogBulkResult result = openSearchService.indexProducts(products);
+            return Response.ok(result).build();
         } catch (IOException e) {
             LOG.error("Error bulk indexing products", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
+            return Response.status(Response.Status.SERVICE_UNAVAILABLE)
+                    .entity(CatalogBulkResult.unknown(products.stream().map(product -> String.valueOf(product.getId())).toList(),
+                            "Transport failed; some writes may have persisted. Verify before retrying."))
                     .build();
         }
     }

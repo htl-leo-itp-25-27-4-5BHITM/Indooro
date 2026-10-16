@@ -20,6 +20,9 @@ import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.LockTimeoutException;
+import jakarta.persistence.PessimisticLockException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -57,34 +60,51 @@ public class StoreAdminService {
     public CommonDtos.PageResponse<StoreDtos.StoreSummaryResponse> listStores(String query,
                                                                              UUID regionId,
                                                                              RecordStatus status,
+                                                                             Boolean hasActiveLayout,
+                                                                             String sort,
                                                                              int page,
                                                                              int size) {
-        StringBuilder hql = new StringBuilder("1 = 1");
+        String sortField = switch (sort == null || sort.isBlank() ? "name" : sort) {
+            case "name" -> "name";
+            case "storeCode" -> "storeCode";
+            case "city" -> "city";
+            default -> throw new WebApplicationException("Ungültige Store-Sortierung.", Response.Status.BAD_REQUEST);
+        };
+        StringBuilder hql = new StringBuilder("from StoreEntity s where 1 = 1");
         Map<String, Object> params = new HashMap<>();
 
         RecordStatus effectiveStatus = status == null ? RecordStatus.ACTIVE : status;
-        hql.append(" and status = :status");
+        hql.append(" and s.status = :status");
         params.put("status", effectiveStatus);
 
         UUID effectiveRegionId = adminAccessService.effectiveRegionFilter(regionId);
         UUID effectiveStoreId = adminAccessService.effectiveStoreFilter(null);
 
         if (effectiveRegionId != null) {
-            hql.append(" and region.id = :regionId");
+            hql.append(" and s.region.id = :regionId");
             params.put("regionId", effectiveRegionId);
         }
 
         if (effectiveStoreId != null) {
-            hql.append(" and id = :storeId");
+            hql.append(" and s.id = :storeId");
             params.put("storeId", effectiveStoreId);
         }
 
         if (query != null && !query.isBlank()) {
-            hql.append(" and (lower(name) like :query or lower(storeCode) like :query or lower(city) like :query)");
+            hql.append(" and (lower(s.name) like :query or lower(s.storeCode) like :query or lower(s.city) like :query)");
             params.put("query", "%" + query.trim().toLowerCase() + "%");
         }
 
-        PanacheQuery<StoreEntity> panacheQuery = storeRepository.find(hql.toString(), Sort.by("name"), params);
+        if (hasActiveLayout != null) {
+            hql.append(hasActiveLayout
+                    ? " and exists (select 1 from LayoutVersionEntity lv where lv.store.id = s.id and lv.status = :layoutStatus)"
+                    : " and not exists (select 1 from LayoutVersionEntity lv where lv.store.id = s.id and lv.status = :layoutStatus)");
+            params.put("layoutStatus", LayoutVersionStatus.ACTIVE);
+        }
+
+        Sort ordering = Sort.by(sortField);
+        if (!"storeCode".equals(sortField)) ordering.and("storeCode");
+        PanacheQuery<StoreEntity> panacheQuery = storeRepository.find(hql.toString(), ordering, params);
         panacheQuery.page(Page.of(Math.max(page, 0), Math.max(size, 1)));
 
         return new CommonDtos.PageResponse<>(
@@ -192,6 +212,15 @@ public class StoreAdminService {
     StoreEntity requireStore(UUID storeId) {
         return storeRepository.findByIdOptional(storeId)
                 .orElseThrow(() -> new NotFoundException("Filiale nicht gefunden."));
+    }
+
+    StoreEntity lockStore(UUID storeId) {
+        try {
+            return storeRepository.findByIdOptional(storeId, LockModeType.PESSIMISTIC_WRITE)
+                    .orElseThrow(() -> new NotFoundException("Filiale nicht gefunden."));
+        } catch (LockTimeoutException | PessimisticLockException exception) {
+            throw new WebApplicationException("Filiallayout wird gerade bearbeitet. Bitte erneut versuchen.", exception, Response.Status.CONFLICT);
+        }
     }
 
     private RegionEntity requireRegion(UUID regionId) {

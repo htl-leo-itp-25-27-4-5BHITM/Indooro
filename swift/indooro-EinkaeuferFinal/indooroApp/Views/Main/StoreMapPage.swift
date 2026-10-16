@@ -565,6 +565,7 @@ struct StoreMapPage: View {
 
     private func targetNavigationCard(_ target: Product) -> some View {
         let isAlreadyInList = shoppingListManager.containsProduct(target)
+        let hasMatchingShelf = matchingShelf(for: target) != nil
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
@@ -625,6 +626,7 @@ struct StoreMapPage: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
                 }
+                .disabled(!hasMatchingShelf)
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
                 .background(accent, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -710,6 +712,7 @@ struct StoreMapPage: View {
         upsellStore.authorizePlanPreloading(for: store, reason: "manual_store_tap")
         pendingStoreSelectionID = store.id
         targetProduct = nil
+        beaconManager.clearRouteTarget()
         beaconManager.loadStoreLayout(storeId: store.id)
     }
 
@@ -876,29 +879,11 @@ struct StoreMapPage: View {
                 return label
             }
         }
-        return "Ziel in der Shop-Karte markiert"
+        return "Kein passendes Regal auf der Karte"
     }
 
     private func matchingShelf(for product: Product) -> LayoutElement? {
-        let parts = product.layoutCode.components(separatedBy: "/")
-        guard !parts.isEmpty else { return nil }
-
-        let productCategory = parts[0]
-        let productMeter = parts.count > 1 ? Int(parts[1]) : nil
-
-        return beaconManager.shelves.first { element in
-            guard let elementCategory = element.category,
-                  elementCategory.starts(with: productCategory) else {
-                return false
-            }
-
-            if let elementMeter = element.meter {
-                guard let productMeter else { return false }
-                return elementMeter == productMeter
-            }
-
-            return true
-        }
+        beaconManager.shelves.first { $0.matchesProductLayoutCode(product.layoutCode) }
     }
 }
 

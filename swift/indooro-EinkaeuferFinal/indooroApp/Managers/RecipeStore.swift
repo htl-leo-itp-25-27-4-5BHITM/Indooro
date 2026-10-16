@@ -11,7 +11,7 @@ final class RecipeStore: ObservableObject {
     @Published private(set) var isLoadingMapping = false
     @Published var errorMessage: String?
 
-    private let apiBase = "https://it220209.cloud.htl-leonding.ac.at/api"
+    private let apiBase = IndooroAPI.baseURL
     private var latestListRequestID = UUID()
     private var latestDetailRequestID = UUID()
     private var latestMappingRequestID = UUID()

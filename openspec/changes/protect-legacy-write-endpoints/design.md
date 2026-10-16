@@ -14,6 +14,8 @@ quarkus.http.auth.permission.admin.policy=authenticated
 
 Product writes already carry `@RolesAllowed("admin")` plus `AdminAccessService.requireAdmin()`. `LayoutResource`, `ImportResource`, `ExportResource`, and `AdminResource` carry no role annotation. Paths not matched by any permission are permitted by Quarkus by default.
 
+Rebuild coordination, 2026-10-12: the admin candidate's live category workflow exposed a 403 on `POST /api/categories` despite its method annotation. The rebuild added `/api/categories` and `/api/categories/*` to the existing authenticated permission so the category UI can write; anonymous `GET` and scoped-user write denial were rechecked against Keycloak. The method-scoped `admin-write` split in decision 1 remains the intended follow-up and task 2.2 stays open.
+
 ## Goals / Non-Goals
 
 **Goals:** close anonymous and under-privileged writes with Quarkus-native mechanisms; keep every iOS and customer read path anonymous.
