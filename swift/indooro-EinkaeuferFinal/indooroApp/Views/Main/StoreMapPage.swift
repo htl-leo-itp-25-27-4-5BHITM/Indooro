@@ -672,6 +672,7 @@ struct StoreMapPage: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(MapFloatingSurface())
+        .accessibilityIdentifier("positionBanner")
     }
 
     private var searchBarCard: some View {
@@ -1197,6 +1198,7 @@ private struct StoreOverviewCard: View {
         }
         .buttonStyle(.plain)
         .disabled(isLoading)
+        .accessibilityIdentifier("storeCard-\(store.storeCode)")
     }
 }
 

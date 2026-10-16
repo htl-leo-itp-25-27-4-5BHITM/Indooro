@@ -201,6 +201,7 @@ struct MapView: View {
                 }
                 .padding(mapPadding)
                 .frame(maxWidth: .infinity, maxHeight: visibleHeight, alignment: .center)
+                .accessibilityIdentifier("storeMap")
 
                 Color.clear
                     .frame(height: bottomInset)

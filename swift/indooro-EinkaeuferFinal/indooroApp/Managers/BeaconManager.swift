@@ -322,10 +322,19 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     // MARK: - Lifecycle
 
+    #if DEBUG
+    /// Startargument `-uiTesting` (nur DEBUG): Modus „Ohne Ortung“, keine Standort-Abfrage.
+    static let isUITesting = ProcessInfo.processInfo.arguments.contains("-uiTesting")
+    #endif
+
     override init() {
         super.init()
         appendDebugLog("BeaconManager init")
         #if DEBUG
+        if Self.isUITesting {
+            // UI-Tests (add-ios-pilot-ui-tests): ohne Ortung starten, keine Berechtigungsdialoge.
+            trackingMode = .debugNoBeacons
+        }
         NavigationRecorder.shared.layoutProvider = { [weak self] in self?.currentLayoutRecord }
         #endif
         loadBundleLayoutFallback()
@@ -2089,6 +2098,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     // MARK: - RSSI helpers
 
     private func requestLocationAuthorizationIfNeeded() {
+        #if DEBUG
+        if Self.isUITesting { return }
+        #endif
         guard CLLocationManager.locationServicesEnabled() else {
             navigationStatusMessage = "Ortungsdienste sind deaktiviert. iBeacon-Ranging braucht Standortfreigabe."
             appendDebugLog("Location Services deaktiviert")

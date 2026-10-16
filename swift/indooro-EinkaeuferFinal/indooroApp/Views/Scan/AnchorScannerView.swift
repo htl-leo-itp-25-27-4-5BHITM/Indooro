@@ -78,6 +78,7 @@ struct AnchorScannerView: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .lineLimit(1...3)
+                    .accessibilityIdentifier("debugPayloadField")
 
                 Button("Übernehmen") {
                     let text = debugPayload.trimmingCharacters(in: .whitespacesAndNewlines)
