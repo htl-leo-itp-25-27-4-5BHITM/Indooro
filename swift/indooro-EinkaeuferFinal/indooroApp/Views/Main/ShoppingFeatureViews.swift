@@ -786,7 +786,9 @@ struct ProductsPage: View {
                 .padding(.vertical, 4)
             }
 
-            if !displayedProducts.isEmpty {
+            if productSearch.errorMessage != nil {
+                ProductSearchFeedback(store: productSearch)
+            } else if !displayedProducts.isEmpty {
                 ForEach(displayedProducts, id: \.self) { product in
                     ProductSearchRow(
                         product: product,
@@ -805,7 +807,7 @@ struct ProductsPage: View {
                 }
             } else if !productSearch.isSearching {
                 ContentUnavailableView(
-                    "Keine passenden Produkte",
+                    productSearch.lastQuery.map { "Keine Treffer für „\($0)“" } ?? "Keine passenden Produkte",
                     systemImage: "magnifyingglass",
                     description: Text(emptyText)
                 )

@@ -24,8 +24,8 @@
 
 - [x] 4.1 Build search URLs with `URLComponents` and `URLQueryItem` in `ProductSearchStore` (search and category list).
 - [ ] 4.2 Implement `fix-ios-contract-and-spec-drift` 3.1–3.3 (shared ISO-8601 decoder, lossy product array).
-- [ ] 4.3 Implement 4.1–4.3 (HTTP status check, `errorMessage`, „Suche fehlgeschlagen“ + „Erneut versuchen“) and the empty state „Keine Treffer für „<Begriff>““.
-- [ ] 4.4 Implement 5.1–5.3 (store-scoped search with `storeId`/`storeCode`, remove `BeaconManager.searchProducts` and related state).
+- [x] 4.3 Implement 4.1–4.3 (HTTP status check, `errorMessage`, „Suche fehlgeschlagen“ + „Erneut versuchen“) and the empty state „Keine Treffer für „<Begriff>““.
+- [x] 4.4 Implement 5.1–5.3 (store-scoped search with `storeId`/`storeCode`, remove `BeaconManager.searchProducts` and related state).
 - [ ] 4.5 Add tests for URL building with `Milch & Käse`, `a+b`, `50%`, `#1`, `Käse?` (pure function, can live in the SwiftPM target or a new XCTest target if needed).
 - [ ] 4.6 Mark the implemented tasks in `fix-ios-contract-and-spec-drift/tasks.md` with „(implemented in prepare-pilot-ios-build)“.
 

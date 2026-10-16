@@ -100,6 +100,7 @@ struct ContentView: View {
             .tabItem {
                 Label("Karte", systemImage: "map.fill")
             }
+            .safeAreaInset(edge: .top) { ProductSearchFeedback(store: mapProductSearch) }
             .tag(AppSection.map)
         }
         .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
@@ -107,11 +108,16 @@ struct ContentView: View {
         .alert("Filiale erkannt: \(beaconManager.suggestedPilotStore?.name ?? "") – öffnen?", isPresented: Binding(
             get: { beaconManager.suggestedPilotStore != nil },
             set: { if !$0 { beaconManager.suggestedPilotStore = nil } }
-        )) {
-            Button("Öffnen") { beaconManager.openSuggestedPilotStore() }
+        ), presenting: beaconManager.suggestedPilotStore) { store in
+            Button("Öffnen") { beaconManager.openSuggestedPilotStore(store) }
             Button("Abbrechen", role: .cancel) { beaconManager.suggestedPilotStore = nil }
         }
         .onAppear {
+            let provider: () -> MobileStoreSummary? = { [weak beaconManager] in
+                beaconManager?.activeLayoutStore ?? beaconManager?.detectedStore
+            }
+            mapProductSearch.storeProvider = provider
+            productsSearch.storeProvider = provider
             navigationSession.attach(to: beaconManager)
             shoppingSessionManager.bind(navigationSession: navigationSession)
             syncShoppingSession()
