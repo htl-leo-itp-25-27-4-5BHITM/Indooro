@@ -24,6 +24,8 @@ enum AppEnvironment {
         #endif
     }
 
+    static var isStudyModeEnabled: Bool { Bundle.main.object(forInfoDictionaryKey: "IndooroStudyMode") as? Bool ?? false }
+
     static var allowsExtendedFeatures: Bool { featureProfile == .full }
 
     static func parseAPIURL(_ value: String?) -> URL? {
