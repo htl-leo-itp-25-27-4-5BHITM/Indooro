@@ -1,0 +1,27 @@
+# OpenSpec verification: `rebuild-admin-platform`
+
+Pilot-Cut-Korrektur: Der in einem früheren lokalen Commit erprobte Swift-Rotationsfix wurde für diesen Branch zurückgenommen und an `add-pilot-guided-tour-fallbacks` übergeben. Die folgenden historischen Swift-Testaussagen sind kein Nachweis für den aktuellen Admin-Branch.
+
+Stand: 2026-10-16, Branch `codex/admin-platform-rebuild`, lokales Image `indooro-admin-rebuild:editor-back-mobile-obstacles` (`sha256:055b6c051552392cc8761cd1b44f2c26e71cc54d749a9ea6e7f32514c0d46d31`). Geprüft wurden `proposal.md`, `design.md`, `tasks.md` und alle sieben Delta-Spec-Dateien. `openspec status` meldet vollständige **Artefakte**; `openspec instructions apply` meldet **35/39 erledigte Aufgaben**. Die strikte Validierung von 41/41 OpenSpec-Artefakten ist kein Nachweis für 41/41 ausgeführte Szenarien.
+
+| Dimension | Ergebnis |
+| --- | --- |
+| Vollständigkeit | 35/39 Tasks; vier offene Freigabe-/Archivierungsschritte. 14 Anforderungen und 41 Szenarien in den Delta-Specs inventarisiert. |
+| Korrektheit | Für die Kernanforderungen sind Implementierung und gezielte Tests/Live-Probes vorhanden. Die Anforderung zur vollständigen Aktionsparität vor einem Routentausch ist beim Editor noch nicht nachgewiesen. Der Katalog-Import bleibt gemäß Spec bei ungeklärtem Commit-Ergebnis gesperrt. |
+| Kohärenz | Stufenweiser React/Vite-Cutover, Quarkus-/OIDC-Grenze, Backend-Scopes, getrennte Draft-/Publish-Schritte und rollbackfähige Route-Flags entsprechen `design.md`. Neun von zehn Routen sind lokal freigeschaltet; der Editor-Flag ist false. |
+
+## Kritische Punkte vor Archivierung
+
+1. **Task 1.1: Zeitpunkt nicht nachholbar.** `docs/admin-rebuild/BASELINE.md` enthält einen späteren Runtime-/Spec-Abgleich, aber die verlangte Prüfung *vor* Implementierungsbeginn fand nicht statt. Checkbox offen lassen. Für eine spätere Archivierung muss eine ausdrückliche Entscheidung dokumentieren, wie diese historische Abweichung im Change behandelt wird; kein rückdatiertes Abhaken.
+2. **Task 1.2: Inventar nicht vollständig belegt.** `ROUTE_INVENTORY.md`, `EDITOR_ACTION_MATRIX.md`, Fixtures, Live-Skripte und Screenshots decken viele Routen/Aktionen ab. Für jede Editor-Aktion und jeden Lade-, Leer-, Validierungs-, Fehler-, Erfolgs- und Dirty-Zustand fehlt weiterhin eine reproduzierbare Fixture-/Screenshot-Zuordnung. Die offenen Zeilen in `EDITOR_EVIDENCE_GAPS.md` abarbeiten und erst dann Task 1.2 abhaken.
+3. **Task 3.10: Editor-Cutover-Gate offen.** Die Store- und Global-Editor-Aktionsmatrix dokumentiert noch unbewertete Unterschiede bei Global Preview/Draft/Export, expliziter Legacy-Validierung, Template-Bestätigung, Drehung, Beacon-Duplikat und Werkzeugmodi. Ein Teil der Canvas-/Inspector-/History-/Fehlerfälle hat keinen gleichen Legacy/Candidate-Lauf. Die Unterschiede pro Zeile beheben oder mit nachvollziehbarer Produktentscheidung abnehmen, Rollen/Scope, Tastatur, Empty/Error, Direktlinks und Rollback zusammenführen, dann erst `editor` aktivieren. Mobile-Routen sind im Simulator bzw. per Swift-Vertrag geprüft; physische Beacon-Navigation ist nicht belegt.
+4. **Task 5.7: Abschluss ist abhängig.** Der Change darf erst nach erfüllten Anforderungen/Szenarien, tatsächlicher Editor-Freigabe und abschließender Verifikation archiviert werden. Die drei obigen Punkte verhindern das derzeit.
+
+## Szenario- und Designprüfung
+
+- **Staged frontend, Auth/Scope und reversible Routen:** `admin-ui/src/`, `backend/.../resources/admin/`, `live-admin-smoke.mjs`, `live-api-role-matrix.mjs` und `live-route-cutover.mjs` belegen den lokalen Quarkus-Build, 12 authentifizierte und 15 verweigerte Direktlinks, 57 Rollen-/Scope-Checks und zehn Switch-/Rollback-Paare. Neun committed Redirects bestehen. Der Editor hat nur die simulierte Rollback-Mechanik, weil sein Flag noch aus ist.
+- **Store-/Katalog-/Rezept-Workflows:** Die jeweils dokumentierten Paritätsproben in `ROUTE_PARITY_MATRIX.md` stützen die neun freigegebenen Einträge. Import-Review/Validierung ist vorhanden; Commit bleibt gesperrt. Dadurch ist das bedingte Szenario eines Backend-Partial-Results noch kein UI-Lauf. Vor einem Import-Commit sind eindeutige Fehler-/Überschreib-/Unknown-Ergebnisse im API und UI zu implementieren und zu prüfen.
+- **Editor-Draft, Publikation, History, Validierung und Mobile-Vertrag:** `live-editor-parity.mjs`, `live-editor-manager-publication.mjs`, `live-editor-states.mjs`, Backend-Tests und Swift-Vertragsprüfungen belegen private Drafts, bestätigtes Publish, genaue Wiederherstellung, anonyme Current-Antworten, Fehler-Retry und mobile JSON-IDs. `EDITOR_ACTION_MATRIX.md` grenzt die noch nicht nachgewiesene vollständige UI-Parität ab. Physische Geräte waren nicht verfügbar; Simulator-Build und Grid-Test sind dafür kein Ersatz.
+- **Design-Kohärenz:** Die beobachtete Aufteilung entspricht den Entscheidungen in `design.md`: Server bleibt Autorität für Scope, die UI blockiert ungeklärte Katalog-Commits, Editor-Commands sind rückgängig zu machen und Veröffentlichung ist ein separater Schritt. Die Rotationsabweichung im Swift-Hindernisgitter ist für den separaten Pilot-Change vorgesehen; ein realer Beacon-Weg wurde nicht vermessen.
+
+**Ergebnis:** Vier kritische offene Tasks. Keine Archivierung und kein Editor-Route-Cutover auf diesem Stand. Der dokumentierte lokale Build und seine Tests bleiben als reproduzierbare Zwischenabnahme erhalten; Push, Merge und Produktions-Deployment fanden nicht statt.
