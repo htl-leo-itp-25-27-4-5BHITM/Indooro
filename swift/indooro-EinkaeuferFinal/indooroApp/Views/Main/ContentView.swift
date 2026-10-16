@@ -100,7 +100,12 @@ struct ContentView: View {
             .tabItem {
                 Label("Karte", systemImage: "map.fill")
             }
-            .safeAreaInset(edge: .top) { ProductSearchFeedback(store: mapProductSearch) }
+            .safeAreaInset(edge: .top) {
+                VStack(spacing: 0) {
+                    PermissionBanner(manager: beaconManager)
+                    ProductSearchFeedback(store: mapProductSearch)
+                }
+            }
             .tag(AppSection.map)
         }
         .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
