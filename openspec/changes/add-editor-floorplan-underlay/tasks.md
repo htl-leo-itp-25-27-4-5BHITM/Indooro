@@ -20,4 +20,4 @@
 ## 4. Verification
 
 - [x] 4.1 Local Quarkus/PostgreSQL check with a synthetic plan committed under `admin-ui/tests/fixtures/` (bytea round-trip, calibration and mobile exclusion).
-- [ ] 4.2 All checks green; pull request → `main`; report status to Erik (`STATUS.md` on `pilot/first-store` is maintained by Erik).
+- [x] 4.2 All checks green; PR #111 → `main`; report status to Erik (`STATUS.md` on `pilot/first-store` is maintained by Erik).
