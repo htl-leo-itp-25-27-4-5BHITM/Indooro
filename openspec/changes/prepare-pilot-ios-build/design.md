@@ -49,7 +49,7 @@ Set `IndooroFeatureProfile = full` to restore all entry points. No data migratio
 
 ## Baseline
 
-2026-10-16: eigener Worktree, `pilot/ios-pilot-build` bei `46b9ad1`; `git fetch origin` und `git merge origin/pilot/first-store` (already up to date). Vollständiges Xcode unter `/Applications/Xcode.app`, Aufrufe mit `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`, da systemweit Command Line Tools ausgewählt sind. Swift-Test und Simulator-Build laufen vor Source-Änderungen; Ergebnis wird ergänzt.
+2026-10-16: eigener Worktree, `pilot/ios-pilot-build` bei `46b9ad1`; `git fetch origin` und `git merge origin/pilot/first-store` (already up to date). Vollständiges Xcode unter `/Applications/Xcode.app`, Aufrufe mit `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`, da systemweit Command Line Tools ausgewählt sind. Vor Source-Änderungen: Swift-Test Exit 0, 77 Tests mit 0 Fehlern; Simulator-Build Exit 0, `** BUILD SUCCEEDED **`. Logs: `docs/pilot-readiness/evidence/prepare-pilot-ios-build/baseline-{swift,build}.log`.
 
 ## Implementation notes
 
