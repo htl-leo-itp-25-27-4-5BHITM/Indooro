@@ -40,10 +40,10 @@
 
 ## 7. Layout Fallback And Cache
 
-- [ ] 7.1 Add `LayoutCacheStore` that writes and reads `Application Support/LayoutCache/<storeId>.json` and `default.json` with `isExcludedFromBackup = true`.
-- [ ] 7.2 Save the decoded layout response after every successful store or default layout application.
-- [ ] 7.3 On store layout failure, apply the cached layout for that store if present and set the description to „<store> • Offline-Kopie vom <Datum>“; otherwise keep the current failure behavior.
-- [ ] 7.4 On default layout failure, try `default.json` before the history fallback.
+- [x] 7.1 Add `LayoutCacheStore` that writes and reads `Application Support/LayoutCache/<storeId>.json` and `default.json` with `isExcludedFromBackup = true`. (implemented in add-pilot-guided-tour-fallbacks)
+- [x] 7.2 Save the decoded layout response after every successful store or default layout application. (implemented in add-pilot-guided-tour-fallbacks)
+- [x] 7.3 On store layout failure, apply the cached layout for that store if present and set the description to „<store> • Offline-Kopie vom <Datum>“; otherwise keep the current failure behavior. (implemented in add-pilot-guided-tour-fallbacks)
+- [x] 7.4 On default layout failure, try `default.json` before the history fallback. (implemented in add-pilot-guided-tour-fallbacks)
 - [ ] 7.5 When `fallback == true`, set the description to „<store> • Standard-Layout (kein aktives Filial-Layout)“ and show a warning badge in the indoor header.
 
 ## 8. Low-Confidence Rendering

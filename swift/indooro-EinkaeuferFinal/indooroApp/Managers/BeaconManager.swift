@@ -131,6 +131,45 @@ private struct LayoutHistoryEnvelope: Decodable {
     let data: [LayoutVersionSummary]?
 }
 
+/// Persistierbare Kopie von `MobileStoreSummary` (dort nur `Decodable`), fuer den Offline-Start.
+private struct PersistedStoreSummary: Codable {
+    let id: UUID
+    let storeCode: String
+    let name: String
+    let city: String
+    let street: String?
+    let zipCode: String?
+    let country: String?
+    let latitude: Double?
+    let longitude: Double?
+
+    init(_ store: MobileStoreSummary) {
+        id = store.id
+        storeCode = store.storeCode
+        name = store.name
+        city = store.city
+        street = store.street
+        zipCode = store.zipCode
+        country = store.country
+        latitude = store.latitude
+        longitude = store.longitude
+    }
+
+    var store: MobileStoreSummary {
+        MobileStoreSummary(
+            id: id,
+            storeCode: storeCode,
+            name: name,
+            city: city,
+            street: street,
+            zipCode: zipCode,
+            country: country,
+            latitude: latitude,
+            longitude: longitude
+        )
+    }
+}
+
 final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate, CLLocationManagerDelegate {
     // MARK: - Public state
 
@@ -177,6 +216,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let layoutHistoryLimit = 12
     private let selectedLayoutModeDefaultsKey = "selectedLayoutMode"
     private let selectedLayoutIdDefaultsKey = "selectedLayoutId"
+    private let lastSelectedStoreIDDefaultsKey = "lastSelectedStoreID"
+    private let lastSelectedStoreSummaryDefaultsKey = "lastSelectedStoreSummary"
+    private let layoutCache = LayoutCacheStore()
     private let fixedTargetCategory: String? = nil
     private let preferIBeaconRanging = true
     private let minimumStoreLookupRSSI = -95
@@ -213,6 +255,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "de_AT")
         formatter.dateFormat = "HH:mm:ss.SSS"
+        return formatter
+    }()
+
+    private static let offlineCopyDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "de_AT")
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
         return formatter
     }()
 
@@ -1255,16 +1305,17 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                         self.activeLayoutDescription = self.currentLayoutDescription(for: layout)
                         self.isLoadingLayout = false
                         self.persistLayoutSelection()
+                        self.layoutCache.save(data, storeID: nil)
                         self.appendDebugLog("Default-Layout angewendet shop=\(layout.shopName)")
                     } catch {
                         print("❌ Aktuelles Server-Layout konnte nicht decodiert werden: \(error.localizedDescription)")
                         self.appendDebugLog("Default-Layout Decode-Fehler: \(error.localizedDescription)")
-                        self.loadLatestHistoryVersionFallback(reason: "Server-Layout nicht lesbar")
+                        self.loadOfflineFallbackAfterDefaultLayoutFailure(reason: "Server-Layout nicht lesbar")
                     }
                 case .failure(let error):
                     print("❌ Aktuelles Server-Layout konnte nicht geladen werden: \(error.localizedDescription)")
                     self.appendDebugLog("Default-Layout Fehler: \(error.localizedDescription)")
-                    self.loadLatestHistoryVersionFallback(reason: "Server momentan nicht erreichbar")
+                    self.loadOfflineFallbackAfterDefaultLayoutFailure(reason: "Server momentan nicht erreichbar")
                 }
             }
         }
@@ -1307,29 +1358,137 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                         )
                         self.isLoadingLayout = false
                         self.persistLayoutSelection()
+                        self.layoutCache.save(data, storeID: store.id.uuidString)
+                        self.rememberLastSelectedStore(store)
                         self.appendDebugLog(
                             "Store-Layout angewendet shop=\(layout.shopName) grid=\(layout.gridSize.width)x\(layout.gridSize.height) elements=\(layout.elements.count) beacons=\(layout.elements.filter { $0.type == "beacon" }.count)"
                         )
                     } catch {
                         print("❌ Store-Layout konnte nicht decodiert werden: \(error.localizedDescription)")
                         self.appendDebugLog("Store-Layout Decode-Fehler: \(error.localizedDescription)")
-                        self.markDetectedStoreLayoutFailed(
-                            store: store,
-                            identityKey: identityKey,
-                            reason: "Store-Layout nicht lesbar"
-                        )
+                        if !self.applyOfflineStoreLayoutIfAvailable(store: store, source: source) {
+                            self.markDetectedStoreLayoutFailed(
+                                store: store,
+                                identityKey: identityKey,
+                                reason: "Store-Layout nicht lesbar"
+                            )
+                        }
                     }
                 case .failure(let error):
                     print("❌ Store-Layout konnte nicht geladen werden: \(error.localizedDescription)")
                     self.appendDebugLog("Store-Layout Fehler: \(error.localizedDescription)")
-                    self.markDetectedStoreLayoutFailed(
-                        store: store,
-                        identityKey: identityKey,
-                        reason: error.localizedDescription
-                    )
+                    if !self.applyOfflineStoreLayoutIfAvailable(store: store, source: source) {
+                        self.markDetectedStoreLayoutFailed(
+                            store: store,
+                            identityKey: identityKey,
+                            reason: error.localizedDescription
+                        )
+                    }
                 }
             }
         }
+    }
+
+    /// Store-Layout fehlgeschlagen: vorhandene, decodierbare Offline-Kopie dieses Stores anwenden.
+    /// Liefert `false`, wenn keine nutzbare Kopie existiert (dann bleibt das Fehlerverhalten).
+    private func applyOfflineStoreLayoutIfAvailable(
+        store: MobileStoreSummary,
+        source: StoreLayoutActivationSource
+    ) -> Bool {
+        guard let cached = layoutCache.load(storeID: store.id.uuidString) else {
+            return false
+        }
+        return applyOfflineStoreLayout(
+            data: cached.data,
+            savedAt: cached.savedAt,
+            store: store,
+            source: source
+        )
+    }
+
+    /// Offline-Kopie eines Stores anwenden; wie der Erfolgsfall, nur mit Offline-Beschreibung.
+    private func applyOfflineStoreLayout(
+        data: Data,
+        savedAt: Date,
+        store: MobileStoreSummary,
+        source: StoreLayoutActivationSource
+    ) -> Bool {
+        guard let layout = try? decodeMobileLayout(from: data) else {
+            appendDebugLog("Store-Offline-Kopie nicht lesbar store=\(store.name)")
+            return false
+        }
+
+        applyLayout(layout)
+        activeLayoutStore = store
+        activeLayoutStoreSource = source
+        clearStoreLayoutFailureMessageIfNeeded()
+        selectedLayoutMode = .currentServer
+        selectedLayoutId = nil
+        selectedLayoutName = store.name
+        activeLayoutDescription = "\(store.name) • Offline-Kopie vom \(offlineCopyDate(savedAt))"
+        isLoadingLayout = false
+        persistLayoutSelection()
+        appendDebugLog("Store-Layout aus Offline-Kopie angewendet store=\(store.name)")
+        return true
+    }
+
+    /// Default-Layout fehlgeschlagen (6.4): Cache des zuletzt gewaehlten Stores -> `default.json`
+    /// -> History-Fallback -> Bundle-Layout (letzter Ausweg).
+    private func loadOfflineFallbackAfterDefaultLayoutFailure(reason: String) {
+        if let lastStore = lastSelectedStoreFromDefaults(),
+           applyOfflineStoreLayoutIfAvailable(store: lastStore, source: .manual) {
+            return
+        }
+
+        if let cached = layoutCache.load(storeID: nil),
+           applyOfflineDefaultLayout(data: cached.data, savedAt: cached.savedAt) {
+            return
+        }
+
+        loadLatestHistoryVersionFallback(reason: reason)
+    }
+
+    private func applyOfflineDefaultLayout(data: Data, savedAt: Date) -> Bool {
+        guard let layout = try? decodeLayout(from: data) else {
+            appendDebugLog("Default-Offline-Kopie nicht lesbar")
+            return false
+        }
+
+        applyLayout(layout)
+        activeLayoutStore = nil
+        activeLayoutStoreSource = nil
+        clearStoreLayoutFailureMessageIfNeeded()
+        selectedLayoutMode = .currentServer
+        selectedLayoutId = nil
+        selectedLayoutName = "Aktuelles Server-Layout"
+        activeLayoutDescription = "\(layout.shopName) • Offline-Kopie vom \(offlineCopyDate(savedAt))"
+        isLoadingLayout = false
+        persistLayoutSelection()
+        appendDebugLog("Default-Layout aus Offline-Kopie angewendet shop=\(layout.shopName)")
+        return true
+    }
+
+    private func rememberLastSelectedStore(_ store: MobileStoreSummary) {
+        let defaults = UserDefaults.standard
+        defaults.set(store.id.uuidString, forKey: lastSelectedStoreIDDefaultsKey)
+        if let summaryData = try? JSONEncoder().encode(PersistedStoreSummary(store)) {
+            defaults.set(summaryData, forKey: lastSelectedStoreSummaryDefaultsKey)
+        }
+    }
+
+    private func lastSelectedStoreFromDefaults() -> MobileStoreSummary? {
+        let defaults = UserDefaults.standard
+        guard let storeIDString = defaults.string(forKey: lastSelectedStoreIDDefaultsKey),
+              let summaryData = defaults.data(forKey: lastSelectedStoreSummaryDefaultsKey),
+              let summary = try? JSONDecoder().decode(PersistedStoreSummary.self, from: summaryData),
+              summary.id.uuidString == storeIDString else {
+            return nil
+        }
+        return summary.store
+    }
+
+    private func offlineCopyDate(_ date: Date) -> String {
+        BeaconManager.offlineCopyDateFormatter.string(from: date)
     }
 
     private func loadLayoutVersion(withId layoutId: String) {

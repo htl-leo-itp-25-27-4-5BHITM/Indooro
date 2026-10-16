@@ -38,10 +38,10 @@
 
 ## 6. Layout Cache and Offline Start (fix-ios-contract-and-spec-drift 7.1–7.4)
 
-- [ ] 6.1 Add `Utilities/LayoutCacheStore.swift` writing/reading `Application Support/LayoutCache/<storeId>.json` and `default.json` with `isExcludedFromBackup = true`.
-- [ ] 6.2 Save the decoded store layout after each successful application; persist the last selected store id.
-- [ ] 6.3 On store layout failure, apply the cached store layout and set the description „<store> • Offline-Kopie vom <Datum>“; on cold start without network, open the last selected store from cache instead of the bundled test-room layout.
-- [ ] 6.4 On default layout failure try `default.json` before history; keep the bundled layout only as the last resort.
+- [x] 6.1 Add `Utilities/LayoutCacheStore.swift` writing/reading `Application Support/LayoutCache/<storeId>.json` and `default.json` with `isExcludedFromBackup = true`.
+- [x] 6.2 Save the decoded store layout after each successful application; persist the last selected store id.
+- [x] 6.3 On store layout failure, apply the cached store layout and set the description „<store> • Offline-Kopie vom <Datum>“; on cold start without network, open the last selected store from cache instead of the bundled test-room layout.
+- [x] 6.4 On default layout failure try `default.json` before history; keep the bundled layout only as the last resort.
 - [ ] 6.5 Verify in the simulator: load pilot store online → quit → airplane mode → start → pilot store layout shown with offline description. Mark `fix-ios-contract-and-spec-drift` 7.1–7.4 as done there.
 
 ## 7. Integration With the Admin Rebuild (after it is merged to main)
