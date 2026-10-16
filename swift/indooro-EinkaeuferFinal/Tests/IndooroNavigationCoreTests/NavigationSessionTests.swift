@@ -242,6 +242,137 @@ final class NavigationSessionTests: XCTestCase {
         XCTAssertEqual(core.activeStopID, "A")
     }
 
+    // MARK: - Routenursprung ohne vertraute Position (Fallback)
+
+    func testTourStartWithoutPositionBuildsRouteFromEntrance() {
+        let graph = openGraph()
+        var core = NavigationSessionCore(graph: graph, entrancePoint: SIMD2(2.5, 15.5))
+        core.startTour(plan: [stop("A", 30.5, 15.5)])
+        let projectedEntrance = WalkableProjector(graph: graph).project(SIMD2(2.5, 15.5))?.projectedPoint
+        XCTAssertEqual(core.routeOriginKind, .entrance)
+        XCTAssertNotNil(core.activeRoute)
+        XCTAssertEqual(core.activeRoute?.points.first, projectedEntrance)
+        XCTAssertEqual(core.routeBuildCount, 1)
+        XCTAssertFalse(core.hasTrustedPosition)
+    }
+
+    func testCompletedStopWithoutPositionStartsNextRouteAtThatStop() {
+        var core = NavigationSessionCore(graph: openGraph(), entrancePoint: SIMD2(2.5, 15.5))
+        core.startTour(plan: [stop("A", 10.5, 15.5), stop("B", 30.5, 15.5)])
+        core.stopCompleted()
+        XCTAssertEqual(core.activeStopID, "B")
+        XCTAssertEqual(core.routeOriginKind, .lastStop("A"))
+        XCTAssertEqual(core.activeRoute?.points.first, SIMD2<Float>(10.5, 15.5))
+    }
+
+    func testSkippedStopGivesTheSameRouteOriginAsCompletedStop() {
+        var core = NavigationSessionCore(graph: openGraph(), entrancePoint: SIMD2(2.5, 15.5))
+        core.startTour(plan: [stop("A", 10.5, 15.5), stop("B", 30.5, 15.5)])
+        core.stopSkipped()
+        XCTAssertEqual(core.routeOriginKind, .lastStop("A"))
+        XCTAssertEqual(core.activeRoute?.points.first, SIMD2<Float>(10.5, 15.5))
+    }
+
+    func testTrustedPositionRebuildsRouteExactlyOnceAndDropsFallback() {
+        var core = NavigationSessionCore(graph: openGraph(), entrancePoint: SIMD2(2.5, 15.5))
+        core.startTour(plan: [stop("A", 30.5, 15.5)])
+        let builds = core.routeBuildCount
+        XCTAssertEqual(core.routeOriginKind, .entrance)
+
+        core.positionUpdated(SIMD2(20.5, 15.5), confidence: 0.9, at: 1)
+        XCTAssertEqual(core.routeBuildCount, builds + 1)
+        XCTAssertEqual(core.routeOriginKind, .position)
+        XCTAssertNil(core.fallbackOrigin)
+        XCTAssertTrue(core.hasTrustedPosition)
+        XCTAssertEqual(core.activeRoute?.points.first, SIMD2<Float>(20.5, 15.5))
+
+        for step in 1...5 {
+            core.positionUpdated(SIMD2(20.5 + Float(step), 15.5), confidence: 0.9, at: 1 + Double(step) * tick)
+        }
+        XCTAssertEqual(core.routeBuildCount, builds + 1)
+    }
+
+    func testLayoutWithoutEntranceAndWithoutCompletedStopDrawsNoRouteAndNoError() {
+        var core = NavigationSessionCore(graph: openGraph())
+        core.startTour(plan: [stop("A", 30.5, 15.5)])
+        XCTAssertNil(core.activeRoute)
+        XCTAssertEqual(core.routeOriginKind, .position)
+        core.tickUpdated(projected: nil, confidence: 0.9, at: 1)
+        XCTAssertNil(core.activeRoute)
+        core.positionUpdated(SIMD2(20.5, 15.5), confidence: 0.9, at: 2)
+        XCTAssertNotNil(core.activeRoute)
+    }
+
+    func testUntrustedSeedProvidesNoRouteOrigin() {
+        var core = NavigationSessionCore(graph: openGraph(), entrancePoint: SIMD2(2.5, 15.5))
+        core.seedPosition(SIMD2(20.5, 15.5), trusted: false)
+        core.startTour(plan: [stop("A", 30.5, 15.5)])
+        XCTAssertNil(core.lastPosition)
+        XCTAssertFalse(core.hasTrustedPosition)
+        XCTAssertEqual(core.routeOriginKind, .entrance)
+    }
+
+    func testLostTrustKeepsProgressAndRouteAndNextStopUsesLastStopAgain() {
+        var core = NavigationSessionCore(graph: openGraph(), entrancePoint: SIMD2(2.5, 15.5))
+        core.seedPosition(SIMD2(20.5, 15.5))
+        core.startTour(plan: [stop("A", 10.5, 15.5), stop("B", 30.5, 15.5)])
+        core.positionUpdated(SIMD2(18.5, 15.5), confidence: 0.9, at: 1)
+        let route = core.activeRoute
+        let progress = core.routeProgress
+
+        // Vertrauen verloren: Position weit ab der Route, aber nicht vertraut.
+        core.positionUpdated(SIMD2(5.5, 15.5), confidence: 0.9, at: 2, trusted: false)
+        XCTAssertFalse(core.hasTrustedPosition)
+        XCTAssertEqual(core.activeRoute, route)
+        XCTAssertEqual(core.routeProgress, progress)
+        XCTAssertEqual(core.lastPosition, SIMD2<Float>(18.5, 15.5))
+        XCTAssertNil(core.offRouteSince)
+
+        core.stopCompleted()
+        XCTAssertEqual(core.activeStopID, "B")
+        XCTAssertEqual(core.routeOriginKind, .lastStop("A"))
+        XCTAssertEqual(core.activeRoute?.points.first, SIMD2<Float>(10.5, 15.5))
+    }
+
+    // MARK: - Zaehler (Section 10.1/10.2)
+
+    func testRerouteCounterCountsOnlyOffRouteRebuilds() {
+        var (core, clock) = tourOnStraightRoute()
+        let reroutesBefore = core.rerouteCount
+        let wrong = SIMD2<Float>(15.5, 22.5)
+        for _ in 0..<10 {
+            clock.advance(tick)
+            core.positionUpdated(wrong, confidence: 0.9, at: clock.now)
+        }
+        XCTAssertEqual(core.rerouteCount, reroutesBefore + 1)
+    }
+
+    func testStopCompletedAndPositionsKeepStopChangeCounterAtZeroAndRouteCounterMonotone() {
+        var (core, clock) = tourOnStraightRoute()
+        var builds = core.routeBuildCount
+        for _ in 0..<20 {
+            clock.advance(tick)
+            core.positionUpdated(SIMD2(25.5, 15.5), confidence: 0.9, at: clock.now)
+            XCTAssertGreaterThanOrEqual(core.routeBuildCount, builds)
+            builds = core.routeBuildCount
+        }
+        core.stopCompleted()
+        XCTAssertEqual(core.activeStopID, "B")
+        XCTAssertGreaterThanOrEqual(core.routeBuildCount, builds)
+        XCTAssertEqual(core.stopChangeWithoutEventCount, 0)
+        XCTAssertEqual(core.manualPositionCount, 0)
+    }
+
+    func testManualCalibrationCountsOnceAndBuildsExactlyOneRoute() {
+        var (core, _) = tourOnStraightRoute()
+        let builds = core.routeBuildCount
+        core.manualCalibration(at: SIMD2(12.5, 5.5))
+        XCTAssertEqual(core.manualPositionCount, 1)
+        XCTAssertEqual(core.routeBuildCount, builds + 1)
+        XCTAssertTrue(core.hasTrustedPosition)
+        XCTAssertEqual(core.routeOriginKind, .position)
+    }
+
     // MARK: - Helpers
 
     /// Tour A (5.5/15.5) vor B (30.5/15.5), Start bei 28.5/15.5: gerade Route nach links.

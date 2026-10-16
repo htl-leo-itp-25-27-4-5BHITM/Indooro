@@ -6,7 +6,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 
 | Person | Aktuelle Change | Branch | Erledigte Tasks | Nächste Tasks | Prüfungen zuletzt | Aktualisiert |
 |---|---|---|---|---|---|---|
-| Erik (Mac) | `add-pilot-guided-tour-fallbacks` | `pilot/erik-guided-tour` | 7.1–7.4 | 1.1–2.7 | `swift test` 77/77 (2026-10-15) | 2026-10-16 |
+| Erik (Mac) | `add-pilot-guided-tour-fallbacks` | `pilot/erik-guided-tour` | 7.1–7.4, 2.1–2.7, 10.1–10.3 | 3.x–6.x, 9.x | `swift test` 88/88, xcodebuild ok (2026-10-16) | 2026-10-16 |
 | Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person B (Windows) | `release-pilot-backend` Phase A | `pilot/release-backend` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person C (Windows) | `prepare-pilot-store-operations` | `pilot/store-operations` | – | 1.1–3.5 | – | 2026-10-16 |
@@ -32,6 +32,12 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Budget und Bestellung von 12 Beacons | Erik + Person C | 2026-10-16 |
 | Herkunft „SPAR Posttraße“-Layout und Belegplan klären | Erik | 2026-10-16 |
 | Termin mit Betreuung | Erik | 2026-10-16 |
+
+## Hinweise an Personen
+
+| Datum | Von | An | Hinweis |
+|---|---|---|---|
+| 2026-10-16 | Erik | Person A | Studienmodus-Zähler stehen bereit (`add-pilot-guided-tour-fallbacks` 10.1): `NavigationSession.routeBuildCount`, `rerouteCount`, `stopChangeWithoutEventCount`, `manualPositionCount` (`@Published`, nur lesen). Branch `pilot/erik-guided-tour`, nach Merge in `pilot/first-store` verfügbar. |
 
 ## Blocker
 

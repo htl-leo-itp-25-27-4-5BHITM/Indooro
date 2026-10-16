@@ -6,13 +6,13 @@
 
 ## 2. Route Origin Fallback (navigation core, testable without simulator)
 
-- [ ] 2.1 Add `fallbackOrigin: SIMD2<Float>?` and an `entrancePoint: SIMD2<Float>?` input to `NavigationSessionCore`; pass the entrance from the layout (first element of type `entrance`, projected to the nearest walkable node) through the initializer and `layoutChanged`.
-- [ ] 2.2 Set `fallbackOrigin = entrancePoint` in `startTour` and `setSingleTarget` WHEN no trusted position exists; in `advanceToNextStop` set `fallbackOrigin` to the map point of the stop that was left.
-- [ ] 2.3 Change `beginRoute()` to build from `lastPosition` if trusted, else from `fallbackOrigin`, else keep `needsRoute = true`.
-- [ ] 2.4 Clear `fallbackOrigin` on the first trusted `positionUpdated` and rebuild the route exactly once from the trusted position.
-- [ ] 2.5 Expose `routeOriginKind` (`.position`, `.entrance`, `.lastStop(title)`) for the UI.
-- [ ] 2.6 Add `NavigationSessionTests`: tour start without position builds from entrance; stop completed without position builds from the completed stop; trusted position replaces the fallback with exactly one rebuild; layout without entrance draws no route; skip behaves like complete for the origin.
-- [ ] 2.7 Add a replay test with a recording that has no measurements for the first 10 s and verify `stopChanges == 0` and one rebuild when measurements start.
+- [x] 2.1 Add `fallbackOrigin: SIMD2<Float>?` and an `entrancePoint: SIMD2<Float>?` input to `NavigationSessionCore`; pass the entrance from the layout (first element of type `entrance`, projected to the nearest walkable node) through the initializer and `layoutChanged`.
+- [x] 2.2 Set `fallbackOrigin = entrancePoint` in `startTour` and `setSingleTarget` WHEN no trusted position exists; in `advanceToNextStop` set `fallbackOrigin` to the map point of the stop that was left.
+- [x] 2.3 Change `beginRoute()` to build from `lastPosition` if trusted, else from `fallbackOrigin`, else keep `needsRoute = true`.
+- [x] 2.4 Clear `fallbackOrigin` on the first trusted `positionUpdated` and rebuild the route exactly once from the trusted position.
+- [x] 2.5 Expose `routeOriginKind` (`.position`, `.entrance`, `.lastStop(title)`) for the UI.
+- [x] 2.6 Add `NavigationSessionTests`: tour start without position builds from entrance; stop completed without position builds from the completed stop; trusted position replaces the fallback with exactly one rebuild; layout without entrance draws no route; skip behaves like complete for the origin.
+- [x] 2.7 Add a replay test with a recording that has no measurements for the first 10 s and verify `stopChanges == 0` and one rebuild when measurements start.
 
 ## 3. Trusted Position (BeaconManager, adapted from fix-ios-contract-and-spec-drift 8.1)
 
@@ -66,6 +66,6 @@
 
 ## 10. Counters for the Study Mode (consumer: add-pilot-study-mode)
 
-- [ ] 10.1 Expose monotonically increasing counters from `NavigationSession`: `routeBuildCount`, `rerouteCount`, `stopChangeWithoutEventCount`, `manualPositionCount` (published, read-only for other modules).
-- [ ] 10.2 Add `NavigationSessionTests` for each counter (reroute in wrong aisle increments `rerouteCount` once; „Erledigt“ does not increment `stopChangeWithoutEventCount`; „Ich bin hier“ increments `manualPositionCount`).
-- [ ] 10.3 Notify Person A in `STATUS.md` that the counters are available.
+- [x] 10.1 Expose monotonically increasing counters from `NavigationSession`: `routeBuildCount`, `rerouteCount`, `stopChangeWithoutEventCount`, `manualPositionCount` (published, read-only for other modules).
+- [x] 10.2 Add `NavigationSessionTests` for each counter (reroute in wrong aisle increments `rerouteCount` once; „Erledigt“ does not increment `stopChangeWithoutEventCount`; „Ich bin hier“ increments `manualPositionCount`).
+- [x] 10.3 Notify Person A in `STATUS.md` that the counters are available.

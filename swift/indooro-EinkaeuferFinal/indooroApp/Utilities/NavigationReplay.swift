@@ -197,6 +197,8 @@ struct ReplayMetrics: Equatable {
     var lowConfidenceToggles = 0
     /// Wandzeit der Planung je Planungsereignis (Sekunden); nicht deterministisch.
     var planningSeconds: [Double] = []
+    /// Gebaute Routen insgesamt (Start, Ereignisse, Ursprungswechsel, Off-Route); nur Diagnose, nicht Teil der Gleichheit.
+    var routeBuildCount = 0
 
     static func == (lhs: ReplayMetrics, rhs: ReplayMetrics) -> Bool {
         lhs.tickCount == rhs.tickCount
@@ -217,12 +219,14 @@ struct ReplayMetrics: Equatable {
 /// (Messspeicher -> Solver -> Schaetzer -> Projektion) und `NavigationSessionCore` (+ `TourPlanner`).
 /// Die virtuelle Uhr tickt alle `updateIntervalSeconds` ab der ersten Zeile.
 enum NavigationReplay {
+    /// `entrance`: Eingangspunkt fuer den Routenstart ohne vertraute Position (Default nil = kein Eingang).
     static func run(
         recording: [NavigationRecordLine],
         layout: LayoutData,
-        config: StabilizedNavigationConfig = .default
+        config: StabilizedNavigationConfig = .default,
+        entrance: SIMD2<Float>? = nil
     ) -> ReplayMetrics {
-        var replay = Replay(layout: layout, config: config)
+        var replay = Replay(layout: layout, config: config, entrance: entrance)
         return replay.run(recording.enumerated().sorted {
             $0.element.timestamp == $1.element.timestamp ? $0.offset < $1.offset : $0.element.timestamp < $1.element.timestamp
         }.map(\.element))
@@ -263,7 +267,7 @@ enum NavigationReplay {
         var suppressJumpCheck = false
         var lags: [Double] = []
 
-        init(layout: LayoutData, config: StabilizedNavigationConfig) {
+        init(layout: LayoutData, config: StabilizedNavigationConfig, entrance: SIMD2<Float>?) {
             self.config = config
             graph = NavigationReplay.makeGraph(layout)
             let beacons = NavigationReplay.layoutBeacons(layout)
@@ -278,6 +282,7 @@ enum NavigationReplay {
             )
             core = NavigationSessionCore(
                 graph: graph,
+                entrancePoint: entrance,
                 routeConfig: config.route,
                 confidenceConfig: config.confidence
             )
@@ -305,6 +310,7 @@ enum NavigationReplay {
                 nextTick += interval
             }
 
+            metrics.routeBuildCount = core.routeBuildCount
             metrics.durationSeconds = max(0, last.timestamp - start)
             if metrics.durationSeconds > 0 {
                 metrics.reroutesPerMinute = Double(metrics.rerouteCount) / (metrics.durationSeconds / 60)
@@ -421,14 +427,14 @@ enum NavigationReplay {
             metrics.tickCount += 1
 
             let activeBefore = core.activeStopID
-            let hadRoute = core.activeRoute != nil
-            let buildsBefore = core.routeBuildCount
+            let reroutesBefore = core.rerouteCount
             core.tickUpdated(projected: result.projectedPoint, confidence: result.confidence, at: time)
 
             if core.activeStopID != activeBefore {
                 metrics.activeStopChangesWithoutEvent += 1
             }
-            if hadRoute, core.routeBuildCount > buildsBefore {
+            // Off-Route-Neubauten zaehlen; der Neubau von einer Fallback-Route auf die vertraute Position nicht.
+            if core.rerouteCount > reroutesBefore {
                 metrics.rerouteCount += 1
                 if let since = truthOffRouteSince {
                     metrics.offRouteDetectionDelays.append(time - since)
