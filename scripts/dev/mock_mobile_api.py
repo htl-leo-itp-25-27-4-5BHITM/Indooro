@@ -4,7 +4,7 @@
     python3 scripts/dev/mock_mobile_api.py [port]            # Default 18090, nur localhost
     MOCK_HOST=0.0.0.0 python3 scripts/dev/mock_mobile_api.py   # fuer ein iPhone im selben WLAN
 
-Dient genau einen Store ("SPAR-Leonding-001") mit dem Layout aus
+Dient genau einen Store ("MOCK-QR-001") mit dem Layout aus
 swift/indooro-EinkaeuferFinal/Tests/IndooroNavigationCoreTests/Resources/store-layout-with-anchors.json
 (Eingang plus QR-Anker A1 und A12). Alles andere liefert 404.
 
@@ -24,8 +24,8 @@ LAYOUT = ROOT / "swift/indooro-EinkaeuferFinal/Tests/IndooroNavigationCoreTests/
 STORE_ID = json.loads(LAYOUT.read_text(encoding="utf-8"))["storeId"]
 STORES = [{
     "id": STORE_ID,
-    "storeCode": "SPAR-Leonding-001",
-    "name": "EUROSPAR Leonding (Mock)",
+    "storeCode": "MOCK-QR-001",
+    "name": "QR-Testmarkt (Mock)",
     "city": "Leonding",
     "address": "Poststrasse 10, 4060 Leonding",
     "latitude": 48.2680495,

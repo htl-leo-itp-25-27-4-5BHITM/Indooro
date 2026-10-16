@@ -12,7 +12,7 @@ Der Simulator hat keine Kamera und die Tastatur verfälscht Sonderzeichen beim T
 
 ```bash
 python3 scripts/dev/mock_mobile_api.py &          # Store mit Ankern A1 und A12 auf 127.0.0.1:18090
-printf '%s' 'https://it220209.cloud.htl-leonding.ac.at/customer/?store=SPAR-Leonding-001&a=A12' | xcrun simctl pbcopy booted
+printf '%s' 'https://it220209.cloud.htl-leonding.ac.at/customer/?store=MOCK-QR-001&a=A12' | xcrun simctl pbcopy booted
 SIMCTL_CHILD_INDOORO_API_BASE_URL=http://127.0.0.1:18090/api xcrun simctl launch booted at.ac.htl.leonding.indooroswift2
 ```
 
