@@ -135,7 +135,7 @@ struct ShoppingSessionPanel: View {
 
             if snapshot.unresolvedProductCount > 0 {
                 Label(
-                    "\(snapshot.unresolvedProductCount) Artikel nicht im Layout",
+                    "\(snapshot.unresolvedProductCount) Artikel ohne Regalposition",
                     systemImage: "exclamationmark.triangle"
                 )
                 .font(.caption2)
@@ -1117,7 +1117,7 @@ private struct PlannedProductRow: View {
                     }
                 }
 
-                Text(item.layoutCode.map { "Regal \($0)" } ?? "Freier Eintrag")
+                Text(item.layoutCode.map { _ in "Regal auf der Karte" } ?? "Freier Eintrag")
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -1798,7 +1798,7 @@ private struct ShoppingChecklistRow: View {
                         }
                     }
 
-                    Text(item.layoutCode.map { "Regal \($0)" } ?? "Keine Regalposition")
+                    Text(item.layoutCode.map { _ in "Regal auf der Karte" } ?? "Keine Regalposition")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 

@@ -8,6 +8,7 @@ final class AppEnvironmentTests: XCTestCase {
     }
     func testFullAndExplicitOverride() {
         XCTAssertEqual(AppEnvironment.parseProfile("full"), .full)
+        XCTAssertEqual(AppEnvironment.parseProfile("full", override: ""), .full)
         XCTAssertEqual(AppEnvironment.parseProfile("pilot", override: "full"), .full)
         XCTAssertEqual(AppEnvironment.parseProfile("full", override: "pilot"), .pilot)
         XCTAssertEqual(AppEnvironment.parseProfile("full", override: "invalid"), .pilot)

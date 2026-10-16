@@ -55,6 +55,7 @@ struct SettingsSheet: View {
                 #if DEBUG
                 Section("Debug") {
                     Picker("Funktionsprofil", selection: $profileOverride) {
+                        Text("Aus Build").tag("")
                         Text("Pilot").tag("pilot")
                         Text("Vollständig").tag("full")
                     }

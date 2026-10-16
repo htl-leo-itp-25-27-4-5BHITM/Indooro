@@ -11,7 +11,8 @@ enum AppEnvironment {
     static let defaultAPI = URL(string: "https://it220209.cloud.htl-leonding.ac.at/api")!
 
     static func parseProfile(_ value: String?, override: String? = nil) -> FeatureProfile {
-        FeatureProfile(rawValue: override ?? value ?? "") ?? .pilot
+        let selection = override.flatMap { $0.isEmpty ? nil : $0 } ?? value ?? ""
+        return FeatureProfile(rawValue: selection) ?? .pilot
     }
 
     static var featureProfile: FeatureProfile {
