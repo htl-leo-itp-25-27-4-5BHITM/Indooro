@@ -4,6 +4,8 @@ Stand 2026-10-16. Skill openspec-verify-change; proposal/design/specs/tasks und 
 
 ## Vollständigkeit
 
+16/17 Tasks abgehakt; 4.1 bleibt wegen Kit-Dateibesitz teilweise offen.
+
 - Setup/Modell/UI vorhanden: konfigurationsabhängiger Einstieg, strenge Test-ID, Aufgaben, Bedingungen, lokale Persistenz, monotone Zeitmessung, Ergebnis, Notizen, Auswahl früherer Sitzungen, Export/Löschen.
 - **CRITICAL / Eigentums-Gate:** 4.1 verlangt Kopie nach `kit/study-export-sample` (Person C). Synthetischer Simulator-Export liegt unter eigener Evidence; C muss übernehmen. Task bleibt offen.
 - **CRITICAL / Integration:** Navigationszähler und Ereignisse manualPosition/reroute/stopChange fehlen an Eriks öffentlicher NavigationSession. STATUS enthält Anfrage. Zeit/Ergebnis funktionieren gemäß dokumentiertem Fallback, fehlende Messwerte „-“. Szenario „manuelle Position einmal“ kann erst mit Eriks Integration abgenommen werden.

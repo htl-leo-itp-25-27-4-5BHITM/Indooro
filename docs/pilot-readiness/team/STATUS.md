@@ -41,10 +41,10 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | 2026-10-16 | Person A | A 4.2/5.1/5.2/5.6: Erik muss BeaconManager-Layoutdecoder (Alt 3.2), StoreMapPage-Filialübersicht ohne erfundene Koordinaten (Alt 6.x), Release-Debug-/Layout-Steuerungen und Kartentexte freigeben oder selbst integrieren. SearchOverlayView bleibt bis zur Löschfreigabe erhalten. | offen |
 | 2026-10-16 | Person A | A 5.4: PermissionBanner und Suchfehler über ContentView integriert; StoreMapPage unverändert. | gelöst ohne Änderung an Eriks Datei |
 | 2026-10-16 | Person A | A 6.5: explizite Freigabe von Erik zum Entfernen der vier toten Views fehlt. | offen |
-| 2026-10-16 | Person A | D: wartet auf docs/pilot-readiness/hardware/RESULT_SUMMARY.md; keine Schwellen ohne Messdaten. | offen |
-| 2026-10-16 | Person A | B: Erik muss routeBuildCount, rerouteCount, stopChangeWithoutEventCount und manualPositionCount an NavigationSession monoton veröffentlichen. Bis dahin Zeit/Ergebnis, fehlende Navigationswerte „-“. | offen |
+| 2026-10-16 | Person A | D 1.1: docs/pilot-readiness/hardware/RESULT_SUMMARY.md auch nach finalem Fetch nicht vorhanden; gemäß Auftrag übersprungen („wartet auf Messergebnis“). Keine Schwellen ohne Messdaten. | offen |
+| 2026-10-16 | Person A | B: Erik muss routeBuildCount, rerouteCount, stopChangeWithoutEventCount und manualPositionCount an NavigationSession monoton sowie manualPosition/reroute/stopChange-Ereignisse veröffentlichen. Bis dahin Zeit/Ergebnis, fehlende Navigationswerte „-“. | offen |
 | 2026-10-16 | Person A | B 4.1: kit/study-export-sample gehört Person C. Person C: fertiger synthetischer Export (3 Zeilen, 6 Events) liegt unter evidence/add-pilot-study-mode/study-export-sample auf pilot/ios-study-mode; bitte CSV + JSONL in den Kit-Pfad übernehmen. Simulator/Formatprüfung erledigt. | offen |
-| 2026-10-16 | Person A | C: Start-Gate „A in pilot/first-store gemergt“ noch nicht erfüllt; zudem Accessibility-Modifier an MapView/StoreMapPage nur nach Absprache. | offen |
+| 2026-10-16 | Person A | C: Start-Gate „A in pilot/first-store gemergt“ weiterhin nicht erfüllt (a20d385 nicht in 46b9ad1). Auf pilot/ios-accessibility a62877f: Baseline 77/0, Build grün, OpenSpec 64/0; Audit/Umsetzung nicht begonnen, Gate-Doku gepusht. MapView/StoreMapPage-Modifier zusätzlich pro Datei mit Erik absprechen. | offen |
 
 ## Entscheidungen
 
