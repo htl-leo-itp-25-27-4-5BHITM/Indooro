@@ -4,6 +4,8 @@ import { fitViewport, screenToWorld, zoomAt, type Point, type Viewport } from ".
 import { assignShelfSections, chooseShelfCategory, elementFill, nextAnchorId, shelfMetadata, shelfMetadataChanges } from "./metadata";
 import { applyCommand, createEditorState, isDirty, isMobileElementId, markSaved, newElementId, parseImportedDocument, redo, repairMobileElementIds, replaceDocument, selectElement, undo, type EditorCommand, type EditorState, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
 import { validateLayout, type AssignedBeacon } from "./validation";
+import { UnderlayPanel } from "./UnderlayPanel";
+import type { LayoutUnderlay } from "./underlay";
 import "./LayoutEditor.css";
 
 const TYPES = [
@@ -35,6 +37,7 @@ export interface LayoutEditorProps {
   api?: ApiClient;
   initialDocument: LayoutDocument;
   mode: "store" | "legacy";
+  storeId?: string;
   storeName?: string;
   assignedBeacons?: AssignedBeacon[];
   saveMode?: "draft" | "immediate";
@@ -60,7 +63,7 @@ const publishWarningNote = (issues: ReturnType<typeof validateLayout>) => {
   return `\n\n${warnings.length} Hinweis${warnings.length === 1 ? "" : "e"} bleiben offen:\n${details}${remaining}`;
 };
 
-export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBeacons = [], saveMode = "draft", onSaveDraft, onSaveCurrent, onPublish, publishLabel = "Veröffentlichen", publishPrompt = "Diesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.", allowUnchangedSave = false, onBack }: LayoutEditorProps) {
+export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, assignedBeacons = [], saveMode = "draft", onSaveDraft, onSaveCurrent, onPublish, publishLabel = "Veröffentlichen", publishPrompt = "Diesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.", allowUnchangedSave = false, onBack }: LayoutEditorProps) {
   const [editor, setEditor] = useState<EditorState>(() => createEditorState(initialDocument));
   const editorRef = useRef(editor);
   editorRef.current = editor;
@@ -78,6 +81,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
   const [categories, setCategories] = useState<Array<{ categoryCode: number; categoryName: string }>>([]);
   const [categoryError, setCategoryError] = useState(false);
   const [categoryRevision, setCategoryRevision] = useState(0);
+  const [underlay, setUnderlay] = useState<LayoutUnderlay | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const gesture = useRef<Gesture | null>(null);
@@ -442,6 +446,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
         }}>Regalabschnitte zuweisen</button>}
         <h2>Vorlagen</h2>
         <div className="le-templates">{TEMPLATES.map((template) => <button type="button" key={template.label} disabled={!!working} onClick={() => applyTemplate(template)}>{template.label}<span>{template.width} × {template.height} m</span></button>)}</div>
+        {mode === "store" && api && storeId && <UnderlayPanel api={api} storeId={storeId} underlay={underlay} onChange={setUnderlay} />}
         <h2>Elemente</h2><p id="le-keyboard-help" className="le-hint">Tastatur: Element wählen, Tab zum Grundriss, Pfeile positionieren, Enter platzieren. Bei ausgewählter Ebene bewegen Pfeile das Element; Shift + Pfeil bewegt schneller. Escape beendet das Werkzeug. Eigenschaften stehen rechts.</p>
         <div className="le-library">{TYPES.map((item) => <button type="button" key={item.type} aria-pressed={tool === "create" && createType === item.type} onClick={() => { setCreateType(item.type); setTool("create"); setKeyboardPoint({ x: document.gridSize.width / 2, y: document.gridSize.height / 2 }); }}><span className="le-swatch" style={{ background: item.color }} />{item.label}</button>)}</div>
         <h2>Ebenen <span>{document.elements.length}</span></h2>
@@ -459,9 +464,17 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
           </select></label>
         </div>
         <svg ref={svgRef} tabIndex={0} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} aria-label="Interaktiver Grundriss" aria-describedby="le-keyboard-help" role="group">
-          <defs><pattern id="le-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#d9e2df" strokeWidth={0.045} /></pattern></defs>
+          <defs><pattern id="le-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#d9e2df" strokeWidth={0.045} /></pattern><clipPath id="le-underlay-clip"><rect x="0" y="0" width={document.gridSize.width} height={document.gridSize.height} /></clipPath></defs>
           <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>
             <rect x={0} y={0} width={document.gridSize.width} height={document.gridSize.height} fill="#fff" stroke="#aabfba" strokeWidth={1 / viewport.scale} />
+            {underlay && (() => {
+              const scale = underlay.scaleMPerPx ?? document.gridSize.width / underlay.widthPx;
+              const width = underlay.widthPx * scale;
+              const height = underlay.heightPx * scale;
+              const cx = underlay.offsetXM + width / 2;
+              const cy = underlay.offsetYM + height / 2;
+              return <g clipPath="url(#le-underlay-clip)" pointerEvents="none"><image href={`data:${underlay.contentType};base64,${underlay.imageBase64}`} x={underlay.offsetXM} y={underlay.offsetYM} width={width} height={height} opacity={underlay.opacity} transform={`rotate(${underlay.rotationDeg} ${cx} ${cy})`} preserveAspectRatio="none" /></g>;
+            })()}
             {showGrid && <rect x={0} y={0} width={document.gridSize.width} height={document.gridSize.height} fill="url(#le-grid)" pointerEvents="none" />}
             {tool === "create" && createType !== "beacon" && <rect className="le-keyboard-preview" x={keyboardPoint.x - (TYPES.find((item) => item.type === createType)?.width || 0) / 2} y={keyboardPoint.y - (TYPES.find((item) => item.type === createType)?.height || 0) / 2} width={TYPES.find((item) => item.type === createType)?.width} height={TYPES.find((item) => item.type === createType)?.height} rx=".2" />}
             {tool === "create" && createType === "beacon" && <circle className="le-keyboard-preview" cx={keyboardPoint.x} cy={keyboardPoint.y} r=".35" />}

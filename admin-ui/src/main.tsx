@@ -6,6 +6,7 @@ import { StoresPage } from "./StoresPage";
 import { EditorRoute } from "./EditorRoute";
 import { StoreDetailPage } from "./StoreDetailPage";
 import { AnchorPrintPage } from "./AnchorPrintPage";
+import { ReadinessPage } from "./ReadinessPage";
 import { RegionsPage } from "./RegionsPage";
 import { StoreCreatePage } from "./StoreCreatePage";
 import { BeaconsPage } from "./BeaconsPage";
@@ -73,6 +74,8 @@ function AdminCandidate() {
             ? <AnchorPrintPage api={api} />
             : window.location.pathname.includes("/stores/detail")
             ? <StoreDetailPage api={api} user={user} />
+            : window.location.pathname.includes("/stores/readiness")
+            ? <ReadinessPage api={api} user={user} />
             : window.location.pathname.includes("/stores") ? <StoresPage api={api} user={user} />
             : window.location.pathname.includes("/regions") ? <RegionsPage api={api} user={user} />
             : window.location.pathname.includes("/beacons") ? <BeaconsPage api={api} user={user} />

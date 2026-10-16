@@ -8,6 +8,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 |---|---|---|---|---|---|---|
 | Erik (Mac) | `add-pilot-guided-tour-fallbacks` (PR #113 gemergt), `add-ios-app-test-target` (PR #114 gemergt) | `pilot/erik-guided-tour`, `pilot/ios-test-target` | Tour: 1.x–6.x, 9.x, 10.x, 8.1/8.2; Tests: 1.x, 2.x, 3.1, 3.2, 3.6, 4.x | Tour 8.3; Tests 3.3–3.5 (warten auf Person A / Studienmodus) | `swift test` 118/118, `xcodebuild test` 11/11, Debug/Release ok (2026-10-16) | 2026-10-16 |
 | Erik (Mac, Feldmessung) | `establish-pilot-field-measurement` [E] | `pilot/field-replay` | 1.2, 4.3, 6.1 | 3.3, 5.2 (warten auf Messung Person C), 4.6, 6.4 (Mensch) | `swift test` 79/79 (1 skipped), xcodebuild ok (2026-10-16) | 2026-10-16 |
+| Erik (Mac) | `add-store-pilot-readiness-check` (PR #116 gemergt) | `pilot/store-readiness` | 1.x–4.4, 5.1 | 5.2 PR; Entscheidung Abdeckungsregel | Backend 182/0, admin-ui 81/81 + Browser 115/115 (2026-10-16) | 2026-10-16 |
 | Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person B (Windows) | `release-pilot-backend` Phase A | `pilot/release-backend` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person C (Windows) | `prepare-pilot-store-operations` | `pilot/store-operations` | – | 1.1–3.5 | – | 2026-10-16 |
@@ -33,11 +34,12 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Budget und Bestellung von 12 Beacons | Erik + Person C | 2026-10-16 |
 | Herkunft „SPAR Posttraße“-Layout und Belegplan klären | Erik | 2026-10-16 |
 | Termin mit Betreuung | Erik | 2026-10-16 |
-| **Nur physisch:** iPhone anstecken, entsperren, „Vertrauen“ tippen, `scripts/ios/install-debug-on-device.sh` starten (liegt in PR #114), dann einen gedruckten QR-Code (Seite „QR-Codes drucken“ im Admin) mit „QR-Code scannen“ scannen (`add-qr-anchor-positioning` 3.5). Kamera-Text in den Build-Settings ergänzt Person A („… und zum Scannen von QR-Codes …“) | Erik / Person A | 2026-10-16 |
-| `add-ios-pilot-ui-tests` (F) wartet nur noch auf Merge von `prepare-pilot-ios-build`, `add-ios-app-test-target` und `add-pilot-guided-tour-fallbacks`; das UI-Test-Target kann danach wie `MCindooroAppTests` per Skript statt per Xcode-Klick angelegt werden | Erik | 2026-10-16 |
+| **Nur physisch:** iPhone anstecken, entsperren, „Vertrauen“ tippen, `scripts/ios/install-debug-on-device.sh` starten, dann einen gedruckten QR-Code (Seite „QR-Codes drucken“ im Admin) mit „QR-Code scannen“ scannen (`add-qr-anchor-positioning` 3.5). Kamera-Text in den Build-Settings ergänzt Person A („… und zum Scannen von QR-Codes …“) | Erik / Person A | 2026-10-16 |
+| `add-ios-pilot-ui-tests` (F) wartet nur noch auf Merge von `prepare-pilot-ios-build` (Person A); Test-Target und geführte Tour sind gemergt (#113, #114); das UI-Test-Target kann danach wie `MCindooroAppTests` per Skript statt per Xcode-Klick angelegt werden | Erik | 2026-10-16 |
 | `improve-positioning-with-motion` (G) wartet auf ≥ 5 echte Aufnahmen mit Truth-Markern aus zwei Orten (Person C) | Person C / Erik | 2026-10-16 |
-| **Nur physisch:** Mess-iPhones anstecken, entsperren, „Vertrauen“ tippen, `scripts/ios/install-debug-on-device.sh` starten (liegt in PR #114), Geräte in `docs/pilot-readiness/team/DEVICES.md` eintragen (`establish-pilot-field-measurement` 4.6); `Self._printChanges()` am Gerät messen (6.4) | Erik | 2026-10-16 |
+| **Nur physisch:** Mess-iPhones anstecken, entsperren, „Vertrauen“ tippen, `scripts/ios/install-debug-on-device.sh` starten, Geräte in `docs/pilot-readiness/team/DEVICES.md` eintragen (`establish-pilot-field-measurement` 4.6); `Self._printChanges()` am Gerät messen (6.4) | Erik | 2026-10-16 |
 | Aufnahmen (≥ 3 Testraum, ≥ 2 großer Raum) nach `NavigationFixtures/incoming/` legen; sie lösen 3.3, 5.2, 5.4, 6.3 aus | Person C | 2026-10-16 |
+| Entscheidung Abdeckungsregel (`add-store-pilot-readiness-check`) (Radius 8 m / 5 % / ≥ 3 Beacons ist auf einem leeren 20×20-m-Raum selbst mit 9 Beacons gelb) | Erik | 2026-10-16 |
 
 ## Hinweise an Personen
 
