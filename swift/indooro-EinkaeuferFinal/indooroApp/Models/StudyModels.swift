@@ -105,7 +105,12 @@ enum StudyFormat {
     static func isValidID(_ value: String) -> Bool {
         value.range(of: "^T[0-9]{1,3}$", options: .regularExpression) == (value.startIndex..<value.endIndex)
     }
-    static func iso(_ date: Date) -> String { ISO8601DateFormatter().string(from: date) }
+    static func iso(_ date: Date) -> String {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        formatter.timeZone = TimeZone(secondsFromGMT: 0)
+        return formatter.string(from: date)
+    }
     static func fileStem(_ session: StudySession) -> String {
         let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = TimeZone(secondsFromGMT: 0); formatter.dateFormat = "yyyyMMdd-HHmmss"
@@ -126,7 +131,11 @@ enum StudyFormat {
         return ([header] + rows).joined(separator: "\n") + "\n"
     }
     static func jsonLines(_ session: StudySession) throws -> Data {
-        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = [.sortedKeys]
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            var container = encoder.singleValueContainer(); try container.encode(iso(date))
+        }
+        encoder.outputFormatting = [.sortedKeys]
         var data = Data()
         for event in session.events { data.append(try encoder.encode(event)); data.append(0x0A) }
         return data

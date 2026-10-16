@@ -28,6 +28,19 @@ struct StudySessionView: View {
                         exportFiles = []
                     }
                     .disabled(!StudyFormat.isValidID(testId) || store.running != nil)
+                    if !store.savedSessions.isEmpty {
+                        Picker("Gespeicherte Sitzung", selection: Binding(
+                            get: { store.session?.id },
+                            set: { id in
+                                if let id { perform { try store.selectSession(id) }; exportFiles = [] }
+                            }
+                        )) {
+                            ForEach(store.savedSessions) { saved in
+                                Text("\(saved.testId) · \(saved.startedAt.formatted(date: .numeric, time: .shortened))").tag(Optional(saved.id))
+                            }
+                        }
+                        .disabled(store.running != nil)
+                    }
                     if let session = store.session {
                         Text("Aktive Sitzung: \(session.testId)")
                         Text("Navigationsmesswerte sind noch nicht verfügbar. Zeit und Ergebnis werden erfasst.")

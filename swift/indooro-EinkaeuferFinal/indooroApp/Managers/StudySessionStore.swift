@@ -17,6 +17,7 @@ enum StudyFailure: LocalizedError {
 @MainActor
 final class StudySessionStore: ObservableObject {
     static let openRequested = Notification.Name("IndooroStudyOpenRequested")
+    @Published private(set) var savedSessions: [StudySession] = []
     @Published private(set) var session: StudySession?
     @Published private(set) var running: StudyRunningTask?
     @Published var errorMessage: String?
@@ -39,7 +40,8 @@ final class StudySessionStore: ObservableObject {
                 do { found.append(try JSONDecoder.indooro.decode(StudySession.self, from: Data(contentsOf: dir.appendingPathComponent("session.json")))) }
                 catch { errorMessage = "Eine gespeicherte Sitzung konnte nicht gelesen werden. Die Dateien bleiben erhalten." }
             }
-            session = found.max(by: { $0.startedAt < $1.startedAt })
+            savedSessions = found.sorted(by: { $0.startedAt > $1.startedAt })
+            session = savedSessions.first
         } catch { errorMessage = "Gespeicherte Sitzungen konnten nicht geladen werden." }
     }
 
@@ -51,6 +53,12 @@ final class StudySessionStore: ObservableObject {
         guard tasks.allSatisfy({ $0.no > 0 && $0.productId > 0 }), Set(tasks.map(\.no)).count == tasks.count else { throw StudyFailure.invalidTask }
         let next = StudySession(id: UUID(), testId: testId, storeCode: storeCode, startedAt: now(), tasks: tasks)
         try persist(next); session = next; errorMessage = nil
+    }
+
+    func selectSession(_ id: UUID) throws {
+        guard running == nil else { throw StudyFailure.busy }
+        guard let saved = savedSessions.first(where: { $0.id == id }) else { throw StudyFailure.invalidTask }
+        session = saved; errorMessage = nil
     }
 
     func addTask(productId: Int, productName: String, layoutCode: String?) throws {
@@ -133,7 +141,7 @@ final class StudySessionStore: ObservableObject {
                 try FileManager.default.removeItem(at: dir)
             }
         }
-        session = nil; errorMessage = nil
+        session = nil; savedSessions = []; errorMessage = nil
     }
 
     private func directory(_ session: StudySession) -> URL { root.appendingPathComponent(session.id.uuidString, isDirectory: true) }
@@ -143,10 +151,17 @@ final class StudySessionStore: ObservableObject {
         var rootURL = root
         var values = URLResourceValues(); values.isExcludedFromBackup = true
         try rootURL.setResourceValues(values)
-        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = [.sortedKeys]
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .custom { date, encoder in
+            var container = encoder.singleValueContainer(); try container.encode(StudyFormat.iso(date))
+        }
+        encoder.outputFormatting = [.sortedKeys]
         try encoder.encode(session).write(to: dir.appendingPathComponent("session.json"), options: .atomic)
         try Data(StudyFormat.csv(session).utf8).write(to: dir.appendingPathComponent(StudyFormat.fileStem(session) + ".csv"), options: .atomic)
         try StudyFormat.jsonLines(session).write(to: dir.appendingPathComponent(StudyFormat.fileStem(session) + ".jsonl"), options: .atomic)
+        savedSessions.removeAll(where: { $0.id == session.id })
+        savedSessions.append(session)
+        savedSessions.sort(by: { $0.startedAt > $1.startedAt })
     }
     private func bundledTasks() throws -> [StudyTask] {
         guard let url = Bundle.main.url(forResource: "study-tasks", withExtension: "json") else { return [] }

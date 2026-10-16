@@ -41,3 +41,6 @@ Flag off = feature invisible.
 - NavigationSession ist vorhanden, veröffentlicht aber keinen der vier geforderten Zähler. routeBuildCount existiert nur intern in NavigationSessionCore. Keine Reflection/Änderung an Eriks Session; fehlende Werte bleiben „-“ statt als null Messwert ausgegeben zu werden.
 - Task 4.1 nennt einen Export unter kit/study-export-sample. Der Kit-Pfad gehört Person C; ein tatsächlich erzeugtes synthetisches Beispiel wird zunächst unter evidence/add-pilot-study-mode abgelegt. Übernahme durch C ist ein Eigentums-Gate.
 - Automatische und UI-Tests verwenden nur synthetische Test-IDs/Produktdaten, keine echten Personen.
+
+- Lesender Gegencheck, Korrekturrunde 1: ältere Sitzungen waren gespeichert, aber nicht mehr auswählbar. Gespeicherte Sitzungen werden jetzt angeboten und können vor dem Export ausgewählt werden; zusätzlicher Persistenztest mit zwei Sitzungen innerhalb derselben Sekunde. Persistierte und exportierte Zeitstempel behalten Millisekunden.
+- Export-Diagnose: DEBUG protokolliert nur Methode/Pfad der gemeinsamen Backend-Session (keine Querywerte/Bodys) und markiert Beginn/Ende des lokalen Exports. Der Beobachter übernimmt keinen Transport.

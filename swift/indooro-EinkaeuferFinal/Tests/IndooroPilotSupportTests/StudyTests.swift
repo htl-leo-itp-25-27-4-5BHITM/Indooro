@@ -65,4 +65,22 @@ final class StudyTests: XCTestCase {
         XCTAssertThrowsError(try store.createSession(testId: "T01", storeCode: "TEST", tasks: []))
         XCTAssertFalse(FileManager.default.fileExists(atPath: root.path))
     }
+    @MainActor
+    func testOlderSessionsRemainSelectableAndExportable() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        var now = Date(timeIntervalSince1970: 1_792_152_000.1)
+        let store = StudySessionStore(root: root, enabled: true, now: { now })
+        try store.createSession(testId: "T01", storeCode: "TEST", tasks: [])
+        let first = try XCTUnwrap(store.session?.id)
+        now += 0.2
+        try store.createSession(testId: "T02", storeCode: "TEST", tasks: [])
+        XCTAssertEqual(store.savedSessions.count, 2)
+        let restored = StudySessionStore(root: root, enabled: true)
+        XCTAssertEqual(restored.session?.testId, "T02")
+        try restored.selectSession(first)
+        XCTAssertEqual(restored.session?.testId, "T01")
+        XCTAssertTrue(try restored.exportURLs().allSatisfy { $0.lastPathComponent.hasPrefix("study-T01-") })
+    }
+
 }
