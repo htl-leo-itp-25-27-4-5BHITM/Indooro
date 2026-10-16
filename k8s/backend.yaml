@@ -79,7 +79,7 @@ spec:
             - name: QUARKUS_HTTP_PROXY_PROXY_ADDRESS_FORWARDING
               value: "true"
             - name: QUARKUS_OIDC_TOKEN_STATE_MANAGER_STRATEGY
-              value: "id-refresh-tokens"
+              value: "keep-all-tokens"
             - name: QUARKUS_OIDC_TOKEN_STATE_MANAGER_SPLIT_TOKENS
               value: "true"
 
