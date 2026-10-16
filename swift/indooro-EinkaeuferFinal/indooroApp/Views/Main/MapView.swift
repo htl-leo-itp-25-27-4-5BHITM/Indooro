@@ -71,7 +71,8 @@ struct MapView: View {
                                 .zIndex(80)
                         }
 
-                        ForEach(beaconManager.shelves) { element in
+                        // QR-Anker sind keine Regale und werden nicht als solche gezeichnet.
+                        ForEach(beaconManager.shelves.filter { !$0.isAnchor }) { element in
                             ShelfView(element: element, pixelsPerMeter: fittedPixelsPerMeter)
                         }
 
@@ -110,6 +111,18 @@ struct MapView: View {
                                     .position(
                                         x: CGFloat(beacon.positionX * fittedPixelsPerMeter),
                                         y: CGFloat(beacon.positionY * fittedPixelsPerMeter)
+                                    )
+                            }
+
+                            ForEach(beaconManager.shelves.filter(\.isAnchor)) { anchor in
+                                Label(anchor.anchorId ?? "?", systemImage: "qrcode")
+                                    .font(.caption2.weight(.bold))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(.thinMaterial, in: Capsule())
+                                    .position(
+                                        x: CGFloat((anchor.x + (anchor.width ?? 1) / 2) * fittedPixelsPerMeter),
+                                        y: CGFloat((anchor.y + (anchor.height ?? 1) / 2) * fittedPixelsPerMeter)
                                     )
                             }
                         }

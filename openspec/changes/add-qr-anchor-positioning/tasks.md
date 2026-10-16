@@ -1,22 +1,22 @@
 ## 1. Setup
 
-- [ ] 1.1 Start after `main` (with the admin rebuild) is merged into `pilot/first-store`; create `pilot/qr-anchors` from `origin/pilot/first-store`; baseline `swift test`, simulator build, admin checks, `sh ./mvnw test`.
+- [x] 1.1 Start after `main` (with the admin rebuild) is merged into `pilot/first-store`; create `pilot/qr-anchors` from `origin/pilot/first-store`; baseline `swift test`, simulator build, admin checks, `sh ./mvnw test`. (branch `pilot/qr-anchors` = `origin/pilot/first-store` + `origin/pilot/erik-guided-tour`, because the scan buttons sit next to „Ich bin hier“ and the untrusted banner from PR 113)
 - [ ] 1.2 Run `npx -y @fission-ai/openspec@1.3.1 validate add-qr-anchor-positioning --strict`.
 
 ## 2. Payload and Layout Model
 
-- [ ] 2.1 Add `AnchorPayload` (pure Swift, SwiftPM target): parse/build the URL, validate store code and anchor id; tests incl. malformed URLs.
-- [ ] 2.2 Decode `anchor` elements in `LayoutData`; expose anchors per layout; tests with a fixture.
+- [x] 2.1 Add `AnchorPayload` (pure Swift, SwiftPM target): parse/build the URL, validate store code and anchor id; tests incl. malformed URLs.
+- [x] 2.2 Decode `anchor` elements in `LayoutData`; expose anchors per layout; tests with a fixture.
 - [ ] 2.3 Backend `LayoutDocumentValidator`: unique `anchorId`, id format; JUnit tests.
 - [ ] 2.4 Admin `editor/validation.ts`: same rule; unit tests.
 
 ## 3. iOS Scan
 
-- [ ] 3.1 Add `Views/Scan/AnchorScannerView.swift` with VisionKit `DataScannerViewController` (QR only), availability check, fallback message if unsupported.
-- [ ] 3.2 Add „QR-Code scannen“ to the indoor map header and the „Position ungenau“ banner.
-- [ ] 3.3 Wire a valid scan to the manual calibration path (trusted position, one route rebuild, study counter `manualPositionCount`).
-- [ ] 3.4 Store mismatch and unknown anchor states per requirement.
-- [ ] 3.5 Simulator check with a QR image (camera simulation not available: use a DEBUG „Payload einfügen“ field to test the same code path); device check documented as human step.
+- [x] 3.1 Add `Views/Scan/AnchorScannerView.swift` with VisionKit `DataScannerViewController` (QR only), availability check, fallback message if unsupported.
+- [x] 3.2 Add „QR-Code scannen“ to the indoor map header and the „Position ungenau“ banner.
+- [x] 3.3 Wire a valid scan to the manual calibration path (trusted position, one route rebuild, study counter `manualPositionCount`).
+- [x] 3.4 Store mismatch and unknown anchor states per requirement.
+- [x] 3.5.5 Simulator check with a QR image (camera simulation not available: use a DEBUG „Payload einfügen“ field to test the same code path); device check documented as human step. Simulator check done (evidence in `docs/pilot-readiness/evidence/qr-anchors/`); **device check with a printed code is a human step** (see `STATUS.md`).
 
 ## 4. Admin Editor and Print Sheet
 
