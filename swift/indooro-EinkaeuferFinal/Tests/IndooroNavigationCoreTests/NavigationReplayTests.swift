@@ -116,6 +116,11 @@ final class NavigationReplayTests: XCTestCase {
         XCTAssertEqual(metrics.rerouteCount, 1)
         XCTAssertEqual(metrics.activeStopChangesWithoutEvent, 0)
         XCTAssertEqual(metrics.offRouteDetectionDelays.count, 1)
+        // Task 6.1 (establish-pilot-field-measurement): Der grosse Schritt ist ein Szenario-Artefakt. Die Wahrheit
+        // springt im Funkloch in einem Tick um 17 m (9.5 -> 26.5); der Schaetzer uebernimmt den bestaetigten Sprung
+        // genau einmal. Der groesste Schritt darf deshalb nicht groesser als der Sprung der Wahrheit sein.
+        XCTAssertEqual(metrics.projectedJumps, 1)
+        XCTAssertEqual(metrics.maxProjectedStepMeters, 17.0, accuracy: 0.5)
     }
 
     // MARK: - Szenario 8: Beacon-Ausfall

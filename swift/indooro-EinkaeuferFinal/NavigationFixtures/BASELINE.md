@@ -96,3 +96,17 @@ Hinweise:
 
 - Die Planungszeit ist ein Debug-Wert und fast vollstaendig Dijkstra (26 Laeufe ueber den Graphen); sie faellt nur bei Planungsereignissen an.
 - 2-opt-Parameter (Mindestgewinn 0.01 m, 50 Durchgaenge) sind provisional.
+
+## Nach Task 6.1 (establish-pilot-field-measurement): 17-m-Schritt in `determinism` und `wrongAisle`
+
+Befund: **Szenario-Artefakt, kein Pipeline-Defekt.** Beide Szenarien lassen die Bodenwahrheit im Funkloch
+in einem einzigen Tick von (10.5, 9.5) nach (10.5, 26.5) springen (`SyntheticRecording.blackout(seconds:truth:)`, 17.0 m).
+Ein Mensch kann das nicht (bei 1.2 m/s dauert der Weg ca. 14 s). Das Sprung-Gate des Schaetzers haelt die ersten
+Folgepunkte und uebernimmt den Cluster nach `jumpConfirmations` (3) Bestaetigungen genau einmal; der groesste Schritt der
+projizierten Position (17.13 m / 17.16 m) entspricht dem Sprung der Wahrheit, `projectedJumps = 1`, kein zweiter Sprung.
+Auch `lagP95 = 17.14 m` stammt aus dieser einen Messung direkt nach dem Wahrheitssprung.
+
+Folge: Aenderung nur an der Erwartung, nicht an der Pipeline. `testWrongAisleCausesExactlyOneReroute` prueft jetzt
+zusaetzlich `projectedJumps == 1` und `maxProjectedStepMeters ≈ 17.0 ± 0.5`; ein Pipeline-Defekt (Gate gibt zu frueh frei,
+Projektion springt auf eine ferne Kante) wuerde diesen Wert ueberschreiten oder zusaetzliche Spruenge erzeugen.
+Echte Aufnahmen kennen diesen Sprung nicht: dort ist der Weg zwischen Gaengen stetig, und `maxStep` ist eine echte Kennzahl.
