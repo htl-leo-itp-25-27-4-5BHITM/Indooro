@@ -6,7 +6,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 
 | Person | Aktuelle Change | Branch | Erledigte Tasks | Nächste Tasks | Prüfungen zuletzt | Aktualisiert |
 |---|---|---|---|---|---|---|
-| Erik (Mac) | `add-ios-app-test-target` | `pilot/ios-test-target` | 1.x, 2.x, 3.1, 3.2, 3.6, 4.1, 4.3 | 3.3–3.5 (warten auf Person A / Studienmodus) | `swift test` 88/88, `xcodebuild test` 11/11, Debug/Release ok (2026-10-16) | 2026-10-16 |
+| Erik (Mac) | `add-ios-app-test-target` | `pilot/ios-test-target` | 1.x, 2.x, 3.1, 3.2, 3.6, 4.x | 3.3–3.5 (warten auf Person A / Studienmodus) | `swift test` 88/88, `xcodebuild test` 11/11, Debug/Release ok (2026-10-16) | 2026-10-16 |
 | Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person B (Windows) | `release-pilot-backend` Phase A | `pilot/release-backend` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person C (Windows) | `prepare-pilot-store-operations` | `pilot/store-operations` | – | 1.1–3.5 | – | 2026-10-16 |
