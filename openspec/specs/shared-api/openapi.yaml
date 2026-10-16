@@ -55,6 +55,8 @@ tags:
     description: Store master data, audit, and beacon assignments.
   - name: store-layouts
     description: Versioned store layouts and editor context.
+  - name: store-readiness
+    description: Pilot readiness report per store (layout, products, beacons).
   - name: beacons
     description: Beacon inventory and assignments.
   - name: example
@@ -1720,6 +1722,34 @@ paths:
               schema: { $ref: "#/components/schemas/EditorContextResponse" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/stores/{storeId}/readiness:
+    parameters:
+      - $ref: "#/components/parameters/StoreIdPath"
+    get:
+      tags: [store-readiness]
+      operationId: getStoreReadiness
+      summary: Pilot readiness of the store's active layout, products and beacons.
+      description: "RED when a blocking finding exists, YELLOW when only warnings exist, GREEN otherwise. Products are matched to shelves by exact category base and meter (31 never matches 310). The store's products are those whose storeId equals the store id or whose storeCode equals the store code. Without an active layout the response is HTTP 200 with a NO_ACTIVE_LAYOUT blocking finding. The product scan stops after 20 pages of 500 and then reports PRODUCT_LIMIT_REACHED."
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui, api-tests]
+      parameters:
+        - name: radius
+          in: query
+          required: false
+          description: Beacon coverage radius in metres. Default 8.0.
+          schema: { type: number, format: double, minimum: 0.5, maximum: 30, default: 8.0 }
+      responses:
+        "200":
+          description: Readiness report.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReadinessReport" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/stores/{storeId}/layout/underlay:
     parameters:
       - $ref: "#/components/parameters/StoreIdPath"
@@ -2925,6 +2955,43 @@ components:
       required: [storeId]
       properties:
         storeId: { type: string, format: uuid }
+    ReadinessReport:
+      type: object
+      required: [storeId, radius, status, blockingCount, warningCount, counts, findings]
+      properties:
+        storeId: { type: string, format: uuid }
+        layoutId: { type: [string, "null"], format: uuid }
+        layoutVersionNo: { type: [integer, "null"] }
+        radius: { type: number }
+        status: { type: string, enum: [RED, YELLOW, GREEN] }
+        blockingCount: { type: integer }
+        warningCount: { type: integer }
+        counts:
+          type: object
+          properties:
+            shelves: { type: integer }
+            entrances: { type: integer }
+            products: { type: integer }
+            placedBeacons: { type: integer }
+            assignedBeacons: { type: integer }
+            walkableCells: { type: integer }
+            lowCoverageCells: { type: integer }
+        findings:
+          type: array
+          items: { $ref: "#/components/schemas/ReadinessFinding" }
+    ReadinessFinding:
+      type: object
+      required: [severity, code, message]
+      properties:
+        severity: { type: string, enum: [BLOCKING, WARNING] }
+        code:
+          type: string
+          enum: [NO_ACTIVE_LAYOUT, ENTRANCE_COUNT, PRODUCT_NO_SHELF, TARGET_SHELF_WITHOUT_LABEL, SHELF_WITHOUT_PRODUCTS, DUPLICATE_PRODUCT_ID, BEACON_ASSIGNED_NOT_PLACED, BEACON_WITHOUT_IDENTITY, LOW_BEACON_COVERAGE, GRID_SIZE_IMPLAUSIBLE, PRODUCT_LIMIT_REACHED]
+        message: { type: string, description: German text for the editor and the checklist. }
+        elementId: { type: [string, "null"], description: Layout element id as text. }
+        productId: { type: [integer, "null"] }
+        layoutCode: { type: [string, "null"] }
+        beaconCode: { type: [string, "null"] }
     BeaconAssignmentResponse:
       type: object
       properties:

@@ -13,6 +13,11 @@ test("candidate direct links deny unknown roles and unknown paths", () => {
   assert.equal(candidateAccess("/admin/next/stores/detail/", "store-manager", "store-1", "store-1"), "allowed");
   assert.equal(candidateAccess("/admin/next/stores/detail/", "store-manager", "store-2", "store-1"), "forbidden");
   assert.equal(candidateAccess("/admin/next/stores/detail/", "viewer"), "forbidden");
+  assert.equal(candidateAccess("/admin/next/stores/readiness/", "store-manager", "store-1", "store-1"), "allowed");
+  assert.equal(candidateAccess("/admin/next/stores/readiness/", "store-manager", "store-2", "store-1"), "forbidden");
+  assert.equal(candidateAccess("/admin/next/stores/readiness/", "store-manager"), "forbidden");
+  assert.equal(candidateAccess("/admin/next/stores/readiness/", "region-manager", "store-2", null), "allowed");
+  assert.equal(candidateAccess("/admin/next/stores/readiness/", "viewer", "store-1", "store-1"), "forbidden");
   assert.equal(candidateAccess("/admin/next/stores/", "region-manager"), "allowed");
   assert.equal(candidateAccess("/admin/next/regions/", "region-manager"), "allowed");
   assert.equal(candidateAccess("/admin/next/regions/", "store-manager"), "forbidden");

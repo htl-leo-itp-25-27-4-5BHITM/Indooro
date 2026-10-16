@@ -1,0 +1,29 @@
+{
+    "storeId": "427253fb-94ff-47e6-8902-1b197e68cd0a",
+    "layoutId": null,
+    "layoutVersionNo": null,
+    "radius": 8.0,
+    "status": "RED",
+    "blockingCount": 1,
+    "warningCount": 0,
+    "counts": {
+        "shelves": 0,
+        "entrances": 0,
+        "products": 0,
+        "placedBeacons": 0,
+        "assignedBeacons": 0,
+        "walkableCells": 0,
+        "lowCoverageCells": 0
+    },
+    "findings": [
+        {
+            "severity": "BLOCKING",
+            "code": "NO_ACTIVE_LAYOUT",
+            "message": "Keine aktive Layout-Version: Die Filiale kann nicht getestet werden.",
+            "elementId": null,
+            "productId": null,
+            "layoutCode": null,
+            "beaconCode": null
+        }
+    ]
+}

@@ -6,7 +6,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 
 | Person | Aktuelle Change | Branch | Erledigte Tasks | Nächste Tasks | Prüfungen zuletzt | Aktualisiert |
 |---|---|---|---|---|---|---|
-| Erik (Mac) | `add-pilot-guided-tour-fallbacks` | `pilot/erik-guided-tour` | 7.1–7.4 | 1.1–2.7 | `swift test` 77/77 (2026-10-15) | 2026-10-16 |
+| Erik (Mac) | `add-store-pilot-readiness-check` | `pilot/store-readiness` | 1.x–4.4, 5.1 | 5.2 PR; Entscheidung Abdeckungsregel | Backend 182/0, admin-ui 81/81 + Browser 115/115 (2026-10-16) | 2026-10-16 |
 | Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person B (Windows) | `release-pilot-backend` Phase A | `pilot/release-backend` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person C (Windows) | `prepare-pilot-store-operations` | `pilot/store-operations` | – | 1.1–3.5 | – | 2026-10-16 |
@@ -32,6 +32,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Budget und Bestellung von 12 Beacons | Erik + Person C | 2026-10-16 |
 | Herkunft „SPAR Posttraße“-Layout und Belegplan klären | Erik | 2026-10-16 |
 | Termin mit Betreuung | Erik | 2026-10-16 |
+| Entscheidung Abdeckungsregel (`add-store-pilot-readiness-check`) (Radius 8 m / 5 % / ≥ 3 Beacons ist auf einem leeren 20×20-m-Raum selbst mit 9 Beacons gelb) | Erik | 2026-10-16 |
 
 ## Blocker
 
