@@ -149,6 +149,8 @@ struct NavigationSessionCore {
     private(set) var routeOriginKind: NavigationRouteOriginKind = .position
 
     private var fallbackOriginKind: NavigationRouteOriginKind?
+    /// Manuell gesetzte Position gilt, bis ein vertrauter Tick eintrifft oder Tour/Layout endet.
+    private var manualPositionHolds = false
     private var entrancePoint: SIMD2<Float>?
     private var graph: IndoorGraph?
     private var needsRoute = false
@@ -221,13 +223,13 @@ struct NavigationSessionCore {
     }
 
     /// Ein Positionierungs-Tick: mit Position wie `positionUpdated`, ohne Loesung nur die Konfidenz
-    /// (ohne Position gibt es auch keine vertraute Position mehr).
+    /// (ohne Position bleibt nur eine noch gueltige manuelle Kalibrierung vertraut).
     mutating func tickUpdated(projected: SIMD2<Float>?, confidence: Float, at now: TimeInterval, trusted: Bool = true) {
         let stopBefore = activeStopID
         if let projected {
             applyPosition(projected, confidence: confidence, at: now, trusted: trusted)
         } else {
-            hasTrustedPosition = false
+            hasTrustedPosition = manualPositionHolds
             applyConfidence(confidence)
         }
         countStopChangeWithoutEvent(since: stopBefore)
@@ -296,6 +298,7 @@ struct NavigationSessionCore {
     /// ein einzelnes Ziel verworfen (Store/Layout gewechselt), eine Tour behaelt ihren Plan.
     /// Ein erledigter Stopp bleibt als Fallback-Ursprung erhalten, sonst gilt der neue Eingang.
     mutating func layoutChanged(graph newGraph: IndoorGraph?, entrance: SIMD2<Float>? = nil, plan newPlan: [NavigationStop]? = nil) {
+        manualPositionHolds = false
         graph = newGraph
         entrancePoint = entrance
         clearRoute()
@@ -332,6 +335,7 @@ struct NavigationSessionCore {
         manualPositionCount += 1
         lastPosition = projected
         hasTrustedPosition = true
+        manualPositionHolds = true
         fallbackOrigin = nil
         fallbackOriginKind = nil
         offRouteSince = nil
@@ -340,6 +344,7 @@ struct NavigationSessionCore {
     }
 
     mutating func stopTour() {
+        manualPositionHolds = false
         mode = .idle
         plan = []
         activeStopID = nil
@@ -457,11 +462,13 @@ struct NavigationSessionCore {
     /// Positionsereignis: vertraut oder nicht. Nur vertraute Positionen aendern Route und Fortschritt.
     private mutating func applyPosition(_ projected: SIMD2<Float>, confidence: Float, at now: TimeInterval, trusted: Bool) {
         guard trusted else {
-            hasTrustedPosition = false
+            hasTrustedPosition = manualPositionHolds
             applyConfidence(confidence)
             return
         }
 
+        // Sichere Solver-Aktualisierung ersetzt die manuelle Position als vertrauten Zustand.
+        manualPositionHolds = false
         lastPosition = projected
         hasTrustedPosition = true
         fallbackOrigin = nil

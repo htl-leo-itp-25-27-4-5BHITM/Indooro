@@ -184,13 +184,21 @@ final class NavigationSession: ObservableObject {
     // MARK: - Intern
 
     private func handle(_ sample: NavigationSample) {
-        core.tickUpdated(projected: sample.projectedPosition, confidence: sample.confidence, at: sample.timestamp)
+        core.tickUpdated(
+            projected: sample.projectedPosition,
+            confidence: sample.confidence,
+            at: sample.timestamp,
+            trusted: sample.isTrusted
+        )
         publish()
     }
 
     private func seedPosition() {
         guard let position = beaconManager?.userPosition else { return }
-        core.seedPosition(SIMD2<Float>(Float(position.x), Float(position.y)))
+        core.seedPosition(
+            SIMD2<Float>(Float(position.x), Float(position.y)),
+            trusted: beaconManager?.isPositionTrusted ?? false
+        )
     }
 
     /// Eingang des aktuellen Layouts (Layout-Elemente ohne Beacons; `shelves` enthaelt auch Eingaenge).

@@ -16,9 +16,9 @@
 
 ## 3. Trusted Position (BeaconManager, adapted from fix-ios-contract-and-spec-drift 8.1)
 
-- [ ] 3.1 Publish `isPositionTrusted` from `BeaconManager` according to the requirement „Tour route has an origin without a trusted position“; feed it into `NavigationSession` so the core receives positions only with their trust flag.
-- [ ] 3.2 Treat a manual calibration as trusted until the next confident solver update.
-- [ ] 3.3 Mark `fix-ios-contract-and-spec-drift` task 8.1 as done with a note „implemented in add-pilot-guided-tour-fallbacks“.
+- [x] 3.1 Publish `isPositionTrusted` from `BeaconManager` according to the requirement „Tour route has an origin without a trusted position“; feed it into `NavigationSession` so the core receives positions only with their trust flag.
+- [x] 3.2 Treat a manual calibration as trusted until the next confident solver update.
+- [x] 3.3 Mark `fix-ios-contract-and-spec-drift` task 8.1 as done with a note „implemented in add-pilot-guided-tour-fallbacks“.
 
 ## 4. „Ich bin hier“ and Degraded Marker (UI)
 

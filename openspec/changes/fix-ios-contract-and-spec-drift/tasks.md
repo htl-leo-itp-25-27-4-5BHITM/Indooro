@@ -48,7 +48,7 @@
 
 ## 8. Low-Confidence Rendering
 
-- [ ] 8.1 Publish `isPositionTrusted` from `BeaconManager` as `trackingMode == .debugNoBeacons || (!isLowConfidence && activeMeasurementCount >= 3)`.
+- [x] 8.1 Publish `isPositionTrusted` from `BeaconManager` as `trackingMode == .debugNoBeacons || (!isLowConfidence && activeMeasurementCount >= 3)`. (implemented in add-pilot-guided-tour-fallbacks)
 - [ ] 8.2 Add `isTrusted` to `UserLocationMarker`; draw 45 % opacity plus a dashed 3 m uncertainty ring when not trusted.
 - [ ] 8.3 Show the status banner with `navigationStatusMessage ?? "Position ungenau"` and „Position setzen“ in the indoor header while not trusted.
 - [ ] 8.4 Implement „Position setzen“ by setting `tapSetsTarget = false` and showing the „Tippen setzt Position“ badge.

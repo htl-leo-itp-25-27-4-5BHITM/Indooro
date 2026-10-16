@@ -12,6 +12,8 @@ struct NavigationSample {
     let projectedPosition: SIMD2<Float>?
     let confidence: Float
     let timestamp: TimeInterval
+    /// Position ist vertraut: Beacon-Tracking aktiv, Solver-Loesung vorhanden, Konfidenz nicht niedrig.
+    let isTrusted: Bool
 }
 
 /// Zielwunsch von BeaconManager (Produkt-Ziel, Storewechsel) an die Navigations-Session.
@@ -139,6 +141,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     @Published var rawUserPosition: CGPoint?
     @Published var userPosition: CGPoint?
+    /// Vertrauenswuerdigkeit von `userPosition` (Solver-Tick oder manuell gesetzte Position).
+    @Published private(set) var isPositionTrusted = false
     @Published var userHeadingRadians: Float?
     @Published var isUserHeadingReliable = false
 
@@ -237,6 +241,10 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let headingReliabilityTimeout: TimeInterval = 1.4
 
     private var manualCalibrationRevision: Int = 0
+    /// Manuelle Kalibrierung gilt als vertraut, bis ein sicherer Solver-Tick eintrifft.
+    private var manualPositionHolds = false
+    /// Nach Wechsel zu `.beacon` endet die manuelle Haltung erst mit dem naechsten Tick.
+    private var resetManualHoldOnNextTick = false
     private var isUpdatingHeading = false
     private var latestHeadingAccuracyDegrees: CLLocationDirection = -1
     private let reliableHeadingAccuracyThreshold: CLLocationDirection = 25
@@ -435,6 +443,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         switch mode {
         case .beacon:
+            resetManualHoldOnNextTick = true
             configureBeaconScanningForCurrentMode()
 
         case .debugNoBeacons:
@@ -443,11 +452,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             clearBeaconMeasurements()
             rssiSamples.removeSamples()
             tapSetsTarget = false
+            // Ohne Beacons gibt es keine Solver-Position; nur eine manuelle Position bleibt vertraut.
+            setPositionTrusted(manualPositionHolds)
             navigationSamples.send(
                 NavigationSample(
                     projectedPosition: nil,
                     confidence: 1,
-                    timestamp: Date().timeIntervalSince1970
+                    timestamp: Date().timeIntervalSince1970,
+                    isTrusted: false
                 )
             )
             DispatchQueue.main.async {
@@ -610,6 +622,19 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     /// Veroeffentlicht das Ergebnis eines Ticks: Rohposition und Blickrichtung aus dem geloesten Punkt,
     /// projizierte Position bei jedem Tick (die Glaettung fuer die Darstellung uebernimmt die Marker-Animation).
     private func publish(_ tick: PositioningTick) {
+        let isTrusted = trackingMode == .beacon
+            && tick.projectedPoint != nil
+            && tick.confidence >= navigationConfig.confidence.lowThreshold
+
+        if resetManualHoldOnNextTick {
+            resetManualHoldOnNextTick = false
+            manualPositionHolds = false
+        }
+        if isTrusted {
+            manualPositionHolds = false
+        }
+        setPositionTrusted(isTrusted || manualPositionHolds)
+
         if let solvedPoint = tick.solvedPoint {
             let movementHeading = estimateHeading(currentPoint: solvedPoint, timestamp: tick.timestamp)
             let reliableHeading = movementHeading ?? recentReliableMovementHeading(at: tick.timestamp)
@@ -627,7 +652,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             NavigationSample(
                 projectedPosition: tick.projectedPoint,
                 confidence: tick.confidence,
-                timestamp: tick.timestamp
+                timestamp: tick.timestamp,
+                isTrusted: isTrusted
             )
         )
 
@@ -635,6 +661,17 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             DispatchQueue.main.async {
                 self.publishUserPosition(CGPoint(projectedPoint))
             }
+        }
+    }
+
+    /// Setzt `isPositionTrusted` nur bei Aenderung und immer auf dem Main-Thread.
+    private func setPositionTrusted(_ trusted: Bool) {
+        guard Thread.isMainThread else {
+            DispatchQueue.main.async { self.setPositionTrusted(trusted) }
+            return
+        }
+        if isPositionTrusted != trusted {
+            isPositionTrusted = trusted
         }
     }
 
@@ -677,6 +714,10 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             mapPoint: CGPoint(effectivePoint),
             timestamp: timestamp
         )
+
+        // Manuelle Position gilt als vertraut, bis ein sicherer Solver-Tick eintrifft.
+        manualPositionHolds = true
+        setPositionTrusted(true)
 
         // Die Session baut nur die Route zum aktiven Stopp von hier neu (Plan bleibt).
         manualCalibrations.send(event)

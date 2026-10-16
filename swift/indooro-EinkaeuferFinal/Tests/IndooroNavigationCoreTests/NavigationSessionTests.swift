@@ -373,6 +373,45 @@ final class NavigationSessionTests: XCTestCase {
         XCTAssertEqual(core.routeOriginKind, .position)
     }
 
+    // MARK: - Vertrauen nach manueller Kalibrierung
+
+    func testManualCalibrationStaysTrustedAcrossUntrustedTicks() {
+        var (core, clock) = tourOnStraightRoute()
+        core.manualCalibration(at: SIMD2(12.5, 5.5))
+        for _ in 0..<5 {
+            clock.advance(tick)
+            core.tickUpdated(projected: SIMD2(20.5, 15.5), confidence: 0.9, at: clock.now, trusted: false)
+            XCTAssertTrue(core.hasTrustedPosition)
+        }
+        clock.advance(tick)
+        core.tickUpdated(projected: nil, confidence: 0.9, at: clock.now, trusted: false)
+        XCTAssertTrue(core.hasTrustedPosition)
+        XCTAssertEqual(core.lastPosition, SIMD2<Float>(12.5, 5.5))
+
+        // Stopp erledigt: Route baut von der manuellen Position, nicht vom Fallback am verlassenen Stopp.
+        core.stopCompleted()
+        XCTAssertEqual(core.routeOriginKind, .position)
+        XCTAssertEqual(core.activeRoute?.points.first, SIMD2<Float>(12.5, 5.5))
+    }
+
+    func testTrustedTickEndsManualHoldSoLaterUntrustedTickDropsTrust() {
+        var (core, clock) = tourOnStraightRoute()
+        core.manualCalibration(at: SIMD2(12.5, 5.5))
+
+        clock.advance(tick)
+        core.tickUpdated(projected: SIMD2(12.5, 5.5), confidence: 0.9, at: clock.now, trusted: true)
+        XCTAssertTrue(core.hasTrustedPosition)
+
+        clock.advance(tick)
+        core.tickUpdated(projected: SIMD2(12.5, 5.5), confidence: 0.9, at: clock.now, trusted: false)
+        XCTAssertFalse(core.hasTrustedPosition)
+
+        // Ohne Vertrauen: Route baut vom Fallback am erledigten Stopp.
+        core.stopCompleted()
+        XCTAssertEqual(core.routeOriginKind, .lastStop("A"))
+        XCTAssertEqual(core.activeRoute?.points.first, SIMD2<Float>(5.5, 15.5))
+    }
+
     // MARK: - Helpers
 
     /// Tour A (5.5/15.5) vor B (30.5/15.5), Start bei 28.5/15.5: gerade Route nach links.
