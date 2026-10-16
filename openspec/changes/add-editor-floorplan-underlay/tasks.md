@@ -5,7 +5,7 @@
 
 ## 2. Backend
 
-- [ ] 2.1 Flyway migration for `layout_underlays` (next free version number).
+- [x] 2.1 Flyway migration for `layout_underlays` at V15 (next unallocated version across active changes).
 - [ ] 2.2 Entity, repository, service with magic-byte check, size and dimension limits, audit log.
 - [ ] 2.3 Resource `PUT/GET/DELETE /api/stores/{storeId}/layout/underlay` with roles and scope; `@QuarkusTest` for 200/401/403/413/415.
 - [ ] 2.4 Update `openspec/specs/shared-api/openapi.yaml`.
