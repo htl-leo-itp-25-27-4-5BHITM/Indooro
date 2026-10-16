@@ -1,7 +1,7 @@
 ## 1. Setup
 
-- [ ] 1.1 Create `pilot/editor-underlay` from `origin/main` after the admin rebuild merge; copy this change folder from `origin/pilot/first-store`; baseline backend and admin checks.
-- [ ] 1.2 Validate the change with OpenSpec strict.
+- [x] 1.1 Use existing `pilot/editor-underlay` at `origin/main` after the admin rebuild merge; the planning folder is already present. Baseline backend 142/142, Admin Unit 69/69, Browser 111/111, Typecheck, Lint and Package/Build passed.
+- [x] 1.2 Validate the change with OpenSpec strict.
 
 ## 2. Backend
 
