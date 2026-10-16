@@ -49,6 +49,33 @@ test("new editor saves a draft, reloads it, then activates the same version", as
   expect(current.status).toBe("ACTIVE");
 });
 
+test("a layout without an entrance can be saved as a private draft but cannot be published", async ({ page }) => {
+  const missingEntrance = { ...document, elements: document.elements.filter((element) => element.type !== "entrance") };
+  let draftWrites = 0;
+  let activations = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/editor-context", (route) => route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: { layoutId: "active-1", versionNo: 1, status: "ACTIVE", layout: missingEntrance }, assignedBeacons: [] } }));
+  await page.route("**/api/stores/store-1/layout/versions", (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: [] });
+    draftWrites += 1;
+    expect(route.request().postDataJSON().activate).toBe(false);
+    return route.fulfill({ json: { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layout: route.request().postDataJSON().layout } });
+  });
+  await page.route("**/api/stores/store-1/layout/versions/draft-2/activate", (route) => {
+    activations += 1;
+    return route.fulfill({ status: 500 });
+  });
+
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await expect(page.getByText("Ein Eingang ist für die Navigation erforderlich.")).toBeVisible();
+  await page.getByRole("textbox", { name: "Filialname" }).fill("Entwurf ohne Eingang");
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.locator(".le-message")).toHaveText("Entwurf gespeichert.");
+  await expect(page.getByRole("button", { name: "Veröffentlichen" })).toBeDisabled();
+  expect(draftWrites).toBe(1);
+  expect(activations).toBe(0);
+});
+
 test("store-scoped direct link blocks another store before loading editor data", async ({ page }) => {
   let contextRequests = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "manager-1", username: "manager", email: null, role: "store-manager", scope: { storeId: "store-1", storeName: "Indooro Linz" } } }));

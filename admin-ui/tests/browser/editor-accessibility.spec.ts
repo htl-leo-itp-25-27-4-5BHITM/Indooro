@@ -185,13 +185,14 @@ test("save failure is announced, retains edits, and announces a successful retry
   const shopName = page.getByLabel("Filialname");
   await shopName.fill("Linz Test geändert");
   await page.getByRole("button", { name: "Entwurf speichern" }).click();
-  await expect(page.getByRole("status")).toHaveText("Serverfehler. Bitte später erneut versuchen.");
+  await expect(page.locator(".le-message")).toHaveText("Serverfehler. Bitte später erneut versuchen.");
+  await expect(page.locator(".le-message")).toHaveAttribute("role", "status");
   await expect(page.getByRole("button", { name: "Entwurf speichern" })).toBeFocused();
   await expect(shopName).toHaveValue("Linz Test geändert");
   await expect(page.getByText("Ungespeicherte Änderungen")).toBeVisible();
 
   await page.getByRole("button", { name: "Entwurf speichern" }).click();
-  await expect(page.getByRole("status")).toHaveText("Entwurf gespeichert.");
+  await expect(page.locator(".le-message")).toHaveText("Entwurf gespeichert.");
   await expect(page.getByRole("button", { name: "Entwurf speichern" })).toBeFocused();
   await expect(page.locator(".le-save-indicator")).toContainText("Gespeichert");
   expect(saveAttempts).toBe(2);
