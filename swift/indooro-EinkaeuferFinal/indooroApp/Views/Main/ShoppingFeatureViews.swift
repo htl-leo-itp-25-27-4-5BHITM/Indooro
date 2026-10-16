@@ -816,7 +816,7 @@ struct ProductsPage: View {
     }
 
     private var recommendationsSection: some View {
-        Section("Kunden kauften ebenfalls") {
+        Section("Passt gut dazu") {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(recommendations) { suggestion in

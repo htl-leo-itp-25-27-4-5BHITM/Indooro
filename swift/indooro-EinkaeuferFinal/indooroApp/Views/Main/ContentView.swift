@@ -19,6 +19,8 @@ struct ContentView: View {
     @StateObject private var upsellStore = UpsellSuggestionStore()
 
     @AppStorage(AppEnvironment.profileOverrideKey) private var profileOverride = ""
+    @AppStorage("IndooroIntroductionCompleted") private var introductionCompleted = false
+    @State private var showsIntroduction = false
     @State private var selectedSection: AppSection = .start
     @State private var targetProduct: Product?
     @State private var pendingShoppingImportPackage: ShoppingTransferPackage?
@@ -117,7 +119,11 @@ struct ContentView: View {
             Button("Öffnen") { beaconManager.openSuggestedPilotStore(store) }
             Button("Abbrechen", role: .cancel) { beaconManager.suggestedPilotStore = nil }
         }
+        .sheet(isPresented: $showsIntroduction) {
+            PilotIntroduction { introductionCompleted = true; showsIntroduction = false }
+        }
         .onAppear {
+            showsIntroduction = !introductionCompleted
             let provider: () -> MobileStoreSummary? = { [weak beaconManager] in
                 beaconManager?.activeLayoutStore ?? beaconManager?.detectedStore
             }

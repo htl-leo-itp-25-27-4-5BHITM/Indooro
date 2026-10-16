@@ -35,7 +35,7 @@
 - [ ] 5.2 Replace remaining English/developer terms in customer-facing strings (search `Views/` for „Tracking“, „Beacon“, „Tap“, „Store“, „Layout“, „LeoCloud“, „Debug“); keep debug log lines unchanged.
 - [x] 5.3 Make permission requests lazy: create `CBCentralManager` and call `requestLocationAuthorizationIfNeeded` only when tracking mode becomes „Mit Ortung“ (`BeaconManager` init and mode switch).
 - [x] 5.4 Publish `bluetoothState` and `locationAuthorization` from `BeaconManager`; add `Views/Components/PermissionBanner.swift` with the two banners and an „Einstellungen öffnen“ button (`UIApplication.openSettingsURLString`); show it in the indoor map.
-- [ ] 5.5 Add the first-launch introduction screen (three points, „Los geht's“), persisted flag, reachable via the Start tab help button; default positioning mode for new installs = „Ohne Ortung“.
+- [x] 5.5 Add the first-launch introduction screen (three points, „Los geht's“), persisted flag, reachable via the Start tab help button; default positioning mode for new installs = „Ohne Ortung“.
 - [ ] 5.6 Implement `fix-ios-contract-and-spec-drift` 6.1–6.4 (store overview without fake coordinates, address subtitle, title „Filialen“) and 10.1–10.2 (cleanup); mark them there.
 
 ## 6. Build and Distribution Hygiene

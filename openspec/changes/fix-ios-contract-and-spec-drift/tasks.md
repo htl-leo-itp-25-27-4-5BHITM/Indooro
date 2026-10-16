@@ -63,8 +63,8 @@
 
 ## 10. Cleanup And Copy
 
-- [ ] 10.1 Rename the planning section to „Passt gut dazu“.
-- [ ] 10.2 Delete `UpsellRequest` and `UpsellSuggestionResponse` from `UpsellModels.swift`.
+- [x] 10.1 Rename the planning section to „Passt gut dazu“. (implemented in prepare-pilot-ios-build)
+- [x] 10.2 Delete `UpsellRequest` and `UpsellSuggestionResponse` from `UpsellModels.swift`. (implemented in prepare-pilot-ios-build)
 
 ## 11. Verification
 
