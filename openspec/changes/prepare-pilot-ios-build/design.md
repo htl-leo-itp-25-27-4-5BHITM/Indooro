@@ -65,3 +65,5 @@ Abgleich Alt-Change (Task 1.2):
 
 - Suchfehler und Store-Scope in der Karte werden über ContentView (`safeAreaInset` und `storeProvider`) integriert; StoreMapPage bleibt unverändert. Damit entfallen die Eigentums-Gates für Alt-Tasks 4.3/5.2 und die Banner-Einbindung.
 - `MobileStoreModels` ist ausdrücklich im Impact zugewiesen; `address`, `source`, `fallback` ergänzt. Die tolerante Decoder-Nutzung in BeaconManager-Layout-/Fallback-Methoden bleibt gemäß direkter Grenze offen (A 4.2, Alt 3.2); ShoppingTransferService gehört nicht zu den gesperrten Navigationsteilen und ist für den explizit übernommenen Alt-Task angepasst.
+
+- Abschnitt-4-Build: SearchOverlayView wird trotz fehlender Nutzung mitkompiliert und referenzierte die entfernte BeaconManager-Suche. Als zugewiesene Suchansicht auf ProductSearchStore migriert; keine Löschung ohne Freigabe.
