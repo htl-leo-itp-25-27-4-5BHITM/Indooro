@@ -40,8 +40,8 @@
 
 ## 6. Build and Distribution Hygiene
 
-- [ ] 6.1 Create `indooroApp/Assets.xcassets` with `AppIcon` (1024 px from `logos/`) and `AccentColor`; verify the built app shows the icon in the simulator.
-- [ ] 6.2 Move `indooroApp/README.md`, `indooroApp/presentation-airdrop-swift/` and unused layout JSONs out of the synchronized folder (see design decision 8); confirm via build and a search for file names that nothing loads them.
+- [x] 6.1 Create `indooroApp/Assets.xcassets` with `AppIcon` (1024 px from `logos/`) and `AccentColor`; verify the built app shows the icon in the simulator.
+- [x] 6.2 Move `indooroApp/README.md`, `indooroApp/presentation-airdrop-swift/` and unused layout JSONs out of the synchronized folder (see design decision 8); confirm via build and a search for file names that nothing loads them.
 - [ ] 6.3 Remove `NSAllowsArbitraryLoads` from `Info.plist`; verify all requests still succeed against LeoCloud (HTTPS).
 - [ ] 6.4 Set `IPHONEOS_DEPLOYMENT_TARGET` to the lowest pilot device version from 1.3 (not below 17.0); fix availability errors.
 - [ ] 6.5 Delete `HeaderView.swift`, `SearchOverlayView.swift`, `MapHeaderView.swift`, `LayoutSelectionSheet.swift` after confirming with a project-wide search that they are unreferenced; coordinate with Erik first because `add-pilot-guided-tour-fallbacks` replaces the „Ich stehe hier“ control.
@@ -49,7 +49,7 @@
 
 ## 7. Verification and Handover
 
-- [ ] 7.1 Run `swift test`, the simulator build, and `npx -y @fission-ai/openspec@1.3.1 validate prepare-pilot-ios-build --strict`.
+- [x] 7.1 Run `swift test`, the simulator build, and `npx -y @fission-ai/openspec@1.3.1 validate prepare-pilot-ios-build --strict`.
 - [ ] 7.2 Manual check list in the simulator, recorded with screenshots under `docs/pilot-readiness/evidence/ios-pilot-build/`: fresh install (no permission prompt, introduction), search „Milch & Käse“, server-down search error (wrong base URL via DEBUG override), Release-like settings sheet, profile `pilot` tab bar, Bluetooth-off banner (device only; otherwise note as open).
 - [ ] 7.3 Install on at least one real iPhone (human step) and record the result in `docs/pilot-readiness/team/DEVICES.md`.
-- [ ] 7.4 Open a pull request `pilot/ios-pilot-build` → `pilot/first-store` with outputs and screenshots; update `docs/pilot-readiness/team/STATUS.md` (row „Person A“).
+- [x] 7.4 Open a pull request `pilot/ios-pilot-build` → `pilot/first-store` with outputs and screenshots; update `docs/pilot-readiness/team/STATUS.md` (row „Person A“).
