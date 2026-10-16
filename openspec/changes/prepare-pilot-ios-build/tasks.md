@@ -8,7 +8,7 @@
 ## 2. Environment and Feature Profile
 
 - [x] 2.1 Add `App/AppEnvironment.swift` with `apiBaseURL` (Info.plist `IndooroAPIBaseURL`, fallback LeoCloud), `requestTimeout` (15 s), and `featureProfile` (`IndooroFeatureProfile`, default `pilot`) plus a DEBUG-only `UserDefaults` override.
-- [ ] 2.2 Add both keys to `Info.plist`.
+- [x] 2.2 Add both keys to `Info.plist`.
 - [ ] 2.3 Replace the `apiBase` literals in `ProductSearchStore`, `RecipeStore`, `UpsellSuggestionStore` and `BeaconManager` with `AppEnvironment.apiBaseURL`; use a shared `URLSession` configuration with the timeout.
 - [ ] 2.4 Verify with `grep -rn "it220209" swift/indooro-EinkaeuferFinal/indooroApp` that only `AppEnvironment` remains.
 
