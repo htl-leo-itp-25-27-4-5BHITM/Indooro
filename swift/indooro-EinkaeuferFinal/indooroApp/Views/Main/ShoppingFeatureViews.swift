@@ -34,6 +34,10 @@ struct ShoppingStopMarker: View {
 
 struct ShoppingSessionPanel: View {
     let snapshot: ShoppingRouteSnapshot
+    /// „Route ab …“ bei Fallback-Ursprung, sonst nil.
+    let routeOriginText: String?
+    /// Kundensprachlicher Standorttext eines Stopps (Regal des ersten Artikels).
+    let locationText: (ShoppingStop) -> String?
     let onOpenList: () -> Void
     let onMarkCurrentStopDone: () -> Void
     let onSkipCurrentStop: () -> Void
@@ -55,10 +59,24 @@ struct ShoppingSessionPanel: View {
                             .font(.subheadline.weight(.bold))
                             .lineLimit(1)
 
+                        if let location = locationText(currentStop) {
+                            Text(location)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(accent)
+                                .lineLimit(1)
+                        }
+
                         Text(currentStop.itemNamesPreview)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+
+                        if let routeOriginText {
+                            Text(routeOriginText)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
                     }
 
                     Spacer(minLength: 0)
@@ -627,6 +645,7 @@ struct ProductsPage: View {
                 ForEach(plannedItems.prefix(7)) { item in
                     PlannedProductRow(
                         item: item,
+                        locationText: shelfPrimaryText(for: item, shelves: beaconManager.shelves),
                         onRemove: {
                             removePlannedItem(item)
                         }
@@ -1086,8 +1105,16 @@ private struct ProductSuggestion: Identifiable {
     let tint: Color
 }
 
+/// Regaltext eines Artikels in Kundensprache (Primaertext des Descriptors); nil ohne passendes Regal.
+private func shelfPrimaryText(for item: ShoppingListItem, shelves: [LayoutElement]) -> String? {
+    guard let layoutCode = item.layoutCode else { return nil }
+    return ShelfLocationDescriptor.make(layoutCode: layoutCode, shelves: shelves)?.primary
+}
+
 private struct PlannedProductRow: View {
     let item: ShoppingListItem
+    /// Standorttext aus dem Elternview; ohne Wert: „Freier Eintrag“ bzw. Testbereich-Hinweis.
+    let locationText: String?
     let onRemove: () -> Void
 
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
@@ -1115,7 +1142,7 @@ private struct PlannedProductRow: View {
                     }
                 }
 
-                Text(item.layoutCode.map { "Regal \($0)" } ?? "Freier Eintrag")
+                Text(locationText ?? (item.layoutCode == nil ? "Freier Eintrag" : ShelfLocationDescriptor.notInTestAreaText))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -1524,6 +1551,7 @@ struct ShoppingListsPage: View {
                 ForEach(openItems) { item in
                     ShoppingChecklistRow(
                         item: item,
+                        locationText: shelfPrimaryText(for: item, shelves: beaconManager.shelves),
                         isCompleted: false,
                         onToggle: {
                             completeItem(item, status: .done, source: "shopping_list")
@@ -1551,6 +1579,7 @@ struct ShoppingListsPage: View {
                     ForEach(preview.unresolvedItems) { item in
                         ShoppingChecklistRow(
                             item: item,
+                            locationText: shelfPrimaryText(for: item, shelves: beaconManager.shelves),
                             isCompleted: false,
                             onToggle: {
                                 completeItem(item, status: .missing, source: "shopping_list")
@@ -1586,6 +1615,7 @@ struct ShoppingListsPage: View {
                     ForEach(completedItems) { item in
                         ShoppingChecklistRow(
                             item: item,
+                            locationText: shelfPrimaryText(for: item, shelves: beaconManager.shelves),
                             isCompleted: true,
                             onToggle: {
                                 if let selectedList {
@@ -1769,6 +1799,8 @@ struct ShoppingListsPage: View {
 
 private struct ShoppingChecklistRow: View {
     let item: ShoppingListItem
+    /// Standorttext aus dem Elternview; ohne Wert: „Keine Regalposition“ bzw. Testbereich-Hinweis.
+    let locationText: String?
     let isCompleted: Bool
     let onToggle: () -> Void
 
@@ -1796,7 +1828,7 @@ private struct ShoppingChecklistRow: View {
                         }
                     }
 
-                    Text(item.layoutCode.map { "Regal \($0)" } ?? "Keine Regalposition")
+                    Text(locationText ?? (item.layoutCode == nil ? "Keine Regalposition" : ShelfLocationDescriptor.notInTestAreaText))
                         .font(.caption)
                         .foregroundStyle(.secondary)
 

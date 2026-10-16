@@ -22,19 +22,19 @@
 
 ## 4. „Ich bin hier“ and Degraded Marker (UI)
 
-- [ ] 4.1 Add one-shot state `nextTapSetsPosition` in the indoor map; add the button „Ich bin hier“ to the indoor header area of `StoreMapPage` (visible WHILE a layout is shown).
-- [ ] 4.2 In `MapView`, route the next tap to the manual calibration path WHEN `nextTapSetsPosition` is true, independent of `tapSetsTarget`; reset the flag afterwards; show the badge „Tippe auf deinen Standort“ while active.
-- [ ] 4.3 Implement `fix-ios-contract-and-spec-drift` 8.2–8.4 on top: untrusted marker at 45 % opacity with dashed 3 m ring, banner „Position ungenau“ with „Position setzen“ (calls the same one-shot mode). Mark 8.2–8.4 there.
-- [ ] 4.4 Show „Route ab Eingang“ / „Route ab <Stopp>“ in the tour panel and target card from `routeOriginKind`.
+- [x] 4.1 Add one-shot state `nextTapSetsPosition` in the indoor map; add the button „Ich bin hier“ to the indoor header area of `StoreMapPage` (visible WHILE a layout is shown).
+- [x] 4.2 In `MapView`, route the next tap to the manual calibration path WHEN `nextTapSetsPosition` is true, independent of `tapSetsTarget`; reset the flag afterwards; show the badge „Tippe auf deinen Standort“ while active.
+- [x] 4.3 Implement `fix-ios-contract-and-spec-drift` 8.2–8.4 on top: untrusted marker at 45 % opacity with dashed 3 m ring, banner „Position ungenau“ with „Position setzen“ (calls the same one-shot mode). Mark 8.2–8.4 there.
+- [x] 4.4 Show „Route ab Eingang“ / „Route ab <Stopp>“ in the tour panel and target card from `routeOriginKind`.
 - [ ] 4.5 Verify in the simulator in mode „Ohne Ortung“ (renamed by `prepare-pilot-ios-build`; until then „Debug (kein Beacon)“): start tour → route from entrance; „Erledigt“ → route from last stop; „Ich bin hier“ → route from tapped point. Record screenshots under `docs/pilot-readiness/evidence/guided-tour/`.
 
 ## 5. Customer-Readable Shelf Location
 
 - [x] 5.1 Add `ShelfLocationDescriptor` (pure Swift, included in the SwiftPM target) with input `layoutCode` and optional shelf `label`/`meter`, output `primary` and `detail` per the requirement „Shelf location is described in customer words“.
 - [x] 5.2 Add tests: labeled shelf, unlabeled shelf, non-numeric fach/reihe, malformed layoutCode, no matching shelf.
-- [ ] 5.3 Replace `targetAisleText`/`targetShelfNumberText` in `StoreMapPage` with the descriptor; remove the fixed „Etage EG“ metric if the layout has one floor; show the „Nicht im Testbereich – bitte Personal fragen“ state instead of silently clearing the target (`BeaconManager.setTargetProduct`).
-- [ ] 5.4 Show the descriptor's primary text for each stop in the tour panel and in the shopping list rows that already show a stop title (`ShoppingFeatureViews`), without changing list logic.
-- [ ] 5.5 Keep category codes visible only in DEBUG builds (e.g. as secondary caption).
+- [x] 5.3 Replace `targetAisleText`/`targetShelfNumberText` in `StoreMapPage` with the descriptor; remove the fixed „Etage EG“ metric if the layout has one floor; show the „Nicht im Testbereich – bitte Personal fragen“ state instead of silently clearing the target (`BeaconManager.setTargetProduct`).
+- [x] 5.4 Show the descriptor's primary text for each stop in the tour panel and in the shopping list rows that already show a stop title (`ShoppingFeatureViews`), without changing list logic.
+- [x] 5.5 Keep category codes visible only in DEBUG builds (e.g. as secondary caption).
 
 ## 6. Layout Cache and Offline Start (fix-ios-contract-and-spec-drift 7.1–7.4)
 

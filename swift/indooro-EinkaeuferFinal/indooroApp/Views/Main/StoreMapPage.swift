@@ -21,6 +21,7 @@ struct StoreMapPage: View {
     @State private var mapScale: Double = 1.0
     @State private var showSettings = false
     @State private var isShowingStoreOverview = true
+    @State private var nextTapSetsPosition = false
     @State private var pendingStoreSelectionID: UUID?
     @State private var storeCameraPosition: MapCameraPosition = .region(
         MKCoordinateRegion(
@@ -205,6 +206,7 @@ struct StoreMapPage: View {
                         navigationSession: navigationSession,
                         pixelsPerMeter: basePixelsPerMeter,
                         mapScale: $mapScale,
+                        nextTapSetsPosition: $nextTapSetsPosition,
                         targetProduct: targetProduct,
                         shoppingStops: activeShoppingSnapshot?.orderedStops ?? [],
                         activeShoppingStopID: activeShoppingSnapshot?.currentStop?.id,
@@ -385,6 +387,8 @@ struct StoreMapPage: View {
         VStack(spacing: 10) {
             mapPageHeader
 
+            indoorPositionControls
+
             searchBarCard
 
             if productSearch.isSearching {
@@ -467,6 +471,60 @@ struct StoreMapPage: View {
         .padding(.horizontal, 2)
     }
 
+    private var indoorPositionControls: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 0) {
+                Button {
+                    nextTapSetsPosition.toggle()
+                } label: {
+                    Label("Ich bin hier", systemImage: "location.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(nextTapSetsPosition ? Color.white : accent)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background(
+                            nextTapSetsPosition ? accent : accent.opacity(0.11),
+                            in: Capsule()
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Ich bin hier")
+
+                Spacer(minLength: 0)
+            }
+
+            if !beaconManager.isPositionTrusted {
+                untrustedPositionBanner
+            }
+        }
+        .padding(.horizontal, 2)
+    }
+
+    private var untrustedPositionBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+
+            Text(navigationSession.navigationStatusMessage ?? "Position ungenau")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+
+            Spacer(minLength: 0)
+
+            Button("Position setzen") {
+                nextTapSetsPosition = true
+            }
+            .font(.caption.weight(.semibold))
+            .buttonStyle(.plain)
+            .foregroundStyle(accent)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(MapFloatingSurface())
+    }
+
     private var searchBarCard: some View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
@@ -525,6 +583,8 @@ struct StoreMapPage: View {
         if let snapshot = activeShoppingSnapshot {
             ShoppingSessionPanel(
                 snapshot: snapshot,
+                routeOriginText: routeOriginText,
+                locationText: { stop in stopLocationText(for: stop) },
                 onOpenList: onOpenLists,
                 onMarkCurrentStopDone: {
                     let completedStop = activeShoppingSnapshot?.currentStop
@@ -573,7 +633,7 @@ struct StoreMapPage: View {
 
     private func targetNavigationCard(_ target: Product) -> some View {
         let isAlreadyInList = shoppingListManager.containsProduct(target)
-        let hasMatchingShelf = matchingShelf(for: target) != nil
+        let shelfDescriptor = ShelfLocationDescriptor.make(layoutCode: target.layoutCode, shelves: beaconManager.shelves)
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
@@ -588,18 +648,35 @@ struct StoreMapPage: View {
                         .foregroundStyle(.primary)
                         .lineLimit(2)
 
-                    HStack(spacing: 8) {
-                        Text(targetZoneLabel(for: target))
+                    if let shelfDescriptor {
+                        Text(shelfDescriptor.primary)
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(.primary)
                             .lineLimit(1)
 
-                        Text("·")
+                        if let detail = shelfDescriptor.detail {
+                            Text(detail)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
 
-                        Text(String(format: "%.2f EUR", target.price))
-                            .fontWeight(.semibold)
-                            .foregroundStyle(accent)
+                        #if DEBUG
+                        Text(shelfDescriptor.debugCode)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        #endif
+                    } else {
+                        Label(ShelfLocationDescriptor.notInTestAreaText, systemImage: "exclamationmark.triangle")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.orange)
+                            .lineLimit(2)
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+                    Text(String(format: "%.2f EUR", target.price))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(accent)
                 }
 
                 Spacer(minLength: 0)
@@ -618,11 +695,10 @@ struct StoreMapPage: View {
                 .buttonStyle(.plain)
             }
 
-            HStack(spacing: 8) {
-                targetCompactMetric(title: "Gang", value: targetAisleText(for: target))
-                targetCompactMetric(title: "Regal", value: targetShelfNumberText(for: target))
-                targetCompactMetric(title: "Etage", value: "EG")
-                Spacer(minLength: 0)
+            if let routeOriginText {
+                Text(routeOriginText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             HStack(spacing: 10) {
@@ -634,7 +710,7 @@ struct StoreMapPage: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
                 }
-                .disabled(!hasMatchingShelf)
+                .disabled(shelfDescriptor == nil)
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
                 .background(accent, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -752,6 +828,7 @@ struct StoreMapPage: View {
 
     private func showStoreOverview() {
         pendingStoreSelectionID = nil
+        nextTapSetsPosition = false
         targetProduct = nil
         clearSearchAndDismissKeyboard()
         withAnimation(.snappy(duration: 0.28)) {
@@ -832,33 +909,23 @@ struct StoreMapPage: View {
         )
     }
 
-    private func targetCompactMetric(title: String, value: String) -> some View {
-        HStack(spacing: 4) {
-            Text(title)
-                .foregroundStyle(.secondary)
-
-            Text(value)
-                .fontWeight(.bold)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
+    /// Herkunft der aktiven Route in Kundensprache; nil bei vertrauenswuerdiger Position oder ohne Route.
+    private var routeOriginText: String? {
+        guard navigationSession.navigationRoute.pointCount >= 2 else { return nil }
+        switch navigationSession.routeOriginKind {
+        case .position:
+            return nil
+        case .entrance:
+            return "Route ab Eingang"
+        case .lastStop(let title):
+            return "Route ab \(title)"
         }
-        .font(.caption)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 6)
-        .background(Color(uiColor: .secondarySystemGroupedBackground).opacity(0.72), in: Capsule())
     }
 
-    private func targetAisleText(for product: Product) -> String {
-        let parts = product.layoutCode.components(separatedBy: "/")
-        guard let first = parts.first, !first.isEmpty else { return "-" }
-        return first
-    }
-
-    private func targetShelfNumberText(for product: Product) -> String {
-        let parts = product.layoutCode.components(separatedBy: "/")
-        guard parts.count > 1, !parts[1].isEmpty else { return "-" }
-        return parts[1]
+    /// Standorttext eines Stopps: Regal des ersten Artikels mit layoutCode.
+    private func stopLocationText(for stop: ShoppingStop) -> String? {
+        guard let layoutCode = stop.items.compactMap(\.layoutCode).first else { return nil }
+        return ShelfLocationDescriptor.make(layoutCode: layoutCode, shelves: beaconManager.shelves)?.primary
     }
 
     private func startRouteToTarget(_ target: Product) {
@@ -876,18 +943,6 @@ struct StoreMapPage: View {
         }
     }
 
-    private func targetZoneLabel(for product: Product) -> String {
-        if let shelf = matchingShelf(for: product) {
-            if let label = shelf.displayMapTitle {
-                return label
-            }
-        }
-        return "Kein passendes Regal auf der Karte"
-    }
-
-    private func matchingShelf(for product: Product) -> LayoutElement? {
-        beaconManager.shelves.first { $0.matchesProductLayoutCode(product.layoutCode) }
-    }
 }
 
 private struct StoreMapPin: Identifiable {

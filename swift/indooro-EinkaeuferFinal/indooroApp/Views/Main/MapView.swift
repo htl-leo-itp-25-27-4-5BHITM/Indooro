@@ -5,6 +5,8 @@ struct MapView: View {
     @ObservedObject var navigationSession: NavigationSession
     let pixelsPerMeter: Double
     @Binding var mapScale: Double
+    /// One-shot-Modus „Ich bin hier“: der naechste Tap setzt die Position und beendet den Modus.
+    @Binding var nextTapSetsPosition: Bool
     let targetProduct: Product?
     let shoppingStops: [ShoppingStop]
     let activeShoppingStopID: String?
@@ -40,7 +42,7 @@ struct MapView: View {
             let routePoints = navigationSession.remainingRoute.cgPoints.map {
                 CGPoint(x: $0.x * fittedPixelsPerMeter, y: $0.y * fittedPixelsPerMeter)
             }
-            let allowsManualMapTap = showsDebugMapElements || !beaconManager.tapSetsTarget
+            let allowsManualMapTap = showsDebugMapElements || !beaconManager.tapSetsTarget || nextTapSetsPosition
 
             VStack(spacing: 0) {
                 Color.clear
@@ -115,7 +117,9 @@ struct MapView: View {
                         if let position = displayUserPosition {
                             UserLocationMarker(
                                 headingRadians: beaconManager.userHeadingRadians,
-                                isReliable: beaconManager.isUserHeadingReliable
+                                isReliable: beaconManager.isUserHeadingReliable,
+                                isTrusted: beaconManager.isPositionTrusted,
+                                pixelsPerMeter: fittedPixelsPerMeter
                             )
                             .position(
                                 x: CGFloat(position.x * fittedPixelsPerMeter),
@@ -137,7 +141,10 @@ struct MapView: View {
                                     let xMeter = Double(location.x) / fittedPixelsPerMeter
                                     let yMeter = Double(location.y) / fittedPixelsPerMeter
                                     let point = CGPoint(x: xMeter, y: yMeter)
-                                    if beaconManager.tapSetsTarget {
+                                    if nextTapSetsPosition {
+                                        beaconManager.setManualUserPosition(point)
+                                        nextTapSetsPosition = false
+                                    } else if beaconManager.tapSetsTarget {
                                         navigationSession.setSingleTarget(point)
                                     } else {
                                         beaconManager.setManualUserPosition(point)
@@ -169,7 +176,9 @@ struct MapView: View {
                     .overlay(alignment: .topTrailing) {
                         if allowsManualMapTap {
                             MapCanvasStatusBadge(
-                                title: beaconManager.tapSetsTarget ? "Tippen setzt Ziel" : "Tippen setzt Position",
+                                title: nextTapSetsPosition
+                                    ? "Tippe auf deinen Standort"
+                                    : (beaconManager.tapSetsTarget ? "Tippen setzt Ziel" : "Tippen setzt Position"),
                                 systemImage: "hand.tap",
                                 tint: .orange
                             )
