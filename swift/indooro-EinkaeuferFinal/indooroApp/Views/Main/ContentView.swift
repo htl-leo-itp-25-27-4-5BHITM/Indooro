@@ -124,6 +124,10 @@ struct ContentView: View {
             guard shoppingSessionManager.isActive else { return }
             syncShoppingSession()
         }
+        .onChange(of: profileOverride) { _, _ in
+            upsellStore.resetSession()
+            if !AppEnvironment.allowsExtendedFeatures && selectedSection == .recipes { selectedSection = .start }
+        }
         .onOpenURL { url in
             handleIncomingShoppingTransfer(url)
         }
@@ -147,7 +151,7 @@ struct ContentView: View {
 
     private var upsellPromptBinding: Binding<UpsellPrompt?> {
         Binding(
-            get: { upsellStore.activePrompt },
+            get: { AppEnvironment.allowsExtendedFeatures ? upsellStore.activePrompt : nil },
             set: { newValue in
                 if newValue == nil {
                     upsellStore.clearPrompt(reason: "sheet_binding_nil")

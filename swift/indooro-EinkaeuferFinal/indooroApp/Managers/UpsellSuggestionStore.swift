@@ -103,6 +103,7 @@ final class UpsellSuggestionStore: ObservableObject {
     }
 
     func authorizePlanPreloading(for store: MobileStoreSummary, reason: String) {
+        guard AppEnvironment.allowsExtendedFeatures else { return }
         if authorizedStoreId != store.id {
             debugLog("authorizePlanPreloading store=\(storeDebug(store)) reason=\(reason) previous=\(authorizedStoreId?.uuidString ?? "nil") clearsCache=true")
             planTask?.cancel()
@@ -126,6 +127,7 @@ final class UpsellSuggestionStore: ObservableObject {
         store: MobileStoreSummary?,
         source: String
     ) {
+        guard AppEnvironment.allowsExtendedFeatures else { resetSession(); return }
         guard shownCountForSession < maxPromptsPerSession else {
             debugLog("preloadPlan skipped reason=session_limit shownCount=\(shownCountForSession) limit=\(maxPromptsPerSession)")
             return
@@ -282,6 +284,7 @@ final class UpsellSuggestionStore: ObservableObject {
         store: MobileStoreSummary?,
         source: String
     ) {
+        guard AppEnvironment.allowsExtendedFeatures else { return }
         let triggerItems = checkedItems.filter { $0.productID != nil && !$0.addedFromUpsell }
         debugLog(
             "showOpportunity requested opportunity=\(opportunityId) source=\(source) store=\(storeDebug(store)) checkedItems=\(checkedItems.map { "\($0.name)#\($0.productID.map(String.init) ?? "nil") upsell=\($0.addedFromUpsell)" })"
@@ -411,6 +414,7 @@ final class UpsellSuggestionStore: ObservableObject {
     }
 
     func accept(_ suggestion: UpsellSuggestion, prompt: UpsellPrompt?) {
+        guard AppEnvironment.allowsExtendedFeatures else { return }
         let metadata: String?
         if let prompt {
             metadata = metadataJson([
@@ -434,6 +438,7 @@ final class UpsellSuggestionStore: ObservableObject {
     }
 
     func dismissCurrentPrompt(suppressProduct: Bool = false) {
+        guard AppEnvironment.allowsExtendedFeatures else { return }
         guard let prompt = activePrompt else {
             debugLog("dismissCurrentPrompt skipped reason=no_active_prompt suppress=\(suppressProduct)")
             return
@@ -770,6 +775,7 @@ final class UpsellSuggestionStore: ObservableObject {
     }
 
     private func sendBestEffort<T: Encodable>(_ request: T, to url: URL) {
+        guard AppEnvironment.allowsExtendedFeatures else { return }
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
