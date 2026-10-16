@@ -4,6 +4,8 @@ Updated: 2026-10-16. Working branch: `codex/admin-platform-rebuild` in the isola
 
 ## Current checkpoint
 
+Pilot-Cut-Entscheidung vom 2026-10-16: Neun Admin-Routen bleiben auf dem Candidate, der Editor bleibt mit `editor: false` auf Legacy. Der umfassende Nachweisrest aus Tasks 1.2, 3.10 und 5.4 ist teilweise belegt und nach `complete-admin-parity-evidence` übertragen. Task 5.4 wurde dafür wieder geöffnet; der Stand ist 34/39. `PILOT_CUT.md` ist die aktuelle Übergabe. Die folgenden Absätze sind historische Prüfzeitpunkte und keine zusätzliche Pilot-Freigabe.
+
 Pilot-Cut-Korrektur vom 2026-10-16: Die in den folgenden historischen Checkpoints beschriebene Swift-Rotationskorrektur wurde aus diesem Branch zurückgenommen; `add-pilot-guided-tour-fallbacks` übernimmt sie. `swift/**` wird im Admin-Pilot-Cut nicht weiter bearbeitet. Die Admin-UI- und Backend-Belege bleiben bestehen.
 
 2026-10-16 further Editor gate evidence on the unchanged local image: `live-editor-validation-pair.mjs` imported the same invalid document into the real old Store editor and Candidate Store editor. Both selected the affected shelf from validation; Candidate treated the missing entrance as a blocking error while keeping private Draft save available, Legacy treated it as a warning and offered confirmation to publish despite two warnings. The confirmation was dismissed; Store version IDs and anonymous Current were unchanged, and disposable Store/Region cleanup returned HTTP 200. Three new keyboard browser regressions cover issue activation, a locked layer resisting movement/duplication, and dirty Back cancel/accept. The freshly packaged full browser suite passed 111/111. This adds evidence without accepting the publication-semantic difference or opening the Editor gate.
