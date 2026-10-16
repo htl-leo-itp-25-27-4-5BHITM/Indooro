@@ -2,9 +2,7 @@ package at.htl.resource.admin;
 
 import at.htl.admin.service.AdminAccessService;
 import at.htl.admin.service.AdminRole;
-import at.htl.admin.service.AuditLogService;
 import at.htl.admin.service.CurrentAdminUser;
-import at.htl.admin.service.StoreAdminService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.security.TestSecurity;
@@ -34,8 +32,6 @@ class UnderlayPostgresIT {
 
     @Inject DataSource dataSource;
     @InjectMock AdminAccessService access;
-    @InjectMock StoreAdminService stores;
-    @InjectMock AuditLogService audit;
 
     @BeforeEach
     void seedStore() throws Exception {
@@ -50,6 +46,7 @@ class UnderlayPostgresIT {
     void clearStore() throws Exception {
         try (Connection connection = dataSource.getConnection(); var statement = connection.createStatement()) {
             statement.executeUpdate("DELETE FROM layout_underlays WHERE store_id = '" + STORE + "'");
+            statement.executeUpdate("DELETE FROM audit_logs WHERE entity_id = '" + STORE + "'");
             statement.executeUpdate("DELETE FROM stores WHERE id = '" + STORE + "'");
             statement.executeUpdate("DELETE FROM regions WHERE id = '" + REGION + "'");
         }
@@ -74,6 +71,11 @@ class UnderlayPostgresIT {
             rows.next();
             assertEquals(image.length, rows.getInt(1));
             assertEquals(0, rows.getBigDecimal(2).compareTo(new java.math.BigDecimal("0.1")));
+        }
+        try (Connection connection = dataSource.getConnection(); var statement = connection.createStatement();
+             var rows = statement.executeQuery("SELECT after_json::text FROM audit_logs WHERE entity_id = '" + STORE + "' AND action = 'CREATE'")) {
+            rows.next();
+            assertFalse(rows.getString(1).contains(base64));
         }
         given().delete(path).then().statusCode(204);
         given().get(path).then().statusCode(404);

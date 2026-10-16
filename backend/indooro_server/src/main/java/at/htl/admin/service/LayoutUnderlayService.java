@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -42,6 +43,7 @@ public class LayoutUnderlayService {
     public LayoutUnderlayDtos.Response save(UUID storeId, LayoutUnderlayDtos.SaveRequest request) {
         checkStore(storeId);
         if (request == null) throw new BadRequestException("Grundrissdaten fehlen.");
+        stores.lockStore(storeId);
         LayoutUnderlayEntity entity = repository.findById(storeId);
         boolean created = entity == null;
         if (created) {
@@ -103,6 +105,7 @@ public class LayoutUnderlayService {
     @Transactional
     public void delete(UUID storeId) {
         checkStore(storeId);
+        stores.lockStore(storeId);
         LayoutUnderlayEntity entity = repository.findByIdOptional(storeId)
                 .orElseThrow(() -> new NotFoundException("Kein Grundrissbild fuer diese Filiale vorhanden."));
         Map<String, Object> before = metadata(entity);
@@ -156,10 +159,19 @@ public class LayoutUnderlayService {
     }
 
     private static Map<String, Object> metadata(LayoutUnderlayEntity entity) {
-        return Map.of("storeId", entity.storeId, "contentType", entity.contentType,
-                "widthPx", entity.widthPx, "heightPx", entity.heightPx,
-                "opacity", entity.opacity, "locked", entity.locked,
-                "updatedAt", entity.updatedAt);
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("storeId", entity.storeId);
+        result.put("contentType", entity.contentType);
+        result.put("widthPx", entity.widthPx);
+        result.put("heightPx", entity.heightPx);
+        result.put("scaleMPerPx", entity.scaleMPerPx);
+        result.put("offsetXM", entity.offsetXM);
+        result.put("offsetYM", entity.offsetYM);
+        result.put("rotationDeg", entity.rotationDeg);
+        result.put("opacity", entity.opacity);
+        result.put("locked", entity.locked);
+        result.put("updatedAt", entity.updatedAt);
+        return result;
     }
 
     private static LayoutUnderlayDtos.Response toResponse(LayoutUnderlayEntity entity) {
