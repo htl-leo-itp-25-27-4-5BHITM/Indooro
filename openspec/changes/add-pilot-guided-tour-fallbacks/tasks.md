@@ -1,8 +1,8 @@
 ## 1. Setup
 
-- [ ] 1.1 Create branch `pilot/erik-guided-tour` from `origin/pilot/first-store` in its own worktree; confirm `swift test` in `swift/indooro-EinkaeuferFinal` reports 77 passing tests before any change.
-- [ ] 1.2 Re-read `design.md` of this change and `fix-ios-contract-and-spec-drift` sections 7 and 8; record in this `design.md` any task of those sections that no longer fits the stabilized pipeline, with the adaptation.
-- [ ] 1.3 Run `npx -y @fission-ai/openspec@1.3.1 validate add-pilot-guided-tour-fallbacks --strict`.
+- [x] 1.1 Create branch `pilot/erik-guided-tour` from `origin/pilot/first-store` in its own worktree; confirm `swift test` in `swift/indooro-EinkaeuferFinal` reports 77 passing tests before any change.
+- [x] 1.2 Re-read `design.md` of this change and `fix-ios-contract-and-spec-drift` sections 7 and 8; record in this `design.md` any task of those sections that no longer fits the stabilized pipeline, with the adaptation.
+- [x] 1.3 Run `npx -y @fission-ai/openspec@1.3.1 validate add-pilot-guided-tour-fallbacks --strict`.
 
 ## 2. Route Origin Fallback (navigation core, testable without simulator)
 
@@ -26,7 +26,7 @@
 - [x] 4.2 In `MapView`, route the next tap to the manual calibration path WHEN `nextTapSetsPosition` is true, independent of `tapSetsTarget`; reset the flag afterwards; show the badge „Tippe auf deinen Standort“ while active.
 - [x] 4.3 Implement `fix-ios-contract-and-spec-drift` 8.2–8.4 on top: untrusted marker at 45 % opacity with dashed 3 m ring, banner „Position ungenau“ with „Position setzen“ (calls the same one-shot mode). Mark 8.2–8.4 there.
 - [x] 4.4 Show „Route ab Eingang“ / „Route ab <Stopp>“ in the tour panel and target card from `routeOriginKind`.
-- [ ] 4.5 Verify in the simulator in mode „Ohne Ortung“ (renamed by `prepare-pilot-ios-build`; until then „Debug (kein Beacon)“): start tour → route from entrance; „Erledigt“ → route from last stop; „Ich bin hier“ → route from tapped point. Record screenshots under `docs/pilot-readiness/evidence/guided-tour/`.
+- [x] 4.5 Verify in the simulator in mode „Ohne Ortung“ (renamed by `prepare-pilot-ios-build`; until then „Debug (kein Beacon)“): start tour → route from entrance; „Erledigt“ → route from last stop; „Ich bin hier“ → route from tapped point. Record screenshots under `docs/pilot-readiness/evidence/guided-tour/`.
 
 ## 5. Customer-Readable Shelf Location
 
@@ -42,7 +42,7 @@
 - [x] 6.2 Save the decoded store layout after each successful application; persist the last selected store id.
 - [x] 6.3 On store layout failure, apply the cached store layout and set the description „<store> • Offline-Kopie vom <Datum>“; on cold start without network, open the last selected store from cache instead of the bundled test-room layout.
 - [x] 6.4 On default layout failure try `default.json` before history; keep the bundled layout only as the last resort.
-- [ ] 6.5 Verify in the simulator: load pilot store online → quit → airplane mode → start → pilot store layout shown with offline description. Mark `fix-ios-contract-and-spec-drift` 7.1–7.4 as done there.
+- [x] 6.5 Verify in the simulator: load pilot store online → quit → airplane mode → start → pilot store layout shown with offline description. Mark `fix-ios-contract-and-spec-drift` 7.1–7.4 as done there.
 
 ## 7. Integration With the Admin Rebuild (after it is merged to main)
 
@@ -53,8 +53,8 @@
 
 ## 8. Verification and Handover
 
-- [ ] 8.1 Run `swift test` (all green), the simulator build, and `npx -y @fission-ai/openspec@1.3.1 validate add-pilot-guided-tour-fallbacks --strict`.
-- [ ] 8.2 Open a pull request `pilot/erik-guided-tour` → `pilot/first-store` with test output and evidence screenshots.
+- [x] 8.1 Run `swift test` (all green), the simulator build, and `npx -y @fission-ai/openspec@1.3.1 validate add-pilot-guided-tour-fallbacks --strict`.
+- [x] 8.2 Open a pull request `pilot/erik-guided-tour` → `pilot/first-store` with test output and evidence screenshots.
 - [ ] 8.3 After merge, update `docs/pilot-readiness/team/STATUS.md` (row „Erik“) and leave this change open until the device check in the pilot store (task 13.6 of `stabilize-ios-navigation-pipeline`) has passed; then archive.
 
 ## 9. Rotated Shelves in the Walkable Graph (fix-ios-contract-and-spec-drift 9.1–9.3)

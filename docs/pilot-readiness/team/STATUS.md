@@ -6,7 +6,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 
 | Person | Aktuelle Change | Branch | Erledigte Tasks | Nächste Tasks | Prüfungen zuletzt | Aktualisiert |
 |---|---|---|---|---|---|---|
-| Erik (Mac) | `add-pilot-guided-tour-fallbacks` | `pilot/erik-guided-tour` | 2.x, 3.x, 4.1–4.4, 5.x, 6.1–6.4, 9.1/9.2/9.4, 10.x | 4.5, 6.5, 9.3, 1.x, 8.x | `swift test` 88/88, xcodebuild ok (2026-10-16) | 2026-10-16 |
+| Erik (Mac) | `add-pilot-guided-tour-fallbacks` | `pilot/erik-guided-tour` | 1.x, 2.x, 3.x, 4.x, 5.x, 6.x, 9.x, 10.x, 8.1/8.2 (PR offen) | 8.3 nach Merge; Geräte-Check 13.6 | `swift test` 118/118, xcodebuild ok, openspec validate 64/0 (2026-10-16) | 2026-10-16 |
 | Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person B (Windows) | `release-pilot-backend` Phase A | `pilot/release-backend` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person C (Windows) | `prepare-pilot-store-operations` | `pilot/store-operations` | – | 1.1–3.5 | – | 2026-10-16 |

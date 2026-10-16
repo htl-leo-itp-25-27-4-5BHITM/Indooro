@@ -41,6 +41,12 @@ struct StoreMapPage: View {
         beaconManager.activeLayoutStore ?? beaconManager.detectedStore
     }
 
+    /// Offline-Start: die Filialliste ist leer (kein Netz), aber eine Offline-Kopie des Stores ist aktiv.
+    /// Dann gibt es in der Filialuebersicht nichts zu waehlen und die Karte wird direkt gezeigt.
+    private var hasOfflineStoreLayoutWithoutStoreList: Bool {
+        beaconManager.mobileStores.isEmpty && beaconManager.activeLayoutStore != nil
+    }
+
     private var displayUserPosition: CGPoint? {
         beaconManager.userPosition ?? beaconManager.rawUserPosition
     }
@@ -76,7 +82,7 @@ struct StoreMapPage: View {
                 return
             }
             withAnimation(.snappy(duration: 0.2)) {
-                isShowingStoreOverview = !beaconManager.isActiveLayoutFromDetectedStore
+                isShowingStoreOverview = !(beaconManager.isActiveLayoutFromDetectedStore || hasOfflineStoreLayoutWithoutStoreList)
             }
         }
         .onChange(of: beaconManager.mobileStores, initial: false) { _, _ in
@@ -84,7 +90,9 @@ struct StoreMapPage: View {
         }
         .onChange(of: beaconManager.activeLayoutStore?.id, initial: false) { _, newValue in
             guard newValue != nil else { return }
-            let shouldOpenLayout = beaconManager.isActiveLayoutFromDetectedStore || pendingStoreSelectionID == newValue
+            let shouldOpenLayout = beaconManager.isActiveLayoutFromDetectedStore
+                || pendingStoreSelectionID == newValue
+                || hasOfflineStoreLayoutWithoutStoreList
             if shouldOpenLayout {
                 pendingStoreSelectionID = nil
                 clearSearchAndDismissKeyboard()
