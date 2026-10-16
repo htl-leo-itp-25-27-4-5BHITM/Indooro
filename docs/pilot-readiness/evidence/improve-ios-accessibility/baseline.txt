@@ -1,0 +1,10 @@
+2026-10-16, pilot/ios-accessibility, Source 46b9ad1 (keine Codeänderung).
+git fetch origin; git merge origin/pilot/first-store: Already up to date.
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer
+swift test: Executed 77 tests, with 0 failures; Exit 0.
+xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme MCindooroApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
+** BUILD SUCCEEDED **; Exit 0.
+OpenSpec improve-ios-accessibility --strict: valid.
+OpenSpec --all --strict: Totals: 64 passed, 0 failed (64 items).
+A-Merge-Gate: git merge-base --is-ancestor origin/pilot/ios-pilot-build origin/pilot/first-store -> Exit 1.
+Keine Accessibility-Abnahme / kein Inspector-Audit.
