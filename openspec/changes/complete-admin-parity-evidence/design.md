@@ -15,4 +15,4 @@ Keep `editor: false` until the P0 action and role matrix and the remaining requi
 
 ## Implementation notes
 
-The paired manager probe now uses the same active fixture in both UIs for raster-height edit and shelf duplicate. Candidate rejects publication of the duplicate shelf address; a separate valid draft is used for the existing publish/restore test. Both roles' temporary scope assignments and disposable fixtures were restored or archived after the passing run. This closes only those named cases, not the complete P0 inventory.
+The paired manager probe now uses the same active fixture in both UIs for raster-height edit, shelf duplicate, Inspector delete and Undo. Legacy Inspector delete is immediate; Candidate confirms it. Candidate rejects publication of the duplicate shelf address; a separate valid draft is used for the existing publish/restore test. Both roles' temporary scope assignments and disposable fixtures were restored or archived after the passing run. This closes only those named cases, not the complete P0 inventory.
