@@ -132,9 +132,9 @@ final class RecipeStore: ObservableObject {
     }
 
     private func handleListResponse(data: Data?, response: URLResponse?, error: Error?) {
-        if let error {
+        if let message = PilotHTTP.errorMessage(response: response, error: error) {
             recipes = []
-            errorMessage = error.localizedDescription
+            errorMessage = message
             return
         }
 
@@ -153,8 +153,8 @@ final class RecipeStore: ObservableObject {
     }
 
     private func handleDetailResponse(data: Data?, response: URLResponse?, error: Error?) {
-        if let error {
-            errorMessage = error.localizedDescription
+        if let message = PilotHTTP.errorMessage(response: response, error: error) {
+            errorMessage = message
             return
         }
 
@@ -164,15 +164,15 @@ final class RecipeStore: ObservableObject {
         }
 
         do {
-            selectedRecipe = try JSONDecoder().decode(RecipeDetail.self, from: data)
+            selectedRecipe = try JSONDecoder.indooro.decode(RecipeDetail.self, from: data)
         } catch {
             errorMessage = "Rezeptdetails konnten nicht gelesen werden."
         }
     }
 
     private func handleMappingResponse(data: Data?, response: URLResponse?, error: Error?) {
-        if let error {
-            errorMessage = error.localizedDescription
+        if let message = PilotHTTP.errorMessage(response: response, error: error) {
+            errorMessage = message
             return
         }
 
@@ -182,14 +182,14 @@ final class RecipeStore: ObservableObject {
         }
 
         do {
-            mappingResponse = try JSONDecoder().decode(RecipeProductMappingResponse.self, from: data)
+            mappingResponse = try JSONDecoder.indooro.decode(RecipeProductMappingResponse.self, from: data)
         } catch {
             errorMessage = "Produktzuordnung konnte nicht gelesen werden."
         }
     }
 
     private static func decodeRecipeSummaries(from data: Data) throws -> [RecipeSummary] {
-        let decoder = JSONDecoder()
+        let decoder = JSONDecoder.indooro
         if let recipes = try? decoder.decode([RecipeSummary].self, from: data) {
             return recipes
         }

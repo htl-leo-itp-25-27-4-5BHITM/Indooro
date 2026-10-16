@@ -54,11 +54,7 @@ final class UpsellSuggestionStore: ObservableObject {
     private let minConfidence = 0.45
     private let maxPendingOpportunityAge: TimeInterval = 30
     private let debugEnabled = true
-    private let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
-    }()
+    private let decoder = JSONDecoder.indooro
     private let encoder = JSONEncoder()
 
     private var lastPromptShownAt: Date?
