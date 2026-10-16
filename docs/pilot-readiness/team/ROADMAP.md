@@ -21,7 +21,7 @@ Für dieses Projekt gilt Indooro als funktionierend, wenn **Phase 3 des Pilots**
 |---|---|---|---|
 | `stabilize-ios-navigation-pipeline` | 83/93 | Rest = Feldaufgaben 10.4, 12.x, 13.6 | Erik + Person C (über `establish-pilot-field-measurement`) |
 | `rebuild-admin-platform` (nur auf Admin-Branch) | 34/39 | Pilot-Cut, Merge in `main` | Erik (Admin-Agent) |
-| `fix-ios-contract-and-spec-drift` | 1/43 | 1.3, 2, 3–8, 9, 10 | verteilt: A (3–6, 10), Erik (7–9), B (2), A (1.3 über Testtarget) |
+| `fix-ios-contract-and-spec-drift` | 1/43 | 1.3, 2, 3–8, 9, 10 | verteilt: A (3–6, 10), Erik (7–9, 1.3 über Testtarget), B (2) |
 | `protect-legacy-write-endpoints` | 0/23 | komplett | Person B (nach Admin-Merge) |
 | `harden-platform-security-baseline` | 0/40 (8 auf Admin-Branch) | 1.1, 1.2, 4.2, 4.3, 5.1, 5.2, 5.5, 8.2 | Person B |
 
@@ -31,10 +31,10 @@ Für dieses Projekt gilt Indooro als funktionierend, wenn **Phase 3 des Pilots**
 |---|---|---|---|---|---|---|
 | 1 | `add-pilot-guided-tour-fallbacks` | Route ohne Ortung, „Ich bin hier“, Regal in Worten, Offline-Cache, gedrehte Regale, Zähler für Studienmodus, Integration Admin | Erik | Mac | `pilot/erik-guided-tour` | sofort |
 | 2 | `prepare-pilot-ios-build` | Suche, Pilot-Profil, Berechtigungen, deutsche Texte, Icon, Installation | Person A | Mac | `pilot/ios-pilot-build` | sofort |
-| 3 | `add-ios-app-test-target` | XCTest-Target, Fixtures, CI für Swift-Tests | Person A | Mac | `pilot/ios-test-target` | nach 2 (oder parallel ab Woche 2) |
+| 3 | `add-ios-app-test-target` | XCTest-Target, Fixtures, CI für Swift-Tests | Erik | Mac | `pilot/ios-test-target` | Woche 2 |
 | 4 | `add-pilot-study-mode` | Testleitungs-Modus: Zeiten, Ergebnis, Zähler, Export | Person A | Mac | `pilot/ios-study-mode` | nach 2 |
 | 5 | `release-pilot-backend` | OpenSearch zu, Secrets raus, Backup/Restore, Smoke-Check, CI mit Tests, Release-Runbook; Phase B: Härtung + erster Pilot-Release | Person B | Windows | `pilot/release-backend` | Phase A sofort, Phase B nach Admin-Merge |
-| 6 | `add-store-pilot-readiness-check` | Seite „Pilot-Bereitschaft“: Layout × Produkte × Beacons | Person B | Windows | `pilot/store-readiness` (später von `main`) | nach Admin-Merge |
+| 6 | `add-store-pilot-readiness-check` | Seite „Pilot-Bereitschaft“: Layout × Produkte × Beacons | Erik | Mac | `pilot/store-readiness` (später von `main`) | nach Admin-Merge |
 | 7 | `establish-pilot-field-measurement` | Beacon-Standard, Hardware, Messprotokoll, Aufnahmen, Analyse, Kalibrierung | Person C [C] + Erik [E] | Windows + Mac | `pilot/field-measurement` + `pilot/field-replay` | sofort |
 | 8 | `add-beacon-placement-planner` | Python-Tool: wie viele Beacons wohin | Person C | Windows | `pilot/beacon-planner` | sofort |
 | 9 | `prepare-pilot-store-operations` | Konventionen, CSV-Import, Pilot-Kit, Checklisten | Person C | Windows | `pilot/store-operations` | sofort |

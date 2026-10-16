@@ -20,7 +20,7 @@ Before a pilot session, the team must know that the store data is consistent: ev
 
 ## Impact
 
-- Owner: Person B „Backend & Betrieb“ (Windows). Branch `pilot/store-readiness`, created from `main` **after** `codex/admin-platform-rebuild` is merged; pull request to `main`.
+- Owner: Erik (Mac or any OS; Java, Node and Docker needed). Branch `pilot/store-readiness`, created from `main` **after** `codex/admin-platform-rebuild` is merged; pull request to `main`.
 - Backend: new resource and service under `backend/indooro_server/src/main/java/at/htl/admin/` (readiness), tests; reads `layout_versions` (PostgreSQL), products (OpenSearch), beacon assignments.
 - Admin UI: new route and page in `admin-ui/src/`, unit and mocked browser tests; built output per the admin rebuild's build process.
 - API: one new protected GET route; no public route changes; `shared-api/openapi.yaml` updated.

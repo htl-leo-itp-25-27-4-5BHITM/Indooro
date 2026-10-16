@@ -28,4 +28,4 @@
 ## 5. Verification and Handover
 
 - [ ] 5.1 Run backend tests, admin checks, `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
-- [ ] 5.2 Open a pull request `pilot/store-readiness` → `main`; update `docs/pilot-readiness/team/STATUS.md` (row „Person B“).
+- [ ] 5.2 Open a pull request `pilot/store-readiness` → `main`; update `docs/pilot-readiness/team/STATUS.md` (row „Erik“).

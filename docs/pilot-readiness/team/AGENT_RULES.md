@@ -34,7 +34,7 @@ Gilt für jeden Agenten, der an einem `pilot/*`-Branch arbeitet. Jeder Prompt ve
 |---|---|---|---|
 | iOS-Navigationskern | `cd swift/indooro-EinkaeuferFinal && swift test` | – (läuft in CI, sobald `add-ios-app-test-target` gemergt ist) | alle grün |
 | iOS-App-Build | `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme MCindooroApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO` | – | `BUILD SUCCEEDED` |
-| Backend | `cd backend/indooro_server && ./mvnw test` | `cd backend\indooro_server; .\mvnw.cmd test` | 0 Fehler |
+| Backend | `cd backend/indooro_server && sh ./mvnw test` | `cd backend\indooro_server; .\mvnw.cmd test` | 0 Fehler |
 | Python-Werkzeuge | `python3 -I -m unittest discover scripts/<tool>` | `python -I -m unittest discover scripts/<tool>` | grün |
 | OpenSpec | `npx -y @fission-ai/openspec@1.3.1 validate --all --strict` | gleich | 0 failed |
 
@@ -50,9 +50,10 @@ Pfade relativ zu `swift/indooro-EinkaeuferFinal/indooroApp/`, wenn nicht anders 
 | Positionspipeline: `Utilities/PositioningPipeline.swift`, `PoseFusionService.swift`, `BeaconMeasurementStore.swift`, `BeaconPositionSolver.swift`, `StabilizedNavigationConfig.swift`, `NavigationReplay.swift`, `NavigationRecorder.swift`, `Resources/layout.json`, `swift/indooro-EinkaeuferFinal/NavigationFixtures/**` | **Erik** | lesen |
 | `Views/Main/StoreMapPage.swift` | **Erik** | Person A: eine Zeile zum Einbinden von `PermissionBanner`, nach Absprache |
 | `Managers/BeaconManager.swift` | **Erik** (Layout, Cache, Fallback, Ziel, Pipeline-Verdrahtung, `isPositionTrusted`) | Person A: `apiBase`/URLs, Berechtigungs-/Bluetooth-Status, Store-Auto-Erkennung, Entfernen von `searchProducts` |
-| `App/AppEnvironment.swift` (neu), `Managers/ProductSearchStore.swift`, `RecipeStore.swift`, `UpsellSuggestionStore.swift`, `Views/Main/ContentView.swift`, `SettingsSheet.swift`, `HomeDashboardView.swift`, Such-/Produktansichten, `Views/Components/PermissionBanner.swift`, `Views/Study/**`, `Managers/StudySessionStore.swift`, `Models/StudyModels.swift`, `Info.plist`, `project.pbxproj`, `Assets.xcassets`, `swift/indooro-EinkaeuferFinal/MCindooroAppTests/**`, `swift/indooro-EinkaeuferFinal/Fixtures/**`, `.github/workflows/ios.yaml` | **Person A** | lesen |
+| `App/AppEnvironment.swift` (neu), `Managers/ProductSearchStore.swift`, `RecipeStore.swift`, `UpsellSuggestionStore.swift`, `Views/Main/ContentView.swift`, `SettingsSheet.swift`, `HomeDashboardView.swift`, Such-/Produktansichten, `Views/Components/PermissionBanner.swift`, `Views/Study/**`, `Managers/StudySessionStore.swift`, `Models/StudyModels.swift`, `Info.plist`, `project.pbxproj`, `Assets.xcassets` | **Person A** | lesen |
+| `swift/indooro-EinkaeuferFinal/MCindooroAppTests/**`, `swift/indooro-EinkaeuferFinal/Fixtures/**`, `.github/workflows/ios.yaml`; nach dem Admin-Merge die neuen Readiness-Dateien (`StoreReadiness*` im Backend, Seite „Pilot-Bereitschaft“ in `admin-ui/`) | **Erik** | lesen |
 | `swift/indooro-EinkaeuferFinal/Tests/**` | Erik (bestehende Dateien); jeder darf neue eigene Testdateien anlegen | – |
-| `k8s/**`, `docker-compose.yml`, `.env.example`, `DEPLOYMENT.md`, `.github/workflows/ci.yaml`, `scripts/ops/**`, `docs/pilot-readiness/operations/{BACKUP_RESTORE,SECRET_ROTATION,RELEASE_RUNBOOK,RELEASES}.md`; nach dem Admin-Merge `backend/**`, `admin-ui/**`, `keycloak/**` | **Person B** | lesen |
+| `k8s/**`, `docker-compose.yml`, `.env.example`, `DEPLOYMENT.md`, `.github/workflows/ci.yaml`, `scripts/ops/**`, `docs/pilot-readiness/operations/{BACKUP_RESTORE,SECRET_ROTATION,RELEASE_RUNBOOK,RELEASES}.md`; nach dem Admin-Merge `backend/**`, `admin-ui/**`, `keycloak/**` (außer Erik’s Readiness-Dateien) | **Person B** | lesen |
 | `docs/pilot-readiness/hardware/**`, `docs/pilot-readiness/kit/**`, `docs/pilot-readiness/evaluation/**`, übrige `docs/pilot-readiness/operations/**`, `scripts/pilot-data/**`, `scripts/field/**`, `scripts/beacon-planner/**`, `scripts/pilot-eval/**` | **Person C** | lesen |
 | `docs/pilot-readiness/team/STATUS.md` | alle: nur eigene Zeile und eigene Blocker | – |
 | `tasks.md` älterer Changes | alle: nur Checkboxen der eigenen zugewiesenen Aufgaben | – |

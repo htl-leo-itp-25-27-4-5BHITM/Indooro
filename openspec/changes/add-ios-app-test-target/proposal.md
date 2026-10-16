@@ -20,6 +20,6 @@ Only the platform-independent navigation core is tested (SwiftPM package `Indoor
 
 ## Impact
 
-- Owner: Person A „iOS“ (Mac), branch `pilot/ios-test-target` from `pilot/first-store`.
+- Owner: Erik (Mac), branch `pilot/ios-test-target` from `pilot/first-store`.
 - Files: `MCindooroApp.xcodeproj` (new target via Xcode UI), `swift/indooro-EinkaeuferFinal/MCindooroAppTests/**` (new), `swift/indooro-EinkaeuferFinal/Fixtures/**` (new JSON fixtures), `.github/workflows/ios.yaml` (new), `TESTING.md`.
 - No production behavior change. Tests may reveal defects; fixes go into the change that owns the file.
