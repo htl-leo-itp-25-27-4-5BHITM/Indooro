@@ -43,6 +43,10 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | 2026-10-16 | Person A | A 6.5: explizite Freigabe von Erik zum Entfernen der vier toten Views fehlt. | offen |
 | 2026-10-16 | Person A | D: wartet auf docs/pilot-readiness/hardware/RESULT_SUMMARY.md; keine Schwellen ohne Messdaten. | offen |
 
+| 2026-10-16 | Person A | B: Erik muss routeBuildCount, rerouteCount, stopChangeWithoutEventCount und manualPositionCount an NavigationSession monoton veröffentlichen. Bis dahin Zeit/Ergebnis, fehlende Navigationswerte „-“. | offen |
+| 2026-10-16 | Person A | B 4.1: kit/study-export-sample gehört Person C. Eigenes synthetisches Export-Beispiel wird unter evidence/add-pilot-study-mode bereitgestellt; C muss es in den Kit-Pfad übernehmen. | offen |
+| 2026-10-16 | Person A | C: Start-Gate „A in pilot/first-store gemergt“ noch nicht erfüllt; zudem Accessibility-Modifier an MapView/StoreMapPage nur nach Absprache. | offen |
+
 ## Entscheidungen
 
 | Datum | Entscheidung | Wer |

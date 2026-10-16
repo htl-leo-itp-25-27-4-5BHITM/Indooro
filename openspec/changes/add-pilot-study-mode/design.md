@@ -31,3 +31,13 @@ Non-goals: server upload, analytics SDK, questionnaires in the app (paper/separa
 ## Migration / Rollback
 
 Flag off = feature invisible.
+
+## Baseline
+
+2026-10-16: `pilot/ios-study-mode`, `git fetch origin`; `origin/pilot/first-store` aktuell, danach gemäß Davids ausdrücklichem Fallback `git merge origin/pilot/ios-pilot-build` (Fast-forward auf `a20d385`). A ist noch nicht im Integrationsbranch; dieser Fallback ersetzt nur für B das ursprüngliche Start-Gate. Swift-Test/Simulator-Build laufen vor Änderungen.
+
+## Implementation notes
+
+- NavigationSession ist vorhanden, veröffentlicht aber keinen der vier geforderten Zähler. routeBuildCount existiert nur intern in NavigationSessionCore. Keine Reflection/Änderung an Eriks Session; fehlende Werte bleiben „-“ statt als null Messwert ausgegeben zu werden.
+- Task 4.1 nennt einen Export unter kit/study-export-sample. Der Kit-Pfad gehört Person C; ein tatsächlich erzeugtes synthetisches Beispiel wird zunächst unter evidence/add-pilot-study-mode abgelegt. Übernahme durch C ist ein Eigentums-Gate.
+- Automatische und UI-Tests verwenden nur synthetische Test-IDs/Produktdaten, keine echten Personen.
