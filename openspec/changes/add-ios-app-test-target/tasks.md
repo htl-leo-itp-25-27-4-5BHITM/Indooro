@@ -22,7 +22,7 @@
 ## 4. CI
 
 - [x] 4.1 Add `.github/workflows/ios.yaml` per design decision 3 (pull requests to `pilot/first-store` and `main`, paths `swift/indooro-EinkaeuferFinal/**`).
-- [ ] 4.2 Push and confirm the workflow passes on GitHub; paste the run link into the pull request. Runs when the pull request is opened; link goes into the PR description.
+- [x] 4.2 Push and confirm the workflow passes on GitHub; paste the run link into the pull request. (Run `38953987878` on `66c8b43` green: `swift test`, simulator build and `App unit tests (MCindooroAppTests)`: https://github.com/htl-leo-itp-25-27-4-5BHITM/Indooro/actions/runs/38953987878)
 - [x] 4.3 Update `swift/indooro-EinkaeuferFinal/TESTING.md` (new target, fixtures, CI).
 
 ## 5. Handover
