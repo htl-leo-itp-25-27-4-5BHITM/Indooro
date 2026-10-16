@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Minimal Mobile-API-Mock fuer Simulator-Pruefungen ohne Backend.
 
-    python3 scripts/dev/mock_mobile_api.py [port]            # Default 18090
+    python3 scripts/dev/mock_mobile_api.py [port]            # Default 18090, nur localhost
+    MOCK_HOST=0.0.0.0 python3 scripts/dev/mock_mobile_api.py   # fuer ein iPhone im selben WLAN
 
 Dient genau einen Store ("SPAR-Leonding-001") mit dem Layout aus
 swift/indooro-EinkaeuferFinal/Tests/IndooroNavigationCoreTests/Resources/store-layout-with-anchors.json
@@ -13,6 +14,7 @@ App im Simulator gegen den Mock starten (nur DEBUG-Builds lesen die Variable):
         xcrun simctl launch booted at.ac.htl.leonding.indooroswift2
 """
 import json
+import os
 import pathlib
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -56,4 +58,4 @@ class Handler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 18090
-    HTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    HTTPServer((os.environ.get("MOCK_HOST", "127.0.0.1"), port), Handler).serve_forever()
