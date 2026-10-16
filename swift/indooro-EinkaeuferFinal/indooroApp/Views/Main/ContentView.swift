@@ -16,6 +16,8 @@ struct ContentView: View {
     @StateObject private var mapProductSearch = ProductSearchStore()
     @StateObject private var productsSearch = ProductSearchStore()
     @StateObject private var recipeStore = RecipeStore()
+    @StateObject private var studyStore = StudySessionStore(enabled: AppEnvironment.isStudyModeEnabled)
+    @State private var showsStudySession = false
     @StateObject private var upsellStore = UpsellSuggestionStore()
 
     @AppStorage(AppEnvironment.profileOverrideKey) private var profileOverride = ""
@@ -108,6 +110,16 @@ struct ContentView: View {
                     ProductSearchFeedback(store: mapProductSearch)
                 }
             }
+            .safeAreaInset(edge: .bottom) {
+                if AppEnvironment.isStudyModeEnabled && studyStore.session != nil {
+                    VStack {
+                        if studyStore.running?.task.condition == .app { StudyRunningControls(store: studyStore) }
+                        Button("Testleitung") { showsStudySession = true }
+                    }
+                    .padding(.horizontal)
+                    .background(.regularMaterial)
+                }
+            }
             .tag(AppSection.map)
         }
         .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
@@ -119,10 +131,21 @@ struct ContentView: View {
             Button("Öffnen") { beaconManager.openSuggestedPilotStore(store) }
             Button("Abbrechen", role: .cancel) { beaconManager.suggestedPilotStore = nil }
         }
+        .onReceive(NotificationCenter.default.publisher(for: StudySessionStore.openRequested)) { _ in
+            guard AppEnvironment.isStudyModeEnabled else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showsStudySession = true }
+        }
+        .sheet(isPresented: $showsStudySession) { StudySessionView(store: studyStore, beaconManager: beaconManager) }
+        .onChange(of: mapProductSearch.errorMessage) { _, message in if let message { studyStore.recordError(message) } }
+        .onChange(of: productsSearch.errorMessage) { _, message in if let message { studyStore.recordError(message) } }
         .sheet(isPresented: $showsIntroduction) {
             PilotIntroduction { introductionCompleted = true; showsIntroduction = false }
         }
         .onAppear {
+            studyStore.onStartAppTask = { task in
+                showsStudySession = false
+                focusProductOnMap(Product(id: task.productId, name: task.productName, price: 0, layoutCode: task.layoutCode ?? ""))
+            }
             showsIntroduction = !introductionCompleted
             let provider: () -> MobileStoreSummary? = { [weak beaconManager] in
                 beaconManager?.activeLayoutStore ?? beaconManager?.detectedStore
