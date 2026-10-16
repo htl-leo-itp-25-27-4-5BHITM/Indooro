@@ -13,23 +13,23 @@
 
 ## 3. Shared Decoding
 
-- [ ] 3.1 Add `JSONDecoder.indooro` with ISO-8601 decoding that accepts fractional and non-fractional seconds.
+- [x] 3.1 Add `JSONDecoder.indooro` with ISO-8601 decoding that accepts fractional and non-fractional seconds. (implemented in prepare-pilot-ios-build)
 - [ ] 3.2 Use `JSONDecoder.indooro` in `UpsellSuggestionStore`, `RecipeStore`, `ProductSearchStore`, `BeaconManager`, and `ShoppingTransferService`.
-- [ ] 3.3 Add `LossyDecodableArray<Element: Decodable>` and decode product lists element-wise in `ProductSearchStore`.
-- [ ] 3.4 Extend `MobileStoreSummary` with optional `address` and use it as first choice in `displaySubtitle`.
-- [ ] 3.5 Extend `MobileLayoutResponse` with optional `source: String?` and `fallback: Bool?`.
+- [x] 3.3 Add `LossyDecodableArray<Element: Decodable>` and decode product lists element-wise in `ProductSearchStore`. (implemented in prepare-pilot-ios-build)
+- [x] 3.4 Extend `MobileStoreSummary` with optional `address` and use it as first choice in `displaySubtitle`. (implemented in prepare-pilot-ios-build)
+- [x] 3.5 Extend `MobileLayoutResponse` with optional `source: String?` and `fallback: Bool?`. (implemented in prepare-pilot-ios-build)
 
 ## 4. HTTP Status And Errors
 
-- [ ] 4.1 Validate HTTP status 200–299 in `ProductSearchStore` and `RecipeStore` and map other codes to a German error message containing the status.
-- [ ] 4.2 Add `@Published var errorMessage: String?` to `ProductSearchStore`; set it on transport, HTTP, and decoding failures; clear it on a new request.
-- [ ] 4.3 Show „Suche fehlgeschlagen“ with the error message and a „Erneut versuchen“ button in the planning results section and the map search panel.
+- [x] 4.1 Validate HTTP status 200–299 in `ProductSearchStore` and `RecipeStore` and map other codes to a German error message containing the status. (implemented in prepare-pilot-ios-build)
+- [x] 4.2 Add `@Published var errorMessage: String?` to `ProductSearchStore`; set it on transport, HTTP, and decoding failures; clear it on a new request. (implemented in prepare-pilot-ios-build)
+- [x] 4.3 Show „Suche fehlgeschlagen“ with the error message and a „Erneut versuchen“ button in the planning results section and the map search panel. (implemented in prepare-pilot-ios-build)
 
 ## 5. Store-Scoped Search
 
-- [ ] 5.1 Add optional `store: MobileStoreSummary?` to `ProductSearchStore.searchProducts(query:size:)` and append `storeId` and `storeCode` query items when present.
-- [ ] 5.2 Pass `beaconManager.activeLayoutStore ?? beaconManager.detectedStore` from `ProductsPage` and `StoreMapPage`.
-- [ ] 5.3 Remove `BeaconManager.searchProducts`, `searchResults`, `isSearching`, `latestSearchRequestID`, and `clearSearch`.
+- [x] 5.1 Add optional `store: MobileStoreSummary?` to `ProductSearchStore.searchProducts(query:size:)` and append `storeId` and `storeCode` query items when present. (implemented in prepare-pilot-ios-build)
+- [x] 5.2 Pass `beaconManager.activeLayoutStore ?? beaconManager.detectedStore` from `ProductsPage` and `StoreMapPage`. (implemented in prepare-pilot-ios-build)
+- [x] 5.3 Remove `BeaconManager.searchProducts`, `searchResults`, `isSearching`, `latestSearchRequestID`, and `clearSearch`. (implemented in prepare-pilot-ios-build)
 
 ## 6. Store Overview
 

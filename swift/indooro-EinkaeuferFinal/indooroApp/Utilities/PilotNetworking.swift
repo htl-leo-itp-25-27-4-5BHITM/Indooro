@@ -39,7 +39,8 @@ enum PilotSearchURL {
         if let storeCode { items.append(URLQueryItem(name: "storeCode", value: storeCode)) }
         parts?.queryItems = items
         // Some servers decode query strings as form data, where a literal + means space.
-        parts?.percentEncodedQuery = parts?.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        let encodedQuery = parts?.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
+        parts?.percentEncodedQuery = encodedQuery
         return parts?.url
     }
 }

@@ -62,3 +62,6 @@ Abgleich Alt-Change (Task 1.2):
 - Die vier API-Literale wurden inzwischen bereits über IndooroAPI zentralisiert. Task 2.3 wird deshalb als Migration dieses bestehenden Einstiegspunkts zu AppEnvironment ausgeführt; DEBUG-Umgebungsvariable INDOORO_API_BASE_URL bleibt erhalten.
 - Keine der zugewiesenen Aufgaben ist allein aufgrund des Alters als erledigt markiert.
 - Geräte unbekannt (Davids Rückmeldung am 2026-10-16). Tasks 1.3/6.4/7.3 bleiben Human steps; bisheriges Deployment-Target bleibt erhalten.
+
+- Suchfehler und Store-Scope in der Karte werden über ContentView (`safeAreaInset` und `storeProvider`) integriert; StoreMapPage bleibt unverändert. Damit entfallen die Eigentums-Gates für Alt-Tasks 4.3/5.2 und die Banner-Einbindung.
+- `MobileStoreModels` ist ausdrücklich im Impact zugewiesen; `address`, `source`, `fallback` ergänzt. Die tolerante Decoder-Nutzung in BeaconManager-Layout-/Fallback-Methoden bleibt gemäß direkter Grenze offen (A 4.2, Alt 3.2); ShoppingTransferService gehört nicht zu den gesperrten Navigationsteilen und ist für den explizit übernommenen Alt-Task angepasst.
