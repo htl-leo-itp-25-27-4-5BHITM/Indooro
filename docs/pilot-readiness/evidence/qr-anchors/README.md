@@ -23,3 +23,7 @@ SIMCTL_CHILD_INDOORO_API_BASE_URL=http://127.0.0.1:18090/api xcrun simctl launch
 Dann in der App: Karte → Store wählen → „QR-Code scannen“ → im Feld „Payload einfügen“ lange drücken → „Paste“ → „Übernehmen“.
 
 Die Pfade „anderer Store“ und „unbekannter Anker“ sind mit `AnchorPayloadTests` abgedeckt. Der Kameratest mit einem gedruckten Code bleibt ein Human step (Gerät).
+
+## Gerätetest
+
+iPhone 13, 2026-10-16, Debug-Build von `pilot/qr-anchors` gegen `scripts/dev/mock_mobile_api.py` (zwei Stores): bestanden. Scan eines Codes mit Anker A12 setzt die Position; Scan eines Codes aus einem anderen Store setzt nach „Wechseln“ die Position mit einem Scan. Der Test mit einem gedruckten Admin-Code gegen einen echten Store mit Ankern steht noch aus (braucht Backend-Rollout und Layout-Update).
