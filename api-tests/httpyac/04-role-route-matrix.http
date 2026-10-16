@@ -331,3 +331,27 @@ Accept: application/json
 Authorization: Bearer {{$global.storeToken}}
 
 ?? status == 403
+
+###
+# Admin: readiness report
+GET {{baseUrl}}/api/stores/{{ACTIVE_STORE_ID}}/readiness
+Accept: application/json
+Authorization: Bearer {{$global.adminToken}}
+
+?? status == 200
+
+###
+# Store manager: assigned readiness report
+GET {{baseUrl}}/api/stores/{{STORE_ALLOWED_STORE_ID}}/readiness
+Accept: application/json
+Authorization: Bearer {{$global.storeToken}}
+
+?? status == 200
+
+###
+# Store manager: forbidden readiness report
+GET {{baseUrl}}/api/stores/{{STORE_FORBIDDEN_STORE_ID}}/readiness
+Accept: application/json
+Authorization: Bearer {{$global.storeToken}}
+
+?? status == 403

@@ -1,22 +1,22 @@
 ## 1. Setup (only after codex/admin-platform-rebuild is merged into main)
 
-- [ ] 1.1 Confirm the admin rebuild merge on `origin/main`; create branch `pilot/store-readiness` from `origin/main`; read this change from `origin/pilot/first-store` if it is not yet on `main` (`git show origin/pilot/first-store:openspec/changes/add-store-pilot-readiness-check/…`) and copy the change folder into the branch as the first commit.
+- [x] 1.1 Confirm the admin rebuild merge on `origin/main`; create branch `pilot/store-readiness` from `origin/main`; read this change from `origin/pilot/first-store` if it is not yet on `main` (`git show origin/pilot/first-store:openspec/changes/add-store-pilot-readiness-check/…`) and copy the change folder into the branch as the first commit. (branch `pilot/store-readiness` = `origin/main` incl. admin rebuild; change folder already present)
 - [ ] 1.2 Run backend tests (`mvnw.cmd test` / `./mvnw test`) and the admin UI checks (`npm run admin:verify` or the scripts in `admin-ui/package.json`); record the baseline in `design.md`.
-- [ ] 1.3 Inventory existing checks: `admin-ui/src/editor/validation.ts`, product readiness on the products page, `StoreLayoutAdminService` publication validation; record reusable parts in `design.md`.
+- [x] 1.3 Inventory existing checks: `admin-ui/src/editor/validation.ts`, product readiness on the products page, `StoreLayoutAdminService` publication validation; record reusable parts in `design.md`.
 - [ ] 1.4 Run `npx -y @fission-ai/openspec@1.3.1 validate add-store-pilot-readiness-check --strict`.
 
 ## 2. Evaluation Logic (backend, pure Java)
 
-- [ ] 2.1 Add `StoreReadinessEvaluator` (input: layout document, product list, assigned beacons, radius; output: findings with severity, code, message, element/product id).
-- [ ] 2.2 Implement the exact shelf matching helper (category base and meter) and copy the test vectors from `swift/indooro-EinkaeuferFinal/Tests/IndooroNavigationCoreTests/ShelfMatchingTests.swift` (available on `pilot/first-store`) into a JUnit test.
-- [ ] 2.3 Implement all blocking checks and warnings of the requirement; unit tests per check, including rotated shelves and missing labels.
-- [ ] 2.4 Implement beacon coverage per design decision 3; unit test with a 20 × 20 m layout and 4 vs 9 beacons.
+- [x] 2.1 Add `StoreReadinessEvaluator` (input: layout document, product list, assigned beacons, radius; output: findings with severity, code, message, element/product id).
+- [x] 2.2 Implement the exact shelf matching helper (category base and meter) and copy the test vectors from `swift/indooro-EinkaeuferFinal/Tests/IndooroNavigationCoreTests/ShelfMatchingTests.swift` (available on `pilot/first-store`) into a JUnit test.
+- [x] 2.3 Implement all blocking checks and warnings of the requirement; unit tests per check, including rotated shelves and missing labels.
+- [x] 2.4 Implement beacon coverage per design decision 3; unit test with a 20 × 20 m layout and 4 vs 9 beacons.
 
 ## 3. Endpoint
 
-- [ ] 3.1 Add `StoreReadinessResource` `GET /api/stores/{storeId}/readiness?radius=8.0` with roles and `AdminAccessService` scope checks; load active layout, store products (paged), assignments.
-- [ ] 3.2 Add `@QuarkusTest` tests: admin 200, store manager own store 200, other store 403, anonymous 401, store without active layout returns a blocking finding.
-- [ ] 3.3 Update `openspec/specs/shared-api/openapi.yaml` (route, schema) and the httpyac role matrix file if present.
+- [x] 3.1 Add `StoreReadinessResource` `GET /api/stores/{storeId}/readiness?radius=8.0` with roles and `AdminAccessService` scope checks; load active layout, store products (paged), assignments.
+- [x] 3.2 Add `@QuarkusTest` tests: admin 200, store manager own store 200, other store 403, anonymous 401, store without active layout returns a blocking finding.
+- [x] 3.3 Update `openspec/specs/shared-api/openapi.yaml` (route, schema) and the httpyac role matrix file if present.
 
 ## 4. Admin Page
 
