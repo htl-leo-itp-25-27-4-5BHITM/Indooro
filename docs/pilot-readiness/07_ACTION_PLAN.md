@@ -6,6 +6,8 @@ Bezug: Blocker K1–K9 und Gates aus [03_PILOT_READINESS.md](03_PILOT_READINESS.
 
 Aufwand: **S** < 0,5 Tag · **M** 1–2 Tage · **L** 3–5 Tage (Personentage). Keine Annahmen über verfügbare Stunden einzelner Teammitglieder.
 
+> **Aktualisiert am 16.10.2026:** Die verbindliche Aufgabenverteilung (2 Mac, 2 Windows), alle OpenSpec-Changes und Branches stehen jetzt in [team/ROADMAP.md](team/ROADMAP.md) und [team/README.md](team/README.md). Die Rollen in Abschnitt 2 unten sind dadurch ersetzt.
+
 ---
 
 ## 1. Rahmenbedingungen, die den Plan bestimmen

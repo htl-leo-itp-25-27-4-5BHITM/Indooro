@@ -56,3 +56,16 @@
 - [ ] 8.1 Run `swift test` (all green), the simulator build, and `npx -y @fission-ai/openspec@1.3.1 validate add-pilot-guided-tour-fallbacks --strict`.
 - [ ] 8.2 Open a pull request `pilot/erik-guided-tour` → `pilot/first-store` with test output and evidence screenshots.
 - [ ] 8.3 After merge, update `docs/pilot-readiness/team/STATUS.md` (row „Erik“) and leave this change open until the device check in the pilot store (task 13.6 of `stabilize-ios-navigation-pipeline`) has passed; then archive.
+
+## 9. Rotated Shelves in the Walkable Graph (fix-ios-contract-and-spec-drift 9.1–9.3)
+
+- [ ] 9.1 Check whether the pilot layouts use rotated shelves (editor field „Winkel“); the admin rebuild found that both Swift navigation variants ignore element rotation when blocking grid cells (`docs/admin-rebuild/PROGRESS.md` on `codex/admin-platform-rebuild`).
+- [ ] 9.2 Implement rotated-rectangle cell coverage in `IndoorGraphBuilder.fromLayout` with unit-testable geometry helpers (cell center inside, edge intersection) in the SwiftPM target; tests with 0°, 45°, 90° shelves; mark `fix-ios-contract-and-spec-drift` 9.1, 9.2.
+- [ ] 9.3 In DEBUG, log shelves whose nearest free node is unreachable from the entrance; mark 9.3 there.
+- [ ] 9.4 Re-run all replay and routing tests; update `NavigationFixtures/BASELINE.md` if route lengths change.
+
+## 10. Counters for the Study Mode (consumer: add-pilot-study-mode)
+
+- [ ] 10.1 Expose monotonically increasing counters from `NavigationSession`: `routeBuildCount`, `rerouteCount`, `stopChangeWithoutEventCount`, `manualPositionCount` (published, read-only for other modules).
+- [ ] 10.2 Add `NavigationSessionTests` for each counter (reroute in wrong aisle increments `rerouteCount` once; „Erledigt“ does not increment `stopChangeWithoutEventCount`; „Ich bin hier“ increments `manualPositionCount`).
+- [ ] 10.3 Notify Person A in `STATUS.md` that the counters are available.

@@ -1,78 +1,72 @@
-# Person A – iOS UX & Pilot-Build
+# Person A (Mac) – iOS-App
 
-## Deine Aufgabe in einem Satz
+## Kurz
 
-Du machst die iOS-App „pilotfähig“: robuste Suche, ruhige deutsche Oberfläche ohne Entwicklerbegriffe, Berechtigungen erst bei Bedarf, Pilot-Profil ohne Rezepte/Upsell/AR, App-Icon und Installation auf echten iPhones.
+Du machst die iOS-App pilotfähig und messbar. Drei Changes in dieser Reihenfolge:
 
-- OpenSpec-Change: `openspec/changes/prepare-pilot-ios-build/`
-- Zusätzlich: `fix-ios-contract-and-spec-drift` Abschnitte 3, 4, 5, 6, 10
-- Branch: `pilot/ios-pilot-build`
-- Prüfungen: `swift test`, `xcodebuild` (Simulator), OpenSpec-Validierung
-- Menschliche Aufgaben: iOS-Versionen der Testgeräte sammeln (Task 1.3), App auf ein echtes iPhone installieren (Task 7.3)
+1. `prepare-pilot-ios-build` (Branch `pilot/ios-pilot-build`): robuste Suche, Pilot-Profil ohne Rezepte/Upsell/AR, Berechtigungen erst bei Bedarf, deutsche Texte, App-Icon, Installation auf echten iPhones. Plus `fix-ios-contract-and-spec-drift` 3, 4, 5, 6, 10.
+2. `add-ios-app-test-target` (Branch `pilot/ios-test-target`): XCTest-Target, JSON-Fixtures, GitHub-Actions-Workflow für Swift-Tests (davon profitieren die Windows-Kollegen).
+3. `add-pilot-study-mode` (Branch `pilot/ios-study-mode`): Testleitungs-Modus mit Zeitmessung, Ergebnis und Export für die Auswertung.
 
-## Vorbereitung (einmalig, im Terminal)
+Menschliche Aufgaben (macht kein Agent): iOS-Versionen der Team-iPhones sammeln; Test-Target einmal in der Xcode-Oberfläche anlegen (5 Minuten, Change 2 Task 1.2); App auf echte iPhones installieren; DEBUG-Build für Messungen auf das iPhone von Person C installieren, wenn Erik keine Zeit hat.
+
+## Einmalige Vorbereitung (Terminal)
 
 ```bash
-cd ~/Documents/htl            # oder dein Projektordner
-git clone git@github.com:htl-leo-itp-25-27-4-5BHITM/Indooro.git   # nur falls noch nicht vorhanden
-cd Indooro
-git fetch origin
-git worktree add --track -b pilot/ios-pilot-build ../Indooro-ios-pilot origin/pilot/ios-pilot-build
-cd ../Indooro-ios-pilot
+cd ~/Documents
+git clone git@github.com:htl-leo-itp-25-27-4-5BHITM/Indooro.git indooro-pilot-a
+cd indooro-pilot-a
+git switch --track origin/pilot/ios-pilot-build
+xcode-select -p          # muss auf Xcode zeigen
+node --version           # für npx OpenSpec
 ```
 
-Voraussetzungen: Xcode mit iOS-Simulator, Node.js (für `npx`), Swift-Toolchain (kommt mit Xcode).
-
-Codex starten (Modellname an deine Codex-Version anpassen):
+Codex starten (Modellname an eure Version anpassen):
 
 ```bash
 codex -m <stärkstes-codex-modell> -c model_reasoning_effort="high"
 ```
 
-## Prompt für deinen Codex (komplett einfügen)
+## Prompt (komplett in Codex einfügen)
 
 ```text
-Du arbeitest autonom im Repository Indooro (HTL-Diplomarbeit, iOS-App für Indoor-Navigation im Supermarkt) im Worktree dieses Ordners auf Branch `pilot/ios-pilot-build`. Ziel ist der erste echte Supermarkt-Pilot.
+Du arbeitest autonom im Repository Indooro (HTL-Diplomarbeit: SwiftUI-iOS-App für Indoor-Navigation im Supermarkt mit BLE-iBeacons, Quarkus-Backend, Web-Admin). Ziel ist der erste echte Supermarkt-Pilot. Du bist der Agent von Person A (iOS, macOS mit Xcode).
 
 LIES ZUERST, in dieser Reihenfolge:
-1. docs/pilot-readiness/team/AGENT_RULES.md  (verbindliche Regeln: Git, Dateibesitz, Prüfungen, Stopp-Bedingungen, Modelle)
-2. docs/pilot-readiness/08_EXECUTIVE_SUMMARY.md und docs/pilot-readiness/03_PILOT_READINESS.md (Kontext)
-3. openspec/config.yaml (Projektkonventionen)
-4. openspec/changes/prepare-pilot-ios-build/ (proposal.md, design.md, specs/**, tasks.md) – das ist dein Auftrag
-5. openspec/changes/fix-ios-contract-and-spec-drift/tasks.md Abschnitte 3, 4, 5, 6, 10 – diese setzt du über deine Change mit um
-6. swift/indooro-EinkaeuferFinal/TESTING.md
+1. docs/pilot-readiness/team/AGENT_RULES.md – verbindlich (Git, Dateibesitz, Prüfungen, Stopp-Regeln, Modelle)
+2. docs/pilot-readiness/team/ROADMAP.md und docs/pilot-readiness/08_EXECUTIVE_SUMMARY.md – Kontext
+3. openspec/config.yaml – Projektkonventionen
+4. swift/indooro-EinkaeuferFinal/TESTING.md
 
-AUFTRAG:
-- Setze alle Tasks in openspec/changes/prepare-pilot-ios-build/tasks.md der Reihe nach um. Nutze dafür den Skill `openspec-apply-change` aus .codex/skills/.
-- Hake jede erledigte Task in tasks.md ab. Halte Abweichungen in design.md unter „Implementation notes“ fest.
-- Tasks mit „Human step“ (z. B. 1.3 Geräteliste, 7.3 echtes iPhone) nicht simulieren: in docs/pilot-readiness/team/STATUS.md unter „Wartet auf Menschen“ eintragen und weitermachen.
-- Halte dich strikt an den Dateibesitz in AGENT_RULES.md Abschnitt 5. In Managers/BeaconManager.swift darfst du NUR: apiBase/URL-Bau, Berechtigungs- und Bluetooth-Status, Store-Auto-Erkennung (Pilot-Profil), Entfernen von searchProducts. Navigation (NavigationSession*, MapView, LayoutData, Zielkarte/Tour-Panel in StoreMapPage) gehört Erik – nicht anfassen.
-- Keine neuen Features außerhalb der Change. Kein Redesign. Rezepte, Upsell und AR werden im Profil „pilot“ nur ausgeblendet, nicht gelöscht.
-- Task 6.5 (tote Views löschen): erst nach Rückfrage – trage sie als Blocker „mit Erik abstimmen“ ein, außer STATUS.md enthält bereits eine Freigabe.
+DEINE CHANGES, STRIKT IN DIESER REIHENFOLGE:
+A) openspec/changes/prepare-pilot-ios-build/            Branch pilot/ios-pilot-build   (inkl. fix-ios-contract-and-spec-drift 3, 4, 5, 6, 10)
+B) openspec/changes/add-ios-app-test-target/            Branch pilot/ios-test-target
+C) openspec/changes/add-pilot-study-mode/               Branch pilot/ios-study-mode   (erst wenn A in pilot/first-store gemergt ist; sonst A auf diesem Branch mergen: git merge origin/pilot/ios-pilot-build)
 
-ARBEITSWEISE:
-- Arbeite mit genau einem schreibenden Agenten (dir). Für reine Lese-Recherche (Code durchsuchen, Aufrufer finden) darfst du, falls verfügbar, bis zu 2 Subagenten mit einem kleineren Modell parallel nutzen. Sie dürfen keine Dateien ändern.
-- Vor Beginn: `git fetch origin && git merge origin/pilot/first-store`. Dann Baseline: `cd swift/indooro-EinkaeuferFinal && swift test` und den xcodebuild-Befehl aus AGENT_RULES.md ausführen; Ergebnisse in design.md unter „Baseline“.
-- Nach jedem Abschnitt der tasks.md: swift test + xcodebuild, dann commit (Nachricht mit Task-Nummer, z. B. `fix(ios): encode search query items (prepare-pilot-ios-build 4.1)`) und `git push`.
-- Reine Logik (URL-Bau, AppEnvironment-Parsing) als testbare Funktionen schreiben und mit Tests absichern.
-- Alle sichtbaren Texte auf Deutsch, Anführungszeichen „…“ wie im bestehenden Code.
-- Keine Secrets, keine Gerätekennungen committen.
+ABLAUF JE CHANGE:
+1. `git fetch origin`, auf den Branch wechseln (`git switch <branch>` oder `git switch --track origin/<branch>`), `git merge origin/pilot/first-store`.
+2. Baseline: `cd swift/indooro-EinkaeuferFinal && swift test` und den xcodebuild-Befehl aus AGENT_RULES.md; Ergebnis in design.md unter „Baseline“.
+3. proposal.md, design.md, specs/**, tasks.md lesen. Tasks der Reihe nach mit dem Skill `openspec-apply-change` umsetzen, jede erledigte Task abhaken.
+4. Nach jedem Abschnitt: swift test + xcodebuild grün, commit mit Task-Nummer, `git push`.
+5. Am Ende: Skill `openspec-verify-change`, `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`, Screenshots unter docs/pilot-readiness/evidence/<change>/, Pull Request nach pilot/first-store (`gh pr create --base pilot/first-store` falls verfügbar, sonst PR-Text in docs/pilot-readiness/evidence/<change>/PR.md), STATUS.md-Zeile „Person A“ aktualisieren.
+6. Dann nächste Change.
 
-FERTIG, WENN:
-- Alle nicht-menschlichen Tasks abgehakt, swift test grün, xcodebuild BUILD SUCCEEDED, `npx -y @fission-ai/openspec@1.3.1 validate prepare-pilot-ios-build --strict` und `validate --all --strict` grün.
-- Skill `openspec-verify-change` ausgeführt, Ergebnis in design.md.
-- Screenshots unter docs/pilot-readiness/evidence/ios-pilot-build/ (Simulator).
-- Branch gepusht. Pull Request `pilot/ios-pilot-build` → `pilot/first-store` beschrieben (falls `gh` verfügbar: `gh pr create --base pilot/first-store`; sonst Text für den PR in docs/pilot-readiness/evidence/ios-pilot-build/PR.md ablegen).
-- STATUS.md-Zeile „Person A“ aktualisiert.
-- Abschluss-Zusammenfassung: was fertig ist, was rot ist, was ein Mensch tun muss.
+WICHTIGE GRENZEN:
+- Dateibesitz laut AGENT_RULES.md Abschnitt 5. Navigation (NavigationSession*, IndoorGraph, MapView, LayoutData, Zielkarte/Tour-Panel in StoreMapPage) und Positionspipeline gehören Erik. In BeaconManager.swift darfst du NUR: apiBase/URL-Bau, Berechtigungs- und Bluetooth-Status, Store-Auto-Erkennung im Pilot-Profil, Entfernen von searchProducts.
+- Rezepte, Upsell, AR im Profil „pilot“ nur ausblenden, nicht löschen.
+- prepare-pilot-ios-build Task 6.5 (tote Views löschen): nur, wenn STATUS.md eine Freigabe von Erik enthält; sonst Blocker eintragen.
+- add-ios-app-test-target Task 1.2 (Target in Xcode anlegen) ist ein Human step: wenn das Target noch nicht existiert, Blocker „Person A: Target in Xcode anlegen (5 min, Anleitung design.md Entscheidung 1)“ eintragen und inzwischen die Fixtures (Abschnitt 2) vorbereiten.
+- Defekte, die Tests in fremden Dateien zeigen: Blocker für den Besitzer, nicht selbst fixen.
+- Keine neuen Features außerhalb der Changes. Alle Texte deutsch mit „…“-Anführungszeichen wie im Code.
+- Ein schreibender Agent (du). Für reine Code-Suche optional bis zu 2 lesende Subagenten mit kleinerem Modell.
 
-Archiviere die Change NICHT.
+FERTIG, WENN alle drei Changes bis auf Human steps erledigt, geprüft, gepusht und als PR vorbereitet sind – oder alle verbleibenden Tasks blockiert sind. Schreibe dann eine Zusammenfassung: fertig / rot / was ein Mensch tun muss. Archiviere keine Change.
 ```
 
-## Abnahme durch Erik
+## Abnahme (Erik prüft)
 
-- Release-Einstellungen ohne „Debug“, „Tracking“, „Beacon“.
-- „Milch & Käse“ findet Treffer, Serverfehler zeigt „Suche fehlgeschlagen“.
-- Frische Installation: keine Berechtigungsabfrage, Einführung erscheint einmal.
-- Profil `pilot`: kein Rezepte-Tab, keine Upsell-Requests im Debug-Netzwerklog.
-- App mit Icon auf mindestens einem echten iPhone installiert.
+- Suche mit „Milch & Käse“ funktioniert; Serverfehler zeigt „Suche fehlgeschlagen“.
+- Frische Installation: keine Berechtigungsabfrage, Einführung einmal; Profil `pilot` ohne Rezepte, ohne Upsell-Requests.
+- App mit Icon auf mindestens einem echten iPhone.
+- `MCindooroAppTests` existiert, GitHub-Workflow `ios.yaml` läuft grün.
+- Studienmodus: Beispiel-Export unter `docs/pilot-readiness/kit/study-export-sample/`.

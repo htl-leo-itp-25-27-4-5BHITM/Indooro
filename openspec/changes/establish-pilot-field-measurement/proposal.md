@@ -31,7 +31,7 @@ The DEBUG recorder, the share action and the deterministic replay already exist 
 
 ## Impact
 
-- Owner: Person B „Positionierung & Hardware“, branch `pilot/field-measurement`.
+- Owners: Person C „Feld, Daten & Pilot-Kit“ (Windows) for documentation, hardware, physical measurements and Python analysis on branch `pilot/field-measurement`; Erik (Mac) for Swift replay, fixtures, calibration and DEBUG builds on branch `pilot/field-replay`. Each task in `tasks.md` is tagged [C] or [E].
 - Files: `docs/pilot-readiness/hardware/` (new: beacon standard, configuration table, measurement protocol, reports), `swift/indooro-EinkaeuferFinal/NavigationFixtures/` (recordings, `BASELINE.md`), `swift/indooro-EinkaeuferFinal/Tests/IndooroNavigationCoreTests/` (replay tests, test layouts), `indooroApp/Resources/layout.json` (test room), positioning pipeline files (`Utilities/PositioningPipeline.swift`, `PoseFusionService.swift`, `BeaconMeasurementStore.swift`, `BeaconPositionSolver.swift`, `StabilizedNavigationConfig.swift`, `NavigationReplay.swift`, `NavigationRecorder.swift`) only for the 17 m investigation and evidence-based calibration.
 - Hardware purchase: 10–12 beacons (budget ca. 100–300 €, approval by the school).
 - Backend, admin: unchanged; beacons are registered through the existing admin beacon management by the store data owner (`prepare-pilot-store-operations`).

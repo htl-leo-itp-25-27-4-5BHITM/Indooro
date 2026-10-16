@@ -34,7 +34,7 @@ The open change `fix-ios-contract-and-spec-drift` already specifies shared decod
 
 ## Impact
 
-- iOS code (owner: Person A „iOS UX & Pilot-Build“, branch `pilot/ios-pilot-build`): new `App/AppEnvironment.swift`, `Managers/ProductSearchStore.swift`, `Managers/RecipeStore.swift`, `Managers/UpsellSuggestionStore.swift`, `Views/Main/ContentView.swift`, `Views/Main/SettingsSheet.swift`, `Views/Main/HomeDashboardView.swift`, `Views/Main/ProductsPage` and search views, new `Views/Components/PermissionBanner.swift`, `Info.plist`, `MCindooroApp.xcodeproj/project.pbxproj` (deployment target, asset catalog only), new `indooroApp/Assets.xcassets`, `Models/MobileStoreModels.swift`.
+- iOS code (owner: Person A „iOS“ (Mac), branch `pilot/ios-pilot-build`): new `App/AppEnvironment.swift`, `Managers/ProductSearchStore.swift`, `Managers/RecipeStore.swift`, `Managers/UpsellSuggestionStore.swift`, `Views/Main/ContentView.swift`, `Views/Main/SettingsSheet.swift`, `Views/Main/HomeDashboardView.swift`, `Views/Main/ProductsPage` and search views, new `Views/Components/PermissionBanner.swift`, `Info.plist`, `MCindooroApp.xcodeproj/project.pbxproj` (deployment target, asset catalog only), new `indooroApp/Assets.xcassets`, `Models/MobileStoreModels.swift`.
 - `BeaconManager.swift` only in: `apiBase` and URL construction, permission/Bluetooth state publishing and lazy permission request, store auto-detection guard, removal of `searchProducts` (see ownership rules in `add-pilot-guided-tour-fallbacks/design.md`).
-- Backend, admin: unchanged. Section 2 of `fix-ios-contract-and-spec-drift` (backend dismissal bound) is owned by `prepare-pilot-store-operations`.
+- Backend, admin: unchanged. Section 2 of `fix-ios-contract-and-spec-drift` (backend dismissal bound) is owned by `release-pilot-backend`.
 - Privacy: improved; no upsell requests leave the device in profile `pilot`.

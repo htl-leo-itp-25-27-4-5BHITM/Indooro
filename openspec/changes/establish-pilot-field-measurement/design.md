@@ -18,13 +18,13 @@ Non-goals: new filters or algorithms; PDR/step detection; AR alignment; changing
 2. **Configuration record.** `docs/pilot-readiness/hardware/beacons.csv` with columns `minor, major, site, x_m, y_m, height_m, mount, tx_power_dbm, interval_ms, battery_date, notes`. Coordinates in layout meters (1 cell = 1 m, convention from `prepare-pilot-store-operations`).
 3. **Hardware criteria.** iBeacon with configurable UUID/major/minor/TX/interval, replaceable battery, adhesive mounting, vendor configuration app available on iOS. Pick one model, buy 12 units.
 4. **Ground truth.** Floor markers with known coordinates; the recorder's long-press `truth` line at each marker; walking loops pass markers in fixed order.
-5. **Report.** One Markdown report per session in `docs/pilot-readiness/hardware/reports/<date>-<site>.md` using `REPORT_TEMPLATE.md`; metrics from replay plus a small script that computes error statistics at truth points (Swift test helper or `scripts/field/` Python with `-I`, no network).
+5. **Report.** One Markdown report per session in `docs/pilot-readiness/hardware/reports/<date>-<site>.md` using `REPORT_TEMPLATE.md`. The Swift replay (Mac) exports per-tick CSV; the Python script `scripts/field/field_stats.py` (Windows-capable, standard library) computes error statistics at truth points and the correct-aisle share.
 6. **Calibration rule.** A provisional parameter may change only with (a) at least two recordings from the target site, (b) before/after metrics in `NavigationFixtures/BASELINE.md`, (c) no regression in the synthetic replay tests. Remove the `// provisional` marker only after that.
 7. **17 m step.** Investigate first whether it is a scenario artefact (truth jump in the synthetic recording, intended teleport) or a pipeline defect (e.g. jump gate releasing after confirmations, projection to a distant edge). Fix only if defect; otherwise document and adjust the scenario's expectation.
 
 ## File ownership
 
-Owns `docs/pilot-readiness/hardware/`, `NavigationFixtures/`, replay-related tests, the test-room `layout.json`, and positioning pipeline files listed in the proposal. Must not edit `NavigationSessionCore.swift`, UI views or `BeaconManager.swift` beyond pipeline wiring. Coordinate with Erik before changing any public type used by `NavigationSession`.
+Person C owns `docs/pilot-readiness/hardware/**` and `scripts/field/**`. Erik owns the Swift side below. Together the change owns `docs/pilot-readiness/hardware/`, `NavigationFixtures/`, replay-related tests, the test-room `layout.json`, and positioning pipeline files listed in the proposal. Must not edit `NavigationSessionCore.swift`, UI views or `BeaconManager.swift` beyond pipeline wiring. Coordinate with Erik before changing any public type used by `NavigationSession`.
 
 ## Risks / Trade-offs
 

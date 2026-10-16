@@ -1,78 +1,53 @@
-# Pilot-Team: Aufteilung, Branches, Ablauf
+# Pilot-Team: Wer macht was, mit welchem Branch
 
-Stand: 16.10.2026 · Grundlage: Audit `docs/pilot-readiness/01–08`, Branch-Stand nach `git fetch` am 16.10.2026.
+Stand: 16.10.2026. Gesamtplan aller Changes: [ROADMAP.md](ROADMAP.md). Regeln für Agenten: [AGENT_RULES.md](AGENT_RULES.md). Laufender Stand: [STATUS.md](STATUS.md).
 
-## 1. Branch-Stand heute
+## Personen
 
-| Branch | Stand | Bedeutung für den Pilot |
-|---|---|---|
-| `main` (`99b802b`) | live auf LeoCloud | Basis für Backend, wird später den Admin-Neubau enthalten |
-| `codex/stabilize-ios-navigation` (`2956fe6`) | stabilisierte Navigation, 77 Tests grün | **ist jetzt in `pilot/first-store` enthalten** |
-| `codex/admin-platform-rebuild` (`9ec0885`, lokal 4 Commits vor `origin`) | Admin-Agent arbeitet noch (34/39 Tasks von `rebuild-admin-platform`) | wird nach Fertigstellung in `main` gemergt; bis dahin fasst **niemand** `backend/**`, `admin-ui/**`, `keycloak/**` an |
-| `claude/ar-alignment-experiment` | AR-Experiment | nicht im Pilot |
-| `codex/indooro-v2-*`, `feature/indooro-ad-v2-concept`, `codex/android-parity-plan` | Werbefilm, Android-Plan | nicht im Pilot |
-| `origin/website` | Website | nicht im Pilot |
-
-## 2. Pilot-Branches
-
-```
-main ──────────────────────────────●───────────────▶ (Admin-Neubau gemergt)
-   \                               │                 \
-    codex/stabilize-ios-navigation  │                  pilot/backend-hardening (Person C, Phase 2) ──PR──▶ main
-      \                            ▼
-       pilot/first-store  ◀── PR ── pilot/erik-guided-tour   (Erik)
-                          ◀── PR ── pilot/ios-pilot-build    (Person A)
-                          ◀── PR ── pilot/field-measurement  (Person B)
-                          ◀── PR ── pilot/store-operations   (Person C, Phase 1)
-                          ◀── merge main (Erik, nach Admin-Merge)
-```
-
-- `pilot/first-store` = Integrationsbranch. Nur Erik mergt dort hinein (Pull Requests).
-- Jede Person arbeitet auf **ihrem** Branch, holt täglich `origin/pilot/first-store` herein.
-- Alle Branches sind auf GitHub gepusht, damit alle (und ihre Agenten) daran arbeiten können.
-
-## 3. Wer macht was
-
-| Person | Rolle | OpenSpec-Change | Branch | Zusätzlich übernommene Tasks |
+| Person | Rechner | Bereich | Changes in dieser Reihenfolge | Prompt |
 |---|---|---|---|---|
-| **Erik** | Integration, Navigation, Release, Partner-Erstkontakt | `add-pilot-guided-tour-fallbacks` | `pilot/erik-guided-tour` | `fix-ios-contract-and-spec-drift` 7.1–7.4, 8.1–8.4; Merge Admin-Neubau → Pilot |
-| **Person A** (Vorschlag: David Berghahn, App) | iOS UX & Pilot-Build | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | `fix-ios-contract-and-spec-drift` 3, 4, 5, 6, 10 |
-| **Person B** (Vorschlag: Michael Stelzmüller, Ortungshardware) | Positionierung, Hardware, Messungen | `establish-pilot-field-measurement` | `pilot/field-measurement` | `stabilize-ios-navigation-pipeline` 10.4, 12.1–12.5, 13.6 |
-| **Person C** (Vorschlag: Fabian Joos oder Niilo Rieser, Server) | Daten, Betrieb, Sicherheit, Pilot-Kit | `prepare-pilot-store-operations` | `pilot/store-operations`, später `pilot/backend-hardening` | `harden-platform-security-baseline` 5.1, 5.2, 5.5, 8.2; `protect-legacy-write-endpoints` komplett (Phase 2); `fix-ios-contract-and-spec-drift` 2.x |
+| **Erik** | Mac | Admin-Abschluss, Integration, Navigation, Mess-Replay, Releases, Partner | Admin-Pilot-Cut → `add-pilot-guided-tour-fallbacks` → `establish-pilot-field-measurement` [E] | [PROMPT_ERIK.md](PROMPT_ERIK.md), [PROMPT_ADMIN_AGENT.md](PROMPT_ADMIN_AGENT.md) |
+| **Person A** | Mac | iOS-App | `prepare-pilot-ios-build` → `add-ios-app-test-target` → `add-pilot-study-mode` | [PROMPT_PERSON_A_IOS.md](PROMPT_PERSON_A_IOS.md) |
+| **Person B** | Windows | Backend, Admin-Erweiterung, Betrieb, Sicherheit | `release-pilot-backend` (A, dann B) → `add-store-pilot-readiness-check` | [PROMPT_PERSON_B_BACKEND.md](PROMPT_PERSON_B_BACKEND.md) |
+| **Person C** | Windows | Feld, Hardware, Daten, Pilot-Kit, Auswertung | `prepare-pilot-store-operations` → `add-beacon-placement-planner` → `establish-pilot-field-measurement` [C] → `prepare-pilot-evaluation` | [PROMPT_PERSON_C_FIELD_DATA.md](PROMPT_PERSON_C_FIELD_DATA.md) |
 
-Die Namen sind Vorschläge nach der Rollenverteilung im README. Das Team entscheidet.
+Person A = die zweite Person mit MacBook. B und C = die beiden mit Windows. Welche konkreten Teammitglieder das sind, entscheidet ihr; Vorschlag nach Projektauftrag: B = einer der beiden „Server“-Leute, C = „Ortungshardware“.
 
-Prompts für die Agenten: [PROMPT_ERIK.md](PROMPT_ERIK.md), [PROMPT_PERSON_A_IOS.md](PROMPT_PERSON_A_IOS.md), [PROMPT_PERSON_B_POSITIONING.md](PROMPT_PERSON_B_POSITIONING.md), [PROMPT_PERSON_C_OPERATIONS.md](PROMPT_PERSON_C_OPERATIONS.md). Gemeinsame Regeln: [AGENT_RULES.md](AGENT_RULES.md).
+## Branches
 
-## 4. Aufgaben, die kein Agent erledigen kann (Menschen)
+| Branch | Basis | Für | Pull Request nach |
+|---|---|---|---|
+| `pilot/first-store` | stabilisierte Navigation + Planung | Integration (nur Erik mergt) | später `main` |
+| `pilot/erik-guided-tour` | `pilot/first-store` | Erik, Change 1 | `pilot/first-store` |
+| `pilot/field-replay` | `pilot/first-store` | Erik, Change 7 [E] | `pilot/first-store` |
+| `pilot/ios-pilot-build` | `pilot/first-store` | Person A, Change 2 | `pilot/first-store` |
+| `pilot/ios-test-target` | `pilot/first-store` | Person A, Change 3 | `pilot/first-store` |
+| `pilot/ios-study-mode` | `pilot/first-store` | Person A, Change 4 | `pilot/first-store` |
+| `pilot/release-backend` | `main` + Planung | Person B, Change 5 | `main` |
+| `pilot/store-readiness` | wird **nach** dem Admin-Merge von `main` angelegt | Person B, Change 6 | `main` |
+| `pilot/store-operations` | `pilot/first-store` | Person C, Change 9 | `pilot/first-store` |
+| `pilot/beacon-planner` | `pilot/first-store` | Person C, Change 8 | `pilot/first-store` |
+| `pilot/field-measurement` | `pilot/first-store` | Person C, Change 7 [C] | `pilot/first-store` |
+| `pilot/pilot-evaluation` | `pilot/first-store` | Person C, Change 10 | `pilot/first-store` |
 
-| Wer | Aufgabe | Bis |
-|---|---|---|
-| Erik | Termin mit Betreuung (Budget 12 Beacons, Schulbrief, Versicherung, Code-Rechte) | Woche 1 |
-| Erik | Klären, welcher Markt „SPAR Posttraße“ ist und wer dort Kontakt hat | Woche 1 |
-| Erik | Erste 2–3 Gespräche mit Märkten (persönlich/Brief/Vermittlung, siehe `06_BUSINESS_OUTREACH.md`) | Woche 2–4 |
-| Erik | LeoCloud-Zugang: Backup ziehen, Secrets rotieren, Rollout (nach Anleitung von Person C) | Woche 2–3 |
-| Person A | Modelle und iOS-Versionen aller Test-iPhones sammeln; Pilot-Build auf echtem iPhone installieren | Woche 1–3 |
-| Person B | Beacon-Modell bestellen (nach Freigabe); Testraum vermessen; Messläufe aufnehmen; größeren Raum mit Regalen organisieren | Woche 1–4 |
-| Person C | Kontaktliste mit 8–12 Märkten (außerhalb des Repos); Kit drucken; mit Erik zu Gesprächen | Woche 2–4 |
+Alle Branches außer `pilot/store-readiness` sind auf GitHub. `codex/admin-platform-rebuild` pusht Erik nach dem Pilot-Cut.
 
-## 5. Zeitplan (Kurzfassung von `07_ACTION_PLAN.md`)
+## Was jede Person einmalig braucht
 
-| Woche | Erik | Person A | Person B | Person C |
-|---|---|---|---|---|
-| 1 (19.–23.10.) | Route-Fallback (Abschn. 2), Betreuung, Markt klären | Setup, Environment, Profil (Abschn. 1–3) | Beacon-Standard, Auswahl, Bestellung (Abschn. 2) | Konventionen, CSV-Tool (Abschn. 2–3) |
-| 2 (26.–30.10.) | Regaltext, „Ich bin hier“ (4–5) | Suche, Fehlerzustände (4) | Testraum-Layout, Protokoll, Trockenlauf (3–4) | Backup, Smoke, Secrets in k8s (4–5) |
-| 3 (02.–06.11.) | Layout-Cache (6), PR | Texte, Intro, Berechtigungen, Icon (5–6), PR | Aufnahmen Testraum (5.1–5.2), PR | Pilot-Kit (6), PR |
-| 4 (09.–13.11.) | Admin-Merge integrieren (7), Gate „bereit für Markt“ | Gerätetest (7.3) | großer Raum, 17-m-Analyse (5.3–6.1) | Phase 2 Backend-Härtung, falls Admin gemergt |
-| 5–8 | Pilot im Markt (siehe `07_ACTION_PLAN.md`) | Fixes aus Tests | Kalibrierung, Markt-Messung (6–7) | Datenerfassung Pilotbereich, Sitzungen |
+| | Erik / Person A (Mac) | Person B (Windows) | Person C (Windows) |
+|---|---|---|---|
+| Git + Zugriff auf `htl-leo-itp-25-27-4-5BHITM/Indooro` | ✓ | ✓ | ✓ |
+| Node.js (für `npx` OpenSpec) | ✓ | ✓ | ✓ |
+| Codex (Windows: WSL2 oder IDE-Erweiterung) | ✓ | ✓ | ✓ |
+| Xcode + iPhone | ✓ | – | – (iPhone zum Messen leiht ein Mac-Nutzer mit DEBUG-Build) |
+| Java 17+, Docker Desktop | – | ✓ | – |
+| Python 3.10+ | optional | ✓ | ✓ |
+| kubectl + LeoCloud-Zugang | Erik | nur falls vorhanden | – |
+| Laser-Entfernungsmesser, Kreppband | – | – | ✓ |
 
-## 6. Pull-Request-Regeln
+## Merge-Ablauf
 
-- Ziel: `pilot/first-store` (Ausnahme `pilot/backend-hardening` → `main`).
-- Inhalt: Change-Name, erledigte Task-Nummern, Ausgabe der Prüfungen, Screenshots bei UI.
-- Review: Erik (oder eine zweite Person, wenn Erik selbst Autor ist).
-- Merge nur mit grünen Prüfungen aus `AGENT_RULES.md` Abschnitt 4.
-
-## 7. Status
-
-Laufender Stand: [STATUS.md](STATUS.md). Jede Person aktualisiert ihre Zeile am Ende jeder Arbeitssitzung.
+1. Person öffnet PR → Erik prüft (Prüfungen grün, nur eigene Dateien, Tasks abgehakt).
+2. Erik mergt in `pilot/first-store` (bzw. B in `main` nach Review durch Erik).
+3. Erik meldet im Team-Chat: „bitte `origin/pilot/first-store` mergen“.
+4. Nach dem Admin-Merge: Erik mergt `main` in `pilot/first-store` (Change 1, Abschnitt 7).
