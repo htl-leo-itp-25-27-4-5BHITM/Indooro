@@ -168,7 +168,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     // MARK: - Config
 
-    private let apiBase = IndooroAPI.baseURL
+    private var apiBase: String { AppEnvironment.apiBaseURL.absoluteString }
     private let allowServerSearch = true
     private let layoutHistoryLimit = 12
     private let selectedLayoutModeDefaultsKey = "selectedLayoutMode"
@@ -496,7 +496,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             return
         }
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, _, error in
             DispatchQueue.main.async {
                 guard let self else { return }
                 guard self.latestSearchRequestID == requestID else { return }
@@ -1050,7 +1050,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         appendDebugLog("Store-Lookup startet rssi=\(rssi) url=\(url.absoluteString)")
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             guard let self else { return }
 
             defer {
@@ -1529,7 +1529,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         lastStoreDetectionBeaconRefreshAt = now
         appendDebugLog("Store-Beacon-Identities Request url=\(url.absoluteString)")
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             guard let self else { return }
 
             if let error {
@@ -1610,7 +1610,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func performRequest(url: URL, completion: @escaping (Result<Data, Error>) -> Void) {
-        URLSession.shared.dataTask(with: url) { data, response, error in
+        AppEnvironment.session.dataTask(with: url) { data, response, error in
             if let error {
                 self.appendDebugLog("HTTP Fehler \(url.path): \(error.localizedDescription)")
                 completion(.failure(error))

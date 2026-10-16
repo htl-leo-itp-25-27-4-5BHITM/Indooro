@@ -4,7 +4,7 @@ final class ProductSearchStore: ObservableObject {
     @Published private(set) var searchResults: [Product] = []
     @Published private(set) var isSearching = false
 
-    private let apiBase = IndooroAPI.baseURL
+    private var apiBase: String { AppEnvironment.apiBaseURL.absoluteString }
     private var latestSearchRequestID = UUID()
 
     func clearSearch() {
@@ -33,7 +33,7 @@ final class ProductSearchStore: ObservableObject {
             return
         }
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, _, error in
             DispatchQueue.main.async {
                 guard let self else { return }
                 guard self.latestSearchRequestID == requestID else { return }
@@ -78,7 +78,7 @@ final class ProductSearchStore: ObservableObject {
             return
         }
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, _, error in
             DispatchQueue.main.async {
                 guard let self else { return }
                 guard self.latestSearchRequestID == requestID else { return }

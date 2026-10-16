@@ -11,7 +11,7 @@ final class RecipeStore: ObservableObject {
     @Published private(set) var isLoadingMapping = false
     @Published var errorMessage: String?
 
-    private let apiBase = IndooroAPI.baseURL
+    private var apiBase: String { AppEnvironment.apiBaseURL.absoluteString }
     private var latestListRequestID = UUID()
     private var latestDetailRequestID = UUID()
     private var latestMappingRequestID = UUID()
@@ -70,7 +70,7 @@ final class RecipeStore: ObservableObject {
             return
         }
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             Task { @MainActor in
                 guard let self, self.latestDetailRequestID == requestID else { return }
                 self.isLoadingDetail = false
@@ -99,7 +99,7 @@ final class RecipeStore: ObservableObject {
             return
         }
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             Task { @MainActor in
                 guard let self, self.latestMappingRequestID == requestID else { return }
                 self.isLoadingMapping = false
@@ -121,7 +121,7 @@ final class RecipeStore: ObservableObject {
             return
         }
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             Task { @MainActor in
                 guard let self, self.latestListRequestID == requestID else { return }
                 self.isLoading = false

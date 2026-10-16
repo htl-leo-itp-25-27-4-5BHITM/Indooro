@@ -47,7 +47,7 @@ final class UpsellSuggestionStore: ObservableObject {
         let opportunities: [OpportunitySignature]
     }
 
-    private let apiBase = IndooroAPI.baseURL
+    private var apiBase: String { AppEnvironment.apiBaseURL.absoluteString }
     private let minSecondsBetweenPrompts: TimeInterval = 8
     private let maxPromptsPerSession = 10
     private let maxSuggestionsShown = 3
@@ -198,7 +198,7 @@ final class UpsellSuggestionStore: ObservableObject {
         isLoading = true
         debugLog("preloadPlan requestId=\(requestID.uuidString) timeout=\(urlRequest.timeoutInterval)s")
 
-        let task = URLSession.shared.dataTask(with: urlRequest) { [weak self] data, response, error in
+        let task = AppEnvironment.session.dataTask(with: urlRequest) { [weak self] data, response, error in
             Task { @MainActor in
                 guard let self else { return }
                 guard self.latestPlanRequestID == requestID else {
@@ -781,7 +781,7 @@ final class UpsellSuggestionStore: ObservableObject {
             return
         }
 
-        URLSession.shared.dataTask(with: urlRequest).resume()
+        AppEnvironment.session.dataTask(with: urlRequest).resume()
     }
 
     private func metadataJson(_ values: [String: String]) -> String? {
