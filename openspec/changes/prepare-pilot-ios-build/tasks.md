@@ -1,9 +1,9 @@
 ## 1. Setup and Discovery
 
 - [ ] 1.1 Create branch `pilot/ios-pilot-build` from `origin/pilot/first-store` in its own worktree; confirm `swift test` in `swift/indooro-EinkaeuferFinal` passes (77 tests) and the simulator build from `TESTING.md` succeeds before any change; record both outputs in `design.md` under „Baseline“.
-- [ ] 1.2 Re-read `fix-ios-contract-and-spec-drift` sections 3, 4, 5, 6, 10 against the current code; record in this `design.md` which tasks still apply unchanged, which need adaptation, and which are obsolete.
+- [x] 1.2 Re-read `fix-ios-contract-and-spec-drift` sections 3, 4, 5, 6, 10 against the current code; record in this `design.md` which tasks still apply unchanged, which need adaptation, and which are obsolete.
 - [ ] 1.3 Ask the team (human step) for model and iOS version of every pilot test iPhone; record them in `docs/pilot-readiness/team/DEVICES.md`.
-- [ ] 1.4 Run `npx -y @fission-ai/openspec@1.3.1 validate prepare-pilot-ios-build --strict`.
+- [x] 1.4 Run `npx -y @fission-ai/openspec@1.3.1 validate prepare-pilot-ios-build --strict`.
 
 ## 2. Environment and Feature Profile
 

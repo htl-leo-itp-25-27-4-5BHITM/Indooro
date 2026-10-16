@@ -7,7 +7,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Person | Aktuelle Change | Branch | Erledigte Tasks | Nächste Tasks | Prüfungen zuletzt | Aktualisiert |
 |---|---|---|---|---|---|---|
 | Erik (Mac) | `add-pilot-guided-tour-fallbacks` | `pilot/erik-guided-tour` | 7.1–7.4 | 1.1–2.7 | `swift test` 77/77 (2026-10-15) | 2026-10-16 |
-| Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | – | 1.1–3.5 | – | 2026-10-16 |
+| Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | 1.2, 1.4 | Baseline, 2.x | OpenSpec Change gültig; Builds laufen | 2026-10-16 |
 | Person B (Windows) | `release-pilot-backend` Phase A | `pilot/release-backend` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person C (Windows) | `prepare-pilot-store-operations` | `pilot/store-operations` | – | 1.1–3.5 | – | 2026-10-16 |
 | Admin-Agent | Welle 2: `complete-admin-parity-evidence`, `add-editor-floorplan-underlay` | `pilot/admin-parity`, `pilot/editor-underlay` | Pilot-Cut erledigt, live | laut `PROMPT_ADMIN_AGENT_WAVE2.md` | Backend 142/0 (2026-10-16) | 2026-10-16 |
@@ -33,11 +33,16 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Herkunft „SPAR Posttraße“-Layout und Belegplan klären | Erik | 2026-10-16 |
 | Termin mit Betreuung | Erik | 2026-10-16 |
 
+| Pilot-iPhones: Modell + iOS-Version nennen, anschließend Installation und Bluetooth-Aus prüfen (A 1.3/6.4/7.3); David kennt Geräte derzeit nicht | Person A / Team | 2026-10-16 |
+
 ## Blocker
 
 | Datum | Person | Blocker / Frage | Antwort |
 |---|---|---|---|
-| – | – | – | – |
+| 2026-10-16 | Person A | A 4.3/4.4/5.2/5.6: Freigabe oder Umsetzung durch Erik für Suchfehler, Store-Scope, Filialübersicht und Kundentexte in StoreMapPage benötigt. BeaconManager-Layoutdecoder und ShoppingTransferService ebenfalls außerhalb der erlaubten Teilbereiche. | offen |
+| 2026-10-16 | Person A | A 5.4: Freigabe für eine PermissionBanner-Einbindung in StoreMapPage benötigt; Komponente und Status werden unabhängig vorbereitet. | offen |
+| 2026-10-16 | Person A | A 6.5: explizite Freigabe von Erik zum Entfernen der vier toten Views fehlt. | offen |
+| 2026-10-16 | Person A | D: wartet auf docs/pilot-readiness/hardware/RESULT_SUMMARY.md; keine Schwellen ohne Messdaten. | offen |
 
 ## Entscheidungen
 
