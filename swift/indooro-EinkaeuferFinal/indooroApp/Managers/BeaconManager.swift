@@ -147,7 +147,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
 
     @Published var tapSetsTarget = true
-    @Published private(set) var trackingMode: TrackingMode = .beacon
+    @Published private(set) var trackingMode: TrackingMode = .debugNoBeacons
+    @Published private(set) var bluetoothState: CBManagerState = .unknown
+    @Published private(set) var locationAuthorization: CLAuthorizationStatus = .notDetermined
     @Published private(set) var layoutHistory: [LayoutVersionSummary] = []
     @Published private(set) var isLoadingLayoutHistory = true
     @Published private(set) var isLoadingLayout = true
@@ -272,9 +274,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         locationManager.delegate = self
         locationManager.pausesLocationUpdatesAutomatically = true
-        requestLocationAuthorizationIfNeeded()
-
-        centralManager = CBCentralManager(delegate: self, queue: nil)
+        locationAuthorization = locationManager.authorizationStatus
         startUpdateTimer()
         refreshStoreDetectionBeaconsIfNeeded(force: true)
         restorePersistedLayoutSelection()
@@ -428,6 +428,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         switch mode {
         case .beacon:
+            if centralManager == nil { centralManager = CBCentralManager(delegate: self, queue: nil) }
+            requestLocationAuthorizationIfNeeded()
             configureBeaconScanningForCurrentMode()
 
         case .debugNoBeacons:
@@ -1834,6 +1836,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     // MARK: - RSSI helpers
 
     private func requestLocationAuthorizationIfNeeded() {
+        locationAuthorization = locationManager.authorizationStatus
+        guard trackingMode == .beacon else { return }
         guard CLLocationManager.locationServicesEnabled() else {
             navigationStatusMessage = "Ortungsdienste sind deaktiviert. iBeacon-Ranging braucht Standortfreigabe."
             appendDebugLog("Location Services deaktiviert")
@@ -2052,6 +2056,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        bluetoothState = central.state
         appendDebugLog("Bluetooth State: \(bluetoothStateDescription(central.state))")
         configureBeaconScanningForCurrentMode()
     }
