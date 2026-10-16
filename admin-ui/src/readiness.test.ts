@@ -84,6 +84,7 @@ test("traffic light texts state the readiness without relying on colour", () => 
 test("coverage text handles layouts without walkable cells", () => {
   assert.equal(coverageText({ walkableCells: 0, lowCoverageCells: 0 }), "Keine begehbaren Zellen");
   assert.equal(coverageText({ walkableCells: 200, lowCoverageCells: 0 }), "0 von 200 begehbaren Zellen unter 3 Beacons (0 %)");
+  assert.equal(coverageText({ walkableCells: 564, lowCoverageCells: 563 }), "563 von 564 begehbaren Zellen unter 3 Beacons (99,8 %)");
 });
 
 test("radius input accepts German and English decimals inside 0.5 to 30 metres", () => {

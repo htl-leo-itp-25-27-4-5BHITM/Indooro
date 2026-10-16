@@ -23,7 +23,7 @@
 - [x] 4.1 Add API client function and types in `admin-ui/src/api/`.
 - [x] 4.2 Add page „Pilot-Bereitschaft“ (route under store detail): traffic light, grouped findings, links to editor element and product, „Als Markdown kopieren“; German texts; empty, loading and error states with retry.
 - [x] 4.3 Add unit tests for the Markdown export and a mocked browser test for red/green/403 states.
-- [ ] 4.4 Build the admin per the documented admin build process and verify the page on a local stack. Build (`npm run build`) and the mocked browser suite (115/115) are green; the check against a local full stack (Quarkus + PostgreSQL + OpenSearch) is **not done** — human step for Erik before the rollout.
+- [x] 4.4 Build the admin per the documented admin build process and verify the page on a local stack. Done 2026-10-16 with an isolated local full stack (Quarkus dev + PostgreSQL 17 + OpenSearch 2.9 + Keycloak 26, seeded by `scripts/dev/seed_readiness_demo.py`): the real endpoint answers for an admin (200), a store-manager without assignment (403) and without token (302 to login); the page was rendered from the real responses (`docs/pilot-readiness/evidence/store-readiness/`). The full-stack run found one display defect (563 of 564 cells shown as „100 %“), fixed to one decimal place. The login in a real browser was not exercised.
 
 ## 5. Verification and Handover
 

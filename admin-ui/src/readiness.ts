@@ -47,7 +47,8 @@ export function parseRadiusInput(raw: string): { radius: number } | { error: str
 /** Coverage is the share of walkable cells with fewer than three placed beacons within the radius. */
 export function coverageText(counts: Pick<ReadinessCounts, "walkableCells" | "lowCoverageCells">): string {
   if (counts.walkableCells <= 0) return "Keine begehbaren Zellen";
-  const share = Math.round((counts.lowCoverageCells / counts.walkableCells) * 100);
+  // One decimal place: 563 of 564 cells must not read as 100 %.
+  const share = (Math.round((counts.lowCoverageCells / counts.walkableCells) * 1000) / 10).toLocaleString("de-AT", { maximumFractionDigits: 1 });
   return `${counts.lowCoverageCells} von ${counts.walkableCells} begehbaren Zellen unter 3 Beacons (${share} %)`;
 }
 
