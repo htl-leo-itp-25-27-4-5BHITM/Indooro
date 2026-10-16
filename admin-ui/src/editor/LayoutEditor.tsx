@@ -330,7 +330,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
 
   const saveDocument = async () => {
     const saveAction = saveMode === "immediate" ? onSaveCurrent : onSaveDraft;
-    if (!saveAction || working || (saveMode === "immediate" && errors > 0)) return;
+    if (!saveAction || working || (!dirty && !allowUnchangedSave) || (saveMode === "immediate" && errors > 0)) return;
     const warningNote = publishWarningNote(issues);
     if (saveMode === "immediate" && !window.confirm(`Das globale Layout jetzt für alle Kunden veröffentlichen? Diese Änderung ist sofort sichtbar.${warningNote}`)) return;
     const saved = structuredClone(editorRef.current.document);
@@ -415,7 +415,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
         <button type="button" className="le-button" onClick={() => importRef.current?.click()} disabled={!!working}>JSON importieren</button>
         <input ref={importRef} className="le-file-input" type="file" accept=".json,application/json" aria-label="Grundrissdatei importieren" onChange={(event) => void importDocument(event.target.files?.[0])} />
         <span className={`le-save-indicator ${dirty ? "is-dirty" : ""}`}>{dirty ? "● Ungespeicherte Änderungen" : "✓ Gespeichert"}</span>
-        <button type="button" className={`le-button ${saveMode === "immediate" ? "le-primary" : ""}`} disabled={!(saveMode === "immediate" ? onSaveCurrent : onSaveDraft) || (!dirty && !allowUnchangedSave) || !!working || (saveMode === "immediate" && errors > 0)} onClick={saveDocument}>{working === "save" ? "Speichert …" : saveMode === "immediate" ? "Global veröffentlichen" : "Entwurf speichern"}</button>
+        <button type="button" className={`le-button ${saveMode === "immediate" ? "le-primary" : ""}`} aria-disabled={!(saveMode === "immediate" ? onSaveCurrent : onSaveDraft) || (!dirty && !allowUnchangedSave) || !!working || (saveMode === "immediate" && errors > 0)} onClick={saveDocument}>{working === "save" ? "Speichert …" : saveMode === "immediate" ? "Global veröffentlichen" : "Entwurf speichern"}</button>
         {saveMode === "draft" && <button type="button" className="le-button le-primary" disabled={!onPublish || dirty || errors > 0 || !!working} onClick={publish}>{working === "publish" ? "Veröffentlicht …" : publishLabel}</button>}
       </div>
     </header>

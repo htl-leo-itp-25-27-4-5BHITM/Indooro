@@ -126,3 +126,74 @@ test("keyboard duplicate respects the selected element lock", async ({ page }) =
   await page.keyboard.press("ControlOrMeta+D");
   await expect(layers).toHaveCount(layout.elements.length + 1);
 });
+
+test("named history controls and global undo/redo shortcuts restore the selected layer", async ({ page }) => {
+  await mockEditor(page, "DRAFT", []);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+
+  const canvas = page.getByRole("group", { name: "Interaktiver Grundriss" });
+  const layer = page.locator(".le-layers").getByRole("button", { name: /Obst & Gemüse/ });
+  await expect(page.getByRole("button", { name: "Rückgängig" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Wiederholen" })).toBeDisabled();
+
+  await layer.click();
+  const x = page.getByLabel("X", { exact: true });
+  const initialX = Number(await x.inputValue());
+  await canvas.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(x).toHaveValue(String(initialX + 1));
+  await expect(page.getByRole("button", { name: "Rückgängig" })).toBeEnabled();
+
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(x).toHaveValue(String(initialX));
+  await expect(page.getByRole("button", { name: "Wiederholen" })).toBeEnabled();
+  await page.keyboard.press("ControlOrMeta+y");
+  await expect(x).toHaveValue(String(initialX + 1));
+  await expect(page.getByRole("button", { name: "Wiederholen" })).toBeDisabled();
+});
+
+test("cancelling a critical delete dialog preserves focus and the selected layer", async ({ page }) => {
+  await mockEditor(page, "DRAFT", []);
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const layer = page.locator(".le-layers").getByRole("button", { name: /Obst & Gemüse/ });
+  await layer.click();
+
+  const remove = page.getByRole("button", { name: "Löschen" });
+  await remove.focus();
+  page.once("dialog", (dialog) => dialog.dismiss());
+  await page.keyboard.press("Enter");
+
+  await expect(remove).toBeFocused();
+  await expect(layer).toHaveAttribute("aria-current", "true");
+  await expect(page.locator(".le-layers").getByRole("listitem")).toHaveCount(layout.elements.length);
+});
+
+test("save failure is announced, retains edits, and announces a successful retry", async ({ page }) => {
+  const saved: LayoutDocument[] = [];
+  let saveAttempts = 0;
+  await mockEditor(page, "DRAFT", saved);
+  await page.route("**/api/stores/store-1/layout/versions", async (route) => {
+    if (route.request().method() !== "POST") return route.fallback();
+    saveAttempts += 1;
+    if (saveAttempts === 1) return route.fulfill({ status: 503, json: { message: "Vorübergehend nicht verfügbar" } });
+    const payload = route.request().postDataJSON() as { layout: LayoutDocument };
+    saved.push(payload.layout);
+    return route.fulfill({ json: { layoutId: "draft-retry", versionNo: 2, status: "DRAFT", layoutName: payload.layout.shopName, layout: payload.layout } });
+  });
+  await page.goto("/admin/next/editor/?storeId=store-1");
+
+  const shopName = page.getByLabel("Filialname");
+  await shopName.fill("Linz Test geändert");
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.getByRole("status")).toHaveText("Serverfehler. Bitte später erneut versuchen.");
+  await expect(page.getByRole("button", { name: "Entwurf speichern" })).toBeFocused();
+  await expect(shopName).toHaveValue("Linz Test geändert");
+  await expect(page.getByText("Ungespeicherte Änderungen")).toBeVisible();
+
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.getByRole("status")).toHaveText("Entwurf gespeichert.");
+  await expect(page.getByRole("button", { name: "Entwurf speichern" })).toBeFocused();
+  await expect(page.locator(".le-save-indicator")).toContainText("Gespeichert");
+  expect(saveAttempts).toBe(2);
+  expect(saved.at(-1)?.shopName).toBe("Linz Test geändert");
+});
