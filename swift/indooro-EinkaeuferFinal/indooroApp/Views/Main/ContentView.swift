@@ -18,6 +18,7 @@ struct ContentView: View {
     @StateObject private var recipeStore = RecipeStore()
     @StateObject private var upsellStore = UpsellSuggestionStore()
 
+    @AppStorage(AppEnvironment.profileOverrideKey) private var profileOverride = ""
     @State private var selectedSection: AppSection = .start
     @State private var targetProduct: Product?
     @State private var pendingShoppingImportPackage: ShoppingTransferPackage?
@@ -53,6 +54,7 @@ struct ContentView: View {
             }
             .tag(AppSection.planning)
 
+            if AppEnvironment.allowsExtendedFeatures {
             RecipesPage(
                 recipeStore: recipeStore,
                 listManager: shoppingListManager,
@@ -65,6 +67,7 @@ struct ContentView: View {
                 Label("Rezepte", systemImage: "fork.knife")
             }
             .tag(AppSection.recipes)
+            }
 
             ShoppingListsPage(
                 listManager: shoppingListManager,

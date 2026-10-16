@@ -33,7 +33,7 @@ struct HomeDashboardView: View {
                     }
 
                     currentListCard
-                    recipesEntryCard
+                    if AppEnvironment.allowsExtendedFeatures { recipesEntryCard }
                     mapEntryCard
                 }
                 .padding(.horizontal, 22)

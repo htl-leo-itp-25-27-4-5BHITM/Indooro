@@ -14,7 +14,7 @@
 
 ## 3. Pilot Profile Gating
 
-- [ ] 3.1 Hide the Rezepte tab and the dashboard shortcut `onOpenRecipes` in profile `pilot` (`ContentView`, `HomeDashboardView`).
+- [x] 3.1 Hide the Rezepte tab and the dashboard shortcut `onOpenRecipes` in profile `pilot` (`ContentView`, `HomeDashboardView`).
 - [ ] 3.2 Return early from every public request method of `UpsellSuggestionStore` in profile `pilot`; hide upsell prompt UI; verify with the DEBUG network log that no `/mobile/upsell/` request is sent during a full tour.
 - [ ] 3.3 Hide the AR section of `SettingsSheet` in profile `pilot`.
 - [ ] 3.4 In `BeaconManager` store detection (`applyDetectedStore`, around lines 1011-1128): in profile `pilot`, never replace an active store; when none is active, show the suggestion „Filiale erkannt: <name> – öffnen?“ (or apply only if exactly one store exists and the customer has not chosen another). Keep profile `full` unchanged.
