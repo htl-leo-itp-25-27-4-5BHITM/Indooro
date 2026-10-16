@@ -15,7 +15,7 @@
 ## 3. UI
 
 - [x] 3.1 Add `IndooroStudyMode` to `Info.plist` (default false) and read it via `AppEnvironment`.
-- [ ] 3.2 Add „Testleitung“ entry in `SettingsSheet` visible only in study mode.
+- [x] 3.2 Add „Testleitung“ entry in `SettingsSheet` visible only in study mode.
 - [ ] 3.3 Add `Views/Study/StudySessionView.swift`: test id input, task list, condition switch per task, big buttons „Start“, „Gefunden“, „Hilfe gebraucht“, „Abgebrochen“, running timer, notes field for the test lead (stored only as `note` event, warning not to enter names).
 - [ ] 3.4 For condition `app`, „Start“ sets the product as target (single target or adds to a study list) and switches to the map; „Gefunden“ etc. reachable from an overlay on the map while a study task runs.
 - [ ] 3.5 Add export via `ShareLink` (CSV + JSONL) and „Alle Sitzungen löschen“ with confirmation.

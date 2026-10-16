@@ -18,6 +18,14 @@ struct SettingsSheet: View {
     var body: some View {
         NavigationStack {
             List {
+                if AppEnvironment.isStudyModeEnabled {
+                    Section {
+                        Button("Testleitung") {
+                            dismiss()
+                            NotificationCenter.default.post(name: StudySessionStore.openRequested, object: nil)
+                        }
+                    }
+                }
                 Section("Ortung") {
                     Picker("Modus", selection: $trackingMode) {
                         Text("Mit Ortung").tag(TrackingMode.beacon)
