@@ -1,7 +1,10 @@
 package at.htl.resource;
 
+import at.htl.admin.service.AdminAccessService;
 import at.htl.service.LayoutService;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.annotation.security.PermitAll;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -27,8 +30,12 @@ public class LayoutResource {
     @Inject
     LayoutService layoutService;
 
+    @Inject
+    AdminAccessService adminAccessService;
+
     @GET
     @Path("/current")
+    @PermitAll
     public Response getCurrentLayout() {
         try {
             return Response.ok(layoutService.getCurrentLayout()).build();
@@ -42,7 +49,9 @@ public class LayoutResource {
 
     @POST
     @Path("/current")
+    @RolesAllowed("admin")
     public Response saveCurrentLayout(JsonNode layout) {
+        adminAccessService.requireAdmin();
         if (layout == null || layout.isNull() || layout.isEmpty()) {
             return Response.status(Response.Status.BAD_REQUEST)
                     .entity(Map.of("error", "Layout payload is required"))
@@ -66,6 +75,7 @@ public class LayoutResource {
 
     @GET
     @Path("/history")
+    @PermitAll
     public Response getLayoutHistory(@QueryParam("limit") Integer limit) {
         try {
             return Response.ok(layoutService.getRecentLayouts(limit)).build();
@@ -79,6 +89,7 @@ public class LayoutResource {
 
     @GET
     @Path("/versions/{layoutId}")
+    @PermitAll
     public Response getLayoutVersion(@PathParam("layoutId") String layoutId) {
         try {
             JsonNode layout = layoutService.getLayoutVersion(layoutId);

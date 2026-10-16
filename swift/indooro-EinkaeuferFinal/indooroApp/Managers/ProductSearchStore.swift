@@ -4,7 +4,7 @@ final class ProductSearchStore: ObservableObject {
     @Published private(set) var searchResults: [Product] = []
     @Published private(set) var isSearching = false
 
-    private let apiBase = "https://it220209.cloud.htl-leonding.ac.at/api"
+    private let apiBase = IndooroAPI.baseURL
     private var latestSearchRequestID = UUID()
 
     func clearSearch() {

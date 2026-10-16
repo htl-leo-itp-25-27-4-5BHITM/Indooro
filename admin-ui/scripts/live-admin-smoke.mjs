@@ -1,0 +1,990 @@
+import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { chromium } from "@playwright/test";
+
+// Explicit local-stack acceptance check. It creates disposable records in the
+// dedicated admin-rebuild PostgreSQL container and never prints demo passwords.
+const base = "http://localhost:8080";
+const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8"));
+const [adminUser, regionUser, storeUser] = realm.users;
+const browser = await chromium.launch({ args: process.env.ADMIN_SMOKE_HOST_ALIAS ? ["--host-resolver-rules=MAP host.docker.internal 127.0.0.1"] : [] });
+
+async function login(user, path = "/admin/next/") {
+  const page = await browser.newPage();
+  await page.goto(base + path, { waitUntil: "domcontentloaded" });
+  await page.locator("#username").fill(user.username);
+  await page.locator("#password").fill(user.credentials.find((item) => item.type === "password").value);
+  await page.locator("#kc-login").click();
+  await page.waitForURL(`**${path.split("?")[0]}*`, { timeout: 15_000 });
+  return page;
+}
+
+async function api(page, method, path, data) {
+  const response = await page.context().request.fetch(base + path, { method, data, failOnStatusCode: false });
+  const raw = await response.text();
+  let body = null;
+  try { body = raw ? JSON.parse(raw) : null; } catch { body = raw; }
+  return { status: response.status(), body };
+}
+
+function expectOk(result, action) {
+  assert.equal(result.status, 200, `${action}: HTTP ${result.status} ${JSON.stringify(result.body).slice(0, 300)}`);
+  return result.body;
+}
+
+async function publicJson(path) {
+  const response = await fetch(base + path);
+  assert.equal(response.status, 200, `anonymous ${path}: HTTP ${response.status}`);
+  return response.json();
+}
+
+function currentLayout(storeId) {
+  return fetch(`${base}/api/mobile/stores/${storeId}/layout/current`).then(async (response) => {
+    assert.equal(response.status, 200, "anonymous current layout");
+    return response.json();
+  });
+}
+
+function assignDemoScopes(regionId, storeId) {
+  const sql = `INSERT INTO user_access_assignments
+    (id, keycloak_subject, username, email, role, region_id, store_id, status, created_at, updated_at)
+    VALUES
+    (gen_random_uuid(), '${regionUser.id}', '${regionUser.username}', '${regionUser.email}', 'region-manager', '${regionId}', NULL, 'ACTIVE', NOW(), NOW()),
+    (gen_random_uuid(), '${storeUser.id}', '${storeUser.username}', '${storeUser.email}', 'store-manager', NULL, '${storeId}', 'ACTIVE', NOW(), NOW())
+    ON CONFLICT (keycloak_subject) WHERE status = 'ACTIVE'
+    DO UPDATE SET region_id = EXCLUDED.region_id, store_id = EXCLUDED.store_id, updated_at = NOW()`;
+  execFileSync("docker", ["exec", "indooro-admin-rebuild-pg", "psql", "-U", "indooro", "-d", "indooro", "-c", sql], { stdio: "pipe" });
+}
+
+function activeCount(storeId) {
+  const sql = `SELECT COUNT(*) FROM layout_versions WHERE store_id = '${storeId}' AND status = 'ACTIVE'`;
+  return Number(execFileSync("docker", ["exec", "indooro-admin-rebuild-pg", "psql", "-U", "indooro", "-d", "indooro", "-Atc", sql], { encoding: "utf8" }).trim());
+}
+
+const documentFor = (name) => ({
+  shopName: name,
+  gridSize: { width: 20, height: 20 },
+  elements: [
+    { id: 1, type: "entrance", x: 2, y: 0, width: 3, height: 1, label: "Eingang" },
+    { id: 2, type: "shelf", x: 5, y: 5, width: 3, height: 2, category: "310/1", meter: 1, label: name },
+  ],
+});
+
+try {
+  const admin = await login(adminUser);
+  assert.equal(expectOk(await api(admin, "GET", "/api/admin/me"), "admin login").role, "admin");
+  const indexInitialization = await api(admin, "POST", "/api/admin/index/create", {});
+  assert.ok([200, 409].includes(indexInitialization.status), `product index initialization: HTTP ${indexInitialization.status}`);
+  const categoryInitialization = await api(admin, "POST", "/api/categories", { categoryCode: 310, categoryName: "Obst & Gemüse" });
+  assert.ok([200, 409].includes(categoryInitialization.status), `category initialization: HTTP ${categoryInitialization.status}`);
+  assert.ok(Array.isArray(await publicJson("/api/categories?size=5")), "anonymous category reads stay public");
+  const run = Date.now().toString(36).slice(-7).toUpperCase();
+  const region = expectOk(await api(admin, "POST", "/api/regions", { code: `LIVE-${run}`, name: `Live Region ${run}` }), "region create");
+  const store = expectOk(await api(admin, "POST", "/api/stores", {
+    regionId: region.id, storeCode: `LIVE-STORE-${run}`, name: `Live Store ${run}`,
+    street: "Testgasse 1", zipCode: "4020", city: "Linz", country: "AT",
+  }), "store create");
+  const foreignRegion = expectOk(await api(admin, "POST", "/api/regions", { code: `OTHER-${run}`, name: `Other Region ${run}` }), "other region create");
+  const foreignStore = expectOk(await api(admin, "POST", "/api/stores", {
+    regionId: foreignRegion.id, storeCode: `OTHER-STORE-${run}`, name: `Other Store ${run}`,
+    street: "Fremdgasse 2", zipCode: "1010", city: "Wien", country: "AT",
+  }), "other store create");
+  const ownBeacon = expectOk(await api(admin, "POST", "/api/beacons", { beaconCode: `LIVE-B-${run}`, uuid: randomUUID(), major: 1, minor: 1 }), "beacon create");
+  const foreignBeacon = expectOk(await api(admin, "POST", "/api/beacons", { beaconCode: `OTHER-B-${run}`, uuid: randomUUID(), major: 1, minor: 2 }), "foreign beacon create");
+  expectOk(await api(admin, "POST", `/api/beacons/${foreignBeacon.id}/assign`, { storeId: foreignStore.id }), "foreign beacon assign");
+  assignDemoScopes(region.id, store.id);
+  await admin.goto(`${base}/admin/next/`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("link", { name: "Store anlegen" }).waitFor();
+  const uiRegionCode = `UI-${run}`;
+  const uiRegionName = `UI Region ${run}`;
+  await admin.goto(`${base}/admin/next/regions/`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("button", { name: "Region anlegen" }).click();
+  await admin.getByRole("textbox", { name: "Code" }).fill(uiRegionCode);
+  await admin.getByRole("textbox", { name: "Name", exact: true }).fill(uiRegionName);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("cell", { name: uiRegionName }).waitFor();
+  const uiRegion = expectOk(await api(admin, "GET", "/api/regions?status=ACTIVE"), "candidate region create")
+    .find((item) => item.code === uiRegionCode);
+  assert.ok(uiRegion, "candidate region create persists in the API");
+  await admin.getByRole("button", { name: "Bearbeiten" }).click();
+  const editedUiRegionName = `${uiRegionName} geprüft`;
+  await admin.getByRole("textbox", { name: "Name", exact: true }).fill(editedUiRegionName);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("cell", { name: editedUiRegionName }).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/regions/${uiRegion.id}`), "candidate region edit").name, editedUiRegionName);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("button", { name: "Archivieren" }).click();
+  await admin.getByRole("status").getByText(`Region „${editedUiRegionName}“ wurde archiviert.`).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/regions/${uiRegion.id}`), "candidate region archive").status, "ARCHIVED");
+  await admin.getByLabel("Status").selectOption("ARCHIVED");
+  await admin.getByRole("cell", { name: editedUiRegionName }).waitFor();
+  const uiBeaconCode = `UI-B-${run}`;
+  const editedUiBeaconCode = `${uiBeaconCode}-EDIT`;
+  await admin.goto(`${base}/admin/next/beacons/`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("button", { name: "Beacon anlegen" }).click();
+  await admin.getByRole("textbox", { name: "Beacon-Code" }).fill(uiBeaconCode);
+  await admin.getByRole("textbox", { name: "UUID", exact: true }).fill(randomUUID());
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("status").getByText("Beacon wurde angelegt.").waitFor();
+  const uiBeacon = expectOk(await api(admin, "GET", `/api/beacons?query=${uiBeaconCode}`), "candidate beacon create")
+    .find((item) => item.beaconCode === uiBeaconCode);
+  assert.ok(uiBeacon, "candidate beacon create persists in the API");
+  await admin.getByRole("row").filter({ hasText: uiBeaconCode }).getByRole("button", { name: "Bearbeiten" }).click();
+  await admin.getByRole("textbox", { name: "Beacon-Code" }).fill(editedUiBeaconCode);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("status").getByText("Beacon wurde gespeichert.").waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/beacons/${uiBeacon.id}`), "candidate beacon edit").beaconCode, editedUiBeaconCode);
+  await admin.goto(`${base}/admin/next/beacons/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).waitFor();
+  await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).getByRole("button", { name: "Zuweisen" }).click();
+  assert.equal(await admin.getByLabel("Ziel-Store").inputValue(), store.id, "store deep link preselects assignment destination");
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("button", { name: "Zuweisung bestätigen" }).click();
+  await admin.getByRole("status").getByText(`${editedUiBeaconCode} wurde ${store.name} zugewiesen.`).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/beacons/${uiBeacon.id}`), "candidate beacon assign").currentStore?.id, store.id);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).getByRole("button", { name: "Freigeben" }).click();
+  await admin.getByRole("status").getByText(`${editedUiBeaconCode} wurde freigegeben.`).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/beacons/${uiBeacon.id}`), "candidate beacon release").currentStore, null);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).getByRole("button", { name: "Archivieren" }).click();
+  await admin.getByRole("status").getByText(`${editedUiBeaconCode} wurde archiviert.`).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/beacons/${uiBeacon.id}`), "candidate beacon archive").status, "ARCHIVED");
+  await admin.getByLabel("Status").selectOption("ARCHIVED");
+  await admin.getByRole("row").filter({ hasText: editedUiBeaconCode }).waitFor();
+  const bulkBeaconCode = `UI-BULK-${run}`;
+  const bulkBeaconUuid = randomUUID();
+  await admin.getByRole("button", { name: "Bulk anlegen" }).click();
+  await admin.getByRole("textbox", { name: "Gemeinsame UUID" }).fill(bulkBeaconUuid);
+  await admin.getByRole("textbox", { name: "Gemeinsamer Major" }).fill("5");
+  await admin.locator("section[aria-labelledby='beacon-bulk-title'] textarea").last().fill(`${bulkBeaconCode}-1,1\n${bulkBeaconCode}-2,2`);
+  await admin.getByRole("button", { name: "Review", exact: true }).click();
+  await admin.getByRole("button", { name: "Review bestätigen und 2 anlegen" }).waitFor();
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("button", { name: "Review bestätigen und 2 anlegen" }).click();
+  await admin.getByRole("status").getByText("2 Beacons wurden angelegt.").waitFor();
+  const bulkBeacons = expectOk(await api(admin, "GET", `/api/beacons?query=${bulkBeaconCode}`), "candidate beacon bulk create");
+  assert.equal(bulkBeacons.filter((item) => item.beaconCode.startsWith(bulkBeaconCode)).length, 2);
+  assert.ok(bulkBeacons.every((item) => item.uuid.replaceAll("-", "").toLowerCase() === bulkBeaconUuid.replaceAll("-", "").toLowerCase()));
+  const mobileStores = await publicJson("/api/mobile/stores");
+  assert.ok(Array.isArray(mobileStores));
+  const mobileStore = mobileStores.find((item) => item.id === store.id);
+  assert.ok(mobileStore, "new store appears in the anonymous iOS store list");
+  for (const key of ["id", "storeCode", "name", "city"]) assert.equal(typeof mobileStore[key], "string", `iOS store field ${key}`);
+  const beaconIdentities = await publicJson("/api/mobile/stores/beacon-identities");
+  assert.ok(Array.isArray(beaconIdentities.uuids));
+  assert.ok(Array.isArray(await publicJson("/api/products?size=5")));
+  assert.ok(Array.isArray(await publicJson("/api/products/search?q=apfel&size=5")));
+  const productId = Math.floor(Date.now() / 1000);
+  const productName = `Live Produkt ${run}`;
+  expectOk(await api(admin, "POST", "/api/admin/products", { id: productId, name: productName, price: 2.49, layoutCode: "310/1/1/1", storeCode: store.storeCode }), "product create");
+  let publicProduct;
+  for (let attempt = 0; attempt < 20 && !publicProduct; attempt += 1) {
+    publicProduct = (await publicJson(`/api/products/search?q=${encodeURIComponent(productName)}&size=10`)).find((item) => item.id === productId);
+    if (!publicProduct) await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  assert.ok(publicProduct, "new product appears in the anonymous iOS/customer search");
+  assert.equal(publicProduct.name, productName);
+  assert.equal(publicProduct.price, 2.49);
+  assert.equal(publicProduct.layoutCode, "310/1/1/1");
+  await admin.goto(`${base}/admin/next/products/?q=${encodeURIComponent(productName)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("cell", { name: productName }).waitFor();
+  await admin.getByRole("button", { name: "Bearbeiten" }).first().click();
+  const updatedProductName = `${productName} geprüft`;
+  await admin.getByRole("textbox", { name: "Name" }).fill(updatedProductName);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByText("Produkt wurde aktualisiert.").waitFor();
+  let updatedPublicProduct;
+  for (let attempt = 0; attempt < 20 && !updatedPublicProduct; attempt += 1) {
+    updatedPublicProduct = (await publicJson(`/api/products/search?q=${encodeURIComponent(updatedProductName)}&size=10`)).find((item) => item.id === productId);
+    if (!updatedPublicProduct) await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  assert.equal(updatedPublicProduct?.name, updatedProductName, "candidate product edit reaches the public catalog");
+  assert.equal(updatedPublicProduct.layoutCode, "310/1/1/1");
+  const uiProductId = productId + 1;
+  const uiProductName = `UI Produkt ${run}`;
+  await admin.getByRole("button", { name: "Produkt anlegen" }).click();
+  await admin.getByRole("textbox", { name: "Produkt-ID" }).fill(String(uiProductId));
+  await admin.getByRole("textbox", { name: "Name" }).fill(uiProductName);
+  await admin.getByRole("textbox", { name: "Preis (EUR)" }).fill("3.29");
+  await admin.locator("section[aria-labelledby='product-form-title'] select[required]").selectOption("310");
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("status").getByText("Produkt wurde angelegt.").waitFor();
+  let uiPublicProduct;
+  for (let attempt = 0; attempt < 20 && !uiPublicProduct; attempt += 1) {
+    uiPublicProduct = (await publicJson(`/api/products/search?q=${encodeURIComponent(uiProductName)}&size=10`)).find((item) => item.id === uiProductId);
+    if (!uiPublicProduct) await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  assert.equal(uiPublicProduct?.name, uiProductName, "candidate product create reaches the public catalog");
+  assert.equal(uiPublicProduct.layoutCode, "310/1/1/1");
+  await admin.goto(`${base}/admin/next/products/?q=${encodeURIComponent(uiProductName)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: uiProductName }).waitFor();
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("row").filter({ hasText: uiProductName }).getByRole("button", { name: "Löschen" }).click();
+  await admin.getByRole("status").getByText(`Produkt ${uiProductName} wurde gelöscht.`).waitFor();
+  let deletedFromAdmin = false;
+  let deletedFromPublic = false;
+  for (let attempt = 0; attempt < 20 && (!deletedFromAdmin || !deletedFromPublic); attempt += 1) {
+    deletedFromAdmin = !expectOk(await api(admin, "GET", `/api/admin/products?q=${encodeURIComponent(uiProductName)}&page=0&size=10`), "candidate product delete post-state").content.some((item) => item.id === uiProductId);
+    deletedFromPublic = !(await publicJson(`/api/products/search?q=${encodeURIComponent(uiProductName)}&size=10`)).some((item) => item.id === uiProductId);
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  assert.ok(deletedFromAdmin && deletedFromPublic, "candidate product delete disappears from admin and public search");
+  const existingCategories = await publicJson("/api/categories?size=500");
+  const usedCategoryCodes = new Set(existingCategories.map((item) => item.categoryCode));
+  const liveCategoryCode = Array.from({ length: 500 }, (_, index) => 500 + index).find((code) => !usedCategoryCodes.has(code));
+  assert.ok(liveCategoryCode, "a free local category code is available");
+  await admin.goto(`${base}/admin/next/categories/`, { waitUntil: "domcontentloaded" });
+  const existingCategory = await publicJson("/api/categories/310");
+  const atomicCollision = await api(admin, "POST", "/api/categories?createOnly=true", { categoryCode: 310, categoryName: `Nicht überschreiben ${run}` });
+  assert.equal(atomicCollision.status, 409, `atomic category create rejects an existing code: ${JSON.stringify(atomicCollision.body).slice(0, 400)}`);
+  assert.equal((await publicJson("/api/categories/310")).categoryName, existingCategory.categoryName, "atomic conflict preserves existing category");
+  await admin.getByRole("button", { name: "Kategorie anlegen" }).click();
+  await admin.getByRole("spinbutton", { name: "Kategorie-Code" }).fill("310");
+  await admin.getByRole("textbox", { name: "Name" }).fill(`Nicht überschreiben ${run}`);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("alert").filter({ hasText: "existiert bereits" }).waitFor();
+  assert.equal((await publicJson("/api/categories/310")).categoryName, existingCategory.categoryName, "candidate create does not overwrite an existing category");
+  await admin.getByRole("button", { name: "Abbrechen" }).click();
+  await admin.getByRole("button", { name: "Kategorie anlegen" }).click();
+  await admin.getByRole("spinbutton", { name: "Kategorie-Code" }).fill(String(liveCategoryCode));
+  await admin.getByRole("textbox", { name: "Name" }).fill(`Live Kategorie ${run}`);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("status").getByText(`Kategorie ${liveCategoryCode} gespeichert.`).waitFor();
+  assert.ok((await publicJson("/api/categories?size=500")).some((item) => item.categoryCode === liveCategoryCode && item.categoryName === `Live Kategorie ${run}`));
+  await admin.getByRole("row").filter({ hasText: `Live Kategorie ${run}` }).getByRole("button", { name: "Bearbeiten" }).click();
+  await admin.getByRole("textbox", { name: "Name" }).fill(`Geprüfte Kategorie ${run}`);
+  await admin.getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("status").getByText(`Kategorie ${liveCategoryCode} gespeichert.`).waitFor();
+  assert.ok((await publicJson("/api/categories?size=500")).some((item) => item.categoryCode === liveCategoryCode && item.categoryName === `Geprüfte Kategorie ${run}`));
+  const mobileRecipes = await publicJson("/api/mobile/recipes?page=0&size=5");
+  assert.ok(Array.isArray(mobileRecipes.content));
+
+  const recipe = expectOk(await api(admin, "POST", "/api/admin/recipes", {
+    recipe: { slug: `live-recipe-${run.toLowerCase()}`, title: `Live Rezept ${run}`, summary: "Lokaler Vertragstest", servings: 2, status: "DRAFT", tagIds: [] },
+    ingredients: [{ position: 1, displayName: "Apfel", quantity: 1, unitCode: "piece" }],
+    steps: [{ position: 1, instruction: "Apfel schneiden." }],
+  }), "recipe draft create");
+  assert.equal(recipe.status, "DRAFT");
+  assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
+  assert.equal(expectOk(await api(admin, "PATCH", `/api/admin/recipes/${recipe.id}/publish`, {}), "recipe publish").status, "PUBLISHED");
+  const publicRecipe = await publicJson(`/api/mobile/recipes/${recipe.id}`);
+  assert.equal(publicRecipe.title, recipe.title);
+  assert.equal(publicRecipe.ingredients[0].displayName, "Apfel");
+  assert.equal(publicRecipe.steps[0].instruction, "Apfel schneiden.");
+  assert.equal(expectOk(await api(admin, "PATCH", `/api/admin/recipes/${recipe.id}/deactivate`, {}), "recipe deactivate").status, "DRAFT");
+  assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
+  const recipeTag = expectOk(await api(admin, "POST", "/api/admin/recipe-tags", { code: `live-tag-${run.toLowerCase()}`, name: `Live Tag ${run}`, kind: "DIET", status: "ACTIVE" }), "recipe tag create");
+  await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(recipe.title)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: recipe.title }).getByRole("button", { name: "Bearbeiten" }).click();
+  const recipeDialog = admin.getByRole("dialog");
+  const candidateRecipeTitle = `${recipe.title} UI`;
+  await recipeDialog.getByRole("textbox", { name: "Titel" }).fill(candidateRecipeTitle);
+  await recipeDialog.getByRole("textbox", { name: "Bild-URL" }).fill("/images/live-recipe.jpg");
+  await recipeDialog.getByRole("textbox", { name: "Bildbeschreibung" }).fill("Live Rezeptbild");
+  await recipeDialog.getByLabel("Tags").selectOption(recipeTag.id);
+  await recipeDialog.getByRole("button", { name: "Speichern" }).click();
+  await recipeDialog.waitFor({ state: "hidden" });
+  const candidateRecipe = expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "candidate recipe edit");
+  assert.equal(candidateRecipe.title, candidateRecipeTitle);
+  assert.equal(candidateRecipe.imageUrl, "/images/live-recipe.jpg");
+  assert.equal(candidateRecipe.imageAlt, "Live Rezeptbild");
+  assert.ok(candidateRecipe.tags.some((item) => item.id === recipeTag.id), "candidate recipe tag revision persisted");
+  assert.equal(candidateRecipe.ingredients[0].displayName, "Apfel");
+  assert.equal(candidateRecipe.steps[0].instruction, "Apfel schneiden.");
+  await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(candidateRecipeTitle)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: candidateRecipeTitle }).getByRole("button", { name: "Bearbeiten" }).click();
+  const revisedStep = `Apfel schneiden und prüfen ${run}.`;
+  await admin.getByRole("dialog").getByRole("textbox", { name: "Schritt 1" }).fill(revisedStep);
+  const stepFailurePath = `**/api/admin/recipes/${recipe.id}/steps/${candidateRecipe.steps[0].id}`;
+  const failRecipeStep = (route) => route.fulfill({ status: 503, json: { error: "Injected recipe step failure" } });
+  await admin.route(stepFailurePath, failRecipeStep);
+  await admin.getByRole("dialog").getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("dialog").getByRole("alert").getByText(/Schritt 1 speichern fehlgeschlagen/).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "failed recipe step post-state").steps[0].instruction, "Apfel schneiden.");
+  await admin.getByRole("dialog").getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+  assert.equal(await admin.getByRole("dialog").getByRole("textbox", { name: "Schritt 1" }).inputValue(), revisedStep, "failed recipe edit preserves local step input");
+  await admin.unroute(stepFailurePath, failRecipeStep);
+  await admin.getByRole("dialog").getByRole("button", { name: "Speichern" }).click();
+  await admin.getByRole("dialog").waitFor({ state: "hidden" });
+  assert.equal(expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "retried recipe step post-state").steps[0].instruction, revisedStep);
+  await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(candidateRecipeTitle)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: candidateRecipeTitle }).getByRole("button", { name: "Bearbeiten" }).click();
+  const ingredientCountBefore = expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "ingredient pre-state").ingredients.length;
+  const ingredientDialog = admin.getByRole("dialog");
+  await ingredientDialog.getByRole("button", { name: "+ Zutat" }).click();
+  await ingredientDialog.getByRole("textbox", { name: "Produkt aus Katalog" }).fill(updatedProductName);
+  await ingredientDialog.getByRole("button", { name: "Suchen" }).click();
+  await ingredientDialog.locator(`.recipe-product-search select option[value='${productId}']`).waitFor({ state: "attached" });
+  await ingredientDialog.locator(".recipe-product-search select").selectOption(String(productId));
+  await ingredientDialog.getByRole("textbox", { name: "Menge" }).last().fill("1 Stück");
+  const mappingFailurePath = `**/api/admin/recipes/${recipe.id}/ingredients/*/product-mapping`;
+  const failRecipeMapping = (route) => route.fulfill({ status: 503, json: { error: "Injected recipe mapping failure" } });
+  await admin.route(mappingFailurePath, failRecipeMapping);
+  await ingredientDialog.getByRole("button", { name: "Speichern" }).click();
+  await ingredientDialog.getByRole("alert").getByText(/Produktzuordnung für Zutat 2 speichern fehlgeschlagen/).waitFor();
+  const afterMappingFailure = expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "ingredient partial post-state");
+  assert.equal(afterMappingFailure.ingredients.length, ingredientCountBefore + 1, "ingredient creation reached server before mapping failed");
+  await ingredientDialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+  await admin.unroute(mappingFailurePath, failRecipeMapping);
+  await ingredientDialog.getByRole("button", { name: "Speichern" }).click();
+  await ingredientDialog.waitFor({ state: "hidden" });
+  const afterMappingRetry = expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "ingredient mapping retry post-state");
+  assert.equal(afterMappingRetry.ingredients.length, ingredientCountBefore + 1, "mapping retry must reuse the existing ingredient");
+  assert.equal(afterMappingRetry.ingredients.filter((item) => item.canonicalName === updatedProductName).length, 1);
+  await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(candidateRecipeTitle)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: candidateRecipeTitle }).getByRole("button", { name: "Bearbeiten" }).click();
+  const publicationDialog = admin.getByRole("dialog");
+  const revisedPublishStep = `Vor Freigabe prüfen ${run}.`;
+  await publicationDialog.getByRole("textbox", { name: "Schritt 1" }).fill(revisedPublishStep);
+  await admin.route(stepFailurePath, failRecipeStep);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await publicationDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+  await publicationDialog.getByRole("alert").getByText(/Speichern teilweise fehlgeschlagen/).waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "failed publication content post-state").status, "DRAFT");
+  assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
+  await publicationDialog.getByRole("button", { name: "Meine Eingaben wiederherstellen" }).click();
+  assert.equal(await publicationDialog.getByRole("textbox", { name: "Schritt 1" }).inputValue(), revisedPublishStep);
+  await admin.unroute(stepFailurePath, failRecipeStep);
+  const publicationFailurePath = `**/api/admin/recipes/${recipe.id}/publish`;
+  const failRecipePublication = (route) => route.fulfill({ status: 503, json: { error: "Injected publication failure" } });
+  await admin.route(publicationFailurePath, failRecipePublication);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await publicationDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+  await publicationDialog.getByRole("alert").getByText(/Statusänderung fehlgeschlagen/).waitFor();
+  const failedPublication = expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "failed publication status post-state");
+  assert.equal(failedPublication.status, "DRAFT");
+  assert.equal(failedPublication.steps[0].instruction, revisedPublishStep);
+  assert.equal(await publicationDialog.getByRole("textbox", { name: "Schritt 1" }).inputValue(), revisedPublishStep);
+  await admin.unroute(publicationFailurePath, failRecipePublication);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await publicationDialog.getByRole("button", { name: "Veröffentlichen" }).click();
+  await publicationDialog.locator(".status-pill").getByText("PUBLISHED").waitFor();
+  const candidatePublicRecipe = await publicJson(`/api/mobile/recipes/${recipe.id}`);
+  assert.equal(candidatePublicRecipe.title, candidateRecipeTitle);
+  assert.equal(candidatePublicRecipe.imageAlt, "Live Rezeptbild");
+  assert.equal(candidatePublicRecipe.steps[0].instruction, revisedPublishStep);
+  assert.ok(candidatePublicRecipe.tags.some((item) => item.id === recipeTag.id), "recipe tag is public after publication");
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("dialog").getByRole("button", { name: "Deaktivieren" }).click();
+  await admin.getByRole("dialog").locator(".status-pill").getByText("DRAFT").waitFor();
+  assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("dialog").getByRole("button", { name: "Archivieren" }).click();
+  await admin.getByRole("dialog").locator(".status-pill").getByText("ARCHIVED").waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/admin/recipes/${recipe.id}`), "candidate recipe archive").status, "ARCHIVED");
+  assert.equal((await fetch(`${base}/api/mobile/recipes/${recipe.id}`)).status, 404);
+
+  // Canonical product mappings are unique across recipes; use a separate product for the create path.
+  const recipeProductId = productId + 2;
+  const recipeProductName = `Rezept Produkt ${run}`;
+  expectOk(await api(admin, "POST", "/api/admin/products", { id: recipeProductId, name: recipeProductName, price: 1.99, layoutCode: "310/1/1/1", storeCode: store.storeCode }), "recipe product create");
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    if ((await publicJson(`/api/products/search?q=${encodeURIComponent(recipeProductName)}&size=10`)).some((item) => item.id === recipeProductId)) break;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  const uiRecipeTitle = `UI Rezept ${run}`;
+  await admin.goto(`${base}/admin/next/recipes/`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("button", { name: "Rezept anlegen" }).click();
+  const newRecipeDialog = admin.getByRole("dialog");
+  await newRecipeDialog.getByRole("textbox", { name: "Slug" }).fill(`ui-recipe-${run.toLowerCase()}`);
+  await newRecipeDialog.getByRole("textbox", { name: "Titel" }).fill(uiRecipeTitle);
+  await newRecipeDialog.getByRole("button", { name: "+ Zutat" }).click();
+  await newRecipeDialog.getByRole("textbox", { name: "Produkt aus Katalog" }).fill(recipeProductName);
+  await newRecipeDialog.getByRole("button", { name: "Suchen" }).click();
+  await newRecipeDialog.locator(".recipe-product-search select").selectOption(String(recipeProductId));
+  await newRecipeDialog.getByRole("textbox", { name: "Menge" }).fill("1 Stück");
+  await newRecipeDialog.getByRole("button", { name: "+ Schritt" }).click();
+  await newRecipeDialog.getByRole("textbox", { name: "Schritt 1" }).fill("Vorbereiten.");
+  await newRecipeDialog.getByRole("button", { name: "Entwurf anlegen" }).click();
+  await newRecipeDialog.waitFor({ state: "hidden", timeout: 5000 }).catch(async () => {
+    throw new Error(`Candidate recipe create remained open: ${(await newRecipeDialog.getByRole("alert").allTextContents()).join(" | ")}`);
+  });
+  const uiRecipeList = expectOk(await api(admin, "GET", `/api/admin/recipes?q=${encodeURIComponent(uiRecipeTitle)}&page=0&size=20`), "candidate recipe create list");
+  const uiRecipe = uiRecipeList.content.find((item) => item.title === uiRecipeTitle);
+  assert.ok(uiRecipe, "candidate recipe create appears in admin list");
+  const uiRecipeDetail = expectOk(await api(admin, "GET", `/api/admin/recipes/${uiRecipe.id}`), "candidate recipe create detail");
+  assert.equal(uiRecipeDetail.ingredients[0].displayName, recipeProductName);
+  assert.equal(uiRecipeDetail.steps[0].instruction, "Vorbereiten.");
+  assert.equal((await fetch(`${base}/api/mobile/recipes/${uiRecipe.id}`)).status, 404);
+  await admin.goto(`${base}/admin/next/recipes/?q=${encodeURIComponent(uiRecipeTitle)}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("row").filter({ hasText: uiRecipeTitle }).getByRole("button", { name: "Bearbeiten" }).click();
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("dialog").getByRole("button", { name: "Veröffentlichen" }).click();
+  await admin.getByRole("dialog").locator(".status-pill").getByText("PUBLISHED").waitFor();
+  assert.equal((await publicJson(`/api/mobile/recipes/${uiRecipe.id}`)).title, uiRecipeTitle);
+
+  const candidateRoutes = [
+    "/admin/next/", "/admin/next/regions/", "/admin/next/stores/", "/admin/next/stores/new/",
+    `/admin/next/stores/detail/?storeId=${store.id}`, "/admin/next/beacons/", "/admin/next/products/",
+    "/admin/next/categories/", "/admin/next/recipes/", "/admin/next/server-logs/",
+    `/admin/next/editor/?storeId=${store.id}`, "/admin/next/editor/",
+  ];
+  for (const route of candidateRoutes) {
+    const response = await admin.goto(base + route, { waitUntil: "domcontentloaded" });
+    assert.equal(response.status(), 200, `candidate deep link ${route}`);
+    await admin.getByRole("navigation").waitFor();
+    const refreshed = await admin.reload({ waitUntil: "domcontentloaded" });
+    assert.equal(refreshed.status(), 200, `candidate refresh ${route}`);
+  }
+
+  assert.equal((await currentLayout(store.id)).source, "DEFAULT");
+  const layoutPath = `/api/stores/${store.id}/layout/versions`;
+  const draft = expectOk(await api(admin, "POST", layoutPath, { layoutName: "First draft", activate: false, layout: documentFor("First draft") }), "draft save");
+  assert.equal(draft.status, "DRAFT");
+  assert.equal((await currentLayout(store.id)).source, "DEFAULT");
+  const published = expectOk(await api(admin, "POST", `${layoutPath}/${draft.layoutId}/activate`, {}), "draft publish");
+  assert.equal(published.status, "ACTIVE");
+  const mobilePublished = await currentLayout(store.id);
+  assert.equal(mobilePublished.layoutId, draft.layoutId);
+  assert.equal(mobilePublished.storeId, store.id);
+  assert.equal(mobilePublished.layout.shopName, "First draft");
+  assert.equal(typeof mobilePublished.layout.gridSize.width, "number");
+  assert.equal(typeof mobilePublished.layout.gridSize.height, "number");
+  assert.ok(mobilePublished.layout.elements.every((item) => Number.isInteger(item.id) && typeof item.type === "string" && typeof item.x === "number" && typeof item.y === "number"));
+  const publicLayoutBeforeEditorRetry = await currentLayout(store.id);
+  let injectedEditorContextFailures = 0;
+  await admin.route(`**/api/stores/${store.id}/layout/editor-context`, async (route) => {
+    if (route.request().method() === "GET" && injectedEditorContextFailures === 0) {
+      injectedEditorContextFailures += 1;
+      await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ message: "Injected live smoke failure" }) });
+      return;
+    }
+    await route.continue();
+  });
+  await admin.goto(`${base}/admin/next/editor/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("heading", { name: "Editor konnte nicht geladen werden" }).waitFor();
+  const retryEditorLoad = admin.getByRole("button", { name: "Erneut versuchen" });
+  await retryEditorLoad.focus();
+  await retryEditorLoad.press("Enter");
+  await admin.getByRole("heading", { name: "Layout Editor" }).waitFor();
+  assert.equal(injectedEditorContextFailures, 1, "exactly one editor-context request receives the injected 503");
+  assert.deepEqual(await currentLayout(store.id), publicLayoutBeforeEditorRetry, "keyboard retry loads the editor without changing the public active layout");
+  await admin.unroute(`**/api/stores/${store.id}/layout/editor-context`);
+  const unassignedBeaconLayout = documentFor("Unassigned beacon");
+  unassignedBeaconLayout.elements.push({ id: 3, type: "beacon", x: 10, y: 10, beaconId: `UNASSIGNED-${run}` });
+  assert.equal((await api(admin, "POST", layoutPath, { layoutName: "Invalid beacon", activate: true, layout: unassignedBeaconLayout })).status, 400);
+  assert.equal((await currentLayout(store.id)).layoutId, draft.layoutId);
+
+  let deniedDirectLinks = 0;
+  let regionCreatedStoreId = null;
+  for (const [user, role] of [[regionUser, "region-manager"], [storeUser, "store-manager"]]) {
+    const page = await login(user);
+    const me = expectOk(await api(page, "GET", "/api/admin/me"), `${role} login`);
+    assert.equal(me.role, role);
+    const dashboardRegions = expectOk(await api(page, "GET", "/api/regions"), `${role} dashboard regions`);
+    const dashboardStores = expectOk(await api(page, "GET", "/api/stores?size=1"), `${role} dashboard stores`);
+    const dashboardMissingLayouts = expectOk(await api(page, "GET", "/api/stores?size=1&hasActiveLayout=false"), `${role} dashboard missing layouts`);
+    const dashboardFreeBeacons = expectOk(await api(page, "GET", "/api/beacons/free"), `${role} dashboard free beacons`);
+    await page.goto(`${base}/admin/next/`, { waitUntil: "domcontentloaded" });
+    const metrics = page.getByRole("region", { name: "Kennzahlen" });
+    for (const [label, expected] of [
+      ["Regionen", dashboardRegions.length], ["Stores", dashboardStores.totalElements],
+      ["Freie Beacons", dashboardFreeBeacons.length], ["Layouts offen", dashboardMissingLayouts.totalElements]
+    ]) assert.equal(Number(await metrics.locator(".metric").filter({ hasText: label }).locator("strong").textContent()), expected, `${role} dashboard metric ${label}`);
+    assert.equal(await page.getByRole("link", { name: "Store anlegen" }).count(), role === "region-manager" ? 1 : 0, `${role} dashboard store-create action`);
+    assert.equal(await page.getByRole("heading", { name: "Letzte Aktivitäten" }).count(), 0);
+    assert.equal((await api(page, "GET", `/api/stores/${store.id}`)).status, 200);
+    assert.equal((await api(page, "GET", `/api/stores/${foreignStore.id}`)).status, 403);
+    assert.equal((await api(page, "GET", `/api/regions/${foreignRegion.id}`)).status, 403);
+    assert.equal((await api(page, "GET", `/api/regions/${uiRegion.id}`)).status, 403);
+    assert.equal((await api(page, "POST", "/api/regions", { code: `DENIED-${run}`, name: "Denied" })).status, 403);
+    assert.equal((await api(page, "PUT", `/api/regions/${region.id}`, { code: region.code, name: "Denied" })).status, 403);
+    assert.equal((await api(page, "GET", "/api/admin/logs")).status, 403);
+    assert.equal((await api(page, "GET", "/api/admin/error-logs")).status, 403);
+    assert.equal((await api(page, "GET", "/api/admin/products?page=0&size=1")).status, 403);
+    assert.equal((await api(page, "GET", "/api/admin/recipes?page=0&size=1")).status, 403);
+    assert.equal((await api(page, "POST", "/api/categories", { categoryCode: 999, categoryName: "Denied" })).status, 403);
+    assert.equal((await api(page, "GET", `/api/stores/${store.id}/layout/editor-context`)).status, 200);
+    assert.equal((await api(page, "GET", `/api/stores/${foreignStore.id}/layout/editor-context`)).status, 403);
+    assert.equal((await api(page, "GET", `/api/beacons/${foreignBeacon.id}`)).status, 403);
+    const visibleStores = expectOk(await api(page, "GET", "/api/stores?page=0&size=50"), `${role} scoped store list`);
+    assert.ok(visibleStores.content.some((item) => item.id === store.id));
+    assert.ok(!visibleStores.content.some((item) => item.id === foreignStore.id));
+    const visibleBeacons = expectOk(await api(page, "GET", "/api/beacons"), `${role} scoped beacons`);
+    assert.ok(!visibleBeacons.some((item) => item.id === foreignBeacon.id));
+    assert.equal((await api(page, "POST", "/api/beacons", { beaconCode: `DENIED-${run}`, uuid: randomUUID() })).status, 403);
+    assert.equal((await api(page, "POST", "/api/beacons/bulk", { uuid: randomUUID(), items: [{ beaconCode: `DENIED-BULK-${run}` }] })).status, 403);
+    assert.equal((await api(page, "POST", `/api/beacons/${ownBeacon.id}/assign`, { storeId: foreignStore.id })).status, 403);
+    if (role === "region-manager") {
+      const visibleRegions = expectOk(await api(page, "GET", "/api/regions?status=ACTIVE"), "region manager region list");
+      assert.deepEqual(visibleRegions.map((item) => item.id), [region.id]);
+      await page.goto(`${base}/admin/next/regions/`, { waitUntil: "domcontentloaded" });
+      await page.getByRole("cell", { name: region.name }).waitFor();
+      assert.equal(await page.getByRole("button", { name: "Region anlegen" }).count(), 0);
+      assert.equal(await page.getByRole("cell", { name: editedUiRegionName }).count(), 0);
+      assert.equal(expectOk(await api(page, "POST", `/api/beacons/${ownBeacon.id}/assign`, { storeId: store.id }), "region beacon assignment").storeId, store.id);
+      assert.equal(expectOk(await api(page, "GET", `/api/beacons/${ownBeacon.id}`), "scoped beacon store region").currentStore?.regionId, region.id);
+    } else {
+      assert.equal((await api(page, "GET", `/api/beacons/${ownBeacon.id}`)).status, 200);
+      assert.equal(expectOk(await api(page, "POST", `/api/beacons/${ownBeacon.id}/release`, {}), "store beacon release").released, true);
+      assert.equal(expectOk(await api(page, "POST", `/api/beacons/${ownBeacon.id}/assign`, { storeId: store.id }), "store beacon reassignment").storeId, store.id);
+    }
+    assert.equal((await api(page, "POST", "/api/admin/index/create", {})).status, 403);
+    assert.equal((await api(page, "DELETE", "/api/admin/index")).status, 403);
+    const ownUpdate = {
+      regionId: region.id, storeCode: store.storeCode, name: `Updated by ${role} ${run}`,
+      street: "Testgasse 1", zipCode: "4020", city: "Linz", country: "AT",
+    };
+    assert.equal(expectOk(await api(page, "PUT", `/api/stores/${store.id}`, ownUpdate), `${role} own store update`).name, ownUpdate.name);
+    assert.equal((await api(page, "PUT", `/api/stores/${foreignStore.id}`, { ...ownUpdate, regionId: foreignRegion.id, storeCode: foreignStore.storeCode })).status, 403);
+    assert.equal((await api(page, "POST", `/api/stores/${foreignStore.id}/layout/versions`, { layoutName: "Forbidden", activate: false, layout: documentFor("Forbidden") })).status, 403);
+    const attemptedCreate = await api(page, "POST", "/api/stores", {
+      regionId: role === "region-manager" ? region.id : foreignRegion.id,
+      storeCode: `SCOPED-${role === "region-manager" ? "RM" : "SM"}-${run}`,
+      name: "Scoped creation check", street: "Testgasse 3", zipCode: "4020", city: "Linz", country: "AT",
+    });
+    if (role === "region-manager") {
+      assert.equal(attemptedCreate.status, 200, "region manager creates in assigned region");
+      assert.equal((await api(page, "POST", "/api/stores", { ...ownUpdate, storeCode: `FOREIGN-${run}`, regionId: foreignRegion.id })).status, 403);
+      const uiStoreCode = `UI-STORE-${run}`;
+      const uiStoreName = `UI Store ${run}`;
+      await page.goto(`${base}/admin/next/stores/new/`, { waitUntil: "domcontentloaded" });
+      for (const [label, value] of [
+        ["Store-Code", uiStoreCode], ["Name", uiStoreName], ["Straße", "UI Testgasse 4"],
+        ["PLZ", "4020"], ["Ort", "Linz"], ["Land", "AT"]
+      ]) await page.getByRole("textbox", { name: label, exact: true }).fill(value);
+      await page.getByRole("button", { name: "Store anlegen" }).click();
+      await page.getByRole("heading", { name: "Store angelegt" }).waitFor();
+      const createdStoreLink = await page.getByRole("link", { name: "Store-Detail öffnen" }).getAttribute("href");
+      assert.ok(createdStoreLink, "candidate store creation links to detail");
+      const uiStoreId = new URL(createdStoreLink, base).searchParams.get("storeId");
+      assert.ok(uiStoreId, "candidate store creation returned a store ID");
+      regionCreatedStoreId = uiStoreId;
+      const uiStore = expectOk(await api(page, "GET", `/api/stores/${uiStoreId}`), "candidate scoped store create");
+      assert.equal(uiStore.region.id, region.id);
+      assert.equal(uiStore.name, uiStoreName);
+      await page.getByRole("link", { name: "Store-Detail öffnen" }).click();
+      await page.getByRole("heading", { name: uiStoreName }).waitFor();
+      assert.ok((await publicJson("/api/mobile/stores")).some((item) => item.id === uiStoreId && item.name === uiStoreName));
+      await page.getByRole("combobox", { name: "Freien Beacon zuordnen" }).selectOption(bulkBeacons[0].id);
+      await page.getByRole("button", { name: "Zuordnen" }).click();
+      await page.getByRole("status").getByText("Beacon zugeordnet.").waitFor();
+      assert.ok(expectOk(await api(page, "GET", `/api/stores/${uiStoreId}/beacons`), "candidate detail beacon assignment").some((item) => item.beaconId === bulkBeacons[0].id));
+      page.once("dialog", (dialog) => { void dialog.accept(); });
+      await page.getByRole("button", { name: "Freigeben" }).click();
+      await page.getByRole("status").getByText("Beacon freigegeben.").waitFor();
+      assert.ok(!expectOk(await api(page, "GET", `/api/stores/${uiStoreId}/beacons`), "candidate detail beacon release").some((item) => item.beaconId === bulkBeacons[0].id));
+    } else {
+      assert.equal(attemptedCreate.status, 403, "store manager cannot create a store");
+    }
+    const deniedLinks = [
+      "/admin/next/products/", "/admin/next/categories/", "/admin/next/recipes/", "/admin/next/server-logs/",
+      "/admin/next/editor/", `/admin/next/stores/detail/?storeId=${foreignStore.id}`,
+      `/admin/next/editor/?storeId=${foreignStore.id}`
+    ];
+    if (role === "store-manager") deniedLinks.push("/admin/next/regions/");
+    for (const deniedLink of deniedLinks) {
+      await page.goto(base + deniedLink, { waitUntil: "domcontentloaded" });
+      try {
+        await page.getByRole("alert").getByRole("heading", { name: "Zugriff verweigert" }).waitFor({ timeout: 5_000 });
+      } catch {
+        throw new Error(`${role} did not receive candidate access denial at ${deniedLink}`);
+      }
+      deniedDirectLinks += 1;
+    }
+    await page.close();
+  }
+
+  assert.ok(regionCreatedStoreId, "region manager created a store for archive acceptance");
+  await admin.goto(`${base}/admin/next/stores/detail/?storeId=${regionCreatedStoreId}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("heading", { name: `UI Store ${run}` }).waitFor();
+  admin.once("dialog", (dialog) => { void dialog.accept(); });
+  await admin.getByRole("button", { name: "Archivieren" }).click();
+  await admin.getByRole("status").getByText("Store archiviert.").waitFor();
+  assert.equal(expectOk(await api(admin, "GET", `/api/stores/${regionCreatedStoreId}`), "candidate store archive").status, "ARCHIVED");
+  assert.ok(!(await publicJson("/api/mobile/stores")).some((item) => item.id === regionCreatedStoreId), "archived store disappears from public store list");
+  const archivedStoreAudit = expectOk(await api(admin, "GET", `/api/stores/${regionCreatedStoreId}/audit`), "candidate store audit");
+  assert.ok(archivedStoreAudit.entries.some((entry) => entry.action === "ARCHIVE"));
+  await admin.getByRole("region", { name: "Änderungsverlauf" }).getByText("Filiale archiviert").waitFor();
+
+  const manager = await login(storeUser, `/admin/next/editor/?storeId=${store.id}`);
+  await manager.locator(".le-canvas").waitFor();
+  manager.once("dialog", (dialog) => { void dialog.accept(); });
+  await manager.getByRole("button", { name: "Neues Layout" }).click();
+  await manager.getByText("Noch keine Elemente").waitFor();
+  await manager.getByRole("button", { name: "Rückgängig" }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 2, "new-layout clear is undoable live");
+  manager.once("dialog", (dialog) => { void dialog.accept(); });
+  await manager.getByRole("button", { name: "Kleiner Laden 15 × 20 m" }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 0, "template clears elements after confirmation");
+  assert.ok((await manager.locator(".le-canvas-toolbar").textContent()).includes("15 × 20"));
+  await manager.getByRole("button", { name: "Rückgängig" }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 2, "template change is undoable live");
+  const downloadPromise = manager.waitForEvent("download");
+  await manager.getByRole("button", { name: "JSON exportieren" }).click();
+  const exportedLayout = JSON.parse(readFileSync(await (await downloadPromise).path(), "utf8"));
+  assert.equal(exportedLayout.shopName, "First draft");
+  assert.equal(exportedLayout.elements.length, 2);
+  await manager.getByLabel("Grundrissdatei importieren").setInputFiles({
+    name: "invalid-layout.json", mimeType: "application/json", buffer: Buffer.from('{"shopName":"incomplete"}')
+  });
+  await manager.getByRole("status").getByText(/Import fehlgeschlagen/).waitFor();
+  assert.ok((await manager.locator(".le-save-indicator").textContent()).includes("Gespeichert"), "invalid import preserves saved editor state");
+  assert.equal(await manager.locator(".le-layers button").count(), 2, "invalid import preserves canvas elements");
+  delete exportedLayout.exportDate;
+  exportedLayout.navigationMetadata = { ...(exportedLayout.navigationMetadata ?? {}), smokeMarker: run };
+  await manager.getByLabel("Grundrissdatei importieren").setInputFiles({
+    name: "live-layout.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(exportedLayout))
+  });
+  await manager.getByRole("status").getByText("Grundriss importiert. Bitte prüfen und als Entwurf speichern.").waitFor();
+  const editorCanvas = manager.getByRole("group", { name: "Interaktiver Grundriss" });
+  const canvasHelpId = await editorCanvas.getAttribute("aria-describedby");
+  assert.ok(canvasHelpId, "packaged editor canvas references keyboard help");
+  assert.match(await manager.locator(`#${canvasHelpId}`).textContent(), /Bei ausgewählter Ebene bewegen Pfeile das Element/, "canvas help describes keyboard movement");
+  await manager.getByRole("button", { name: "POI", exact: true }).click();
+  await editorCanvas.focus();
+  await manager.keyboard.press("Enter");
+  assert.equal(await manager.locator(".le-layers button").count(), 3, "live editor keyboard creates an element");
+  await manager.getByRole("button", { name: "Löschen", exact: true }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 2, "live editor deletes an element");
+  await manager.getByRole("button", { name: "Rückgängig" }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 3, "live editor undoes deletion");
+  await manager.getByRole("button", { name: "Wiederholen" }).click();
+  assert.equal(await manager.locator(".le-layers button").count(), 2, "live editor redoes deletion");
+  await manager.getByRole("button", { name: "Wand", exact: true }).click();
+  const drawingArea = await manager.locator(".le-canvas > g > rect").first().boundingBox();
+  assert.ok(drawingArea, "live editor drawing area is visible");
+  const wallStart = { x: drawingArea.x + drawingArea.width * 0.62, y: drawingArea.y + drawingArea.height * 0.66 };
+  await manager.mouse.move(wallStart.x, wallStart.y);
+  await manager.mouse.down();
+  await manager.mouse.move(wallStart.x + drawingArea.width * 0.16, wallStart.y + drawingArea.height * 0.18, { steps: 5 });
+  await manager.mouse.up();
+  assert.equal(await manager.locator(".le-layers button").count(), 3, "live editor drag creates a wall");
+  const drawnWallWidth = Number(await manager.getByLabel("Breite", { exact: true }).inputValue());
+  const drawnWallHeight = Number(await manager.getByLabel("Höhe", { exact: true }).inputValue());
+  assert.ok(drawnWallWidth > 1 && drawnWallHeight > 1, "live editor drag determines wall dimensions");
+  await manager.getByRole("button", { name: "Auswählen", exact: false }).first().click();
+  const shelfLayerButton = manager.locator(".le-layers button").nth(1);
+  assert.equal(await manager.locator(".le-layers").getByRole("listitem").count(), 3, "editor layers expose semantic list items");
+  assert.equal(await manager.locator(".le-layers").getByRole("listitem").nth(1).getByRole("button").count(), 1, "each layer keeps its button role");
+  await shelfLayerButton.click();
+  const keyboardControlX = await manager.getByLabel("X", { exact: true }).inputValue();
+  await manager.keyboard.press("Space");
+  assert.equal(await shelfLayerButton.getAttribute("aria-current"), "true", "Space activates the focused shelf layer");
+  await manager.keyboard.press("ArrowRight");
+  assert.equal(await manager.getByLabel("X", { exact: true }).inputValue(), keyboardControlX, "arrows on focused controls do not move shelves");
+  await manager.getByRole("checkbox", { name: "Gesperrt" }).check();
+  assert.equal(await manager.getByRole("button", { name: "Duplizieren" }).isDisabled(), true, "locked shelf disables the inspector action");
+  await editorCanvas.focus();
+  await manager.keyboard.press("ControlOrMeta+d");
+  assert.equal(await manager.locator(".le-layers button").count(), 3, "locked shelf cannot be duplicated by keyboard");
+  await manager.getByRole("checkbox", { name: "Gesperrt" }).uncheck();
+  const categoryPicker = manager.getByLabel("Produktkategorie auswählen");
+  await categoryPicker.locator('option[value="310"]').waitFor({ state: "attached" });
+  const alternateCategory = await categoryPicker.locator('option:not([value=""]):not([value="310"])').first().getAttribute("value");
+  assert.ok(alternateCategory, "live catalog offers a second shelf category");
+  await categoryPicker.selectOption(alternateCategory);
+  assert.equal(await manager.getByLabel("Kategoriecode").inputValue(), alternateCategory);
+  await manager.getByRole("button", { name: "Rückgängig" }).click();
+  assert.equal(await manager.getByLabel("Kategoriecode").inputValue(), "310", "catalog category selection is undoable");
+  const selectedX = manager.getByLabel("X", { exact: true });
+  const pointerStartX = Number(await selectedX.inputValue());
+  const selectedShelf = manager.locator('.le-canvas rect[stroke="#123f40"]');
+  const shelfBox = await selectedShelf.boundingBox();
+  assert.ok(shelfBox, "selected live shelf is visible");
+  const editorUnit = shelfBox.width / Number(await manager.getByLabel("Breite", { exact: true }).inputValue());
+  await manager.mouse.move(shelfBox.x + shelfBox.width / 2, shelfBox.y + shelfBox.height / 2);
+  await manager.mouse.down();
+  await manager.mouse.move(shelfBox.x + shelfBox.width / 2 + editorUnit * 2, shelfBox.y + shelfBox.height / 2 + editorUnit, { steps: 5 });
+  await manager.mouse.up();
+  assert.notEqual(Number(await selectedX.inputValue()), pointerStartX, "live editor pointer moves shelf");
+  const originalWidth = Number(await manager.getByLabel("Breite", { exact: true }).inputValue());
+  const resizeHandle = await manager.locator(".le-handle:not(.le-rotate)").boundingBox();
+  assert.ok(resizeHandle, "selected live shelf has resize handle");
+  await manager.mouse.move(resizeHandle.x + resizeHandle.width / 2, resizeHandle.y + resizeHandle.height / 2);
+  await manager.mouse.down();
+  await manager.mouse.move(resizeHandle.x + resizeHandle.width / 2 + editorUnit * 2, resizeHandle.y + resizeHandle.height / 2 + editorUnit, { steps: 5 });
+  await manager.mouse.up();
+  const resizedWidth = Number(await manager.getByLabel("Breite", { exact: true }).inputValue());
+  assert.ok(resizedWidth > originalWidth, "live editor pointer resizes shelf");
+  const rotatedShelfBox = await selectedShelf.boundingBox();
+  const rotateHandle = await manager.locator(".le-handle.le-rotate").boundingBox();
+  assert.ok(rotatedShelfBox && rotateHandle, "selected live shelf has rotate handle");
+  await manager.mouse.move(rotateHandle.x + rotateHandle.width / 2, rotateHandle.y + rotateHandle.height / 2);
+  await manager.mouse.down();
+  await manager.mouse.move(rotatedShelfBox.x + rotatedShelfBox.width / 2 + 18, rotatedShelfBox.y + rotatedShelfBox.height / 2, { steps: 8 });
+  await manager.mouse.up();
+  const rotatedAngle = Number(await manager.getByLabel("Winkel", { exact: true }).inputValue());
+  assert.notEqual(rotatedAngle, 0, "live editor pointer rotates shelf");
+  const initialX = Number(await selectedX.inputValue());
+  await editorCanvas.focus();
+  await manager.keyboard.press("ArrowRight");
+  assert.equal(Number(await selectedX.inputValue()), initialX + 1, "live editor keyboard moves selected shelf");
+  await manager.keyboard.press("ControlOrMeta+z");
+  assert.equal(Number(await selectedX.inputValue()), initialX, "live editor undo restores selected shelf");
+  await manager.keyboard.press("ControlOrMeta+Shift+z");
+  assert.equal(Number(await selectedX.inputValue()), initialX + 1, "live editor redo restores selected shelf move");
+  await manager.getByRole("textbox", { name: "Bezeichnung" }).fill("Published from live editor");
+  await manager.getByRole("spinbutton", { name: "Zugriffswinkel" }).fill("135");
+  await manager.getByRole("textbox", { name: "Layout-Code" }).fill("525/2/1/1");
+  await manager.locator(".le-validation").getByText(/Layout-Code und Regal-Kategorie\/Abschnitt widersprechen sich/).waitFor();
+  await manager.getByRole("textbox", { name: "Layout-Code" }).fill("310/1/1/1");
+  await manager.getByRole("textbox", { name: "Produktposition hinzufügen" }).fill("310-42");
+  await manager.getByRole("button", { name: "Hinzufügen" }).click();
+  const failEditorSave = (route) => route.request().method() === "POST"
+    ? route.fulfill({ status: 503, json: { error: "Injected editor save failure" } }) : route.continue();
+  await manager.route(`**/api/stores/${store.id}/layout/versions`, failEditorSave);
+  await manager.getByRole("button", { name: "Entwurf speichern" }).click();
+  await manager.getByRole("status").getByText("Serverfehler. Bitte später erneut versuchen.").waitFor();
+  assert.ok((await manager.locator(".le-save-indicator").textContent()).includes("Ungespeicherte Änderungen"), "failed save preserves dirty editor state");
+  assert.equal((await currentLayout(store.id)).layoutId, draft.layoutId, "failed save preserves public layout");
+  await manager.unroute(`**/api/stores/${store.id}/layout/versions`, failEditorSave);
+  await manager.getByRole("button", { name: "Entwurf speichern" }).click();
+  await manager.getByText("Entwurf gespeichert.").waitFor();
+  assert.equal((await currentLayout(store.id)).layoutId, draft.layoutId);
+  const mobilePreview = manager.getByRole("region", { name: "Aktuell mobiles Layout" });
+  await mobilePreview.getByRole("button", { name: "Gespeicherten Entwurf ansehen" }).click();
+  await mobilePreview.getByText("Gespeicherter Entwurf · nicht öffentlich").waitFor();
+  await mobilePreview.getByText("Numerisch lesbar").waitFor();
+  await mobilePreview.getByRole("button", { name: "Öffentlich aktiv" }).click();
+  await mobilePreview.getByText("Aktive Version").waitFor();
+  const failEditorPublish = (route) => route.fulfill({ status: 503, json: { error: "Injected editor publish failure" } });
+  await manager.route(`**/api/stores/${store.id}/layout/versions/*/activate`, failEditorPublish);
+  manager.once("dialog", (dialog) => void dialog.accept());
+  await manager.getByRole("button", { name: "Veröffentlichen", exact: true }).click();
+  await manager.getByRole("status").getByText("Serverfehler. Bitte später erneut versuchen.").waitFor();
+  assert.equal((await currentLayout(store.id)).layoutId, draft.layoutId, "failed activation preserves public layout");
+  await manager.unroute(`**/api/stores/${store.id}/layout/versions/*/activate`, failEditorPublish);
+  manager.once("dialog", (dialog) => void dialog.accept());
+  await manager.getByRole("button", { name: "Veröffentlichen", exact: true }).click();
+  await manager.getByText("Layout veröffentlicht.").waitFor();
+  const edited = await currentLayout(store.id);
+  assert.notEqual(edited.layoutId, draft.layoutId);
+  assert.equal(edited.layout.elements[1].label, "Published from live editor");
+  assert.equal(edited.layout.elements[1].x, initialX + 1);
+  assert.equal(edited.layout.elements[1].width, resizedWidth);
+  assert.equal(edited.layout.elements[1].rotation, rotatedAngle);
+  assert.equal(edited.layout.elements[1].accessAngle, 135);
+  assert.equal(edited.layout.elements[1].layoutCode, "310/1/1/1");
+  assert.deepEqual(edited.layout.elements[1].productPositions, ["310-42"]);
+  const publishedWall = edited.layout.elements.find((element) => element.type === "wall");
+  assert.equal(publishedWall?.width, drawnWallWidth, "drawn wall width reaches the public layout");
+  assert.equal(publishedWall?.height, drawnWallHeight, "drawn wall height reaches the public layout");
+  assert.ok(edited.layout.elements.every((element) => typeof element.id === "number" && Number.isSafeInteger(element.id)), "published store layout keeps iOS-decodable numeric element IDs");
+  assert.equal(edited.layout.navigationMetadata.smokeMarker, run);
+  const mismatchedStoreLayout = structuredClone(edited.layout);
+  mismatchedStoreLayout.elements[1].layoutCode = "525/2/1/1";
+  assert.equal((await api(manager, "POST", `/api/stores/${store.id}/layout/versions`, { activate: true, layout: mismatchedStoreLayout })).status, 400, "store API blocks publication with a mismatched shelf target");
+  const mismatchedDraft = expectOk(await api(manager, "POST", `/api/stores/${store.id}/layout/versions`, { activate: false, layout: mismatchedStoreLayout }), "historical shelf draft remains editable");
+  assert.equal(mismatchedDraft.status, "DRAFT");
+  assert.equal((await api(manager, "POST", `/api/stores/${store.id}/layout/versions/${mismatchedDraft.layoutId}/activate`)).status, 400, "store API blocks later activation with a mismatched shelf target");
+  assert.equal((await currentLayout(store.id)).layoutId, edited.layoutId, "invalid shelf target never replaces the public store layout");
+  const inconsistentStoreSection = structuredClone(edited.layout);
+  delete inconsistentStoreSection.elements[1].layoutCode;
+  inconsistentStoreSection.elements[1].meter = 2;
+  assert.equal((await api(manager, "POST", `/api/stores/${store.id}/layout/versions`, { activate: true, layout: inconsistentStoreSection })).status, 400, "store API blocks mismatched shelf section without a layout code");
+  assert.equal((await currentLayout(store.id)).layoutId, edited.layoutId, "invalid shelf section preserves the public store layout");
+  await manager.goto(`${base}/admin/next/stores/detail/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
+  await manager.getByRole("heading", { name: "Stammdaten" }).waitFor();
+  await manager.getByText("Aktiv: Version", { exact: false }).waitFor();
+  await manager.getByText(ownBeacon.beaconCode).first().waitFor();
+  await manager.getByRole("button", { name: "Bearbeiten" }).click();
+  const candidateStoreName = `Store UI ${run}`;
+  await manager.getByRole("textbox", { name: "Name" }).fill(candidateStoreName);
+  await manager.getByRole("button", { name: "Speichern" }).click();
+  await manager.getByRole("status").getByText("Store gespeichert.").waitFor();
+  await manager.getByRole("heading", { name: candidateStoreName }).waitFor();
+  assert.equal(expectOk(await api(manager, "GET", `/api/stores/${store.id}`), "candidate store detail edit").name, candidateStoreName);
+  assert.equal((await publicJson("/api/mobile/stores")).find((item) => item.id === store.id)?.name, candidateStoreName);
+  await manager.close();
+
+  const globalBefore = expectOk(await api(admin, "GET", "/api/layout/current"), "global layout before edit");
+  let injectGlobalLoadFailure = true;
+  const failGlobalLoad = (route) => {
+    if (route.request().method() === "GET" && injectGlobalLoadFailure) {
+      injectGlobalLoadFailure = false;
+      return route.fulfill({ status: 503, json: { error: "Injected global layout load failure" } });
+    }
+    return route.continue();
+  };
+  await admin.route("**/api/layout/current", failGlobalLoad);
+  await admin.goto(base + "/admin/next/editor/", { waitUntil: "domcontentloaded" });
+  await admin.getByRole("alert").getByText("Globales Layout nicht verfügbar").waitFor();
+  await admin.getByRole("button", { name: "Erneut versuchen" }).focus();
+  await admin.keyboard.press("Enter");
+  await admin.getByRole("heading", { name: "Globales Layout", exact: true }).waitFor();
+  await admin.unroute("**/api/layout/current", failGlobalLoad);
+  await admin.getByLabel("Filialname").fill(`Live Global ${run}`);
+  const failGlobalPublish = (route) => route.request().method() === "POST"
+    ? route.fulfill({ status: 503, json: { error: "Injected global publish failure" } }) : route.continue();
+  await admin.route("**/api/layout/current", failGlobalPublish);
+  admin.once("dialog", (dialog) => void dialog.accept());
+  await admin.getByRole("button", { name: "Global veröffentlichen" }).click();
+  await admin.getByRole("status").getByText("Serverfehler. Bitte später erneut versuchen.").waitFor();
+  assert.ok((await admin.locator(".le-save-indicator").textContent()).includes("Ungespeicherte Änderungen"), "failed global publish retains editor input");
+  await admin.unroute("**/api/layout/current", failGlobalPublish);
+  assert.equal(expectOk(await api(admin, "GET", "/api/layout/current"), "global layout after failed publish").layoutId, globalBefore.layoutId);
+  admin.once("dialog", (dialog) => void dialog.accept());
+  await admin.getByRole("button", { name: "Global veröffentlichen" }).click();
+  await admin.getByText("Globales Layout veröffentlicht.").waitFor();
+  const globalAfter = expectOk(await api(admin, "GET", "/api/layout/current"), "global layout after edit");
+  assert.equal(globalAfter.shopName, `Live Global ${run}`);
+  assert.equal(globalAfter.elements.length, globalBefore.elements.length);
+  assert.equal(globalAfter.recordType, "current");
+  const invalidMobileLayout = structuredClone(globalAfter);
+  invalidMobileLayout.elements[0].id = "legacy-string-id";
+  assert.equal((await api(admin, "POST", "/api/layout/current", invalidMobileLayout)).status, 400, "global API blocks iOS-incompatible element IDs");
+  assert.equal(expectOk(await api(admin, "GET", "/api/layout/current"), "global layout after rejected IDs").layoutId, globalAfter.layoutId);
+  const customerShelf = globalAfter.elements.find((element) => element.type === "shelf" && element.category === "310/1");
+  assert.ok(customerShelf, "global fixture has the customer product's shelf target");
+  const mismatchedGlobalLayout = structuredClone(globalAfter);
+  mismatchedGlobalLayout.elements.find((element) => element.id === customerShelf.id).layoutCode = "525/2/1/1";
+  assert.equal((await api(admin, "POST", "/api/layout/current", mismatchedGlobalLayout)).status, 400, "global API blocks a mismatched shelf target");
+  assert.equal(expectOk(await api(admin, "GET", "/api/layout/current"), "global layout after rejected shelf target").layoutId, globalAfter.layoutId);
+  const inconsistentGlobalSection = structuredClone(globalAfter);
+  const inconsistentGlobalShelf = inconsistentGlobalSection.elements.find((element) => element.id === customerShelf.id);
+  delete inconsistentGlobalShelf.layoutCode;
+  inconsistentGlobalShelf.meter = 2;
+  assert.equal((await api(admin, "POST", "/api/layout/current", inconsistentGlobalSection)).status, 400, "global API blocks mismatched shelf section without a layout code");
+  assert.equal(expectOk(await api(admin, "GET", "/api/layout/current"), "global layout after rejected section").layoutId, globalAfter.layoutId);
+  const customer = await browser.newPage();
+  await customer.goto(`${base}/customer/`, { waitUntil: "domcontentloaded" });
+  await customer.locator("#mapCanvas [data-element-id]").first().waitFor();
+  await customer.locator("#search-input").fill(updatedProductName);
+  const customerProduct = customer.locator(".search-result-item").filter({ hasText: updatedProductName });
+  await customerProduct.waitFor();
+  await customerProduct.click();
+  assert.equal(await customer.locator(".map-element.highlighted").getAttribute("data-element-id"), String(customerShelf.id), "customer search reaches the published shelf");
+  // A prefix category before the intended shelf must not steal the target.
+  const prefixShelf = { ...customerShelf, id: Math.max(...globalAfter.elements.map((element) => element.id)) + 1,
+    category: "3100/1", meter: 1, layoutCode: "3100/1/1/1", label: "Prefix collision shelf" };
+  const collisionLayout = { ...globalAfter, elements: [prefixShelf, ...globalAfter.elements] };
+  expectOk(await api(admin, "POST", "/api/layout/current", collisionLayout), "global prefix-collision layout publication");
+  await customer.reload();
+  await customer.locator("#mapCanvas [data-element-id]").first().waitFor();
+  await customer.locator("#search-input").fill(updatedProductName);
+  const collisionProduct = customer.locator(".search-result-item").filter({ hasText: updatedProductName });
+  await collisionProduct.waitFor();
+  await collisionProduct.click();
+  assert.equal(await customer.locator(".map-element.highlighted").getAttribute("data-element-id"), String(customerShelf.id), "customer search matches the exact category despite a prefix shelf appearing first");
+  await customer.close();
+  const history = expectOk(await api(admin, "GET", "/api/layout/history?limit=12"), "global layout history");
+  assert.ok(history.some((entry) => entry.layoutId === globalAfter.layoutId));
+  assert.equal((await api(admin, "GET", `/api/layout/versions/${globalAfter.layoutId}`)).status, 200);
+  const globalHistoryPanel = admin.getByRole("region", { name: "Globale Layout-Historie" });
+  await globalHistoryPanel.getByRole("button", { name: "Weitere Versionen laden" }).click();
+  await globalHistoryPanel.getByRole("listitem").nth(12).waitFor();
+  assert.ok(await globalHistoryPanel.getByRole("listitem").count() > 12, "global history loads older versions");
+  await admin.goto(`${base}/admin/next/editor/?layoutId=${globalBefore.layoutId}`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("heading", { name: "Historische Version bearbeiten" }).waitFor();
+  admin.once("dialog", (dialog) => void dialog.accept());
+  await admin.getByRole("button", { name: "Global veröffentlichen" }).click();
+  await admin.locator(".legacy-editor-route-published").waitFor();
+  assert.equal(new URL(admin.url()).searchParams.has("layoutId"), false, "global recovery leaves historical URL");
+  const globalRestored = expectOk(await api(admin, "GET", "/api/layout/current"), "restored global layout");
+  assert.notEqual(globalRestored.layoutId, globalBefore.layoutId);
+  assert.equal(globalRestored.shopName, globalBefore.shopName);
+  assert.deepEqual(globalRestored.elements, globalBefore.elements);
+  const historyFaultPage = await login(adminUser, "/admin/next/editor/");
+  let injectHistoryFault = true;
+  await historyFaultPage.route("**/api/layout/history?*", (route) => {
+    if (injectHistoryFault) {
+      injectHistoryFault = false;
+      return route.fulfill({ status: 503, json: { error: "Injected local history failure" } });
+    }
+    return route.continue();
+  });
+  await historyFaultPage.reload();
+  await historyFaultPage.getByRole("region", { name: "Globale Layout-Historie" }).getByRole("alert").waitFor();
+  await historyFaultPage.getByLabel("Filialname").fill(`Unsaved history retry ${run}`);
+  await historyFaultPage.getByRole("button", { name: "Historie erneut laden" }).focus();
+  await historyFaultPage.keyboard.press("Enter");
+  await historyFaultPage.getByRole("region", { name: "Globale Layout-Historie" }).getByRole("link", { name: "Öffnen", exact: true }).first().waitFor();
+  assert.equal(await historyFaultPage.getByLabel("Filialname").inputValue(), `Unsaved history retry ${run}`);
+  await historyFaultPage.close();
+
+  const saves = await Promise.all(Array.from({ length: 4 }, (_, index) =>
+    api(admin, "POST", layoutPath, { layoutName: `Concurrent ${index}`, activate: false, layout: documentFor(`Concurrent ${index}`) })));
+  const versions = saves.map((result) => expectOk(result, "concurrent draft save"));
+  assert.equal(new Set(versions.map((version) => version.versionNo)).size, 4);
+  const activations = await Promise.all(versions.slice(0, 2).map((version) => api(admin, "POST", `${layoutPath}/${version.layoutId}/activate`, {})));
+  const activated = activations.map((result) => expectOk(result, "concurrent activation"));
+  assert.equal(activeCount(store.id), 1);
+  const current = await currentLayout(store.id);
+  assert.ok(activated.some((version) => version.layoutId === current.layoutId));
+  const restoreManager = await login(storeUser, `/admin/next/editor/?storeId=${store.id}&layoutId=${edited.layoutId}`);
+  await restoreManager.getByRole("button", { name: "Version wieder aktivieren" }).waitFor();
+  restoreManager.once("dialog", (dialog) => void dialog.accept());
+  await restoreManager.getByRole("button", { name: "Version wieder aktivieren" }).click();
+  await restoreManager.getByText("Layout veröffentlicht.").waitFor();
+  await restoreManager.close();
+  assert.equal(activeCount(store.id), 1);
+  const restoredPublicLayout = await currentLayout(store.id);
+  assert.equal(restoredPublicLayout.layoutId, edited.layoutId);
+  assert.equal(restoredPublicLayout.layout.elements[1].x, initialX + 1);
+  assert.equal(restoredPublicLayout.layout.elements[1].accessAngle, 135);
+  assert.equal(restoredPublicLayout.layout.navigationMetadata.smokeMarker, run);
+  const unassignedDraft = expectOk(await api(admin, "POST", layoutPath, { layoutName: "Unassigned draft", activate: false, layout: unassignedBeaconLayout }), "unassigned beacon draft");
+  assert.equal((await api(admin, "POST", `${layoutPath}/${unassignedDraft.layoutId}/activate`, {})).status, 400);
+  assert.equal((await currentLayout(store.id)).layoutId, edited.layoutId);
+  const assignedBeaconLayout = documentFor("Assigned beacon");
+  assignedBeaconLayout.elements.push({ id: 3, type: "beacon", x: 10, y: 10, beaconId: ownBeacon.beaconCode });
+  const assignedDraft = expectOk(await api(admin, "POST", layoutPath, { layoutName: "Assigned beacon", activate: false, layout: assignedBeaconLayout }), "assigned beacon draft");
+  expectOk(await api(admin, "POST", `${layoutPath}/${assignedDraft.layoutId}/activate`, {}), "assigned beacon activation");
+  assert.equal((await currentLayout(store.id)).layout.elements[2].beaconId, ownBeacon.beaconCode);
+  expectOk(await api(admin, "POST", `${layoutPath}/${edited.layoutId}/activate`, {}), "restore editor version after assigned-beacon check");
+  assert.equal(activeCount(store.id), 1);
+
+  const diagnosticMarker = `Local diagnostic ${run}`;
+  execFileSync("docker", ["exec", "indooro-admin-rebuild-pg", "psql", "-U", "indooro", "-d", "indooro", "-c",
+    `INSERT INTO error_logs (id, status_code, method, path, message, error_type, stack_trace, created_at, updated_at) VALUES (gen_random_uuid(), 503, 'GET', '/api/local-smoke', '${diagnosticMarker}', 'SmokeException', 'SmokeException: ${diagnosticMarker}\\n  at LocalSmoke.run(LocalSmoke.java:42)', NOW(), NOW()), (gen_random_uuid(), 400, 'POST', '/api/local-smoke', '${diagnosticMarker} without trace', 'InputError', NULL, NOW(), NOW())`], { stdio: "pipe" });
+  const auditLogs = expectOk(await api(admin, "GET", "/api/admin/logs?limit=50"), "admin audit logs");
+  const errorLogs = expectOk(await api(admin, "GET", "/api/admin/error-logs?limit=50"), "admin error logs");
+  assert.ok(Array.isArray(auditLogs.entries) && auditLogs.entries.length > 0);
+  assert.ok(Array.isArray(errorLogs.entries));
+  const legacyDiagnosticsMap = async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: (await response.text()).replace(/diagnostics: (true|false)/, "diagnostics: false") });
+  };
+  await admin.route("**/admin/route-cutover.js", legacyDiagnosticsMap);
+  await admin.goto(`${base}/admin/server-logs/`, { waitUntil: "domcontentloaded" });
+  await admin.getByText("Audit Events", { exact: true }).waitFor();
+  const legacyTrace = admin.locator("details").filter({ hasText: diagnosticMarker }).filter({ hasNotText: "without trace" });
+  await legacyTrace.locator("summary").focus();
+  await admin.keyboard.press("Enter");
+  assert.ok((await legacyTrace.locator("pre").textContent()).includes(`SmokeException: ${diagnosticMarker}`));
+  await admin.getByRole("button", { name: "Aktualisieren" }).focus();
+  await admin.keyboard.press("Enter");
+  await admin.getByText("Audit Events", { exact: true }).waitFor();
+  await admin.unroute("**/admin/route-cutover.js", legacyDiagnosticsMap);
+  await admin.goto(`${base}/admin/next/server-logs/`, { waitUntil: "domcontentloaded" });
+  await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
+  const diagnosticRow = admin.getByRole("region", { name: "Serverfehler" }).getByRole("row").filter({ hasText: diagnosticMarker, hasNotText: "without trace" });
+  await diagnosticRow.waitFor();
+  await diagnosticRow.getByText("Stacktrace").focus();
+  await admin.keyboard.press("Enter");
+  await diagnosticRow.locator("pre").waitFor();
+  assert.ok((await diagnosticRow.locator("pre").textContent()).includes(`SmokeException: ${diagnosticMarker}`));
+  const noTraceRow = admin.getByRole("region", { name: "Serverfehler" }).getByRole("row").filter({ hasText: `${diagnosticMarker} without trace` });
+  await noTraceRow.getByText("Details").focus();
+  await admin.keyboard.press("Enter");
+  assert.ok((await noTraceRow.locator("pre").textContent()).includes('"errorType": "InputError"'));
+  await admin.getByRole("button", { name: "Aktualisieren" }).focus();
+  await admin.keyboard.press("Enter");
+  await admin.getByRole("region", { name: "Änderungsverlauf" }).getByRole("row").nth(1).waitFor();
+  let injectDiagnosticsFault = true;
+  await admin.route("**/api/admin/error-logs?*", (route) => {
+    if (injectDiagnosticsFault) {
+      injectDiagnosticsFault = false;
+      return route.fulfill({ status: 503, json: { error: "Injected local diagnostics failure" } });
+    }
+    return route.continue();
+  });
+  await admin.reload();
+  await admin.getByRole("alert").getByText("Diagnose nicht verfügbar").waitFor();
+  await admin.getByRole("button", { name: "Erneut versuchen" }).focus();
+  await admin.keyboard.press("Enter");
+  await admin.getByRole("region", { name: "Serverfehler" }).getByRole("row").filter({ hasText: diagnosticMarker, hasNotText: "without trace" }).waitFor();
+  await admin.route("**/api/admin/*logs?*", (route) => route.fulfill({ json: { limit: 50, entries: [] } }));
+  await admin.reload();
+  await admin.getByRole("region", { name: "Änderungsverlauf" }).getByText("Keine Änderungen protokolliert.").waitFor();
+  await admin.getByRole("region", { name: "Serverfehler" }).getByText("Keine Serverfehler protokolliert.").waitFor();
+
+  console.log(JSON.stringify({ result: "PASS", regionId: region.id, storeId: store.id, directLinks: candidateRoutes.length, deniedDirectLinks, roleChecks: 2, scopedRoleMatrix: true, candidateScopedDashboard: true, beaconLifecycle: true, anonymousContracts: true, publicProductAfterMutation: true, customerPublishedShelfTarget: true, iosNumericLayoutIds: true, globalMobileIdGuard: true, candidateRegionLifecycle: true, candidateBeaconLifecycle: true, candidateBeaconBulkCreate: true, candidateStoreCreate: true, candidateStoreArchive: true, candidateStoreDetailEdit: true, candidateDetailBeaconLifecycle: true, candidateProductLifecycle: true, candidateCategoryCreateEdit: true, candidateRecipeCreatePublish: true, candidateRecipeTagRevision: true, candidateRecipeArchive: true, candidateRecipePublicationRecovery: true, candidateRecipePartialMappingRecovery: true, candidateEditorKeyboardControls: true, candidateEditorLockedShortcut: true, candidateEditorTemplateUndo: true, legacyDiagnosticsParity: true, candidateDiagnosticsReadRefresh: true, candidateDiagnosticsStackTrace: true, candidateDiagnosticsWithoutTrace: true, candidateDiagnosticsFaultRecovery: true, candidateDiagnosticsEmptyState: true, layoutJsonRoundTrip: true, candidateEditorGeometryLifecycle: true, layoutVersionRecovery: true, globalVersionRecovery: true, globalHistoryFaultRecovery: true, swiftStoreLayoutShape: true, recipeLifecycle: true, globalPublication: true, concurrentSaves: 4, concurrentActivations: 2, activeLayouts: 1 }));
+  await admin.close();
+} finally {
+  await browser.close();
+}

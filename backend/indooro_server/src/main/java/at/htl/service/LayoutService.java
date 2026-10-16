@@ -10,6 +10,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -18,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,6 +34,9 @@ public class LayoutService {
 
     @Inject
     ObjectMapper objectMapper;
+
+    @Inject
+    LayoutDocumentValidator layoutDocumentValidator;
 
     @ConfigProperty(name = "opensearch.layout-index")
     String layoutIndexName;
@@ -76,8 +79,9 @@ public class LayoutService {
 
         SearchResponse<JsonNode> response = client.search(s -> s
                 .index(layoutIndexName)
-                .size(Math.max(finalLimit * 3, 20))
-                .query(q -> q.matchAll(m -> m)),
+                .size(finalLimit)
+                .query(q -> q.term(t -> t.field("recordType.keyword").value(v -> v.stringValue("version"))))
+                .sort(sort -> sort.field(field -> field.field("savedAt").order(SortOrder.Desc))),
                 JsonNode.class
         );
 
@@ -90,11 +94,13 @@ public class LayoutService {
             layouts.add(toHistoryEntry(source));
         }
 
-        layouts.sort(Comparator.comparing(LayoutHistoryEntry::savedAt).reversed());
-        return layouts.stream().limit(finalLimit).toList();
+        return layouts;
     }
 
     public LayoutHistoryEntry saveCurrentLayout(JsonNode layout) throws IOException {
+        layoutDocumentValidator.validate(layout);
+        layoutDocumentValidator.validateMobileElementIds(layout);
+        layoutDocumentValidator.validatePublishedShelfRouting(layout);
         ensureLayoutIndex();
 
         String layoutId = UUID.randomUUID().toString();

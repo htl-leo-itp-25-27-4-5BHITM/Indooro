@@ -1,6 +1,8 @@
 package at.htl.resource;
 
+import at.htl.admin.service.AdminAccessService;
 import at.htl.service.OpenSearchService;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -19,13 +21,18 @@ public class AdminResource {
     @Inject
     OpenSearchService openSearchService;
 
+    @Inject
+    AdminAccessService adminAccessService;
+
     /**
      * Erstellt den Index
      * POST /api/admin/index/create
      */
     @POST
     @Path("/index/create")
+    @RolesAllowed("admin")
     public Response createIndex() {
+        adminAccessService.requireAdmin();
         try {
             openSearchService.createIndex();
             return Response.ok("{\"message\": \"Index created successfully\"}").build();
@@ -43,7 +50,9 @@ public class AdminResource {
      */
     @DELETE
     @Path("/index")
+    @RolesAllowed("admin")
     public Response deleteIndex() {
+        adminAccessService.requireAdmin();
         try {
             openSearchService.deleteIndex();
             return Response.ok("{\"message\": \"Index deleted successfully\"}").build();

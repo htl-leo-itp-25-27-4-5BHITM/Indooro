@@ -1,11 +1,11 @@
 openapi: 3.1.0
 info:
   title: Indooro API
-  version: "2026.09.17"
+  version: "2026.10.12"
   summary: Shared HTTP contract of the Indooro backend (Quarkus) for the iOS client, the Admin Platform, and the customer web page.
   description: |
-    Hand-reviewed contract that mirrors the implementation in
-    `backend/indooro_server/src/main/java/at/htl/resource` at commit `63a42d4`.
+    Hand-reviewed contract for the current implementation in
+    `backend/indooro_server/src/main/java/at/htl/resource` and its admin resources.
     It is the single source of truth referenced by the OpenSpec capability `shared-api`.
 
     Every operation carries:
@@ -418,7 +418,7 @@ paths:
     post:
       tags: [catalog]
       operationId: indexProductsBulk
-      summary: Bulk index products (used by the admin import drawer).
+      summary: Bulk upsert products with ordered row outcomes; writes are not atomic.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
       x-indooro-consumers: [admin-ui, api-tests]
@@ -433,13 +433,18 @@ paths:
               items: { $ref: "#/components/schemas/Product" }
       responses:
         "200":
-          description: Summary message. Per-item OpenSearch errors are only logged.
+          description: Ordered results for each submitted row. A 200 can include failed or unknown rows.
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/MessageResponse" }
+              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "503":
+          description: Transport outcome is ambiguous; verify affected document IDs before retrying.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
   /api/categories:
     get:
       tags: [catalog]
@@ -465,10 +470,15 @@ paths:
     post:
       tags: [catalog]
       operationId: upsertCategory
-      summary: Create or replace one category.
+      summary: Create or replace one category; createOnly performs an atomic create that rejects existing codes.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
       x-indooro-consumers: [admin-ui]
+      parameters:
+        - name: createOnly
+          in: query
+          description: When true, use OpenSearch create semantics and return 409 if the code exists. Omitted or false retains legacy upsert behavior.
+          schema: { type: boolean, default: false }
       requestBody:
         required: true
         content:
@@ -481,6 +491,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Category" }
         "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "409": { $ref: "#/components/responses/Conflict" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
   /api/categories/{categoryCode}:
@@ -508,7 +519,7 @@ paths:
       summary: Create or replace a category under the path code.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [none]
+      x-indooro-consumers: [admin-ui]
       requestBody:
         required: true
         content:
@@ -527,7 +538,7 @@ paths:
     post:
       tags: [catalog]
       operationId: indexCategoriesBulk
-      summary: Bulk index categories.
+      summary: Bulk upsert categories with ordered row outcomes; writes are not atomic.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
       x-indooro-consumers: [admin-ui]
@@ -541,18 +552,18 @@ paths:
               items: { $ref: "#/components/schemas/Category" }
       responses:
         "200":
-          description: Summary.
+          description: Ordered results for each submitted row. A 200 can include failed or unknown rows.
           content:
             application/json:
-              schema:
-                type: object
-                required: [message, count]
-                properties:
-                  message: { type: string, const: Categories indexed }
-                  count: { type: integer }
+              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
         "400": { $ref: "#/components/responses/LegacyBadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "503":
+          description: Transport outcome is ambiguous; verify affected category codes before retrying.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
 
   # ---------------------------------------------------------------- legacy layout
   /api/layout/current:
@@ -574,8 +585,9 @@ paths:
       tags: [legacy-layout]
       operationId: saveLegacyCurrentLayout
       summary: Save a new global layout version and make it current.
-      description: Currently anonymous (finding SEC-06); scheduled to require role admin by change `protect-legacy-write-endpoints`.
-      x-indooro-access: public
+      description: Published elements require positive numeric IDs at most 9007199254740991 for iOS. A shelf layoutCode, when present, must begin with that shelf's category and section. Requires role admin.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
       x-indooro-consumers: [admin-ui]
       x-indooro-findings: [SEC-02, SEC-06, PERF-33, BUG-04]
       requestBody:
@@ -596,6 +608,7 @@ paths:
                   layoutId: { type: string, format: uuid }
                   savedAt: { type: string, format: date-time }
         "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/LegacyServerError" }
   /api/layout/history:
     get:
@@ -710,11 +723,11 @@ paths:
       tags: [maintenance]
       operationId: createProductIndex
       summary: Create the product index with its mapping.
-      description: Reports success even when creation fails (finding BUG-11).
+      description: Creates the product index and reports an existing index as a conflict.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
-      x-indooro-access: authenticated
+      x-indooro-access: role:admin
       x-indooro-consumers: [api-tests]
-      x-indooro-findings: [SEC-06, BUG-11, BUG-12]
+      x-indooro-findings: [BUG-12]
       responses:
         "200":
           description: Message.
@@ -722,15 +735,17 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/MessageResponse" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/admin/index:
     delete:
       tags: [maintenance]
       operationId: deleteProductIndex
       summary: Delete the product index (destructive).
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
-      x-indooro-access: authenticated
+      x-indooro-access: role:admin
       x-indooro-consumers: [api-tests]
-      x-indooro-findings: [SEC-06, BUG-11]
       responses:
         "200":
           description: Message.
@@ -738,6 +753,8 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/MessageResponse" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/admin/health:
     get:
       tags: [maintenance]
@@ -822,24 +839,43 @@ paths:
     get:
       tags: [admin-products]
       operationId: listAdminProducts
-      summary: Product list for the admin UI.
+      summary: Search and page products for the admin UI. Omitting page retains the legacy array response.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
       x-indooro-consumers: [admin-ui, api-tests]
       x-indooro-findings: [PERF-23]
       parameters:
+        - name: page
+          in: query
+          description: Zero-based result page. When supplied, the response is a PageResponse.
+          schema: { type: integer, default: 0, minimum: 0 }
         - name: size
           in: query
-          description: Missing means 500; clamped to 1..1000.
-          schema: { type: integer, maximum: 1000 }
+          description: Page size (maximum 100) when page is supplied; legacy array limit (maximum 1000) otherwise.
+          schema: { type: integer, minimum: 1, maximum: 1000 }
+        - name: q
+          in: query
+          description: Optional text search across product name, ID, layout code, and store code.
+          schema: { type: string, maxLength: 120 }
+        - name: sort
+          in: query
+          description: Ascending German natural sort field for paged results; defaults to id. Requires page.
+          schema: { type: string, enum: [name, id, layoutCode], default: id }
+        - name: routable
+          in: query
+          description: Filter by legacy admin readiness, based only on a trimmed layoutCode matching digits/digits/digits/digits with component widths 1-4/1-3/1-2/1-2. Requires page; this is not a mobile route-reachability guarantee.
+          schema: { type: boolean }
       responses:
         "200":
           description: Products.
           content:
             application/json:
               schema:
-                type: array
-                items: { $ref: "#/components/schemas/Product" }
+                oneOf:
+                  - type: array
+                    items: { $ref: "#/components/schemas/Product" }
+                  - $ref: "#/components/schemas/ProductPageResponse"
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/ServerError" }
@@ -900,6 +936,10 @@ paths:
         - name: status
           in: query
           schema: { $ref: "#/components/schemas/RecipeStatus" }
+        - name: sort
+          in: query
+          description: When set, sorts the complete filtered result before pagination; title uses German numeric-aware ordering and null publication dates sort last. Omitting sort preserves the existing publishedAt DESC then title API order for older consumers.
+          schema: { type: string, enum: [title, status, publishedAt] }
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/AdminPageSize"
       responses:
@@ -1033,7 +1073,7 @@ paths:
       summary: Add an ingredient.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       parameters:
         - $ref: "#/components/parameters/RecipeIdPath"
       requestBody:
@@ -1060,7 +1100,7 @@ paths:
       summary: Replace an ingredient.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       requestBody:
         required: true
         content:
@@ -1081,7 +1121,7 @@ paths:
       summary: Delete an ingredient.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -1092,7 +1132,7 @@ paths:
       summary: Add a preparation step.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       parameters:
         - $ref: "#/components/parameters/RecipeIdPath"
       requestBody:
@@ -1122,7 +1162,7 @@ paths:
       summary: Replace a step.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       requestBody:
         required: true
         content:
@@ -1143,7 +1183,7 @@ paths:
       summary: Delete a step.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       responses:
         "204": { description: Deleted. }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -1245,7 +1285,7 @@ paths:
       summary: Recipe tags filtered by status (default ACTIVE) and text.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       parameters:
         - $ref: "#/components/parameters/RecordStatusQuery"
         - name: q
@@ -1379,7 +1419,7 @@ paths:
       summary: Region in scope.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin|region-manager|store-manager
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       responses:
         "200":
           description: Region.
@@ -1437,7 +1477,7 @@ paths:
     get:
       tags: [stores]
       operationId: listStores
-      summary: Stores in scope (default status ACTIVE), sorted by name.
+      summary: Stores in scope (default status ACTIVE), sorted by name unless another supported field is requested.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin|region-manager|store-manager
       x-indooro-consumers: [admin-ui, api-tests]
@@ -1451,6 +1491,14 @@ paths:
           in: query
           schema: { type: string, format: uuid }
         - $ref: "#/components/parameters/RecordStatusQuery"
+        - name: hasActiveLayout
+          in: query
+          description: Filters stores by whether they have an ACTIVE layout version.
+          schema: { type: boolean }
+        - name: sort
+          in: query
+          description: Ascending sort field, with store code as a stable tie-breaker for name and city.
+          schema: { type: string, enum: [name, storeCode, city], default: name }
         - $ref: "#/components/parameters/Page"
         - $ref: "#/components/parameters/AdminPageSize"
       responses:
@@ -1605,7 +1653,8 @@ paths:
     post:
       tags: [store-layouts]
       operationId: saveStoreLayoutVersion
-      summary: Save a new version; activates it when requested or when no active version exists.
+      summary: Save a new version. Explicit activate=false keeps a draft; true activates it. Omitted or null activates only when no active version exists for legacy clients.
+      description: Drafts may retain historical string or missing element IDs for repair. Activation requires positive numeric IDs at most 9007199254740991 for iOS and matching shelf category/section and layoutCode prefixes.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin|region-manager|store-manager
       x-indooro-consumers: [admin-ui]
@@ -1640,6 +1689,7 @@ paths:
       tags: [store-layouts]
       operationId: activateStoreLayoutVersion
       summary: Activate a version and archive the previously active one.
+      description: Rejects layouts whose element IDs cannot be decoded by iOS as positive numeric IDs at most 9007199254740991 or whose shelf layoutCode disagrees with its category and section.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin|region-manager|store-manager
       x-indooro-consumers: [admin-ui]
@@ -1649,6 +1699,7 @@ paths:
         - $ref: "#/components/parameters/LayoutIdPath"
       responses:
         "200": { $ref: "#/components/responses/StoreLayoutOk" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
   /api/stores/{storeId}/layout/editor-context:
@@ -1725,7 +1776,7 @@ paths:
       summary: Active beacons without an active assignment.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin|region-manager|store-manager
-      x-indooro-consumers: [api-tests]
+      x-indooro-consumers: [admin-ui, api-tests]
       x-indooro-findings: [DC-11]
       responses:
         "200":
@@ -2051,6 +2102,26 @@ components:
       required: [message]
       properties:
         message: { type: string }
+    CatalogBulkResult:
+      type: object
+      required: [message, count, saved, failed, unknown, rows]
+      properties:
+        message: { type: string }
+        count: { type: integer, minimum: 0 }
+        saved: { type: integer, minimum: 0 }
+        failed: { type: integer, minimum: 0 }
+        unknown: { type: integer, minimum: 0 }
+        rows:
+          type: array
+          description: One result per submitted operation, in request order. Row numbers are one-based.
+          items:
+            type: object
+            required: [row, id, status]
+            properties:
+              row: { type: integer, minimum: 1 }
+              id: { type: string }
+              status: { type: string, enum: [saved, failed, unknown] }
+              reason: { type: [string, "null"] }
     RecordStatus:
       type: string
       enum: [ACTIVE, ARCHIVED]
@@ -2070,6 +2141,16 @@ components:
           description: Store format `<categoryCode>/<meter>/<level>/<position>`, e.g. `310/1/1/1`.
         storeId: { type: [string, "null"] }
         storeCode: { type: [string, "null"] }
+    ProductPageResponse:
+      type: object
+      required: [content, page, size, totalElements]
+      properties:
+        content:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+        page: { type: integer, minimum: 0 }
+        size: { type: integer, minimum: 1, maximum: 100 }
+        totalElements: { type: integer, format: int64, minimum: 0 }
     Category:
       type: object
       required: [categoryCode, categoryName]
@@ -2089,7 +2170,7 @@ components:
       additionalProperties: true
       description: Editor element. Unknown keys are preserved.
       properties:
-        id: { type: [string, integer] }
+        id: { type: [string, integer], description: Drafts may retain historical strings; published layouts require positive numeric IDs at most 9007199254740991. }
         type: { type: string, examples: [shelf, wall, aisle, cashier, entrance, poi, beacon] }
         x: { type: number }
         y: { type: number }
@@ -2101,6 +2182,7 @@ components:
         label: { type: string, description: Untrusted text; clients must escape it (finding SEC-02). }
         category: { type: [string, integer] }
         meter: { type: [string, integer] }
+        layoutCode: { type: string, description: When published on a shelf, its category/section prefix must equal that shelf's category field. }
         color: { type: string }
         beaconId: { type: string, description: Untrusted text; clients must escape it. }
         beaconCode: { type: string }
@@ -2221,6 +2303,7 @@ components:
         prepTimeMinutes: { type: [integer, "null"] }
         cookTimeMinutes: { type: [integer, "null"] }
         totalTimeMinutes: { type: [integer, "null"] }
+        stepCount: { type: integer, minimum: 0 }
         status: { $ref: "#/components/schemas/RecipeStatus" }
         publishedAt: { type: [string, "null"], format: date-time }
         mappedIngredientCount: { type: integer }
@@ -2663,7 +2746,9 @@ components:
       properties:
         layoutName: { type: [string, "null"], maxLength: 150 }
         changeNote: { type: [string, "null"], maxLength: 2000 }
-        activate: { type: [boolean, "null"] }
+        activate:
+          type: [boolean, "null"]
+          description: Explicit false saves a draft, including the first version. True activates it. Omitted or null preserves legacy first-save activation.
         layout: { $ref: "#/components/schemas/LayoutDocument" }
     StoreLayoutResponse:
       type: object

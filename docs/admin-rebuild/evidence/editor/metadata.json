@@ -1,0 +1,151 @@
+{
+  "result": "PASS",
+  "baseUrl": "http://localhost:8080",
+  "generatedAt": "2026-10-16T09:11:12.241Z",
+  "outputDirectory": "/Users/erikbergi/.codex/worktrees/admin-rebuild/Indooro/docs/admin-rebuild/evidence/editor",
+  "fixtureIds": {
+    "scopedRegionId": "797913e8-a756-410a-b51e-1e5583a03b68",
+    "scopedStoreId": "8b3d1718-9498-490b-8562-73a27f2de745",
+    "scopedStoreCode": "EC-6BB54659",
+    "foreignRegionId": "b109c57e-7666-4f53-9b12-8ae2d14dcd7a",
+    "foreignStoreId": "7fbec219-170b-4f89-83ed-632156e8a348",
+    "foreignStoreCode": "EF-6BB54659",
+    "initialLayoutId": "b9d76151-8731-4eaf-8535-3a14a5a9d587",
+    "draftLayoutId": "6f3f5a2c-6ad6-4439-89bc-ec03d1d7f0c5"
+  },
+  "screenshots": [
+    {
+      "name": "candidate-store-initial",
+      "file": "candidate-store-initial.png",
+      "state": "initial",
+      "url": "http://localhost:8080/admin/next/editor/?storeId=8b3d1718-9498-490b-8562-73a27f2de745&layoutId=b9d76151-8731-4eaf-8535-3a14a5a9d587",
+      "storeId": "8b3d1718-9498-490b-8562-73a27f2de745",
+      "layoutId": "b9d76151-8731-4eaf-8535-3a14a5a9d587"
+    },
+    {
+      "name": "candidate-store-draft",
+      "file": "candidate-store-draft.png",
+      "state": "unsaved-draft",
+      "url": "http://localhost:8080/admin/next/editor/?storeId=8b3d1718-9498-490b-8562-73a27f2de745&layoutId=b9d76151-8731-4eaf-8535-3a14a5a9d587",
+      "storeId": "8b3d1718-9498-490b-8562-73a27f2de745",
+      "draftName": "Evidence Draft 6BB54659"
+    },
+    {
+      "name": "candidate-store-saved-draft",
+      "file": "candidate-store-saved-draft.png",
+      "state": "saved-draft",
+      "url": "http://localhost:8080/admin/next/editor/?storeId=8b3d1718-9498-490b-8562-73a27f2de745&layoutId=6f3f5a2c-6ad6-4439-89bc-ec03d1d7f0c5",
+      "storeId": "8b3d1718-9498-490b-8562-73a27f2de745",
+      "layoutId": "6f3f5a2c-6ad6-4439-89bc-ec03d1d7f0c5"
+    },
+    {
+      "name": "candidate-store-publication-confirmation",
+      "file": "candidate-store-publication-confirmation.png",
+      "state": "publication-confirmation-dismissed",
+      "url": "http://localhost:8080/admin/next/editor/?storeId=8b3d1718-9498-490b-8562-73a27f2de745&layoutId=6f3f5a2c-6ad6-4439-89bc-ec03d1d7f0c5",
+      "storeId": "8b3d1718-9498-490b-8562-73a27f2de745",
+      "layoutId": "6f3f5a2c-6ad6-4439-89bc-ec03d1d7f0c5",
+      "confirmationText": "Bestätigung vor Veröffentlichung\n\nDiesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.\n\nScreenshot-Modus · keine Bestätigung gesendet"
+    },
+    {
+      "name": "legacy-store-initial",
+      "file": "legacy-store-initial.png",
+      "state": "initial",
+      "url": "http://localhost:8080/admin/editor/?storeId=8b3d1718-9498-490b-8562-73a27f2de745&layoutId=b9d76151-8731-4eaf-8535-3a14a5a9d587",
+      "storeId": "8b3d1718-9498-490b-8562-73a27f2de745",
+      "layoutId": "b9d76151-8731-4eaf-8535-3a14a5a9d587"
+    },
+    {
+      "name": "legacy-store-draft",
+      "file": "legacy-store-draft.png",
+      "state": "unsaved-draft",
+      "url": "http://localhost:8080/admin/editor/?storeId=8b3d1718-9498-490b-8562-73a27f2de745&layoutId=b9d76151-8731-4eaf-8535-3a14a5a9d587",
+      "storeId": "8b3d1718-9498-490b-8562-73a27f2de745"
+    },
+    {
+      "name": "candidate-global-initial",
+      "file": "candidate-global-initial.png",
+      "state": "initial",
+      "url": "http://localhost:8080/admin/next/editor/"
+    },
+    {
+      "name": "candidate-global-publication-confirmation",
+      "file": "candidate-global-publication-confirmation.png",
+      "state": "publication-confirmation-dismissed",
+      "url": "http://localhost:8080/admin/next/editor/",
+      "confirmationText": "Bestätigung vor Veröffentlichung\n\nDas globale Layout jetzt für alle Kunden veröffentlichen? Diese Änderung ist sofort sichtbar.\n\nScreenshot-Modus · keine Bestätigung gesendet"
+    },
+    {
+      "name": "legacy-global-initial",
+      "file": "legacy-global-initial.png",
+      "state": "initial",
+      "url": "http://localhost:8080/admin/editor/"
+    },
+    {
+      "name": "legacy-global-unsaved",
+      "file": "legacy-global-unsaved.png",
+      "state": "unsaved-global",
+      "url": "http://localhost:8080/admin/editor/",
+      "publicationGuard": "Global POST blocked by capture context"
+    },
+    {
+      "name": "candidate-store-scoped-direct-link",
+      "file": "candidate-store-scoped-direct-link.png",
+      "state": "scoped-direct-link",
+      "url": "http://localhost:8080/admin/next/editor/?storeId=8b3d1718-9498-490b-8562-73a27f2de745",
+      "storeId": "8b3d1718-9498-490b-8562-73a27f2de745",
+      "role": "region-manager",
+      "regionId": "797913e8-a756-410a-b51e-1e5583a03b68"
+    },
+    {
+      "name": "candidate-store-denied-direct-link",
+      "file": "candidate-store-denied-direct-link.png",
+      "state": "denied-direct-link",
+      "url": "http://localhost:8080/admin/next/editor/?storeId=7fbec219-170b-4f89-83ed-632156e8a348",
+      "storeId": "7fbec219-170b-4f89-83ed-632156e8a348",
+      "role": "region-manager",
+      "assignedRegionId": "797913e8-a756-410a-b51e-1e5583a03b68"
+    },
+    {
+      "name": "candidate-store-load-error",
+      "file": "candidate-store-load-error.png",
+      "state": "injected-load-error",
+      "url": "http://localhost:8080/admin/next/editor/?storeId=8b3d1718-9498-490b-8562-73a27f2de745",
+      "storeId": "8b3d1718-9498-490b-8562-73a27f2de745",
+      "injectedStatus": 503
+    },
+    {
+      "name": "candidate-store-store-manager-denied-direct-link",
+      "file": "candidate-store-store-manager-denied-direct-link.png",
+      "state": "denied-direct-link",
+      "url": "http://localhost:8080/admin/next/editor/?storeId=8b3d1718-9498-490b-8562-73a27f2de745",
+      "storeId": "8b3d1718-9498-490b-8562-73a27f2de745",
+      "role": "store-manager",
+      "ownStoreId": "d9db4e2a-8c6e-476a-a808-edbbded0baa7"
+    }
+  ],
+  "cleanup": {
+    "scopedStore": {
+      "id": "8b3d1718-9498-490b-8562-73a27f2de745",
+      "status": 200
+    },
+    "foreignStore": {
+      "id": "7fbec219-170b-4f89-83ed-632156e8a348",
+      "status": 200
+    },
+    "foreignRegion": {
+      "id": "b109c57e-7666-4f53-9b12-8ae2d14dcd7a",
+      "status": 200
+    }
+  },
+  "globalWrites": 0,
+  "notes": [
+    "Publication-confirmation screenshots use a page-level window.confirm shim that renders the exact prompt as a visible overlay and returns false; no publication is confirmed.",
+    "Candidate global mode uses the new /admin/next shell around the shared LegacyEditorRoute. The legacy global mode is /admin/editor/.",
+    "A private Store draft is disposable fixture data. Stores and their Region are archived in finally."
+  ],
+  "remainingGates": [
+    "No real iOS/Android device rendering or navigation is captured.",
+    "Global publication confirmation is represented by a screenshot shim; the browser-native confirmation UI is not part of page screenshots."
+  ]
+}

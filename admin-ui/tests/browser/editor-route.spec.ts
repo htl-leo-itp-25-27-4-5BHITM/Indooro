@@ -1,0 +1,208 @@
+import { expect, test } from "@playwright/test";
+
+const document = {
+  shopName: "Indooro Linz",
+  gridSize: { width: 20, height: 20 },
+  elements: [
+    { id: 1, type: "entrance", x: 1, y: 1, width: 2, height: 1, label: "Eingang" },
+    { id: 2, type: "shelf", x: 4, y: 4, width: 4, height: 2, label: "Obst", category: "310/1" }
+  ]
+};
+
+test("new editor saves a draft, reloads it, then activates the same version", async ({ page }) => {
+  let current = { layoutId: null as string | null, versionNo: null as number | null, status: "DEFAULT", layout: document };
+  let savedPayload: Record<string, unknown> | null = null;
+  let activateCalls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", email: null, role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/editor-context", (route) => route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: current, assignedBeacons: [] } }));
+  await page.route("**/api/stores/store-1/layout/versions", (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: current.layoutId ? [{ layoutId: current.layoutId, versionNo: current.versionNo, layoutName: current.layout.shopName, status: current.status }] : [] });
+    savedPayload = route.request().postDataJSON();
+    current = { layoutId: "layout-2", versionNo: 2, status: "DRAFT", layout: savedPayload!.layout as typeof document };
+    return route.fulfill({ json: current });
+  });
+  await page.route("**/api/stores/store-1/layout/versions/layout-2", (route) => route.fulfill({ json: current }));
+  await page.route("**/api/stores/store-1/layout/versions/layout-2/activate", (route) => {
+    activateCalls += 1;
+    current = { ...current, status: "ACTIVE" };
+    return route.fulfill({ json: current });
+  });
+
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await expect(page.getByRole("region", { name: "Layout-Editor" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Layout Editor" })).toBeVisible();
+  await page.getByRole("textbox", { name: "Filialname" }).fill("Indooro Linz Neu");
+  await expect(page.getByText("Ungespeicherte Änderungen")).toBeVisible();
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect.poll(() => savedPayload?.activate).toBe(false);
+  expect((savedPayload?.layout as typeof document).elements).toHaveLength(2);
+  await expect(page.locator(".le-message")).toContainText("Entwurf gespeichert");
+  await expect(page).toHaveURL(/layoutId=layout-2/);
+
+  await page.reload();
+  await expect(page.getByRole("textbox", { name: "Filialname" })).toHaveValue("Indooro Linz Neu");
+  await expect(page.getByRole("button", { name: "Veröffentlichen" })).toBeEnabled();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Veröffentlichen" }).click();
+  await expect.poll(() => activateCalls).toBe(1);
+  await expect(page.locator(".le-message")).toContainText("Layout veröffentlicht");
+  expect(current.status).toBe("ACTIVE");
+});
+
+test("a layout without an entrance can be saved as a private draft but cannot be published", async ({ page }) => {
+  const missingEntrance = { ...document, elements: document.elements.filter((element) => element.type !== "entrance") };
+  let draftWrites = 0;
+  let activations = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/editor-context", (route) => route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: { layoutId: "active-1", versionNo: 1, status: "ACTIVE", layout: missingEntrance }, assignedBeacons: [] } }));
+  await page.route("**/api/stores/store-1/layout/versions", (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: [] });
+    draftWrites += 1;
+    expect(route.request().postDataJSON().activate).toBe(false);
+    return route.fulfill({ json: { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layout: route.request().postDataJSON().layout } });
+  });
+  await page.route("**/api/stores/store-1/layout/versions/draft-2/activate", (route) => {
+    activations += 1;
+    return route.fulfill({ status: 500 });
+  });
+
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await expect(page.getByText("Ein Eingang ist für die Navigation erforderlich.")).toBeVisible();
+  await page.getByRole("textbox", { name: "Filialname" }).fill("Entwurf ohne Eingang");
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.locator(".le-message")).toHaveText("Entwurf gespeichert.");
+  await expect(page.getByRole("button", { name: "Veröffentlichen" })).toBeDisabled();
+  expect(draftWrites).toBe(1);
+  expect(activations).toBe(0);
+});
+
+test("store-scoped direct link blocks another store before loading editor data", async ({ page }) => {
+  let contextRequests = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "manager-1", username: "manager", email: null, role: "store-manager", scope: { storeId: "store-1", storeName: "Indooro Linz" } } }));
+  await page.route("**/api/stores/store-2/layout/editor-context", (route) => { contextRequests += 1; return route.fulfill({ status: 403 }); });
+  await page.goto("/admin/next/editor/?storeId=store-2");
+  await expect(page.getByRole("alert")).toContainText("Zugriff verweigert");
+  expect(contextRequests).toBe(0);
+});
+
+test("editor load can be retried after a transient failure", async ({ page }) => {
+  let fail = true;
+  let reads = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/editor-context", (route) => {
+    reads += 1;
+    return fail ? route.fulfill({ status: 503, json: { error: "Unavailable" } }) : route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: { layoutId: "active-1", versionNo: 1, status: "ACTIVE", layout: document }, assignedBeacons: [] } });
+  });
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await expect(page.getByRole("alert")).toContainText("Serverfehler");
+  fail = false;
+  await page.getByRole("button", { name: "Erneut versuchen" }).click();
+  await expect(page.getByRole("heading", { name: "Layout Editor" })).toBeVisible();
+  expect(reads).toBe(2);
+});
+
+test("failed draft save keeps edits dirty and can be retried", async ({ page }) => {
+  let fail = true;
+  let saves = 0;
+  let savedLayout: typeof document | null = null;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/editor-context", (route) => route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: { layoutId: "active-1", versionNo: 1, status: "ACTIVE", layout: document }, assignedBeacons: [] } }));
+  await page.route("**/api/stores/store-1/layout/versions", (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ json: [{ layoutId: "active-1", versionNo: 1, status: "ACTIVE" }] });
+    saves += 1;
+    if (fail) return route.fulfill({ status: 503, json: { error: "Unavailable" } });
+    savedLayout = route.request().postDataJSON().layout as typeof document;
+    return route.fulfill({ json: { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layout: savedLayout } });
+  });
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  const name = page.getByRole("textbox", { name: "Filialname" });
+  await name.fill("Retry Linz");
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.locator(".le-message")).toContainText("Serverfehler");
+  await expect(page.getByText("Ungespeicherte Änderungen")).toBeVisible();
+  expect(await name.inputValue()).toBe("Retry Linz");
+
+  fail = false;
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await expect(page.locator(".le-message")).toContainText("Entwurf gespeichert");
+  await expect(page).toHaveURL(/layoutId=draft-2/);
+  expect(saves).toBe(2);
+  expect(savedLayout?.shopName).toBe("Retry Linz");
+});
+
+test("failed activation leaves the draft available for retry", async ({ page }) => {
+  let fail = true;
+  let activations = 0;
+  const draft = { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layout: document };
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/editor-context")) return route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: draft, assignedBeacons: [] } });
+    if (path.endsWith("/versions") && route.request().method() === "GET") return route.fulfill({ json: [draft] });
+    if (path.endsWith("/versions/draft-2")) return route.fulfill({ json: draft });
+    if (path.endsWith("/versions/draft-2/activate")) {
+      activations += 1;
+      return fail ? route.fulfill({ status: 503, json: { error: "Unavailable" } }) : route.fulfill({ json: { ...draft, status: "ACTIVE" } });
+    }
+    return route.fulfill({ status: 404 });
+  });
+  await page.goto("/admin/next/editor/?storeId=store-1&layoutId=draft-2");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Veröffentlichen" }).click();
+  await expect(page.locator(".le-message")).toContainText("Serverfehler");
+  await expect(page.getByRole("button", { name: "Veröffentlichen" })).toBeEnabled();
+  expect(activations).toBe(1);
+
+  fail = false;
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Veröffentlichen" }).click();
+  await expect(page.locator(".le-message")).toContainText("Layout veröffentlicht");
+  await expect.poll(() => activations).toBe(2);
+});
+
+test("archived store version can be restored unchanged from its direct link", async ({ page }) => {
+  const archived = { layoutId: "old-1", versionNo: 1, layoutName: "Earlier map", status: "ARCHIVED", layout: document };
+  const active = { ...archived, layoutId: "new-2", versionNo: 2, status: "ACTIVE", layout: { ...document, shopName: "Newer map" } };
+  let activatedId: string | null = null;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/**", (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/editor-context")) return route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: active, assignedBeacons: [] } });
+    if (path.endsWith("/versions")) return route.fulfill({ json: [active, archived] });
+    if (path.endsWith("/versions/old-1")) return route.fulfill({ json: archived });
+    if (path.endsWith("/versions/old-1/activate")) { activatedId = "old-1"; return route.fulfill({ json: { ...archived, status: "ACTIVE" } }); }
+    return route.fulfill({ status: 404 });
+  });
+  await page.route("**/api/mobile/stores/store-1/layout/current", (route) => route.fulfill({ json: { storeId: "store-1", layoutId: activatedId ?? "new-2", source: "ACTIVE", fallback: false, layout: activatedId ? archived.layout : active.layout } }));
+  await page.goto("/admin/next/editor/?storeId=store-1&layoutId=old-1");
+  await expect(page.getByRole("textbox", { name: "Filialname" })).toHaveValue("Indooro Linz");
+  await expect(page.getByRole("button", { name: "Version wieder aktivieren" })).toBeEnabled();
+  page.once("dialog", (dialog) => { expect(dialog.message()).toContain("ältere Version"); return dialog.accept(); });
+  await page.getByRole("button", { name: "Version wieder aktivieren" }).click();
+  await expect.poll(() => activatedId).toBe("old-1");
+  await expect(page.getByRole("region", { name: "Aktuell mobiles Layout" })).toContainText("old-1");
+  await expect(page.getByRole("button", { name: "Version wieder aktivieren" })).toHaveCount(0);
+});
+
+test("store version history retries without replacing unsaved editor work", async ({ page }) => {
+  let fail = true;
+  let contextReads = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores/store-1/layout/editor-context", (route) => {
+    contextReads += 1;
+    return route.fulfill({ json: { store: { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz" }, currentLayout: { layoutId: "active-1", versionNo: 1, status: "ACTIVE", layout: document }, assignedBeacons: [] } });
+  });
+  await page.route("**/api/stores/store-1/layout/versions", (route) => fail
+    ? route.fulfill({ status: 503, json: { error: "Unavailable" } })
+    : route.fulfill({ json: [{ layoutId: "active-1", versionNo: 1, layoutName: "Indooro Linz", status: "ACTIVE" }] }));
+  await page.route("**/api/mobile/stores/store-1/layout/current", (route) => route.fulfill({ json: { storeId: "store-1", layoutId: "active-1", source: "ACTIVE", fallback: false, layout: document } }));
+  await page.goto("/admin/next/editor/?storeId=store-1");
+  await expect(page.getByRole("alert")).toContainText("Versionsliste nicht verfügbar");
+  await page.getByRole("textbox", { name: "Filialname" }).fill("Ungespeicherter Name");
+  fail = false;
+  await page.getByRole("button", { name: "Versionen erneut laden" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("link", { name: "Öffnen", exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Filialname" })).toHaveValue("Ungespeicherter Name");
+  expect(contextReads).toBe(1);
+});

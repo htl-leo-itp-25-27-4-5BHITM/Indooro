@@ -76,6 +76,16 @@ struct LayoutElement: Codable, Identifiable, Sendable {
         return categoryBase
     }
 
+    /// Match a product's complete category segment, not a numeric prefix such as 31 in 310.
+    func matchesProductLayoutCode(_ layoutCode: String) -> Bool {
+        let parts = layoutCode.split(separator: "/", omittingEmptySubsequences: false)
+        guard parts.count >= 2,
+              let categoryBase,
+              categoryBase == String(parts[0]),
+              let productMeter = Int(parts[1]) else { return false }
+        return effectiveMeter.map { $0 == productMeter } ?? true
+    }
+
     private enum CodingKeys: String, CodingKey {
         case id
         case type

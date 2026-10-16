@@ -88,3 +88,5 @@ swift/*.zip
 
 # Unreviewed field recordings (may contain device data); only anonymized files go to NavigationFixtures/recordings/
 swift/indooro-EinkaeuferFinal/NavigationFixtures/incoming/
+backend/indooro_server/src/main/resources/META-INF/resources/admin/next/
+test-results/

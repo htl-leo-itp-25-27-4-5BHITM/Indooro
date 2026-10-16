@@ -16,15 +16,15 @@
 
 ## 3. Output Encoding and Headers
 
-- [ ] 3.1 Move `escapeHtml` into `admin/editor-core.js` and use it or `textContent` for every interpolated value in `admin/editor.js` (lines 279, 286–287, 789, 880 and all `data-*` ids).
-- [ ] 3.2 Replace `innerHTML` interpolation in `customer/app.js` with DOM construction or escaping.
-- [ ] 3.3 Remove the Tailwind Play CDN from `customer/index.html` and add the required classes to `customer/style.css`.
-- [ ] 3.4 Add `quarkus.http.header` configuration for Content-Security-Policy, `X-Content-Type-Options`, `Referrer-Policy`, and `%prod` HSTS.
-- [ ] 3.5 Send the same CSP from `scripts/serve-admin-smoke.mjs` and add a Playwright test that stores a malicious label and asserts literal rendering and no console CSP violations.
+- [x] 3.1 Move `escapeHtml` into `admin/editor-core.js` and use it or `textContent` for every interpolated value in `admin/editor.js` (lines 279, 286–287, 789, 880 and all `data-*` ids).
+- [x] 3.2 Replace `innerHTML` interpolation in `customer/app.js` with DOM construction or escaping.
+- [x] 3.3 Remove the Tailwind Play CDN from `customer/index.html` and add the required classes to `customer/style.css`.
+- [x] 3.4 Add `quarkus.http.header` configuration for Content-Security-Policy, `X-Content-Type-Options`, `Referrer-Policy`, and `%prod` HSTS.
+- [x] 3.5 Send the same CSP from `scripts/serve-admin-smoke.mjs` and add a Playwright test that stores a malicious label and asserts literal rendering and no console CSP violations.
 
 ## 4. Backend Hardening
 
-- [ ] 4.1 Add `LayoutDocumentValidator` and call it from `LayoutService.saveCurrentLayout` and `StoreLayoutAdminService.saveLayoutVersion`.
+- [x] 4.1 Add `LayoutDocumentValidator` and call it from `LayoutService.saveCurrentLayout` and `StoreLayoutAdminService.saveLayoutVersion`.
 - [ ] 4.2 Bound `PdfExportService` inputs (products, name length, level/position/meter ranges) and replace unencodable characters.
 - [ ] 4.3 Bound `PdfImportService` inputs (10 MB, 50 pages) and replace the `DOTALL` item regex with line-based parsing with bounded numeric groups.
 - [ ] 4.4 Change `ErrorLogService` and both exception mappers to persist only 5xx and authenticated admin 4xx, return generic 5xx messages with `correlationId`, and guard persistence with `try/catch`.
@@ -45,8 +45,8 @@
 ## 6. Tests
 
 - [ ] 6.1 Add Quarkus tests for audit actor attribution, tag/product/category audit entries, error persistence policy, generic 5xx body, layout validation limits, PDF bounds, upsell nested validation, and reduced anonymous diagnostics.
-- [ ] 6.2 Add `node --test` cases for `escapeHtml` usage in editor helpers.
-- [ ] 6.3 Run `npm run admin:verify` with the CSP-enabled smoke server.
+- [x] 6.2 Add `node --test` cases for `escapeHtml` usage in editor helpers.
+- [x] 6.3 Run `npm run admin:verify` with the CSP-enabled smoke server.
 
 ## 7. Documentation and Deployment
 

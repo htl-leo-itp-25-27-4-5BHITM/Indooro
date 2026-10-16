@@ -83,10 +83,10 @@ struct MapZonePalette {
 
     static func resolve(for element: LayoutElement) -> MapZonePalette {
         let descriptor = element.zoneDescriptorText
-        let rawColor = Color(hex: element.color ?? "#D6DFE7")
+        let rawColor = Color(hex: element.color ?? "#456F82")
         let fallback = MapZonePalette(
-            fillColors: [rawColor.opacity(element.isEmptyMapZone ? 0.12 : 0.22), rawColor.opacity(element.isEmptyMapZone ? 0.08 : 0.14)],
-            borderColor: rawColor.opacity(element.isEmptyMapZone ? 0.18 : 0.36),
+            fillColors: [rawColor.opacity(element.isEmptyMapZone ? 0.12 : 0.42), rawColor.opacity(element.isEmptyMapZone ? 0.08 : 0.25)],
+            borderColor: rawColor.opacity(element.isEmptyMapZone ? 0.18 : 0.68),
             textColor: Color(red: 0.18, green: 0.22, blue: 0.26),
             iconColor: rawColor.opacity(0.85),
             iconBackground: Color.white.opacity(0.55),

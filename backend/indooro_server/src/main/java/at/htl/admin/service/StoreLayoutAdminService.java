@@ -7,18 +7,22 @@ import at.htl.admin.entity.LayoutVersionStatus;
 import at.htl.admin.entity.StoreEntity;
 import at.htl.admin.repository.BeaconAssignmentRepository;
 import at.htl.admin.repository.LayoutVersionRepository;
+import at.htl.service.LayoutDocumentValidator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -35,6 +39,9 @@ public class StoreLayoutAdminService {
 
     @Inject
     ObjectMapper objectMapper;
+
+    @Inject
+    LayoutDocumentValidator layoutDocumentValidator;
 
     @Inject
     AuditLogService auditLogService;
@@ -78,12 +85,26 @@ public class StoreLayoutAdminService {
     @Transactional
     public LayoutDtos.StoreLayoutResponse saveLayoutVersion(UUID storeId, LayoutDtos.LayoutSaveRequest request) {
         adminAccessService.requireStoreAccess(storeId);
-        StoreEntity store = storeAdminService.requireStore(storeId);
+        layoutDocumentValidator.validate(request == null ? null : request.layout());
+        // Serialize version numbering and active-version transitions for this store.
+        StoreEntity store = storeAdminService.lockStore(storeId);
         LayoutVersionEntity activeLayout = layoutVersionRepository.findActiveByStoreId(storeId).orElse(null);
-        boolean shouldActivate = Boolean.TRUE.equals(request.activate()) || activeLayout == null;
+        // An explicit false is a draft even for a new store. Omitted/null retains the
+        // historical first-save behavior for existing API clients.
+        boolean shouldActivate = Boolean.TRUE.equals(request.activate())
+                || request.activate() == null && activeLayout == null;
+
+        if (shouldActivate) {
+            layoutDocumentValidator.validateMobileElementIds(request.layout());
+            layoutDocumentValidator.validatePublishedShelfRouting(request.layout());
+            validateAssignedBeacons(storeId, request.layout());
+        }
 
         if (shouldActivate && activeLayout != null) {
             activeLayout.status = LayoutVersionStatus.ARCHIVED;
+            // The partial unique index permits only one ACTIVE row. Flush the archive
+            // before Hibernate inserts the replacement; update ordering is not guaranteed.
+            layoutVersionRepository.flush();
         }
 
         LayoutVersionEntity entity = new LayoutVersionEntity();
@@ -106,13 +127,20 @@ public class StoreLayoutAdminService {
     @Transactional
     public LayoutDtos.StoreLayoutResponse activateLayoutVersion(UUID storeId, UUID layoutId) {
         adminAccessService.requireStoreAccess(storeId);
-        storeAdminService.requireStore(storeId);
+        storeAdminService.lockStore(storeId);
         LayoutVersionEntity entity = layoutVersionRepository.findByStoreAndId(storeId, layoutId)
                 .orElseThrow(() -> new NotFoundException("Layout-Version nicht gefunden."));
+        layoutDocumentValidator.validate(entity.layoutJson);
+        layoutDocumentValidator.validateMobileElementIds(entity.layoutJson);
+        layoutDocumentValidator.validatePublishedShelfRouting(entity.layoutJson);
+        validateAssignedBeacons(storeId, entity.layoutJson);
 
         layoutVersionRepository.findActiveByStoreId(storeId)
                 .filter(active -> !active.id.equals(layoutId))
-                .ifPresent(active -> active.status = LayoutVersionStatus.ARCHIVED);
+                .ifPresent(active -> {
+                    active.status = LayoutVersionStatus.ARCHIVED;
+                    layoutVersionRepository.flush();
+                });
 
         entity.status = LayoutVersionStatus.ACTIVE;
         entity.activatedAt = Instant.now();
@@ -124,6 +152,15 @@ public class StoreLayoutAdminService {
     public LayoutDtos.EditorContextResponse getEditorContext(UUID storeId) {
         adminAccessService.requireStoreAccess(storeId);
         StoreEntity store = storeAdminService.requireStore(storeId);
+        LayoutVersionEntity active = layoutVersionRepository.findActiveByStoreId(storeId).orElse(null);
+        LayoutVersionEntity latestDraft = layoutVersionRepository.listByStoreId(storeId).stream()
+                .filter(version -> version.status == LayoutVersionStatus.DRAFT)
+                .findFirst()
+                .orElse(null);
+        LayoutDtos.StoreLayoutResponse editable = latestDraft != null
+                && (active == null || latestDraft.versionNo > active.versionNo)
+                ? toLayoutResponse(latestDraft)
+                : active != null ? toLayoutResponse(active) : getCurrentLayout(storeId);
         List<LayoutDtos.EditorBeaconResponse> beacons = beaconAssignmentRepository.listActiveByStoreId(storeId)
                 .stream()
                 .map(this::toEditorBeacon)
@@ -131,7 +168,7 @@ public class StoreLayoutAdminService {
 
         return new LayoutDtos.EditorContextResponse(
                 new LayoutDtos.StoreEditorReference(store.id, store.storeCode, store.name),
-                getCurrentLayout(storeId),
+                editable,
                 beacons
         );
     }
@@ -146,6 +183,24 @@ public class StoreLayoutAdminService {
                 entity.activatedAt,
                 entity.layoutJson
         );
+    }
+
+    private void validateAssignedBeacons(UUID storeId, JsonNode layout) {
+        Set<String> assigned = new HashSet<>();
+        for (BeaconAssignmentEntity assignment : beaconAssignmentRepository.listActiveByStoreId(storeId)) {
+            if (assignment.beacon.id != null) assigned.add(assignment.beacon.id.toString());
+            if (assignment.beacon.beaconCode != null) assigned.add(assignment.beacon.beaconCode);
+            if (assignment.beacon.identityKey != null) assigned.add(assignment.beacon.identityKey);
+        }
+        for (JsonNode element : layout.path("elements")) {
+            if (!"beacon".equals(element.path("type").asText())) continue;
+            String beaconId = element.path("beaconId").asText("").trim();
+            if (beaconId.isEmpty()) beaconId = element.path("beaconCode").asText("").trim();
+            if (beaconId.isEmpty()) beaconId = element.path("identityKey").asText("").trim();
+            if (beaconId.isEmpty() || !assigned.contains(beaconId)) {
+                throw new BadRequestException("Layout-Beacon ist dieser Filiale nicht zugeordnet: " + beaconId);
+            }
+        }
     }
 
     private LayoutDtos.LayoutVersionSummary toVersionSummary(LayoutVersionEntity entity) {
