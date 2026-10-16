@@ -1,9 +1,9 @@
 ## 1. Setup
 
-- [ ] 1.1 Start only after `prepare-pilot-ios-build` is merged into `pilot/first-store`. Check out `pilot/ios-study-mode` and merge `origin/pilot/first-store`; confirm `swift test` and the simulator build pass.
+- [x] 1.1 Start only after `prepare-pilot-ios-build` is merged into `pilot/first-store`. Check out `pilot/ios-study-mode` and merge `origin/pilot/first-store`; confirm `swift test` and the simulator build pass.
 - [x] 1.2 Read this change, `add-pilot-guided-tour-fallbacks/design.md` (NavigationSession) and `prepare-pilot-evaluation/design.md` (consumer of the export).
 - [x] 1.3 Check which counters `NavigationSession` exposes (design decision 2); for missing ones add a request in `docs/pilot-readiness/team/STATUS.md` „Blocker“ for Erik and continue with timing/outcome first.
-- [ ] 1.4 Run `npx -y @fission-ai/openspec@1.3.1 validate add-pilot-study-mode --strict`.
+- [x] 1.4 Run `npx -y @fission-ai/openspec@1.3.1 validate add-pilot-study-mode --strict`.
 
 ## 2. Model and Store
 

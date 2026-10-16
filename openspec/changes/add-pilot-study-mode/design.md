@@ -34,7 +34,7 @@ Flag off = feature invisible.
 
 ## Baseline
 
-2026-10-16: `pilot/ios-study-mode`, `git fetch origin`; `origin/pilot/first-store` aktuell, danach gemäß Davids ausdrücklichem Fallback `git merge origin/pilot/ios-pilot-build` (Fast-forward auf `a20d385`). A ist noch nicht im Integrationsbranch; dieser Fallback ersetzt nur für B das ursprüngliche Start-Gate. Swift-Test/Simulator-Build laufen vor Änderungen.
+2026-10-16: `pilot/ios-study-mode`, `git fetch origin`; `origin/pilot/first-store` aktuell, danach gemäß Davids ausdrücklichem Fallback `git merge origin/pilot/ios-pilot-build` (Fast-forward auf `a20d385`). A ist noch nicht im Integrationsbranch; dieser Fallback ersetzt nur für B das ursprüngliche Start-Gate. Vor Source-Änderungen: swift test 77 + 9 Tests, 0 Fehler, Exit 0; Simulator-Build Exit 0, BUILD SUCCEEDED. DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer.
 
 ## Implementation notes
 
