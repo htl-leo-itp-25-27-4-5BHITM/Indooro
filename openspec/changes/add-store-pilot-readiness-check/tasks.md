@@ -1,9 +1,9 @@
 ## 1. Setup (only after codex/admin-platform-rebuild is merged into main)
 
 - [x] 1.1 Confirm the admin rebuild merge on `origin/main`; create branch `pilot/store-readiness` from `origin/main`; read this change from `origin/pilot/first-store` if it is not yet on `main` (`git show origin/pilot/first-store:openspec/changes/add-store-pilot-readiness-check/…`) and copy the change folder into the branch as the first commit. (branch `pilot/store-readiness` = `origin/main` incl. admin rebuild; change folder already present)
-- [ ] 1.2 Run backend tests (`mvnw.cmd test` / `./mvnw test`) and the admin UI checks (`npm run admin:verify` or the scripts in `admin-ui/package.json`); record the baseline in `design.md`.
+- [x] 1.2 Run backend tests (`mvnw.cmd test` / `./mvnw test`) and the admin UI checks (`npm run admin:verify` or the scripts in `admin-ui/package.json`); record the baseline in `design.md`. (backend 146/0 before, 182/0 after; admin UI `npm test` 81/81, browser 115/115 after)
 - [x] 1.3 Inventory existing checks: `admin-ui/src/editor/validation.ts`, product readiness on the products page, `StoreLayoutAdminService` publication validation; record reusable parts in `design.md`.
-- [ ] 1.4 Run `npx -y @fission-ai/openspec@1.3.1 validate add-store-pilot-readiness-check --strict`.
+- [x] 1.4 Run `npx -y @fission-ai/openspec@1.3.1 validate add-store-pilot-readiness-check --strict`.
 
 ## 2. Evaluation Logic (backend, pure Java)
 
@@ -20,12 +20,12 @@
 
 ## 4. Admin Page
 
-- [ ] 4.1 Add API client function and types in `admin-ui/src/api/`.
-- [ ] 4.2 Add page „Pilot-Bereitschaft“ (route under store detail): traffic light, grouped findings, links to editor element and product, „Als Markdown kopieren“; German texts; empty, loading and error states with retry.
-- [ ] 4.3 Add unit tests for the Markdown export and a mocked browser test for red/green/403 states.
-- [ ] 4.4 Build the admin per the documented admin build process and verify the page on a local stack.
+- [x] 4.1 Add API client function and types in `admin-ui/src/api/`.
+- [x] 4.2 Add page „Pilot-Bereitschaft“ (route under store detail): traffic light, grouped findings, links to editor element and product, „Als Markdown kopieren“; German texts; empty, loading and error states with retry.
+- [x] 4.3 Add unit tests for the Markdown export and a mocked browser test for red/green/403 states.
+- [ ] 4.4 Build the admin per the documented admin build process and verify the page on a local stack. Build (`npm run build`) and the mocked browser suite (115/115) are green; the check against a local full stack (Quarkus + PostgreSQL + OpenSearch) is **not done** — human step for Erik before the rollout.
 
 ## 5. Verification and Handover
 
-- [ ] 5.1 Run backend tests, admin checks, `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
+- [x] 5.1 Run backend tests, admin checks, `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
 - [ ] 5.2 Open a pull request `pilot/store-readiness` → `main`; update `docs/pilot-readiness/team/STATUS.md` (row „Erik“).
