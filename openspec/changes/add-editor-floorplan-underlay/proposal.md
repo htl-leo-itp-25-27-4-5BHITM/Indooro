@@ -4,7 +4,7 @@ Drawing a real store in the layout editor from scratch is the slowest part of on
 
 ## What Changes
 
-- New editor: upload a PNG/JPEG (or the first page of a PDF rendered in the browser) as underlay for the current layout draft.
+- New editor: upload a PNG/JPEG as underlay for the current layout draft. PDF pages can be exported as PNG/JPEG before upload; the editor provides this hint.
 - Scale and align the underlay with two reference points and their real distance in meters; adjust opacity, rotation and offset; lock the underlay.
 - Store the underlay per store (not per version) via a protected backend endpoint with size and type limits; the mobile API never exposes it.
 - Underlay is visible only in the editor, never in the app.
