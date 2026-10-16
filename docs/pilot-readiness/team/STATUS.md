@@ -32,7 +32,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Budget und Bestellung von 12 Beacons | Erik + Person C | 2026-10-16 |
 | Herkunft „SPAR Posttraße“-Layout und Belegplan klären | Erik | 2026-10-16 |
 | Termin mit Betreuung | Erik | 2026-10-16 |
-| DEBUG-Build mit Recorder auf die Mess-iPhones installieren (Xcode → Gerät), Geräte in `docs/pilot-readiness/team/DEVICES.md` eintragen (`establish-pilot-field-measurement` 4.6); `Self._printChanges()` am Gerät messen (6.4) | Erik | 2026-10-16 |
+| **Nur physisch:** Mess-iPhones anstecken, entsperren, „Vertrauen“ tippen, `scripts/ios/install-debug-on-device.sh` starten (liegt in PR #114), Geräte in `docs/pilot-readiness/team/DEVICES.md` eintragen (`establish-pilot-field-measurement` 4.6); `Self._printChanges()` am Gerät messen (6.4) | Erik | 2026-10-16 |
 | Aufnahmen (≥ 3 Testraum, ≥ 2 großer Raum) nach `NavigationFixtures/incoming/` legen; sie lösen 3.3, 5.2, 5.4, 6.3 aus | Person C | 2026-10-16 |
 
 ## Blocker
