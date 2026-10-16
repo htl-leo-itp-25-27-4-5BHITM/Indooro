@@ -9,7 +9,7 @@
 
 - [x] 2.1 Add `Models/StudyModels.swift` (session, task, outcome, condition, event) with `Codable`; test id validation `^T\d{1,3}$`.
 - [x] 2.2 Add `Managers/StudySessionStore.swift`: create session, load task list (`study-tasks.json` in bundle or manual), start/stop tasks, snapshot counters, write JSONL events, persist under `Documents/StudySessions/`.
-- [ ] 2.3 Implement the CSV writer exactly per design decision 4 (header order, enums, ISO timestamps, one decimal).
+- [x] 2.3 Implement the CSV writer exactly per design decision 4 (header order, enums, ISO timestamps, one decimal).
 - [ ] 2.4 Put pure logic (validation, CSV formatting, duration and counter differences) into a testable unit; add tests (SwiftPM target if platform-independent, otherwise the XCTest target from `add-ios-app-test-target` (Erik)).
 
 ## 3. UI

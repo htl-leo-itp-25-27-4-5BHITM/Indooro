@@ -99,3 +99,36 @@ struct StudyRunningTask {
     let counters: StudyCounters
     var appErrorCount: Int = 0
 }
+
+enum StudyFormat {
+    static let header = "test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count"
+    static func isValidID(_ value: String) -> Bool {
+        value.range(of: "^T[0-9]{1,3}$", options: .regularExpression) != nil
+    }
+    static func iso(_ date: Date) -> String { ISO8601DateFormatter().string(from: date) }
+    static func fileStem(_ session: StudySession) -> String {
+        let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = TimeZone(secondsFromGMT: 0); formatter.dateFormat = "yyyyMMdd-HHmmss"
+        return "study-\(session.testId)-\(formatter.string(from: session.startedAt))"
+    }
+    static func csvField(_ value: String) -> String {
+        value.contains(where: { [",", "\"", "\n", "\r"].contains($0) }) ? "\"" + value.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : value
+    }
+    static func csv(_ session: StudySession) -> String {
+        func count(_ value: Int?) -> String { value.map(String.init) ?? "-" }
+        let rows = session.rows.map { row in
+            [session.testId, session.id.uuidString, session.storeCode, String(row.task.no), String(row.task.productId),
+             row.task.productName, row.task.condition.rawValue, row.positioningMode,
+             iso(row.startedAt), iso(row.endedAt), String(format: "%.1f", locale: Locale(identifier: "en_US_POSIX"), row.duration),
+             row.outcome.rawValue, count(row.counters.manualPositionCount), count(row.counters.rerouteCount),
+             count(row.counters.stopChangeWithoutEventCount), String(row.appErrorCount)].map(csvField).joined(separator: ",")
+        }
+        return ([header] + rows).joined(separator: "\n") + "\n"
+    }
+    static func jsonLines(_ session: StudySession) throws -> Data {
+        let encoder = JSONEncoder(); encoder.dateEncodingStrategy = .iso8601; encoder.outputFormatting = [.sortedKeys]
+        var data = Data()
+        for event in session.events { data.append(try encoder.encode(event)); data.append(0x0A) }
+        return data
+    }
+}
