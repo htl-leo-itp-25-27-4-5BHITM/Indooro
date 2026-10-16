@@ -16,7 +16,7 @@
 - [x] 3.2 Add „QR-Code scannen“ to the indoor map header and the „Position ungenau“ banner.
 - [x] 3.3 Wire a valid scan to the manual calibration path (trusted position, one route rebuild, study counter `manualPositionCount`).
 - [x] 3.4 Store mismatch and unknown anchor states per requirement.
-- [x] 3.5.5 Simulator check with a QR image (camera simulation not available: use a DEBUG „Payload einfügen“ field to test the same code path); device check documented as human step. Simulator check done (evidence in `docs/pilot-readiness/evidence/qr-anchors/`); **device check with a printed code is a human step** (see `STATUS.md`).
+- [x] 3.5.5 Simulator check with a QR image (camera simulation not available: use a DEBUG „Payload einfügen“ field to test the same code path); device check documented as human step. Simulator check done incl. path „Anker gescannt → Position gesetzt“ via pasteboard payload and `scripts/dev/mock_mobile_api.py` (evidence `03-anchor-scanned-position-set.png`); **device check with a printed code is a human step** (see `STATUS.md`).
 
 ## 4. Admin Editor and Print Sheet
 
