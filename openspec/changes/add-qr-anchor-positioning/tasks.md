@@ -17,6 +17,7 @@
 - [x] 3.3 Wire a valid scan to the manual calibration path (trusted position, one route rebuild, study counter `manualPositionCount`).
 - [x] 3.4 Store mismatch and unknown anchor states per requirement.
 - [x] 3.5.5 Simulator check with a QR image (camera simulation not available: use a DEBUG „Payload einfügen“ field to test the same code path); device check documented as human step. Simulator check done incl. path „Anker gescannt → Position gesetzt“ via pasteboard payload and `scripts/dev/mock_mobile_api.py` (evidence `03-anchor-scanned-position-set.png`); **device check with a printed code is a human step** (see `STATUS.md`).
+- [x] 3.6 One scan is enough across stores: a code of another store keeps the anchor as pending (`PendingAnchorScan`), switches the store and sets the position once the layout is active; an anchor missing in the new layout shows „Unbekannter Code – bitte anderen Code scannen“ and leaves no hanging state (closing the scanner clears the pending scan; new scans are ignored while the target store loads). Pure logic with unit tests in `AnchorPayloadTests` (same store, other store with anchor, other store without anchor, case-insensitive, no active store); no timers or thresholds added. Simulator check against `scripts/dev/mock_mobile_api.py` with two stores (`04-one-scan-store-switch-position-set.png`, `05-store-switch-unknown-anchor.png`).
 
 ## 4. Admin Editor and Print Sheet
 

@@ -5,6 +5,10 @@
 | `01-qr-button-and-banner.png` | „QR-Code scannen“ neben „Ich bin hier“ und im Banner „Position ungenau“ |
 | `02-scanner-fallback-unknown-code.png` | Scanner ohne Kamera (Simulator, Berechtigung abgelehnt): Hinweistext, DEBUG-Feld „Payload einfügen“, Meldung „Unbekannter Code – bitte anderen Code scannen“ |
 | `03-anchor-scanned-position-set.png` | Pfad „Anker gescannt → Position gesetzt“: Payload `https://it220209.cloud.htl-leonding.ac.at/customer/?store=SPAR-Leonding-001&a=A12` im DEBUG-Feld eingefügt und übernommen; Positionsmarker steht auf Anker A12 (x 10,5 / y 3), das Banner „Position ungenau“ ist weg (Position vertrauenswürdig). |
+| `04-one-scan-store-switch-position-set.png` | Ein Scan genügt: Code `MOCK-QR-002`/`B7` aus „QR-Testmarkt (Mock)“ gescannt, „Wechseln“ getippt, der Store wird geladen und der Marker steht auf Anker B7 (kein zweiter Scan) |
+| `05-store-switch-unknown-anchor.png` | Code `MOCK-QR-001`/`A99` (Anker existiert nicht) aus dem anderen Store: nach „Wechseln“ „Unbekannter Code – bitte anderen Code scannen“, kein hängender Zustand |
+
+Test-QR-Codes für das iPhone: `test-qr-A12-mock-store.gif` (Store 1), `test-qr-B7-store2.gif` (Store 2, Anker vorhanden), `test-qr-A99-store2-unknown-anchor.gif` (Store 2, Anker fehlt).
 
 ## So wiederholbar
 

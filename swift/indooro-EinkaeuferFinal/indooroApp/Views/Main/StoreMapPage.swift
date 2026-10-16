@@ -24,8 +24,10 @@ struct StoreMapPage: View {
     @State private var nextTapSetsPosition = false
     @State private var showAnchorScanner = false
     @State private var anchorScanStatusMessage: String?
-    /// Code einer anderen Filiale aus einem Scan; solange gesetzt, zeigt ein Alert den Wechsel an.
-    @State private var pendingStoreSwitchCode: String?
+    /// Payload eines Scans einer anderen Filiale; solange gesetzt, zeigt ein Alert den Wechsel an.
+    @State private var pendingStoreSwitchPayload: AnchorPayload?
+    /// Gescannter Anker, der nach dem Store-Wechsel automatisch gesetzt wird.
+    @State private var pendingAnchorScan: PendingAnchorScan?
     @State private var pendingStoreSelectionID: UUID?
     @State private var storeCameraPosition: MapCameraPosition = .region(
         MKCoordinateRegion(
@@ -104,6 +106,9 @@ struct StoreMapPage: View {
                     isShowingStoreOverview = false
                 }
             }
+        }
+        .onChange(of: beaconManager.activeLayoutStore?.id, initial: false) { _, _ in
+            resolvePendingAnchorScan()
         }
         .onChange(of: beaconManager.activeLayoutStoreSource, initial: false) { _, newValue in
             guard newValue == .beacon, beaconManager.activeLayoutStore != nil else { return }
@@ -185,28 +190,35 @@ struct StoreMapPage: View {
             AnchorScannerView(
                 statusMessage: anchorScanStatusMessage,
                 onPayload: handleScannedAnchorPayload,
-                onClose: { showAnchorScanner = false }
+                onClose: {
+                    pendingAnchorScan = nil
+                    showAnchorScanner = false
+                }
             )
             .presentationDetents([.large])
             .alert(
                 storeSwitchAlertTitle,
                 isPresented: Binding(
-                    get: { pendingStoreSwitchCode != nil },
-                    set: { if !$0 { pendingStoreSwitchCode = nil } }
+                    get: { pendingStoreSwitchPayload != nil },
+                    set: { if !$0 { pendingStoreSwitchPayload = nil } }
                 )
             ) {
                 if let target = storeSwitchTargetStore {
                     Button("Wechseln") {
+                        // Der Scan wird nach dem Laden des Stores automatisch gesetzt; der Scanner bleibt offen.
+                        if let payload = pendingStoreSwitchPayload {
+                            pendingAnchorScan = PendingAnchorScan(payload: payload)
+                        }
+                        pendingStoreSwitchPayload = nil
+                        anchorScanStatusMessage = "Filiale wird geladen …"
                         beaconManager.loadStoreLayout(storeId: target.id)
-                        pendingStoreSwitchCode = nil
-                        showAnchorScanner = false
                     }
                     Button("Abbrechen", role: .cancel) {
-                        pendingStoreSwitchCode = nil
+                        pendingStoreSwitchPayload = nil
                     }
                 } else {
                     Button("OK", role: .cancel) {
-                        pendingStoreSwitchCode = nil
+                        pendingStoreSwitchPayload = nil
                     }
                 }
             } message: {
@@ -218,7 +230,7 @@ struct StoreMapPage: View {
     }
 
     private var storeSwitchTargetStore: MobileStoreSummary? {
-        guard let code = pendingStoreSwitchCode else { return nil }
+        guard let code = pendingStoreSwitchPayload?.storeCode else { return nil }
         return beaconManager.mobileStores.first { $0.storeCode.lowercased() == code.lowercased() }
     }
 
@@ -231,12 +243,14 @@ struct StoreMapPage: View {
 
     private func openAnchorScanner() {
         anchorScanStatusMessage = nil
+        pendingAnchorScan = nil
         showAnchorScanner = true
     }
 
     private func handleScannedAnchorPayload(_ text: String) {
-        // Waehrend der Wechsel-Abfrage werden weitere Scans ignoriert.
-        guard pendingStoreSwitchCode == nil else { return }
+        // Waehrend der Wechsel-Abfrage und waehrend der Zielstore laedt, werden weitere Scans ignoriert
+        // (der Scanner kann denselben Code erneut melden). Schliessen des Scanners hebt das auf.
+        guard pendingStoreSwitchPayload == nil, pendingAnchorScan == nil else { return }
 
         let outcome = AnchorPayload.resolve(
             text,
@@ -250,10 +264,38 @@ struct StoreMapPage: View {
             nextTapSetsPosition = false
             beaconManager.setManualUserPosition(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
             showAnchorScanner = false
-        case .storeMismatch(let storeCode):
+        case .storeMismatch:
             anchorScanStatusMessage = nil
-            pendingStoreSwitchCode = storeCode
+            pendingStoreSwitchPayload = AnchorPayload.parse(text)
         case .unknownAnchor, .invalid:
+            anchorScanStatusMessage = "Unbekannter Code – bitte anderen Code scannen"
+        }
+    }
+
+    /// Wertet einen wartenden Store-Wechsel-Scan aus, sobald das Layout der Ziel-Filiale aktiv ist.
+    private func resolvePendingAnchorScan() {
+        guard let pending = pendingAnchorScan else { return }
+        // Scanner wurde zwischenzeitlich geschlossen: nichts mehr setzen.
+        guard showAnchorScanner else {
+            pendingAnchorScan = nil
+            return
+        }
+
+        guard let outcome = pending.resolve(
+            activeStoreCode: beaconManager.activeLayoutStore?.storeCode,
+            anchors: beaconManager.shelves.filter(\.isAnchor)
+        ) else {
+            return
+        }
+        pendingAnchorScan = nil
+
+        switch outcome {
+        case .setPosition(_, let point):
+            anchorScanStatusMessage = nil
+            nextTapSetsPosition = false
+            beaconManager.setManualUserPosition(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+            showAnchorScanner = false
+        case .unknownAnchor, .invalid, .storeMismatch:
             anchorScanStatusMessage = "Unbekannter Code – bitte anderen Code scannen"
         }
     }

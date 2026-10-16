@@ -61,7 +61,15 @@ struct AnchorPayload: Equatable {
         guard let payload = parse(text) else {
             return .invalid
         }
+        return resolve(payload, activeStoreCode: activeStoreCode, anchors: anchors)
+    }
 
+    /// Wie `resolve(_:activeStoreCode:anchors:)`, aber fuer einen bereits geparsten Payload.
+    static func resolve(
+        _ payload: AnchorPayload,
+        activeStoreCode: String?,
+        anchors: [LayoutElement]
+    ) -> AnchorScanOutcome {
         guard let activeStoreCode,
               payload.storeCode.lowercased() == activeStoreCode.lowercased() else {
             return .storeMismatch(storeCode: payload.storeCode)
@@ -105,4 +113,19 @@ enum AnchorScanOutcome: Equatable {
     case unknownAnchor
     /// Kein gueltiger Anker-Code.
     case invalid
+}
+
+/// Gescannter Anker, dessen Filiale erst geladen werden muss.
+struct PendingAnchorScan: Equatable {
+    let payload: AnchorPayload
+
+    /// nil, solange der aktive Store (case-insensitiv) noch nicht der Store des Payloads ist
+    /// (Layout laedt noch). Sonst das Ergebnis gegen die Anker des aktiven Layouts.
+    func resolve(activeStoreCode: String?, anchors: [LayoutElement]) -> AnchorScanOutcome? {
+        guard let activeStoreCode,
+              payload.storeCode.lowercased() == activeStoreCode.lowercased() else {
+            return nil
+        }
+        return AnchorPayload.resolve(payload, activeStoreCode: activeStoreCode, anchors: anchors)
+    }
 }

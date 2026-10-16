@@ -217,4 +217,59 @@ final class AnchorPayloadTests: XCTestCase {
             .setPosition(anchorId: "A12", point: SIMD2<Float>(10.5, 3.5))
         )
     }
+
+    // MARK: - Resolve (bereits geparster Payload)
+
+    func testResolvePayloadSameStoreSetsPositionDirectly() throws {
+        let anchors = [try element(id: 10, type: "anchor", anchorId: "A12", x: 10.5, y: 3, width: 1, height: 2)]
+        let payload = AnchorPayload(storeCode: "S1", anchorId: "A12")
+        XCTAssertEqual(
+            AnchorPayload.resolve(payload, activeStoreCode: "S1", anchors: anchors),
+            .setPosition(anchorId: "A12", point: SIMD2<Float>(11, 4))
+        )
+    }
+
+    // MARK: - Store-Wechsel per Scan (PendingAnchorScan)
+
+    func testStoreSwitchScanIsMismatchUntilTargetStoreIsActive() throws {
+        let payloadText = "https://h.at/customer/?store=Spar-Hörsching-001&a=A12"
+        let targetAnchors = [try element(id: 10, type: "anchor", anchorId: "A12", x: 10.5, y: 3, width: 1, height: 2)]
+
+        XCTAssertEqual(
+            AnchorPayload.resolve(payloadText, activeStoreCode: "ALT", anchors: []),
+            .storeMismatch(storeCode: "Spar-Hörsching-001")
+        )
+
+        let pending = try XCTUnwrap(AnchorPayload.parse(payloadText).map { PendingAnchorScan(payload: $0) })
+        XCTAssertNil(pending.resolve(activeStoreCode: "ALT", anchors: []))
+        XCTAssertNil(pending.resolve(activeStoreCode: "ALT", anchors: targetAnchors))
+        XCTAssertEqual(
+            pending.resolve(activeStoreCode: "Spar-Hörsching-001", anchors: targetAnchors),
+            .setPosition(anchorId: "A12", point: SIMD2<Float>(11, 4))
+        )
+    }
+
+    func testPendingScanWithoutActiveStoreStaysPending() throws {
+        let pending = PendingAnchorScan(payload: AnchorPayload(storeCode: "S2", anchorId: "A1"))
+        let anchors = [try element(id: 10, type: "anchor", anchorId: "A1", x: 1, y: 1)]
+        XCTAssertNil(pending.resolve(activeStoreCode: nil, anchors: anchors))
+    }
+
+    func testPendingScanUnknownAnchorInTargetStore() {
+        let pending = PendingAnchorScan(payload: AnchorPayload(storeCode: "S2", anchorId: "A99"))
+        XCTAssertEqual(
+            pending.resolve(activeStoreCode: "S2", anchors: []),
+            .unknownAnchor
+        )
+    }
+
+    func testPendingScanStoreCodeComparisonIsCaseInsensitive() throws {
+        let pending = PendingAnchorScan(payload: AnchorPayload(storeCode: "Spar-Hörsching-001", anchorId: "A1"))
+        let anchors = [try element(id: 10, type: "anchor", anchorId: "A1", x: 1, y: 1)]
+        XCTAssertNil(pending.resolve(activeStoreCode: "ALT", anchors: anchors))
+        XCTAssertEqual(
+            pending.resolve(activeStoreCode: "spar-hörsching-001", anchors: anchors),
+            .setPosition(anchorId: "A1", point: SIMD2<Float>(1.5, 1.5))
+        )
+    }
 }

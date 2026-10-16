@@ -4,7 +4,7 @@
     python3 scripts/dev/mock_mobile_api.py [port]            # Default 18090, nur localhost
     MOCK_HOST=0.0.0.0 python3 scripts/dev/mock_mobile_api.py   # fuer ein iPhone im selben WLAN
 
-Dient genau einen Store ("MOCK-QR-001") mit dem Layout aus
+Dient zwei Stores: "MOCK-QR-001" (Anker A1, A12) und "MOCK-QR-002" (Anker B1, B7) mit dem Layout aus
 swift/indooro-EinkaeuferFinal/Tests/IndooroNavigationCoreTests/Resources/store-layout-with-anchors.json
 (Eingang plus QR-Anker A1 und A12). Alles andere liefert 404.
 
@@ -21,7 +21,17 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 
 ROOT = pathlib.Path(__file__).resolve().parents[1].parent
 LAYOUT = ROOT / "swift/indooro-EinkaeuferFinal/Tests/IndooroNavigationCoreTests/Resources/store-layout-with-anchors.json"
-STORE_ID = json.loads(LAYOUT.read_text(encoding="utf-8"))["storeId"]
+LAYOUT_1 = json.loads(LAYOUT.read_text(encoding="utf-8"))
+STORE_ID = LAYOUT_1["storeId"]
+
+# Zweiter Store zum Testen des Store-Wechsels per Scan: gleiche Geometrie, andere Anker (B1, B7).
+STORE_ID_2 = "9a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5e"
+LAYOUT_2 = json.loads(LAYOUT.read_text(encoding="utf-8"))
+LAYOUT_2["storeId"] = STORE_ID_2
+LAYOUT_2["layout"]["shopName"] = "QR-Testmarkt 2 (Mock)"
+for element in LAYOUT_2["layout"]["elements"]:
+    if element.get("type") == "anchor":
+        element["anchorId"] = {"A12": "B7", "A1": "B1"}.get(element["anchorId"], element["anchorId"])
 STORES = [{
     "id": STORE_ID,
     "storeCode": "MOCK-QR-001",
@@ -30,6 +40,14 @@ STORES = [{
     "address": "Poststrasse 10, 4060 Leonding",
     "latitude": 48.2680495,
     "longitude": 14.2618747,
+}, {
+    "id": STORE_ID_2,
+    "storeCode": "MOCK-QR-002",
+    "name": "QR-Testmarkt 2 (Mock)",
+    "city": "Leonding",
+    "address": "Teststrasse 2, 4060 Leonding",
+    "latitude": 48.2701,
+    "longitude": 14.2650,
 }]
 
 
@@ -50,6 +68,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, [])
         if path == f"/api/mobile/stores/{STORE_ID}/layout/current":
             return self._send(200, LAYOUT.read_bytes())
+        if path == f"/api/mobile/stores/{STORE_ID_2}/layout/current":
+            return self._send(200, LAYOUT_2)
         return self._send(404, {"error": "not found", "path": path})
 
     def log_message(self, fmt, *args):
