@@ -1,0 +1,64 @@
+name: iOS Tests
+
+on:
+  pull_request:
+    branches: [ "pilot/first-store", "main" ]
+    paths:
+      - 'swift/indooro-EinkaeuferFinal/**'
+      - '.github/workflows/ios.yaml'
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  swift-tests:
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache SwiftPM build directory
+        uses: actions/cache@v4
+        with:
+          path: swift/indooro-EinkaeuferFinal/.build
+          key: swiftpm-${{ runner.os }}-${{ hashFiles('swift/indooro-EinkaeuferFinal/Package.swift') }}
+          restore-keys: |
+            swiftpm-${{ runner.os }}-
+
+      - name: Navigation package and contract tests (swift test)
+        working-directory: swift/indooro-EinkaeuferFinal
+        run: swift test
+
+      - name: Resolve an available iPhone simulator
+        id: simulator
+        run: |
+          # Nimmt das erste verfuegbare iPhone; der Name haengt vom Runner-Image ab.
+          NAME=$(xcrun simctl list devices available | grep -E '^[[:space:]]+iPhone' | head -n 1 | sed -E 's/^[[:space:]]+//; s/ \([0-9A-F-]+\).*$//')
+          if [ -z "$NAME" ]; then
+            echo "Kein iPhone-Simulator verfuegbar" >&2
+            exit 1
+          fi
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "Simulator: $NAME"
+
+      - name: Simulator build (MCindooroApp)
+        run: |
+          xcodebuild build \
+            -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj \
+            -scheme MCindooroApp \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: App unit tests (MCindooroAppTests)
+        # Erst aktiv, wenn der Testtarget in Xcode angelegt wurde (add-ios-app-test-target 1.2).
+        if: ${{ hashFiles('swift/indooro-EinkaeuferFinal/MCindooroAppTests/**/*.swift') != '' }}
+        run: |
+          xcodebuild test \
+            -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj \
+            -scheme MCindooroApp \
+            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
+            CODE_SIGNING_ALLOWED=NO
