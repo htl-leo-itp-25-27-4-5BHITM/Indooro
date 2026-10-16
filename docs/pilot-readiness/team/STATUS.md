@@ -32,6 +32,9 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Budget und Bestellung von 12 Beacons | Erik + Person C | 2026-10-16 |
 | Herkunft „SPAR Posttraße“-Layout und Belegplan klären | Erik | 2026-10-16 |
 | Termin mit Betreuung | Erik | 2026-10-16 |
+| QR-Anker: gedruckten Code mit der Kamera am iPhone scannen (Gerät, `add-qr-anchor-positioning` 3.5); Kamera-Text in den Build-Settings ergänzen („… und zum Scannen von QR-Codes …“, Person A) | Erik / Person A | 2026-10-16 |
+| `add-ios-pilot-ui-tests` (F) wartet auf Merge von `prepare-pilot-ios-build`, `add-ios-app-test-target`, `add-pilot-guided-tour-fallbacks`; danach UI-Test-Target `MCindooroAppUITests` in Xcode anlegen (Human step 1.2) | Erik | 2026-10-16 |
+| `improve-positioning-with-motion` (G) wartet auf ≥ 5 echte Aufnahmen mit Truth-Markern aus zwei Orten (Person C) | Person C / Erik | 2026-10-16 |
 
 ## Hinweise an Personen
 

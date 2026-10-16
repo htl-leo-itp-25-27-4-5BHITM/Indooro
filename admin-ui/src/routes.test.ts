@@ -34,3 +34,12 @@ test("candidate navigation keeps staff inside the new shell and scopes editor li
   const products = visibleRoutes("admin").find((route) => route.label === "Produkte")!;
   assert.equal(candidateNavigationPath(products, { subject: "admin-1", username: "admin", email: null, role: "admin", scope: null }), "/admin/next/products/");
 });
+
+test("QR anchor print page follows the store detail access rules", () => {
+  assert.equal(candidateAccess("/admin/next/stores/anchors/", "store-manager", "store-1", "store-1"), "allowed");
+  assert.equal(candidateAccess("/admin/next/stores/anchors/", "store-manager", "store-2", "store-1"), "forbidden");
+  assert.equal(candidateAccess("/admin/next/stores/anchors/", "store-manager"), "forbidden");
+  assert.equal(candidateAccess("/admin/next/stores/anchors/", "region-manager", "store-2"), "allowed");
+  assert.equal(candidateAccess("/admin/next/stores/anchors", "admin"), "allowed");
+  assert.equal(candidateAccess("/admin/next/stores/anchors/", "viewer"), "forbidden");
+});
