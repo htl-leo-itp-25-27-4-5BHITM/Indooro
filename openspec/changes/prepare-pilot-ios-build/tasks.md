@@ -22,7 +22,7 @@
 
 ## 4. Search (incl. fix-ios-contract-and-spec-drift 3, 4, 5)
 
-- [ ] 4.1 Build search URLs with `URLComponents` and `URLQueryItem` in `ProductSearchStore` (search and category list).
+- [x] 4.1 Build search URLs with `URLComponents` and `URLQueryItem` in `ProductSearchStore` (search and category list).
 - [ ] 4.2 Implement `fix-ios-contract-and-spec-drift` 3.1–3.3 (shared ISO-8601 decoder, lossy product array).
 - [ ] 4.3 Implement 4.1–4.3 (HTTP status check, `errorMessage`, „Suche fehlgeschlagen“ + „Erneut versuchen“) and the empty state „Keine Treffer für „<Begriff>““.
 - [ ] 4.4 Implement 5.1–5.3 (store-scoped search with `storeId`/`storeCode`, remove `BeaconManager.searchProducts` and related state).
