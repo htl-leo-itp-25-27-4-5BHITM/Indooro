@@ -39,8 +39,8 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 
 | Datum | Person | Blocker / Frage | Antwort |
 |---|---|---|---|
-| 2026-10-16 | Person A | A 4.3/4.4/5.2/5.6: Freigabe oder Umsetzung durch Erik für Suchfehler, Store-Scope, Filialübersicht und Kundentexte in StoreMapPage benötigt. BeaconManager-Layoutdecoder und ShoppingTransferService ebenfalls außerhalb der erlaubten Teilbereiche. | offen |
-| 2026-10-16 | Person A | A 5.4: Freigabe für eine PermissionBanner-Einbindung in StoreMapPage benötigt; Komponente und Status werden unabhängig vorbereitet. | offen |
+| 2026-10-16 | Person A | A 4.2/5.1/5.2/5.6: Erik muss BeaconManager-Layoutdecoder (Alt 3.2), StoreMapPage-Filialübersicht ohne erfundene Koordinaten (Alt 6.x), Release-Debug-/Layout-Steuerungen und Kartentexte freigeben oder selbst integrieren. SearchOverlayView bleibt bis zur Löschfreigabe erhalten. | offen |
+| 2026-10-16 | Person A | A 5.4: PermissionBanner und Suchfehler über ContentView integriert; StoreMapPage unverändert. | gelöst ohne Änderung an Eriks Datei |
 | 2026-10-16 | Person A | A 6.5: explizite Freigabe von Erik zum Entfernen der vier toten Views fehlt. | offen |
 | 2026-10-16 | Person A | D: wartet auf docs/pilot-readiness/hardware/RESULT_SUMMARY.md; keine Schwellen ohne Messdaten. | offen |
 
