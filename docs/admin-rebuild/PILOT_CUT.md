@@ -17,6 +17,10 @@ Auch Dashboard, Rezepte und Diagnostik sind lokal auf die neue Oberfläche umges
 
 Für den Pilot bleibt der Editor auf Legacy, sofern die vorhandenen fokussierten Live-Probes für Speichern, Aktivieren, Import/Export, Rollen-Drafts und Fehlerzustände nicht gemeinsam auf dem finalen lokalen Paket grün sind. Ein positives Ergebnis erlaubt einen getrennt dokumentierten Editor-Flag-Cutover; es ist **keine** Voraussetzung für diesen Pilot-Cut. Das bestehende Legacy-Editor-Verhalten bei Preview/Export und fehlendem Eingang unterscheidet sich teils vom Candidate; siehe `EDITOR_ACTION_MATRIX.md`.
 
+## Prüfung nach Abgleich mit `origin/main`
+
+`git fetch origin && git merge origin/main` ergab „Already up to date.“ Danach bestanden `sh ./mvnw test` (142/142; das vorhandene `mvnw` hat kein Execute-Bit), Admin-UI-Typecheck, ESLint, 69/69 Unit-Tests, 111/111 Browser-Tests mit frisch paketierter Candidate-Ausgabe, `npm run build` und strikte OpenSpec-Validierung 42/42. Diese automatischen Checks ersetzen keinen Produktions-Smoke oder physischen Beacon-Weg.
+
 ## Bekannte Lücken und Zuständigkeit
 
 - OpenSpec `rebuild-admin-platform` Tasks 1.2, 3.10 und 5.4 sind teilweise belegt; der fehlende vollständige Aktions-/Zustands-/Rollen-Nachweis ist in `EDITOR_EVIDENCE_GAPS.md` erfasst und an `complete-admin-parity-evidence` übergeben. Task 1.1 verlangte einen Review vor Implementierungsbeginn und ist historisch nicht nachholbar. Der Change wird für den Pilot nicht archiviert.
