@@ -172,6 +172,38 @@ enum NavigationRecordLine: Codable, Equatable {
     }
 }
 
+// MARK: - Feld-Export (Tick-CSV)
+
+extension NavigationReplay {
+    static let csvHeader = "t,truth_x,truth_y,est_x,est_y,proj_x,proj_y,confidence,beacons_used,route_rebuild,stop_change"
+
+    /// CSV je Tick mit Header `csvHeader`: Dezimalpunkt, 3 Nachkommastellen, leeres Feld fuer `nil`,
+    /// `route_rebuild`/`stop_change` als 0/1. Endet mit Zeilenumbruch.
+    static func csv(ticks: [ReplayTick]) -> String {
+        var lines = [csvHeader]
+        lines.reserveCapacity(ticks.count + 1)
+        for tick in ticks {
+            let fields: [String] = [
+                csvField(tick.t),
+                csvField(tick.truth?.x), csvField(tick.truth?.y),
+                csvField(tick.solved?.x), csvField(tick.solved?.y),
+                csvField(tick.projected?.x), csvField(tick.projected?.y),
+                csvField(tick.confidence),
+                String(tick.beaconsUsed),
+                tick.routeRebuild ? "1" : "0",
+                tick.stopChange ? "1" : "0",
+            ]
+            lines.append(fields.joined(separator: ","))
+        }
+        return lines.joined(separator: "\n") + "\n"
+    }
+
+    private static func csvField<T: BinaryFloatingPoint>(_ value: T?) -> String {
+        guard let value else { return "" }
+        return String(format: "%.3f", Double(value))
+    }
+}
+
 // MARK: - Replay
 
 /// Kennzahlen eines Replays. Alle Felder ausser `planningSeconds` (Wandzeit) sind deterministisch;
@@ -213,6 +245,25 @@ struct ReplayMetrics: Equatable {
     }
 }
 
+/// Ein Tick des Replays fuer den Feld-Export (`NavigationReplay.csv`). Nur Beobachtung, keine Metrik.
+struct ReplayTick: Equatable {
+    /// Tickzeitpunkt (Aufzeichnungszeit).
+    var t: TimeInterval
+    /// Letzter Bodenwahrheits-Marker, sofern er im selben Raster wie die Off-Route-Pruefung liegt (sonst `nil`).
+    var truth: SIMD2<Float>?
+    /// Vom Solver geloester Rohpunkt (`PositioningTick.solvedPoint`).
+    var solved: SIMD2<Float>?
+    /// Projizierte Position (`PositioningTick.projectedPoint`).
+    var projected: SIMD2<Float>?
+    var confidence: Float
+    /// Frische Messungen zur Tick-Zeit (Eingang des Solvers, `BeaconMeasurementStore.activeMeasurements`).
+    var beaconsUsed: Int
+    /// `core.routeBuildCount` hat sich in diesem Tick erhoeht.
+    var routeRebuild: Bool
+    /// `core.activeStopID` hat sich in diesem Tick geaendert.
+    var stopChange: Bool
+}
+
 /// Spielt eine Aufzeichnung durch dieselbe Kette wie die App: `PositioningPipeline`
 /// (Messspeicher -> Solver -> Schaetzer -> Projektion) und `NavigationSessionCore` (+ `TourPlanner`).
 /// Die virtuelle Uhr tickt alle `updateIntervalSeconds` ab der ersten Zeile.
@@ -220,9 +271,10 @@ enum NavigationReplay {
     static func run(
         recording: [NavigationRecordLine],
         layout: LayoutData,
-        config: StabilizedNavigationConfig = .default
+        config: StabilizedNavigationConfig = .default,
+        onTick: ((ReplayTick) -> Void)? = nil
     ) -> ReplayMetrics {
-        var replay = Replay(layout: layout, config: config)
+        var replay = Replay(layout: layout, config: config, onTick: onTick)
         return replay.run(recording.enumerated().sorted {
             $0.element.timestamp == $1.element.timestamp ? $0.offset < $1.offset : $0.element.timestamp < $1.element.timestamp
         }.map(\.element))
@@ -262,9 +314,11 @@ enum NavigationReplay {
         var truthOffRouteSince: TimeInterval?
         var suppressJumpCheck = false
         var lags: [Double] = []
+        let onTick: ((ReplayTick) -> Void)?
 
-        init(layout: LayoutData, config: StabilizedNavigationConfig) {
+        init(layout: LayoutData, config: StabilizedNavigationConfig, onTick: ((ReplayTick) -> Void)?) {
             self.config = config
+            self.onTick = onTick
             graph = NavigationReplay.makeGraph(layout)
             let beacons = NavigationReplay.layoutBeacons(layout)
             beaconNames = beacons.map(\.name)
@@ -419,11 +473,15 @@ enum NavigationReplay {
             let result = pipeline.tick(beaconNames: beaconNames, samples: samples, at: time)
             samples.removeSamples()
             metrics.tickCount += 1
+            // Reine Lesung nach dem Tick: dieselben frischen Messungen, die der Solver gesehen hat.
+            let beaconsUsed = store.activeMeasurements(at: time).count
 
             let activeBefore = core.activeStopID
             let hadRoute = core.activeRoute != nil
             let buildsBefore = core.routeBuildCount
             core.tickUpdated(projected: result.projectedPoint, confidence: result.confidence, at: time)
+            let routeRebuild = core.routeBuildCount > buildsBefore
+            let stopChange = core.activeStopID != activeBefore
 
             if core.activeStopID != activeBefore {
                 metrics.activeStopChangesWithoutEvent += 1
@@ -454,6 +512,21 @@ enum NavigationReplay {
             }
             pendingTruth.removeAll()
             trackTruthOffRoute(at: time)
+
+            var truth: SIMD2<Float>?
+            if let latest = latestTruth, time - latest.t <= 2 * config.beacon.updateIntervalSeconds + 1e-6 {
+                truth = latest.point
+            }
+            onTick?(ReplayTick(
+                t: time,
+                truth: truth,
+                solved: result.solvedPoint,
+                projected: result.projectedPoint,
+                confidence: result.confidence,
+                beaconsUsed: beaconsUsed,
+                routeRebuild: routeRebuild,
+                stopChange: stopChange
+            ))
         }
 
         /// Beginn der Zeit, in der die Wahrheit weiter als `offRouteDistance` von der aktiven Route entfernt ist.
