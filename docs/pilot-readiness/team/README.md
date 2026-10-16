@@ -24,18 +24,19 @@ Person A = die zweite Person mit MacBook. B und C = die beiden mit Windows. Welc
 | `pilot/ios-test-target` | `pilot/first-store` | Erik, Change 3 | `pilot/first-store` |
 | `pilot/ios-study-mode` | `pilot/first-store` | Person A, Change 4 | `pilot/first-store` |
 | `pilot/release-backend` | `main` + Planung | Person B, Change 5 | `main` |
-| `pilot/store-readiness` | wird **nach** dem Admin-Merge von `main` angelegt | Erik, Change 6 | `main` |
+| `pilot/admin-parity` | `main` + Planung | Erik (Admin-Agent), `complete-admin-parity-evidence` | `main` |
+| `pilot/store-readiness` | `main` + Planung | Erik, Change 6 | `main` |
 | `pilot/store-operations` | `pilot/first-store` | Person C, Change 9 | `pilot/first-store` |
 | `pilot/beacon-planner` | `pilot/first-store` | Person C, Change 8 | `pilot/first-store` |
 | `pilot/field-measurement` | `pilot/first-store` | Person C, Change 7 [C] | `pilot/first-store` |
 | `pilot/pilot-evaluation` | `pilot/first-store` | Person C, Change 10 | `pilot/first-store` |
 | `pilot/qr-anchors`, `pilot/ios-ui-tests`, `pilot/motion-positioning` | `pilot/first-store` | Erik, Welle 2 | `pilot/first-store` |
 | `pilot/ios-accessibility`, `pilot/arrival-suggestion` | `pilot/first-store` | Person A, Welle 2 | `pilot/first-store` |
-| `pilot/store-catalog`, `pilot/search-quality`, `pilot/catalog-import` | **nach Admin-Merge** von `main` anlegen | Person B, Welle 2 | `main` |
-| `pilot/web-finder`, `pilot/editor-coverage` | **nach Admin-Merge** von `main` anlegen | Person C, Welle 2 | `main` |
-| `pilot/editor-underlay`, Parität-Nachweise | **nach Admin-Merge** von `main` anlegen | Erik (Admin-Agent), Welle 2 | `main` |
+| `pilot/store-catalog`, `pilot/search-quality`, `pilot/catalog-import` | `main` + Planung | Person B, Welle 2 | `main` |
+| `pilot/web-finder`, `pilot/editor-coverage` | `main` + Planung | Person C, Welle 2 | `main` |
+| `pilot/editor-underlay` | `main` + Planung | Erik (Admin-Agent), Welle 2 | `main` |
 
-Alle Branches außer `pilot/store-readiness` sind auf GitHub. `codex/admin-platform-rebuild` pusht Erik nach dem Pilot-Cut.
+Alle Branches sind auf GitHub (Stand 2026-10-16). `main` enthält den Admin-Neubau und die Planung; `pilot/first-store` enthält `main` plus die stabilisierte iOS-Navigation. Login in den Admin: [ADMIN_LOGIN.md](ADMIN_LOGIN.md).
 
 ## Was jede Person einmalig braucht
 

@@ -53,7 +53,7 @@ A) openspec/changes/prepare-pilot-store-operations/      Branch pilot/store-oper
 B) openspec/changes/add-beacon-placement-planner/       Branch pilot/beacon-planner
 C) openspec/changes/establish-pilot-field-measurement/  Branch pilot/field-measurement – NUR Tasks mit [C]; Tasks mit [E] gehören Erik, nicht anfassen
 D) openspec/changes/prepare-pilot-evaluation/           Branch pilot/pilot-evaluation (prüfe in STATUS.md, ob Person B sie übernommen hat)
-WELLE 2 (NUR nach dem Admin-Merge in main; Branch `git switch -c <branch> origin/main`, Change-Ordner mit `git checkout origin/pilot/first-store -- openspec/changes/<change> docs/pilot-readiness/team` übernehmen und committen; Pull Request nach main):
+WELLE 2 (der Admin-Neubau ist seit 2026-10-16 in main; die Branches existieren schon auf GitHub mit main + Planung: `git switch --track origin/<branch>`, dann `git merge origin/main`; Pull Request nach main):
 E) openspec/changes/upgrade-customer-web-product-finder/  Branch pilot/web-finder – darf als einzige Ausnahme backend/indooro_server/src/main/resources/META-INF/resources/customer/** ändern; Tests mit `node --test`
 F) openspec/changes/add-editor-beacon-coverage-overlay/   Branch pilot/editor-coverage – nach Merge von add-beacon-placement-planner; nur admin-ui/src/editor/coverage.ts und das Overlay
 

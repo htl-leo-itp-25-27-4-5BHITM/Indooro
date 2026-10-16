@@ -33,16 +33,16 @@ LIES ZUERST:
 
 DEINE CHANGES, IN DIESER REIHENFOLGE:
 A) openspec/changes/add-pilot-guided-tour-fallbacks/   Branch pilot/erik-guided-tour
-   - Abschnitte 1–6, 9, 10 und 8. Abschnitt 7 (main → pilot/first-store) NUR wenn `git log origin/main` den Merge von codex/admin-platform-rebuild enthält; dann in diesem Fall auf Branch pilot/first-store arbeiten, Konflikte laut design.md Entscheidung 7 lösen, Prüfungen, push.
+   - Abschnitte 1–6, 9, 10 und 8. Abschnitt 7 (main → pilot/first-store) ist bereits erledigt (Merge `f6cdf17`, Tests grün).
    - Übernimmt fix-ios-contract-and-spec-drift 7.1–7.4, 8.1–8.4, 9.1–9.3 – dort abhaken mit „(implemented in add-pilot-guided-tour-fallbacks)“.
 B) openspec/changes/add-ios-app-test-target/  Branch pilot/ios-test-target
    - Task 1.2 (Test-Target in der Xcode-Oberfläche anlegen, 5 min) ist ein Human step für Erik: falls das Target fehlt, Blocker eintragen und zuerst die Fixtures (Abschnitt 2) erstellen.
    - Übernimmt fix-ios-contract-and-spec-drift 1.3.
 C) openspec/changes/establish-pilot-field-measurement/  Branch pilot/field-replay – NUR Tasks mit [E]. Tasks mit [C] gehören Person C. Aufnahmen kommen über NavigationFixtures/incoming/ (gitignored); fehlen sie, die Tasks als „wartet auf Messung (Person C)“ eintragen und nur die vorbereitenden [E]-Tasks (1.2, 3.3 sobald layout-testraum.json da ist, 4.3, 6.1) erledigen.
-D) openspec/changes/add-store-pilot-readiness-check/  Branch pilot/store-readiness – NUR nach dem Admin-Merge in main: `git switch -c pilot/store-readiness origin/main`, Change-Ordner übernehmen (`git checkout origin/pilot/first-store -- openspec/changes/add-store-pilot-readiness-check docs/pilot-readiness/team`), committen, umsetzen. Backend-Tests mit `sh ./mvnw test` (mvnw hat kein Execute-Bit). Pull Request nach main. Fasse dabei nur die neuen Readiness-Dateien und die nötigen Routen an; der Rest von backend/** gehört Person B.
+D) openspec/changes/add-store-pilot-readiness-check/  Branch pilot/store-readiness (existiert, Basis main + Planung): `git switch --track origin/pilot/store-readiness`, `git merge origin/main`, umsetzen. Backend-Tests mit `sh ./mvnw test` (mvnw hat kein Execute-Bit). Pull Request nach main. Fasse dabei nur die neuen Readiness-Dateien und die nötigen Routen an; der Rest von backend/** gehört Person B.
 
 WELLE 2 (danach):
-E) openspec/changes/add-qr-anchor-positioning/      Branch pilot/qr-anchors – erst wenn main (Admin) in pilot/first-store gemergt ist; iOS + Editor + Backend-Validierung
+E) openspec/changes/add-qr-anchor-positioning/      Branch pilot/qr-anchors – iOS + Editor + Backend-Validierung (main ist bereits in pilot/first-store)
 F) openspec/changes/add-ios-pilot-ui-tests/         Branch pilot/ios-ui-tests – wenn prepare-pilot-ios-build, add-ios-app-test-target und A gemergt sind
 G) openspec/changes/improve-positioning-with-motion/ Branch pilot/motion-positioning – nur wenn ≥ 5 echte Aufnahmen mit Truth-Markern aus zwei Orten existieren
 (complete-admin-parity-evidence und add-editor-floorplan-underlay laufen über den Admin-Agenten mit eigenem Prompt.)

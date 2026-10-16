@@ -6,9 +6,9 @@ Du machst das Backend sicher, sicherbar und auslieferbar. Eine Change in zwei Ph
 
 1. `release-pilot-backend` (Branch `pilot/release-backend`, Basis `main`)
    - **Phase A – sofort:** OpenSearch nicht mehr von außen erreichbar, Passwörter raus aus dem Repo, Backup/Restore- und Smoke-Skripte (Python), CI mit Tests und festen Image-Tags, Release-Runbook.
-   - **Phase B – erst nach dem Admin-Merge in `main`:** `protect-legacy-write-endpoints` komplett, PDF-Grenzen, Upsell-Dismissal-Grenze, erster Pilot-Release (Befehle führt Erik aus).
+   - **Phase B – direkt im Anschluss (der Admin-Neubau ist seit 2026-10-16 in `main` und live):** `protect-legacy-write-endpoints` komplett, PDF-Grenzen, Upsell-Dismissal-Grenze, erster Pilot-Release (Befehle führt Erik aus).
 
-Bis zum Admin-Merge (geplant diese Woche, Erik meldet sich): **keine** Änderungen unter `backend/`, `admin-ui/`, `keycloak/`.
+Der Admin-Merge ist erledigt. Du darfst `backend/`, `admin-ui/` und `keycloak/` ändern. Ausnahmen: die Readiness-Dateien (Erik) und `META-INF/resources/customer/**` (Person C). Das Admin-Frontend wird jetzt von CI gebaut (`.github/workflows/ci.yaml`, PR #108). Live läuft das Image `:d91a1b0`.
 
 Menschliche Aufgaben: Docker Desktop und Java installieren; bei der lokalen Restore-Probe zuschauen; mit Erik den ersten Release durchführen (Erik hat den LeoCloud-Zugang).
 
@@ -50,11 +50,11 @@ DEINE CHANGES:
 A) openspec/changes/release-pilot-backend/   Branch pilot/release-backend (Basis main)
    - Phase A = tasks.md Abschnitte 1–4: SOFORT.
    - Phase B = Abschnitte 5–6: NUR wenn `git log origin/main --oneline` den Merge von codex/admin-platform-rebuild enthält. Prüfe das zu Beginn jeder Sitzung.
-WELLE 2 (nach Phase A bzw. B, NUR nach dem Admin-Merge in main; Branches jeweils `git switch -c <branch> origin/main`, Change-Ordner mit `git checkout origin/pilot/first-store -- openspec/changes/<change> docs/pilot-readiness/team` übernehmen und committen):
+WELLE 2 (nach Phase A und B; der Admin-Neubau ist seit 2026-10-16 in main; die Branches existieren schon auf GitHub und enthalten main + Planung: `git switch --track origin/<branch>`, dann `git merge origin/main`):
 B) openspec/changes/add-store-scoped-catalog/              Branch pilot/store-catalog
 C) openspec/changes/improve-product-search-quality/        Branch pilot/search-quality
 D) openspec/changes/add-admin-catalog-spreadsheet-import/  Branch pilot/catalog-import (nach B)
-Falls Welle 2 noch blockiert ist und Zeit übrig bleibt: openspec/changes/prepare-pilot-evaluation/ (Branch pilot/pilot-evaluation, reines Python) – vorher in STATUS.md prüfen, dass Person C es nicht schon begonnen hat, und dich dort als Bearbeiter eintragen.
+Falls Zeit übrig bleibt: openspec/changes/prepare-pilot-evaluation/ (Branch pilot/pilot-evaluation, Basis pilot/first-store, reines Python) – vorher in STATUS.md prüfen, dass Person C es nicht schon begonnen hat, und dich dort als Bearbeiter eintragen.
 
 ABLAUF:
 1. `git fetch origin`; auf dem Branch `git merge origin/main`.
@@ -63,7 +63,7 @@ ABLAUF:
 4. Am Ende jeder Phase: Skill `openspec-verify-change`, Pull Request nach main (`gh pr create --base main` falls verfügbar, sonst PR-Text in docs/pilot-readiness/operations/PR-<change>.md), STATUS.md-Zeile „Person B“ aktualisieren.
 
 HARTE GRENZEN:
-- Vor dem Admin-Merge: KEINE Änderung unter backend/**, admin-ui/**, keycloak/**.
+- Ändere in backend/**, admin-ui/**, keycloak/** nur, was deine Changes verlangen. Die Admin-Seiten gehören funktional dem Admin-Agenten (complete-admin-parity-evidence, add-editor-floorplan-underlay); bei Überschneidung Blocker in STATUS.md eintragen.
 - Niemals Passwörter, Client-Secrets oder Tokens ausgeben, kopieren oder committen. Werte aus dem Repo nie in neue Dateien übernehmen; nur secretKeyRef, ${VAR}, Platzhalter.
 - Keine Befehle gegen LeoCloud: kein kubectl apply/exec/delete/rollout, keine Deployments. Befehle nur dokumentieren und als Human step für Erik in STATUS.md eintragen.
 - Skripte in Python (Standardbibliothek + subprocess für kubectl/docker), lauffähig in WSL, macOS und Windows-PowerShell; keine reinen Bash-Skripte.

@@ -46,10 +46,10 @@
 
 ## 7. Integration With the Admin Rebuild (after it is merged to main)
 
-- [ ] 7.1 Wait until `codex/admin-platform-rebuild` is merged into `main` and pushed; record the merge commit hash here.
-- [ ] 7.2 Merge `origin/main` into `pilot/first-store` (merge commit, no force push); resolve conflicts in `Managers/BeaconManager.swift`, `Models/LayoutData.swift`, `Views/Main/StoreMapPage.swift` per design decision 7.
-- [ ] 7.3 Run `swift test`, the simulator build command from `TESTING.md`, `./mvnw test` in `backend/indooro_server`, and `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`; fix regressions.
-- [ ] 7.4 Notify the team (team channel) that every work branch must merge `origin/pilot/first-store`.
+- [x] 7.1 Wait until `codex/admin-platform-rebuild` is merged into `main` and pushed; record the merge commit hash here. (Merged as `39b5f9a` on 2026-10-16; follow-ups `9d3b720` OIDC manifest fix, `d91a1b0` CI admin UI build.)
+- [x] 7.2 Merge `origin/main` into `pilot/first-store` (merge commit, no force push); resolve conflicts in `Managers/BeaconManager.swift`, `Models/LayoutData.swift`, `Views/Main/StoreMapPage.swift` per design decision 7.
+- [x] 7.3 Run `swift test`, the simulator build command from `TESTING.md`, `./mvnw test` in `backend/indooro_server`, and `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`; fix regressions. (2026-10-16: `swift test` 77/77 and simulator build green after merge `f6cdf17`; `sh ./mvnw test` 142/0 on the merged tree.)
+- [x] 7.4 Notify the team (team channel) that every work branch must merge `origin/pilot/first-store`.
 
 ## 8. Verification and Handover
 
