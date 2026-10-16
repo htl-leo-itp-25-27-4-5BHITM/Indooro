@@ -6,7 +6,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 
 | Person | Aktuelle Change | Branch | Erledigte Tasks | Nächste Tasks | Prüfungen zuletzt | Aktualisiert |
 |---|---|---|---|---|---|---|
-| Erik (Mac) | `add-ios-app-test-target` | `pilot/ios-test-target` | 1.1, 1.4, 2.x, 3.1, 3.6, 4.1, 4.3 | 1.2 (Mensch), danach 1.3, 3.2–3.5, 4.2 | `swift test` 88/88, xcodebuild ok (2026-10-16) | 2026-10-16 |
+| Erik (Mac) | `add-ios-app-test-target` | `pilot/ios-test-target` | 1.x, 2.x, 3.1, 3.2, 3.6, 4.1, 4.3 | 3.3–3.5 (warten auf Person A / Studienmodus), 4.2 (CI-Lauf) | `swift test` 88/88, `xcodebuild test` 11/11, Debug/Release ok (2026-10-16) | 2026-10-16 |
 | Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person B (Windows) | `release-pilot-backend` Phase A | `pilot/release-backend` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person C (Windows) | `prepare-pilot-store-operations` | `pilot/store-operations` | – | 1.1–3.5 | – | 2026-10-16 |
@@ -32,8 +32,13 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Budget und Bestellung von 12 Beacons | Erik + Person C | 2026-10-16 |
 | Herkunft „SPAR Posttraße“-Layout und Belegplan klären | Erik | 2026-10-16 |
 | Termin mit Betreuung | Erik | 2026-10-16 |
-| Xcode: Unit-Test-Target `MCindooroAppTests` anlegen (File → New → Target → Unit Testing Bundle, Host `MCindooroApp`, Ordner `MCindooroAppTests/` als synchronisierte Gruppe), Projektänderung allein committen: `test(ios): add MCindooroAppTests target (add-ios-app-test-target 1.2)`. Danach `xcodebuild test` (Task 1.3), Tests 3.2–3.5 (Branch `pilot/ios-test-target`) | Erik | 2026-10-16 |
 | 2026-10-16 | Erik (Tests `add-ios-app-test-target`) | Person A | Defekte aus den Fixture-Tests (Tests halten das Ist-Verhalten fest, bitte in deinen Dateien beheben und den Test anpassen): (1) `MobileStoreSummary` mappt das Feld `address` aus `GET /api/mobile/stores` nicht, `displaySubtitle` zeigt nur die Stadt (`Models/MobileStoreModels.swift`). (2) `ProductSearchStore.handleProductsResponse` dekodiert die Liste nicht lossy: ein defektes Element leert die ganze Trefferliste ohne Hinweis. (3) `ProductSearchStore.searchProducts` nutzt `.urlQueryAllowed`; `&`, `+`, `#` im Suchbegriff werden nicht kodiert (deckt sich mit `prepare-pilot-ios-build` 4.1). |
+
+## Hinweise an Personen
+
+| Datum | Von | An | Hinweis |
+|---|---|---|---|
+| 2026-10-16 | Erik | Person A | `project.pbxproj` ist in `pilot/ios-test-target` (PR #114) erweitert: neues Target `MCindooroAppTests` plus geteiltes Scheme `MCindooroApp`. Bitte #114 vor deinem PR mit pbxproj-Änderungen mergen, danach `origin/pilot/first-store` einmergen. `ShoppingListManager.init(defaults:)` ist neu (Default `.standard`). Skript: `scripts/ios/add_unit_test_target.rb`. |
 
 ## Blocker
 
