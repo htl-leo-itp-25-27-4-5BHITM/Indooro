@@ -8,7 +8,7 @@
 # Voraussetzung (nur ein Mensch kann das): iPhone per Kabel anstecken, entsperren,
 # "Diesem Computer vertrauen" bestaetigen, Entwicklermodus aktivieren
 # (Einstellungen > Datenschutz & Sicherheit > Entwicklermodus). Das Geraet muss in
-# `xcrun devicectl list devices` den Status "connected" oder "available (paired)" haben.
+# `xcrun devicectl list devices` den Status "available (paired)" oder "connected" haben.
 # Signing nutzt DEVELOPMENT_TEAM aus dem Xcode-Projekt (Automatic Signing).
 set -eu
 
@@ -39,7 +39,10 @@ def usable(d):
     hw = d.get("hardwareProperties", {})
     if hw.get("platform", "") not in ("iOS", "iPadOS"):
         return False
-    return state(d) in ("connected", "available", "available (paired)")
+    # devicectl zeigt "available (paired)" als tunnelState "disconnected" + pairingState "paired";
+    # nicht erreichbare Geraete haben tunnelState "unavailable".
+    paired = d.get("connectionProperties", {}).get("pairingState", "") == "paired"
+    return paired and state(d) in ("connected", "disconnected", "available")
 rows = [d for d in devices if usable(d)]
 if wanted:
     rows = [d for d in rows
