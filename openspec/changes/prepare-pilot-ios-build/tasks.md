@@ -45,7 +45,7 @@
 - [ ] 6.3 Remove `NSAllowsArbitraryLoads` from `Info.plist`; verify all requests still succeed against LeoCloud (HTTPS).
 - [ ] 6.4 Set `IPHONEOS_DEPLOYMENT_TARGET` to the lowest pilot device version from 1.3 (not below 17.0); fix availability errors.
 - [ ] 6.5 Delete `HeaderView.swift`, `SearchOverlayView.swift`, `MapHeaderView.swift`, `LayoutSelectionSheet.swift` after confirming with a project-wide search that they are unreferenced; coordinate with Erik first because `add-pilot-guided-tour-fallbacks` replaces the „Ich stehe hier“ control.
-- [ ] 6.6 Write `docs/pilot-readiness/team/INSTALL_ON_DEVICE.md`: how to install the pilot build from Xcode on a team iPhone (signing team, trust developer, 7-day limit with free accounts), and how to switch the profile in DEBUG.
+- [x] 6.6 Write `docs/pilot-readiness/team/INSTALL_ON_DEVICE.md`: how to install the pilot build from Xcode on a team iPhone (signing team, trust developer, 7-day limit with free accounts), and how to switch the profile in DEBUG.
 
 ## 7. Verification and Handover
 
