@@ -34,7 +34,7 @@ final class StudyTests: XCTestCase {
         try store.addNote("Synthetischer Test, keine echten Personen")
         uptime += 48.04; clock += 1 // Wall clock changes must not distort duration.
         try store.finish(.found)
-        XCTAssertEqual(store.session?.rows[0].duration, 48.04, accuracy: 0.001)
+        XCTAssertEqual(try XCTUnwrap(store.session?.rows.first?.duration), 48.04, accuracy: 0.001)
         XCTAssertThrowsError(try store.start(taskNo: 1, positioningMode: "ohne_ortung"))
         try store.start(taskNo: 2, positioningMode: "mit_ortung")
         uptime += 22; clock += 22

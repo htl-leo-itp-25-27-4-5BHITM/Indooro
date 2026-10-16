@@ -73,6 +73,7 @@ final class StudySessionStore: ObservableObject {
         guard enabled else { throw StudyFailure.disabled }
         guard running == nil else { throw StudyFailure.busy }
         guard var next = session, let task = next.tasks.first(where: { $0.no == taskNo }), !next.rows.contains(where: { $0.task.no == taskNo }) else { throw StudyFailure.invalidTask }
+        guard task.condition == .withoutApp || ["mit_ortung", "ohne_ortung"].contains(positioningMode) else { throw StudyFailure.invalidTask }
         let begin = now()
         let state = StudyRunningTask(task: task, startedAt: begin, startedUptime: uptime(),
                                      positioningMode: task.condition == .withoutApp ? "-" : positioningMode,

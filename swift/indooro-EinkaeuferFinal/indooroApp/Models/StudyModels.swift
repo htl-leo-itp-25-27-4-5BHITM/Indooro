@@ -103,7 +103,7 @@ struct StudyRunningTask {
 enum StudyFormat {
     static let header = "test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count"
     static func isValidID(_ value: String) -> Bool {
-        value.range(of: "^T[0-9]{1,3}$", options: .regularExpression) != nil
+        value.range(of: "^T[0-9]{1,3}$", options: .regularExpression) == (value.startIndex..<value.endIndex)
     }
     static func iso(_ date: Date) -> String { ISO8601DateFormatter().string(from: date) }
     static func fileStem(_ session: StudySession) -> String {
