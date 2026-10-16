@@ -16,6 +16,7 @@ let package = Package(
             path: "indooroApp",
             sources: [
                 "Models/LayoutData.swift",
+                "Models/ShelfLocationDescriptor.swift",
                 "Utilities/IndoorGraph.swift",
                 "Utilities/KalmanFilter.swift",
                 "Utilities/BeaconPositionSolver.swift",

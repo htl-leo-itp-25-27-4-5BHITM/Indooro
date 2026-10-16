@@ -30,8 +30,8 @@
 
 ## 5. Customer-Readable Shelf Location
 
-- [ ] 5.1 Add `ShelfLocationDescriptor` (pure Swift, included in the SwiftPM target) with input `layoutCode` and optional shelf `label`/`meter`, output `primary` and `detail` per the requirement „Shelf location is described in customer words“.
-- [ ] 5.2 Add tests: labeled shelf, unlabeled shelf, non-numeric fach/reihe, malformed layoutCode, no matching shelf.
+- [x] 5.1 Add `ShelfLocationDescriptor` (pure Swift, included in the SwiftPM target) with input `layoutCode` and optional shelf `label`/`meter`, output `primary` and `detail` per the requirement „Shelf location is described in customer words“.
+- [x] 5.2 Add tests: labeled shelf, unlabeled shelf, non-numeric fach/reihe, malformed layoutCode, no matching shelf.
 - [ ] 5.3 Replace `targetAisleText`/`targetShelfNumberText` in `StoreMapPage` with the descriptor; remove the fixed „Etage EG“ metric if the layout has one floor; show the „Nicht im Testbereich – bitte Personal fragen“ state instead of silently clearing the target (`BeaconManager.setTargetProduct`).
 - [ ] 5.4 Show the descriptor's primary text for each stop in the tour panel and in the shopping list rows that already show a stop title (`ShoppingFeatureViews`), without changing list logic.
 - [ ] 5.5 Keep category codes visible only in DEBUG builds (e.g. as secondary caption).
@@ -59,10 +59,10 @@
 
 ## 9. Rotated Shelves in the Walkable Graph (fix-ios-contract-and-spec-drift 9.1–9.3)
 
-- [ ] 9.1 Check whether the pilot layouts use rotated shelves (editor field „Winkel“); the admin rebuild found that both Swift navigation variants ignore element rotation when blocking grid cells (`docs/admin-rebuild/PROGRESS.md` on `codex/admin-platform-rebuild`).
-- [ ] 9.2 Implement rotated-rectangle cell coverage in `IndoorGraphBuilder.fromLayout` with unit-testable geometry helpers (cell center inside, edge intersection) in the SwiftPM target; tests with 0°, 45°, 90° shelves; mark `fix-ios-contract-and-spec-drift` 9.1, 9.2.
+- [x] 9.1 Check whether the pilot layouts use rotated shelves (editor field „Winkel“); the admin rebuild found that both Swift navigation variants ignore element rotation when blocking grid cells (`docs/admin-rebuild/PROGRESS.md` on `codex/admin-platform-rebuild`).
+- [x] 9.2 Implement rotated-rectangle cell coverage in `IndoorGraphBuilder.fromLayout` with unit-testable geometry helpers (cell center inside, edge intersection) in the SwiftPM target; tests with 0°, 45°, 90° shelves; mark `fix-ios-contract-and-spec-drift` 9.1, 9.2.
 - [ ] 9.3 In DEBUG, log shelves whose nearest free node is unreachable from the entrance; mark 9.3 there.
-- [ ] 9.4 Re-run all replay and routing tests; update `NavigationFixtures/BASELINE.md` if route lengths change.
+- [x] 9.4 Re-run all replay and routing tests; update `NavigationFixtures/BASELINE.md` if route lengths change.
 
 ## 10. Counters for the Study Mode (consumer: add-pilot-study-mode)
 

@@ -54,3 +54,10 @@ Other pilot changes may edit `BeaconManager.swift` only in: the `apiBase` consta
 ## Migration / Rollback
 
 All changes are client-side. Rollback = revert the merge request on `pilot/first-store`. Cached layouts are disposable.
+
+## Implementation notes
+
+- 2026-10-16, task 9.1: the four live store layouts (`GET /api/mobile/stores/{id}/layout/current`) contain no element with `rotation` other than 0. The rotated-cell coverage is implemented anyway (task 9.2) because the admin editor offers the field „Winkel“; elements with rotation 0 or a multiple of 360 keep the old axis-aligned coverage, so replay baselines are unchanged (`NavigationFixtures/BASELINE.md` needs no update, task 9.4).
+- Task 2.1: the entrance point is the center of the first `entrance` element (`IndoorGraph.entrancePoint(in:)`), projected to the nearest walkable point in the core. `NavigationSession` reads it from `BeaconManager.shelves`, which contains all non-beacon elements.
+- Tasks 2.x/3.x: `NavigationSessionCore.tickUpdated(…, trusted:)` ignores untrusted positions for route progress and off-route evidence; a tick without a solution also ends trust, except while a manual position is held (`manualPositionHolds`, cleared by the next trusted tick). `isPositionTrusted` in `BeaconManager` = beacon mode, solver position present, confidence ≥ `confidence.lowThreshold` (existing constant), or manual position held.
+- Task 10.1: `stopChangeWithoutEventCount` is a defensive invariant counter (position ticks never change the active stop, so it stays 0); `rerouteCount` counts only off-route rebuilds, not the single rebuild from a fallback origin to the first trusted position.

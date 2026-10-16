@@ -447,6 +447,22 @@ enum IndoorGraphBuilder {
                 continue
             }
 
+            // Gedrehte Elemente blockieren nur die Zellen, die das gedrehte Rechteck wirklich ueberdeckt.
+            if let rotation = element.rotation, !RotatedRectGeometry.isAxisAligned(rotation) {
+                blockedCells.formUnion(
+                    RotatedRectGeometry.blockedCells(
+                        x: element.x,
+                        y: element.y,
+                        width: element.width,
+                        height: element.height,
+                        rotationDegrees: rotation,
+                        gridWidth: gridWidth,
+                        gridHeight: gridHeight
+                    )
+                )
+                continue
+            }
+
             let ex = Int(floor(element.x))
             let ey = Int(floor(element.y))
             let ew = max(1, Int(ceil(element.width ?? 1)))
@@ -534,6 +550,136 @@ enum IndoorGraphBuilder {
         }
 
         return IndoorGraph(nodes: nodes, edges: edges)
+    }
+}
+
+/// Geometrie gedrehter Rechtecke auf dem Zellengitter. Rotation in Grad, im Uhrzeigersinn um den
+/// Mittelpunkt, Karte mit y nach unten (wie SVG rotate in admin-ui/src/editor/geometry.ts).
+enum RotatedRectGeometry {
+    /// Ueberlappungen kleiner als dieser Wert (Flaeche/Kante beruehrt nur) zaehlen nicht.
+    static let overlapEpsilon = 1e-6
+
+    static func isAxisAligned(_ rotationDegrees: Double) -> Bool {
+        rotationDegrees.truncatingRemainder(dividingBy: 360) == 0
+    }
+
+    /// Ecken des Rechtecks (x, y, width, height), um den Mittelpunkt um `rotationDegrees` gedreht.
+    static func corners(
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+        rotationDegrees: Double
+    ) -> [SIMD2<Double>] {
+        let centerX = x + width / 2
+        let centerY = y + height / 2
+        let halfWidth = width / 2
+        let halfHeight = height / 2
+        let radians = rotationDegrees * .pi / 180
+        let cosine = cos(radians)
+        let sine = sin(radians)
+
+        let local = [
+            SIMD2(-halfWidth, -halfHeight),
+            SIMD2(halfWidth, -halfHeight),
+            SIMD2(halfWidth, halfHeight),
+            SIMD2(-halfWidth, halfHeight)
+        ]
+        return local.map { point in
+            SIMD2(
+                centerX + point.x * cosine - point.y * sine,
+                centerY + point.x * sine + point.y * cosine
+            )
+        }
+    }
+
+    /// Separating-Axis-Test: true, wenn Zelle und Rechteck eine Flaeche mit Ueberlappung > `overlapEpsilon` teilen.
+    static func overlapsCell(_ cell: GridPoint, corners rectCorners: [SIMD2<Double>]) -> Bool {
+        let cellX = Double(cell.x)
+        let cellY = Double(cell.y)
+        let cellCorners = [
+            SIMD2(cellX, cellY),
+            SIMD2(cellX + 1, cellY),
+            SIMD2(cellX + 1, cellY + 1),
+            SIMD2(cellX, cellY + 1)
+        ]
+
+        guard rectCorners.count == 4 else { return false }
+        let rectEdgeA = rectCorners[1] - rectCorners[0]
+        let rectEdgeB = rectCorners[3] - rectCorners[0]
+        let lengthA = simd_length(rectEdgeA)
+        let lengthB = simd_length(rectEdgeB)
+        guard lengthA > 0, lengthB > 0 else { return false }
+
+        let axes = [
+            SIMD2(1.0, 0.0),
+            SIMD2(0.0, 1.0),
+            rectEdgeA / lengthA,
+            rectEdgeB / lengthB
+        ]
+
+        for axis in axes {
+            let cellRange = projectionRange(of: cellCorners, onto: axis)
+            let rectRange = projectionRange(of: rectCorners, onto: axis)
+            let overlap = min(cellRange.max, rectRange.max) - max(cellRange.min, rectRange.min)
+            if overlap <= overlapEpsilon {
+                return false
+            }
+        }
+        return true
+    }
+
+    /// Alle Zellen, die das gedrehte Rechteck mit echter Flaeche ueberdeckt. Zellen ausserhalb des Gitters entfallen.
+    static func blockedCells(
+        x: Double,
+        y: Double,
+        width: Double?,
+        height: Double?,
+        rotationDegrees: Double,
+        gridWidth: Int,
+        gridHeight: Int
+    ) -> Set<GridPoint> {
+        let rectWidth = width ?? 1
+        let rectHeight = height ?? 1
+        guard rectWidth > 0, rectHeight > 0 else { return [] }
+
+        let rectCorners = corners(
+            x: x,
+            y: y,
+            width: rectWidth,
+            height: rectHeight,
+            rotationDegrees: rotationDegrees
+        )
+        let xs = rectCorners.map(\.x)
+        let ys = rectCorners.map(\.y)
+        let minCellX = max(0, Int(floor(xs.min() ?? 0)))
+        let maxCellX = min(gridWidth, Int(ceil(xs.max() ?? 0)))
+        let minCellY = max(0, Int(floor(ys.min() ?? 0)))
+        let maxCellY = min(gridHeight, Int(ceil(ys.max() ?? 0)))
+
+        var cells: Set<GridPoint> = []
+        guard minCellX < maxCellX, minCellY < maxCellY else { return cells }
+
+        for cellX in minCellX..<maxCellX {
+            for cellY in minCellY..<maxCellY {
+                let cell = GridPoint(x: cellX, y: cellY)
+                if overlapsCell(cell, corners: rectCorners) {
+                    cells.insert(cell)
+                }
+            }
+        }
+        return cells
+    }
+
+    private static func projectionRange(of points: [SIMD2<Double>], onto axis: SIMD2<Double>) -> (min: Double, max: Double) {
+        var minimum = Double.greatestFiniteMagnitude
+        var maximum = -Double.greatestFiniteMagnitude
+        for point in points {
+            let projected = simd_dot(point, axis)
+            minimum = min(minimum, projected)
+            maximum = max(maximum, projected)
+        }
+        return (minimum, maximum)
     }
 }
 
