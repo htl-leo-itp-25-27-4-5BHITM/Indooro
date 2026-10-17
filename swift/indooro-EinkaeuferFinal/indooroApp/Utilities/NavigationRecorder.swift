@@ -1,6 +1,7 @@
 #if DEBUG
 import Foundation
 import Combine
+import CoreMotion
 
 /// Zeichnet Rohmessungen, Layout-Identitaet, Navigationsereignisse und Bodenwahrheit als JSON Lines nach
 /// `Documents/NavigationRecordings/<ISO-Zeitstempel>.jsonl` auf (design.md D11). Nur DEBUG-Builds:
@@ -21,6 +22,7 @@ final class NavigationRecorder: ObservableObject {
     private var buffer: [String] = []
     private var flushTimer: DispatchSourceTimer?
     private var active = false
+    private let pedometer = CMPedometer()
 
     private init() {}
 
@@ -52,6 +54,7 @@ final class NavigationRecorder: ObservableObject {
             if let layout = layoutProvider?() {
                 record(.layout(layout))
             }
+            startStepCounting()
         } catch {
             DispatchQueue.main.async { self.isRecording = false }
         }
@@ -67,7 +70,27 @@ final class NavigationRecorder: ObservableObject {
             handle = nil
             active = false
         }
+        pedometer.stopUpdates()
         DispatchQueue.main.async { self.isRecording = false }
+    }
+
+    /// Schrittzaehlung nur bei verfuegbarer Hardware und nicht verweigerter Berechtigung. Der System-Dialog
+    /// „Bewegung & Fitness“ erscheint daher nur beim Start einer Aufzeichnung. Fehler: keine step-Zeilen,
+    /// die Aufzeichnung laeuft weiter.
+    private func startStepCounting() {
+        guard CMPedometer.isStepCountingAvailable() else { return }
+        let status = CMPedometer.authorizationStatus()
+        guard status != .denied, status != .restricted else { return }
+        // Nullstand beim Start: markiert „Schrittdaten vorhanden“, auch wenn die erste Aenderung erst spaeter kommt.
+        recordStep(steps: 0, distance: 0, at: Date().timeIntervalSince1970)
+        pedometer.startUpdates(from: Date()) { [weak self] data, error in
+            guard let self, let data, error == nil else { return }
+            self.recordStep(
+                steps: data.numberOfSteps.intValue,
+                distance: data.distance?.doubleValue,
+                at: data.endDate.timeIntervalSince1970
+            )
+        }
     }
 
     static var recordingsDirectory: URL {
@@ -103,6 +126,14 @@ final class NavigationRecorder: ObservableObject {
             t: timestamp, source: .ranging, beacon: beacon, rssi: rssi,
             accuracy: accuracy, proximity: proximity, txPower: nil
         )))
+    }
+
+    func recordStep(steps: Int, distance: Double?, at timestamp: TimeInterval) {
+        record(.step(StepRecord(t: timestamp, steps: steps, distance: distance, source: "pedometer")))
+    }
+
+    func recordHeading(degrees: Double, accuracy: Double, at timestamp: TimeInterval) {
+        record(.heading(HeadingRecord(t: timestamp, degrees: degrees, accuracy: accuracy, source: "compass")))
     }
 
     func recordLayout(id: String?, revision: Int, shopName: String?) {
