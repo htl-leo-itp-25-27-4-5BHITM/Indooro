@@ -163,6 +163,7 @@ test("recipe retry after mapping failure reuses the created ingredient", async (
   let mappingAttempts = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
   await page.route("**/api/admin/recipe-tags?*", (route) => route.fulfill({ json: [tag] }));
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [{ id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz", region: null }], page: 0, size: 100, totalElements: 1 } }));
   await page.route("**/api/admin/products**", (route) => route.fulfill({ json: [product] }));
   await page.route("**/api/admin/recipes?*", (route) => route.fulfill({ json: { content: [detail], page: 0, size: 20, totalElements: 1 } }));
   await page.route("**/api/admin/recipes/recipe-1", (route) => {
@@ -254,6 +255,7 @@ test("candidate recipe create and publish preserve saved content and tags", asyn
   let confirmedMappingProductId: number | null = null;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
   await page.route("**/api/admin/recipe-tags?*", (route) => route.fulfill({ json: [tag] }));
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [{ id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz", region: null }], page: 0, size: 100, totalElements: 1 } }));
   await page.route("**/api/admin/products**", (route) => route.fulfill({ json: [product] }));
   await page.route("**/api/admin/recipes?*", (route) => route.fulfill({ json: { content: savedRecipe ? [savedRecipe] : [], page: 0, size: 20, totalElements: savedRecipe ? 1 : 0 } }));
   await page.route("**/api/admin/recipes", async (route) => {

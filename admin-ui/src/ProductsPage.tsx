@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
-import { CatalogImportPanel } from "./CatalogImport";
+import { ProductCsvImport } from "./ProductCsvImport";
 import {
   accessibleStores,
   deleteProductPath,
@@ -203,6 +203,7 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
   const [deleteError, setDeleteError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [notice, setNotice] = useState("");
+  const [importBusy, setImportBusy] = useState(false);
 
   const accessible = useMemo(() => accessibleStores(user, stores), [user, stores]);
   const selectedStore = useMemo(() => resolveStoreSelection(accessible, selectedStoreId), [accessible, selectedStoreId]);
@@ -359,10 +360,10 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
 
   return <section className="products-page" aria-labelledby="products-title">
     <div className="page-heading"><div><p className="eyebrow">Katalog</p><h2 id="products-title">Produkte</h2><p>Produkte, Kategorie-Kontext und Regalpositionen im Katalog verwalten.</p></div><button type="button" className="primary" onClick={startCreate} disabled={!selectedStore}>Produkt anlegen</button></div>
-    <div className="filters" role="group" aria-label="Markt"><label>Markt<select value={selectedStore?.id ?? ""} disabled={!storesLoaded || accessible.length <= 1} onChange={(event) => changeStore(event.currentTarget.value)}><option value="">Markt wählen</option>{accessible.map((store) => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}</select></label></div>
+    <div className="filters" role="group" aria-label="Markt"><label>Markt<select value={selectedStore?.id ?? ""} disabled={!storesLoaded || accessible.length <= 1 || importBusy} onChange={(event) => changeStore(event.currentTarget.value)}><option value="">Markt wählen</option>{accessible.map((store) => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}</select></label></div>
     {storeError && <p role="alert" className="notice error">{storeError}</p>}
     {storesLoaded && !storeError && accessible.length === 0 && <p role="alert" className="notice error">Für diesen Benutzer ist kein Markt verfügbar.</p>}
-    <CatalogImportPanel kind="product" />
+    <ProductCsvImport key={selectedStore?.id ?? "no-store"} api={api} store={selectedStore} onBusyChange={setImportBusy} onImported={() => setRevision((value) => value + 1)} />
     {notice && <p role="status" className="notice success">{notice}</p>}
     {deleteError && <p role="alert" className="notice error">{deleteError}</p>}
     {categoryError && <p role="status" className="notice">Kategorien konnten nicht geladen werden. Kategorie-Namen und lokale Layout-Prüfung sind eingeschränkt: {categoryError}</p>}

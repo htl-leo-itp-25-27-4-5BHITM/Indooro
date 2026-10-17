@@ -154,6 +154,24 @@ class ProductResourceBulkTest {
                 && PILOT_ID.toString().equals(product.getStoreId())));
     }
 
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void bulkWithMoreThan500ProductsIsRejectedBeforeWrite() throws IOException {
+        stubPilotParameter();
+        StringBuilder items = new StringBuilder("[");
+        for (int id = 1; id <= 501; id++) {
+            items.append(id > 1 ? "," : "").append("{\"id\":").append(id)
+                    .append(",\"name\":\"Ware\",\"price\":1.0,\"layoutCode\":\"310/1/1/1\"}");
+        }
+        items.append("]");
+
+        given().contentType("application/json").body(items.toString()).queryParam("storeCode", PILOT_CODE)
+                .post("/api/products/bulk").then()
+                .statusCode(400)
+                .body("error", equalTo("Maximal 500 Produkte pro Anfrage."));
+        verify(products, never()).indexProducts(anyList());
+    }
+
     private void stubPilotParameter() {
         when(storeResolver.resolveOptional(isNull(), eq(PILOT_CODE))).thenReturn(PILOT);
     }
