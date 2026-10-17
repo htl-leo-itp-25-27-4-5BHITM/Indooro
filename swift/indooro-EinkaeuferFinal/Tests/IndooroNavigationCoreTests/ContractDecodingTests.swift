@@ -86,11 +86,10 @@ final class ContractDecodingTests: XCTestCase {
         XCTAssertEqual(products[0].layoutCode, "520/2/1/1")
     }
 
-    func testProductListWithOneMalformedElementFailsAsWhole() throws {
-        // Reales Verhalten: ProductSearchStore.decodeProducts dekodiert die Liste nicht lossy.
-        // Fehlt in einem Element ein Pflichtfeld (hier layoutCode), schlägt die gesamte Dekodierung
-        // fehl; der Fallback über ProductCollectionResponse scheitert ebenfalls, und die Suche
-        // zeigt leere Ergebnisse. Siehe Bericht (Defekt-Kandidat).
+    func testPlainProductArrayDecoderIsStrictAboutMalformedElements() throws {
+        // `[Product]` mit dem Standard-Decoder bleibt strikt. Die App liest Trefferlisten lossy
+        // (ProductSearchStore.decodeProducts, prepare-pilot-ios-build 4.2): ein defektes Element
+        // wird übersprungen. Das prüft MCindooroAppTests/ProductSearchStoreTests.
         let data = try ContractFixtures.data("products-search-one-malformed.json")
 
         XCTAssertThrowsError(try JSONDecoder().decode([Product].self, from: data))
