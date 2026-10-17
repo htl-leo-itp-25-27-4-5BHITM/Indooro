@@ -13,6 +13,7 @@ import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.Operator;
 import org.opensearch.client.opensearch.core.*;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Locale;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -112,31 +114,53 @@ public class OpenSearchService {
     }
 
     /**
-     * Holt ein Produkt anhand der ID
+     * Holt ein Produkt anhand seiner Produkt-ID (nicht der Dokument-ID). Ohne Store-Angabe liefert die Suche
+     * das erste Treffer-Produkt ueber alle Maerkte.
      */
     public Product getProductById(Integer id) throws IOException {
-        GetRequest getRequest = GetRequest.of(g -> g
-                .index(indexName)
-                .id(String.valueOf(id))
-        );
-
-        GetResponse<Product> response = client.get(getRequest, Product.class);
-
-        if (response.found()) {
-            return response.source();
-        }
-        return null;
+        return getProductById(id, null, null);
     }
 
-    /**
-     * Holt alle Produkte
-     */
-    public List<Product> getAllProducts(Integer size) throws IOException {
-        final Integer finalSize = (size == null) ? 100 : size;
+    public Product getProductById(Integer id, String storeId, String storeCode) throws IOException {
+        final String normalizedStoreId = normalizeOptionalFilter(storeId);
+        final String normalizedStoreCode = normalizeOptionalFilter(storeCode);
 
         SearchRequest searchRequest = SearchRequest.of(s -> s
                 .index(indexName)
-                .query(q -> q.matchAll(m -> m))
+                .size(1)
+                .query(q -> q.bool(b -> {
+                    b.filter(filter -> filter.term(term -> term
+                            .field("id")
+                            .value(FieldValue.of(id.intValue()))
+                    ));
+                    applyStoreFilter(b, normalizedStoreId, normalizedStoreCode);
+                    return b;
+                }))
+        );
+
+        SearchResponse<Product> response = client.search(searchRequest, Product.class);
+        return response.hits().hits().stream()
+                .map(Hit::source)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Holt Produkte, optional nur eines Marktes
+     */
+    public List<Product> getAllProducts(Integer size, String storeId, String storeCode) throws IOException {
+        final Integer finalSize = (size == null) ? 100 : size;
+        final String normalizedStoreId = normalizeOptionalFilter(storeId);
+        final String normalizedStoreCode = normalizeOptionalFilter(storeCode);
+
+        SearchRequest searchRequest = SearchRequest.of(s -> s
+                .index(indexName)
+                .query(q -> q.bool(b -> {
+                    b.must(m -> m.matchAll(ma -> ma));
+                    applyStoreFilter(b, normalizedStoreId, normalizedStoreCode);
+                    return b;
+                }))
                 .size(finalSize)
         );
 
@@ -147,18 +171,15 @@ public class OpenSearchService {
                 .collect(Collectors.toList());
     }
 
-    /** Searches and pages the admin catalog while retaining OpenSearch's exact hit count. */
-    public CommonDtos.PageResponse<Product> searchAdminProductsPage(String query, int page, int size) throws IOException {
-        return searchAdminProductsPage(query, page, size, "id", null);
-    }
-
-    /** Admin filters in OpenSearch, then applies the legacy German natural sort before paging. */
+    /** Admin paging restricted to one store (storeId and/or storeCode, both from the resolved store). */
     public CommonDtos.PageResponse<Product> searchAdminProductsPage(String query, int page, int size,
-                                                                     String sort, Boolean routable) throws IOException {
+                                                                     String sort, Boolean routable,
+                                                                     String storeId, String storeCode) throws IOException {
         String q = query == null ? "" : query.trim();
         long offset = (long) Math.max(page, 0) * Math.max(size, 1);
         String normalizedSort = sort == null ? "id" : sort;
-        Query productQuery = buildAdminProductQuery(q, routable);
+        Query productQuery = buildAdminProductQuery(q, routable,
+                normalizeOptionalFilter(storeId), normalizeOptionalFilter(storeCode));
         List<Product> allProducts = new ArrayList<>();
         long total = 0;
         List<String> searchAfter = null;
@@ -186,30 +207,31 @@ public class OpenSearchService {
         return new CommonDtos.PageResponse<>(allProducts.subList(start, end), page, size, total);
     }
 
-    private Query buildAdminProductQuery(String q, Boolean routable) {
-        if (q.isEmpty() && routable == null) return Query.of(query -> query.matchAll(matchAll -> matchAll));
-        if (q.isEmpty()) {
-            return Query.of(query -> query.bool(bool -> {
-                bool.must(must -> must.matchAll(matchAll -> matchAll));
-                applyRoutableFilter(bool, routable);
-                return bool;
-            }));
+    private Query buildAdminProductQuery(String q, Boolean routable, String storeId, String storeCode) {
+        if (q.isEmpty() && routable == null && storeId == null && storeCode == null) {
+            return Query.of(query -> query.matchAll(matchAll -> matchAll));
         }
         return Query.of(query -> query.bool(bool -> {
-            bool.should(should -> should.term(term -> term.field("name.keyword").value(value -> value.stringValue(q)).boost(10f)));
-            bool.should(should -> should.match(match -> match.field("name").query(FieldValue.of(q)).operator(Operator.And)));
-            bool.should(should -> should.term(term -> term.field("layoutCode").value(value -> value.stringValue(q))));
-            bool.should(should -> should.term(term -> term.field("storeCode").value(value -> value.stringValue(q))));
-            if (q.matches("\\d+")) {
-                try {
-                    int productId = Integer.parseInt(q);
-                    bool.should(should -> should.term(term -> term.field("id").value(FieldValue.of(productId))));
-                } catch (NumberFormatException ignored) {
-                    // The remaining text fields still provide useful matches for very large numbers.
+            if (q.isEmpty()) {
+                bool.must(must -> must.matchAll(matchAll -> matchAll));
+            } else {
+                bool.should(should -> should.term(term -> term.field("name.keyword").value(value -> value.stringValue(q)).boost(10f)));
+                bool.should(should -> should.match(match -> match.field("name").query(FieldValue.of(q)).operator(Operator.And)));
+                bool.should(should -> should.term(term -> term.field("layoutCode").value(value -> value.stringValue(q))));
+                bool.should(should -> should.term(term -> term.field("storeCode").value(value -> value.stringValue(q))));
+                if (q.matches("\\d+")) {
+                    try {
+                        int productId = Integer.parseInt(q);
+                        bool.should(should -> should.term(term -> term.field("id").value(FieldValue.of(productId))));
+                    } catch (NumberFormatException ignored) {
+                        // The remaining text fields still provide useful matches for very large numbers.
+                    }
                 }
+                bool.minimumShouldMatch("1");
             }
+            applyStoreFilter(bool, storeId, storeCode);
             applyRoutableFilter(bool, routable);
-            return bool.minimumShouldMatch("1");
+            return bool;
         }));
     }
 
@@ -286,7 +308,7 @@ public class OpenSearchService {
         return end;
     }
 
-    private void applyRoutableFilter(org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder bool,
+    private void applyRoutableFilter(BoolQuery.Builder bool,
                                      Boolean routable) {
         if (routable == null) return;
         var validLayout = org.opensearch.client.opensearch._types.query_dsl.Query.of(query -> query.script(script -> script
@@ -331,13 +353,49 @@ public class OpenSearchService {
                 .collect(Collectors.toList());
     }
 
+    /** Upsell-Fallback: nur Produkte ohne Markt (Altbestand), niemals Produkte anderer Maerkte. */
+    public List<Product> findUnscopedUpsellCandidates(Integer size) throws IOException {
+        final Integer finalSize = (size == null) ? 50 : Math.min(Math.max(size, 1), 200);
+
+        SearchRequest searchRequest = SearchRequest.of(s -> s
+                .index(indexName)
+                .query(q -> q.bool(b -> {
+                    b.must(m -> m.matchAll(ma -> ma));
+                    b.mustNot(mn -> mn.exists(e -> e.field("storeCode")));
+                    b.mustNot(mn -> mn.exists(e -> e.field("storeId")));
+                    return b;
+                }))
+                .size(finalSize)
+        );
+
+        SearchResponse<Product> response = client.search(searchRequest, Product.class);
+
+        return response.hits().hits().stream()
+                .map(Hit::source)
+                .filter(p -> p != null)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Dokument-ID: `<storeCode>:<productId>` fuer Produkte mit Markt, sonst `<productId>` (Altbestand).
+     * Gleiche Produkt-IDs in zwei Maerkten kollidieren dadurch nicht.
+     */
+    public static String documentId(Product product) {
+        return documentId(product.getStoreCode(), product.getId());
+    }
+
+    public static String documentId(String storeCode, Integer id) {
+        String code = storeCode == null ? "" : storeCode.trim();
+        return code.isEmpty() ? String.valueOf(id) : code + ":" + id;
+    }
+
     /**
      * Indexiert ein einzelnes Produkt
      */
     public String indexProduct(Product product) throws IOException {
         IndexRequest<Product> request = IndexRequest.of(i -> i
                 .index(indexName)
-                .id(String.valueOf(product.getId()))
+                .id(documentId(product))
                 .document(product)
         );
 
@@ -348,19 +406,19 @@ public class OpenSearchService {
     }
 
     /**
-     * Loescht ein einzelnes Produkt anhand der ID.
+     * Loescht ein einzelnes Produkt eines Marktes (Dokument-ID `<storeCode>:<id>`).
      */
-    public boolean deleteProduct(Integer id) throws IOException {
+    public boolean deleteProduct(Integer id, String storeCode) throws IOException {
         DeleteRequest request = DeleteRequest.of(d -> d
                 .index(indexName)
-                .id(String.valueOf(id))
+                .id(documentId(storeCode, id))
         );
 
         DeleteResponse response = client.delete(request);
         boolean deleted = response.result() == Result.Deleted;
 
         if (deleted) {
-            LOG.info("Deleted product with id: " + id);
+            LOG.info("Deleted product with id: " + id + " store: " + storeCode);
         } else {
             LOG.info("Product with id " + id + " was not deleted. Result: " + response.result());
         }
@@ -373,19 +431,24 @@ public class OpenSearchService {
      */
     public CatalogBulkResult indexProducts(List<Product> products) throws IOException {
         BulkRequest.Builder bulkBuilder = new BulkRequest.Builder().refresh(Refresh.WaitFor);
+        List<String> productIds = new ArrayList<>(products.size());
+        List<String> docIds = new ArrayList<>(products.size());
 
         for (Product product : products) {
+            String docId = documentId(product);
+            productIds.add(String.valueOf(product.getId()));
+            docIds.add(docId);
             bulkBuilder.operations(op -> op
                     .index(idx -> idx
                             .index(indexName)
-                            .id(String.valueOf(product.getId()))
+                            .id(docId)
                             .document(product)
                     )
             );
         }
 
         BulkResponse response = client.bulk(bulkBuilder.build());
-        return CatalogBulkResult.fromResponse(products.stream().map(product -> String.valueOf(product.getId())).toList(), response);
+        return CatalogBulkResult.fromResponse(productIds, docIds, response);
     }
 
     /**
@@ -418,6 +481,15 @@ public class OpenSearchService {
     public void deleteIndex() throws IOException {
         client.indices().delete(d -> d.index(indexName));
         LOG.info("Index " + indexName + " deleted successfully");
+    }
+
+    private void applyStoreFilter(BoolQuery.Builder bool, String storeId, String storeCode) {
+        if (storeId != null) {
+            bool.filter(filter -> filter.term(term -> term.field("storeId").value(v -> v.stringValue(storeId))));
+        }
+        if (storeCode != null) {
+            bool.filter(filter -> filter.term(term -> term.field("storeCode").value(v -> v.stringValue(storeCode))));
+        }
     }
 
     private String normalizeOptionalFilter(String value) {

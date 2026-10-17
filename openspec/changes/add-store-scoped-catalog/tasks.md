@@ -4,10 +4,10 @@
 
 ## 2. Backend
 
-- [ ] 2.1 Store-scoped document ids and required `storeId`/`storeCode` on writes; validation errors in German.
-- [ ] 2.2 Search and list filter by store; default store configuration; tests.
-- [ ] 2.3 Admin product endpoints: required store, scope checks; `@QuarkusTest` for admin/region/store manager/anonymous.
-- [ ] 2.4 Bulk import requires store; NDJSON from `scripts/pilot-data` accepted unchanged.
+- [x] 2.1 Store-scoped document ids and required `storeId`/`storeCode` on writes; validation errors in German.
+- [x] 2.2 Search and list filter by store; default store configuration; tests.
+- [x] 2.3 Admin product endpoints: required store, scope checks; `@QuarkusTest` for admin/region/store manager/anonymous.
+- [x] 2.4 Bulk import requires store; NDJSON from `scripts/pilot-data` accepted unchanged.
 
 ## 3. Admin UI
 

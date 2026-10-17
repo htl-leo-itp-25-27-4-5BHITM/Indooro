@@ -122,7 +122,8 @@ public class UpsellSuggestionService {
             return cached.get();
         }
 
-        Product checkedProduct = resolveProduct(request.checkedProductId());
+        Product checkedProduct = resolveProduct(request.checkedProductId(),
+                request.storeId() == null ? null : request.storeId().toString(), request.storeCode());
         List<Product> candidates = loadCandidates(request, checkedProduct);
         if (candidates.isEmpty()) {
             UpsellDtos.UpsellSuggestionResponse response = emptyResponse(request.checkedProductId(), "none");
@@ -553,9 +554,9 @@ public class UpsellSuggestionService {
         }
     }
 
-    Product resolveProduct(Integer productId) {
+    Product resolveProduct(Integer productId, String storeId, String storeCode) {
         try {
-            Product product = openSearchService.getProductById(productId);
+            Product product = openSearchService.getProductById(productId, storeId, normalizeOptional(storeCode));
             if (product == null || product.getId() == null) {
                 throw new NotFoundException("Produkt nicht gefunden.");
             }
@@ -576,7 +577,7 @@ public class UpsellSuggestionService {
             List<Product> candidates = filterCandidates(request, checkedProduct, storeScoped);
 
             if (candidates.size() < maxSuggestions && (request.storeId() != null || normalizeOptional(request.storeCode()) != null)) {
-                List<Product> fallback = openSearchService.findUpsellCandidates(Math.max(maxCandidates, maxSuggestions), null, null);
+                List<Product> fallback = unscopedOnly(openSearchService.findUnscopedUpsellCandidates(Math.max(maxCandidates, maxSuggestions)));
                 candidates = mergeCandidates(candidates, filterCandidates(request, checkedProduct, fallback));
             }
 
@@ -588,6 +589,13 @@ public class UpsellSuggestionService {
             LOG.warn("Upsell candidate lookup failed", exception);
             return List.of();
         }
+    }
+
+    /** Fallback candidates may only come from products without a store (legacy data), never from other markets. */
+    private List<Product> unscopedOnly(List<Product> products) {
+        return products.stream()
+                .filter(product -> normalizeOptional(product.getStoreId()) == null && normalizeOptional(product.getStoreCode()) == null)
+                .toList();
     }
 
     List<Product> loadPlanCandidates(
@@ -603,7 +611,7 @@ public class UpsellSuggestionService {
             List<Product> candidates = filterPlanCandidates(request, opportunities, storeScoped);
 
             if (candidates.size() < maxSuggestions && (request.storeId() != null || normalizeOptional(request.storeCode()) != null)) {
-                List<Product> fallback = openSearchService.findUpsellCandidates(Math.max(maxCandidates, maxSuggestions), null, null);
+                List<Product> fallback = unscopedOnly(openSearchService.findUnscopedUpsellCandidates(Math.max(maxCandidates, maxSuggestions)));
                 candidates = mergeCandidates(candidates, filterPlanCandidates(request, opportunities, fallback));
             }
 
