@@ -39,7 +39,8 @@ let package = Package(
                 "Utilities/MotionTracker.swift",
                 "Utilities/NavigationReplay.swift",
                 "Utilities/StabilizedNavigationConfig.swift",
-                "Utilities/AnchorPayload.swift"
+                "Utilities/AnchorPayload.swift",
+                "Utilities/ProductEndpoint.swift"
             ]
         ),
         .testTarget(

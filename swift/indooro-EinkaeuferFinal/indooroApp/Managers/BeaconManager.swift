@@ -307,6 +307,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         detectedStore?.name
     }
 
+    /// Filialcode der aktuell wirksamen Filiale (aktives Layout, sonst erkannte Filiale).
+    var effectiveStoreCode: String? {
+        ProductEndpoint.normalizedStoreCode((activeLayoutStore ?? detectedStore)?.storeCode)
+    }
+
     var activeLayoutStoreName: String? {
         activeLayoutStore?.name
     }
