@@ -2347,6 +2347,13 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         let headingDegrees = newHeading.trueHeading >= 0
             ? newHeading.trueHeading
             : newHeading.magneticHeading
+        #if DEBUG
+        NavigationRecorder.shared.recordHeading(
+            degrees: headingDegrees,
+            accuracy: newHeading.headingAccuracy,
+            at: Date().timeIntervalSince1970
+        )
+        #endif
 
         latestHeadingAccuracyDegrees = newHeading.headingAccuracy
         rawDeviceHeadingRadians = mapHeadingRadians(from: headingDegrees)

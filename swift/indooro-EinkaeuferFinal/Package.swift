@@ -34,6 +34,7 @@ let package = Package(
                 "Utilities/NavigationSessionCore.swift",
                 "Utilities/TourPlanner.swift",
                 "Utilities/PositioningPipeline.swift",
+                "Utilities/MotionTracker.swift",
                 "Utilities/NavigationReplay.swift",
                 "Utilities/StabilizedNavigationConfig.swift",
                 "Utilities/AnchorPayload.swift"
