@@ -5,6 +5,7 @@ import at.htl.model.Product;
 import at.htl.service.CatalogStoreResolver;
 import at.htl.service.CatalogStoreResolver.CatalogStoreException;
 import at.htl.service.CatalogStoreResolver.ResolvedStore;
+import at.htl.service.LegacyDocumentGuard;
 import at.htl.service.OpenSearchService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -40,6 +41,9 @@ public class AdminProductResource extends AdminApiSupport {
 
     @Inject
     CatalogStoreResolver storeResolver;
+
+    @Inject
+    LegacyDocumentGuard legacyDocumentGuard;
 
     @GET
     public Object listProducts(@QueryParam("page") Integer page,
@@ -94,6 +98,7 @@ public class AdminProductResource extends AdminApiSupport {
         ResolvedStore store = requireStoreAccess(product.getStoreId(), product.getStoreCode());
         product.setStoreId(store.id().toString());
         product.setStoreCode(store.storeCode());
+        legacyDocumentGuard.requireNoLegacyDocuments(store.storeCode());
 
         try {
             openSearchService.indexProduct(product);
@@ -116,6 +121,7 @@ public class AdminProductResource extends AdminApiSupport {
             throw badRequest("Produkt-ID muss eine positive ganze Zahl sein.");
         }
         ResolvedStore store = requireStoreAccess(storeId, storeCode);
+        legacyDocumentGuard.requireNoLegacyDocuments(store.storeCode());
 
         try {
             boolean deleted = openSearchService.deleteProduct(id, store.storeCode());
