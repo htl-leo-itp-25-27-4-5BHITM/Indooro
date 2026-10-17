@@ -23,6 +23,8 @@
     "api:test:upsell": "npx -y httpyac send api-tests/httpyac/06-upsell.http --all --bail"
   },
   "devDependencies": {
-    "@playwright/test": "^1.60.0"
+    "@playwright/test": "^1.60.0",
+    "ajv": "^8.20.0",
+    "yaml": "^2.9.1"
   }
 }
