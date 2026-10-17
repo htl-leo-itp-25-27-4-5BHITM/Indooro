@@ -11,8 +11,8 @@
 ## 3. Commit (backend + admin-ui)
 
 - [x] 3.1 Bulk endpoint with per-row results and idempotency key; audit log; tests. (endpoint: POST /api/admin/products/bulk)
-- [ ] 3.2 UI: error table, overwrite confirmation, batch progress, retry; mocked browser tests.
-- [ ] 3.3 Enable the previously disabled commit only when all tests pass; update `PILOT_CUT.md` successor docs.
+- [x] 3.2 UI: error table, overwrite confirmation, batch progress, retry; mocked browser tests. (`ProductCsvImport.tsx`; CSV specs in `products.spec.ts`)
+- [x] 3.3 Enable the previously disabled commit only when all tests pass; update `PILOT_CUT.md` successor docs. (product commit enabled; category commit stays review-only and disabled)
 
 ## 4. Handover
 

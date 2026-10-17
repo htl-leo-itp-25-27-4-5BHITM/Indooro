@@ -40,9 +40,16 @@ export interface RunnerTotals {
   pending: number;
 }
 
+/** Block, dessen Antwort den Lauf beendet hat (400/401/403/409). Nachfolgende Blöcke bleiben `pending`. */
+export interface RunnerAbort {
+  batch: number;
+  message: string;
+}
+
 export interface RunnerState {
   batches: BatchState[];
   totals: RunnerTotals;
+  aborted?: RunnerAbort;
 }
 
 export interface PostResult {
@@ -180,11 +187,13 @@ async function drive(
   products: SheetProduct[],
   deps: RunnerDeps,
   options: RunnerOptions,
-  shouldSend: (batch: BatchState) => boolean
+  shouldSend: (batch: BatchState) => boolean,
+  previousAbort?: RunnerAbort
 ): Promise<RunnerState> {
   const working = batches.map((batch) => ({ ...batch }));
   const offsets = startOffsets(working);
   const report = () => deps.onProgress?.(withTotals(working));
+  let aborted = previousAbort;
   report();
   for (let index = 0; index < working.length; index += 1) {
     const batch = working[index];
@@ -195,9 +204,13 @@ async function drive(
     const result = await sendBatch(batch, slice, deps, options);
     working[index] = result.batch;
     report();
-    if (result.abort) break;
+    if (result.abort) {
+      aborted = { batch: batch.index + 1, message: result.batch.error ?? "Anfrage abgelehnt." };
+      break;
+    }
   }
-  return withTotals(working);
+  const state = withTotals(working);
+  return aborted ? { ...state, aborted } : state;
 }
 
 /**
@@ -224,7 +237,7 @@ export async function retryUnknown(state: RunnerState, products: SheetProduct[],
     throw new Error("Die Produktliste passt nicht zum Importstand.");
   }
   const batches = state.batches.map((batch) => ({ ...batch, rows: batch.rows.map((row) => ({ ...row })) }));
-  return drive(batches, products, deps, options, (batch) => batch.status === "unknown");
+  return drive(batches, products, deps, options, (batch) => batch.status === "unknown", state.aborted);
 }
 
 /** Status je Produkt-Id, damit die Oberfläche pro Zeile anzeigen kann. Wartende Blöcke zeigen `pending`. */
