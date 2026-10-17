@@ -38,6 +38,8 @@ enum UITestSupport {
             // Argument-Domain ueberdeckt den gespeicherten Zustand: leere Liste, keine aktive Tour.
             "-shoppingListStore.v1", "",
             "-shoppingSession.activeListID", "",
+            // Die Einführung beim ersten Start (prepare-pilot-ios-build 5.5) würde die Tab-Leiste verdecken.
+            "-IndooroIntroductionCompleted", "YES",
         ]
         app.launchEnvironment["INDOORO_API_BASE_URL"] = apiBase
         app.launch()
