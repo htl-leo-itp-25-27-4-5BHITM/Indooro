@@ -41,4 +41,4 @@ Coordination (2026-10-12): `docs/admin-rebuild/CHANGE_COORDINATION.md` maps each
 
 - [x] 6.1 Run `npm run admin:verify` and `./mvnw test`. Evidence 2026-10-18: root `npm run admin:test` 119 pass, root Playwright 45 pass, `admin-ui` typecheck + 174 unit pass, `sh mvnw -q test` exit 0 (378 tests, 0 failures, 2 skipped); `admin-ui` browser 140 pass, 1 fail (`editor-global-accessibility.spec.ts:7`, customer page shows "Markt wählen" instead of the shop name; unrelated to this change).
 - [ ] 6.2 (Mensch: needs a local stack with V7/V8 seed and a Keycloak login.) On a local stack with the V7/V8 seed, edit „Apfel-Hafer-Crumble“ and confirm image and tags remain; confirm all 26 recipes are reachable; confirm logout requires a new login.
-- [ ] 6.3 Run `npx -y @fission-ai/openspec@1.3.1 validate fix-admin-dashboard-contract-drift --strict`.
+- [x] 6.3 Run `npx -y @fission-ai/openspec@1.3.1 validate fix-admin-dashboard-contract-drift --strict`. Evidence 2026-10-18: valid; `validate --all --strict` 64/64.
