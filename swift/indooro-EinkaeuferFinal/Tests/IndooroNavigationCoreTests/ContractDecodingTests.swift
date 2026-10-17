@@ -1,4 +1,5 @@
 import XCTest
+@testable import IndooroPilotSupport
 @testable import IndooroNavigationCore
 
 /// Lädt anonymisierte Live-Antworten bzw. handgemachte Fixtures aus `Fixtures/`.
@@ -93,6 +94,17 @@ final class ContractDecodingTests: XCTestCase {
         let data = try ContractFixtures.data("products-search-one-malformed.json")
 
         XCTAssertThrowsError(try JSONDecoder().decode([Product].self, from: data))
+    }
+
+    func testLossyArrayDropsMalformedProductAndKeepsTheRest() throws {
+        // Die App liest Trefferlisten über LossyDecodableArray (ProductSearchStore.decodeProducts,
+        // prepare-pilot-ios-build 4.2). Hier mit dem echten Produktmodell; die Store-Logik selbst
+        // (Seitenform, Fehlerfall) liegt nur in der App und ist in MCindooroAppTests/ProductSearchStoreTests.
+        let data = try ContractFixtures.data("products-search-one-malformed.json")
+
+        let products = try JSONDecoder.indooro.decode(LossyDecodableArray<Product>.self, from: data).elements
+
+        XCTAssertEqual(products.map(\.id), [92, 94])
     }
 
     // MARK: - Rezepte

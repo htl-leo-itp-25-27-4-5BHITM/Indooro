@@ -43,7 +43,7 @@ let package = Package(
         ),
         .testTarget(
             name: "IndooroNavigationCoreTests",
-            dependencies: ["IndooroNavigationCore"],
+            dependencies: ["IndooroNavigationCore", "IndooroPilotSupport"],
             path: "Tests/IndooroNavigationCoreTests",
             resources: [.copy("Resources")]
         )
