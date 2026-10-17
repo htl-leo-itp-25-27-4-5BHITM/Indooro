@@ -14,6 +14,8 @@ struct MapView: View {
     let topInset: CGFloat
     let bottomInset: CGFloat
     let showsDebugMapElements: Bool
+    /// VoiceOver-Zusammenfassung der Karte (Ziel, Entfernung, Route, Positionsqualität).
+    let accessibilitySummary: String
 
     #if DEBUG
     /// Waehrend eines langen Drucks (Wahrheitsmarkierung) wird der folgende Tap ignoriert.
@@ -55,135 +57,146 @@ struct MapView: View {
                     maximumZoomScale: maximumMapScale
                 ) {
                     ZStack(alignment: .topLeading) {
-                        StoreMapCanvas(width: mapWidth, height: mapHeight)
+                        ZStack(alignment: .topLeading) {
+                            StoreMapCanvas(width: mapWidth, height: mapHeight)
 
-                        GridLines(
-                            step: fittedPixelsPerMeter,
-                            width: mapWidth,
-                            height: mapHeight,
-                            gridCountX: Int(beaconManager.gridWidth),
-                            gridCountY: Int(beaconManager.gridHeight),
-                            showsDebugStyle: showsDebugMapElements
-                        )
-
-                        if !routePoints.isEmpty {
-                            RouteLineView(points: routePoints, accent: routeAccent)
-                                .zIndex(80)
-                        }
-
-                        // QR-Anker sind keine Regale und werden nicht als solche gezeichnet.
-                        ForEach(beaconManager.shelves.filter { !$0.isAnchor }) { element in
-                            ShelfView(element: element, pixelsPerMeter: fittedPixelsPerMeter)
-                        }
-
-                        if !showsShoppingSession, let targetPosition = navigationSession.targetPosition {
-                            TargetMapMarker()
-                                .position(
-                                    x: CGFloat(targetPosition.x * fittedPixelsPerMeter),
-                                    y: CGFloat(targetPosition.y * fittedPixelsPerMeter)
-                                )
-                                .zIndex(110)
-                        }
-
-                        if !shoppingStops.isEmpty {
-                            ForEach(Array(shoppingStops.enumerated()), id: \.element.id) { index, stop in
-                                ShoppingStopMarker(
-                                    index: index + 1,
-                                    isActive: stop.id == activeShoppingStopID
-                                )
-                                .position(
-                                    x: CGFloat(stop.mapPoint.x * fittedPixelsPerMeter),
-                                    y: CGFloat(stop.mapPoint.y * fittedPixelsPerMeter)
-                                )
-                                .zIndex(stop.id == activeShoppingStopID ? 120 : 96)
-                            }
-                        }
-
-                        if showsDebugMapElements {
-                            MapAxes(
-                                pixelsPerMeter: fittedPixelsPerMeter,
-                                gridWidth: Int(beaconManager.gridWidth),
-                                gridHeight: Int(beaconManager.gridHeight)
+                            GridLines(
+                                step: fittedPixelsPerMeter,
+                                width: mapWidth,
+                                height: mapHeight,
+                                gridCountX: Int(beaconManager.gridWidth),
+                                gridCountY: Int(beaconManager.gridHeight),
+                                showsDebugStyle: showsDebugMapElements
                             )
 
-                            ForEach(beaconManager.beacons) { beacon in
-                                BeaconMapItem(beacon: beacon, pixelsPerMeter: fittedPixelsPerMeter)
+                            if !routePoints.isEmpty {
+                                RouteLineView(points: routePoints, accent: routeAccent)
+                                    .zIndex(80)
+                            }
+
+                            // QR-Anker sind keine Regale und werden nicht als solche gezeichnet.
+                            ForEach(beaconManager.shelves.filter { !$0.isAnchor }) { element in
+                                ShelfView(element: element, pixelsPerMeter: fittedPixelsPerMeter)
+                            }
+
+                            if !showsShoppingSession, let targetPosition = navigationSession.targetPosition {
+                                TargetMapMarker()
                                     .position(
-                                        x: CGFloat(beacon.positionX * fittedPixelsPerMeter),
-                                        y: CGFloat(beacon.positionY * fittedPixelsPerMeter)
+                                        x: CGFloat(targetPosition.x * fittedPixelsPerMeter),
+                                        y: CGFloat(targetPosition.y * fittedPixelsPerMeter)
                                     )
+                                    .zIndex(110)
                             }
 
-                            ForEach(beaconManager.shelves.filter(\.isAnchor)) { anchor in
-                                Label(anchor.anchorId ?? "?", systemImage: "qrcode")
-                                    .font(.caption2.weight(.bold))
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .background(.thinMaterial, in: Capsule())
+                            if !shoppingStops.isEmpty {
+                                ForEach(Array(shoppingStops.enumerated()), id: \.element.id) { index, stop in
+                                    ShoppingStopMarker(
+                                        index: index + 1,
+                                        isActive: stop.id == activeShoppingStopID
+                                    )
                                     .position(
-                                        x: CGFloat((anchor.x + (anchor.width ?? 1) / 2) * fittedPixelsPerMeter),
-                                        y: CGFloat((anchor.y + (anchor.height ?? 1) / 2) * fittedPixelsPerMeter)
+                                        x: CGFloat(stop.mapPoint.x * fittedPixelsPerMeter),
+                                        y: CGFloat(stop.mapPoint.y * fittedPixelsPerMeter)
                                     )
-                            }
-                        }
-
-                        if let position = displayUserPosition {
-                            UserLocationMarker(
-                                headingRadians: beaconManager.userHeadingRadians,
-                                isReliable: beaconManager.isUserHeadingReliable,
-                                isTrusted: beaconManager.isPositionTrusted,
-                                pixelsPerMeter: fittedPixelsPerMeter
-                            )
-                            .position(
-                                x: CGFloat(position.x * fittedPixelsPerMeter),
-                                y: CGFloat(position.y * fittedPixelsPerMeter)
-                            )
-                            .zIndex(130)
-                            .animation(.linear(duration: StabilizedNavigationConfig.default.beacon.updateIntervalSeconds), value: position)
-                            .animation(.easeInOut(duration: 0.16), value: beaconManager.userHeadingRadians)
-                        }
-
-                        if allowsManualMapTap {
-                            Color.white.opacity(0.001)
-                                .frame(width: mapWidth, height: mapHeight)
-                                .contentShape(Rectangle())
-                                .onTapGesture { location in
-                                    #if DEBUG
-                                    if truthPressActive { return }
-                                    #endif
-                                    let xMeter = Double(location.x) / fittedPixelsPerMeter
-                                    let yMeter = Double(location.y) / fittedPixelsPerMeter
-                                    let point = CGPoint(x: xMeter, y: yMeter)
-                                    if nextTapSetsPosition {
-                                        beaconManager.setManualUserPosition(point)
-                                        nextTapSetsPosition = false
-                                    } else if beaconManager.tapSetsTarget {
-                                        navigationSession.setSingleTarget(point)
-                                    } else {
-                                        beaconManager.setManualUserPosition(point)
-                                    }
+                                    .zIndex(stop.id == activeShoppingStopID ? 120 : 96)
                                 }
-                                #if DEBUG
-                                .simultaneousGesture(
-                                    LongPressGesture(minimumDuration: 0.6)
-                                        .sequenced(before: DragGesture(minimumDistance: 0))
-                                        .onChanged { value in
-                                            guard !truthPressActive,
-                                                  case .second(true, let drag?) = value else { return }
-                                            truthPressActive = true
-                                            NavigationRecorder.shared.recordTruth(
-                                                x: Float(drag.location.x / fittedPixelsPerMeter),
-                                                y: Float(drag.location.y / fittedPixelsPerMeter)
-                                            )
-                                        }
-                                        .onEnded { _ in
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-                                                truthPressActive = false
-                                            }
-                                        }
+                            }
+
+                            if showsDebugMapElements {
+                                MapAxes(
+                                    pixelsPerMeter: fittedPixelsPerMeter,
+                                    gridWidth: Int(beaconManager.gridWidth),
+                                    gridHeight: Int(beaconManager.gridHeight)
                                 )
-                                #endif
+
+                                ForEach(beaconManager.beacons) { beacon in
+                                    BeaconMapItem(beacon: beacon, pixelsPerMeter: fittedPixelsPerMeter)
+                                        .position(
+                                            x: CGFloat(beacon.positionX * fittedPixelsPerMeter),
+                                            y: CGFloat(beacon.positionY * fittedPixelsPerMeter)
+                                        )
+                                }
+
+                                ForEach(beaconManager.shelves.filter(\.isAnchor)) { anchor in
+                                    Label(anchor.anchorId ?? "?", systemImage: "qrcode")
+                                        .font(.caption2.weight(.bold))
+                                        .padding(.horizontal, 6)
+                                        .padding(.vertical, 3)
+                                        .background(.thinMaterial, in: Capsule())
+                                        .position(
+                                            x: CGFloat((anchor.x + (anchor.width ?? 1) / 2) * fittedPixelsPerMeter),
+                                            y: CGFloat((anchor.y + (anchor.height ?? 1) / 2) * fittedPixelsPerMeter)
+                                        )
+                                }
+                            }
+
+                            if let position = displayUserPosition {
+                                UserLocationMarker(
+                                    headingRadians: beaconManager.userHeadingRadians,
+                                    isReliable: beaconManager.isUserHeadingReliable,
+                                    isTrusted: beaconManager.isPositionTrusted,
+                                    pixelsPerMeter: fittedPixelsPerMeter
+                                )
+                                .position(
+                                    x: CGFloat(position.x * fittedPixelsPerMeter),
+                                    y: CGFloat(position.y * fittedPixelsPerMeter)
+                                )
+                                .zIndex(130)
+                                .animation(.linear(duration: StabilizedNavigationConfig.default.beacon.updateIntervalSeconds), value: position)
+                                .animation(.easeInOut(duration: 0.16), value: beaconManager.userHeadingRadians)
+                            }
+
+                            if allowsManualMapTap {
+                                Color.white.opacity(0.001)
+                                    .frame(width: mapWidth, height: mapHeight)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture { location in
+                                        #if DEBUG
+                                        if truthPressActive { return }
+                                        #endif
+                                        let xMeter = Double(location.x) / fittedPixelsPerMeter
+                                        let yMeter = Double(location.y) / fittedPixelsPerMeter
+                                        let point = CGPoint(x: xMeter, y: yMeter)
+                                        if nextTapSetsPosition {
+                                            beaconManager.setManualUserPosition(point)
+                                            nextTapSetsPosition = false
+                                        } else if beaconManager.tapSetsTarget {
+                                            navigationSession.setSingleTarget(point)
+                                        } else {
+                                            beaconManager.setManualUserPosition(point)
+                                        }
+                                    }
+                                    #if DEBUG
+                                    .simultaneousGesture(
+                                        LongPressGesture(minimumDuration: 0.6)
+                                            .sequenced(before: DragGesture(minimumDistance: 0))
+                                            .onChanged { value in
+                                                guard !truthPressActive,
+                                                      case .second(true, let drag?) = value else { return }
+                                                truthPressActive = true
+                                                NavigationRecorder.shared.recordTruth(
+                                                    x: Float(drag.location.x / fittedPixelsPerMeter),
+                                                    y: Float(drag.location.y / fittedPixelsPerMeter)
+                                                )
+                                            }
+                                            .onEnded { _ in
+                                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                                    truthPressActive = false
+                                                }
+                                            }
+                                    )
+                                    #endif
+                            }
                         }
+                        .accessibilityHidden(true)
+
+                        // VoiceOver: eine Zusammenfassung statt aller Kartenelemente (Regale, Marker, Achsen).
+                        Color.clear
+                            .frame(width: mapWidth, height: mapHeight)
+                            .allowsHitTesting(false)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel(accessibilitySummary)
+                            .accessibilityIdentifier("mapSummary")
                     }
                     .frame(width: mapWidth, height: mapHeight)
                     .overlay(alignment: .topTrailing) {
@@ -193,7 +206,7 @@ struct MapView: View {
                                     ? "Tippe auf deinen Standort"
                                     : (beaconManager.tapSetsTarget ? "Tippen setzt Ziel" : "Tippen setzt Position"),
                                 systemImage: "hand.tap",
-                                tint: .orange
+                                tint: Color.a11yWarningText
                             )
                             .padding(12)
                         }

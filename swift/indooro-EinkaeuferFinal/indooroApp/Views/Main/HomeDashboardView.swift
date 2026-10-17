@@ -9,6 +9,7 @@ struct HomeDashboardView: View {
     let onOpenMap: () -> Void
 
     @State private var showsTutorial = false
+    @ScaledMetric(relativeTo: .title) private var heroIconSize: CGFloat = 36
 
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
     private let routeAccent = Color(red: 0.15, green: 0.57, blue: 0.88)
@@ -53,13 +54,14 @@ struct HomeDashboardView: View {
     private var headerSection: some View {
         VStack(spacing: 16) {
             Text("Indooro")
-                .font(.system(size: 44, weight: .bold, design: .rounded))
+                .font(.system(.largeTitle, design: .rounded, weight: .bold))
                 .foregroundStyle(accent)
                 .padding(.top, 6)
+                .accessibilityAddTraits(.isHeader)
 
             VStack(spacing: 8) {
                 Text("Finde alles.\nSchnell und einfach.")
-                    .font(.system(size: 23, weight: .bold, design: .rounded))
+                    .font(.system(.title2, design: .rounded, weight: .bold))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.primary)
 
@@ -106,9 +108,10 @@ struct HomeDashboardView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .top, spacing: 14) {
                 Image(systemName: "arrow.up.circle.fill")
-                    .font(.system(size: 36))
+                    .font(.system(size: heroIconSize))
                     .foregroundStyle(.white, accent)
                     .shadow(color: accent.opacity(0.22), radius: 8, y: 4)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Aktive Einkaufstour")
@@ -118,19 +121,21 @@ struct HomeDashboardView: View {
                     Text(banner.listName)
                         .font(.headline.weight(.semibold))
                 }
+                .accessibilityElement(children: .combine)
 
                 Spacer(minLength: 0)
             }
 
             Text(banner.currentStopTitle)
-                .font(.system(size: 24, weight: .bold, design: .rounded))
-                .lineLimit(2)
+                .font(.system(.title3, design: .rounded, weight: .bold))
+                .lineLimit(4)
 
             HStack(spacing: 14) {
                 statColumn(title: "Stopps", value: "\(banner.remainingStopCount)")
                 statColumn(title: "Artikel", value: "\(banner.remainingProductCount)")
                 statColumn(title: "Ohne Regal", value: "\(banner.unresolvedProductCount)")
             }
+            .accessibilityElement(children: .combine)
 
             Button {
                 onOpenMap()
@@ -230,7 +235,7 @@ struct HomeDashboardView: View {
             } label: {
                 Label("Rezepte öffnen", systemImage: "cart.badge.plus")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(warmAccent)
+                    .foregroundStyle(Color.a11yWarningText)
                     .frame(maxWidth: .infinity)
                     .frame(height: 44)
             }
@@ -281,19 +286,20 @@ struct HomeDashboardView: View {
                 .buttonStyle(.plain)
                 .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .foregroundStyle(.white)
-                .background(routeAccent, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(Color.a11yRouteBlueText, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 Button {
                     showsTutorial = true
                 } label: {
                     Image(systemName: "questionmark")
                         .font(.headline.weight(.bold))
-                        .foregroundStyle(warmAccent)
+                        .foregroundStyle(Color.a11yWarningText)
                         .frame(width: 44, height: 44)
                         .background(warmAccent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .accessibilityLabel("Einführung anzeigen")
             }
         }
         .padding(18)
@@ -354,7 +360,7 @@ private struct HomeTutorialSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     Text("So nutzt du Indooro am einfachsten")
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(.title, design: .rounded, weight: .bold))
 
                     Text("Die beste Reihenfolge ist: Einkauf planen, kurz prüfen und dann mit der Karte durch den Markt gehen.")
                         .font(.subheadline)

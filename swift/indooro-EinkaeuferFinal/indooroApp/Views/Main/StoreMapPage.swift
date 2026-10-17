@@ -38,6 +38,7 @@ struct StoreMapPage: View {
 
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
     private let routeAccent = Color(red: 0.15, green: 0.57, blue: 0.88)
+    @ScaledMetric(relativeTo: .title) private var targetIconSize: CGFloat = 38
 
     private var activeShoppingSnapshot: ShoppingRouteSnapshot? {
         shoppingSessionManager.snapshot
@@ -67,6 +68,23 @@ struct StoreMapPage: View {
             return "Noch unter 1 m"
         }
         return "Noch ca. \(Int(meters.rounded())) m"
+    }
+
+    /// VoiceOver-Zusammenfassung der Karte: Ziel bzw. aktueller Stopp, Entfernung, Route, Positionsqualität.
+    private var mapAccessibilitySummary: String {
+        var targetText: String?
+        if let target = targetProduct {
+            let shelfText = ShelfLocationDescriptor.make(layoutCode: target.layoutCode, shelves: beaconManager.shelves)?.primary
+            targetText = AccessibilityText.productRowLabel(name: target.name, shelfText: shelfText)
+        } else if let stop = activeShoppingSnapshot?.currentStop {
+            targetText = stop.title
+        }
+        return AccessibilityText.mapSummary(
+            targetText: targetText,
+            distanceMeters: targetText == nil ? nil : activeRouteDistanceMeters,
+            routeOrigin: routeOriginName,
+            positionTrusted: beaconManager.isPositionTrusted
+        )
     }
 
     var body: some View {
@@ -342,7 +360,8 @@ struct StoreMapPage: View {
                         showsShoppingSession: activeShoppingSnapshot != nil,
                         topInset: 0,
                         bottomInset: 0,
-                        showsDebugMapElements: showsDebugMapElements
+                        showsDebugMapElements: showsDebugMapElements,
+                        accessibilitySummary: mapAccessibilitySummary
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
@@ -412,12 +431,13 @@ struct StoreMapPage: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("SPAR-Filialen")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .font(.system(.title2, design: .rounded, weight: .bold))
                     .foregroundStyle(.primary)
+                    .accessibilityAddTraits(.isHeader)
 
                 Text(storeOverviewSubtitle)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
                     .lineLimit(1)
             }
 
@@ -429,12 +449,13 @@ struct StoreMapPage: View {
                 Image(systemName: "location.viewfinder")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 44, height: 44)
                     .background(Color(uiColor: .systemBackground), in: Circle())
                     .overlay(Circle().stroke(Color.primary.opacity(0.06), lineWidth: 1))
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Filialen einpassen")
 
             Button {
                 beaconManager.refreshMobileStores()
@@ -442,24 +463,26 @@ struct StoreMapPage: View {
                 Image(systemName: "arrow.clockwise")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 44, height: 44)
                     .background(Color(uiColor: .systemBackground), in: Circle())
                     .overlay(Circle().stroke(Color.primary.opacity(0.06), lineWidth: 1))
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
             .disabled(beaconManager.isLoadingMobileStores)
+            .accessibilityLabel("Filialen neu laden")
 
             Button { showSettings = true } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 44, height: 44)
                     .background(Color(uiColor: .systemBackground), in: Circle())
                     .overlay(Circle().stroke(Color.primary.opacity(0.06), lineWidth: 1))
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Einstellungen")
         }
     }
 
@@ -485,7 +508,7 @@ struct StoreMapPage: View {
             HStack(spacing: 10) {
                 Image(systemName: "wifi.exclamationmark")
                     .font(.headline)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.a11yWarningText)
 
                 Text(message)
                     .font(.subheadline.weight(.medium))
@@ -500,9 +523,12 @@ struct StoreMapPage: View {
                     Image(systemName: "arrow.clockwise")
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 36, height: 36)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(accent)
+                .accessibilityLabel("Erneut laden")
             }
             .padding(14)
             .background(MapFloatingSurface(cornerRadius: 18))
@@ -561,23 +587,25 @@ struct StoreMapPage: View {
                 Image(systemName: "chevron.left")
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(.primary)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 44, height: 44)
                     .background(Color(uiColor: .systemBackground), in: Circle())
                     .overlay(Circle().stroke(Color.primary.opacity(0.06), lineWidth: 1))
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Zur Filialübersicht")
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(beaconManager.activeLayoutStoreName ?? "Marktkarte")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .font(.system(.title2, design: .rounded, weight: .bold))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
+                    .accessibilityAddTraits(.isHeader)
 
                 Text(beaconManager.activeLayoutDescription)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
                     .lineLimit(1)
             }
 
@@ -587,7 +615,7 @@ struct StoreMapPage: View {
                 Image(systemName: "slider.horizontal.3")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 44, height: 44)
                     .background(Color(uiColor: .systemBackground), in: Circle())
                     .overlay(
                         Circle()
@@ -596,6 +624,7 @@ struct StoreMapPage: View {
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Einstellungen")
         }
         .padding(.horizontal, 2)
     }
@@ -615,6 +644,8 @@ struct StoreMapPage: View {
                             nextTapSetsPosition ? accent : accent.opacity(0.11),
                             in: Capsule()
                         )
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Ich bin hier")
@@ -628,6 +659,8 @@ struct StoreMapPage: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 9)
                         .background(accent.opacity(0.11), in: Capsule())
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("QR-Code scannen")
@@ -646,7 +679,7 @@ struct StoreMapPage: View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.a11yWarningText)
 
             Text(navigationSession.navigationStatusMessage ?? "Position ungenau")
                 .font(.caption.weight(.medium))
@@ -661,6 +694,8 @@ struct StoreMapPage: View {
             .font(.caption.weight(.semibold))
             .buttonStyle(.plain)
             .foregroundStyle(accent)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
 
             Button("Position setzen") {
                 nextTapSetsPosition = true
@@ -668,6 +703,8 @@ struct StoreMapPage: View {
             .font(.caption.weight(.semibold))
             .buttonStyle(.plain)
             .foregroundStyle(accent)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -692,9 +729,12 @@ struct StoreMapPage: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.body)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Suche löschen")
             }
 
             Image(systemName: "viewfinder")
@@ -788,7 +828,7 @@ struct StoreMapPage: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "cart.circle.fill")
-                    .font(.system(size: 38))
+                    .font(.system(size: targetIconSize))
                     .foregroundStyle(.white, routeAccent)
                     .shadow(color: routeAccent.opacity(0.22), radius: 8, y: 4)
 
@@ -802,13 +842,11 @@ struct StoreMapPage: View {
                         Text(shelfDescriptor.primary)
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(.primary)
-                            .lineLimit(1)
 
                         if let detail = shelfDescriptor.detail {
                             Text(detail)
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
+                                .foregroundStyle(Color.a11ySecondaryText)
                         }
 
                         #if DEBUG
@@ -820,8 +858,7 @@ struct StoreMapPage: View {
                     } else {
                         Label(ShelfLocationDescriptor.notInTestAreaText, systemImage: "exclamationmark.triangle")
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(.orange)
-                            .lineLimit(2)
+                            .foregroundStyle(Color.a11yWarningText)
                     }
 
                     Text(String(format: "%.2f EUR", target.price))
@@ -841,14 +878,17 @@ struct StoreMapPage: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 32, height: 32)
                         .background(Color.primary.opacity(0.05), in: Circle())
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Ziel entfernen")
             }
 
             if let routeOriginText {
                 Text(routeOriginText)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
             }
 
             HStack(spacing: 10) {
@@ -875,7 +915,7 @@ struct StoreMapPage: View {
                         Label("Einplanen", systemImage: "plus")
                             .font(.subheadline.weight(.semibold))
                             .padding(.horizontal, 14)
-                            .frame(height: 42)
+                            .frame(height: 44)
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(accent)
@@ -1059,17 +1099,22 @@ struct StoreMapPage: View {
         )
     }
 
-    /// Herkunft der aktiven Route in Kundensprache; nil bei vertrauenswuerdiger Position oder ohne Route.
-    private var routeOriginText: String? {
+    /// Name des Routen-Ursprungs; nil bei vertrauenswuerdiger Position oder ohne Route.
+    private var routeOriginName: String? {
         guard navigationSession.navigationRoute.pointCount >= 2 else { return nil }
         switch navigationSession.routeOriginKind {
         case .position:
             return nil
         case .entrance:
-            return "Route ab Eingang"
+            return "Eingang"
         case .lastStop(let title):
-            return "Route ab \(title)"
+            return title
         }
+    }
+
+    /// Herkunft der aktiven Route in Kundensprache; nil bei vertrauenswuerdiger Position oder ohne Route.
+    private var routeOriginText: String? {
+        routeOriginName.map { "Route ab \($0)" }
     }
 
     /// Standorttext eines Stopps: Regal des ersten Artikels mit layoutCode.
@@ -1086,9 +1131,9 @@ struct StoreMapPage: View {
     private var targetStatusPill: some View {
         Group {
             if let targetRouteDistanceText {
-                MapInfoPill(title: targetRouteDistanceText, systemImage: "figure.walk", tint: routeAccent)
+                MapInfoPill(title: targetRouteDistanceText, systemImage: "figure.walk", tint: .a11yRouteBlueText)
             } else {
-                MapInfoPill(title: "Ziel ist auf der Karte markiert", systemImage: "location", tint: routeAccent)
+                MapInfoPill(title: "Ziel ist auf der Karte markiert", systemImage: "location", tint: .a11yRouteBlueText)
             }
         }
     }
@@ -1106,6 +1151,7 @@ private struct StoreMapPin: Identifiable {
 
 private struct StorePinMarker: View {
     let isLoading: Bool
+    @ScaledMetric(relativeTo: .body) private var storeIconSize: CGFloat = 18
 
     var body: some View {
         ZStack {
@@ -1125,7 +1171,7 @@ private struct StorePinMarker: View {
                         .frame(width: 36, height: 36)
 
                     Image(systemName: "storefront.fill")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: storeIconSize, weight: .semibold))
                         .foregroundStyle(.white)
                 }
                 .shadow(color: .black.opacity(0.18), radius: 8, y: 4)
@@ -1185,7 +1231,7 @@ private struct StoreOverviewCard: View {
 
                     Image(systemName: "chevron.right")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                 }
             }
             .frame(width: 220, alignment: .leading)
