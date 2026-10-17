@@ -1,0 +1,14 @@
+id;name;marke;menge;regal_label;kategorie;meter;fach;reihe;preis
+;Unbekannt;;;;812;3;1;1;1,00
+;Falsch;;;Gang 9 · links · Irgendwas;310;1;1;1;
+;Bruch;;;;420;1;1;abc;
+;;;;;310;1;1;1;
+7;Doppel;;;;310;1;1;4;
+7;Doppel 2;;;;310;1;1;5;
+0;Null;;;;310;1;1;6;
+;Minus;;;;310;1;1;7;-1
+;Tausend;;;;310;1;1;8;1.234,50
+;Kategorie Null;;;;0;1;1;9;
+;Meter Null;;;;310;0;1;9;
+;Fach 1.5;;;;310;1;1.5;9;
+;Ok;;;;310;1;1;10;2,5

@@ -4,9 +4,9 @@
 
 ## 2. Parsing and Validation (admin-ui)
 
-- [ ] 2.1 CSV parser (separator and BOM detection) with tests incl. Excel exports with umlauts.
-- [ ] 2.2 XLSX first-sheet parser if a license-compatible offline library is acceptable; otherwise document CSV-only.
-- [ ] 2.3 Port validation rules from `scripts/pilot-data/csv_to_ndjson.py` with shared fixtures.
+- [x] 2.1 CSV parser (separator and BOM detection) with tests incl. Excel exports with umlauts.
+- [x] 2.2 XLSX first-sheet parser if a license-compatible offline library is acceptable; otherwise document CSV-only. (decision: CSV only; no XLSX parser, Excel users save as CSV)
+- [x] 2.3 Port validation rules from `scripts/pilot-data/csv_to_ndjson.py` with shared fixtures. (rules implemented from the prepare-pilot-store-operations design, because csv_to_ndjson.py does not exist yet; fixtures are synthetic)
 
 ## 3. Commit (backend + admin-ui)
 
