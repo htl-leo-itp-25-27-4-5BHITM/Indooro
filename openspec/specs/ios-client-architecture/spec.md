@@ -138,3 +138,24 @@ The positioning manager SHALL keep an in-memory debug log of at most 80 lines wi
 - **WHEN** the same key is logged again
 - **THEN** the new message is dropped
 
+### Requirement: App logic is covered by an XCTest target and CI
+The iOS project SHALL contain the unit test target `MCindooroAppTests` hosted by `MCindooroApp`, with tests for backend response decoding from JSON fixtures, shopping list persistence and merging, feature profile and environment parsing, search URL building and study export formatting. A CI workflow SHALL run `swift test` for the navigation package and the app unit tests on a macOS runner for every pull request to `pilot/first-store` and `main`, and a failing test SHALL fail the workflow.
+
+#### Scenario: Decoding regression
+- **GIVEN** a change renames a field in `MobileLayoutResponse`
+- **WHEN** a pull request is opened
+- **THEN** the fixture-based decoding test fails and the CI workflow reports failure
+
+#### Scenario: Windows contributor
+- **GIVEN** a team member without a Mac opens a pull request that touches shared JSON fixtures
+- **WHEN** CI runs
+- **THEN** the Swift tests run on the macOS runner and their result is visible in the pull request
+
+### Requirement: Pilot flows are covered by UI tests in fixture mode
+The iOS project SHALL contain the UI test target `MCindooroAppUITests`. Launched with `-uiTesting`, the app SHALL use bundled fixture data without network, BLE or permission prompts. UI tests SHALL cover product search with special characters, shelf location text, tour start from the entrance, completing a stop, setting the position with „Ich bin hier“, and offline start, and SHALL run in CI for pull requests to `pilot/first-store`.
+
+#### Scenario: Tour regression
+- **GIVEN** a pull request breaks the route fallback after „Erledigt“
+- **WHEN** CI runs the UI tests
+- **THEN** the tour test fails and the workflow reports failure
+
