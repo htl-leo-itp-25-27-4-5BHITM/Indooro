@@ -52,6 +52,34 @@ test("product search submits with the keyboard and list failures can be retried"
   expect(queries.at(-1)).toBe("Birne");
 });
 
+test("product search typing keeps focus and sends no product request until submitted", async ({ page }) => {
+  const requests: string[] = [];
+  await mockSingleStore(page);
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/categories?*", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/admin/products?*", (route) => {
+    requests.push(new URL(route.request().url()).search);
+    return route.fulfill({ json: { content: [{ id: 1, name: "Apfel", price: 1, layoutCode: "310/1/1/1", storeId: null, storeCode: null }], page: 0, size: 20, totalElements: 1 } });
+  });
+
+  await page.goto("/admin/next/products/");
+  await expect(page.getByRole("cell", { name: "Apfel" })).toBeVisible();
+  const requestsBeforeTyping = requests.length;
+  const search = page.getByRole("searchbox", { name: "Suche" });
+  await search.click();
+  await page.keyboard.type("Apfel");
+  await expect(search).toHaveValue("Apfel");
+  await expect(search).toBeFocused();
+  // Kurze Wartezeit, damit ein verzögerter (debounced) Request sichtbar würde.
+  await page.evaluate(() => new Promise((resolve) => setTimeout(resolve, 300)));
+  expect(requests.length).toBe(requestsBeforeTyping);
+
+  await search.press("Enter");
+  await expect(page).toHaveURL(/q=Apfel/);
+  await expect.poll(() => requests.length).toBe(requestsBeforeTyping + 1);
+  expect(requests.at(-1)).toContain("q=Apfel");
+});
+
 test("product sort and readiness filter are requested from the server before paging", async ({ page }) => {
   const requests: URL[] = [];
   await mockSingleStore(page);

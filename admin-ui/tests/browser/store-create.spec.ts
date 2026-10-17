@@ -64,3 +64,22 @@ test("admin creates a store using keyboard controls", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Store angelegt" })).toBeVisible();
   expect(createdBody).toMatchObject({ storeCode: "KEY-02", name: "Keyboard Store", regionId: "region-1" });
 });
+
+test("store create with empty required fields is blocked by native validation and sends no POST", async ({ page }) => {
+  let postCalls = 0;
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/regions?status=ACTIVE", (route) => route.fulfill({ json: [{ id: "region-1", code: "AT-OOE", name: "Oberösterreich", status: "ACTIVE" }] }));
+  await page.route("**/api/stores", (route) => {
+    if (route.request().method() === "POST") postCalls += 1;
+    return route.fulfill({ json: { id: "store-empty", name: "" } });
+  });
+  await page.goto("/admin/next/stores/new/");
+  await expect(page.getByRole("textbox", { name: "Store-Code" })).toBeVisible();
+  await page.getByRole("button", { name: "Store anlegen" }).click();
+  const storeCode = page.getByRole("textbox", { name: "Store-Code" });
+  await expect(storeCode).toBeFocused();
+  expect(await storeCode.evaluate((element: HTMLInputElement) => element.validationMessage)).not.toBe("");
+  expect(await page.locator("form.detail-form").evaluate((form: HTMLFormElement) => form.checkValidity())).toBe(false);
+  await expect(page.getByRole("heading", { name: "Store angelegt" })).toHaveCount(0);
+  expect(postCalls).toBe(0);
+});
