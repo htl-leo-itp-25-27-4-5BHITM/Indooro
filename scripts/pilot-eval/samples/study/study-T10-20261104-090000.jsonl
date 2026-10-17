@@ -1,0 +1,13 @@
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 1, "testId": "T10", "t": "2026-11-04T09:00:00.000Z", "type": "taskStart"}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 1, "testId": "T10", "t": "2026-11-04T09:01:45.000Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 2, "testId": "T10", "t": "2026-11-04T09:02:13.000Z", "type": "taskStart"}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 2, "testId": "T10", "t": "2026-11-04T09:04:17.500Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 0, "rerouteCount": 0, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 3, "testId": "T10", "t": "2026-11-04T09:04:38.500Z", "type": "taskStart"}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 3, "testId": "T10", "t": "2026-11-04T09:07:14.200Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 4, "testId": "T10", "t": "2026-11-04T09:07:43.200Z", "type": "taskStart"}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 4, "testId": "T10", "t": "2026-11-04T09:07:58.914Z", "type": "manualPosition"}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 4, "testId": "T10", "t": "2026-11-04T09:08:14.029Z", "type": "manualPosition"}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 4, "testId": "T10", "t": "2026-11-04T09:08:36.124Z", "type": "manualPosition"}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 4, "testId": "T10", "t": "2026-11-04T09:08:57.869Z", "type": "reroute"}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 4, "testId": "T10", "t": "2026-11-04T09:09:01.125Z", "type": "note", "text": "Regal war schwer zu finden"}
+{"sessionId": "5715bd6f-a416-4293-84c2-e2e3444ea7c8", "taskNo": 4, "testId": "T10", "t": "2026-11-04T09:09:11.700Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 3, "rerouteCount": 1, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}

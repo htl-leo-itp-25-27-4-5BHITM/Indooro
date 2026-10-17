@@ -1,0 +1,14 @@
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 1, "testId": "T04", "t": "2026-11-02T09:00:00.000Z", "type": "taskStart"}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 1, "testId": "T04", "t": "2026-11-02T09:02:30.900Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 2, "testId": "T04", "t": "2026-11-02T09:02:46.900Z", "type": "taskStart"}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 2, "testId": "T04", "t": "2026-11-02T09:03:01.101Z", "type": "manualPosition"}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 2, "testId": "T04", "t": "2026-11-02T09:03:02.790Z", "type": "error", "message": "Synthetischer Testfehler"}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 2, "testId": "T04", "t": "2026-11-02T09:03:12.700Z", "type": "manualPosition"}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 2, "testId": "T04", "t": "2026-11-02T09:05:32.700Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 2, "rerouteCount": 0, "stopChangeWithoutEventCount": 0, "appErrorCount": 1}}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 3, "testId": "T04", "t": "2026-11-02T09:05:58.700Z", "type": "taskStart"}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 3, "testId": "T04", "t": "2026-11-02T09:07:17.800Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 4, "testId": "T04", "t": "2026-11-02T09:07:42.800Z", "type": "taskStart"}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 4, "testId": "T04", "t": "2026-11-02T09:07:49.962Z", "type": "reroute"}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 4, "testId": "T04", "t": "2026-11-02T09:07:55.266Z", "type": "note", "text": "Produkt lag im falschen Fach"}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 4, "testId": "T04", "t": "2026-11-02T09:08:05.037Z", "type": "manualPosition"}
+{"sessionId": "47294739-614f-43d7-99db-3ad0ddd1dfb2", "taskNo": 4, "testId": "T04", "t": "2026-11-02T09:08:27.900Z", "type": "taskEnd", "outcome": "abgebrochen", "counters": {"manualPositionCount": 1, "rerouteCount": 1, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
