@@ -86,7 +86,7 @@ PR #105 (Admin) ─► main ─┬─► #5 Phase B ─► erster Pilot-Release
 | Sprint | Zeitraum | Ziel | Hauptsächlich |
 |---|---|---|---|
 | 1 | 19.10.–30.10. | Pilotfähig im Testraum | Welle 1: 1, 2, 5A, 7 (Standard + Testraum), 9; Admin-Release (Details `SPRINT_01.md`) |
-| 2 | 02.11.–13.11. | Bereit für den Markt | 3, 4, 5B, 6, 7 (großer Raum), 8, 10; Welle 2: 12, 16, 17, 19 |
+| 2 | 02.11.–13.11. | Bereit für den Markt | 3, 4, 5B, 6, 7 (großer Raum), 8, 10; Welle 2: 12, 16, 17, 19 (Details `SPRINT_02.md`) |
 | 3 | 16.11.–27.11. | Markt erfasst und gemessen (vor dem Weihnachtsgeschäft) | Pilot Phase 2 im Markt; Welle 2: 11, 13, 14, 18, 20, 21 |
 | 4 | 30.11.–11.12. | Kalibriert und komfortabel | 15, 22, Fixes aus dem Markt; Vorbereitung Phase 3 (Jänner) |
 
