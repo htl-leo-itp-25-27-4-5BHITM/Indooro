@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import type { ApiClient } from "./api/client";
+import { accessibleStores, loadActiveStores, productErrorMessage, readRememberedStoreId, rememberStoreId, resolveStoreSelection, storeLabel, storeScopeParams, type AdminStore } from "./productStore";
+import type { CurrentUser } from "./routes";
 import { changeRecipePublication, cloneDetail, createRecipeWithContent, numeric, readRecipeFilters, recipeFiltersQuery, recipeListPath, RecipeCreatePartialError, saveRecipeChanges, type Product, type RecipeDetail, type RecipeIngredient, type RecipeIngredientMapping, type RecipeMappingResponse, type RecipePageResponse, type RecipeStep, type RecipeTag, validateDraft, validateNewRecipe } from "./RecipesPage.logic";
 import "./RecipesPage.css";
 
-export function RecipesPage({ api }: { api: ApiClient }) {
+export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser }) {
   const filters = useMemo(() => readRecipeFilters(window.location.search), []);
   const [page, setPage] = useState<RecipePageResponse | null>(null);
   const [tags, setTags] = useState<RecipeTag[]>([]);
@@ -19,6 +21,8 @@ export function RecipesPage({ api }: { api: ApiClient }) {
   const [productQuery, setProductQuery] = useState("");
   const [products, setProducts] = useState<Product[]>([]);
   const [productError, setProductError] = useState<string | null>(null);
+  const [stores, setStores] = useState<AdminStore[]>([]);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(() => readRememberedStoreId());
   const [search, setSearch] = useState(filters.q);
   const [creating, setCreating] = useState(false);
   const [mappingFor, setMappingFor] = useState<string | null>(null);
@@ -31,6 +35,17 @@ export function RecipesPage({ api }: { api: ApiClient }) {
   const dialogRef = useRef<HTMLElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const initialFocusPending = useRef(false);
+
+  const accessibleStoreList = useMemo(() => accessibleStores(user, stores), [user, stores]);
+  const selectedStore = useMemo(() => resolveStoreSelection(accessibleStoreList, selectedStoreId), [accessibleStoreList, selectedStoreId]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    loadActiveStores(api, controller.signal)
+      .then((result) => { if (!controller.signal.aborted) setStores(result); })
+      .catch((cause: unknown) => { if (!controller.signal.aborted) setProductError(productErrorMessage(cause, "Märkte konnten nicht geladen werden.")); });
+    return () => controller.abort();
+  }, [api]);
 
   const dialogOpen = editor !== null;
   useLayoutEffect(() => {
@@ -81,11 +96,14 @@ export function RecipesPage({ api }: { api: ApiClient }) {
   const patchEditor = (patch: Partial<RecipeDetail>) => setEditor((value) => value ? { ...value, ...patch } : value);
   const patchIngredient = (index: number, patch: Partial<RecipeIngredient>) => patchEditor({ ingredients: editor!.ingredients.map((item, i) => i === index ? { ...item, ...patch } : item) });
   const patchStep = (index: number, patch: Partial<RecipeStep>) => patchEditor({ steps: editor!.steps.map((item, i) => i === index ? { ...item, ...patch } : item) });
+  const selectStore = (storeId: string) => { setSelectedStoreId(storeId || null); if (storeId) rememberStoreId(storeId); setProducts([]); setProductError(null); };
   const searchProducts = async () => {
+    if (!selectedStore) { setProductError("Bitte einen Markt wählen."); return; }
     const params = new URLSearchParams({ page: "0", size: "20" }); if (productQuery.trim()) params.set("q", productQuery.trim());
+    storeScopeParams(selectedStore).forEach((value, key) => params.set(key, value));
     setProductError(null);
     try { const result = await api.get<{ content?: Product[] } | Product[]>(`/api/admin/products?${params}`); const list = Array.isArray(result) ? result : result.content; if (!Array.isArray(list)) throw new Error("Produktantwort ist unvollständig."); setProducts(list); }
-    catch (cause) { setProductError(cause instanceof Error ? cause.message : "Produkte konnten nicht geladen werden."); }
+    catch (cause) { setProductError(productErrorMessage(cause, "Produkte konnten nicht geladen werden.")); }
   };
   const save = async (event: FormEvent) => {
     event.preventDefault(); if (!editor || !original || busy || previewMode) return;
@@ -233,6 +251,7 @@ export function RecipesPage({ api }: { api: ApiClient }) {
               <label className="recipe-span-2">Tags<select multiple value={selectedTagIds} onChange={(event) => setSelectedTagIds(Array.from(event.target.selectedOptions, (option) => option.value))}>{[...new Map([...tags, ...editor.tags].map((tag) => [tag.id, tag])).values()].map((tag) => <option key={tag.id} value={tag.id}>{tag.name}</option>)}</select><small>Mit Strg/Cmd mehrere Tags auswählen.</small></label>
             </div>
             <div className="recipe-section"><div className="section-heading"><h3>Zutaten</h3><button type="button" className="button" onClick={() => { patchEditor({ ingredients: [...editor.ingredients, { position: editor.ingredients.length + 1, displayName: "", quantityText: "", selectedProduct: null }] }); setProducts([]); setProductQuery(""); }}>+ Zutat</button></div>
+              {editor.ingredients.some((item) => !item.id) && <label>Markt für Produktsuche<select value={selectedStore?.id ?? ""} disabled={accessibleStoreList.length <= 1} onChange={(event) => selectStore(event.currentTarget.value)}><option value="">Markt wählen</option>{accessibleStoreList.map((store) => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}</select></label>}
               {editor.ingredients.map((item, index) => <div className="recipe-item" key={item.id ?? `new-${index}`}><label>Zutat<input value={item.id ? item.displayName : item.selectedProduct?.name ?? ""} readOnly /></label>
                 <label>Menge<input value={item.quantityText ?? ""} onChange={(event) => patchIngredient(index, { quantityText: event.target.value })} /></label>
                 {!item.id && <div className="recipe-product-search"><label>Produkt aus Katalog<input value={productQuery} onChange={(event) => setProductQuery(event.target.value)} placeholder="Produktname suchen" /></label><button type="button" className="button" onClick={() => void searchProducts()}>Suchen</button>{productError && <small role="alert">{productError}</small>}{products.length > 0 && <select value={item.selectedProduct?.id ?? ""} onChange={(event) => { const product = products.find((candidate) => String(candidate.id) === event.target.value) ?? null; patchIngredient(index, { selectedProduct: product }); }}><option value="">Produkt auswählen</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name} · #{product.id}</option>)}</select>}{item.selectedProduct && <small>Ausgewählt: {item.selectedProduct.name}</small>}</div>}
