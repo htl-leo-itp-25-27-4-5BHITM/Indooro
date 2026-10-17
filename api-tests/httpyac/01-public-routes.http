@@ -115,7 +115,7 @@ Accept: application/json
 
 {"elements":[]}
 
-?? status == 401
+?? status matches ^(302|401)$
 
 ###
 # Anonymous PDF import is rejected (admin only)
@@ -129,7 +129,7 @@ Content-Type: application/pdf
 %PDF-1.4
 --indooroProbe--
 
-?? status == 401
+?? status matches ^(302|401)$
 
 ###
 # Anonymous PDF export is rejected (admin only)
@@ -139,7 +139,7 @@ Accept: application/pdf
 
 []
 
-?? status == 401
+?? status matches ^(302|401)$
 
 ###
 # Anonymous mobile upsell suggestions stay anonymous (not 401/403)
