@@ -106,6 +106,10 @@ struct ContentView: View {
             shoppingSessionManager.bind(navigationSession: navigationSession)
             syncShoppingSession()
         }
+        .onChange(of: beaconManager.effectiveStoreCode, initial: true) { _, newStoreCode in
+            mapProductSearch.setActiveStore(code: newStoreCode)
+            productsSearch.setActiveStore(code: newStoreCode)
+        }
         .onChange(of: targetProduct, initial: false) { _, newProduct in
             guard !shoppingSessionManager.isActive else { return }
             beaconManager.setTargetProduct(newProduct)

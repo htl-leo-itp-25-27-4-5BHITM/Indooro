@@ -201,8 +201,12 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     @Published private(set) var selectedLayoutName = "Aktuelles Server-Layout"
     @Published private(set) var activeLayoutDescription = "Bundle-Layout aktiv"
     @Published private(set) var layoutRevision = 0
-    @Published private(set) var detectedStore: MobileStoreSummary?
-    @Published private(set) var activeLayoutStore: MobileStoreSummary?
+    @Published private(set) var detectedStore: MobileStoreSummary? {
+        didSet { handleEffectiveStoreChange() }
+    }
+    @Published private(set) var activeLayoutStore: MobileStoreSummary? {
+        didSet { handleEffectiveStoreChange() }
+    }
     @Published private(set) var activeLayoutStoreSource: StoreLayoutActivationSource?
     @Published private(set) var mobileStores: [MobileStoreSummary] = []
     @Published private(set) var isLoadingMobileStores = false
@@ -227,6 +231,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let debugLogLimit = 80
     private let storeDetectionRefreshInterval: TimeInterval = 60
     private var latestSearchRequestID = UUID()
+    private var lastEffectiveStoreCode: String?
 
     // MARK: - Bluetooth internals
 
@@ -306,6 +311,18 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     var detectedStoreName: String? {
         detectedStore?.name
+    }
+
+    /// Filialcode der aktuell wirksamen Filiale (aktives Layout, sonst erkannte Filiale).
+    var effectiveStoreCode: String? {
+        ProductEndpoint.normalizedStoreCode((activeLayoutStore ?? detectedStore)?.storeCode)
+    }
+
+    private func handleEffectiveStoreChange() {
+        let code = effectiveStoreCode
+        guard code != lastEffectiveStoreCode else { return }
+        lastEffectiveStoreCode = code
+        clearSearch()
     }
 
     var activeLayoutStoreName: String? {
@@ -559,10 +576,12 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         let requestID = UUID()
         latestSearchRequestID = requestID
         isSearching = true
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let urlString = "\(apiBase)/products/search?q=\(encoded)&size=50"
-
-        guard let url = URL(string: urlString) else {
+        guard let url = ProductEndpoint.searchURL(
+            base: apiBase,
+            query: query,
+            size: 50,
+            storeCode: effectiveStoreCode
+        ) else {
             isSearching = false
             return
         }
