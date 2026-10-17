@@ -213,4 +213,42 @@ class MobileUpsellResourceTest {
                 .body(not(containsString("openai")))
                 .body(not(containsString("api")));
     }
+
+    @Test
+    void acceptsDismissalSuppressionUpToThirtyDays() {
+        doNothing().when(upsellSuggestionService).dismiss(any());
+
+        given()
+                .contentType("application/json")
+                .body("""
+                        {
+                          "checkedProductId": 1,
+                          "suggestedProductId": 2,
+                          "storeId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                          "sessionId": "s",
+                          "suppressMinutes": 1440
+                        }
+                        """)
+                .when().post("/api/mobile/upsell/dismiss")
+                .then()
+                .statusCode(202);
+    }
+
+    @Test
+    void rejectsDismissalSuppressionAboveThirtyDays() {
+        given()
+                .contentType("application/json")
+                .body("""
+                        {
+                          "checkedProductId": 1,
+                          "suggestedProductId": 2,
+                          "storeId": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+                          "sessionId": "s",
+                          "suppressMinutes": 43201
+                        }
+                        """)
+                .when().post("/api/mobile/upsell/dismiss")
+                .then()
+                .statusCode(400);
+    }
 }

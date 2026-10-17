@@ -17,8 +17,8 @@
 ## 3. Configuration Hardening
 
 - [x] 3.1 Move the OIDC client secret default to `%dev` and `%test` profiles and require `OIDC_CLIENT_SECRET` in `%prod`. (implemented in release-pilot-backend)
-- [ ] 3.2 Replace wildcard CORS origins with profile-specific origin lists.
-- [ ] 3.3 Set HTTP body and form attribute limits to 10 MB.
+- [x] 3.2 Replace wildcard CORS origins with profile-specific origin lists. (implemented in release-pilot-backend)
+- [x] 3.3 Keep HTTP body limit at 14 MB (admin underlay is 10 MB Base64-encoded in JSON, about 13.4 MiB); form attribute limit unchanged, no form uploads exist. (implemented in release-pilot-backend, deviation from 10 MB)
 - [x] 3.4 Verify `k8s/backend.yaml` injects `QUARKUS_OIDC_CREDENTIALS_SECRET` from a Kubernetes secret (already present) and document it. (implemented in release-pilot-backend)
 
 ## 4. Tests
@@ -29,8 +29,8 @@
 
 ## 5. Documentation And Deployment
 
-- [ ] 5.1 Update `DEPLOYMENT.md` with the required OIDC client secret variable and CORS origins.
-- [ ] 5.2 Update `docs/specs/TSD.md` route table.
+- [x] 5.1 Update `DEPLOYMENT.md` with the required OIDC client secret variable and CORS origins. (implemented in release-pilot-backend)
+- [x] 5.2 Update `docs/specs/TSD.md` route table. (implemented in release-pilot-backend)
 - [ ] 5.3 Roll out to LeoCloud and run `npm run api:test:public` and `npm run api:test:roles` against the public host.
 
 ## 6. Verification

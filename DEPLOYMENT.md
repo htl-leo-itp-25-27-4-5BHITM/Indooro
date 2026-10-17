@@ -363,6 +363,7 @@ Der Backend-Container bekommt die OIDC-Konfiguration ueber `k8s/backend.yaml`:
 - `QUARKUS_OIDC_CLIENT_ID=indooro-admin-web`
 - `QUARKUS_OIDC_CREDENTIALS_SECRET` aus `indooro-keycloak-secret` (Key `admin-web-client-secret`). **Pflicht in Produktion.**
 - Lokal heisst die Variable `OIDC_CLIENT_SECRET` (aus `.env`, gleicher Wert wie `KC_ADMIN_WEB_CLIENT_SECRET`). Lokal braucht das Backend ausserdem `DB_PASSWORD` aus `.env`.
+- `CORS_ORIGINS` (optional): kommaseparierte Liste erlaubter Browser-Origins. Default ist der LeoCloud-Host plus `https://www.indooro.at` und `https://indooro.at`. Setzen, falls die Kundenweb-App an einer anderen Adresse gehostet wird. Dev und Test erlauben nur `http://localhost:8080` und `http://localhost:5173`.
 
 Die Werte werden nicht im Repo gepflegt. Anlage und Rotation: `docs/pilot-readiness/operations/SECRET_ROTATION.md`.
 
