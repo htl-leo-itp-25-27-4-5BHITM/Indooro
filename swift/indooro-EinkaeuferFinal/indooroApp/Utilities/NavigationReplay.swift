@@ -321,11 +321,11 @@ enum NavigationReplay {
         entrance: SIMD2<Float>? = nil,
         onTick: ((ReplayTick) -> Void)? = nil
     ) -> ReplayMetrics {
-        // Bewegungszeilen werden vor dem Sortieren entfernt: sie duerfen weder Tickraster noch Dauer beeinflussen.
-        // Ausgewertet werden sie erst in Gruppe 3 (motionAided); bis dahin gilt dasselbe Verhalten mit und ohne Flag.
+        // Ohne motionAided werden Bewegungszeilen vor dem Sortieren entfernt: sie duerfen weder Tickraster
+        // noch Dauer beeinflussen. Mit Flag bleiben sie in der Zeitleiste und speisen den Tracker.
         let timeline = recording.filter { line in
             switch line {
-            case .step, .heading: return false
+            case .step, .heading: return config.motion.motionAided
             case .measurement, .layout, .event, .truth: return true
             }
         }
@@ -444,9 +444,10 @@ enum NavigationReplay {
                 latestTruth = (point, record.t)
             case .event(let record):
                 apply(event: record)
-            case .step, .heading:
-                // Bewegungsdaten werden in Gruppe 3 ausgewertet.
-                break
+            case .step(let record):
+                pipeline.recordStep(cumulativeSteps: record.steps, at: record.t)
+            case .heading(let record):
+                pipeline.recordHeading(bearingDegrees: record.degrees, accuracy: record.accuracy, at: record.t)
             }
         }
 

@@ -10,9 +10,9 @@
 
 ## 3. Model
 
-- [ ] 3.1 Standing detection and BLE damping behind flag `motionAided`.
-- [ ] 3.2 Step displacement along the walkable graph; tests with synthetic walks.
-- [ ] 3.3 BLE/step consistency check (large BLE jump without steps → hold).
+- [x] 3.1 Standing detection and BLE damping behind flag `motionAided`.
+- [x] 3.2 Step displacement along the walkable graph; tests with synthetic walks.
+- [x] 3.3 BLE/step consistency check (large BLE jump without steps → hold).
 
 ## 4. Evidence
 

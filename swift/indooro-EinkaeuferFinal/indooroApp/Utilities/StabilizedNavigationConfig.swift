@@ -20,6 +20,9 @@ struct MotionConfig {
     var stepLengthMeters: Float = 0.7 // provisional
     var headingToleranceRadians: Float = .pi / 3 // provisional
     var standingJumpConfirmations: Int = 12 // provisional
+    // Kompasspeilung nur bei Genauigkeit bis dazu (wie reliableHeadingAccuracyThreshold) und nicht aelter als Sekunden.
+    var headingMaxAccuracyDegrees: Double = 25 // provisional
+    var headingMaxAgeSeconds: TimeInterval = 2.0 // provisional
 }
 
 struct BeaconPositioningConfig {

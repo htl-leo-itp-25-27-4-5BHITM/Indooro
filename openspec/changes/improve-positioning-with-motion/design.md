@@ -36,13 +36,24 @@ Consequences:
 | `standingAlphaFactor` | 0.2 | Decision 2. Multiplies the estimator alpha while standing, so BLE noise moves the estimate 5× less. |
 | `stepLengthMeters` | 0.7 m | Decision 2. Typical adult step; calibratable per person later. |
 | `headingToleranceRadians` | 60° | A heading further than 60° from every outgoing walkable edge direction gives no displacement; BLE alone decides. |
+| `headingMaxAccuracyDegrees` | 25° | Same limit as `reliableHeadingAccuracyThreshold` in `BeaconManager`; less accurate compass readings are not used for displacement. |
+| `headingMaxAgeSeconds` | 2.0 s | A heading older than this is not used (compass events arrive on change, `headingFilter` is 1°). |
 | `standingJumpConfirmations` | 12 | While standing, a BLE jump (outside the existing gate) needs 12 consistent ticks (≈ 4.2 s at 0.35 s) instead of `jumpConfirmations` (3). Holds, but cannot dead-lock if the person really was moved (cart, pedometer outage). |
 
 Behavior per tick, in this order, only when `motionAided` and motion data is present:
 
-1. **Standing detection (3.1).** Standing = the pedometer step count has not increased for `standingAfterSeconds`. Without any step data (denied permission, old recording) the state is *unknown* and the pipeline behaves exactly as with the flag off.
+1. **Standing detection (3.1).** Standing = the pedometer step count has not increased for `standingAfterSeconds`. The recorder writes a `step` line with 0 steps at the start so that „step data present“ is known even if the first step comes late. Without any step data (denied permission, old recording) the state is *unknown* and the pipeline behaves exactly as with the flag off (`PoseFusionService.update` is called with `motion: nil`).
 2. **Step displacement (3.2).** New steps since the last tick × `stepLengthMeters` move the estimate along the outgoing edge of the nearest graph node whose direction is closest to the latest heading (map convention of `BeaconManager.mapHeadingRadians`: 0 rad = +y, `bearing → π − bearing`). The displaced estimate is the prior; the BLE point then corrects it through the normal gate and EMA. The projector keeps the result on the walkable graph.
 3. **BLE damping while standing (3.1).** The EMA alpha is multiplied by `standingAlphaFactor`.
 4. **Consistency check (3.3).** While standing, a BLE jump outside the gate needs `standingJumpConfirmations` instead of `jumpConfirmations`.
+
+Known limits (all for group 4 to judge against real recordings):
+
+- Steps that arrive in a tick without a BLE solution are discarded, not applied later (a long blackout would otherwise produce one large displacement). Motion therefore does not bridge dropouts yet.
+- The time-based part of the jump gate (`maxPlausibleSpeed · dt + jumpMargin`) still grows while a jump is held, so after ≈ 6.5 s a standing jump passes the gate even if `standingJumpConfirmations` is not reached yet. On the synthetic 17 m jump the acceptance moves from tick 11 (flag off) to tick 20 (flag on).
+- With the flag on, `step`/`heading` lines stay in the replay timeline. Motion lines after the last measurement lengthen the replay duration; with the flag off they are removed before the timeline is built.
+- The heading uses the compass-to-map convention of `BeaconManager.mapHeadingRadians` (no per-layout north offset). A layout that is not north-aligned needs an offset; this is a non-goal of `stabilize-ios-navigation-pipeline` and stays open until recordings show whether it matters.
+
+Synthetic results (unit tests in `MotionAidedTests`, seeded, not evidence): standing path length 2.92 m (off) vs 0.87 m (on); walking mean lag 3.22 m (off) vs 2.01 m (on); damping factor 0.2 cuts the path under noise from 37.8 m to 6.9 m. These only show that the model does what it is designed to do; whether it helps on real walks is decided in group 4.
 
 Not part of this change: automatic arrival, route changes from motion data, any UI.

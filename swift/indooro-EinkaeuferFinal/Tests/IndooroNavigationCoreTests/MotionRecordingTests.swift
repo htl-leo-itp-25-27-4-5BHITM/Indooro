@@ -3,7 +3,7 @@ import simd
 @testable import IndooroNavigationCore
 
 /// Schritt- und Kompass-Zeilen im Aufzeichnungsformat: Roundtrip, Abwaertskompatibilitaet und
-/// Gleichheit des Replays mit und ohne eingestreute Bewegungszeilen (motionAided noch nicht ausgewertet).
+/// Gleichheit des Replays: Flag aus ignoriert Bewegungszeilen, Flag an ohne Zeilen ist gleich Flag aus.
 final class MotionRecordingTests: XCTestCase {
     private func layout() throws -> LayoutData {
         try TestLayouts.demoSupermarket(beaconSpacing: 8)
@@ -63,16 +63,40 @@ final class MotionRecordingTests: XCTestCase {
 
     // MARK: - Replay-Gleichheit
 
+    /// Flag aus: Bewegungszeilen (auch ausserhalb des Bereichs) sind fuer das Replay unsichtbar.
     func testMotionLinesDoNotChangeReplayWhenFlagOff() throws {
-        try assertMotionLinesAreInvisibleToReplay(motionAided: false)
-    }
-
-    func testMotionLinesDoNotChangeReplayWhenFlagOn() throws {
-        try assertMotionLinesAreInvisibleToReplay(motionAided: true)
-    }
-
-    private func assertMotionLinesAreInvisibleToReplay(motionAided: Bool) throws {
         let layout = try layout()
+        let (base, mixed) = try recordingWithAndWithoutMotion(layout: layout)
+        var config = StabilizedNavigationConfig.default
+        config.motion.motionAided = false
+
+        let plain = NavigationReplay.run(recording: try roundTrip(base), layout: layout, config: config)
+        let withMotion = NavigationReplay.run(recording: try roundTrip(mixed), layout: layout, config: config)
+        XCTAssertGreaterThan(plain.tickCount, 0)
+        XCTAssertEqual(withMotion, plain)
+        XCTAssertEqual(withMotion.tickCount, plain.tickCount)
+        XCTAssertEqual(withMotion.durationSeconds, plain.durationSeconds)
+    }
+
+    /// Flag an ohne Bewegungszeilen: identisch zu Flag aus (kein Bewegungsdatum, kein Codepfad-Unterschied).
+    func testFlagOnWithoutMotionLinesEqualsFlagOff() throws {
+        let layout = try layout()
+        let (base, _) = try recordingWithAndWithoutMotion(layout: layout)
+        var on = StabilizedNavigationConfig.default
+        on.motion.motionAided = true
+        var off = StabilizedNavigationConfig.default
+        off.motion.motionAided = false
+
+        let flagOff = NavigationReplay.run(recording: try roundTrip(base), layout: layout, config: off)
+        let flagOn = NavigationReplay.run(recording: try roundTrip(base), layout: layout, config: on)
+        XCTAssertGreaterThan(flagOff.tickCount, 0)
+        XCTAssertEqual(flagOn, flagOff)
+    }
+
+    /// Basisaufzeichnung und dieselbe mit verstreuten Bewegungszeilen (vor, zwischen und nach den Messungen).
+    private func recordingWithAndWithoutMotion(
+        layout: LayoutData
+    ) throws -> (base: [NavigationRecordLine], mixed: [NavigationRecordLine]) {
         var recording = SyntheticRecording(layout: layout, seed: 91)
         recording.event(.startTour, plan: [stop("A", 30.5, 9.5)])
         recording.walk([SIMD2(2.5, 9.5), SIMD2(30.5, 9.5)], speed: 1.2)
@@ -94,16 +118,7 @@ final class MotionRecordingTests: XCTestCase {
         }
         mixed.append(.step(StepRecord(t: last + 50, steps: 999, distance: 700, source: "pedometer")))
         mixed.append(.heading(HeadingRecord(t: last + 50, degrees: 350, accuracy: 3, source: "compass")))
-
-        var config = StabilizedNavigationConfig.default
-        config.motion.motionAided = motionAided
-
-        let plain = NavigationReplay.run(recording: try roundTrip(base), layout: layout, config: config)
-        let withMotion = NavigationReplay.run(recording: try roundTrip(mixed), layout: layout, config: config)
-        XCTAssertGreaterThan(plain.tickCount, 0)
-        XCTAssertEqual(withMotion, plain)
-        XCTAssertEqual(withMotion.tickCount, plain.tickCount)
-        XCTAssertEqual(withMotion.durationSeconds, plain.durationSeconds)
+        return (base, mixed)
     }
 
     // MARK: - Config
