@@ -41,11 +41,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.HexFormat;
 import java.util.regex.Pattern;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/admin/products")
 @RolesAllowed({"admin", "region-manager", "store-manager"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "admin-products")
 public class AdminProductResource extends AdminApiSupport {
 
     private static final Logger LOG = Logger.getLogger(AdminProductResource.class);
@@ -78,6 +81,7 @@ public class AdminProductResource extends AdminApiSupport {
     @Inject
     LegacyDocumentGuard legacyDocumentGuard;
 
+    @Operation(operationId = "listAdminProducts")
     @GET
     public Object listProducts(@QueryParam("page") Integer page,
                                @QueryParam("size") Integer size,
@@ -122,6 +126,7 @@ public class AdminProductResource extends AdminApiSupport {
         };
     }
 
+    @Operation(operationId = "upsertAdminProduct")
     @POST
     public Product upsertProduct(Product product) {
         validateProduct(product);
@@ -145,6 +150,7 @@ public class AdminProductResource extends AdminApiSupport {
         }
     }
 
+    @Operation(operationId = "deleteAdminProduct")
     @DELETE
     @Path("/{id}")
     public Response deleteProduct(@PathParam("id") Integer id,

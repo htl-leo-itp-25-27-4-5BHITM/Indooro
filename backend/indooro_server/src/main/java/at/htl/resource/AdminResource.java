@@ -10,10 +10,13 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/admin")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "maintenance")
 public class AdminResource {
 
     private static final Logger LOG = Logger.getLogger(AdminResource.class);
@@ -28,6 +31,7 @@ public class AdminResource {
      * Erstellt den Index
      * POST /api/admin/index/create
      */
+    @Operation(operationId = "createProductIndex")
     @POST
     @Path("/index/create")
     @RolesAllowed("admin")
@@ -48,6 +52,7 @@ public class AdminResource {
      * Löscht den Index
      * DELETE /api/admin/index
      */
+    @Operation(operationId = "deleteProductIndex")
     @DELETE
     @Path("/index")
     @RolesAllowed("admin")
@@ -106,6 +111,7 @@ public class AdminResource {
      * Health Check
      * GET /api/admin/health
      */
+    @Operation(operationId = "adminHealth")
     @GET
     @Path("/health")
     @RolesAllowed("admin")

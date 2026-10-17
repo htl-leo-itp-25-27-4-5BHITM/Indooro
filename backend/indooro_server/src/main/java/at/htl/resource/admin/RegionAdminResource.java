@@ -15,33 +15,40 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/regions")
 @RolesAllowed({"admin", "region-manager", "store-manager"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "regions")
 public class RegionAdminResource extends AdminApiSupport {
 
     @Inject
     RegionAdminService regionAdminService;
 
+    @Operation(operationId = "listRegions")
     @GET
     public Object listRegions(@QueryParam("status") String status) {
         return regionAdminService.listRegions(parseStatus(status));
     }
 
+    @Operation(operationId = "createRegion")
     @POST
     @RolesAllowed("admin")
     public RegionDtos.RegionResponse createRegion(@Valid RegionDtos.RegionUpsertRequest request) {
         return regionAdminService.createRegion(request);
     }
 
+    @Operation(operationId = "getRegion")
     @GET
     @Path("/{regionId}")
     public RegionDtos.RegionResponse getRegion(@PathParam("regionId") java.util.UUID regionId) {
         return regionAdminService.getRegion(regionId);
     }
 
+    @Operation(operationId = "updateRegion")
     @PUT
     @Path("/{regionId}")
     @RolesAllowed("admin")
@@ -50,6 +57,7 @@ public class RegionAdminResource extends AdminApiSupport {
         return regionAdminService.updateRegion(regionId, request);
     }
 
+    @Operation(operationId = "archiveRegion")
     @PATCH
     @Path("/{regionId}/archive")
     @RolesAllowed("admin")

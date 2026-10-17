@@ -27,16 +27,20 @@ import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/admin/recipes")
 @RolesAllowed("admin")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "admin-recipes")
 public class AdminRecipeResource extends AdminApiSupport {
 
     @Inject
     RecipeService recipeService;
 
+    @Operation(operationId = "listAdminRecipes")
     @GET
     public CommonDtos.PageResponse<RecipeDtos.RecipeSummaryResponse> listRecipes(@QueryParam("q") String query,
                                                                                  @QueryParam("tag") String tag,
@@ -51,17 +55,20 @@ public class AdminRecipeResource extends AdminApiSupport {
         return recipeService.listAdminRecipes(query, tag, parseRecipeStatus(status), normalizePage(page), normalizeSize(size), normalizedSort);
     }
 
+    @Operation(operationId = "createRecipe")
     @POST
     public RecipeDtos.RecipeDetailResponse createRecipe(@Valid RecipeDtos.RecipeCreateRequest request) {
         return recipeService.createRecipe(request);
     }
 
+    @Operation(operationId = "getAdminRecipe")
     @GET
     @Path("/{recipeId}")
     public RecipeDtos.RecipeDetailResponse getRecipe(@PathParam("recipeId") UUID recipeId) {
         return recipeService.getAdminRecipe(recipeId);
     }
 
+    @Operation(operationId = "updateRecipe")
     @PUT
     @Path("/{recipeId}")
     public RecipeDtos.RecipeDetailResponse updateRecipe(@PathParam("recipeId") UUID recipeId,
@@ -69,24 +76,28 @@ public class AdminRecipeResource extends AdminApiSupport {
         return recipeService.updateRecipe(recipeId, request);
     }
 
+    @Operation(operationId = "publishRecipe")
     @PATCH
     @Path("/{recipeId}/publish")
     public RecipeDtos.RecipeDetailResponse publishRecipe(@PathParam("recipeId") UUID recipeId) {
         return recipeService.publishRecipe(recipeId);
     }
 
+    @Operation(operationId = "deactivateRecipe")
     @PATCH
     @Path("/{recipeId}/deactivate")
     public RecipeDtos.RecipeDetailResponse deactivateRecipe(@PathParam("recipeId") UUID recipeId) {
         return recipeService.deactivateRecipe(recipeId);
     }
 
+    @Operation(operationId = "archiveRecipe")
     @PATCH
     @Path("/{recipeId}/archive")
     public RecipeDtos.RecipeDetailResponse archiveRecipe(@PathParam("recipeId") UUID recipeId) {
         return recipeService.archiveRecipe(recipeId);
     }
 
+    @Operation(operationId = "addRecipeIngredient")
     @POST
     @Path("/{recipeId}/ingredients")
     public RecipeDtos.RecipeIngredientResponse addIngredient(@PathParam("recipeId") UUID recipeId,
@@ -94,6 +105,7 @@ public class AdminRecipeResource extends AdminApiSupport {
         return recipeService.addIngredient(recipeId, request);
     }
 
+    @Operation(operationId = "updateRecipeIngredient")
     @PUT
     @Path("/{recipeId}/ingredients/{ingredientId}")
     public RecipeDtos.RecipeIngredientResponse updateIngredient(@PathParam("recipeId") UUID recipeId,
@@ -102,6 +114,7 @@ public class AdminRecipeResource extends AdminApiSupport {
         return recipeService.updateIngredient(recipeId, ingredientId, request);
     }
 
+    @Operation(operationId = "deleteRecipeIngredient")
     @DELETE
     @Path("/{recipeId}/ingredients/{ingredientId}")
     public Response deleteIngredient(@PathParam("recipeId") UUID recipeId,
@@ -110,6 +123,7 @@ public class AdminRecipeResource extends AdminApiSupport {
         return Response.noContent().build();
     }
 
+    @Operation(operationId = "addRecipeStep")
     @POST
     @Path("/{recipeId}/steps")
     public RecipeDtos.RecipeStepResponse addStep(@PathParam("recipeId") UUID recipeId,
@@ -117,6 +131,7 @@ public class AdminRecipeResource extends AdminApiSupport {
         return recipeService.addStep(recipeId, request);
     }
 
+    @Operation(operationId = "updateRecipeStep")
     @PUT
     @Path("/{recipeId}/steps/{stepId}")
     public RecipeDtos.RecipeStepResponse updateStep(@PathParam("recipeId") UUID recipeId,
@@ -125,6 +140,7 @@ public class AdminRecipeResource extends AdminApiSupport {
         return recipeService.updateStep(recipeId, stepId, request);
     }
 
+    @Operation(operationId = "deleteRecipeStep")
     @DELETE
     @Path("/{recipeId}/steps/{stepId}")
     public Response deleteStep(@PathParam("recipeId") UUID recipeId,
@@ -133,6 +149,7 @@ public class AdminRecipeResource extends AdminApiSupport {
         return Response.noContent().build();
     }
 
+    @Operation(operationId = "getAdminRecipeMappingStatus")
     @GET
     @Path("/{recipeId}/mapping-status")
     public RecipeDtos.RecipeProductMappingResponse mappingStatus(@PathParam("recipeId") UUID recipeId,
@@ -141,6 +158,7 @@ public class AdminRecipeResource extends AdminApiSupport {
         return recipeService.mappingStatus(recipeId, storeId, storeCode, false);
     }
 
+    @Operation(operationId = "getMappingSuggestions")
     @GET
     @Path("/{recipeId}/ingredients/{ingredientId}/mapping-suggestions")
     public List<RecipeDtos.MappedRecipeProduct> mappingSuggestions(@PathParam("recipeId") UUID recipeId,
@@ -151,6 +169,7 @@ public class AdminRecipeResource extends AdminApiSupport {
         return recipeService.mappingSuggestions(recipeId, ingredientId, storeId, query, Math.min(Math.max(size, 1), 25));
     }
 
+    @Operation(operationId = "confirmIngredientMapping")
     @PUT
     @Path("/{recipeId}/ingredients/{ingredientId}/product-mapping")
     public RecipeDtos.IngredientMappingStatusResponse confirmMapping(@PathParam("recipeId") UUID recipeId,
@@ -159,6 +178,7 @@ public class AdminRecipeResource extends AdminApiSupport {
         return recipeService.confirmMapping(recipeId, ingredientId, request);
     }
 
+    @Operation(operationId = "archiveIngredientMapping")
     @DELETE
     @Path("/{recipeId}/ingredients/{ingredientId}/product-mapping/{mappingId}")
     public Response archiveMapping(@PathParam("recipeId") UUID recipeId,
