@@ -13,6 +13,10 @@ final class ProductSearchStore: ObservableObject {
     private var task: URLSessionDataTask?
     private var retryAction: (() -> Void)?
 
+    /// Filialcode der aktiven Filiale (`nil` = keine Filiale bekannt). Gilt, wenn die Anfrage keine
+    /// eigene Filiale mitbringt (weder `store` noch `storeProvider`).
+    private(set) var activeStoreCode: String?
+
     func clearSearch() {
         task?.cancel()
         latestSearchRequestID = UUID()
@@ -25,6 +29,22 @@ final class ProductSearchStore: ObservableObject {
     }
 
     func retry() { retryAction?() }
+
+    /// Setzt die aktive Filiale. Bei einer Aenderung werden Treffer und laufende Anfragen verworfen.
+    func setActiveStore(code: String?) {
+        let normalized = ProductEndpoint.normalizedStoreCode(code)
+        guard normalized != activeStoreCode else { return }
+        activeStoreCode = normalized
+        clearSearch()
+    }
+
+    func searchURL(query: String, size: Int) -> URL? {
+        ProductEndpoint.searchURL(base: AppEnvironment.apiBaseURL.absoluteString, query: query, size: size, storeCode: activeStoreCode)
+    }
+
+    func listURL(size: Int) -> URL? {
+        ProductEndpoint.listURL(base: AppEnvironment.apiBaseURL.absoluteString, size: size, storeCode: activeStoreCode)
+    }
 
     func searchProducts(query: String, size: Int = 50, store: MobileStoreSummary? = nil) {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -52,7 +72,7 @@ final class ProductSearchStore: ObservableObject {
         errorMessage = nil
         hasCompletedSearch = false
         searchResults = []
-        guard let url = PilotSearchURL.make(base: AppEnvironment.apiBaseURL, query: query, size: size, storeID: store?.id, storeCode: store?.storeCode) else {
+        guard let url = PilotSearchURL.make(base: AppEnvironment.apiBaseURL, query: query, size: size, storeID: store?.id, storeCode: ProductEndpoint.normalizedStoreCode(store?.storeCode) ?? activeStoreCode) else {
             isSearching = false
             errorMessage = "Die Suchanfrage konnte nicht erstellt werden."
             return
