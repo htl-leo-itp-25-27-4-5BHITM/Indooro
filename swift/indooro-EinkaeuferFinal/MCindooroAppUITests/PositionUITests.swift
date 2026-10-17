@@ -26,7 +26,13 @@ final class PositionUITests: XCTestCase {
 
         let map = UITestSupport.storeMap(in: app)
         XCTAssertTrue(map.waitForExistence(timeout: UITestSupport.timeout), "Karte fehlt")
-        map.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        // Auf langsamen Runnern (CI, iOS 26.5) kann die ScrollView der Karte noch animieren; ein Tipp
+        // stoppt dann nur die Bewegung und kommt nicht an. Daher bis zu dreimal tippen, bis der Hinweis weg ist.
+        var tapAttempts = 0
+        repeat {
+            tapAttempts += 1
+            map.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+        } while !hint.waitForNonExistence(timeout: 5) && tapAttempts < 3
 
         // Die Position ist gesetzt: Tipp-Hinweis und „Position ungenau“ verschwinden.
         XCTAssertTrue(hint.waitForNonExistence(timeout: UITestSupport.timeout), "Tipp-Hinweis bleibt sichtbar")

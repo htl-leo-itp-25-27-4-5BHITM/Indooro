@@ -6,6 +6,7 @@
 #   sh scripts/ios/run-ui-tests.sh
 #   UI_TEST_DEVICE_UDID=<UDID> sh scripts/ios/run-ui-tests.sh   # bestimmter Simulator
 #   DERIVED_DATA_PATH=<Pfad> sh scripts/ios/run-ui-tests.sh      # eigener Derived-Data-Ordner
+#   UI_TEST_ONLY=MCindooroAppUITests/PositionUITests sh scripts/ios/run-ui-tests.sh   # nur eine Klasse oder ein Test
 #
 # Simulator: laufender iPhone-Simulator, sonst der erste verfuegbare iPhone-Simulator.
 # Exitcode ist der von `xcodebuild test`; der Mock wird am Ende beendet.
@@ -81,6 +82,7 @@ xcodebuild test \
   -scheme "$SCHEME" \
   -destination "platform=iOS Simulator,id=$UDID" \
   -derivedDataPath "$DERIVED" \
+  ${UI_TEST_ONLY:+-only-testing:"$UI_TEST_ONLY"} \
   CODE_SIGNING_ALLOWED=NO
 status=$?
 set -e
