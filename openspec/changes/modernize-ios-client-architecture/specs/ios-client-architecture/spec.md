@@ -106,7 +106,7 @@ The iOS app SHALL build the walkable graph once per layout revision, SHALL share
 #### Scenario: Order is unchanged by the optimization
 - **GIVEN** the characterization fixtures from before the refactor
 - **WHEN** stops are ordered in optimized mode
-- **THEN** the order equals the recorded nearest-neighbor order
+- **THEN** the order equals the order recorded from `TourPlanner` in `IndooroNavigationCore`
 
 ### Requirement: Shopping data persists in versioned files
 The iOS app SHALL persist lists, selected list, active tour list, and route mode in `Application Support/ShoppingLists/lists.json` with `schemaVersion` 2, SHALL write atomically and keep the previous file as `lists.json.bak`, SHALL debounce writes by 300 ms, SHALL migrate data from the `UserDefaults` keys `shoppingListStore.v1`, `shoppingSession.activeListID`, and `shoppingSession.routeMode` on first launch, SHALL remove those keys only after two consecutive successful loads of the new file, and IF the file cannot be decoded THEN SHALL rename it to `lists.corrupt-<timestamp>.json`, try the backup, and never overwrite unreadable data with a new default list.

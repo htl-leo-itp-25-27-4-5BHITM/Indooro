@@ -1,0 +1,65 @@
+diff --git a/swift/indooro-EinkaeuferFinal/indooroApp/Managers/BeaconManager.swift b/swift/indooro-EinkaeuferFinal/indooroApp/Managers/BeaconManager.swift
+index 9da593f..a002b64 100644
+--- a/swift/indooro-EinkaeuferFinal/indooroApp/Managers/BeaconManager.swift
++++ b/swift/indooro-EinkaeuferFinal/indooroApp/Managers/BeaconManager.swift
+@@ -618,6 +618,20 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
+             return
+         }
+ 
++        #if DEBUG
++        if RenderProbe.isEnabled {
++            RenderProbe.ticks += 1
++            RenderProbe.startReporting()
++            // Simulierter Stillstand: feste Position (2.0, 3.5) in Kartenmetern, RSSI aus dem Abstand zu jedem Beacon.
++            for beacon in beacons {
++                let dx = beacon.positionX - 2.0
++                let dy = beacon.positionY - 3.5
++                let distance = max(1.0, (dx * dx + dy * dy).squareRoot())
++                let rssi = Int((-59.0 - 20.0 * log10(distance)).rounded())
++                recordBeaconSample(name: beacon.name, rssi: rssi, timestamp: timestamp, txPower: nil)
++            }
++        }
++        #endif
+         let tick = positioningPipeline.tick(
+             beaconNames: beacons.map(\.name),
+             samples: rssiSamples,
+@@ -2463,3 +2477,20 @@ private extension BeaconProximityClass {
+         }
+     }
+ }
++
++#if DEBUG
++/// TEMPORAER (stabilize-ios-navigation-pipeline 10.4): zaehlt Ticks und ContentView-Auswertungen.
++enum RenderProbe {
++    static let isEnabled = ProcessInfo.processInfo.environment["INDOORO_RENDER_PROBE"] == "1"
++    static var ticks = 0
++    static var contentViewBodies = 0
++    private static var started = false
++    static func startReporting() {
++        guard isEnabled, !started else { return }
++        started = true
++        Timer.scheduledTimer(withTimeInterval: 5, repeats: true) { _ in
++            print("RENDERPROBE t=\(Int(Date().timeIntervalSince1970)) ticks=\(ticks) contentViewBodies=\(contentViewBodies)")
++        }
++    }
++}
++#endif
+diff --git a/swift/indooro-EinkaeuferFinal/indooroApp/Views/Main/ContentView.swift b/swift/indooro-EinkaeuferFinal/indooroApp/Views/Main/ContentView.swift
+index cc70dcd..008ebf5 100644
+--- a/swift/indooro-EinkaeuferFinal/indooroApp/Views/Main/ContentView.swift
++++ b/swift/indooro-EinkaeuferFinal/indooroApp/Views/Main/ContentView.swift
+@@ -25,6 +25,14 @@ struct ContentView: View {
+     @State private var pendingLastStoreLayoutOpenRequest: UUID?
+ 
+     var body: some View {
++        #if DEBUG
++        let _ = {
++            if RenderProbe.isEnabled {
++                RenderProbe.contentViewBodies += 1
++                Self._printChanges()
++            }
++        }()
++        #endif
+         TabView(selection: $selectedSection) {
+             HomeDashboardView(
+                 selectedList: shoppingListManager.selectedList,

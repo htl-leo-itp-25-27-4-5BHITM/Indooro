@@ -1,0 +1,20 @@
+CREATE TABLE layout_underlays (
+    store_id UUID PRIMARY KEY REFERENCES stores(id),
+    content_type VARCHAR(20) NOT NULL,
+    bytes BYTEA NOT NULL,
+    width_px INTEGER NOT NULL,
+    height_px INTEGER NOT NULL,
+    scale_m_per_px NUMERIC(16, 10),
+    offset_x_m NUMERIC(14, 6) NOT NULL DEFAULT 0,
+    offset_y_m NUMERIC(14, 6) NOT NULL DEFAULT 0,
+    rotation_deg NUMERIC(9, 4) NOT NULL DEFAULT 0,
+    opacity NUMERIC(4, 3) NOT NULL DEFAULT 0.5,
+    locked BOOLEAN NOT NULL DEFAULT FALSE,
+    updated_at TIMESTAMPTZ NOT NULL,
+    updated_by VARCHAR(120) NOT NULL,
+    CONSTRAINT ck_layout_underlays_content_type CHECK (content_type IN ('image/png', 'image/jpeg')),
+    CONSTRAINT ck_layout_underlays_bytes CHECK (octet_length(bytes) BETWEEN 1 AND 10485760),
+    CONSTRAINT ck_layout_underlays_dimensions CHECK (width_px BETWEEN 1 AND 8000 AND height_px BETWEEN 1 AND 8000),
+    CONSTRAINT ck_layout_underlays_scale CHECK (scale_m_per_px IS NULL OR scale_m_per_px > 0),
+    CONSTRAINT ck_layout_underlays_opacity CHECK (opacity BETWEEN 0 AND 1)
+);

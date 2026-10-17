@@ -1,0 +1,56 @@
+{
+    "storeId": "8b581937-fbf8-41ff-b8f5-07437d840cd0",
+    "layoutId": "76609384-71d5-452e-a382-ceb6c20211d9",
+    "layoutVersionNo": 1,
+    "radius": 8.0,
+    "status": "RED",
+    "blockingCount": 2,
+    "warningCount": 2,
+    "counts": {
+        "shelves": 6,
+        "entrances": 1,
+        "products": 12,
+        "placedBeacons": 5,
+        "assignedBeacons": 5,
+        "walkableCells": 564,
+        "lowCoverageCells": 563
+    },
+    "findings": [
+        {
+            "severity": "BLOCKING",
+            "code": "PRODUCT_NO_SHELF",
+            "message": "Produkt 9100011 hat einen layoutCode (540/1/1/1), der kein Regal trifft.",
+            "elementId": null,
+            "productId": 9100011,
+            "layoutCode": "540/1/1/1",
+            "beaconCode": null
+        },
+        {
+            "severity": "BLOCKING",
+            "code": "PRODUCT_NO_SHELF",
+            "message": "Produkt 9100012 hat einen layoutCode (520/9/1/1), der kein Regal trifft.",
+            "elementId": null,
+            "productId": 9100012,
+            "layoutCode": "520/9/1/1",
+            "beaconCode": null
+        },
+        {
+            "severity": "WARNING",
+            "code": "SHELF_WITHOUT_PRODUCTS",
+            "message": "Regal 530/2 hat keine Produkte.",
+            "elementId": "7",
+            "productId": null,
+            "layoutCode": "530/2",
+            "beaconCode": null
+        },
+        {
+            "severity": "WARNING",
+            "code": "LOW_BEACON_COVERAGE",
+            "message": "563 von 564 begehbaren Zellen (99.8 %) haben weniger als 3 Beacons im Radius 8.0 m.",
+            "elementId": null,
+            "productId": null,
+            "layoutCode": null,
+            "beaconCode": null
+        }
+    ]
+}

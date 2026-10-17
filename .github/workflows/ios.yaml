@@ -1,0 +1,96 @@
+name: iOS Tests
+
+on:
+  pull_request:
+    branches: [ "pilot/first-store", "main" ]
+    paths:
+      - 'swift/indooro-EinkaeuferFinal/**'
+      - 'scripts/dev/mock_mobile_api.py'
+      - '.github/workflows/ios.yaml'
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  swift-tests:
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Cache SwiftPM build directory
+        uses: actions/cache@v4
+        with:
+          path: swift/indooro-EinkaeuferFinal/.build
+          key: swiftpm-${{ runner.os }}-${{ hashFiles('swift/indooro-EinkaeuferFinal/Package.swift') }}
+          restore-keys: |
+            swiftpm-${{ runner.os }}-
+
+      - name: Navigation package and contract tests (swift test)
+        working-directory: swift/indooro-EinkaeuferFinal
+        run: swift test
+
+      - name: Resolve an available iPhone simulator
+        id: simulator
+        run: |
+          # Nimmt das erste verfuegbare iPhone; der Name haengt vom Runner-Image ab.
+          NAME=$(xcrun simctl list devices available | grep -E '^[[:space:]]+iPhone' | head -n 1 | sed -E 's/^[[:space:]]+//; s/ \([0-9A-F-]+\).*$//')
+          if [ -z "$NAME" ]; then
+            echo "Kein iPhone-Simulator verfuegbar" >&2
+            exit 1
+          fi
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "Simulator: $NAME"
+
+      - name: Simulator build (MCindooroApp)
+        run: |
+          xcodebuild build \
+            -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj \
+            -scheme MCindooroApp \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Start mobile API mock (ui-test-store)
+        # Die UI-Tests (MCindooroAppUITests) brauchen den Mock auf 127.0.0.1:18090 (add-ios-pilot-ui-tests).
+        if: ${{ hashFiles('swift/indooro-EinkaeuferFinal/MCindooroAppTests/**/*.swift') != '' }}
+        run: |
+          MOCK_DATASET=ui-test-store nohup python3 scripts/dev/mock_mobile_api.py 18090 > "$RUNNER_TEMP/mock-api.log" 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://127.0.0.1:18090/api/mobile/stores; then
+              echo "Mock antwortet nach $attempt Versuch(en)."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Mock antwortet nicht. Log:" >&2
+          cat "$RUNNER_TEMP/mock-api.log" >&2
+          exit 1
+
+      - name: App unit and UI tests (MCindooroAppTests, MCindooroAppUITests)
+        # Erst aktiv, wenn der Testtarget in Xcode angelegt wurde (add-ios-app-test-target 1.2).
+        # Der Scheme-Lauf enthaelt beide Testziele. Bei einem Simulator-Boot-Fehler wird einmal wiederholt
+        # (design.md, Entscheidung 4); echte Testfehler werden nicht wiederholt.
+        if: ${{ hashFiles('swift/indooro-EinkaeuferFinal/MCindooroAppTests/**/*.swift') != '' }}
+        run: |
+          set +e
+          run_tests() {
+            xcodebuild test \
+              -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj \
+              -scheme MCindooroApp \
+              -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
+              CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$1"
+            return "${PIPESTATUS[0]}"
+          }
+          run_tests "$RUNNER_TEMP/xcodebuild-1.log"
+          status=$?
+          if [ "$status" -ne 0 ] && grep -qE 'Unable to boot|Failed to boot|failed to boot|Timed out waiting for .*(Simulator|device)|CoreSimulatorService connection became invalid' "$RUNNER_TEMP/xcodebuild-1.log"; then
+            echo "::warning::Simulator-Boot-Fehler erkannt, zweiter und letzter Versuch."
+            xcrun simctl shutdown all || true
+            run_tests "$RUNNER_TEMP/xcodebuild-2.log"
+            status=$?
+          fi
+          exit "$status"

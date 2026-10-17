@@ -146,7 +146,15 @@ final class IndoorGraph {
                 continue
             }
 
-            if best == nil || projection.distanceToPoint < (best?.distanceToPoint ?? .greatestFiniteMagnitude) {
+            // Gleiche Distanz: kleinere Kanten-ID gewinnt, damit das Ergebnis nicht von der
+            // Hash-Reihenfolge des Dictionarys abhaengt.
+            if let current = best {
+                let isCloser = projection.distanceToPoint < current.distanceToPoint - 1e-5
+                let isTie = abs(projection.distanceToPoint - current.distanceToPoint) <= 1e-5
+                if isCloser || (isTie && projection.edgeID < current.edgeID) {
+                    best = projection
+                }
+            } else {
                 best = projection
             }
         }
@@ -205,13 +213,24 @@ final class IndoorGraph {
         )
     }
 
-    func shortestRoute(from startPoint: SIMD2<Float>, to endPoint: SIMD2<Float>, floor: Int = 0) -> IndoorRoute? {
+    func shortestRoute(
+        from startPoint: SIMD2<Float>,
+        to endPoint: SIMD2<Float>,
+        floor: Int = 0,
+        turnPenalty: Float = RouteStabilityConfig.defaultTurnPenaltyMeters
+    ) -> IndoorRoute? {
         guard let startNode = nearestNode(to: startPoint, floor: floor),
               let endNode = nearestNode(to: endPoint, floor: floor) else {
             return nil
         }
 
-        return shortestRoute(fromNodeID: startNode.id, toNodeID: endNode.id, startPoint: startPoint, endPoint: endPoint)
+        return shortestRoute(
+            fromNodeID: startNode.id,
+            toNodeID: endNode.id,
+            startPoint: startPoint,
+            endPoint: endPoint,
+            turnPenalty: turnPenalty
+        )
     }
 
     func plannedRoute(from startPoint: SIMD2<Float>, to endPoint: SIMD2<Float>, floor: Int = 0) -> IndoorRoute? {
@@ -226,51 +245,139 @@ final class IndoorGraph {
         return simd_length(endPoint - startPoint)
     }
 
+    /// A* ueber Zustaenden (Knoten, Eingangsrichtung). Jeder Richtungswechsel kostet
+    /// `turnPenalty` zusaetzlich, damit lange Geraden bevorzugt werden. Gleiche Kosten werden
+    /// ueber f, g, Knoten-ID und Richtungsreihenfolge entschieden: gleiche Eingabe, gleiche Route.
     func shortestRoute(
         fromNodeID startNodeID: Int,
         toNodeID endNodeID: Int,
         startPoint: SIMD2<Float>? = nil,
-        endPoint: SIMD2<Float>? = nil
+        endPoint: SIMD2<Float>? = nil,
+        turnPenalty: Float = RouteStabilityConfig.defaultTurnPenaltyMeters
     ) -> IndoorRoute? {
         guard nodesByID[startNodeID] != nil, nodesByID[endNodeID] != nil else { return nil }
 
-        var openSet: Set<Int> = [startNodeID]
-        var cameFromNode: [Int: Int] = [:]
-        var cameFromEdge: [Int: Int] = [:]
+        struct State: Hashable {
+            let node: Int
+            let direction: Int // 0 = Start, 1...8 = Richtungssektor
+        }
+        struct OpenEntry {
+            let f: Float
+            let g: Float
+            let state: State
+        }
+        struct Link {
+            let previous: State
+            let edgeID: Int
+        }
 
-        var gScore: [Int: Float] = [startNodeID: 0]
-        var fScore: [Int: Float] = [startNodeID: heuristicCost(from: startNodeID, to: endNodeID)]
+        func isOrderedBefore(_ lhs: OpenEntry, _ rhs: OpenEntry) -> Bool {
+            if lhs.f != rhs.f { return lhs.f < rhs.f }
+            if lhs.g != rhs.g { return lhs.g < rhs.g }
+            if lhs.state.node != rhs.state.node { return lhs.state.node < rhs.state.node }
+            return lhs.state.direction < rhs.state.direction
+        }
 
-        while !openSet.isEmpty {
-            guard let current = openSet.min(by: { (fScore[$0] ?? .greatestFiniteMagnitude) < (fScore[$1] ?? .greatestFiniteMagnitude) }) else {
-                break
-            }
+        var open = BinaryHeap<OpenEntry>(areInIncreasingOrder: isOrderedBefore)
+        var gScore: [State: Float] = [:]
+        var cameFrom: [State: Link] = [:]
+        var closed: Set<State> = []
 
-            if current == endNodeID {
-                return reconstructRoute(
-                    cameFromNode: cameFromNode,
-                    cameFromEdge: cameFromEdge,
-                    endNodeID: endNodeID,
-                    totalCost: gScore[endNodeID] ?? 0,
+        let startState = State(node: startNodeID, direction: 0)
+        gScore[startState] = 0
+        open.push(OpenEntry(f: heuristicCost(from: startNodeID, to: endNodeID), g: 0, state: startState))
+
+        while let entry = open.pop() {
+            let current = entry.state
+            if closed.contains(current) { continue }
+            closed.insert(current)
+
+            if current.node == endNodeID {
+                var nodePath: [Int] = [current.node]
+                var edgePath: [Int] = []
+                var cursor = current
+                while let link = cameFrom[cursor] {
+                    edgePath.append(link.edgeID)
+                    nodePath.append(link.previous.node)
+                    cursor = link.previous
+                }
+                nodePath.reverse()
+                edgePath.reverse()
+                return buildRoute(
+                    nodePath: nodePath,
+                    edgePath: edgePath,
+                    totalCost: entry.g,
                     startPoint: startPoint,
                     endPoint: endPoint
                 )
             }
 
-            openSet.remove(current)
-            for neighbor in adjacencyByNode[current] ?? [] {
-                let tentative = (gScore[current] ?? .greatestFiniteMagnitude) + neighbor.cost
-                if tentative < (gScore[neighbor.neighborNodeID] ?? .greatestFiniteMagnitude) {
-                    cameFromNode[neighbor.neighborNodeID] = current
-                    cameFromEdge[neighbor.neighborNodeID] = neighbor.edgeID
-                    gScore[neighbor.neighborNodeID] = tentative
-                    fScore[neighbor.neighborNodeID] = tentative + heuristicCost(from: neighbor.neighborNodeID, to: endNodeID)
-                    openSet.insert(neighbor.neighborNodeID)
+            let currentG = gScore[current] ?? .greatestFiniteMagnitude
+            for neighbor in adjacencyByNode[current.node] ?? [] {
+                let direction = directionSector(from: current.node, to: neighbor.neighborNodeID)
+                let penalty = (current.direction != 0 && current.direction != direction) ? turnPenalty : 0
+                let tentative = currentG + neighbor.cost + penalty
+                let next = State(node: neighbor.neighborNodeID, direction: direction)
+                if closed.contains(next) { continue }
+                if tentative < (gScore[next] ?? .greatestFiniteMagnitude) {
+                    gScore[next] = tentative
+                    cameFrom[next] = Link(previous: current, edgeID: neighbor.edgeID)
+                    open.push(
+                        OpenEntry(
+                            f: tentative + heuristicCost(from: next.node, to: endNodeID),
+                            g: tentative,
+                            state: next
+                        )
+                    )
                 }
             }
         }
 
         return nil
+    }
+
+    /// Dijkstra ueber reine Kantenkosten (ohne Abbiegestrafe) von einem Startknoten zu allen
+    /// erreichbaren Knoten. Grundlage der Distanzmatrix der Tourenplanung.
+    func distances(fromNodeID startNodeID: Int) -> [Int: Float] {
+        guard nodesByID[startNodeID] != nil else { return [:] }
+
+        struct Entry {
+            let cost: Float
+            let node: Int
+        }
+        var open = BinaryHeap<Entry>(areInIncreasingOrder: { lhs, rhs in
+            lhs.cost != rhs.cost ? lhs.cost < rhs.cost : lhs.node < rhs.node
+        })
+        var best: [Int: Float] = [startNodeID: 0]
+        var settled: Set<Int> = []
+        open.push(Entry(cost: 0, node: startNodeID))
+
+        while let entry = open.pop() {
+            if !settled.insert(entry.node).inserted { continue }
+            for neighbor in adjacencyByNode[entry.node] ?? [] {
+                let tentative = entry.cost + neighbor.cost
+                if tentative < (best[neighbor.neighborNodeID] ?? .greatestFiniteMagnitude) {
+                    best[neighbor.neighborNodeID] = tentative
+                    open.push(Entry(cost: tentative, node: neighbor.neighborNodeID))
+                }
+            }
+        }
+        return best
+    }
+
+    /// Distanzen vom naechsten Knoten des Punktes zu allen erreichbaren Knoten.
+    func distances(from point: SIMD2<Float>, floor: Int = 0) -> [Int: Float] {
+        guard let node = nearestNode(to: point, floor: floor) else { return [:] }
+        return distances(fromNodeID: node.id)
+    }
+
+    /// Richtung einer Kante als Sektor 1...8 (45-Grad-Raster, feste Reihenfolge).
+    private func directionSector(from nodeID: Int, to otherNodeID: Int) -> Int {
+        guard let a = nodesByID[nodeID], let b = nodesByID[otherNodeID] else { return 0 }
+        let delta = b.mapPoint - a.mapPoint
+        let angle = atan2(delta.y, delta.x) // -pi...pi
+        let sector = Int((angle / (.pi / 4)).rounded())
+        return ((sector % 8) + 8) % 8 + 1
     }
 
     private func heuristicCost(from nodeID: Int, to otherNodeID: Int) -> Float {
@@ -280,29 +387,13 @@ final class IndoorGraph {
         return simd_length(a.mapPoint - b.mapPoint)
     }
 
-    private func reconstructRoute(
-        cameFromNode: [Int: Int],
-        cameFromEdge: [Int: Int],
-        endNodeID: Int,
+    private func buildRoute(
+        nodePath: [Int],
+        edgePath: [Int],
         totalCost: Float,
         startPoint: SIMD2<Float>?,
         endPoint: SIMD2<Float>?
     ) -> IndoorRoute? {
-        var nodePath: [Int] = [endNodeID]
-        var edgePath: [Int] = []
-
-        var current = endNodeID
-        while let parent = cameFromNode[current] {
-            nodePath.append(parent)
-            if let edgeID = cameFromEdge[current] {
-                edgePath.append(edgeID)
-            }
-            current = parent
-        }
-
-        nodePath.reverse()
-        edgePath.reverse()
-
         guard !nodePath.isEmpty else { return nil }
 
         var polyline: [SIMD2<Float>] = []
@@ -352,7 +443,24 @@ enum IndoorGraphBuilder {
         var blockedCells: Set<GridPoint> = []
 
         for element in elements {
-            if element.type == "beacon" || element.type == "entrance" {
+            // QR-Anker sind Positionsmarken auf dem Boden und blockieren keine Zellen.
+            if element.type == "beacon" || element.type == "entrance" || element.isAnchor {
+                continue
+            }
+
+            // Gedrehte Elemente blockieren nur die Zellen, die das gedrehte Rechteck wirklich ueberdeckt.
+            if let rotation = element.rotation, !RotatedRectGeometry.isAxisAligned(rotation) {
+                blockedCells.formUnion(
+                    RotatedRectGeometry.blockedCells(
+                        x: element.x,
+                        y: element.y,
+                        width: element.width,
+                        height: element.height,
+                        rotationDegrees: rotation,
+                        gridWidth: gridWidth,
+                        gridHeight: gridHeight
+                    )
+                )
                 continue
             }
 
@@ -446,8 +554,207 @@ enum IndoorGraphBuilder {
     }
 }
 
+/// Geometrie gedrehter Rechtecke auf dem Zellengitter. Rotation in Grad, im Uhrzeigersinn um den
+/// Mittelpunkt, Karte mit y nach unten (wie SVG rotate in admin-ui/src/editor/geometry.ts).
+enum RotatedRectGeometry {
+    /// Ueberlappungen kleiner als dieser Wert (Flaeche/Kante beruehrt nur) zaehlen nicht.
+    static let overlapEpsilon = 1e-6
+
+    static func isAxisAligned(_ rotationDegrees: Double) -> Bool {
+        rotationDegrees.truncatingRemainder(dividingBy: 360) == 0
+    }
+
+    /// Ecken des Rechtecks (x, y, width, height), um den Mittelpunkt um `rotationDegrees` gedreht.
+    static func corners(
+        x: Double,
+        y: Double,
+        width: Double,
+        height: Double,
+        rotationDegrees: Double
+    ) -> [SIMD2<Double>] {
+        let centerX = x + width / 2
+        let centerY = y + height / 2
+        let halfWidth = width / 2
+        let halfHeight = height / 2
+        let radians = rotationDegrees * .pi / 180
+        let cosine = cos(radians)
+        let sine = sin(radians)
+
+        let local = [
+            SIMD2(-halfWidth, -halfHeight),
+            SIMD2(halfWidth, -halfHeight),
+            SIMD2(halfWidth, halfHeight),
+            SIMD2(-halfWidth, halfHeight)
+        ]
+        return local.map { point in
+            SIMD2(
+                centerX + point.x * cosine - point.y * sine,
+                centerY + point.x * sine + point.y * cosine
+            )
+        }
+    }
+
+    /// Separating-Axis-Test: true, wenn Zelle und Rechteck eine Flaeche mit Ueberlappung > `overlapEpsilon` teilen.
+    static func overlapsCell(_ cell: GridPoint, corners rectCorners: [SIMD2<Double>]) -> Bool {
+        let cellX = Double(cell.x)
+        let cellY = Double(cell.y)
+        let cellCorners = [
+            SIMD2(cellX, cellY),
+            SIMD2(cellX + 1, cellY),
+            SIMD2(cellX + 1, cellY + 1),
+            SIMD2(cellX, cellY + 1)
+        ]
+
+        guard rectCorners.count == 4 else { return false }
+        let rectEdgeA = rectCorners[1] - rectCorners[0]
+        let rectEdgeB = rectCorners[3] - rectCorners[0]
+        let lengthA = simd_length(rectEdgeA)
+        let lengthB = simd_length(rectEdgeB)
+        guard lengthA > 0, lengthB > 0 else { return false }
+
+        let axes = [
+            SIMD2(1.0, 0.0),
+            SIMD2(0.0, 1.0),
+            rectEdgeA / lengthA,
+            rectEdgeB / lengthB
+        ]
+
+        for axis in axes {
+            let cellRange = projectionRange(of: cellCorners, onto: axis)
+            let rectRange = projectionRange(of: rectCorners, onto: axis)
+            let overlap = min(cellRange.max, rectRange.max) - max(cellRange.min, rectRange.min)
+            if overlap <= overlapEpsilon {
+                return false
+            }
+        }
+        return true
+    }
+
+    /// Alle Zellen, die das gedrehte Rechteck mit echter Flaeche ueberdeckt. Zellen ausserhalb des Gitters entfallen.
+    static func blockedCells(
+        x: Double,
+        y: Double,
+        width: Double?,
+        height: Double?,
+        rotationDegrees: Double,
+        gridWidth: Int,
+        gridHeight: Int
+    ) -> Set<GridPoint> {
+        let rectWidth = width ?? 1
+        let rectHeight = height ?? 1
+        guard rectWidth > 0, rectHeight > 0 else { return [] }
+
+        let rectCorners = corners(
+            x: x,
+            y: y,
+            width: rectWidth,
+            height: rectHeight,
+            rotationDegrees: rotationDegrees
+        )
+        let xs = rectCorners.map(\.x)
+        let ys = rectCorners.map(\.y)
+        let minCellX = max(0, Int(floor(xs.min() ?? 0)))
+        let maxCellX = min(gridWidth, Int(ceil(xs.max() ?? 0)))
+        let minCellY = max(0, Int(floor(ys.min() ?? 0)))
+        let maxCellY = min(gridHeight, Int(ceil(ys.max() ?? 0)))
+
+        var cells: Set<GridPoint> = []
+        guard minCellX < maxCellX, minCellY < maxCellY else { return cells }
+
+        for cellX in minCellX..<maxCellX {
+            for cellY in minCellY..<maxCellY {
+                let cell = GridPoint(x: cellX, y: cellY)
+                if overlapsCell(cell, corners: rectCorners) {
+                    cells.insert(cell)
+                }
+            }
+        }
+        return cells
+    }
+
+    private static func projectionRange(of points: [SIMD2<Double>], onto axis: SIMD2<Double>) -> (min: Double, max: Double) {
+        var minimum = Double.greatestFiniteMagnitude
+        var maximum = -Double.greatestFiniteMagnitude
+        for point in points {
+            let projected = simd_dot(point, axis)
+            minimum = min(minimum, projected)
+            maximum = max(maximum, projected)
+        }
+        return (minimum, maximum)
+    }
+}
+
 extension CGPoint {
     init(_ vector: SIMD2<Float>) {
         self.init(x: CGFloat(vector.x), y: CGFloat(vector.y))
+    }
+}
+
+/// Binaerer Min-Heap mit frei waehlbarer Ordnung.
+struct BinaryHeap<Element> {
+    private var storage: [Element] = []
+    private let areInIncreasingOrder: (Element, Element) -> Bool
+
+    init(areInIncreasingOrder: @escaping (Element, Element) -> Bool) {
+        self.areInIncreasingOrder = areInIncreasingOrder
+    }
+
+    var isEmpty: Bool { storage.isEmpty }
+    var count: Int { storage.count }
+
+    mutating func push(_ element: Element) {
+        storage.append(element)
+        var child = storage.count - 1
+        while child > 0 {
+            let parent = (child - 1) / 2
+            guard areInIncreasingOrder(storage[child], storage[parent]) else { break }
+            storage.swapAt(child, parent)
+            child = parent
+        }
+    }
+
+    mutating func pop() -> Element? {
+        guard let first = storage.first else { return nil }
+        let last = storage.removeLast()
+        if !storage.isEmpty {
+            storage[0] = last
+            var parent = 0
+            while true {
+                let left = 2 * parent + 1
+                let right = left + 1
+                var smallest = parent
+                if left < storage.count, areInIncreasingOrder(storage[left], storage[smallest]) { smallest = left }
+                if right < storage.count, areInIncreasingOrder(storage[right], storage[smallest]) { smallest = right }
+                if smallest == parent { break }
+                storage.swapAt(parent, smallest)
+                parent = smallest
+            }
+        }
+        return first
+    }
+}
+
+struct GridPoint: Hashable, Equatable, CustomStringConvertible {
+    let x: Int
+    let y: Int
+
+    var description: String {
+        "(\(x), \(y))"
+    }
+}
+
+extension IndoorGraph {
+    /// Elemente (ohne Beacon und Eingang), deren Mittelpunkt auf einen Knoten projiziert wird, der vom Eingang
+    /// aus nicht erreichbar ist. `shortestRoute` projiziert Start und Ziel selbst auf den naechsten freien Knoten;
+    /// nil bedeutet: keine Route. Reine Funktion fuer die DEBUG-Diagnose.
+    func unreachableShelves(in elements: [LayoutElement], from entrance: SIMD2<Float>) -> [LayoutElement] {
+        elements.filter { element in
+            guard element.type != "beacon", element.type != "entrance", !element.isAnchor else { return false }
+            let center = SIMD2<Float>(
+                Float(element.x + (element.width ?? 1) / 2),
+                Float(element.y + (element.height ?? 1) / 2)
+            )
+            return shortestRoute(from: entrance, to: center, floor: 0, turnPenalty: 0) == nil
+        }
     }
 }

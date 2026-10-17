@@ -9,6 +9,10 @@ struct SettingsSheet: View {
     let onShowAR: () -> Void
 
     @Environment(\.dismiss) private var dismiss
+    #if DEBUG
+    @ObservedObject private var recorder = NavigationRecorder.shared
+    @State private var shareURL: URL?
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -45,6 +49,31 @@ struct SettingsSheet: View {
                     Toggle("Tap setzt Ziel", isOn: $tapSetsTarget)
                 }
 
+                #if DEBUG
+                Section("Debug") {
+                    Toggle("Messungen aufzeichnen", isOn: Binding(
+                        get: { recorder.isRecording },
+                        set: { $0 ? recorder.start() : recorder.stop() }
+                    ))
+
+                    if let url = recorder.lastRecordingURL {
+                        Button {
+                            shareURL = url
+                        } label: {
+                            Label("Aufzeichnung teilen", systemImage: "square.and.arrow.up")
+                        }
+                        .disabled(recorder.isRecording)
+                        Text(url.lastPathComponent)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    Text("Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu aendern.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                #endif
+
                 Section("AR") {
                     Button {
                         onShowAR()
@@ -60,6 +89,13 @@ struct SettingsSheet: View {
                     }
                 }
             }
+            #if DEBUG
+            .sheet(isPresented: Binding(get: { shareURL != nil }, set: { if !$0 { shareURL = nil } })) {
+                if let shareURL {
+                    ShareSheet(activityItems: [shareURL], onComplete: { _ in })
+                }
+            }
+            #endif
             .navigationTitle("Einstellungen")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

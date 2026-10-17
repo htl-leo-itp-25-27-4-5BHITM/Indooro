@@ -98,7 +98,7 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
   const canArchive = user.role === "admin" && store.status === "ACTIVE";
 
   return <div className="store-detail-page">
-    <div className="page-intro"><div><p className="eyebrow">{store.region.code} · {store.storeCode}</p><h2>{store.name}</h2><p>{store.street}, {store.zipCode} {store.city} · {store.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</p></div><a className="button" href="/admin/next/stores/">Zur Store-Liste</a></div>
+    <div className="page-intro"><div><p className="eyebrow">{store.region.code} · {store.storeCode}</p><h2>{store.name}</h2><p>{store.street}, {store.zipCode} {store.city} · {store.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</p></div><div className="form-actions"><a className="button" href={`/admin/next/stores/readiness/?storeId=${encodeURIComponent(store.id)}`}>Pilot-Bereitschaft</a><a className="button" href={`/admin/next/stores/anchors/?storeId=${encodeURIComponent(store.id)}`}>QR-Codes drucken</a><a className="button" href="/admin/next/stores/">Zur Store-Liste</a></div></div>
     {notice && <p className="notice success-state" role="status">{notice}</p>}
     {mutationError && <div className="notice error-state" role="alert"><strong>Änderung nicht gespeichert</strong><p>{mutationError}</p></div>}
     <section className="notice detail-section" aria-labelledby="store-data-title"><div className="section-heading"><h3 id="store-data-title">Stammdaten</h3>{store.status === "ACTIVE" && !editing && <button className="button" onClick={() => setEditing(true)}>Bearbeiten</button>}</div>

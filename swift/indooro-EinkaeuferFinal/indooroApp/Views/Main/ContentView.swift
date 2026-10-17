@@ -10,6 +10,7 @@ private enum AppSection: Hashable {
 
 struct ContentView: View {
     @StateObject var beaconManager = BeaconManager()
+    @StateObject private var navigationSession = NavigationSession()
     @StateObject private var shoppingListManager = ShoppingListManager()
     @StateObject private var shoppingSessionManager = ShoppingSessionManager()
     @StateObject private var mapProductSearch = ProductSearchStore()
@@ -58,7 +59,7 @@ struct ContentView: View {
                 sessionManager: shoppingSessionManager,
                 beaconManager: beaconManager,
                 onOpenShopping: { selectedSection = .shopping },
-                onRecipeItemsAdded: syncShoppingSession
+                onRecipeItemsAdded: { syncShoppingSession() }
             )
             .tabItem {
                 Label("Rezepte", systemImage: "fork.knife")
@@ -82,6 +83,7 @@ struct ContentView: View {
 
             StoreMapPage(
                 beaconManager: beaconManager,
+                navigationSession: navigationSession,
                 shoppingListManager: shoppingListManager,
                 shoppingSessionManager: shoppingSessionManager,
                 productSearch: mapProductSearch,
@@ -100,6 +102,8 @@ struct ContentView: View {
         .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
         .preferredColorScheme(.light)
         .onAppear {
+            navigationSession.attach(to: beaconManager)
+            shoppingSessionManager.bind(navigationSession: navigationSession)
             syncShoppingSession()
         }
         .onChange(of: targetProduct, initial: false) { _, newProduct in
@@ -108,18 +112,10 @@ struct ContentView: View {
         }
         .onChange(of: beaconManager.layoutRevision) { _, _ in
             if shoppingSessionManager.isActive {
-                syncShoppingSession()
+                syncShoppingSession(event: .layoutChanged)
             } else if let targetProduct {
                 beaconManager.setTargetProduct(targetProduct)
             }
-        }
-        .onChange(of: beaconManager.userPosition) { _, _ in
-            guard shoppingSessionManager.isActive else { return }
-            syncShoppingSession()
-        }
-        .onChange(of: beaconManager.rawUserPosition) { _, _ in
-            guard shoppingSessionManager.isActive else { return }
-            syncShoppingSession()
         }
         .onChange(of: shoppingListManager.revision) { _, _ in
             guard shoppingSessionManager.isActive else { return }
@@ -208,10 +204,11 @@ struct ContentView: View {
         shoppingSessionManager.stopSession(beaconManager: beaconManager)
     }
 
-    private func syncShoppingSession() {
+    private func syncShoppingSession(event: ShoppingSyncEvent = .listChanged) {
         shoppingSessionManager.sync(
             listManager: shoppingListManager,
-            beaconManager: beaconManager
+            beaconManager: beaconManager,
+            event: event
         )
     }
 

@@ -38,7 +38,15 @@ export function candidateAccess(pathname: string, role: string, requestedStoreId
   if (pathname === "/admin/next/" || pathname === "/admin/next") {
     return visibleRoutes(role).length ? "allowed" : "forbidden";
   }
+  if (pathname === "/admin/next/stores/anchors/" || pathname === "/admin/next/stores/anchors") {
+    if (role === "store-manager" && (!requestedStoreId || requestedStoreId !== scopeStoreId)) return "forbidden";
+    return ["admin", "region-manager", "store-manager"].includes(role) ? "allowed" : "forbidden";
+  }
   if (pathname === "/admin/next/stores/detail/" || pathname === "/admin/next/stores/detail") {
+    if (role === "store-manager" && (!requestedStoreId || requestedStoreId !== scopeStoreId)) return "forbidden";
+    return ["admin", "region-manager", "store-manager"].includes(role) ? "allowed" : "forbidden";
+  }
+  if (pathname === "/admin/next/stores/readiness/" || pathname === "/admin/next/stores/readiness") {
     if (role === "store-manager" && (!requestedStoreId || requestedStoreId !== scopeStoreId)) return "forbidden";
     return ["admin", "region-manager", "store-manager"].includes(role) ? "allowed" : "forbidden";
   }

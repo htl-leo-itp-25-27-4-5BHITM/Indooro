@@ -3,23 +3,25 @@ import simd
 
 struct ARRouteContainerView: View {
     @ObservedObject var beaconManager: BeaconManager
+    @ObservedObject var navigationSession: NavigationSession
     // TODO: Übergib hier ein echtes Alignment aus QR/Beacon/Manual-Align statt nil.
     let manualAlignment: ARMapAlignment?
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var hudModel = ARNavigationHUDModel()
 
-    init(beaconManager: BeaconManager, manualAlignment: ARMapAlignment? = nil) {
+    init(beaconManager: BeaconManager, navigationSession: NavigationSession, manualAlignment: ARMapAlignment? = nil) {
         self.beaconManager = beaconManager
+        self.navigationSession = navigationSession
         self.manualAlignment = manualAlignment
     }
 
     var body: some View {
         ZStack(alignment: .top) {
             ARRouteViewRepresentable(
-                route: beaconManager.navigationRoute,
+                route: navigationSession.navigationRoute,
                 userPosition: beaconManager.userPosition,
-                isLowConfidence: beaconManager.isLowConfidence,
+                isLowConfidence: navigationSession.isLowConfidence,
                 manualCalibrationEvent: beaconManager.manualCalibrationEvent,
                 hudModel: hudModel,
                 manualAlignment: manualAlignment
@@ -81,7 +83,7 @@ struct ARRouteContainerView: View {
                     .padding(.horizontal, 14)
                     .padding(.vertical, 10)
                     .background(
-                        beaconManager.isLowConfidence
+                        navigationSession.isLowConfidence
                             ? Color.orange.opacity(0.9)
                             : Color.blue.opacity(0.88)
                     )

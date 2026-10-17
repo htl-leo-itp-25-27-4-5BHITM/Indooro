@@ -3,10 +3,9 @@ import Foundation
 struct StabilizedNavigationConfig {
     var beacon = BeaconPositioningConfig()
     var poseFusion = PoseFusionConfig()
-    var displayPosition = DisplayPositionConfig()
-    var mapMatcher = MapMatcherConfig()
     var route = RouteStabilityConfig()
     var confidence = ConfidenceConfig()
+    var planning = PlanningConfig()
 
     static let `default` = StabilizedNavigationConfig()
 }
@@ -19,64 +18,44 @@ struct BeaconPositioningConfig {
     var minDistanceMeters: Float = 0.35
     var maxDistanceMeters: Float = 11.0
     var pathLossExponent: Float = 2.8
+    var defaultTxPowerDBm: Float = -72
     var solverResidualScaleMeters: Float = 0.85
     var solverDamping: Float = 0.55
-    var iBeaconAccuracyBlendAlpha: Float = 0.28
-    var maxAcceptedAccuracyJumpMeters: Float = 2.2
 }
 
 struct PoseFusionConfig {
-    var basePositionSmoothingAlpha: Float = 0.28
-    var lowConfidenceSmoothingAlpha: Float = 0.08
-    var headingSmoothingAlpha: Float = 0.28
-    var maxAcceptedSpeedMetersPerSecond: Float = 1.45
-    var staleRadioFixSeconds: TimeInterval = 1.8
-    var radioAccuracyForFullTrust: Float = 1.0
-    var radioAccuracyForZeroTrust: Float = 8.0
-    var maxPredictionWindowSeconds: TimeInterval = 0.45
-    var movingVelocityRetentionPerSecond: Float = 0.78
-    var stationaryVelocityRetentionPerSecond: Float = 0.12
-    var motionPredictionAccelerationThresholdG: Float = 0.05
-    var headingPredictionBlendAlpha: Float = 0.2
-    var confidenceDecayPerPredictionSecond: Float = 0.38
-}
-
-struct DisplayPositionConfig {
-    var displayPositionUpdateIntervalSeconds: TimeInterval = 1.0
-    var minDisplayPositionChangeMeters: Float = 0.85
-    var maxDisplayPositionStalenessSeconds: TimeInterval = 3.0
-    var maxReasonableMovementMetersPerSecond: Float = 2.5
-    var requiredJumpConfirmations: Int = 3
-    var smoothingAlpha: Float = 0.35
-}
-
-struct MapMatcherConfig {
-    var candidateSearchRadius: Float = 2.4
-    var maxProjectionDistance: Float = 3.8
-    var distanceWeight: Float = 1.0
-    var headingWeight: Float = 0.65
-    var continuityWeight: Float = 1.25
-    var routeBiasWeight: Float = 0.55
-    var disconnectedEdgePenalty: Float = 7.0
-    var preferredEdgeBonus: Float = 0.45
-    var requiredScoreImprovementForDisconnectedSwitch: Float = 2.2
+    // Glaettung: estimate += alpha * (punkt - estimate), alpha linear nach Konfidenz.
+    var estimatorHighConfidenceAlpha: Float = 0.46 // provisional
+    var estimatorLowConfidenceAlpha: Float = 0.18 // provisional
+    // Sprung-Gate: Punkt wird gehalten, wenn er weiter als
+    // maxPlausibleSpeed * dt + jumpMargin vom Schaetzwert entfernt ist.
+    var maxPlausibleSpeed: Float = 2.5 // provisional (m/s)
+    var jumpMargin: Float = 0.85 // provisional (m)
+    var jumpConfirmations: Int = 3 // provisional
+    var jumpClusterRadius: Float = 1.275 // provisional (m)
 }
 
 struct RouteStabilityConfig {
-    var offRouteDistanceMeters: Float = 8.0
-    var offRouteHoldSeconds: TimeInterval = 6.0
-    var rerouteCooldownSeconds: TimeInterval = 20.0
-    var minReroutePositionChangeMeters: Float = 5.0
-    var minRouteDifferenceToReplace: Float = 6.0
-    var activeSegmentLockDistanceMeters: Float = 2.4
-    var decisionUnlockDistanceMeters: Float = 2.6
-    var progressBacktrackToleranceMeters: Float = 3.0
-    var rerouteRequiresAlternativeEdgeScoreGain: Float = 2.0
-    var manualCalibrationTriggersReroute: Bool = true
+    /// Abbiegestrafe der Routensuche in Metern pro Richtungswechsel.
+    static let defaultTurnPenaltyMeters: Float = 1.5 // provisional
+
+    var turnPenaltyMeters: Float = RouteStabilityConfig.defaultTurnPenaltyMeters // provisional
+    // Fortschritt faellt nur, wenn die Projektion weiter als diese Toleranz hinter dem Maximum liegt.
+    var progressBacktrackToleranceMeters: Float = 3.0 // provisional
+    // Eine Off-Route-Evidenz gilt, solange die projizierte Position weiter als
+    // offRouteDistanceMeters von der Route entfernt ist; nach offRouteHoldSeconds wird neu geroutet.
+    var offRouteDistanceMeters: Float = 4.0 // provisional
+    var offRouteHoldSeconds: TimeInterval = 2.5 // provisional
 }
 
 struct ConfidenceConfig {
     var lowThreshold: Float = 0.35
     var recoverThreshold: Float = 0.55
     var minBeaconCountForTracking: Int = 3
+}
+
+struct PlanningConfig {
+    // 2-opt auf dem offenen Pfad: ein Zug wird nur angewendet, wenn er mehr als dieses Minimum spart.
+    var twoOptMinimumGainMeters: Float = 0.01 // provisional
+    var twoOptMaxPasses: Int = 50 // provisional
 }

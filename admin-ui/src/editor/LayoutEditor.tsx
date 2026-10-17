@@ -1,9 +1,11 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { ApiClient } from "../api/client";
 import { fitViewport, screenToWorld, zoomAt, type Point, type Viewport } from "./geometry";
-import { assignShelfSections, chooseShelfCategory, elementFill, shelfMetadata, shelfMetadataChanges } from "./metadata";
+import { assignShelfSections, chooseShelfCategory, elementFill, nextAnchorId, shelfMetadata, shelfMetadataChanges } from "./metadata";
 import { applyCommand, createEditorState, isDirty, isMobileElementId, markSaved, newElementId, parseImportedDocument, redo, repairMobileElementIds, replaceDocument, selectElement, undo, type EditorCommand, type EditorState, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
 import { validateLayout, type AssignedBeacon } from "./validation";
+import { UnderlayPanel } from "./UnderlayPanel";
+import type { LayoutUnderlay } from "./underlay";
 import "./LayoutEditor.css";
 
 const TYPES = [
@@ -16,6 +18,7 @@ const TYPES = [
   { type: "wall", label: "Wand", color: "#667085", width: 5, height: 0.5 },
   { type: "poi", label: "POI", color: "#947da6", width: 2, height: 2 },
   { type: "beacon", label: "Beacon", color: "#b6635f", width: 0, height: 0 },
+  { type: "anchor", label: "QR-Anker", color: "#1f2937", width: 1, height: 1 },
 ] as const;
 
 const TEMPLATES = [
@@ -34,6 +37,7 @@ export interface LayoutEditorProps {
   api?: ApiClient;
   initialDocument: LayoutDocument;
   mode: "store" | "legacy";
+  storeId?: string;
   storeName?: string;
   assignedBeacons?: AssignedBeacon[];
   saveMode?: "draft" | "immediate";
@@ -59,7 +63,7 @@ const publishWarningNote = (issues: ReturnType<typeof validateLayout>) => {
   return `\n\n${warnings.length} Hinweis${warnings.length === 1 ? "" : "e"} bleiben offen:\n${details}${remaining}`;
 };
 
-export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBeacons = [], saveMode = "draft", onSaveDraft, onSaveCurrent, onPublish, publishLabel = "Veröffentlichen", publishPrompt = "Diesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.", allowUnchangedSave = false, onBack }: LayoutEditorProps) {
+export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, assignedBeacons = [], saveMode = "draft", onSaveDraft, onSaveCurrent, onPublish, publishLabel = "Veröffentlichen", publishPrompt = "Diesen gespeicherten Entwurf veröffentlichen? Die mobile Ansicht verwendet danach diese Version.", allowUnchangedSave = false, onBack }: LayoutEditorProps) {
   const [editor, setEditor] = useState<EditorState>(() => createEditorState(initialDocument));
   const editorRef = useRef(editor);
   editorRef.current = editor;
@@ -77,6 +81,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
   const [categories, setCategories] = useState<Array<{ categoryCode: number; categoryName: string }>>([]);
   const [categoryError, setCategoryError] = useState(false);
   const [categoryRevision, setCategoryRevision] = useState(0);
+  const [underlay, setUnderlay] = useState<LayoutUnderlay | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const gesture = useRef<Gesture | null>(null);
@@ -127,7 +132,8 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
     const x = type === "beacon" ? world.x : world.x - definition.width / 2;
     const y = type === "beacon" ? world.y : world.y - definition.height / 2;
     dispatch({ type: "create", element: { id: newElementId(editorRef.current.document), type, x, y, accessAngle: 90,
-      ...(type === "beacon" ? { beaconId: beacon?.beaconCode, beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } : { width: definition.width, height: definition.height }) } });
+      ...(type === "beacon" ? { beaconId: beacon?.beaconCode, beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } : { width: definition.width, height: definition.height }),
+      ...(type === "anchor" ? { anchorId: nextAnchorId(editorRef.current.document) } : {}) } });
     setTool("select");
   };
   const placeKeyboardElement = () => createAtWorld(keyboardPointRef.current, placementTypeRef.current);
@@ -251,7 +257,8 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
     }
     if (tool === "create") {
       const world = screenToWorld(at, viewport);
-      if (createType === "beacon") createAtWorld(world, createType);
+      // Beacons and QR anchors are placed by a single click at a fixed size.
+      if (createType === "beacon" || createType === "anchor") createAtWorld(world, createType);
       else {
         const definition = TYPES.find((item) => item.type === createType)!;
         const element: LayoutElement = { id: newElementId(editorRef.current.document), type: createType, x: world.x - definition.width / 2, y: world.y - definition.height / 2, width: definition.width, height: definition.height, accessAngle: 90 };
@@ -439,6 +446,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
         }}>Regalabschnitte zuweisen</button>}
         <h2>Vorlagen</h2>
         <div className="le-templates">{TEMPLATES.map((template) => <button type="button" key={template.label} disabled={!!working} onClick={() => applyTemplate(template)}>{template.label}<span>{template.width} × {template.height} m</span></button>)}</div>
+        {mode === "store" && api && storeId && <UnderlayPanel api={api} storeId={storeId} underlay={underlay} onChange={setUnderlay} />}
         <h2>Elemente</h2><p id="le-keyboard-help" className="le-hint">Tastatur: Element wählen, Tab zum Grundriss, Pfeile positionieren, Enter platzieren. Bei ausgewählter Ebene bewegen Pfeile das Element; Shift + Pfeil bewegt schneller. Escape beendet das Werkzeug. Eigenschaften stehen rechts.</p>
         <div className="le-library">{TYPES.map((item) => <button type="button" key={item.type} aria-pressed={tool === "create" && createType === item.type} onClick={() => { setCreateType(item.type); setTool("create"); setKeyboardPoint({ x: document.gridSize.width / 2, y: document.gridSize.height / 2 }); }}><span className="le-swatch" style={{ background: item.color }} />{item.label}</button>)}</div>
         <h2>Ebenen <span>{document.elements.length}</span></h2>
@@ -456,9 +464,17 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
           </select></label>
         </div>
         <svg ref={svgRef} tabIndex={0} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} aria-label="Interaktiver Grundriss" aria-describedby="le-keyboard-help" role="group">
-          <defs><pattern id="le-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#d9e2df" strokeWidth={0.045} /></pattern></defs>
+          <defs><pattern id="le-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#d9e2df" strokeWidth={0.045} /></pattern><clipPath id="le-underlay-clip"><rect x="0" y="0" width={document.gridSize.width} height={document.gridSize.height} /></clipPath></defs>
           <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>
             <rect x={0} y={0} width={document.gridSize.width} height={document.gridSize.height} fill="#fff" stroke="#aabfba" strokeWidth={1 / viewport.scale} />
+            {underlay && (() => {
+              const scale = underlay.scaleMPerPx ?? document.gridSize.width / underlay.widthPx;
+              const width = underlay.widthPx * scale;
+              const height = underlay.heightPx * scale;
+              const cx = underlay.offsetXM + width / 2;
+              const cy = underlay.offsetYM + height / 2;
+              return <g clipPath="url(#le-underlay-clip)" pointerEvents="none"><image href={`data:${underlay.contentType};base64,${underlay.imageBase64}`} x={underlay.offsetXM} y={underlay.offsetYM} width={width} height={height} opacity={underlay.opacity} transform={`rotate(${underlay.rotationDeg} ${cx} ${cy})`} preserveAspectRatio="none" /></g>;
+            })()}
             {showGrid && <rect x={0} y={0} width={document.gridSize.width} height={document.gridSize.height} fill="url(#le-grid)" pointerEvents="none" />}
             {tool === "create" && createType !== "beacon" && <rect className="le-keyboard-preview" x={keyboardPoint.x - (TYPES.find((item) => item.type === createType)?.width || 0) / 2} y={keyboardPoint.y - (TYPES.find((item) => item.type === createType)?.height || 0) / 2} width={TYPES.find((item) => item.type === createType)?.width} height={TYPES.find((item) => item.type === createType)?.height} rx=".2" />}
             {tool === "create" && createType === "beacon" && <circle className="le-keyboard-preview" cx={keyboardPoint.x} cy={keyboardPoint.y} r=".35" />}
@@ -473,7 +489,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
               const cy = element.y + h / 2;
               const rotation = element.rotation || 0;
               return <g key={`${element.id ?? "missing"}-${index}`} transform={`rotate(${rotation} ${cx} ${cy})`}>
-                {point ? <g onPointerDown={(event) => onElementDown(event, element)}><circle cx={element.x} cy={element.y} r={Math.max(0.32, 8 / viewport.scale)} fill={elementFill(element, definition?.color || "#b6635f")} stroke={active ? "#123f40" : "white"} strokeWidth={2 / viewport.scale} /><circle cx={element.x} cy={element.y} r={Math.max(0.55, 14 / viewport.scale)} fill="transparent" /></g> : <g onPointerDown={(event) => onElementDown(event, element)}><rect x={element.x} y={element.y} width={w} height={h} rx={Math.min(0.25, h / 5)} fill={elementFill(element, definition?.color || "#7d91a0")} stroke={active ? "#123f40" : issueFor(element.id) ? "#c23b42" : "#ffffff"} strokeWidth={(active ? 3 : 1.5) / viewport.scale} /><text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={Math.min(0.7, Math.max(0.3, w / 8))} pointerEvents="none">{w >= 2 ? labelFor(element).slice(0, 16) : ""}</text></g>}
+                {point ? <g onPointerDown={(event) => onElementDown(event, element)}><circle cx={element.x} cy={element.y} r={Math.max(0.32, 8 / viewport.scale)} fill={elementFill(element, definition?.color || "#b6635f")} stroke={active ? "#123f40" : "white"} strokeWidth={2 / viewport.scale} /><circle cx={element.x} cy={element.y} r={Math.max(0.55, 14 / viewport.scale)} fill="transparent" /></g> : <g onPointerDown={(event) => onElementDown(event, element)}><rect x={element.x} y={element.y} width={w} height={h} rx={Math.min(0.25, h / 5)} fill={elementFill(element, definition?.color || "#7d91a0")} stroke={active ? "#123f40" : issueFor(element.id) ? "#c23b42" : "#ffffff"} strokeWidth={(active ? 3 : 1.5) / viewport.scale} /><text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={element.type === "anchor" ? 0.45 : Math.min(0.7, Math.max(0.3, w / 8))} pointerEvents="none">{element.type === "anchor" ? "QR" : w >= 2 ? labelFor(element).slice(0, 16) : ""}</text></g>}
                 {active && !element.locked && !point && <><circle className="le-handle" cx={element.x + w} cy={element.y + h} r={7 / viewport.scale} strokeWidth={2 / viewport.scale} onPointerDown={(event) => startGesture(event, { kind: "resize", id: element.id!, start: screenToWorld(localPoint(event), viewport), element })} /><line x1={cx} y1={element.y} x2={cx} y2={element.y - 18 / viewport.scale} stroke="#123f40" strokeWidth={2 / viewport.scale} pointerEvents="none" /><circle className="le-handle le-rotate" cx={cx} cy={element.y - 18 / viewport.scale} r={7 / viewport.scale} strokeWidth={2 / viewport.scale} onPointerDown={(event) => { const world = screenToWorld(localPoint(event), viewport); startGesture(event, { kind: "rotate", id: element.id!, start: world, element, initialAngle: Math.atan2(world.y - cy, world.x - cx) * 180 / Math.PI }); }} /></>}
               </g>;
             })}
@@ -488,7 +504,9 @@ export function LayoutEditor({ api, initialDocument, mode, storeName, assignedBe
           <p className="le-hint">Elementtyp: {TYPES.find((item) => item.type === selected.type)?.label || selected.type}</p>
           <label>Bezeichnung<input type="text" maxLength={200} value={selected.label || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { label: event.target.value } })} /></label>
           <div className="le-number-grid">{(["x", "y", ...(selected.type === "beacon" ? [] : ["width", "height"]), "rotation"] as const).map((field) => <label key={field}>{({ x: "X", y: "Y", width: "Breite", height: "Höhe", rotation: "Winkel" } as Record<string, string>)[field]}<input type="number" step={field === "rotation" ? 1 : snapping ? 1 : 0.1} value={Number(selected[field] ?? 0)} disabled={selected.locked} onChange={(event) => changeNumber(field as "x" | "y" | "width" | "height" | "rotation", event.target.value)} /></label>)}</div>
-          {selected.type !== "beacon" && <label>Zugriffswinkel<input type="number" min={0} max={360} step={1} value={Number(selected.accessAngle ?? 90)} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { accessAngle: Math.max(0, Math.min(360, number(event.target.value, Number(selected.accessAngle ?? 90)))) } })} /></label>}
+          {selected.type === "anchor" && <label>QR-Anker-ID<input type="text" maxLength={12} value={selected.anchorId ?? ""} placeholder="A1" disabled={selected.locked} aria-describedby="le-anchor-id-hint" onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { anchorId: event.target.value.toUpperCase() } })} /></label>}
+          {selected.type === "anchor" && <p id="le-anchor-id-hint" className="le-hint">Eindeutige ID pro Layout: A–Z, 0–9 und Bindestrich, höchstens 12 Zeichen. Diese ID steht auf dem Ausdruck.</p>}
+          {selected.type !== "beacon" && selected.type !== "anchor" && <label>Zugriffswinkel<input type="number" min={0} max={360} step={1} value={Number(selected.accessAngle ?? 90)} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { accessAngle: Math.max(0, Math.min(360, number(event.target.value, Number(selected.accessAngle ?? 90)))) } })} /></label>}
           {selected.type === "shelf" && <><div className="le-number-grid"><label>Kategoriecode<input type="text" maxLength={180} value={shelfMetadata(selected).code} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { code: event.target.value }) })} /></label><label>Abschnitt<input type="number" min={1} step={1} value={shelfMetadata(selected).section ?? ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { section: event.target.value === "" ? null : number(event.target.value, shelfMetadata(selected).section || 1) }) })} /></label></div>
           {api && <label>Produktkategorie auswählen<select value={categories.some((item) => String(item.categoryCode) === shelfMetadata(selected).code) ? shelfMetadata(selected).code : ""} disabled={selected.locked || categories.length === 0} onChange={(event) => { if (event.target.value) dispatch({ type: "patch", id: selected.id!, changes: chooseShelfCategory(document, selected, event.target.value) }); }}><option value="">Kategorie wählen</option>{categories.map((item) => <option key={item.categoryCode} value={item.categoryCode}>{item.categoryCode} · {item.categoryName}</option>)}</select></label>}
           {api && categoryError && <p className="le-category-error" role="status">Kategorien nicht verfügbar. Code kann manuell eingegeben werden. <button type="button" onClick={() => setCategoryRevision((value) => value + 1)}>Erneut laden</button></p>}
