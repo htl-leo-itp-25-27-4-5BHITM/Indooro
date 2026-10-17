@@ -83,7 +83,7 @@ test("bulk beacons send null for an empty major", async ({ page }) => {
 });
 
 test("renders layout editor canvas and professional tool panels", async ({ page }) => {
-  await page.goto("/admin/editor/?storeId=store-1");
+  await page.goto("/admin/editor/?storeId=store-1&legacy=1");
   await expect(page.getByRole("heading", { name: "Layout Editor" })).toBeVisible();
   await expect(page.locator("#canvasContainer")).toBeVisible();
   await expect(page.locator("#propertiesWrapper")).toBeVisible();

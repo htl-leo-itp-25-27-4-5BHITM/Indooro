@@ -110,7 +110,7 @@ try {
   assert.equal(await admin.getByRole("textbox", { name: "Filialname" }).inputValue(), defaultName);
   evidence.candidateDirectRefresh = true;
 
-  await admin.goto(`${base}/admin/editor/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
+  await admin.goto(`${base}/admin/editor/?storeId=${store.id}&legacy=1`, { waitUntil: "domcontentloaded" });
   await admin.locator("#storeContextBox").waitFor();
   await admin.locator("#shopName").waitFor();
   assert.equal(await admin.locator("#shopName").inputValue(), defaultName);

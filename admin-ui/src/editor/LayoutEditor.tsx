@@ -50,9 +50,16 @@ export interface LayoutEditorProps {
   onBack?: () => void;
 }
 
+// Legacy global editor numbering: the smallest free Indooro<n> (n >= 1) that no other beacon uses yet.
+const nextLegacyBeaconId = (document: LayoutDocument) => {
+  const used = new Set(document.elements.filter((element) => element.type === "beacon").map((element) => element.beaconId));
+  let n = 1;
+  while (used.has(`Indooro${n}`)) n += 1;
+  return `Indooro${n}`;
+};
 const labelFor = (element: LayoutElement) => element.label || TYPES.find((item) => item.type === element.type)?.label || element.type;
 const number = (value: string, fallback: number) => Number.isFinite(Number(value)) && value !== "" ? Number(value) : fallback;
-const confirmCriticalDelete = (element: LayoutElement) => !(["entrance", "exit", "checkout", "cashier", "wall", "shelf", "aisle", "beacon", "navigation-node"].includes(element.type)
+const confirmCriticalDelete = (element: LayoutElement) => !(["entrance", "exit", "checkout", "cashier", "wall", "shelf", "counter", "cooler", "freezer", "aisle", "beacon", "navigation-node"].includes(element.type)
   || (Array.isArray(element.productPositions) && element.productPositions.length > 0)
   || !!element.layoutCode) || window.confirm(`„${labelFor(element)}“ löschen? Die Karte oder Produktpositionen können danach ungültig sein.`);
 const publishWarningNote = (issues: ReturnType<typeof validateLayout>) => {
@@ -131,8 +138,9 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
     }
     const x = type === "beacon" ? world.x : world.x - definition.width / 2;
     const y = type === "beacon" ? world.y : world.y - definition.height / 2;
+    const legacyBeaconId = type === "beacon" && mode === "legacy" ? nextLegacyBeaconId(editorRef.current.document) : undefined;
     dispatch({ type: "create", element: { id: newElementId(editorRef.current.document), type, x, y, accessAngle: 90,
-      ...(type === "beacon" ? { beaconId: beacon?.beaconCode, beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } : { width: definition.width, height: definition.height }),
+      ...(type === "beacon" ? { beaconId: beacon?.beaconCode ?? legacyBeaconId, beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } : { width: definition.width, height: definition.height }),
       ...(type === "anchor" ? { anchorId: nextAnchorId(editorRef.current.document) } : {}) } });
     setTool("select");
   };
@@ -179,7 +187,8 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
   useEffect(() => {
     const keyDown = (event: KeyboardEvent) => {
       const target = event.target;
-      if (!(target instanceof Element) || (target !== document.body && !target.closest(".le"))) return;
+      // `document` is shadowed by the layout document in this component, so the browser document is addressed explicitly.
+      if (!(target instanceof Element) || (target !== window.document.body && !target.closest(".le"))) return;
       if (target.closest("button, a, input, textarea, select, summary, [contenteditable], [role='button']")) return;
       if (event.code === "Space") {
         spaceHeld.current = true;
@@ -228,7 +237,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
       } else if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "d") {
         event.preventDefault();
         const id = editorRef.current.selectedId;
-        if (id !== null && !editorRef.current.document.elements.find((item) => item.id === id)?.locked) setEditor((current) => applyCommand(current, { type: "duplicate", id, duplicateId: newElementId(current.document) }));
+        if (id !== null && !editorRef.current.document.elements.find((item) => item.id === id)?.locked) setEditor((current) => applyCommand(current, { type: "duplicate", id, duplicateId: newElementId(current.document), anchorId: nextAnchorId(current.document) }));
       } else if (event.key === "Escape") {
         setTool("select");
         setEditor((current) => selectElement(current, null));
@@ -247,7 +256,9 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   };
   const capture = (event: ReactPointerEvent<SVGElement>) => svgRef.current?.setPointerCapture(event.pointerId);
-  const startGesture = (event: ReactPointerEvent<SVGElement>, next: Gesture) => { gesture.current = next; capture(event); event.stopPropagation(); event.preventDefault(); };
+  // preventDefault stops the browser from focusing the canvas, so focus it explicitly: Entf, Pfeile and Strg+Z then act on the canvas selection.
+  const focusCanvas = () => svgRef.current?.focus({ preventScroll: true });
+  const startGesture = (event: ReactPointerEvent<SVGElement>, next: Gesture) => { gesture.current = next; capture(event); focusCanvas(); event.stopPropagation(); event.preventDefault(); };
 
   const onBackgroundDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     const at = localPoint(event);
@@ -264,12 +275,13 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
         const element: LayoutElement = { id: newElementId(editorRef.current.document), type: createType, x: world.x - definition.width / 2, y: world.y - definition.height / 2, width: definition.width, height: definition.height, accessAngle: 90 };
         startGesture(event, { kind: "create", start: world, element });
       }
-    } else setEditor((current) => selectElement(current, null));
+    } else { focusCanvas(); setEditor((current) => selectElement(current, null)); }
   };
 
   const onElementDown = (event: ReactPointerEvent<SVGElement>, element: LayoutElement) => {
     if (tool === "pan" || spaceHeld.current || event.button === 1) { startGesture(event, { kind: "pan", start: localPoint(event), viewport }); return; }
     if (tool === "create") return;
+    focusCanvas();
     setEditor((current) => selectElement(current, element.id ?? null));
     if (element.locked || element.id == null) { event.stopPropagation(); return; }
     startGesture(event, { kind: "move", id: element.id, start: screenToWorld(localPoint(event), viewport), element });
@@ -518,7 +530,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
           {selected.type === "beacon" && mode === "legacy" && <label>Beacon-ID<input type="text" maxLength={200} value={selected.beaconId || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { beaconId: event.target.value } })} /></label>}
           <label className="le-inline"><input type="checkbox" checked={!!selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { locked: event.target.checked } })} /> Gesperrt</label>
           <div className="le-inspector-actions"><button type="button" disabled={selected.locked || selectedIndex <= 0} onClick={() => dispatch({ type: "reorder", id: selected.id!, direction: "backward" })}>Nach hinten</button><button type="button" disabled={selected.locked || selectedIndex >= document.elements.length - 1} onClick={() => dispatch({ type: "reorder", id: selected.id!, direction: "forward" })}>Nach vorne</button></div>
-          <div className="le-inspector-actions"><button type="button" disabled={selected.locked} onClick={() => dispatch({ type: "duplicate", id: selected.id!, duplicateId: newElementId(document) })}>Duplizieren</button><button type="button" disabled={selected.locked} onClick={() => { if (confirmCriticalDelete(selected)) dispatch({ type: "delete", id: selected.id! }); }}>Löschen</button></div>
+          <div className="le-inspector-actions">{selected.type !== "beacon" && <button type="button" disabled={selected.locked} onClick={() => dispatch({ type: "rotate90", id: selected.id! })}>90° drehen</button>}<button type="button" disabled={selected.locked} onClick={() => dispatch({ type: "duplicate", id: selected.id!, duplicateId: newElementId(document), anchorId: nextAnchorId(document) })}>Duplizieren</button><button type="button" disabled={selected.locked} onClick={() => { if (confirmCriticalDelete(selected)) dispatch({ type: "delete", id: selected.id! }); }}>Löschen</button></div>
         </div> : <div className="le-inspector"><p className="le-empty">Element auswählen, um Position und Eigenschaften zu bearbeiten.</p><label>Filialname<input type="text" maxLength={200} value={document.shopName} onChange={(event) => dispatch({ type: "document", changes: { shopName: event.target.value } })} /></label><div className="le-number-grid"><label>Breite<input type="number" min={1} max={1000} value={document.gridSize.width} onChange={(event) => dispatch({ type: "document", changes: { gridSize: { width: number(event.target.value, document.gridSize.width), height: document.gridSize.height } } })} /></label><label>Höhe<input type="number" min={1} max={1000} value={document.gridSize.height} onChange={(event) => dispatch({ type: "document", changes: { gridSize: { width: document.gridSize.width, height: number(event.target.value, document.gridSize.height) } } })} /></label></div></div>}
         <div className="le-validation"><h2>Prüfung <span>{errors ? `${errors} Fehler` : "Bereit"}</span></h2><p>{issues.length ? `${errors} Fehler · ${issues.length - errors} Hinweise` : "Keine Probleme gefunden."}</p><ul>{issues.map((issue, index) => <li key={`${issue.code}-${String(issue.elementId)}-${index}`} className={`le-${issue.severity}`}><button type="button" onClick={() => issue.elementId !== null && setEditor((current) => selectElement(current, issue.elementId))} disabled={issue.elementId === null}><span>{issue.severity === "error" ? "!" : "i"}</span>{issue.message}</button></li>)}</ul></div>
       </aside>

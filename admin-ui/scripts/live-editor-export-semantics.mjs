@@ -136,7 +136,7 @@ try {
   legacyPage.on("request", (request) => {
     if (request.method() === "POST" && request.url().includes(`/api/stores/${store.id}/layout/versions`)) legacyPosts.push(request.method());
   });
-  await legacyPage.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${initial.layoutId}`, { waitUntil: "domcontentloaded" });
+  await legacyPage.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${initial.layoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await legacyPage.locator("#shopName").waitFor();
   await legacyPage.locator("#shopName").fill(`Legacy unsaved ${stamp}`);
   evidence.legacy.versionsBefore = await versionIds(admin, versions);

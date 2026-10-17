@@ -154,7 +154,7 @@ try {
   evidence.invalidImportNoDraftOrPublicMutation = true;
 
   // Legacy import and draft persistence use the same disposable Store/version.
-  await admin.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${initial.layoutId}`, { waitUntil: "domcontentloaded" });
+  await admin.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${initial.layoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await admin.locator("#shopName").waitFor();
   await admin.locator("#fileInput").setInputFiles({ name: "import.json", mimeType: "application/json", buffer: bytes });
   await admin.locator("#shopName").waitFor();

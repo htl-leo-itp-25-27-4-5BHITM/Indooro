@@ -106,7 +106,7 @@ try {
   const publicAfter = await anonymousCurrent(store.id);
   assert.equal(publicAfter.layoutId, initial.layoutId, "draft is not served by anonymous mobile current-layout");
   evidence.mobileDraftRemainsPrivate = true;
-  await admin.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${toolVersionId}`, { waitUntil: "domcontentloaded" });
+  await admin.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${toolVersionId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await admin.locator("#shopName").waitFor();
   await admin.locator("#layersList").getByText(`Tool Shelf ${stamp}`, { exact: true }).waitFor();
   evidence.legacyReadsCandidateVersion = true;

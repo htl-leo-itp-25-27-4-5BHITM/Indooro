@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
 import { chromium } from "@playwright/test";
 
 // Exercise scoped manager publication on disposable stores. Manager account
@@ -21,6 +21,7 @@ const evidence = {
   checks: [],
   fixtureIds: {},
   publications: {},
+  pairedManagerActions: {},
   denials: [],
   cleanup: { scopesRestored: false, storeArchived: false, regionArchived: false, foreignStoreArchived: false, foreignRegionArchived: false },
 };
@@ -132,23 +133,96 @@ async function seedActive(store, label) {
   return { path, version, current };
 }
 
+async function managerLegacyDraft(role, page, store, seed) {
+  const versions = `/api/stores/${store.id}/layout/versions`;
+  await page.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${seed.version.layoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
+  await page.locator("#shopName").waitFor();
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await page.locator("#shopName").waitFor();
+  await page.waitForFunction((expected) => document.querySelector("#shopName")?.value === expected, seed.current.layout.shopName);
+  assert.equal(await page.locator("#shopName").inputValue(), seed.current.layout.shopName, `${role} Legacy direct link and refresh load the fixture`);
+  await page.locator("#gridHeight").fill("22");
+  await page.locator("#gridHeight").dispatchEvent("change");
+  await page.locator("#toolSelect").click();
+  await page.locator('#layersList [data-layer-id="2"]').click();
+  assert.equal(await page.locator("#propLabel").count(), 1, `${role} Legacy shelf inspector opens: ${await page.locator("#propertiesWrapper").innerText()}`);
+  await page.getByTitle("Duplizieren").click();
+  assert.equal(await page.locator("#layersList [data-layer-id]").count(), 3, `${role} Legacy duplicate`);
+  await page.getByTitle("Löschen").click();
+  assert.equal(await page.locator("#layersList [data-layer-id]").count(), 2, `${role} Legacy inspector delete is immediate`);
+  await page.keyboard.press("Control+z");
+  assert.equal(await page.locator("#layersList [data-layer-id]").count(), 3, `${role} Legacy undo restores deleted duplicate`);
+  const screenshot = new URL(`../../docs/admin-rebuild/evidence/editor/${role}-legacy-paired.png`, import.meta.url);
+  mkdirSync(new URL("../../docs/admin-rebuild/evidence/editor/", import.meta.url), { recursive: true });
+  await page.screenshot({ path: screenshot.pathname, fullPage: true });
+  const responseWait = page.waitForResponse((response) => response.request().method() === "POST" && response.url().includes(versions));
+  await page.locator("#saveDraftBtn").click();
+  const response = await responseWait;
+  assert.equal(response.status(), 200, `${role} Legacy draft save`);
+  const receipt = await response.json();
+  const draft = ok(await api(page, "GET", `${versions}/${receipt.layoutId}`), `${role} Legacy draft readback`);
+  assert.equal(draft.status, "DRAFT");
+  assert.equal(draft.layout.gridSize.height, 22);
+  assert.equal(draft.layout.elements.length, 3);
+  assert.deepEqual(await mobileCurrent(store.id, `${role} after Legacy draft`), seed.current, `${role} Legacy draft remains private`);
+  evidence.pairedManagerActions[role] = { fixtureVersionId: seed.version.layoutId, legacyDraftId: receipt.layoutId, legacyGridHeight: 22, legacyElementCount: 3, legacyInspectorDeleteImmediate: true, legacyUndoRestoresDuplicate: true, legacyScreenshot: `docs/admin-rebuild/evidence/editor/${role}-legacy-paired.png` };
+  check(`${role} Legacy direct-link refresh, grid-height edit, shelf duplicate/delete/undo, private draft, API and Mobile readback`);
+}
+
 async function managerPublication(role, page, store, seed, stamp) {
   const draftName = `${role} published ${stamp}`;
   const root = `/api/stores/${store.id}/layout`;
-  await page.goto(`${base}/admin/next/editor/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${base}/admin/next/editor/?storeId=${store.id}&layoutId=${seed.version.layoutId}`, { waitUntil: "domcontentloaded" });
   await page.getByRole("heading", { name: "Layout Editor" }).waitFor();
   assert.equal(await page.getByRole("textbox", { name: "Filialname" }).inputValue(), seed.current.layout.shopName, `${role} loads the seeded public version`);
+  assert.equal(await page.locator(".le-layers button").count(), 2, `${role} Candidate starts from the same fixture`);
+  await page.getByRole("textbox", { name: "Filialname" }).fill(draftName);
+  await page.getByLabel("Höhe", { exact: true }).fill("22");
+  await page.locator(".le-layers button").nth(1).click();
+  await page.getByRole("button", { name: "Duplizieren" }).click();
+  assert.equal(await page.locator(".le-layers button").count(), 3, `${role} Candidate duplicate`);
+  let deleteConfirmation = null;
+  page.once("dialog", async (dialog) => { deleteConfirmation = dialog.message(); await dialog.accept(); });
+  await page.getByRole("button", { name: "Löschen" }).click();
+  assert.match(deleteConfirmation || "", /löschen|entfernen/i, `${role} Candidate inspector delete confirmation`);
+  assert.equal(await page.locator(".le-layers button").count(), 2, `${role} Candidate inspector delete`);
+  await page.getByRole("button", { name: "Rückgängig" }).click();
+  assert.equal(await page.locator(".le-layers button").count(), 3, `${role} Candidate undo restores deleted duplicate`);
+  const screenshot = new URL(`../../docs/admin-rebuild/evidence/editor/${role}-candidate-paired.png`, import.meta.url);
+  await page.screenshot({ path: screenshot.pathname, fullPage: true });
+  await page.getByRole("button", { name: "Entwurf speichern" }).click();
+  await page.getByText("Entwurf gespeichert.").waitFor({ timeout: 10_000 });
+  const pairedDraftId = new URL(page.url()).searchParams.get("layoutId");
+  assert.ok(pairedDraftId, `${role} paired draft save navigates to its saved version`);
+  let row = ok(await api(page, "GET", `${root}/versions/${pairedDraftId}`), `${role} paired draft API readback`);
+  assert.equal(row.status, "DRAFT");
+  assert.equal(row.layout.shopName, draftName);
+  assert.equal(row.layout.gridSize.height, 22);
+  assert.equal(row.layout.elements.length, 3);
+  evidence.pairedManagerActions[role].candidateDraftId = pairedDraftId;
+  evidence.pairedManagerActions[role].candidateGridHeight = 22;
+  evidence.pairedManagerActions[role].candidateElementCount = 3;
+  evidence.pairedManagerActions[role].candidateInspectorDeleteConfirmed = true;
+  evidence.pairedManagerActions[role].candidateUndoRestoresDuplicate = true;
+  evidence.pairedManagerActions[role].candidateScreenshot = `docs/admin-rebuild/evidence/editor/${role}-candidate-paired.png`;
+  assert.deepEqual(await mobileCurrent(store.id, `${role} before publish`), seed.current, `${role} draft is private before publishing`);
+  assert.equal(await page.getByRole("button", { name: "Veröffentlichen" }).isEnabled(), false, `${role} duplicate shelf address blocks publication`);
+  evidence.pairedManagerActions[role].candidateDuplicatePublishBlocked = true;
+
+  // Publish a valid edit separately; the paired duplicate stays a private draft.
+  await page.goto(`${base}/admin/next/editor/?storeId=${store.id}&layoutId=${seed.version.layoutId}`, { waitUntil: "domcontentloaded" });
+  await page.getByRole("heading", { name: "Layout Editor" }).waitFor();
   await page.getByRole("textbox", { name: "Filialname" }).fill(draftName);
   await page.getByRole("button", { name: "Entwurf speichern" }).click();
   await page.getByText("Entwurf gespeichert.").waitFor({ timeout: 10_000 });
   const draftId = new URL(page.url()).searchParams.get("layoutId");
-  assert.ok(draftId, `${role} draft save navigates to its saved version`);
-  let row = ok(await api(page, "GET", `${root}/versions/${draftId}`), `${role} draft API readback`);
+  assert.ok(draftId && draftId !== pairedDraftId, `${role} valid publication draft is separate`);
+  row = ok(await api(page, "GET", `${root}/versions/${draftId}`), `${role} valid draft API readback`);
   assert.equal(row.status, "DRAFT");
   assert.equal(row.layout.shopName, draftName);
-  assert.deepEqual(await mobileCurrent(store.id, `${role} before publish`), seed.current, `${role} draft is private before publishing`);
   let confirmation = null;
   page.once("dialog", async (dialog) => { confirmation = dialog.message(); await dialog.accept(); });
+  assert.equal(await page.getByRole("button", { name: "Veröffentlichen" }).isEnabled(), true, `${role} Candidate publish enabled: ${await page.locator(".le-validation").innerText()}`);
   await page.getByRole("button", { name: "Veröffentlichen" }).click();
   assert.match(confirmation || "", /Entwurf veröffentlichen/);
   await page.getByRole("status").getByText("Layout veröffentlicht.").waitFor({ timeout: 10_000 });
@@ -230,6 +304,8 @@ try {
   assert.equal(regionMe.scope.regionId, region.id);
   assert.equal(storeMe.role, "store-manager");
   assert.equal(storeMe.scope.storeId, storeManagerStore.id);
+  await managerLegacyDraft("region-manager", regionManager, regionStore, regionSeed);
+  await managerLegacyDraft("store-manager", storeManager, storeManagerStore, storeSeed);
   await managerPublication("region-manager", regionManager, regionStore, regionSeed, stamp);
   await managerPublication("store-manager", storeManager, storeManagerStore, storeSeed, stamp);
   await checkRoleDenials("region-manager", regionManager, foreignStore);

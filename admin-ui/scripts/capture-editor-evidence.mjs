@@ -210,7 +210,7 @@ try {
   // Legacy Store editor at the direct link. Keep the changes local; capture the
   // initial state and an edited draft without invoking legacy save behavior.
   const legacyStore = await admin.context().newPage();
-  await legacyStore.goto(`${base}/admin/editor/?storeId=${scopedStore.id}&layoutId=${initial.layoutId}`, { waitUntil: "domcontentloaded" });
+  await legacyStore.goto(`${base}/admin/editor/?storeId=${scopedStore.id}&layoutId=${initial.layoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await waitLegacyStore(legacyStore);
   await capture(legacyStore, "legacy-store-initial", "initial", { storeId: scopedStore.id, layoutId: initial.layoutId });
   await legacyStore.locator("#shopName").fill(`Legacy Evidence Draft ${stamp}`);
@@ -231,7 +231,7 @@ try {
   await candidateGlobal.close();
 
   const legacyGlobal = await admin.context().newPage();
-  await legacyGlobal.goto(`${base}/admin/editor/`, { waitUntil: "domcontentloaded" });
+  await legacyGlobal.goto(`${base}/admin/editor/?legacy=1`, { waitUntil: "domcontentloaded" });
   await legacyGlobal.locator("#shopName").waitFor({ timeout: 15_000 });
   await legacyGlobal.locator("#publishBtn").waitFor();
   await capture(legacyGlobal, "legacy-global-initial", "initial");

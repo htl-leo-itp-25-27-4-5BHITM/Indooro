@@ -126,7 +126,7 @@ try {
   }), "create foreign fixture Store");
 
   const suffix = `Probe ${stamp}`;
-  await admin.goto(`${base}/admin/editor/?probe=${stamp}`, { waitUntil: "domcontentloaded" });
+  await admin.goto(`${base}/admin/editor/?probe=${stamp}&legacy=1`, { waitUntil: "domcontentloaded" });
   await admin.locator("#toolSelect").waitFor();
   await waitInputValue(admin.locator("#shopName"), `Seed ${stamp}`, "legacy global seed load");
   await admin.locator("#shopName").fill(`Legacy ${suffix}`);
@@ -175,7 +175,7 @@ try {
   assert.equal(stillInitial.layoutId, initial.layoutId, "draft must not replace the public active version");
   assert.equal(stillInitial.layout.shopName, `Initial ${suffix}`);
   evidence.draftIsNotPublic = true;
-  await admin.goto(`${base}/admin/editor/?storeId=${created.store.id}&layoutId=${draftId}`, { waitUntil: "domcontentloaded" });
+  await admin.goto(`${base}/admin/editor/?storeId=${created.store.id}&layoutId=${draftId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await admin.locator("#storeContextBox").waitFor();
   await admin.locator("#shopName").waitFor();
   await waitInputValue(admin.locator("#shopName"), `Draft ${suffix}`, "legacy store direct link opens the selected draft");

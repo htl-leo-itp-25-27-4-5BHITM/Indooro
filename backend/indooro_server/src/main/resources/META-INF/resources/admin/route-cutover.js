@@ -29,7 +29,16 @@ const ENTRIES = Object.freeze({
   "/admin/server-logs/": ["diagnostics", "/admin/next/server-logs/"]
 });
 
+/**
+ * `?legacy=1` keeps the original static page for one visit, so a replaced
+ * route stays reachable as a fallback without rebuilding the image.
+ */
+function wantsLegacy(search) {
+  return new URLSearchParams(search).get("legacy") === "1";
+}
+
 export function cutoverTarget(pathname, search = "", hash = "", flags = ROUTE_CUTOVER) {
+  if (wantsLegacy(search)) return null;
   const normalized = pathname.endsWith("/") ? pathname : `${pathname}/`;
   const entry = ENTRIES[normalized];
   return entry && flags[entry[0]] === true ? `${entry[1]}${search}${hash}` : null;
