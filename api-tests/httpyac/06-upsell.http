@@ -96,7 +96,8 @@ Accept: application/json
   "checkedProductId": {{UPSELL_CHECKED_PRODUCT_ID}},
   "suggestedProductId": {{UPSELL_CHECKED_PRODUCT_ID}},
   "storeId": "{{ACTIVE_STORE_ID}}",
-  "sessionId": "httpyac-session"
+  "sessionId": "httpyac-session",
+  "suppressMinutes": 1440
 }
 
 ?? status == 202
