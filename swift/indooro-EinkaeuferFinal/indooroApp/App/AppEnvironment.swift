@@ -34,6 +34,38 @@ enum AppEnvironment {
 
     static var allowsExtendedFeatures: Bool { featureProfile == .full }
 
+    /// Feldtuning der Ankunftsvorschläge. `nil` heißt: Standardwert der App (ArrivalSuggestionConfig.defaults()).
+    struct ArrivalSuggestionTuning: Equatable {
+        let radiusMeters: Double?
+        let dwellSeconds: Double?
+    }
+
+    static let arrivalRadiusEnvironmentKey = "INDOORO_ARRIVAL_RADIUS_M"
+    static let arrivalDwellEnvironmentKey = "INDOORO_ARRIVAL_DWELL_S"
+
+    /// Positive, endliche Zahl oder `nil` (ungültige Werte und Werte <= 0 werden ignoriert).
+    static func parsePositiveSetting(_ value: String?) -> Double? {
+        guard let value, let number = Double(value.trimmingCharacters(in: .whitespacesAndNewlines)),
+              number.isFinite, number > 0 else { return nil }
+        return number
+    }
+
+    static func arrivalSuggestionTuning(environment: [String: String]) -> ArrivalSuggestionTuning {
+        ArrivalSuggestionTuning(
+            radiusMeters: parsePositiveSetting(environment[arrivalRadiusEnvironmentKey]),
+            dwellSeconds: parsePositiveSetting(environment[arrivalDwellEnvironmentKey])
+        )
+    }
+
+    /// Nur DEBUG-Builds lesen die Umgebung (wie INDOORO_API_BASE_URL); Release nimmt immer die Standardwerte.
+    static var arrivalSuggestionTuning: ArrivalSuggestionTuning {
+        #if DEBUG
+        return arrivalSuggestionTuning(environment: ProcessInfo.processInfo.environment)
+        #else
+        return ArrivalSuggestionTuning(radiusMeters: nil, dwellSeconds: nil)
+        #endif
+    }
+
     static func parseAPIURL(_ value: String?) -> URL? {
         guard let value, var parts = URLComponents(string: value.trimmingCharacters(in: .whitespacesAndNewlines)),
               let scheme = parts.scheme?.lowercased(), ["https", "http"].contains(scheme),
