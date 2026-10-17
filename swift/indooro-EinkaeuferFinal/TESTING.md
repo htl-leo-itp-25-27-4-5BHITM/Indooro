@@ -125,3 +125,64 @@ xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj \
   -scheme MCindooroApp -configuration Debug -sdk iphonesimulator \
   -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
 ```
+
+## UI-Tests (add-ios-pilot-ui-tests)
+
+Die XCUITests im Target `MCindooroAppUITests` prüfen die Pilot-Abläufe in der App:
+Planung, Tour, Regaltext, „Ich bin hier“, Offline-Start, QR-Anker und Store-Wechsel per Scan.
+
+Ausführen (aus dem Repo-Root):
+
+```bash
+sh scripts/ios/run-ui-tests.sh
+```
+
+Das Skript startet `scripts/dev/mock_mobile_api.py` mit `MOCK_DATASET=ui-test-store` auf
+127.0.0.1:18090, wartet, bis der Mock antwortet, führt `xcodebuild test` für das Scheme
+`MCindooroApp` aus (Unit- und UI-Tests) und beendet den Mock am Ende. Der Simulator ist der
+gerade gebootete iPhone, sonst der erste verfügbare; mit `UI_TEST_DEVICE_UDID` lässt er sich
+festlegen. Der Exitcode von `xcodebuild` wird durchgereicht.
+
+- **Mock-Datensatz**: `MOCK_DATASET=ui-test-store` liefert zwei Filialen (`UITEST-001` „UI-Testmarkt“,
+  `UITEST-002` „UI-Testmarkt 2“), deren Layouts, 30 Produkte und die Produktsuche aus
+  `swift/indooro-EinkaeuferFinal/Fixtures/ui-test-store/`. Ohne die Variable bleibt der alte
+  Datensatz mit `MOCK-QR-001`/`MOCK-QR-002` unverändert.
+- **Launch-Zustand**: Die App startet mit `-uiTesting` (Modus „Ohne Ortung“, keine
+  Standortabfrage, nur DEBUG-Builds) und `INDOORO_API_BASE_URL=http://127.0.0.1:18090/api`.
+  Die Einkaufsliste und eine aktive Tour werden über Argument-Domain-Werte geleert, sodass jeder
+  Test frisch startet.
+- **Helfer**: `MCindooroAppUITests/UITestSupport.swift`. Warten nur über `waitForExistence` und
+  `waitForNonExistence`, keine Sleeps. Der Test bricht mit klarer Meldung ab, wenn der Mock fehlt
+  oder den falschen Datensatz liefert.
+- **Test-Hooks**: `accessibilityIdentifier` nur in `StoreMapPage` (`storeCard-<Code>`,
+  `positionBanner`), `MapView` (`storeMap`) und `AnchorScannerView` (`debugPayloadField`).
+
+Abgedeckte Abläufe:
+
+| Datei | Test | Ablauf |
+|---|---|---|
+| `TourFlowUITests.swift` | `testTourStartsAtEntranceAndRoutesFromLastStopAfterDone` | Drei Produkte planen, Store öffnen, Tour starten, „Route ab Eingang“, „Erledigt“, „Route ab <Regal>“ |
+| `ShelfTextUITests.swift` | `testPlannedProductShowsShelfTextInWords` | Regaltext in Worten in Planung und Einkaufen, kein roher layoutCode in der Planung |
+| `PositionUITests.swift` | `testIchBinHierSetsPositionWithTapOnMap` | „Ich bin hier“, Tipp auf die Karte, Hinweis und „Position ungenau“ verschwinden |
+| `OfflineStartUITests.swift` | `testOfflineStartOpensStoreFromOfflineCopy` | Online laden, neu starten ohne API, Store aus der Offline-Kopie |
+| `AnchorScanUITests.swift` | `testAnchorPayloadSetsPositionAndClosesScanner`, `testUnknownAnchorShowsHintAndKeepsScannerOpen` | Anker-Payload setzt die Position, unbekannter Anker zeigt den Hinweis |
+| `StoreSwitchUITests.swift` | `testScanOfOtherStoreSwitchesStoreAndSetsPositionWithOneScan` | Scan einer anderen Filiale, Wechsel-Abfrage, ein Scan setzt die Position |
+
+Der Scanner läuft im Simulator ohne Kamera. Die Tests nutzen deshalb den DEBUG-Fallback
+„Payload einfügen“ mit dem Button „Übernehmen“. Ein Kamera-Systemdialog wird über einen
+Interruption-Monitor bestätigt.
+
+Bekannte Grenzen:
+
+- Die Produktsuche mit Sonderzeichen (z. B. „Milch & Käse“) ist nicht abgedeckt. `ProductSearchStore`
+  und `BeaconManager` kodieren den Suchtext mit `.urlQueryAllowed`, das `&` und `+` nicht
+  escaped. Der Test nutzt nur einfache Begriffe; der Sonderzeichen-Test wartet auf
+  `prepare-pilot-ios-build`.
+- Die Trefferzeile der Produktsuche zeigt den rohen layoutCode („Regal 520/2/1/1“). Die UI-Tests
+  prüfen den Regaltext daher in Planung und Einkaufen, nicht in der Trefferliste.
+- Die Tests hängen an den deutschen Labels der Oberfläche (z. B. „Erledigt“, „Einplanen“,
+  „Tour starten“). Eine Umbenennung bricht die Tests.
+- Der Kamera-Pfad mit echtem QR-Code ist nicht abgedeckt; das ist ein Gerätetest.
+
+CI: `.github/workflows/ios.yaml` startet den Mock vor dem Schritt „App unit and UI tests“ und
+wiederholt den `xcodebuild test`-Lauf einmal bei einem Simulator-Boot-Fehler.

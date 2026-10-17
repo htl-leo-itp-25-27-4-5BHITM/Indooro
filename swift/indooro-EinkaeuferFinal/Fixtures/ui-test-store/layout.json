@@ -1,0 +1,24 @@
+{
+  "storeId": "5a1d0e2f-8c3b-4d7e-9f10-2b3c4d5e6f70",
+  "layoutId": "6c2e1f30-7a4b-4c8d-8e9f-0a1b2c3d4e5f",
+  "source": "ACTIVE",
+  "fallback": false,
+  "layout": {
+    "shopName": "UI-Testmarkt",
+    "gridSize": { "width": 24, "height": 14 },
+    "exportDate": "2026-10-01T08:00:00.000Z",
+    "layoutId": "6c2e1f30-7a4b-4c8d-8e9f-0a1b2c3d4e5f",
+    "savedAt": "2026-10-01T08:00:00.000Z",
+    "elements": [
+      { "id": 1, "type": "entrance", "x": 0, "y": 5, "width": 2, "height": 4, "label": "Eingang", "color": "#E5E7EB", "rotation": 0, "locked": false },
+      { "id": 2, "type": "shelf", "category": "310/1", "meter": 1, "x": 3, "y": 1, "width": 4, "height": 2, "label": "Gang 1 – Obst & Gemüse", "color": "#4CAF50", "rotation": 0, "accessAngle": 90, "locked": false },
+      { "id": 3, "type": "shelf", "category": "520/2", "meter": 2, "x": 9, "y": 1, "width": 4, "height": 2, "label": "Gang 2 – Molkereiprodukte", "color": "#BBDEFB", "rotation": 0, "accessAngle": 90, "locked": false },
+      { "id": 4, "type": "shelf", "category": "130/3", "meter": 3, "x": 15, "y": 1, "width": 4, "height": 2, "label": "Gang 3 – Brot & Backwaren", "color": "#FFE082", "rotation": 0, "accessAngle": 90, "locked": false },
+      { "id": 5, "type": "shelf", "category": "530/4", "meter": 4, "x": 3, "y": 10, "width": 4, "height": 2, "label": "Gang 1 – Tiefkühlprodukte", "color": "#B3E5FC", "rotation": 0, "accessAngle": 90, "locked": false },
+      { "id": 6, "type": "shelf", "category": "420/5", "meter": 5, "x": 9, "y": 10, "width": 4, "height": 2, "label": "Gang 2 – Konserven & Saucen", "color": "#FF9800", "rotation": 0, "accessAngle": 90, "locked": false },
+      { "id": 7, "type": "shelf", "category": "510/6", "meter": 6, "x": 15, "y": 10, "width": 4, "height": 2, "label": "Gang 3 – Getränke", "color": "#2196F3", "rotation": 0, "accessAngle": 90, "locked": false },
+      { "id": 10, "type": "anchor", "anchorId": "A1", "x": 1, "y": 4, "width": 1, "height": 1, "label": "Eingang oben" },
+      { "id": 11, "type": "anchor", "anchorId": "A12", "x": 11, "y": 6, "width": 1, "height": 1, "label": "Gang 2 – Mitte" }
+    ]
+  }
+}

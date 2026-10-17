@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXContainerItemProxy section */
+		5D8096DF4A8CF6EDD516E54A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 677672632F0E50DB00242147 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 6776726A2F0E50DB00242147;
+			remoteInfo = MCindooroApp;
+		};
 		DD8FCCAD38A189E26118CC39 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 677672632F0E50DB00242147 /* Project object */;
@@ -19,6 +26,7 @@
 /* Begin PBXFileReference section */
 		15D217E3A8E44DC25427BD79 /* MCindooroAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MCindooroAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		6776726B2F0E50DB00242147 /* MCindooroApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MCindooroApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D93D5721397772177A6255E4 /* MCindooroAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MCindooroAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -37,6 +45,13 @@
 			exceptions = (
 			);
 			path = MCindooroAppTests;
+			sourceTree = "<group>";
+		};
+		617D421D4612691CDAA46E09 /* MCindooroAppUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			path = MCindooroAppUITests;
 			sourceTree = "<group>";
 		};
 		6776726D2F0E50DB00242147 /* indooroApp */ = {
@@ -64,6 +79,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AE609F921B671BD7E2048269 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -72,6 +94,7 @@
 			children = (
 				6776726D2F0E50DB00242147 /* indooroApp */,
 				3107C8641411A96ABB2F6015 /* MCindooroAppTests */,
+				617D421D4612691CDAA46E09 /* MCindooroAppUITests */,
 				6776726C2F0E50DB00242147 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -81,6 +104,7 @@
 			children = (
 				6776726B2F0E50DB00242147 /* MCindooroApp.app */,
 				15D217E3A8E44DC25427BD79 /* MCindooroAppTests.xctest */,
+				D93D5721397772177A6255E4 /* MCindooroAppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -107,6 +131,27 @@
 			productName = indooroApp;
 			productReference = 6776726B2F0E50DB00242147 /* MCindooroApp.app */;
 			productType = "com.apple.product-type.application";
+		};
+		731CDB6DF5D317F4213D4C86 /* MCindooroAppUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 20896C7C8AB18CA730DED3B8 /* Build configuration list for PBXNativeTarget "MCindooroAppUITests" */;
+			buildPhases = (
+				BA703EB5AFF324EFBE0923EE /* Sources */,
+				AE609F921B671BD7E2048269 /* Frameworks */,
+				9EA18581357D01894596D5DE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F68B89C9DA0E053D6F52B5B2 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				617D421D4612691CDAA46E09 /* MCindooroAppUITests */,
+			);
+			name = MCindooroAppUITests;
+			productName = MCindooroAppUITests;
+			productReference = D93D5721397772177A6255E4 /* MCindooroAppUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 		C05C1ACC7510C2FAC78B06B5 /* MCindooroAppTests */ = {
 			isa = PBXNativeTarget;
@@ -160,6 +205,7 @@
 			targets = (
 				6776726A2F0E50DB00242147 /* MCindooroApp */,
 				C05C1ACC7510C2FAC78B06B5 /* MCindooroAppTests */,
+				731CDB6DF5D317F4213D4C86 /* MCindooroAppUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -179,10 +225,24 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		9EA18581357D01894596D5DE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		677672672F0E50DB00242147 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BA703EB5AFF324EFBE0923EE /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -205,9 +265,35 @@
 			target = 6776726A2F0E50DB00242147 /* MCindooroApp */;
 			targetProxy = DD8FCCAD38A189E26118CC39 /* PBXContainerItemProxy */;
 		};
+		F68B89C9DA0E053D6F52B5B2 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = MCindooroApp;
+			target = 6776726A2F0E50DB00242147 /* MCindooroApp */;
+			targetProxy = 5D8096DF4A8CF6EDD516E54A /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		1119F840E0F3EBE2DE7F9027 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YVTW3J7XLC;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = at.ac.htl.leonding.indooroswift2.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = MCindooroApp;
+			};
+			name = Debug;
+		};
 		677672742F0E50DC00242147 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -419,6 +505,27 @@
 			};
 			name = Release;
 		};
+		8FE9EC198321E2D3F8C73E93 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YVTW3J7XLC;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = at.ac.htl.leonding.indooroswift2.uitests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = MCindooroApp;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		94FEB74F81BA300942E068EF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -443,6 +550,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		20896C7C8AB18CA730DED3B8 /* Build configuration list for PBXNativeTarget "MCindooroAppUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8FE9EC198321E2D3F8C73E93 /* Release */,
+				1119F840E0F3EBE2DE7F9027 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		677672662F0E50DB00242147 /* Build configuration list for PBXProject "MCindooroApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

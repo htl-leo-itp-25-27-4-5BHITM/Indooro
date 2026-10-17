@@ -47,6 +47,16 @@
                ReferencedContainer = "container:MCindooroApp.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "731CDB6DF5D317F4213D4C86"
+               BuildableName = "MCindooroAppUITests.xctest"
+               BlueprintName = "MCindooroAppUITests"
+               ReferencedContainer = "container:MCindooroApp.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
