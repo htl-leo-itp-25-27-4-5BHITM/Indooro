@@ -1,16 +1,5 @@
 import Foundation
 
-struct UpsellRequest: Encodable {
-    let storeId: UUID?
-    let storeCode: String?
-    let checkedProductId: Int
-    let shoppingListId: String?
-    let currentListProductIds: [Int]
-    let completedProductIds: [Int]
-    let source: String
-    let recipeId: UUID?
-}
-
 struct UpsellProductSummary: Decodable, Identifiable, Hashable {
     let id: Int
     let name: String
@@ -52,13 +41,6 @@ struct UpsellSuggestion: Decodable, Identifiable, Hashable {
     let product: UpsellProductSummary
     let reason: String
     let confidence: Double
-}
-
-struct UpsellSuggestionResponse: Decodable {
-    let checkedProductId: Int
-    let suggestions: [UpsellSuggestion]
-    let source: String?
-    let expiresAt: Date?
 }
 
 struct UpsellPlanRequest: Encodable {

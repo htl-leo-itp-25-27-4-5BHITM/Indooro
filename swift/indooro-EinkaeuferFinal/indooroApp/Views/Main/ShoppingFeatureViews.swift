@@ -153,7 +153,7 @@ struct ShoppingSessionPanel: View {
 
             if snapshot.unresolvedProductCount > 0 {
                 Label(
-                    "\(snapshot.unresolvedProductCount) Artikel nicht im Layout",
+                    "\(snapshot.unresolvedProductCount) Artikel ohne Regalposition",
                     systemImage: "exclamationmark.triangle"
                 )
                 .font(.caption2)
@@ -805,7 +805,9 @@ struct ProductsPage: View {
                 .padding(.vertical, 4)
             }
 
-            if !displayedProducts.isEmpty {
+            if productSearch.errorMessage != nil {
+                ProductSearchFeedback(store: productSearch)
+            } else if !displayedProducts.isEmpty {
                 ForEach(displayedProducts, id: \.self) { product in
                     ProductSearchRow(
                         product: product,
@@ -824,7 +826,7 @@ struct ProductsPage: View {
                 }
             } else if !productSearch.isSearching {
                 ContentUnavailableView(
-                    "Keine passenden Produkte",
+                    productSearch.lastQuery.map { "Keine Treffer für „\($0)“" } ?? "Keine passenden Produkte",
                     systemImage: "magnifyingglass",
                     description: Text(emptyText)
                 )
@@ -833,7 +835,7 @@ struct ProductsPage: View {
     }
 
     private var recommendationsSection: some View {
-        Section("Kunden kauften ebenfalls") {
+        Section("Passt gut dazu") {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(recommendations) { suggestion in

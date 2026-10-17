@@ -33,7 +33,7 @@ struct HomeDashboardView: View {
                     }
 
                     currentListCard
-                    recipesEntryCard
+                    if AppEnvironment.allowsExtendedFeatures { recipesEntryCard }
                     mapEntryCard
                 }
                 .padding(.horizontal, 22)
@@ -45,16 +45,7 @@ struct HomeDashboardView: View {
             .navigationBarTitleDisplayMode(.inline)
         }
         .sheet(isPresented: $showsTutorial) {
-            HomeTutorialSheet(
-                onOpenPlanning: {
-                    showsTutorial = false
-                onOpenPlanning()
-                },
-                onOpenMap: {
-                    showsTutorial = false
-                    onOpenMap()
-                }
-            )
+            PilotIntroduction { showsTutorial = false }
             .presentationDetents([.large])
         }
     }
@@ -267,7 +258,7 @@ struct HomeDashboardView: View {
                     .background(routeAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("Shop-Karte")
+                    Text("Marktkarte")
                         .font(.headline.weight(.semibold))
 
                     Text("Route, Produktziel und Standort auf einen Blick.")
@@ -411,7 +402,7 @@ private struct HomeTutorialSheet: View {
                 .padding(20)
             }
             .background(pageBackground.ignoresSafeArea())
-            .navigationTitle("Tutorial")
+            .navigationTitle("Hilfe")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

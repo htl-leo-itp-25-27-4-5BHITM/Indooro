@@ -85,9 +85,9 @@ enum TrackingMode: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .beacon:
-            return "Beacon"
+            return "Mit Ortung"
         case .debugNoBeacons:
-            return "Debug (ohne Beacons)"
+            return "Ohne Ortung"
         }
     }
 }
@@ -188,11 +188,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     @Published var navigationStatusMessage: String?
     @Published var manualCalibrationEvent: ManualCalibrationEvent?
 
-    @Published var searchResults: [Product] = []
-    @Published var isSearching = false
 
     @Published var tapSetsTarget = true
-    @Published private(set) var trackingMode: TrackingMode = .beacon
+    @Published private(set) var trackingMode: TrackingMode = .debugNoBeacons
+    @Published private(set) var bluetoothState: CBManagerState = .unknown
+    @Published private(set) var locationAuthorization: CLAuthorizationStatus = .notDetermined
     @Published private(set) var layoutHistory: [LayoutVersionSummary] = []
     @Published private(set) var isLoadingLayoutHistory = true
     @Published private(set) var isLoadingLayout = true
@@ -211,7 +211,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     // MARK: - Config
 
-    private let apiBase = IndooroAPI.baseURL
+    private var apiBase: String { AppEnvironment.apiBaseURL.absoluteString }
     private let allowServerSearch = true
     private let layoutHistoryLimit = 12
     private let selectedLayoutModeDefaultsKey = "selectedLayoutMode"
@@ -226,7 +226,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let storeLayoutFailureStatusMessage = "Store erkannt, Layout konnte nicht geladen werden."
     private let debugLogLimit = 80
     private let storeDetectionRefreshInterval: TimeInterval = 60
-    private var latestSearchRequestID = UUID()
 
     // MARK: - Bluetooth internals
 
@@ -342,9 +341,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         locationManager.delegate = self
         locationManager.pausesLocationUpdatesAutomatically = true
-        requestLocationAuthorizationIfNeeded()
-
-        centralManager = CBCentralManager(delegate: self, queue: nil)
+        locationAuthorization = locationManager.authorizationStatus
         startUpdateTimer()
         refreshStoreDetectionBeaconsIfNeeded(force: true)
         restorePersistedLayoutSelection()
@@ -387,11 +384,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }
     }
 
-    func clearSearch() {
-        latestSearchRequestID = UUID()
-        isSearching = false
-        searchResults = []
-    }
+
 
     func clearDebugLog() {
         debugLogLines.removeAll()
@@ -503,6 +496,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         switch mode {
         case .beacon:
             resetManualHoldOnNextTick = true
+            if centralManager == nil { centralManager = CBCentralManager(delegate: self, queue: nil) }
+            requestLocationAuthorizationIfNeeded()
             configureBeaconScanningForCurrentMode()
 
         case .debugNoBeacons:
@@ -541,58 +536,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     // MARK: - Search
 
-    func searchProducts(query: String) {
-        if !allowServerSearch {
-            DispatchQueue.main.async {
-                self.latestSearchRequestID = UUID()
-                self.isSearching = false
-                self.searchResults = []
-            }
-            return
-        }
 
-        guard !query.isEmpty else {
-            clearSearch()
-            return
-        }
-
-        let requestID = UUID()
-        latestSearchRequestID = requestID
-        isSearching = true
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let urlString = "\(apiBase)/products/search?q=\(encoded)&size=50"
-
-        guard let url = URL(string: urlString) else {
-            isSearching = false
-            return
-        }
-
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                guard self.latestSearchRequestID == requestID else { return }
-                self.isSearching = false
-
-                if let error {
-                    print("❌ Fehler bei Suche: \(error.localizedDescription)")
-                    self.searchResults = []
-                    return
-                }
-
-                guard let data else {
-                    self.searchResults = []
-                    return
-                }
-
-                do {
-                    self.searchResults = try JSONDecoder().decode([Product].self, from: data)
-                } catch {
-                    print("❌ JSON Fehler: \(error)")
-                    self.searchResults = []
-                }
-            }
-        }.resume()
-    }
 
     // MARK: - BLE update loop
 
@@ -1150,7 +1094,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         appendDebugLog("Store-Lookup startet rssi=\(rssi) url=\(url.absoluteString)")
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             guard let self else { return }
 
             defer {
@@ -1208,7 +1152,19 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }.resume()
     }
 
+    @Published var suggestedPilotStore: MobileStoreSummary?
+
+    func openSuggestedPilotStore(_ store: MobileStoreSummary) {
+        suggestedPilotStore = nil
+        detectedStore = store
+        loadStoreLayout(storeId: store.id)
+    }
+
     private func applyDetectedStore(_ detection: StoreByBeaconResponse, identityKey: String) {
+        if !AppEnvironment.allowsExtendedFeatures {
+            if activeLayoutStore == nil && detectedStore == nil { suggestedPilotStore = detection.store }
+            return
+        }
         let hasAppliedStoreLayout = activeLayoutStore?.id == detection.store.id
         let shouldLoadStoreLayout = !hasAppliedStoreLayout || selectedLayoutMode != .currentServer
 
@@ -1738,7 +1694,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         lastStoreDetectionBeaconRefreshAt = now
         appendDebugLog("Store-Beacon-Identities Request url=\(url.absoluteString)")
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             guard let self else { return }
 
             if let error {
@@ -1819,7 +1775,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func performRequest(url: URL, completion: @escaping (Result<Data, Error>) -> Void) {
-        URLSession.shared.dataTask(with: url) { data, response, error in
+        AppEnvironment.session.dataTask(with: url) { data, response, error in
             if let error {
                 self.appendDebugLog("HTTP Fehler \(url.path): \(error.localizedDescription)")
                 completion(.failure(error))
@@ -2098,9 +2054,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     // MARK: - RSSI helpers
 
     private func requestLocationAuthorizationIfNeeded() {
+        locationAuthorization = locationManager.authorizationStatus
         #if DEBUG
         if Self.isUITesting { return }
         #endif
+        guard trackingMode == .beacon else { return }
         guard CLLocationManager.locationServicesEnabled() else {
             navigationStatusMessage = "Ortungsdienste sind deaktiviert. iBeacon-Ranging braucht Standortfreigabe."
             appendDebugLog("Location Services deaktiviert")
@@ -2319,6 +2277,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        bluetoothState = central.state
         appendDebugLog("Bluetooth State: \(bluetoothStateDescription(central.state))")
         configureBeaconScanningForCurrentMode()
     }

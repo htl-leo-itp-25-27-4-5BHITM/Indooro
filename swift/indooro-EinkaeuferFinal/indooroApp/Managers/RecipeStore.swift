@@ -11,7 +11,7 @@ final class RecipeStore: ObservableObject {
     @Published private(set) var isLoadingMapping = false
     @Published var errorMessage: String?
 
-    private let apiBase = IndooroAPI.baseURL
+    private var apiBase: String { AppEnvironment.apiBaseURL.absoluteString }
     private var latestListRequestID = UUID()
     private var latestDetailRequestID = UUID()
     private var latestMappingRequestID = UUID()
@@ -70,7 +70,7 @@ final class RecipeStore: ObservableObject {
             return
         }
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             Task { @MainActor in
                 guard let self, self.latestDetailRequestID == requestID else { return }
                 self.isLoadingDetail = false
@@ -99,7 +99,7 @@ final class RecipeStore: ObservableObject {
             return
         }
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             Task { @MainActor in
                 guard let self, self.latestMappingRequestID == requestID else { return }
                 self.isLoadingMapping = false
@@ -121,7 +121,7 @@ final class RecipeStore: ObservableObject {
             return
         }
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             Task { @MainActor in
                 guard let self, self.latestListRequestID == requestID else { return }
                 self.isLoading = false
@@ -132,9 +132,9 @@ final class RecipeStore: ObservableObject {
     }
 
     private func handleListResponse(data: Data?, response: URLResponse?, error: Error?) {
-        if let error {
+        if let message = PilotHTTP.errorMessage(response: response, error: error) {
             recipes = []
-            errorMessage = error.localizedDescription
+            errorMessage = message
             return
         }
 
@@ -153,8 +153,8 @@ final class RecipeStore: ObservableObject {
     }
 
     private func handleDetailResponse(data: Data?, response: URLResponse?, error: Error?) {
-        if let error {
-            errorMessage = error.localizedDescription
+        if let message = PilotHTTP.errorMessage(response: response, error: error) {
+            errorMessage = message
             return
         }
 
@@ -164,15 +164,15 @@ final class RecipeStore: ObservableObject {
         }
 
         do {
-            selectedRecipe = try JSONDecoder().decode(RecipeDetail.self, from: data)
+            selectedRecipe = try JSONDecoder.indooro.decode(RecipeDetail.self, from: data)
         } catch {
             errorMessage = "Rezeptdetails konnten nicht gelesen werden."
         }
     }
 
     private func handleMappingResponse(data: Data?, response: URLResponse?, error: Error?) {
-        if let error {
-            errorMessage = error.localizedDescription
+        if let message = PilotHTTP.errorMessage(response: response, error: error) {
+            errorMessage = message
             return
         }
 
@@ -182,14 +182,14 @@ final class RecipeStore: ObservableObject {
         }
 
         do {
-            mappingResponse = try JSONDecoder().decode(RecipeProductMappingResponse.self, from: data)
+            mappingResponse = try JSONDecoder.indooro.decode(RecipeProductMappingResponse.self, from: data)
         } catch {
             errorMessage = "Produktzuordnung konnte nicht gelesen werden."
         }
     }
 
     private static func decodeRecipeSummaries(from data: Data) throws -> [RecipeSummary] {
-        let decoder = JSONDecoder()
+        let decoder = JSONDecoder.indooro
         if let recipes = try? decoder.decode([RecipeSummary].self, from: data) {
             return recipes
         }
