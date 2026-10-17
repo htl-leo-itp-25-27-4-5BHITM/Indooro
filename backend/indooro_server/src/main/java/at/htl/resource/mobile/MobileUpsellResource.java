@@ -1,7 +1,9 @@
 package at.htl.resource.mobile;
 
 import at.htl.admin.dto.UpsellDtos;
+import at.htl.admin.service.AdminRole;
 import at.htl.admin.service.UpsellSuggestionService;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -21,6 +23,9 @@ public class MobileUpsellResource {
     @Inject
     UpsellSuggestionService upsellSuggestionService;
 
+    @Inject
+    SecurityIdentity identity;
+
     @POST
     @Path("/suggestions")
     public UpsellDtos.UpsellSuggestionResponse suggestions(@Valid UpsellDtos.UpsellSuggestionRequest request) {
@@ -30,7 +35,7 @@ public class MobileUpsellResource {
     @POST
     @Path("/plan")
     public UpsellDtos.UpsellPlanResponse plan(@Valid UpsellDtos.UpsellPlanRequest request) {
-        return upsellSuggestionService.plan(request);
+        return withDebugForCaller(upsellSuggestionService.plan(request));
     }
 
     @POST
@@ -45,5 +50,38 @@ public class MobileUpsellResource {
     public Response dismiss(@Valid UpsellDtos.UpsellDismissRequest request) {
         upsellSuggestionService.dismiss(request);
         return Response.accepted().build();
+    }
+
+    /** Nicht-Admins sehen nur requestId, responseSource und fallbackReason im debug-Objekt. */
+    private UpsellDtos.UpsellPlanResponse withDebugForCaller(UpsellDtos.UpsellPlanResponse response) {
+        UpsellDtos.UpsellPlanDebug debug = response == null ? null : response.debug();
+        if (debug == null || isAdmin()) {
+            return response;
+        }
+        UpsellDtos.UpsellPlanDebug reduced = new UpsellDtos.UpsellPlanDebug(
+                debug.requestId(),
+                null,
+                debug.responseSource(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                debug.fallbackReason(),
+                null,
+                null
+        );
+        return new UpsellDtos.UpsellPlanResponse(
+                response.opportunities(),
+                response.source(),
+                response.expiresAt(),
+                reduced
+        );
+    }
+
+    private boolean isAdmin() {
+        return identity != null && !identity.isAnonymous() && identity.hasRole(AdminRole.ADMIN.value());
     }
 }

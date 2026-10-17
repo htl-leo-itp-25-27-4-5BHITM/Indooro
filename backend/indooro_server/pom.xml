@@ -103,6 +103,12 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
 
+        <!-- Scheduler (error log retention) -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-scheduler</artifactId>
+        </dependency>
+
         <!-- Test Dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
