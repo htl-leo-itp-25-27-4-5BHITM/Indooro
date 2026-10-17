@@ -174,10 +174,9 @@ Interruption-Monitor bestätigt.
 
 Bekannte Grenzen:
 
-- Die Produktsuche mit Sonderzeichen (z. B. „Milch & Käse“) ist nicht abgedeckt. `ProductSearchStore`
-  und `BeaconManager` kodieren den Suchtext mit `.urlQueryAllowed`, das `&` und `+` nicht
-  escaped. Der Test nutzt nur einfache Begriffe; der Sonderzeichen-Test wartet auf
-  `prepare-pilot-ios-build`.
+- Die Produktsuche mit Sonderzeichen (z. B. „Milch & Käse“) ist nur per Unit-Test abgedeckt
+  (`ProductEndpointTests`): `ProductEndpoint` kodiert `& + = # ?` im Suchtext, damit er keine
+  Parameter wie `storeCode` einschleusen kann. Ein UI-Test dafür fehlt noch.
 - Die Trefferzeile der Produktsuche zeigt den rohen layoutCode („Regal 520/2/1/1“). Die UI-Tests
   prüfen den Regaltext daher in Planung und Einkaufen, nicht in der Trefferliste.
 - Die Tests hängen an den deutschen Labels der Oberfläche (z. B. „Erledigt“, „Einplanen“,

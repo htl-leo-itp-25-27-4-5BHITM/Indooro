@@ -7,10 +7,29 @@ final class ProductSearchStore: ObservableObject {
     private let apiBase = IndooroAPI.baseURL
     private var latestSearchRequestID = UUID()
 
+    /// Filialcode, der an jede Produktanfrage angehaengt wird (`nil` = keine Filiale bekannt).
+    private(set) var activeStoreCode: String?
+
     func clearSearch() {
         latestSearchRequestID = UUID()
         isSearching = false
         searchResults = []
+    }
+
+    /// Setzt die aktive Filiale. Bei einer Aenderung werden Treffer und laufende Anfragen verworfen.
+    func setActiveStore(code: String?) {
+        let normalized = ProductEndpoint.normalizedStoreCode(code)
+        guard normalized != activeStoreCode else { return }
+        activeStoreCode = normalized
+        clearSearch()
+    }
+
+    func searchURL(query: String, size: Int) -> URL? {
+        ProductEndpoint.searchURL(base: apiBase, query: query, size: size, storeCode: activeStoreCode)
+    }
+
+    func listURL(size: Int) -> URL? {
+        ProductEndpoint.listURL(base: apiBase, size: size, storeCode: activeStoreCode)
     }
 
     func searchProducts(query: String, size: Int = 50) {
@@ -24,11 +43,9 @@ final class ProductSearchStore: ObservableObject {
         latestSearchRequestID = requestID
         isSearching = true
 
-        let encoded = trimmedQuery.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
         let resultSize = max(1, size)
-        let urlString = "\(apiBase)/products/search?q=\(encoded)&size=\(resultSize)"
 
-        guard let url = URL(string: urlString) else {
+        guard let url = searchURL(query: trimmedQuery, size: resultSize) else {
             isSearching = false
             return
         }
@@ -71,9 +88,8 @@ final class ProductSearchStore: ObservableObject {
         isSearching = true
 
         let resultSize = max(1, size)
-        let urlString = "\(apiBase)/products?size=\(resultSize)"
 
-        guard let url = URL(string: urlString) else {
+        guard let url = listURL(size: resultSize) else {
             isSearching = false
             return
         }
