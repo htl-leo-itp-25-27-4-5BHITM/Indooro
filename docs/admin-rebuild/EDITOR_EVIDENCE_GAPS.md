@@ -1,5 +1,21 @@
 # Editor-Belege und offene Nachweise
 
+## Aktueller Stand (2026-10-17)
+
+**Alle drei P0-Lücken sind geschlossen. Der Editor-Flag steht im Branch noch auf `false`:** das Commit des einen Wertes wurde in der Claude-Code-Sitzung vom Berechtigungsklassifikator abgelehnt; die Schritte zum Umschalten stehen in `ROUTE_CUTOVER.md` („Editor cutover and rollback“). Nachweis je Lücke mit Dateien und Testnamen: [`EDITOR_P0_CLOSURE.md`](EDITOR_P0_CLOSURE.md).
+
+| Lücke | Stand | Nachweis |
+| --- | --- | --- |
+| P0 – 1.2 Aktions-/Zustandsinventar | geschlossen | `legacy-parity-map.json` + `legacy-parity-map.test.ts` (jede Legacy-`id` abgebildet, Nachweis und Entscheidung je Eintrag), `editor-states.spec.ts`, `editor-edge-cases.test.ts`, `editor-canvas-edge-cases.spec.ts`, `editor-gap-closure.spec.ts` |
+| P0 – 3.10 Rollen-/Scope-UI-Abnahme | geschlossen | `editor-roles.spec.ts` (3 Rollen × 6 Fälle), `StoreLayoutAdminResourceRoleTest`, `AdminAccessServiceStoreScopeTest`, `StoreLayoutAdminServiceScopeTest` |
+| P0 – 3.10 Legacy-Aktionsvergleich | geschlossen | fehlende Funktionen nachgebaut („90° drehen“, globale Beacon-ID `Indooro<n>`, Löschbestätigung für Theke/Kühl-/Tiefkühlregal), drei gefundene Fehler behoben, jeder Unterschied mit `decision` in `legacy-parity-map.json` |
+| P1 – Screenshots je Zustand | teilweise | 20 Zustandsaufnahmen unter `evidence/editor-states/`; Fehler-/Konfliktkombinationen darüber hinaus nicht |
+| P1 – Accessibility | offen | Tastatur/Fokus automatisiert; kein Screenreader-Audit |
+| P1 – Mobile-Geräteweg | offen | kein physisches Gerät; Simulator/API gelten nicht als Gerätetest |
+| P1 – Rollback als Cutover-Beleg | teilweise | URL-Mapping und `?legacy=1`-Fallback unit-getestet (`admin-route-cutover.test.mjs`); der echte Flag-Wechsel und der Live-Lauf `test:live:cutover` gegen den gepackten Stack stehen aus (Flag-Commit abgelehnt, Docker-Daemon nicht nutzbar) |
+
+Die Entscheidungen `accepted-improvement` / `accepted-removed` hat der übernehmende Agent vorgeschlagen und im Test verankert; nur die drei Punkte vom 2026-10-16 sind Product-Owner-Entscheidungen. Der folgende Text beschreibt den Stand vom 2026-10-16 vor dem Abschluss und bleibt als Historie erhalten.
+
 Stand: 2026-10-16. Diese Bestandsaufnahme ordnet vorhandene Nachweise für OpenSpec `rebuild-admin-platform` den Tasks 1.2 und 3.10 zu. „Mock“ bezeichnet Browser-Tests mit abgefangenen API-Antworten; „Live“ bezeichnet die in `ROUTE_PARITY_MATRIX.md` dokumentierten Probes am gepackten lokalen Quarkus-/Keycloak-Stack. Ein Test oder Screenshot belegt nur die darin ausgeführte Aktion und den Zustand.
 
 ## Was die OpenSpec-Gates verlangen
