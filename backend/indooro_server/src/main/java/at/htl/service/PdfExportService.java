@@ -25,8 +25,21 @@ public class PdfExportService {
 
     private record ShelfPosition(String categoryId, String meterId, int level, int position) {}
 
+    static final int MAX_PRODUCTS = 2000;
+    static final int MAX_NAME_LENGTH = 200;
+    static final int MAX_LEVEL = 50;
+    static final int MAX_POSITION = 50;
+    static final int MAX_METER = 999;
+    private static final int MAX_NUMBER_DIGITS = 9;
+
     public byte[] generatePdf(List<Product> products) throws IOException {
-        List<Product> safeProducts = products == null ? List.of() : products;
+        if (products != null && products.size() > MAX_PRODUCTS) {
+            throw new PdfInputException("Maximal " + MAX_PRODUCTS + " Produkte pro PDF-Export erlaubt.");
+        }
+        List<Product> safeProducts = products == null ? List.of()
+                : products.stream().filter(Objects::nonNull).toList();
+        // Alle Eingaben vor dem Rendern pruefen (schnell, ohne PDF-Aufbau)
+        safeProducts.forEach(PdfExportService::validateProduct);
 
         try (PDDocument document = new PDDocument()) {
 
@@ -173,14 +186,14 @@ public class PdfExportService {
                     content.setNonStrokingColor(Color.BLACK);
 
                     content.newLineAtOffset(pX + 3, currentY + shelfHeight - 12);
-                    String nameVal = String.valueOf(p.getName());
+                    String nameVal = sanitize(p.getName());
                     String shortName = nameVal.length() > 12 ? nameVal.substring(0, 10) + ".." : nameVal;
                     content.showText(shortName);
 
                     content.newLineAtOffset(0, -12);
                     content.setFont(new PDType1Font(Standard14Fonts.FontName.COURIER), 7);
                     content.setNonStrokingColor(Color.BLUE);
-                    content.showText(String.valueOf(p.getLayoutCode()));
+                    content.showText(sanitize(p.getLayoutCode()));
 
                     content.endText();
                 }
@@ -255,14 +268,14 @@ public class PdfExportService {
 
             // Name
             content.newLineAtOffset(COL_NAME - COL_ID, 0);
-            String name = p.getName() == null ? "" : p.getName();
+            String name = sanitize(p.getName());
             if (name.length() > 30) name = name.substring(0, 27) + "...";
             content.showText(name);
 
             // Code
             content.newLineAtOffset(COL_CODE - COL_NAME, 0);
             content.setFont(new PDType1Font(Standard14Fonts.FontName.COURIER), 9);
-            content.showText(p.getLayoutCode() == null ? "" : p.getLayoutCode());
+            content.showText(sanitize(p.getLayoutCode()));
 
             content.endText();
         }
@@ -273,7 +286,7 @@ public class PdfExportService {
         content.setNonStrokingColor(Color.BLACK);
         content.setFont(new PDType1Font(Standard14Fonts.FontName.HELVETICA_BOLD), 24);
         content.newLineAtOffset(40, 560);
-        content.showText("BELEGPLAN: KATEGORIE " + categoryId + " - METER " + meterId);
+        content.showText(sanitize("BELEGPLAN: KATEGORIE " + categoryId + " - METER " + meterId));
         content.endText();
 
         content.beginText();
@@ -289,14 +302,59 @@ public class PdfExportService {
         content.stroke();
     }
 
-    private ShelfPosition parseCode(String code) {
-        try {
-            if (code == null) return new ShelfPosition("?", "?", 1, 1);
-            String[] parts = code.split("/");
-            if (parts.length < 4) return new ShelfPosition("Unknown", "1", 1, 1);
-            return new ShelfPosition(parts[0], parts[1], Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
-        } catch (Exception e) {
-            return new ShelfPosition("Error", "1", 1, 1);
+    private static void validateProduct(Product p) {
+        String name = p.getName();
+        if (name != null && name.length() > MAX_NAME_LENGTH) {
+            throw new PdfInputException("Produktname darf hoechstens " + MAX_NAME_LENGTH + " Zeichen lang sein.");
         }
+        parseCode(p.getLayoutCode());
+    }
+
+    /**
+     * Layoutcode im Format kategorie/meter/level/position.
+     * Fehlender Code (null) und leerer Code bleiben erlaubt und ergeben die bisherigen Platzhalter.
+     * Jeder andere Code muss exakt 4 Teile haben; meter, level und position sind Ganzzahlen im erlaubten Bereich.
+     */
+    private static ShelfPosition parseCode(String code) {
+        if (code == null) return new ShelfPosition("?", "?", 1, 1);
+        if (code.isBlank()) return new ShelfPosition("Unknown", "1", 1, 1);
+
+        String[] parts = code.split("/", -1);
+        if (parts.length != 4) {
+            throw new PdfInputException("Ungueltiger Layoutcode '" + code + "': erwartet kategorie/meter/level/position.");
+        }
+        int meter = parseBoundedNumber(parts[1], 1, MAX_METER, "Meter", code);
+        int level = parseBoundedNumber(parts[2], 1, MAX_LEVEL, "Level", code);
+        int position = parseBoundedNumber(parts[3], 1, MAX_POSITION, "Position", code);
+        return new ShelfPosition(parts[0], String.valueOf(meter), level, position);
+    }
+
+    private static int parseBoundedNumber(String value, int min, int max, String label, String code) {
+        // Laengenpruefung vor dem Parsen, damit Ueberlaeufe gar nicht erst entstehen
+        if (value.isEmpty() || value.length() > MAX_NUMBER_DIGITS || !value.chars().allMatch(c -> c >= '0' && c <= '9')) {
+            throw new PdfInputException("Ungueltiger " + label + " im Layoutcode '" + code + "'.");
+        }
+        int number = Integer.parseInt(value);
+        if (number < min || number > max) {
+            throw new PdfInputException(label + " im Layoutcode '" + code + "' muss zwischen " + min + " und " + max + " liegen.");
+        }
+        return number;
+    }
+
+    /**
+     * Ersetzt Zeichen, die die Standard-14-Schriften (WinAnsi) nicht darstellen koennen, durch '?'.
+     * Steuerzeichen und alles ausserhalb von Latin-1 wird ersetzt; ein Surrogatpaar ergibt ein '?'.
+     */
+    static String sanitize(String text) {
+        if (text == null) return "";
+        StringBuilder sb = new StringBuilder(text.length());
+        text.codePoints().forEach(cp -> sb.append(isWinAnsiPrintable(cp) ? (char) cp : '?'));
+        return sb.toString();
+    }
+
+    private static boolean isWinAnsiPrintable(int codePoint) {
+        if (codePoint > 255) return false;
+        if (codePoint < 0x20) return false;
+        return codePoint < 0x7F || codePoint > 0x9F;
     }
 }

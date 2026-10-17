@@ -25,8 +25,8 @@
 ## 4. Backend Hardening
 
 - [x] 4.1 Add `LayoutDocumentValidator` and call it from `LayoutService.saveCurrentLayout` and `StoreLayoutAdminService.saveLayoutVersion`.
-- [ ] 4.2 Bound `PdfExportService` inputs (products, name length, level/position/meter ranges) and replace unencodable characters.
-- [ ] 4.3 Bound `PdfImportService` inputs (10 MB, 50 pages) and replace the `DOTALL` item regex with line-based parsing with bounded numeric groups.
+- [x] 4.2 Bound `PdfExportService` inputs (products, name length, level/position/meter ranges) and replace unencodable characters. (implemented in release-pilot-backend)
+- [x] 4.3 Bound `PdfImportService` inputs (10 MB, 50 pages) and replace the `DOTALL` item regex with line-based parsing with bounded numeric groups. (implemented in release-pilot-backend)
 - [ ] 4.4 Change `ErrorLogService` and both exception mappers to persist only 5xx and authenticated admin 4xx, return generic 5xx messages with `correlationId`, and guard persistence with `try/catch`.
 - [ ] 4.5 Add `quarkus-scheduler` and a daily retention job for `error_logs` (30 days, 50 000 rows).
 - [ ] 4.6 Add `V13__audit_actor_subject.sql` and resolve the acting user in `AuditLogService`, `StoreLayoutAdminService`, and `RecipeService`.
