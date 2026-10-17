@@ -23,7 +23,7 @@
       "op": "<=",
       "value": 2,
       "min_n": 5,
-      "unit": "Korrekturen pro Tour",
+      "unit": "pro Tour",
       "n_unit": "Touren"
     },
     "unjustified_stop_changes": {
@@ -39,7 +39,7 @@
       "op": "<=",
       "value": 1,
       "min_n": 5,
-      "unit": "Reroutes pro Tour",
+      "unit": "pro Tour",
       "n_unit": "Touren"
     },
     "abort_rate": {
@@ -64,7 +64,7 @@
       "value": 2,
       "min_n": 1,
       "unit": "Stunden gesamt",
-      "n_unit": "Messtermine"
+      "n_unit": "Angabe"
     },
     "incident_rate": {
       "label": "Technische Vorfälle je Tour (Absturz, Hänger, falsche Daten)",
@@ -79,7 +79,7 @@
       "op": "<=",
       "value": 1,
       "min_n": 1,
-      "unit": "Reroutes pro Tour",
+      "unit": "pro Tour",
       "n_unit": "Feldläufe"
     }
   }
