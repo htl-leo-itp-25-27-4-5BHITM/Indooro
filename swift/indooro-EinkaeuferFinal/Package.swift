@@ -38,7 +38,9 @@ let package = Package(
                 "Utilities/PositioningPipeline.swift",
                 "Utilities/NavigationReplay.swift",
                 "Utilities/StabilizedNavigationConfig.swift",
-                "Utilities/AnchorPayload.swift"
+                "Utilities/AnchorPayload.swift",
+                "Utilities/AccessibilityText.swift",
+                "Utilities/AccessibilityPalette.swift"
             ]
         ),
         .testTarget(
