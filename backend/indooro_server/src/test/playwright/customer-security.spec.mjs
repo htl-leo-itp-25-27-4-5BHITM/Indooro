@@ -6,21 +6,30 @@ test("customer map and search treat layout and product text as data", async ({ p
     if (/content security policy|content-security-policy|refused to/i.test(message.text())) cspViolations.push(message.text());
   });
   const attack = '<img src=x onerror="window.__indooroXss=1">';
-  await page.route("**/api/layout/current", (route) => route.fulfill({
+  await page.route("**/api/mobile/stores", (route) => route.fulfill({
+    json: [{ id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz", city: "Linz", address: "Hauptstrasse 1", latitude: 48.3, longitude: 14.3 }]
+  }));
+  await page.route("**/api/mobile/stores/*/layout/current", (route) => route.fulfill({
     json: {
-      shopName: attack,
-      gridSize: { width: 20, height: 20 },
-      elements: [
-        { id: "shelf-1", type: "shelf", x: 2, y: 2, width: 4, height: 2, category: "310/1", label: attack },
-        { id: "beacon-1", type: "beacon", x: 10, y: 10, beaconId: attack }
-      ]
+      storeId: "store-1",
+      layoutId: "layout-1",
+      source: "PUBLISHED",
+      fallback: false,
+      layout: {
+        shopName: attack,
+        gridSize: { width: 20, height: 20 },
+        elements: [
+          { id: "shelf-1", type: "shelf", x: 2, y: 2, width: 4, height: 2, category: "310/1", label: attack },
+          { id: "beacon-1", type: "beacon", x: 10, y: 10, beaconId: attack }
+        ]
+      }
     }
   }));
   await page.route("**/api/products/search?*", (route) => route.fulfill({
     json: [{ id: 1, name: attack, price: 1.99, layoutCode: "310/1/1/1" }]
   }));
 
-  const response = await page.goto("/customer/");
+  const response = await page.goto("/customer/?store=LINZ-01");
   expect(response.headers()["content-security-policy"]).toContain("script-src 'self'");
   await expect(page.locator("#shopNameDisplay")).toHaveText(attack);
   await expect(page.locator("#mapCanvas")).toContainText(attack);

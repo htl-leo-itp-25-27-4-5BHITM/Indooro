@@ -11,3 +11,24 @@ The customer web view SHALL accept `?store=<storeCode>` and optional `&a=<anchor
 #### Scenario: Unknown store
 - **WHEN** the link contains an unknown store code
 - **THEN** the page shows the store list instead of an error
+
+## MODIFIED Requirements
+
+### Requirement: Customer web uses public catalog and layout APIs
+The customer web experience SHALL use the public store list (`/api/mobile/stores`), the store's active layout (`/api/mobile/stores/{storeId}/layout/current`) and product search (`/api/products/search`) so anonymous users can search products and view the map. The search request SHALL include `storeCode` as soon as the store is known and SHALL omit the parameter otherwise.
+
+#### Scenario: Anonymous customer searches
+- **GIVEN** the customer page has loaded a store
+- **WHEN** the customer enters a product query
+- **THEN** the page calls product search with `storeCode` of that store without Keycloak login
+
+#### Scenario: Customer map loads
+- **GIVEN** the store has an active or default layout
+- **WHEN** the customer page needs a map
+- **THEN** it loads `/api/mobile/stores/{storeId}/layout/current` without Admin Platform authentication
+
+## REMOVED Requirements
+
+### Requirement: Customer web remains a compatibility surface
+**Reason**: The customer web view now selects the store and consumes the store-specific layout; the legacy global layout flow is no longer used.
+**Migration**: Use `?store=<storeCode>` links (QR codes) or the store list on `/customer/`.

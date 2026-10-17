@@ -2,59 +2,95 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Indooro - Live Produktsuche</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Indooro – Produktsuche</title>
   <link rel="stylesheet" href="style.css">
-  <script defer src="app.js"></script>
+  <script type="module" src="app.js"></script>
 </head>
 <body>
-  <header>
-    <h1>🛒 <span id="shopNameDisplay">Indooro</span></h1>
-    <p class="subtitle">Finden Sie Ihre Produkte im Handumdrehen</p>
-    <div class="search-container">
-      <div class="search-wrapper">
-        <span class="search-icon">🔍</span>
-        <input 
-          type="text" 
-          id="search-input" 
-          placeholder="Produkt suchen..." 
-          aria-label="Produkt suchen"
-        />
-        <button id="clear-search" style="display: none;" aria-label="Suche löschen">✕</button>
-      </div>
+  <noscript>
+    <p class="noscript">Bitte aktivieren Sie JavaScript, damit die Produktsuche funktioniert.</p>
+  </noscript>
+
+  <header class="site-header">
+    <div class="site-header-inner">
+      <p class="eyebrow">Indooro · Produktsuche</p>
+      <h1 id="shopNameDisplay">Produktsuche</h1>
+      <button id="switch-store" class="btn btn-small" type="button" hidden>Markt wechseln</button>
     </div>
   </header>
 
-  <div class="main-container">
-    <!-- Left Sidebar: Search Results -->
-    <aside class="sidebar" id="sidebar">
-      <div id="search-results-panel">
-        <div class="welcome-message">
-          <span class="welcome-icon">👉</span>
-          <p>Suchen Sie nach einem Produkt, um es auf der Karte zu finden</p>
-        </div>
-      </div>
-    </aside>
+  <main class="page">
+    <section id="view-status" class="view status-view" hidden>
+      <p id="status-message" class="status-message" role="status" aria-live="polite"></p>
+      <div id="status-actions" class="actions"></div>
+    </section>
 
-    <!-- Main Area: Interactive Map -->
-    <main class="map-container">
-      <div class="map-header">
-        <h2 id="mapTitle">Ladenlayout</h2>
-        <div class="map-controls">
-          <button id="zoomOut" class="zoom-btn">−</button>
-          <span id="zoomLabel">100%</span>
-          <button id="zoomIn" class="zoom-btn">+</button>
+    <section id="view-stores" class="view" aria-labelledby="stores-heading" hidden>
+      <div class="card">
+        <h2 id="stores-heading">Markt wählen</h2>
+        <p class="hint">Bitte wählen Sie den Markt, in dem Sie einkaufen.</p>
+        <p id="store-note" class="note" hidden></p>
+        <ul id="store-list" class="store-list"></ul>
+      </div>
+    </section>
+
+    <section id="view-finder" class="view finder" hidden>
+      <section class="card" aria-labelledby="search-heading">
+        <h2 id="search-heading">Produkt suchen</h2>
+        <p id="finder-note" class="note" hidden></p>
+        <form id="search-form" class="search-form" role="search">
+          <label for="search-input" class="visually-hidden">Produkt suchen</label>
+          <div class="search-field">
+            <input
+              id="search-input"
+              type="search"
+              inputmode="search"
+              enterkeyhint="search"
+              autocomplete="off"
+              autocapitalize="off"
+              autocorrect="off"
+              spellcheck="false"
+              placeholder="z. B. Backpulver"
+            >
+            <button id="clear-search" class="btn btn-small" type="button" hidden>Suche löschen</button>
+          </div>
+        </form>
+        <p id="search-status" class="search-status" role="status" aria-live="polite"></p>
+        <div id="search-actions" class="actions"></div>
+        <ul id="search-results-panel" class="results"></ul>
+      </section>
+
+      <section id="map-section" class="card map-section" aria-labelledby="map-heading">
+        <div class="section-head">
+          <h2 id="map-heading">Karte</h2>
+          <div class="zoom-controls" role="group" aria-label="Kartenzoom">
+            <button id="zoom-out" class="btn btn-icon" type="button" aria-label="Verkleinern">−</button>
+            <span id="zoom-label" class="zoom-label" aria-live="off">100 %</span>
+            <button id="zoom-in" class="btn btn-icon" type="button" aria-label="Vergrößern">+</button>
+            <button id="zoom-reset" class="btn btn-small" type="button">Zurücksetzen</button>
+          </div>
         </div>
-      </div>
-      <div class="map-viewport" id="mapViewport">
-        <div id="mapCanvas" class="map-canvas">
-          <!-- Map will be rendered here -->
+        <div id="map-viewport" class="map-viewport">
+          <div id="mapCanvas" class="map-stage"></div>
         </div>
-      </div>
-      <div class="map-legend">
-        <span>💡 Tipp: Klicken Sie auf ein Suchergebnis, um die Position auf der Karte zu sehen</span>
-      </div>
-    </main>
-  </div>
+        <p class="hint">Mit zwei Fingern zoomen, mit einem Finger verschieben.</p>
+      </section>
+
+      <section id="list-section" class="card" aria-labelledby="list-heading">
+        <div class="section-head">
+          <h2 id="list-heading">Meine Einkaufsliste</h2>
+          <button id="clear-list" class="btn btn-small" type="button">Liste leeren</button>
+        </div>
+        <p id="list-empty" class="hint">Noch keine Produkte auf der Liste. Wählen Sie bei einem Suchtreffer „Zur Liste“.</p>
+        <ol id="list-items" class="list-items"></ol>
+      </section>
+    </section>
+  </main>
+
+  <footer class="page-footer">
+    <p>Diese Seite verwendet keine Cookies und keine Analyse-Werkzeuge.</p>
+  </footer>
 </body>
 </html>
