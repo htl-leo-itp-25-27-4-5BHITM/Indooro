@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { coverageRule, type CoverageResult } from "./coverage";
 import { coveragePathData, COVERAGE_COLORS, coverageLegend, formatCoverageSummary, formatGapLine, gapStatus } from "./coverageView";
+import type { LayoutDocument, LayoutElement } from "./model";
+import { parsePlanCsv, planToElements, PLAN_MAX_BYTES } from "./planImport";
 import type { CoverageOverlay } from "./useCoverageOverlay";
 
 const RADIUS_STEP = 0.5;
@@ -62,6 +64,52 @@ export function CoveragePanel({ overlay }: { overlay: CoverageOverlay }) {
         </li>)}
       </ul>
     </>}
+  </section>;
+}
+
+const PLAN_ERROR_PREVIEW = 5;
+
+/**
+ * Imports the planner's beacons-plan.csv as beacon elements with placeholder identities. Only shown in store mode:
+ * there the validation flags them as foreign beacons and publishing stays blocked until they are assigned.
+ */
+export function PlanImportBlock({ disabled, getDocument, onImport }: {
+  disabled: boolean;
+  getDocument: () => LayoutDocument;
+  onImport: (elements: LayoutElement[], skipped: string[]) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [errors, setErrors] = useState<string[]>([]);
+
+  const readFile = async (file: File | undefined) => {
+    if (!file) return;
+    setErrors([]);
+    try {
+      if (file.size > PLAN_MAX_BYTES) { setErrors(["Die Datei ist größer als 1 MB."]); return; }
+      const parsed = parsePlanCsv(await file.text());
+      if (parsed.errors.length) { setErrors(parsed.errors); return; }
+      const plan = planToElements(getDocument(), parsed.beacons);
+      if (plan.errors.length) { setErrors(plan.errors); return; }
+      if (!plan.elements.length) { setErrors(["Alle Beacons aus dem Vorschlag sind bereits im Grundriss vorhanden."]); return; }
+      if (!window.confirm(`${plan.elements.length} Beacons aus dem Vorschlag hinzufügen? Platzhalter-Identitäten: sie müssen später echten Beacons zugeordnet werden. Rückgängig ist möglich.`)) return;
+      onImport(plan.elements, plan.skipped);
+    } catch {
+      setErrors(["Die Datei konnte nicht gelesen werden."]);
+    } finally {
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return <section className="le-plan-import" aria-label="Beacon-Vorschlag übernehmen">
+    <h2>Beacon-Vorschlag</h2>
+    <p className="le-hint">Übernimmt <code>beacons-plan.csv</code> aus dem Planer als Beacons mit Platzhalter-Identitäten (Indooro&lt;Minor&gt;). Veröffentlichen bleibt gesperrt, bis die Beacons echten Geräten zugeordnet sind.</p>
+    <button type="button" className="le-button" disabled={disabled} onClick={() => inputRef.current?.click()}>Vorschlag übernehmen (CSV)</button>
+    <input ref={inputRef} className="le-plan-file-input" type="file" accept=".csv,text/csv" aria-label="Beacon-Plan (beacons-plan.csv) importieren" disabled={disabled} onChange={(event) => void readFile(event.target.files?.[0])} />
+    {errors.length > 0 && <div role="alert" className="le-plan-errors">
+      <p>Import nicht übernommen. Bitte die Datei korrigieren:</p>
+      <ul>{errors.slice(0, PLAN_ERROR_PREVIEW).map((error, index) => <li key={index}>{error}</li>)}</ul>
+      {errors.length > PLAN_ERROR_PREVIEW && <p>… und {errors.length - PLAN_ERROR_PREVIEW} weitere Fehler.</p>}
+    </div>}
   </section>;
 }
 

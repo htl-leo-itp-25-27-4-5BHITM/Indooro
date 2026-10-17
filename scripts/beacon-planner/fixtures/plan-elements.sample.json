@@ -1,0 +1,38 @@
+[
+  {
+    "id": 3,
+    "type": "beacon",
+    "beaconId": "Indooro1",
+    "beaconUUID": "00000000-0000-0000-0000-000000000000",
+    "beaconMajor": 1,
+    "beaconMinor": 1,
+    "x": 2.5,
+    "y": 1.5,
+    "meter": 1,
+    "category": "undefined/1"
+  },
+  {
+    "id": 4,
+    "type": "beacon",
+    "beaconId": "Indooro2",
+    "beaconUUID": "00000000-0000-0000-0000-000000000000",
+    "beaconMajor": 1,
+    "beaconMinor": 2,
+    "x": 12.5,
+    "y": 3.0,
+    "meter": 2,
+    "category": "undefined/2"
+  },
+  {
+    "id": 5,
+    "type": "beacon",
+    "beaconId": "Indooro3",
+    "beaconUUID": "00000000-0000-0000-0000-000000000000",
+    "beaconMajor": 1,
+    "beaconMinor": 3,
+    "x": 19.0,
+    "y": 9.5,
+    "meter": 3,
+    "category": "undefined/3"
+  }
+]
