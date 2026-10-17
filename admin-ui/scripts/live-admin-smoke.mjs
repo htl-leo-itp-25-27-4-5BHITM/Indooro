@@ -227,7 +227,7 @@ try {
   let deletedFromAdmin = false;
   let deletedFromPublic = false;
   for (let attempt = 0; attempt < 20 && (!deletedFromAdmin || !deletedFromPublic); attempt += 1) {
-    deletedFromAdmin = !expectOk(await api(admin, "GET", `/api/admin/products?q=${encodeURIComponent(uiProductName)}&page=0&size=10`), "candidate product delete post-state").content.some((item) => item.id === uiProductId);
+    deletedFromAdmin = !expectOk(await api(admin, "GET", `/api/admin/products?q=${encodeURIComponent(uiProductName)}&page=0&size=10&storeCode=${encodeURIComponent(store.storeCode)}`), "candidate product delete post-state").content.some((item) => item.id === uiProductId);
     deletedFromPublic = !(await publicJson(`/api/products/search?q=${encodeURIComponent(uiProductName)}&size=10`)).some((item) => item.id === uiProductId);
     await new Promise((resolve) => setTimeout(resolve, 250));
   }
@@ -494,7 +494,7 @@ try {
     assert.equal((await api(page, "PUT", `/api/regions/${region.id}`, { code: region.code, name: "Denied" })).status, 403);
     assert.equal((await api(page, "GET", "/api/admin/logs")).status, 403);
     assert.equal((await api(page, "GET", "/api/admin/error-logs")).status, 403);
-    assert.equal((await api(page, "GET", "/api/admin/products?page=0&size=1")).status, 403);
+    assert.equal((await api(page, "GET", `/api/admin/products?page=0&size=1&storeCode=${encodeURIComponent(foreignStore.storeCode)}`)).status, 403);
     assert.equal((await api(page, "GET", "/api/admin/recipes?page=0&size=1")).status, 403);
     assert.equal((await api(page, "POST", "/api/categories", { categoryCode: 999, categoryName: "Denied" })).status, 403);
     assert.equal((await api(page, "GET", `/api/stores/${store.id}/layout/editor-context`)).status, 200);

@@ -392,6 +392,7 @@ Diese IDs stehen in `.env` und muessen zur aktuellen Demo-Datenbank passen:
 
 ```text
 ACTIVE_STORE_ID=ad61389a-7486-48fa-afa2-9b5e4132f6a8
+ACTIVE_STORE_CODE=<storeCode zu ACTIVE_STORE_ID, wird fuer Produkt-Schreibzugriffe benoetigt>
 REGION_ALLOWED_STORE_ID=ad61389a-7486-48fa-afa2-9b5e4132f6a8
 REGION_FORBIDDEN_STORE_ID=00000000-0000-0000-0000-000000000000
 STORE_ALLOWED_STORE_ID=ad61389a-7486-48fa-afa2-9b5e4132f6a8
