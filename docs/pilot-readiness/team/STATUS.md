@@ -11,7 +11,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Erik (Mac) | `add-ios-pilot-ui-tests` (F, PR #118 gemergt) | `pilot/ios-ui-tests` | 1.x, 2.x, 3.2–3.4, 4.x; CI grün (iOS 26.5, 8 UI-Tests) | 3.1 (wartet auf `prepare-pilot-ios-build`), 3.5 (wartet auf `add-pilot-study-mode`); Merge von #118 vor Person As pbxproj-PR | `scripts/ios/run-ui-tests.sh` 8 UI + 11 Unit grün, `swift test` 170 (2026-10-17) | 2026-10-17 |
 | Erik (Mac, Feldmessung) | `establish-pilot-field-measurement` [E] | `pilot/field-replay` | 1.2, 4.3, 6.1 | 3.3, 5.2 (warten auf Messung Person C), 4.6, 6.4 (Mensch) | `swift test` 79/79 (1 skipped), xcodebuild ok (2026-10-16) | 2026-10-16 |
 | Erik (Mac) | `add-store-pilot-readiness-check` (PR #116 gemergt) | `pilot/store-readiness` | 1.x–4.4, 5.x | Entscheidung Abdeckungsregel | Backend 182/0, admin-ui 81/81 + Browser 115/115 (2026-10-16) | 2026-10-17 |
-| Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | – | 1.1–3.5 | – | 2026-10-16 |
+| Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | 24/35; Code + PR-Entwurf in evidence/prepare-pilot-ios-build | Rest: Eigentums-Gates und Menschen; danach B | 86 Tests/0; Build grün; UI-Smoke 1/0; OpenSpec 64/0 | 2026-10-16 |
 | Person B (Windows) | `release-pilot-backend` Phase A | `pilot/release-backend` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person C (Windows) | `prepare-pilot-store-operations` | `pilot/store-operations` | – | 1.1–3.5 | – | 2026-10-16 |
 | Admin-Agent | Welle 2: `complete-admin-parity-evidence`, `add-editor-floorplan-underlay` | `pilot/admin-parity`, `pilot/editor-underlay` | Pilot-Cut erledigt, live | laut `PROMPT_ADMIN_AGENT_WAVE2.md` | Backend 142/0 (2026-10-16) | 2026-10-16 |
@@ -52,12 +52,16 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | 2026-10-16 | Erik | Person A | Studienmodus-Zähler stehen bereit (`add-pilot-guided-tour-fallbacks` 10.1): `NavigationSession.routeBuildCount`, `rerouteCount`, `stopChangeWithoutEventCount`, `manualPositionCount` (`@Published`, nur lesen). Branch `pilot/erik-guided-tour`, nach Merge in `pilot/first-store` verfügbar. |
 | 2026-10-16 | Erik | Person A | Kategorie-Codes stehen in deinen Dateien noch in Kundenansichten: `Views/Main/ProductSearchRow.swift` („Regal <layoutCode>“) und `ShoppingTransferViews.swift` (Zeilen ~89, ~223 „Regal: <layoutCode>“). Ersatz: `ShelfLocationDescriptor.make(layoutCode:shelves:)?.primary` (verfügbar mit Merge von `pilot/erik-guided-tour`), Fallback `ShelfLocationDescriptor.notInTestAreaText`. |
 | 2026-10-17 | Erik | Person A | PR `pilot/ios-ui-tests` ändert `project.pbxproj` (neues Target `MCindooroAppUITests`, Scheme `MCindooroApp`). Bitte vor deinem PR mit pbxproj-Änderungen mergen und danach `origin/pilot/first-store` einmergen. Der Test-Hook `-uiTesting` liegt DEBUG-only in `BeaconManager` (Modus „Ohne Ortung“, keine Standort-Abfrage). Sobald `AppEnvironment` gemergt ist, kann der Fixture-Modus dorthin wandern. Die UI-Tests finden Elemente über sichtbare Labels (Tabs „Planung“/„Karte“/„Einkaufen“, Suchfeld „Was möchtest du kaufen?“, „Einplanen“, „Tour starten“): Label-Änderungen in deinen Dateien bitte mit `sh scripts/ios/run-ui-tests.sh` prüfen. |
+| Pilot-iPhones: Modell + iOS-Version nennen, anschließend Installation und Bluetooth-Aus prüfen (A 1.3/6.4/7.3); David kennt Geräte derzeit nicht | Person A / Team | 2026-10-16 |
 
 ## Blocker
 
 | Datum | Person | Blocker / Frage | Antwort |
 |---|---|---|---|
-| – | – | – | – |
+| 2026-10-16 | Person A | A 4.2/5.1/5.2/5.6: Erik muss BeaconManager-Layoutdecoder (Alt 3.2), StoreMapPage-Filialübersicht ohne erfundene Koordinaten (Alt 6.x), Release-Debug-/Layout-Steuerungen und Kartentexte freigeben oder selbst integrieren. SearchOverlayView bleibt bis zur Löschfreigabe erhalten. | offen |
+| 2026-10-16 | Person A | A 5.4: PermissionBanner und Suchfehler über ContentView integriert; StoreMapPage unverändert. | gelöst ohne Änderung an Eriks Datei |
+| 2026-10-16 | Person A | A 6.5: explizite Freigabe von Erik zum Entfernen der vier toten Views fehlt. | offen |
+| 2026-10-16 | Person A | D: wartet auf docs/pilot-readiness/hardware/RESULT_SUMMARY.md; keine Schwellen ohne Messdaten. | offen |
 
 ## Entscheidungen
 
