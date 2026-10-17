@@ -19,8 +19,11 @@ spec:
       #   - name: ghcr-credentials
       containers:
         - name: indooro-backend
-          image: ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:latest
-          imagePullPolicy: Always
+          # Fester Tag = Git-Commit-SHA der CI (live laeuft a47c5e6).
+          # Rollout/Rollback siehe docs/pilot-readiness/operations/RELEASE_RUNBOOK.md.
+          # Vor `kubectl apply` den Tag pruefen.
+          image: ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:a47c5e6
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
           readinessProbe:
@@ -44,7 +47,10 @@ spec:
             - name: DB_USERNAME
               value: "indooro"
             - name: DB_PASSWORD
-              value: "indooro"
+              valueFrom:
+                secretKeyRef:
+                  name: indooro-postgres-secret
+                  key: POSTGRES_PASSWORD
 
             - name: OPENSEARCH_PORT
               value: "9200"

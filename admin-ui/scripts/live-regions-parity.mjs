@@ -7,7 +7,7 @@ import { chromium } from "@playwright/test";
 // created and archived through the UI; demo scope assignments are read only.
 const base = process.env.ADMIN_SMOKE_BASE_URL || "http://localhost:8080";
 const evidenceDir = new URL("../../docs/admin-rebuild/evidence/regions/", import.meta.url);
-const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8"));
+const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8").replace(/\$\{(\w+)\}/g, (match, name) => process.env[name] ?? match));
 const [adminUser, regionUser, storeUser] = realm.users;
 const browser = await chromium.launch({ args: process.env.ADMIN_SMOKE_HOST_ALIAS ? ["--host-resolver-rules=MAP host.docker.internal 127.0.0.1"] : [] });
 
