@@ -36,6 +36,7 @@ export type EditorCommand =
   | { type: "move"; id: ElementId; x: number; y: number }
   | { type: "resize"; id: ElementId; width: number; height: number }
   | { type: "rotate"; id: ElementId; rotation: number }
+  | { type: "rotate90"; id: ElementId }
   | { type: "delete"; id: ElementId }
   | { type: "duplicate"; id: ElementId; duplicateId: ElementId }
   | { type: "reorder"; id: ElementId; direction: "forward" | "backward" }
@@ -175,6 +176,15 @@ export function applyCommand(state: EditorState, command: EditorCommand, snapSte
       if (index < 0 || before.elements[index].locked || !Number.isFinite(command.rotation)) return state;
       next = replace({ ...before.elements[index], rotation: ((Math.round(command.rotation * 10) / 10 % 360) + 360) % 360 });
       break;
+    case "rotate90": {
+      // Swaps the footprint only; the stored rotation angle is kept as-is.
+      if (index < 0 || before.elements[index].locked || isPoint(before.elements[index])) return state;
+      const source = before.elements[index];
+      const width = snap(Number(source.height) || 1, snapStep, snapping);
+      const height = snap(Number(source.width) || 1, snapStep, snapping);
+      next = replace(constrainElement({ ...source, width, height }, before, snapStep, snapping));
+      break;
+    }
     case "delete":
       if (index < 0 || before.elements[index].locked) return state;
       next = { ...before, elements: before.elements.filter((_, at) => at !== index) };
