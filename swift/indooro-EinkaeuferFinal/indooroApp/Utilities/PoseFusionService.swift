@@ -9,6 +9,16 @@ struct PoseEstimate {
     let timestamp: TimeInterval
 }
 
+/// Bewegungsdaten eines Ticks (nur mit `motionAided`). Standardwerte = ohne Bewegungseinfluss.
+struct MotionAid {
+    /// Verschiebung des Schaetzers vor Gate und EMA (Schritte entlang der Kante).
+    var displacement: SIMD2<Float> = .zero
+    /// Faktor auf die EMA-Alpha (Stehen: BLE-Rauschen daempfen).
+    var alphaFactor: Float = 1
+    /// Bestaetigungsschwelle fuer Spruenge; `nil` = `PoseFusionConfig.jumpConfirmations`.
+    var jumpConfirmations: Int? = nil
+}
+
 /// Schaetzer: Sprung-Gate im Tick-Takt, danach ein konfidenz-interpolierter EMA.
 /// Kein Geschwindigkeitsmodell, keine Prediction; der Zustand aendert sich nur in `update`.
 final class PoseFusionService {
@@ -31,16 +41,30 @@ final class PoseFusionService {
     }
 
     /// Verarbeitet einen geloesten Punkt pro Tick. Nicht endliche Punkte werden ignoriert.
-    func update(solvedPoint: SIMD2<Float>, confidence: Float, timestamp: TimeInterval) -> PoseEstimate? {
+    /// `motion` ohne Wirkung (`nil`) = Verhalten ohne Bewegungsdaten.
+    func update(
+        solvedPoint: SIMD2<Float>,
+        confidence: Float,
+        timestamp: TimeInterval,
+        motion: MotionAid? = nil
+    ) -> PoseEstimate? {
         guard solvedPoint.x.isFinite, solvedPoint.y.isFinite else {
             return estimate.map { PoseEstimate(point: $0, wasHeld: true, timestamp: timestamp) }
         }
 
-        guard let current = estimate, let lastAccepted = lastAcceptedTimestamp else {
+        guard var current = estimate, let lastAccepted = lastAcceptedTimestamp else {
             estimate = solvedPoint
             lastAcceptedTimestamp = timestamp
             clearJumpCandidate()
             return PoseEstimate(point: solvedPoint, wasHeld: false, timestamp: timestamp)
+        }
+
+        // Schritt-Verschiebung als Prior: Gate und EMA arbeiten auf dem verschobenen Schaetzer.
+        // lastAcceptedTimestamp bleibt, weil die Verschiebung kein BLE-Punkt ist.
+        if let motion, motion.displacement != .zero,
+           motion.displacement.x.isFinite, motion.displacement.y.isFinite {
+            current += motion.displacement
+            estimate = current
         }
 
         // dt = Zeit seit dem letzten AKZEPTIERTEN Punkt (waehrend des Haltens waechst das Limit).
@@ -56,7 +80,8 @@ final class PoseFusionService {
                 pendingJumpConfirmations = 1
             }
 
-            guard pendingJumpConfirmations >= max(1, config.jumpConfirmations) else {
+            let confirmations = motion?.jumpConfirmations ?? config.jumpConfirmations
+            guard pendingJumpConfirmations >= max(1, confirmations) else {
                 return PoseEstimate(point: current, wasHeld: true, timestamp: timestamp)
             }
 
@@ -70,7 +95,7 @@ final class PoseFusionService {
         }
 
         clearJumpCandidate()
-        let alpha = smoothingAlpha(for: confidence)
+        let alpha = smoothingAlpha(for: confidence) * (motion?.alphaFactor ?? 1)
         let smoothed = current + (solvedPoint - current) * alpha
         estimate = smoothed
         lastAcceptedTimestamp = timestamp

@@ -1,0 +1,8 @@
+DEBUG gemeinsame Backend-Session; keine Methode/Pfad-Anfrage zwischen begin/end.
+2026-10-16 18:58:04.522 Df MCindooroApp[7313:1381b] (Foundation) [PilotNetwork] GET /api/mobile/stores/beacon-identities
+2026-10-16 18:58:04.542 Df MCindooroApp[7313:1381b] (Foundation) [PilotNetwork] GET /api/layout/current
+2026-10-16 18:58:04.542 Df MCindooroApp[7313:1381b] (Foundation) [PilotNetwork] GET /api/layout/history
+2026-10-16 18:58:05.995 Df MCindooroApp[7313:1381d] (Foundation) [PilotNetwork] GET /api/layout/history
+2026-10-16 18:58:09.752 Df MCindooroApp[7313:1381d] (Foundation) [PilotNetwork] GET /api/mobile/stores
+2026-10-16 18:58:37.503 Df MCindooroApp[7313:137fb] (Foundation) [StudyExport] begin
+2026-10-16 18:58:37.513 Df MCindooroApp[7313:137fb] (Foundation) [StudyExport] end

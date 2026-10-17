@@ -63,6 +63,8 @@ final class PositioningPipeline {
     private let estimator: PoseFusionService
     private let projector: WalkableProjector
     private let config: StabilizedNavigationConfig
+    private let graph: IndoorGraph
+    private let motion: MotionTracker
 
     /// Letzte Solver-Loesung (Startwert der naechsten Loesung).
     private(set) var lastSolvedPoint: SIMD2<Float>?
@@ -75,9 +77,25 @@ final class PositioningPipeline {
     ) {
         self.store = store
         self.config = config
+        self.graph = graph
+        motion = MotionTracker(config: config.motion)
         solver = BeaconPositionSolver(bounds: bounds, config: config.beacon)
         estimator = PoseFusionService(config: config.poseFusion)
         projector = WalkableProjector(graph: graph)
+    }
+
+    // MARK: - Bewegung
+
+    /// Schrittzaehler-Zeile (kumulativ). Ohne `motionAided` ohne Wirkung.
+    func recordStep(cumulativeSteps: Int, at timestamp: TimeInterval) {
+        guard config.motion.motionAided else { return }
+        motion.recordStep(cumulativeSteps: cumulativeSteps, at: timestamp)
+    }
+
+    /// Kompasspeilung. Ohne `motionAided` ohne Wirkung.
+    func recordHeading(bearingDegrees: Double, accuracy: Double, at timestamp: TimeInterval) {
+        guard config.motion.motionAided else { return }
+        motion.recordHeading(bearingDegrees: bearingDegrees, accuracy: accuracy, at: timestamp)
     }
 
     // MARK: - Tick
@@ -108,6 +126,10 @@ final class PositioningPipeline {
         let baseConfidence = Self.trackingConfidence(activeMeasurements: measurements, config: config.beacon)
 
         guard let solved = solver.solve(measurements: measurements, previousEstimate: lastSolvedPoint) else {
+            // Bekannte Grenze: neue Schritte ohne Loesung werden verworfen und nicht nachgeholt.
+            if config.motion.motionAided, motion.hasStepData {
+                _ = motion.consumeNewSteps()
+            }
             return PositioningTick(
                 timestamp: timestamp,
                 solvedPoint: nil,
@@ -120,7 +142,13 @@ final class PositioningPipeline {
         let confidence = Self.clamp(0.45 * baseConfidence + 0.55 * solved.confidence, min: 0, max: 1)
         lastSolvedPoint = solved.point
 
-        guard let estimate = estimator.update(solvedPoint: solved.point, confidence: confidence, timestamp: timestamp),
+        let aid = motionAid(at: timestamp)
+        guard let estimate = estimator.update(
+            solvedPoint: solved.point,
+            confidence: confidence,
+            timestamp: timestamp,
+            motion: aid
+        ),
               let projection = projector.project(estimate.point) else {
             return PositioningTick(
                 timestamp: timestamp,
@@ -140,6 +168,46 @@ final class PositioningPipeline {
         )
     }
 
+    /// Bewegungsdaten des Ticks. `nil` ohne Flag oder ohne Schrittdaten: dann Aufruf wie ohne Bewegung.
+    private func motionAid(at timestamp: TimeInterval) -> MotionAid? {
+        guard config.motion.motionAided, motion.hasStepData else { return nil }
+        let standing = motion.isStanding(at: timestamp) ?? false
+        let steps = motion.consumeNewSteps()
+
+        var aid = MotionAid()
+        if standing {
+            aid.alphaFactor = config.motion.standingAlphaFactor
+            aid.jumpConfirmations = config.motion.standingJumpConfirmations
+        }
+        if steps > 0, let current = estimator.estimate,
+           let heading = motion.headingDirection(at: timestamp),
+           let direction = walkDirection(from: current, heading: heading) {
+            aid.displacement = direction * (Float(steps) * config.motion.stepLengthMeters)
+        }
+        return aid
+    }
+
+    /// Richtung der ausgehenden Kante des naechsten Knotens, die der Kompassrichtung am naechsten liegt.
+    /// `nil`, wenn der Winkel groesser als `headingToleranceRadians` ist.
+    private func walkDirection(from point: SIMD2<Float>, heading: SIMD2<Float>) -> SIMD2<Float>? {
+        guard let node = graph.nearestNode(to: point) else { return nil }
+        var best: SIMD2<Float>?
+        var bestCosine = -Float.greatestFiniteMagnitude
+        for neighbor in graph.neighborPoints(of: node.id) {
+            let delta = neighbor - node.mapPoint
+            let length = simd_length(delta)
+            guard length > 0 else { continue }
+            let direction = delta / length
+            let cosine = simd_dot(direction, heading)
+            if cosine > bestCosine {
+                bestCosine = cosine
+                best = direction
+            }
+        }
+        guard let best, bestCosine >= cos(config.motion.headingToleranceRadians) else { return nil }
+        return best
+    }
+
     // MARK: - Kalibrierung und Reset
 
     /// Manuelle Kalibrierung: projizieren, Schaetzer und Solver-Startwert auf den Punkt setzen.
@@ -148,6 +216,8 @@ final class PositioningPipeline {
         let effectivePoint = projector.project(mapPoint)?.projectedPoint ?? mapPoint
         estimator.reset(to: effectivePoint, timestamp: timestamp)
         lastSolvedPoint = effectivePoint
+        // Schritte vor der Kalibrierung gehoeren zur alten Position und werden verworfen.
+        _ = motion.consumeNewSteps()
         return effectivePoint
     }
 

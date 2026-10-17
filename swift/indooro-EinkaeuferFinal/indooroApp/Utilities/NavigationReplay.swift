@@ -99,15 +99,41 @@ struct TruthRecord: Codable, Equatable {
     var y: Float
 }
 
-/// Eine Zeile der Aufzeichnung: `{"type":"measurement"|"layout"|"event"|"truth", ...}`.
+/// Schrittzaehler (CMPedometer). `steps` ist kumulativ seit Aufzeichnungsstart.
+struct StepRecord: Codable, Equatable {
+    var t: TimeInterval
+    var steps: Int
+    /// Meter (kumulativ, sofern vom Schrittzaehler geliefert).
+    var distance: Double?
+    var source: String // "pedometer"
+}
+
+/// Kompasspeilung (CLHeading).
+struct HeadingRecord: Codable, Equatable {
+    var t: TimeInterval
+    /// Kompasspeilung 0-360, true north wenn verfuegbar.
+    var degrees: Double
+    /// Grad, >= 0.
+    var accuracy: Double
+    var source: String // "compass"
+}
+
+/// Eine Zeile der Aufzeichnung: `{"type":"measurement"|"layout"|"event"|"truth"|"step"|"heading", ...}`.
 enum NavigationRecordLine: Codable, Equatable {
     case measurement(MeasurementRecord)
     case layout(LayoutRecord)
     case event(EventRecord)
     case truth(TruthRecord)
+    case step(StepRecord)
+    case heading(HeadingRecord)
 
     private enum TypeKey: String, CodingKey { case type }
-    private enum LineType: String, Codable { case measurement, layout, event, truth }
+    private enum LineType: String, Codable { case measurement, layout, event, truth, step, heading }
+
+    /// Nur der Typ einer Zeile; unbekannte Typen werden beim Parsen uebersprungen.
+    private struct TypeOnly: Decodable {
+        let type: String
+    }
 
     var timestamp: TimeInterval {
         switch self {
@@ -115,6 +141,8 @@ enum NavigationRecordLine: Codable, Equatable {
         case .layout(let record): return record.t
         case .event(let record): return record.t
         case .truth(let record): return record.t
+        case .step(let record): return record.t
+        case .heading(let record): return record.t
         }
     }
 
@@ -125,6 +153,8 @@ enum NavigationRecordLine: Codable, Equatable {
         case .layout: self = .layout(try LayoutRecord(from: decoder))
         case .event: self = .event(try EventRecord(from: decoder))
         case .truth: self = .truth(try TruthRecord(from: decoder))
+        case .step: self = .step(try StepRecord(from: decoder))
+        case .heading: self = .heading(try HeadingRecord(from: decoder))
         }
     }
 
@@ -143,6 +173,12 @@ enum NavigationRecordLine: Codable, Equatable {
         case .truth(let record):
             try container.encode(LineType.truth, forKey: .type)
             try record.encode(to: encoder)
+        case .step(let record):
+            try container.encode(LineType.step, forKey: .type)
+            try record.encode(to: encoder)
+        case .heading(let record):
+            try container.encode(LineType.heading, forKey: .type)
+            try record.encode(to: encoder)
         }
     }
 
@@ -159,12 +195,19 @@ enum NavigationRecordLine: Codable, Equatable {
         String(decoding: try Self.encoder.encode(self), as: UTF8.self)
     }
 
+    /// Zeilen mit unbekanntem `type` werden uebersprungen (Aufnahmen neuerer Builds bleiben lesbar);
+    /// ungueltiges JSON und bekannte Typen mit kaputten Feldern werfen.
     static func parse(jsonl: String) throws -> [NavigationRecordLine] {
         let decoder = JSONDecoder()
         return try jsonl
             .split(whereSeparator: \.isNewline)
             .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
-            .map { try decoder.decode(NavigationRecordLine.self, from: Data($0.utf8)) }
+            .compactMap { text -> NavigationRecordLine? in
+                let data = Data(text.utf8)
+                let typeName = try decoder.decode(TypeOnly.self, from: data).type
+                guard LineType(rawValue: typeName) != nil else { return nil }
+                return try decoder.decode(NavigationRecordLine.self, from: data)
+            }
     }
 
     static func jsonl(_ lines: [NavigationRecordLine]) throws -> String {
@@ -278,8 +321,16 @@ enum NavigationReplay {
         entrance: SIMD2<Float>? = nil,
         onTick: ((ReplayTick) -> Void)? = nil
     ) -> ReplayMetrics {
+        // Ohne motionAided werden Bewegungszeilen vor dem Sortieren entfernt: sie duerfen weder Tickraster
+        // noch Dauer beeinflussen. Mit Flag bleiben sie in der Zeitleiste und speisen den Tracker.
+        let timeline = recording.filter { line in
+            switch line {
+            case .step, .heading: return config.motion.motionAided
+            case .measurement, .layout, .event, .truth: return true
+            }
+        }
         var replay = Replay(layout: layout, config: config, entrance: entrance, onTick: onTick)
-        return replay.run(recording.enumerated().sorted {
+        return replay.run(timeline.enumerated().sorted {
             $0.element.timestamp == $1.element.timestamp ? $0.offset < $1.offset : $0.element.timestamp < $1.element.timestamp
         }.map(\.element))
     }
@@ -393,6 +444,10 @@ enum NavigationReplay {
                 latestTruth = (point, record.t)
             case .event(let record):
                 apply(event: record)
+            case .step(let record):
+                pipeline.recordStep(cumulativeSteps: record.steps, at: record.t)
+            case .heading(let record):
+                pipeline.recordHeading(bearingDegrees: record.degrees, accuracy: record.accuracy, at: record.t)
             }
         }
 

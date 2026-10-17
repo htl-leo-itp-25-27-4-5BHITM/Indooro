@@ -47,18 +47,14 @@ final class UpsellSuggestionStore: ObservableObject {
         let opportunities: [OpportunitySignature]
     }
 
-    private let apiBase = IndooroAPI.baseURL
+    private var apiBase: String { AppEnvironment.apiBaseURL.absoluteString }
     private let minSecondsBetweenPrompts: TimeInterval = 8
     private let maxPromptsPerSession = 10
     private let maxSuggestionsShown = 3
     private let minConfidence = 0.45
     private let maxPendingOpportunityAge: TimeInterval = 30
     private let debugEnabled = true
-    private let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
-    }()
+    private let decoder = JSONDecoder.indooro
     private let encoder = JSONEncoder()
 
     private var lastPromptShownAt: Date?
@@ -103,6 +99,7 @@ final class UpsellSuggestionStore: ObservableObject {
     }
 
     func authorizePlanPreloading(for store: MobileStoreSummary, reason: String) {
+        guard AppEnvironment.allowsExtendedFeatures else { return }
         if authorizedStoreId != store.id {
             debugLog("authorizePlanPreloading store=\(storeDebug(store)) reason=\(reason) previous=\(authorizedStoreId?.uuidString ?? "nil") clearsCache=true")
             planTask?.cancel()
@@ -126,6 +123,7 @@ final class UpsellSuggestionStore: ObservableObject {
         store: MobileStoreSummary?,
         source: String
     ) {
+        guard AppEnvironment.allowsExtendedFeatures else { resetSession(); return }
         guard shownCountForSession < maxPromptsPerSession else {
             debugLog("preloadPlan skipped reason=session_limit shownCount=\(shownCountForSession) limit=\(maxPromptsPerSession)")
             return
@@ -198,7 +196,7 @@ final class UpsellSuggestionStore: ObservableObject {
         isLoading = true
         debugLog("preloadPlan requestId=\(requestID.uuidString) timeout=\(urlRequest.timeoutInterval)s")
 
-        let task = URLSession.shared.dataTask(with: urlRequest) { [weak self] data, response, error in
+        let task = AppEnvironment.session.dataTask(with: urlRequest) { [weak self] data, response, error in
             Task { @MainActor in
                 guard let self else { return }
                 guard self.latestPlanRequestID == requestID else {
@@ -282,6 +280,7 @@ final class UpsellSuggestionStore: ObservableObject {
         store: MobileStoreSummary?,
         source: String
     ) {
+        guard AppEnvironment.allowsExtendedFeatures else { return }
         let triggerItems = checkedItems.filter { $0.productID != nil && !$0.addedFromUpsell }
         debugLog(
             "showOpportunity requested opportunity=\(opportunityId) source=\(source) store=\(storeDebug(store)) checkedItems=\(checkedItems.map { "\($0.name)#\($0.productID.map(String.init) ?? "nil") upsell=\($0.addedFromUpsell)" })"
@@ -411,6 +410,7 @@ final class UpsellSuggestionStore: ObservableObject {
     }
 
     func accept(_ suggestion: UpsellSuggestion, prompt: UpsellPrompt?) {
+        guard AppEnvironment.allowsExtendedFeatures else { return }
         let metadata: String?
         if let prompt {
             metadata = metadataJson([
@@ -434,6 +434,7 @@ final class UpsellSuggestionStore: ObservableObject {
     }
 
     func dismissCurrentPrompt(suppressProduct: Bool = false) {
+        guard AppEnvironment.allowsExtendedFeatures else { return }
         guard let prompt = activePrompt else {
             debugLog("dismissCurrentPrompt skipped reason=no_active_prompt suppress=\(suppressProduct)")
             return
@@ -770,6 +771,7 @@ final class UpsellSuggestionStore: ObservableObject {
     }
 
     private func sendBestEffort<T: Encodable>(_ request: T, to url: URL) {
+        guard AppEnvironment.allowsExtendedFeatures else { return }
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = "POST"
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -781,7 +783,7 @@ final class UpsellSuggestionStore: ObservableObject {
             return
         }
 
-        URLSession.shared.dataTask(with: urlRequest).resume()
+        AppEnvironment.session.dataTask(with: urlRequest).resume()
     }
 
     private func metadataJson(_ values: [String: String]) -> String? {

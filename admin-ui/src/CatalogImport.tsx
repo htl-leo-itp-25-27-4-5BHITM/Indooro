@@ -71,13 +71,13 @@ export function reviewCatalogImport(kind: CatalogImportKind, rows: CatalogImport
   };
 }
 
-const limitation = "Commit gesperrt. Die Bulk-Endpunkte liefern jetzt Ergebnisse je Zeile, aber die persistierten Ergebnisse bei Teilfehlern und die Behandlung ungewisser Transportantworten sind im laufenden System noch nicht abgenommen. Bestehende IDs würden überschrieben. Diese Prüfung hat nichts gesendet.";
+const limitation = "Commit gesperrt. Für Kategorien ist noch kein Bulk-Import freigegeben. Diese Prüfung hat nichts gesendet.";
 
-export function CatalogImportPanel({ kind }: { kind: CatalogImportKind }) {
+/** Kategorieimport: nur Prüfung, der Commit bleibt gesperrt. Produktimport läuft über ProductCsvImport. */
+export function CatalogImportPanel({ kind }: { kind: "category" }) {
   const [source, setSource] = useState("");
   const [review, setReview] = useState<CatalogImportReview | null>(null);
   const [parseError, setParseError] = useState("");
-  const productExample = '[{"id":101,"name":"Apfel","price":1.99,"layoutCode":"310/1/1/1","storeCode":"SPAR-Leonding-001"}]';
   const categoryExample = '[{"categoryCode":310,"categoryName":"Obst & Gemüse"}]';
   const parse = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -92,11 +92,11 @@ export function CatalogImportPanel({ kind }: { kind: CatalogImportKind }) {
     }
   };
   return <section className="catalog-import panel" aria-labelledby={`${kind}-import-title`}>
-    <div className="panel-header"><h3 id={`${kind}-import-title`}>{kind === "product" ? "Produktimport prüfen" : "Kategorieimport prüfen"}</h3></div>
+    <div className="panel-header"><h3 id={`${kind}-import-title`}>Kategorieimport prüfen</h3></div>
     <p>JSON-Array oder NDJSON einfügen. Die Prüfung bleibt lokal und sendet keine Daten.</p>
     <form onSubmit={parse}>
       <label htmlFor={`${kind}-import-source`}>JSON-Array oder NDJSON</label>
-      <textarea id={`${kind}-import-source`} rows={6} value={source} onChange={(event) => setSource(event.currentTarget.value)} placeholder={kind === "product" ? productExample : categoryExample} />
+      <textarea id={`${kind}-import-source`} rows={6} value={source} onChange={(event) => setSource(event.currentTarget.value)} placeholder={categoryExample} />
       <button type="submit" className="primary">Parsen und prüfen</button>
     </form>
     {parseError && <p role="alert" className="notice error">Import konnte nicht geprüft werden: {parseError}</p>}
