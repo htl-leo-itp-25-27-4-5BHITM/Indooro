@@ -147,6 +147,13 @@ struct ContentView: View {
                 pendingLastStoreLayoutOpenRequest = UUID()
                 focusProductOnMap(Product(id: task.productId, name: task.productName, price: 0, layoutCode: task.layoutCode ?? ""))
             }
+            studyStore.counterSnapshot = { [weak navigationSession] in
+                guard let navigationSession else { return StudyCounters() }
+                return StudyCounters(routeBuildCount: navigationSession.routeBuildCount,
+                                     rerouteCount: navigationSession.rerouteCount,
+                                     stopChangeWithoutEventCount: navigationSession.stopChangeWithoutEventCount,
+                                     manualPositionCount: navigationSession.manualPositionCount)
+            }
             showsIntroduction = !introductionCompleted
             let provider: () -> MobileStoreSummary? = { [weak beaconManager] in
                 beaconManager?.activeLayoutStore ?? beaconManager?.detectedStore
