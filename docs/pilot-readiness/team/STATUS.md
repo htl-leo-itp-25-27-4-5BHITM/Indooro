@@ -11,7 +11,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Erik (Mac) | `add-ios-pilot-ui-tests` (F, PR #118 gemergt) | `pilot/ios-ui-tests` | 1.x, 2.x, 3.2–3.4, 4.x; CI grün (iOS 26.5, 8 UI-Tests) | 3.1 (wartet auf `prepare-pilot-ios-build`), 3.5 (wartet auf `add-pilot-study-mode`); Merge von #118 vor Person As pbxproj-PR | `scripts/ios/run-ui-tests.sh` 8 UI + 11 Unit grün, `swift test` 170 (2026-10-17) | 2026-10-17 |
 | Erik (Mac, Feldmessung) | `establish-pilot-field-measurement` [E] | `pilot/field-replay` | 1.2, 4.3, 6.1 | 3.3, 5.2 (warten auf Messung Person C), 4.6, 6.4 (Mensch) | `swift test` 79/79 (1 skipped), xcodebuild ok (2026-10-16) | 2026-10-16 |
 | Erik (Mac) | `add-store-pilot-readiness-check` (PR #116 gemergt) | `pilot/store-readiness` | 1.x–4.4, 5.x | Entscheidung Abdeckungsregel | Backend 182/0, admin-ui 81/81 + Browser 115/115 (2026-10-16) | 2026-10-17 |
-| Person A (Mac) | `prepare-pilot-ios-build` | `pilot/ios-pilot-build` | 24/35; Code + PR-Entwurf in evidence/prepare-pilot-ios-build | Rest: Eigentums-Gates und Menschen; danach B | 86 Tests/0; Build grün; UI-Smoke 1/0; OpenSpec 64/0 | 2026-10-16 |
+| Person A (Mac) | A + B reviewbar; C/D Gates | `pilot/ios-study-mode` | A 24/35, B 16/17; PR-Texte + Evidence vorhanden | Erik-Integration/Freigaben, C Kit-Übernahme; C wartet auf A-Merge; D Messdaten | 91 Tests/0; Build grün; B UI 2/0; OpenSpec 64/0 | 2026-10-16 |
 | Person B (Windows) | `release-pilot-backend` Phase A | `pilot/release-backend` | – | 1.1–3.5 | – | 2026-10-16 |
 | Person C (Windows) | `prepare-pilot-store-operations` | `pilot/store-operations` | – | 1.1–3.5 | – | 2026-10-16 |
 | Admin-Agent | Welle 2: `complete-admin-parity-evidence`, `add-editor-floorplan-underlay` | `pilot/admin-parity`, `pilot/editor-underlay` | Pilot-Cut erledigt, live | laut `PROMPT_ADMIN_AGENT_WAVE2.md` | Backend 142/0 (2026-10-16) | 2026-10-16 |
@@ -61,7 +61,10 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | 2026-10-16 | Person A | A 4.2/5.1/5.2/5.6: Erik muss BeaconManager-Layoutdecoder (Alt 3.2), StoreMapPage-Filialübersicht ohne erfundene Koordinaten (Alt 6.x), Release-Debug-/Layout-Steuerungen und Kartentexte freigeben oder selbst integrieren. SearchOverlayView bleibt bis zur Löschfreigabe erhalten. | offen |
 | 2026-10-16 | Person A | A 5.4: PermissionBanner und Suchfehler über ContentView integriert; StoreMapPage unverändert. | gelöst ohne Änderung an Eriks Datei |
 | 2026-10-16 | Person A | A 6.5: explizite Freigabe von Erik zum Entfernen der vier toten Views fehlt. | offen |
-| 2026-10-16 | Person A | D: wartet auf docs/pilot-readiness/hardware/RESULT_SUMMARY.md; keine Schwellen ohne Messdaten. | offen |
+| 2026-10-16 | Person A | D 1.1: docs/pilot-readiness/hardware/RESULT_SUMMARY.md auch nach finalem Fetch nicht vorhanden; gemäß Auftrag übersprungen („wartet auf Messergebnis“). Keine Schwellen ohne Messdaten. | offen |
+| 2026-10-16 | Person A | B: Erik muss routeBuildCount, rerouteCount, stopChangeWithoutEventCount und manualPositionCount an NavigationSession monoton sowie manualPosition/reroute/stopChange-Ereignisse veröffentlichen. Bis dahin Zeit/Ergebnis, fehlende Navigationswerte „-“. | offen |
+| 2026-10-16 | Person A | B 4.1: kit/study-export-sample gehört Person C. Person C: fertiger synthetischer Export (3 Zeilen, 6 Events) liegt unter evidence/add-pilot-study-mode/study-export-sample auf pilot/ios-study-mode; bitte CSV + JSONL in den Kit-Pfad übernehmen. Simulator/Formatprüfung erledigt. | offen |
+| 2026-10-16 | Person A | C: Start-Gate „A in pilot/first-store gemergt“ weiterhin nicht erfüllt (a20d385 nicht in 46b9ad1). Auf pilot/ios-accessibility a62877f: Baseline 77/0, Build grün, OpenSpec 64/0; Audit/Umsetzung nicht begonnen, Gate-Doku gepusht. MapView/StoreMapPage-Modifier zusätzlich pro Datei mit Erik absprechen. | offen |
 
 ## Entscheidungen
 

@@ -11,7 +11,7 @@ let package = Package(
         .library(name: "IndooroNavigationCore", targets: ["IndooroNavigationCore"])
     ],
     targets: [
-        .target(name: "IndooroPilotSupport", path: "indooroApp", sources: ["App/AppEnvironment.swift", "Utilities/PilotNetworking.swift"]),
+        .target(name: "IndooroPilotSupport", path: "indooroApp", sources: ["App/AppEnvironment.swift", "Utilities/PilotNetworking.swift", "Models/StudyModels.swift", "Managers/StudySessionStore.swift"]),
         .testTarget(name: "IndooroPilotSupportTests", dependencies: ["IndooroPilotSupport"], path: "Tests/IndooroPilotSupportTests"),
         .target(
             name: "IndooroNavigationCore",
