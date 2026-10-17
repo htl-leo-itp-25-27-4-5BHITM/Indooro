@@ -10,7 +10,7 @@
  * - Blocking follows the readiness rule: every element except beacon and entrance blocks, anchors included.
  *   Rotated elements (rotation != 0) block the bounding box of the rotated rectangle.
  */
-import ruleJson from "../../../backend/indooro_server/src/main/resources/readiness/coverage-rule.json";
+import ruleJson from "../../../backend/indooro_server/src/main/resources/readiness/coverage-rule.json" with { type: "json" };
 import type { LayoutDocument } from "./model";
 
 export interface CoverageRule {
@@ -223,4 +223,24 @@ export function coverageSummary(grid: Pick<CoverageCounts, "counts">, minBeacons
     walkableCells,
     coveredCells,
   };
+}
+
+/** Number of walkable cells under the readiness rule; used to choose between inline and Web Worker computation. */
+export function walkableCellCount(document: CoverageInput): number {
+  let count = 0;
+  for (const row of walkableGrid(document).walkable) for (const free of row) if (free) count++;
+  return count;
+}
+
+export interface CoverageResult {
+  grid: CoverageCounts;
+  summary: CoverageSummary;
+  beaconCount: number;
+}
+
+/** Counts and summary for one radius. Shared by the inline path and the coverage Web Worker. */
+export function computeCoverage(document: CoverageInput, radius: number, minBeacons: number): CoverageResult {
+  const beacons = beaconPoints(document);
+  const grid = coverageCounts(document, beacons, radius);
+  return { grid, summary: coverageSummary(grid, minBeacons), beaconCount: beacons.length };
 }

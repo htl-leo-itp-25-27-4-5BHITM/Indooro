@@ -6,7 +6,7 @@
 ## 2. Implementation
 
 - [ ] 2.1 `editor/coverage.ts` with unit tests on shared vectors.
-- [ ] 2.2 Overlay toggle, radius control, percentage; Web Worker for large layouts.
+- [x] 2.2 Overlay toggle, radius control, percentage; Web Worker for large layouts.
 - [ ] 2.3 Import `beacons-plan.csv` as beacon elements (placeholder identities); tests.
 
 ## 3. Handover
