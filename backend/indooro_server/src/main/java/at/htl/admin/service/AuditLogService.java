@@ -28,12 +28,37 @@ public class AuditLogService {
                     String summary,
                     Object before,
                     Object after) {
+        persist("SYSTEM", "system", entityType, entityId, action, summary, before, after);
+    }
+
+    /**
+     * Schreibt einen Eintrag, der dem angemeldeten Admin-Benutzer zugeordnet wird.
+     */
+    @Transactional
+    public void logByAdmin(CurrentAdminUser admin,
+                           String entityType,
+                           UUID entityId,
+                           String action,
+                           String summary,
+                           Object before,
+                           Object after) {
+        persist(admin.role().value(), admin.username(), entityType, entityId, action, summary, before, after);
+    }
+
+    private void persist(String actorRole,
+                         String actorLabel,
+                         String entityType,
+                         UUID entityId,
+                         String action,
+                         String summary,
+                         Object before,
+                         Object after) {
         AuditLogEntity entry = new AuditLogEntity();
         entry.entityType = entityType;
         entry.entityId = entityId;
         entry.action = action;
-        entry.actorRole = "SYSTEM";
-        entry.actorLabel = "system";
+        entry.actorRole = actorRole;
+        entry.actorLabel = actorLabel;
         entry.summary = summary;
         entry.beforeJson = toJson(before);
         entry.afterJson = toJson(after);

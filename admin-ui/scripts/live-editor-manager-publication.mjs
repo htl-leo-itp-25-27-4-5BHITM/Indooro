@@ -9,7 +9,7 @@ import { chromium } from "@playwright/test";
 // archived. No global layout endpoint is written.
 const base = process.env.ADMIN_SMOKE_BASE_URL || "http://localhost:8080";
 assert.ok(["localhost", "127.0.0.1", "host.docker.internal"].includes(new URL(base).hostname), "probe only permits local hosts");
-const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8"));
+const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8").replace(/\$\{(\w+)\}/g, (match, name) => process.env[name] ?? match));
 const [adminUser, regionUser, storeUser] = realm.users;
 const dbContainer = process.env.ADMIN_SMOKE_PG_CONTAINER || "indooro-admin-rebuild-pg";
 const dbUser = process.env.ADMIN_SMOKE_PG_USER || "indooro";

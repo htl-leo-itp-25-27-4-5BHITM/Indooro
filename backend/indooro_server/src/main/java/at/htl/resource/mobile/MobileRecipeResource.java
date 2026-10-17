@@ -3,6 +3,7 @@ package at.htl.resource.mobile;
 import at.htl.admin.dto.CommonDtos;
 import at.htl.admin.dto.RecipeDtos;
 import at.htl.admin.service.RecipeService;
+import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DefaultValue;
@@ -17,6 +18,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.UUID;
 
+@PermitAll
 @Path("/api/mobile/recipes")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

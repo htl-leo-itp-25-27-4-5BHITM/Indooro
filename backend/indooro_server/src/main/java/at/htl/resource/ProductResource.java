@@ -5,6 +5,7 @@ import at.htl.admin.service.AdminAccessService;
 import at.htl.model.Product;
 import at.htl.service.OpenSearchService;
 import at.htl.service.CatalogBulkResult;
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -36,6 +37,7 @@ public class ProductResource {
      */
     @GET
     @Path("/search")
+    @PermitAll
     public Response searchProducts(
             @QueryParam("q") String query,
             @QueryParam("size") @DefaultValue("10") Integer size,
@@ -65,6 +67,7 @@ public class ProductResource {
      * GET /api/products
      */
     @GET
+    @PermitAll
     public Response getAllProducts(@QueryParam("size") @DefaultValue("100") Integer size) {
         try {
             List<Product> products = openSearchService.getAllProducts(size);
@@ -83,6 +86,7 @@ public class ProductResource {
      */
     @GET
     @Path("/{id}")
+    @PermitAll
     public Response getProductById(@PathParam("id") Integer id) {
         try {
             Product product = openSearchService.getProductById(id);
