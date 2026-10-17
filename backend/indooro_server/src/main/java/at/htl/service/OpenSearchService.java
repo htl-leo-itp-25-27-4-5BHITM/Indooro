@@ -14,6 +14,8 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.mapping.Property;
+import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.Operator;
@@ -22,8 +24,12 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
+import org.opensearch.client.opensearch.indices.GetMappingRequest;
+import org.opensearch.client.opensearch.indices.GetMappingResponse;
 import org.opensearch.client.opensearch.indices.IndexState;
+import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.opensearch.indices.UpdateAliasesRequest;
+import org.opensearch.client.opensearch.indices.get_mapping.IndexMappingRecord;
 import org.opensearch.client.opensearch.indices.update_aliases.Action;
 
 import java.io.IOException;
@@ -36,6 +42,7 @@ import java.util.Locale;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -51,9 +58,22 @@ public class OpenSearchService {
 
     /**
      * Ergebnis der Alias-Umschaltung. {@code previous} sind die Versionsindizes, die den Alias vorher trugen;
-     * fuer einen Rollback genuegt ein erneuter Aufruf von {@link #activateIndex(String)} mit einem dieser Namen.
+     * fuer einen Rollback genuegt ein erneuter Aufruf von {@link #activateIndex(String, boolean)} mit einem dieser Namen
+     * (bei abweichenden Dokumentzahlen mit {@code force=true}, siehe {@link #activateIndex(String, boolean)}).
      */
     public record ActivateResult(String alias, String index, List<String> previous) {}
+
+    /** Ergebnis der Mapping-Pruefung fuer die Subfelder {@code name.prefix} und {@code name.parts}. */
+    private record NameSubfieldSupport(boolean supported, long checkedAtNanos) {}
+
+    /**
+     * Wie lange ein Mapping-Ergebnis gilt. Mehrere Backend-Instanzen kennen nur ihren eigenen Cache; nach einer
+     * Alias-Umschaltung auf einer anderen Instanz wird der Stand spaetestens nach diesem Intervall neu gelesen.
+     */
+    static final long NAME_SUBFIELD_CACHE_NANOS = TimeUnit.SECONDS.toNanos(60);
+
+    private static final String NAME_PREFIX_SUBFIELD = "prefix";
+    private static final String NAME_PARTS_SUBFIELD = "parts";
 
     @Inject
     OpenSearchClient client;
@@ -67,6 +87,9 @@ public class OpenSearchService {
     @ConfigProperty(name = "opensearch.alias")
     String aliasName;
 
+    /** Cache der Mapping-Pruefung. {@code null}: unbekannt oder letzte Abfrage fehlgeschlagen (dann nicht gecacht). */
+    private volatile NameSubfieldSupport nameSubfieldSupport;
+
     /**
      * Sucht Produkte anhand eines Suchbegriffs
      */
@@ -79,6 +102,9 @@ public class OpenSearchService {
         final String q = query.trim();
         final String normalizedStoreId = normalizeOptionalFilter(storeId);
         final String normalizedStoreCode = normalizeOptionalFilter(storeCode);
+        // Subfelder name.prefix / name.parts existieren nur in Indizes mit neuem Mapping. In einem Altindex
+        // wuerden diese Klauseln still nichts treffen; deshalb nur dann ins Query aufnehmen, wenn das Mapping sie hat.
+        final boolean withNameSubfields = nameSubfieldsAvailable();
 
         SearchRequest searchRequest = SearchRequest.of(s -> s
                 .index(indexName)
@@ -103,14 +129,17 @@ public class OpenSearchService {
                                     .query(FieldValue.of(q))
                                     .operator(Operator.And)
                                     .boost(4f)
-                            ))
-                            // 4) Präfix beim Tippen ("backp" => "Backpulver")
-                            .should(sh -> sh.match(m -> m
-                                    .field("name.prefix")
-                                    .query(FieldValue.of(q))
-                                    .operator(Operator.And)
-                                    .boost(3f)
-                            ))
+                            ));
+                    // 4) Präfix beim Tippen ("backp" => "Backpulver"), nur mit Subfeld name.prefix
+                    if (withNameSubfields) {
+                        b.should(sh -> sh.match(m -> m
+                                .field("name.prefix")
+                                .query(FieldValue.of(q))
+                                .operator(Operator.And)
+                                .boost(3f)
+                        ));
+                    }
+                    b
                             // 5) Tippfehler ("Nutela", "Milsch"); erste Buchstaben bleiben stabil
                             .should(sh -> sh.match(m -> m
                                     .field("name")
@@ -120,14 +149,17 @@ public class OpenSearchService {
                                     .maxExpansions(50)
                                     .operator(Operator.And)
                                     .boost(1.5f)
-                            ))
-                            // 6) Wortteile innerhalb eines Namens ("wasser" in "Mineralwasser")
-                            .should(sh -> sh.match(m -> m
-                                    .field("name.parts")
-                                    .query(FieldValue.of(q))
-                                    .operator(Operator.And)
-                                    .boost(1f)
-                            ))
+                            ));
+                    // 6) Wortteile innerhalb eines Namens ("wasser" in "Mineralwasser"), nur mit Subfeld name.parts
+                    if (withNameSubfields) {
+                        b.should(sh -> sh.match(m -> m
+                                .field("name.parts")
+                                .query(FieldValue.of(q))
+                                .operator(Operator.And)
+                                .boost(1f)
+                        ));
+                    }
+                    b
                             // 6b) Entspannt: bei mehreren Suchwoertern genuegen 75 % ("frische milch" findet "Frischmilch")
                             .should(sh -> sh.match(m -> m
                                     .field("name")
@@ -516,6 +548,7 @@ public class OpenSearchService {
             throw new WebApplicationException("Produktindex existiert bereits.", Response.Status.CONFLICT);
         }
         client.indices().create(ProductIndexDefinition.createIndexRequest(indexName));
+        forgetNameSubfieldSupport();
         LOG.info("Index " + indexName + " created successfully");
     }
 
@@ -524,6 +557,7 @@ public class OpenSearchService {
      */
     public void deleteIndex() throws IOException {
         client.indices().delete(d -> d.index(indexName));
+        forgetNameSubfieldSupport();
         LOG.info("Index " + indexName + " deleted successfully");
     }
 
@@ -574,8 +608,13 @@ public class OpenSearchService {
     /**
      * Schaltet den Alias {@code opensearch.alias} auf den Versionsindex {@code targetIndex} um. Alle Entfernungen
      * und das Hinzufuegen laufen in EINEM atomaren {@code _aliases}-Request. Loescht keinen Index.
+     *
+     * <p>Vorher werden die Dokumentzahlen von Ziel und Quelle ({@code opensearch.index}, der Index, den das Backend
+     * heute liest) nach einem Refresh verglichen. Weichen sie ab, sind zwischen Reindex und Umschaltung Schreibvorgaenge
+     * passiert, die im Ziel fehlen. Dann antwortet die Methode mit 409 und schaltet nicht um. Mit {@code force=true}
+     * wird trotzdem umgeschaltet.
      */
-    public ActivateResult activateIndex(String targetIndex) throws IOException {
+    public ActivateResult activateIndex(String targetIndex, boolean force) throws IOException {
         if (targetIndex == null || !versionPattern().matcher(targetIndex).matches()) {
             throw new WebApplicationException("Ungültiger Indexname \"" + targetIndex + "\": erwartet "
                     + indexPrefix + "<Nummer>.", Response.Status.BAD_REQUEST);
@@ -583,6 +622,20 @@ public class OpenSearchService {
         Map<String, IndexState> versions = versionedIndices();
         if (!versions.containsKey(targetIndex)) {
             throw new WebApplicationException("Index " + targetIndex + " existiert nicht.", Response.Status.NOT_FOUND);
+        }
+
+        long targetCount = refreshAndCount(targetIndex, "Zielindex " + targetIndex + " existiert nicht.");
+        long sourceCount = refreshAndCount(indexName, "Quellindex " + indexName + " existiert nicht.");
+        if (sourceCount != targetCount) {
+            String message = String.format(Locale.ROOT,
+                    "Dokumentzahlen weichen ab: Quelle %s hat %d Dokumente, Ziel %s hat %d. "
+                            + "writes happened between reindex and activate; re-run reindex "
+                            + "(oder force=true, um trotzdem umzuschalten). Alias unverändert.",
+                    indexName, sourceCount, targetIndex, targetCount);
+            if (!force) {
+                throw new WebApplicationException(message, Response.Status.CONFLICT);
+            }
+            LOG.warn("Alias-Umschaltung auf " + targetIndex + " mit force=true trotz Abweichung: " + message);
         }
 
         List<String> previous = versions.entrySet().stream()
@@ -598,6 +651,7 @@ public class OpenSearchService {
         }
         actions.add(Action.of(a -> a.add(add -> add.index(targetIndex).alias(aliasName).isWriteIndex(true))));
         client.indices().updateAliases(UpdateAliasesRequest.of(u -> u.actions(actions)));
+        forgetNameSubfieldSupport();
 
         LOG.info("Alias " + aliasName + " umgeschaltet: " + previous + " -> " + targetIndex);
         return new ActivateResult(aliasName, targetIndex, previous);
@@ -606,6 +660,62 @@ public class OpenSearchService {
     /** Pattern fuer Versionsnamen {@code <prefix><Zahl>}, z. B. products_v12. */
     Pattern versionPattern() {
         return Pattern.compile(Pattern.quote(indexPrefix) + "\\d+");
+    }
+
+    /**
+     * Prueft im Mapping des Suchindex ({@code opensearch.index}), ob {@code name} die Subfelder {@code prefix} und
+     * {@code parts} hat. Das Ergebnis wird {@link #NAME_SUBFIELD_CACHE_NANOS} lang gecacht. Schlaegt die Abfrage fehl
+     * oder liefert sie kein Mapping, wird ohne die beiden Subfeld-Klauseln gesucht und nichts gecacht.
+     */
+    boolean nameSubfieldsAvailable() {
+        NameSubfieldSupport cached = nameSubfieldSupport;
+        if (cached != null && System.nanoTime() - cached.checkedAtNanos() < NAME_SUBFIELD_CACHE_NANOS) {
+            return cached.supported();
+        }
+        try {
+            GetMappingResponse response = client.indices().getMapping(GetMappingRequest.of(g -> g.index(indexName)));
+            Map<String, IndexMappingRecord> mappings = response == null ? null : response.result();
+            if (mappings == null || mappings.isEmpty()) {
+                LOG.warn("Mapping von " + indexName + " leer: Suche ohne name.prefix/name.parts");
+                return false;
+            }
+            boolean supported = mappings.values().stream().anyMatch(OpenSearchService::hasNameSubfields);
+            nameSubfieldSupport = new NameSubfieldSupport(supported, System.nanoTime());
+            return supported;
+        } catch (IOException | RuntimeException e) {
+            // Nicht gecacht: die naechste Suche versucht die Abfrage erneut.
+            LOG.warn("Mapping von " + indexName + " nicht lesbar, Suche ohne name.prefix/name.parts: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private static boolean hasNameSubfields(IndexMappingRecord record) {
+        TypeMapping indexMapping = record == null ? null : record.mappings();
+        Property name = indexMapping == null || indexMapping.properties() == null
+                ? null : indexMapping.properties().get("name");
+        if (name == null || !name.isText() || name.text().fields() == null) {
+            return false;
+        }
+        Map<String, Property> fields = name.text().fields();
+        return fields.containsKey(NAME_PREFIX_SUBFIELD) && fields.containsKey(NAME_PARTS_SUBFIELD);
+    }
+
+    /** Verwirft das gecachte Mapping-Ergebnis, nach jeder Aenderung an Indizes oder Alias. */
+    private void forgetNameSubfieldSupport() {
+        nameSubfieldSupport = null;
+    }
+
+    /** Refresh, damit alle Schreibvorgaenge sichtbar sind, danach die Dokumentzahl. */
+    private long refreshAndCount(String index, String notFoundMessage) throws IOException {
+        try {
+            client.indices().refresh(RefreshRequest.of(r -> r.index(index)));
+        } catch (OpenSearchException e) {
+            if (e.status() == 404) {
+                throw new WebApplicationException(notFoundMessage, Response.Status.NOT_FOUND);
+            }
+            throw e;
+        }
+        return countDocuments(index, notFoundMessage);
     }
 
     /** Vorhandene Versionsindizes ({@code <prefix>*}, nur Namen im Versionsmuster) mit ihren Aliasen. */

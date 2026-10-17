@@ -22,6 +22,7 @@ import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.opensearch.client.opensearch.indices.IndexState;
 import org.opensearch.client.opensearch.indices.OpenSearchIndicesClient;
+import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.opensearch.indices.UpdateAliasesRequest;
 import org.opensearch.client.opensearch.indices.update_aliases.Action;
 import org.opensearch.client.transport.endpoints.BooleanResponse;
@@ -173,7 +174,7 @@ class OpenSearchReindexServiceTest {
     void activateSendsRemoveAndAddInOneAtomicRequest() throws IOException {
         stubVersions(version("products_v1", "products_live"), version("products_v2"));
 
-        OpenSearchService.ActivateResult result = service.activateIndex("products_v2");
+        OpenSearchService.ActivateResult result = service.activateIndex("products_v2", false);
 
         assertEquals("products_live", result.alias());
         assertEquals("products_v2", result.index());
@@ -198,7 +199,7 @@ class OpenSearchReindexServiceTest {
     void activateWithoutCurrentAliasOnlyAddsAlias() throws IOException {
         stubVersions(version("products_v1"));
 
-        OpenSearchService.ActivateResult result = service.activateIndex("products_v1");
+        OpenSearchService.ActivateResult result = service.activateIndex("products_v1", false);
 
         assertEquals(List.of(), result.previous());
         ArgumentCaptor<UpdateAliasesRequest> captor = ArgumentCaptor.forClass(UpdateAliasesRequest.class);
@@ -222,7 +223,7 @@ class OpenSearchReindexServiceTest {
 
         for (String name : invalid) {
             WebApplicationException error = assertThrows(WebApplicationException.class,
-                    () -> service.activateIndex(name), "Name: " + name);
+                    () -> service.activateIndex(name, false), "Name: " + name);
             assertEquals(400, error.getResponse().getStatus(), "Name: " + name);
         }
         verify(indices, never()).get(any(GetIndexRequest.class));
@@ -234,10 +235,63 @@ class OpenSearchReindexServiceTest {
         stubVersions(version("products_v1", "products_live"));
 
         WebApplicationException error = assertThrows(WebApplicationException.class,
-                () -> service.activateIndex("products_v9"));
+                () -> service.activateIndex("products_v9", false));
 
         assertEquals(404, error.getResponse().getStatus());
         verify(indices, never()).updateAliases(any(UpdateAliasesRequest.class));
+    }
+
+    // ---- Dokumentzahl-Pruefung vor der Umschaltung ----
+
+    @Test
+    void activateRefreshesTargetAndSourceBeforeCounting() throws IOException {
+        stubVersions(version("products_v1", "products_live"), version("products_v2"));
+
+        service.activateIndex("products_v2", false);
+
+        verify(indices).refresh(argThat((RefreshRequest r) -> r.index().equals(List.of("products_v2"))));
+        verify(indices).refresh(argThat((RefreshRequest r) -> r.index().equals(List.of("products"))));
+        verify(indices).updateAliases(any(UpdateAliasesRequest.class));
+    }
+
+    @Test
+    void activateWithDifferentCountsReturnsConflictAndKeepsAlias() throws IOException {
+        stubVersions(version("products_v1", "products_live"), version("products_v2"));
+        stubCounts(5, 4);
+
+        WebApplicationException error = assertThrows(WebApplicationException.class,
+                () -> service.activateIndex("products_v2", false));
+
+        assertEquals(409, error.getResponse().getStatus());
+        assertTrue(error.getMessage().contains("Quelle products hat 5 Dokumente"), error.getMessage());
+        assertTrue(error.getMessage().contains("Ziel products_v2 hat 4"), error.getMessage());
+        assertTrue(error.getMessage().contains("writes happened between reindex and activate; re-run reindex"),
+                error.getMessage());
+        verify(indices, never()).updateAliases(any(UpdateAliasesRequest.class));
+        verify(indices, never()).delete(any(DeleteIndexRequest.class));
+    }
+
+    @Test
+    void activateWithEqualCountsSwitchesAlias() throws IOException {
+        stubVersions(version("products_v1", "products_live"), version("products_v2"));
+        stubCounts(5, 5);
+
+        OpenSearchService.ActivateResult result = service.activateIndex("products_v2", false);
+
+        assertEquals("products_v2", result.index());
+        verify(indices, times(1)).updateAliases(any(UpdateAliasesRequest.class));
+    }
+
+    @Test
+    void forceSwitchesDespiteDifferentCounts() throws IOException {
+        stubVersions(version("products_v1", "products_live"), version("products_v2"));
+        stubCounts(5, 4);
+
+        OpenSearchService.ActivateResult result = service.activateIndex("products_v2", true);
+
+        assertEquals("products_v2", result.index());
+        assertEquals(List.of("products_v1"), result.previous());
+        verify(indices, times(1)).updateAliases(any(UpdateAliasesRequest.class));
     }
 
     // ---- Hilfsmethoden ----

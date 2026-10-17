@@ -146,20 +146,20 @@ class ProductReindexIntegrationTest {
         assertEquals(expected, second.targetCount());
         assertTrue(indexExists("qtest_v1"), "qtest_v1 muss nach dem zweiten Reindex erhalten bleiben");
 
-        OpenSearchService.ActivateResult toV1 = service.activateIndex("qtest_v1");
+        OpenSearchService.ActivateResult toV1 = service.activateIndex("qtest_v1", false);
         assertEquals(ALIAS, toV1.alias());
         assertEquals("qtest_v1", toV1.index());
         assertEquals(List.of(), toV1.previous());
         assertEquals(Set.of("qtest_v1"), aliasTargets());
         assertEquals(expected, documentCount(ALIAS));
 
-        OpenSearchService.ActivateResult toV2 = service.activateIndex("qtest_v2");
+        OpenSearchService.ActivateResult toV2 = service.activateIndex("qtest_v2", false);
         assertEquals(List.of("qtest_v1"), toV2.previous());
         assertEquals(Set.of("qtest_v2"), aliasTargets());
         assertTrue(indexExists("qtest_v1"), "qtest_v1 darf nach der Umschaltung nicht geloescht sein");
         assertTrue(indexExists(SOURCE), "Quellindex darf nicht geloescht sein");
 
-        OpenSearchService.ActivateResult rollback = service.activateIndex("qtest_v1");
+        OpenSearchService.ActivateResult rollback = service.activateIndex("qtest_v1", false);
         assertEquals(List.of("qtest_v2"), rollback.previous());
         assertEquals(Set.of("qtest_v1"), aliasTargets());
         assertEquals(expected, documentCount(SOURCE));

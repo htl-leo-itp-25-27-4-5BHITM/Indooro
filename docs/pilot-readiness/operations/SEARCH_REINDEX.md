@@ -79,6 +79,24 @@ curl -s -X POST "$BASE/api/admin/index/activate?index=products_vN" \
 
 Die Umschaltung läuft in einem einzigen atomaren Schritt. Der Index wird nicht gelöscht. Nur Namen der Form `products_v<Nummer>` werden akzeptiert (sonst `400`), unbekannte Namen geben `404`.
 
+**Dokumentzahl-Prüfung vor der Umschaltung.** Vor dem Umschalten aktualisiert der Server Ziel und Quelle (Refresh) und zählt die Dokumente in `products_vN` und im Index, den das Backend heute liest (`opensearch.index`, also `products` bis zur Umstellung auf den Alias). Stimmen die Zahlen überein, wird umgeschaltet. Weichen sie ab, antwortet der Server mit `409` und nennt beide Zahlen. Der Alias bleibt dann unverändert. Die Abweichung entsteht durch Schreibvorgänge zwischen Reindex und Umschaltung, die im Ziel fehlen:
+
+```json
+{"status":409,"error":"Dokumentzahlen weichen ab: Quelle products hat 153 Dokumente, Ziel products_v1 hat 154. writes happened between reindex and activate; re-run reindex (oder force=true, um trotzdem umzuschalten). Alias unverändert."}
+```
+
+Dann Schritt 1 erneut ausführen. Das Ergebnis ist `products_v(N+1)`, das abweichende `products_vN` wird nicht umgeschaltet.
+
+Nur wenn die Abweichung bewusst in Kauf genommen wird, schaltet `force=true` trotzdem um. Der Parameter gehört nicht in den Normalfall und wird im Log als Warnung vermerkt:
+
+```bash
+curl -s -X POST "$BASE/api/admin/index/activate?index=products_vN&force=true" \
+  -H "Authorization: Bearer $INDOORO_ADMIN_TOKEN" \
+  -H "Content-Type: application/json"
+```
+
+Ohne `force` gilt: Die Zählung findet nur bei gleichen Zahlen statt, und der Alias wird nur dann geschrieben. Das `409` kommt vor jeder Änderung am Alias.
+
 ### 5) Backend mit dem Alias ausrollen
 
 Im Backend-Deployment die Umgebungsvariable setzen. Der Eintrag gehört in `k8s/backend.yaml` (Block `env`):
@@ -111,3 +129,4 @@ Der Rollback ist nur sauber, solange seit Schritt 5 keine Katalog-Schreibvorgän
 - `DELETE /api/admin/index` löscht den Index unter `opensearch.index`. Mit `OPENSEARCH_INDEX=products_live` schlägt das fehl, weil `products_live` ein Alias ist. Das ist gewollt. Versionsindizes werden nicht über die App gelöscht.
 - Nach dem Umschalten bleibt `products` als eingefrorener Stand stehen. Wer Speicherplatz freigibt, löscht ihn erst nach der manuellen Freigabe.
 - Neue Synonyme: `synonyms_de.txt` ändern, Backend-Release, dann Reindex (Schritte 1–5). Ein bloßes Umschalten reicht nicht.
+- **Subfelder `name.prefix` und `name.parts`:** Die Suche liest beim ersten Aufruf das Mapping von `opensearch.index` und merkt sich das Ergebnis höchstens 60 Sekunden lang. Die Präfix- und Wortteil-Klauseln werden nur dann verwendet, wenn das Feld `name` diese Subfelder hat. Ein Altindex ohne Reindex funktioniert deshalb weiter. Volltext und Tippfehler über `name` greifen, aber ohne Synonyme und ohne deutsche Analyse, und `backp` findet nicht „Backpulver“. Erst `products_vN` mit neuem Mapping bringt diese Treffer. Nach einer Umschaltung übernimmt das Backend den neuen Stand spätestens nach 60 Sekunden, auf jeder Instanz. Schlägt die Mapping-Abfrage fehl, sucht das Backend ohne die beiden Klauseln und fragt bei der nächsten Suche erneut an.

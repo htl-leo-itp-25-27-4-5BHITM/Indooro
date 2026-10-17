@@ -84,15 +84,17 @@ public class AdminResource {
 
     /**
      * Schaltet den Produkt-Alias atomar auf einen Versionsindex um. Loescht keinen Index.
-     * POST /api/admin/index/activate?index=products_vN
+     * Weichen die Dokumentzahlen von Quelle und Ziel ab, antwortet der Endpunkt mit 409, ausser mit force=true.
+     * POST /api/admin/index/activate?index=products_vN[&amp;force=true]
      */
     @POST
     @Path("/index/activate")
     @RolesAllowed("admin")
-    public Response activateIndex(@QueryParam("index") String index) {
+    public Response activateIndex(@QueryParam("index") String index,
+                                  @QueryParam("force") @DefaultValue("false") boolean force) {
         adminAccessService.requireAdmin();
         try {
-            return Response.ok(openSearchService.activateIndex(index)).build();
+            return Response.ok(openSearchService.activateIndex(index, force)).build();
         } catch (IOException e) {
             LOG.error("Error activating index " + index, e);
             throw new WebApplicationException("Alias-Umschaltung fehlgeschlagen: OpenSearch nicht erreichbar oder Fehler beim Schreiben der Aliase.",
