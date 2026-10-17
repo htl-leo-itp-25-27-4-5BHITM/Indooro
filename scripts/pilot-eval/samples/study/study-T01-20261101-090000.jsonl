@@ -1,0 +1,10 @@
+{"sessionId": "de8a774b-cf36-458b-8737-819096da1dac", "taskNo": 1, "testId": "T01", "t": "2026-11-01T09:00:00.000Z", "type": "taskStart"}
+{"sessionId": "de8a774b-cf36-458b-8737-819096da1dac", "taskNo": 1, "testId": "T01", "t": "2026-11-01T09:01:21.600Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": 0, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "de8a774b-cf36-458b-8737-819096da1dac", "taskNo": 2, "testId": "T01", "t": "2026-11-01T09:01:30.600Z", "type": "taskStart"}
+{"sessionId": "de8a774b-cf36-458b-8737-819096da1dac", "taskNo": 2, "testId": "T01", "t": "2026-11-01T09:03:45.900Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}
+{"sessionId": "de8a774b-cf36-458b-8737-819096da1dac", "taskNo": 3, "testId": "T01", "t": "2026-11-01T09:03:53.900Z", "type": "taskStart"}
+{"sessionId": "de8a774b-cf36-458b-8737-819096da1dac", "taskNo": 3, "testId": "T01", "t": "2026-11-01T09:04:41.306Z", "type": "manualPosition"}
+{"sessionId": "de8a774b-cf36-458b-8737-819096da1dac", "taskNo": 3, "testId": "T01", "t": "2026-11-01T09:04:55.210Z", "type": "manualPosition"}
+{"sessionId": "de8a774b-cf36-458b-8737-819096da1dac", "taskNo": 3, "testId": "T01", "t": "2026-11-01T09:04:57.200Z", "type": "taskEnd", "outcome": "hilfe", "counters": {"manualPositionCount": 2, "rerouteCount": null, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "de8a774b-cf36-458b-8737-819096da1dac", "taskNo": 4, "testId": "T01", "t": "2026-11-01T09:05:04.200Z", "type": "taskStart"}
+{"sessionId": "de8a774b-cf36-458b-8737-819096da1dac", "taskNo": 4, "testId": "T01", "t": "2026-11-01T09:06:24.000Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}

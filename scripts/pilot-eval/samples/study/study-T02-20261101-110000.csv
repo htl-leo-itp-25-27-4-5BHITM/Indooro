@@ -1,0 +1,5 @@
+test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count
+T02,d8f56413-5be6-428e-98c2-67976142ea7d,SYNTH,1,9105,SYNTH Tahin Glas 370 g,ohne_app,-,2026-11-01T11:00:00.000Z,2026-11-01T11:01:25.400Z,85.4,gefunden,-,-,-,0
+T02,d8f56413-5be6-428e-98c2-67976142ea7d,SYNTH,2,9105,SYNTH Tahin Glas 370 g,app,ohne_ortung,2026-11-01T11:01:44.400Z,2026-11-01T11:03:15.200Z,90.8,gefunden,0,0,0,0
+T02,d8f56413-5be6-428e-98c2-67976142ea7d,SYNTH,3,9109,SYNTH Mandelmus 250 g,ohne_app,-,2026-11-01T11:03:32.200Z,2026-11-01T11:05:28.900Z,116.7,gefunden,-,-,-,0
+T02,d8f56413-5be6-428e-98c2-67976142ea7d,SYNTH,4,9109,SYNTH Mandelmus 250 g,app,mit_ortung,2026-11-01T11:05:35.900Z,2026-11-01T11:08:12.500Z,156.6,gefunden,1,0,0,0

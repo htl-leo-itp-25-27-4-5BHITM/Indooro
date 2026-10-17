@@ -1,0 +1,13 @@
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 1, "testId": "T07", "t": "2026-11-03T09:00:00.000Z", "type": "taskStart"}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 1, "testId": "T07", "t": "2026-11-03T09:00:34.761Z", "type": "manualPosition"}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 1, "testId": "T07", "t": "2026-11-03T09:00:37.389Z", "type": "reroute"}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 1, "testId": "T07", "t": "2026-11-03T09:00:59.639Z", "type": "manualPosition"}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 1, "testId": "T07", "t": "2026-11-03T09:01:36.100Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 2, "rerouteCount": 1, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 2, "testId": "T07", "t": "2026-11-03T09:01:58.100Z", "type": "taskStart"}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 2, "testId": "T07", "t": "2026-11-03T09:03:23.600Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 3, "testId": "T07", "t": "2026-11-03T09:03:41.600Z", "type": "taskStart"}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 3, "testId": "T07", "t": "2026-11-03T09:04:54.446Z", "type": "manualPosition"}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 3, "testId": "T07", "t": "2026-11-03T09:05:08.353Z", "type": "manualPosition"}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 3, "testId": "T07", "t": "2026-11-03T09:05:13.600Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 2, "rerouteCount": 0, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 4, "testId": "T07", "t": "2026-11-03T09:05:36.600Z", "type": "taskStart"}
+{"sessionId": "a491f0b2-ea1f-4a65-a27a-984d654821d0", "taskNo": 4, "testId": "T07", "t": "2026-11-03T09:07:33.600Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}

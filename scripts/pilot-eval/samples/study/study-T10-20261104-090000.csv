@@ -1,0 +1,5 @@
+test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count
+T10,5715bd6f-a416-4293-84c2-e2e3444ea7c8,SYNTH,1,9101,SYNTH Sojasauce hell 500 ml,ohne_app,-,2026-11-04T09:00:00.000Z,2026-11-04T09:01:45.000Z,105.0,gefunden,-,-,-,0
+T10,5715bd6f-a416-4293-84c2-e2e3444ea7c8,SYNTH,2,9101,SYNTH Sojasauce hell 500 ml,app,ohne_ortung,2026-11-04T09:02:13.000Z,2026-11-04T09:04:17.500Z,124.5,gefunden,0,0,0,0
+T10,5715bd6f-a416-4293-84c2-e2e3444ea7c8,SYNTH,3,9104,SYNTH Kichererbsenmehl 500 g,ohne_app,-,2026-11-04T09:04:38.500Z,2026-11-04T09:07:14.200Z,155.7,gefunden,-,-,-,0
+T10,5715bd6f-a416-4293-84c2-e2e3444ea7c8,SYNTH,4,9104,SYNTH Kichererbsenmehl 500 g,app,mit_ortung,2026-11-04T09:07:43.200Z,2026-11-04T09:09:11.700Z,88.5,gefunden,3,1,0,0

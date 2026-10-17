@@ -1,0 +1,5 @@
+test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count
+T01,de8a774b-cf36-458b-8737-819096da1dac,SYNTH,1,9100,SYNTH Kokosraspeln 200 g,app,mit_ortung,2026-11-01T09:00:00.000Z,2026-11-01T09:01:21.600Z,81.6,gefunden,-,0,0,0
+T01,de8a774b-cf36-458b-8737-819096da1dac,SYNTH,2,9100,SYNTH Kokosraspeln 200 g,ohne_app,-,2026-11-01T09:01:30.600Z,2026-11-01T09:03:45.900Z,135.3,gefunden,-,-,-,0
+T01,de8a774b-cf36-458b-8737-819096da1dac,SYNTH,3,9102,SYNTH Miso-Paste weiß 300 g,app,mit_ortung,2026-11-01T09:03:53.900Z,2026-11-01T09:04:57.200Z,63.3,hilfe,2,-,0,0
+T01,de8a774b-cf36-458b-8737-819096da1dac,SYNTH,4,9102,SYNTH Miso-Paste weiß 300 g,ohne_app,-,2026-11-01T09:05:04.200Z,2026-11-01T09:06:24.000Z,79.8,gefunden,-,-,-,0
