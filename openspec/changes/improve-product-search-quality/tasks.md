@@ -11,11 +11,11 @@
 ## 3. Index and Query
 
 - [x] 3.1 Add index settings/mapping JSON and `synonyms_de.txt` (≥ 40 entries).
-- [ ] 3.2 Implement alias-based index creation and reindex (`products_vN`, alias `products`), keeping old index; tests.
+- [x] 3.2 Implement alias-based index creation and reindex (`products_vN`, alias `products_live`; the existing concrete index `products` cannot become an alias without deleting it, so the app switches via `OPENSEARCH_INDEX`), keeping old index; tests.
 - [x] 3.3 Rework the query with boosts per design; keep `size`, `storeId`, `storeCode` behavior.
 - [x] 3.4 Iterate until precision@3 ≥ 0.85; document each iteration's value.
 
 ## 4. Operations
 
-- [ ] 4.1 Document the LeoCloud reindex and alias switch (commands only, executed by Erik) in `docs/pilot-readiness/operations/SEARCH_REINDEX.md`.
+- [x] 4.1 Document the LeoCloud reindex and alias switch (commands only, executed by Erik) in `docs/pilot-readiness/operations/SEARCH_REINDEX.md`.
 - [ ] 4.2 All checks green; PR → `main`; `STATUS.md`.

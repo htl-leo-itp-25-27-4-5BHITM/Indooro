@@ -10,6 +10,7 @@ import org.jboss.logging.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldValue;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOrder;
@@ -19,14 +20,24 @@ import org.opensearch.client.opensearch._types.query_dsl.Operator;
 import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
+import org.opensearch.client.opensearch.indices.GetIndexRequest;
+import org.opensearch.client.opensearch.indices.GetIndexResponse;
+import org.opensearch.client.opensearch.indices.IndexState;
+import org.opensearch.client.opensearch.indices.UpdateAliasesRequest;
+import org.opensearch.client.opensearch.indices.update_aliases.Action;
 
 import java.io.IOException;
 import java.text.Collator;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @ApplicationScoped
@@ -35,11 +46,26 @@ public class OpenSearchService {
     private static final Logger LOG = Logger.getLogger(OpenSearchService.class);
     private static final String ROUTABLE_LAYOUT_SCRIPT = "doc['layoutCode'].size() != 0 && /[0-9]{1,4}\\/[0-9]{1,3}\\/[0-9]{1,2}\\/[0-9]{1,2}/.matcher(doc['layoutCode'].value.trim()).matches()";
 
+    /** Ergebnis eines Reindex: Quelle, Zielindex und die beiden verglichenen Dokumentzahlen. */
+    public record ReindexResult(String source, String target, long sourceCount, long targetCount, String status) {}
+
+    /**
+     * Ergebnis der Alias-Umschaltung. {@code previous} sind die Versionsindizes, die den Alias vorher trugen;
+     * fuer einen Rollback genuegt ein erneuter Aufruf von {@link #activateIndex(String)} mit einem dieser Namen.
+     */
+    public record ActivateResult(String alias, String index, List<String> previous) {}
+
     @Inject
     OpenSearchClient client;
 
     @ConfigProperty(name = "opensearch.index")
     String indexName;
+
+    @ConfigProperty(name = "opensearch.index-prefix")
+    String indexPrefix;
+
+    @ConfigProperty(name = "opensearch.alias")
+    String aliasName;
 
     /**
      * Sucht Produkte anhand eines Suchbegriffs
@@ -486,6 +512,140 @@ public class OpenSearchService {
     public void deleteIndex() throws IOException {
         client.indices().delete(d -> d.index(indexName));
         LOG.info("Index " + indexName + " deleted successfully");
+    }
+
+    /**
+     * Kopiert alle Produkte aus dem Quellindex ({@code opensearch.index}, Index oder Alias) in den naechsten freien
+     * Versionsindex {@code <prefix><N+1>} und vergleicht die Dokumentzahlen. Loescht nichts: Quelle, vorhandene
+     * Versionen und Alias bleiben unveraendert. Bei Abweichung wird nur gemeldet (500), das Ziel bleibt liegen.
+     */
+    public ReindexResult reindexProducts() throws IOException {
+        long sourceCount = countDocuments(indexName, "Quellindex " + indexName + " existiert nicht.");
+        String target = nextVersionName(versionedIndices().keySet());
+        if (client.indices().exists(ExistsRequest.of(e -> e.index(target))).value()) {
+            throw new WebApplicationException("Zielindex " + target + " existiert bereits. Bitte erneut versuchen.",
+                    Response.Status.CONFLICT);
+        }
+        try {
+            client.indices().create(ProductIndexDefinition.createIndexRequest(target));
+        } catch (OpenSearchException e) {
+            if (e.error() != null && "resource_already_exists_exception".equals(e.error().type())) {
+                throw new WebApplicationException("Zielindex " + target + " existiert bereits. Bitte erneut versuchen.",
+                        Response.Status.CONFLICT);
+            }
+            throw e;
+        }
+
+        ReindexResponse reindex = client.reindex(ReindexRequest.of(r -> r
+                .source(s -> s.index(indexName))
+                .dest(d -> d.index(target))
+                .waitForCompletion(true)
+                .refresh(true)));
+        long targetCount = countDocuments(target, "Zielindex " + target + " existiert nicht.");
+
+        int failures = reindex.failures() == null ? 0 : reindex.failures().size();
+        boolean timedOut = Boolean.TRUE.equals(reindex.timedOut());
+        if (sourceCount != targetCount || failures > 0 || timedOut) {
+            LOG.error("Reindex " + indexName + " -> " + target + " unvollstaendig: source=" + sourceCount
+                    + " target=" + targetCount + " failures=" + failures + " timedOut=" + timedOut);
+            throw new WebApplicationException(String.format(Locale.ROOT,
+                    "Reindex unvollständig: Quelle %s hat %d Dokumente, Ziel %s hat %d (Fehler: %d%s). "
+                            + "Das Ziel wurde nicht gelöscht, der Alias ist unverändert.",
+                    indexName, sourceCount, target, targetCount, failures, timedOut ? ", Zeitüberschreitung" : ""),
+                    Response.Status.INTERNAL_SERVER_ERROR);
+        }
+        LOG.info("Reindex " + indexName + " -> " + target + " ok: " + targetCount + " Dokumente");
+        return new ReindexResult(indexName, target, sourceCount, targetCount, "OK");
+    }
+
+    /**
+     * Schaltet den Alias {@code opensearch.alias} auf den Versionsindex {@code targetIndex} um. Alle Entfernungen
+     * und das Hinzufuegen laufen in EINEM atomaren {@code _aliases}-Request. Loescht keinen Index.
+     */
+    public ActivateResult activateIndex(String targetIndex) throws IOException {
+        if (targetIndex == null || !versionPattern().matcher(targetIndex).matches()) {
+            throw new WebApplicationException("Ungültiger Indexname \"" + targetIndex + "\": erwartet "
+                    + indexPrefix + "<Nummer>.", Response.Status.BAD_REQUEST);
+        }
+        Map<String, IndexState> versions = versionedIndices();
+        if (!versions.containsKey(targetIndex)) {
+            throw new WebApplicationException("Index " + targetIndex + " existiert nicht.", Response.Status.NOT_FOUND);
+        }
+
+        List<String> previous = versions.entrySet().stream()
+                .filter(e -> e.getValue() != null && e.getValue().aliases() != null
+                        && e.getValue().aliases().containsKey(aliasName))
+                .map(Map.Entry::getKey)
+                .sorted()
+                .toList();
+
+        List<Action> actions = new ArrayList<>();
+        for (String old : previous) {
+            actions.add(Action.of(a -> a.remove(r -> r.index(old).alias(aliasName))));
+        }
+        actions.add(Action.of(a -> a.add(add -> add.index(targetIndex).alias(aliasName).isWriteIndex(true))));
+        client.indices().updateAliases(UpdateAliasesRequest.of(u -> u.actions(actions)));
+
+        LOG.info("Alias " + aliasName + " umgeschaltet: " + previous + " -> " + targetIndex);
+        return new ActivateResult(aliasName, targetIndex, previous);
+    }
+
+    /** Pattern fuer Versionsnamen {@code <prefix><Zahl>}, z. B. products_v12. */
+    Pattern versionPattern() {
+        return Pattern.compile(Pattern.quote(indexPrefix) + "\\d+");
+    }
+
+    /** Vorhandene Versionsindizes ({@code <prefix>*}, nur Namen im Versionsmuster) mit ihren Aliasen. */
+    private Map<String, IndexState> versionedIndices() throws IOException {
+        Map<String, IndexState> all;
+        try {
+            GetIndexResponse response = client.indices().get(GetIndexRequest.of(g -> g.index(indexPrefix + "*")));
+            all = response.result();
+        } catch (OpenSearchException e) {
+            if (e.status() == 404) {
+                return Map.of();
+            }
+            throw e;
+        }
+        Pattern pattern = versionPattern();
+        Map<String, IndexState> versions = new LinkedHashMap<>();
+        if (all != null) {
+            all.forEach((name, state) -> {
+                if (pattern.matcher(name).matches()) {
+                    versions.put(name, state);
+                }
+            });
+        }
+        return versions;
+    }
+
+    /** Naechster Versionsname: höchste vorhandene Nummer + 1, ohne Treffer 1. */
+    String nextVersionName(Collection<String> existing) {
+        Pattern pattern = Pattern.compile(Pattern.quote(indexPrefix) + "(\\d+)");
+        long max = 0;
+        for (String name : existing) {
+            Matcher m = pattern.matcher(name);
+            if (m.matches()) {
+                try {
+                    max = Math.max(max, Long.parseLong(m.group(1)));
+                } catch (NumberFormatException ignored) {
+                    // Zu grosse Nummer: kein gueltiger Versionsname, zaehlt nicht.
+                }
+            }
+        }
+        return indexPrefix + (max + 1);
+    }
+
+    /** Dokumentzahl eines Index bzw. Alias; 404 wird mit der uebergebenen Meldung als 404 gemeldet. */
+    private long countDocuments(String index, String notFoundMessage) throws IOException {
+        try {
+            return client.count(CountRequest.of(c -> c.index(index))).count();
+        } catch (OpenSearchException e) {
+            if (e.status() == 404) {
+                throw new WebApplicationException(notFoundMessage, Response.Status.NOT_FOUND);
+            }
+            throw e;
+        }
     }
 
     private void applyStoreFilter(BoolQuery.Builder bool, String storeId, String storeCode) {
