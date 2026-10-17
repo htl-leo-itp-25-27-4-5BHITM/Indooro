@@ -2,6 +2,10 @@ package at.htl.resource.admin;
 
 import at.htl.admin.service.AdminAccessService;
 import at.htl.model.Product;
+import at.htl.service.CatalogStoreResolver;
+import at.htl.service.CatalogStoreResolver.CatalogStoreException;
+import at.htl.service.CatalogStoreResolver.ResolvedStore;
+import at.htl.service.LegacyDocumentGuard;
 import at.htl.service.OpenSearchService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -20,10 +24,9 @@ import jakarta.ws.rs.BadRequestException;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
-import java.util.List;
 
 @Path("/api/admin/products")
-@RolesAllowed("admin")
+@RolesAllowed({"admin", "region-manager", "store-manager"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class AdminProductResource extends AdminApiSupport {
@@ -36,20 +39,29 @@ public class AdminProductResource extends AdminApiSupport {
     @Inject
     OpenSearchService openSearchService;
 
+    @Inject
+    CatalogStoreResolver storeResolver;
+
+    @Inject
+    LegacyDocumentGuard legacyDocumentGuard;
+
     @GET
     public Object listProducts(@QueryParam("page") Integer page,
                                @QueryParam("size") Integer size,
                                @QueryParam("q") String query,
                                @QueryParam("sort") String sort,
-                               @QueryParam("routable") Boolean routable) {
-        adminAccessService.requireAdmin();
+                               @QueryParam("routable") Boolean routable,
+                               @QueryParam("storeId") String storeId,
+                               @QueryParam("storeCode") String storeCode) {
+        ResolvedStore store = requireStoreAccess(storeId, storeCode);
 
         try {
             if (page != null) {
                 int normalizedPage = normalizePage(page);
                 int normalizedSize = normalizePageSize(size);
                 String normalizedSort = normalizeProductSort(sort);
-                return openSearchService.searchAdminProductsPage(query, normalizedPage, normalizedSize, normalizedSort, routable);
+                return openSearchService.searchAdminProductsPage(query, normalizedPage, normalizedSize, normalizedSort,
+                        routable, store.id().toString(), store.storeCode());
             }
             if (sort != null || routable != null) {
                 throw new BadRequestException("Sortierung und Routbar-Filter erfordern paginierte Produktlisten.");
@@ -57,9 +69,9 @@ public class AdminProductResource extends AdminApiSupport {
             // Preserve the array response for existing clients that have not adopted paging yet.
             int legacySize = normalizeProductListSize(size);
             if (query != null && !query.isBlank()) {
-                return openSearchService.searchProducts(query, legacySize);
+                return openSearchService.searchProducts(query, legacySize, store.id().toString(), store.storeCode());
             }
-            return openSearchService.getAllProducts(legacySize);
+            return openSearchService.getAllProducts(legacySize, store.id().toString(), store.storeCode());
         } catch (IOException exception) {
             LOG.error("Error loading admin products", exception);
             throw new WebApplicationException(
@@ -79,13 +91,14 @@ public class AdminProductResource extends AdminApiSupport {
 
     @POST
     public Product upsertProduct(Product product) {
-        adminAccessService.requireAdmin();
         validateProduct(product);
 
         product.setName(product.getName().trim());
         product.setLayoutCode(product.getLayoutCode().trim());
-        product.setStoreId(normalizeOptional(product.getStoreId()));
-        product.setStoreCode(normalizeOptional(product.getStoreCode()));
+        ResolvedStore store = requireStoreAccess(product.getStoreId(), product.getStoreCode());
+        product.setStoreId(store.id().toString());
+        product.setStoreCode(store.storeCode());
+        legacyDocumentGuard.requireNoLegacyDocuments(store.storeCode());
 
         try {
             openSearchService.indexProduct(product);
@@ -101,15 +114,17 @@ public class AdminProductResource extends AdminApiSupport {
 
     @DELETE
     @Path("/{id}")
-    public Response deleteProduct(@PathParam("id") Integer id) {
-        adminAccessService.requireAdmin();
-
+    public Response deleteProduct(@PathParam("id") Integer id,
+                                  @QueryParam("storeId") String storeId,
+                                  @QueryParam("storeCode") String storeCode) {
         if (id == null || id < 1) {
             throw badRequest("Produkt-ID muss eine positive ganze Zahl sein.");
         }
+        ResolvedStore store = requireStoreAccess(storeId, storeCode);
+        legacyDocumentGuard.requireNoLegacyDocuments(store.storeCode());
 
         try {
-            boolean deleted = openSearchService.deleteProduct(id);
+            boolean deleted = openSearchService.deleteProduct(id, store.storeCode());
             if (!deleted) {
                 throw new WebApplicationException("Produkt wurde nicht gefunden.", Response.Status.NOT_FOUND);
             }
@@ -121,6 +136,18 @@ public class AdminProductResource extends AdminApiSupport {
                     Response.Status.INTERNAL_SERVER_ERROR
             );
         }
+    }
+
+    /** Every admin product call names one store; the caller must have scope on it (admin: all stores). */
+    private ResolvedStore requireStoreAccess(String storeId, String storeCode) {
+        ResolvedStore store;
+        try {
+            store = storeResolver.require(storeId, storeCode);
+        } catch (CatalogStoreException exception) {
+            throw badRequest(exception.getMessage());
+        }
+        adminAccessService.requireStoreAccess(store.id());
+        return store;
     }
 
     private void validateProduct(Product product) {
@@ -162,12 +189,5 @@ public class AdminProductResource extends AdminApiSupport {
     private int normalizePageSize(Integer size) {
         if (size == null) return 20;
         return Math.min(Math.max(size, 1), 100);
-    }
-
-    private String normalizeOptional(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim();
     }
 }

@@ -3,18 +3,27 @@ package at.htl.resource;
 
 import at.htl.admin.service.AdminAccessService;
 import at.htl.model.Product;
-import at.htl.service.OpenSearchService;
 import at.htl.service.CatalogBulkResult;
+import at.htl.service.CatalogStoreResolver;
+import at.htl.service.CatalogStoreResolver.CatalogStoreException;
+import at.htl.service.CatalogStoreResolver.ResolvedStore;
+import at.htl.service.LegacyDocumentGuard;
+import at.htl.service.OpenSearchService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Path("/api/products")
@@ -30,9 +39,19 @@ public class ProductResource {
     @Inject
     AdminAccessService adminAccessService;
 
+    @Inject
+    CatalogStoreResolver storeResolver;
+
+    @Inject
+    LegacyDocumentGuard legacyDocumentGuard;
+
+    /** Store used for read requests that name no store. Empty = no default, old behavior (no store filter). */
+    @ConfigProperty(name = "indooro.catalog.default-store-code")
+    Optional<String> defaultStoreCode;
+
     /**
      * Suche nach Produkten
-     * GET /api/products/search?q=apfel&size=10
+     * GET /api/products/search?q=apfel&size=10&storeCode=SPAR-Leonding-001
      */
     @GET
     @Path("/search")
@@ -49,7 +68,8 @@ public class ProductResource {
         }
 
         try {
-            List<Product> products = openSearchService.searchProducts(query, size, storeId, storeCode);
+            List<Product> products = openSearchService.searchProducts(query, size, storeId,
+                    effectiveStoreCode(storeId, storeCode));
             LOG.info("Search for '" + query + "' returned " + products.size() + " results");
             return Response.ok(products).build();
         } catch (IOException e) {
@@ -61,13 +81,16 @@ public class ProductResource {
     }
 
     /**
-     * Holt alle Produkte
-     * GET /api/products
+     * Holt alle Produkte (eines Marktes)
+     * GET /api/products?storeCode=SPAR-Leonding-001
      */
     @GET
-    public Response getAllProducts(@QueryParam("size") @DefaultValue("100") Integer size) {
+    public Response getAllProducts(@QueryParam("size") @DefaultValue("100") Integer size,
+                                   @QueryParam("storeId") String storeId,
+                                   @QueryParam("storeCode") String storeCode) {
         try {
-            List<Product> products = openSearchService.getAllProducts(size);
+            List<Product> products = openSearchService.getAllProducts(size, storeId,
+                    effectiveStoreCode(storeId, storeCode));
             return Response.ok(products).build();
         } catch (IOException e) {
             LOG.error("Error getting all products", e);
@@ -79,13 +102,15 @@ public class ProductResource {
 
     /**
      * Holt ein Produkt anhand der ID
-     * GET /api/products/1
+     * GET /api/products/1?storeCode=SPAR-Leonding-001
      */
     @GET
     @Path("/{id}")
-    public Response getProductById(@PathParam("id") Integer id) {
+    public Response getProductById(@PathParam("id") Integer id,
+                                   @QueryParam("storeId") String storeId,
+                                   @QueryParam("storeCode") String storeCode) {
         try {
-            Product product = openSearchService.getProductById(id);
+            Product product = openSearchService.getProductById(id, storeId, effectiveStoreCode(storeId, storeCode));
             if (product != null) {
                 return Response.ok(product).build();
             } else {
@@ -102,7 +127,7 @@ public class ProductResource {
     }
 
     /**
-     * Indexiert ein einzelnes Produkt
+     * Indexiert ein einzelnes Produkt (Markt im Body: storeId oder storeCode)
      * POST /api/products
      */
     @POST
@@ -110,7 +135,15 @@ public class ProductResource {
     public Response indexProduct(Product product) {
         adminAccessService.requireAdmin();
         validateProduct(product);
-        normalizeProductScope(product);
+
+        ResolvedStore store;
+        try {
+            store = storeResolver.require(product.getStoreId(), product.getStoreCode());
+        } catch (CatalogStoreException exception) {
+            return errorResponse(Response.Status.BAD_REQUEST, exception.getMessage());
+        }
+        applyStore(product, store);
+        legacyDocumentGuard.requireNoLegacyDocuments(store.storeCode());
 
         try {
             String result = openSearchService.indexProduct(product);
@@ -124,36 +157,120 @@ public class ProductResource {
     }
 
     /**
-     * Indexiert mehrere Produkte
-     * POST /api/products/bulk
+     * Indexiert mehrere Produkte. storeId/storeCode als Query-Parameter gelten als Vorgabe fuer Items ohne eigenen Markt;
+     * ein Item, das dem Parameter widerspricht, wird als fehlerhafte Zeile gemeldet.
+     * POST /api/products/bulk?storeCode=SPAR-Leonding-001
      */
     @POST
     @Path("/bulk")
     @RolesAllowed("admin")
-    public Response indexProducts(List<Product> products) {
+    public Response indexProducts(@QueryParam("storeId") String storeId,
+                                  @QueryParam("storeCode") String storeCode,
+                                  List<Product> products) {
         adminAccessService.requireAdmin();
         if (products == null || products.isEmpty()) {
             throw new WebApplicationException("Produktliste ist erforderlich.", Response.Status.BAD_REQUEST);
         }
         products.forEach(this::validateProduct);
-        Set<Integer> ids = new HashSet<>();
         for (Product product : products) {
-            if (product.getId() < 1 || !ids.add(product.getId())) {
-                throw new WebApplicationException("Produkt-IDs müssen positiv und eindeutig sein.", Response.Status.BAD_REQUEST);
+            if (product.getId() < 1) {
+                throw new WebApplicationException("Produkt-IDs müssen positiv sein.", Response.Status.BAD_REQUEST);
             }
         }
-        products.forEach(this::normalizeProductScope);
 
+        ResolvedStore parameterStore;
         try {
-            CatalogBulkResult result = openSearchService.indexProducts(products);
-            return Response.ok(result).build();
-        } catch (IOException e) {
-            LOG.error("Error bulk indexing products", e);
-            return Response.status(Response.Status.SERVICE_UNAVAILABLE)
-                    .entity(CatalogBulkResult.unknown(products.stream().map(product -> String.valueOf(product.getId())).toList(),
-                            "Transport failed; some writes may have persisted. Verify before retrying."))
-                    .build();
+            parameterStore = storeResolver.resolveOptional(storeId, storeCode);
+        } catch (CatalogStoreException exception) {
+            return errorResponse(Response.Status.BAD_REQUEST, exception.getMessage());
         }
+        if (parameterStore == null && products.stream().anyMatch(this::hasNoStore)) {
+            return errorResponse(Response.Status.BAD_REQUEST, CatalogStoreResolver.MISSING_STORE);
+        }
+
+        Map<Integer, String> rejectedRows = new HashMap<>();
+        List<Product> writable = new ArrayList<>();
+        for (int index = 0; index < products.size(); index++) {
+            Product product = products.get(index);
+            try {
+                ResolvedStore itemStore = storeResolver.resolveOptional(product.getStoreId(), product.getStoreCode());
+                if (itemStore != null && parameterStore != null && !itemStore.id().equals(parameterStore.id())) {
+                    throw new CatalogStoreException("Markt des Produkts widerspricht dem Parameter storeId/storeCode.");
+                }
+                applyStore(product, itemStore != null ? itemStore : parameterStore);
+                writable.add(product);
+            } catch (CatalogStoreException exception) {
+                rejectedRows.put(index, exception.getMessage());
+            }
+        }
+
+        Set<String> documentIds = new HashSet<>();
+        for (Product product : writable) {
+            if (!documentIds.add(OpenSearchService.documentId(product))) {
+                throw new WebApplicationException("Produkt-IDs müssen innerhalb eines Marktes eindeutig sein.",
+                        Response.Status.BAD_REQUEST);
+            }
+        }
+
+        CatalogBulkResult written = null;
+        String transportFailure = null;
+        if (!writable.isEmpty()) {
+            try {
+                written = openSearchService.indexProducts(writable);
+            } catch (IOException e) {
+                LOG.error("Error bulk indexing products", e);
+                transportFailure = "Transport failed; some writes may have persisted. Verify before retrying.";
+            }
+        }
+
+        List<CatalogBulkResult.Row> rows = new ArrayList<>(products.size());
+        int writtenPosition = 0;
+        for (int index = 0; index < products.size(); index++) {
+            String productId = String.valueOf(products.get(index).getId());
+            if (rejectedRows.containsKey(index)) {
+                rows.add(new CatalogBulkResult.Row(index + 1, productId, "failed", rejectedRows.get(index)));
+                continue;
+            }
+            if (written != null) {
+                CatalogBulkResult.Row source = written.rows().get(writtenPosition);
+                rows.add(new CatalogBulkResult.Row(index + 1, productId, source.status(), source.reason()));
+            } else {
+                rows.add(new CatalogBulkResult.Row(index + 1, productId, "unknown", transportFailure));
+            }
+            writtenPosition++;
+        }
+        CatalogBulkResult result = CatalogBulkResult.fromRows(rows);
+        if (transportFailure != null) {
+            return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(result).build();
+        }
+        return Response.ok(result).build();
+    }
+
+    /** Explicit store parameter wins; without any store parameter the configured default store applies (if set). */
+    private String effectiveStoreCode(String storeId, String storeCode) {
+        if (isBlank(storeId) && isBlank(storeCode)) {
+            return defaultStoreCode
+                    .map(String::trim)
+                    .filter(value -> !value.isEmpty())
+                    .orElse(null);
+        }
+        return isBlank(storeCode) ? null : storeCode.trim();
+    }
+
+    private boolean hasNoStore(Product product) {
+        return isBlank(product.getStoreId()) && isBlank(product.getStoreCode());
+    }
+
+    private void applyStore(Product product, ResolvedStore store) {
+        product.setStoreId(store.id().toString());
+        product.setStoreCode(store.storeCode());
+    }
+
+    private Response errorResponse(Response.Status status, String message) {
+        return Response.status(status)
+                .type(MediaType.APPLICATION_JSON)
+                .entity(Map.of("error", message))
+                .build();
     }
 
     private void validateProduct(Product product) {
@@ -174,15 +291,7 @@ public class ProductResource {
         }
     }
 
-    private void normalizeProductScope(Product product) {
-        product.setStoreId(normalizeOptional(product.getStoreId()));
-        product.setStoreCode(normalizeOptional(product.getStoreCode()));
-    }
-
-    private String normalizeOptional(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim();
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }
