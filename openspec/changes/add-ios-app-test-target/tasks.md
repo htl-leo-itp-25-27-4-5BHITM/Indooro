@@ -27,5 +27,5 @@
 
 ## 5. Handover
 
-- [ ] 5.1 Run `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
-- [ ] 5.2 Open a pull request `pilot/ios-test-target` → `pilot/first-store`; update `STATUS.md`.
+- [x] 5.1 Run `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
+- [x] 5.2 Open a pull request `pilot/ios-test-target` → `pilot/first-store`; update `STATUS.md`.

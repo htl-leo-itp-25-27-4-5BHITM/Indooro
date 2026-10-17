@@ -55,7 +55,7 @@
 
 - [x] 8.1 Run `swift test` (all green), the simulator build, and `npx -y @fission-ai/openspec@1.3.1 validate add-pilot-guided-tour-fallbacks --strict`.
 - [x] 8.2 Open a pull request `pilot/erik-guided-tour` → `pilot/first-store` with test output and evidence screenshots.
-- [ ] 8.3 After merge, update `docs/pilot-readiness/team/STATUS.md` (row „Erik“) and leave this change open until the device check in the pilot store (task 13.6 of `stabilize-ios-navigation-pipeline`) has passed; then archive.
+- [x] 8.3 After merge, update `docs/pilot-readiness/team/STATUS.md` (row „Erik“) and leave this change open until the device check in the pilot store (task 13.6 of `stabilize-ios-navigation-pipeline`) has passed; then archive.
 
 ## 9. Rotated Shelves in the Walkable Graph (fix-ios-contract-and-spec-drift 9.1–9.3)
 
