@@ -164,6 +164,8 @@ Abgedeckte Abläufe:
 | `TourFlowUITests.swift` | `testTourStartsAtEntranceAndRoutesFromLastStopAfterDone` | Drei Produkte planen, Store öffnen, Tour starten, „Route ab Eingang“, „Erledigt“, „Route ab <Regal>“ |
 | `ShelfTextUITests.swift` | `testPlannedProductShowsShelfTextInWords` | Regaltext in Worten in Planung und Einkaufen, kein roher layoutCode in der Planung |
 | `PositionUITests.swift` | `testIchBinHierSetsPositionWithTapOnMap` | „Ich bin hier“, Tipp auf die Karte, Hinweis und „Position ungenau“ verschwinden |
+| `SearchUITests.swift` | `testAmpersandQueryFindsOnlyTheMatchingProduct`, `testTypoShowsNoResultHintWithoutAddButton`, `testPlusQueryWithoutResultsShowsHintAndDoesNotCrash` | Suche mit „&“, Tippfehler und „+“: richtiges Produkt bzw. „Keine Treffer für …“ |
+| `StudyExportUITests.swift` | `testSessionWithTwoTasksAndExportPreparation` | Testleitung (DEBUG `INDOORO_STUDY_MODE=1`): Test-ID, zwei Aufgaben, Export vorbereiten, Löschen |
 | `OfflineStartUITests.swift` | `testOfflineStartOpensStoreFromOfflineCopy` | Online laden, neu starten ohne API, Store aus der Offline-Kopie |
 | `AnchorScanUITests.swift` | `testAnchorPayloadSetsPositionAndClosesScanner`, `testUnknownAnchorShowsHintAndKeepsScannerOpen` | Anker-Payload setzt die Position, unbekannter Anker zeigt den Hinweis |
 | `StoreSwitchUITests.swift` | `testScanOfOtherStoreSwitchesStoreAndSetsPositionWithOneScan` | Scan einer anderen Filiale, Wechsel-Abfrage, ein Scan setzt die Position |

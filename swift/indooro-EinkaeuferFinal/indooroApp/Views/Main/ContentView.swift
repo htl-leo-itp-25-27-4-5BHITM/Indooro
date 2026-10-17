@@ -16,8 +16,13 @@ struct ContentView: View {
     @StateObject private var mapProductSearch = ProductSearchStore()
     @StateObject private var productsSearch = ProductSearchStore()
     @StateObject private var recipeStore = RecipeStore()
+    @StateObject private var studyStore = StudySessionStore(enabled: AppEnvironment.isStudyModeEnabled)
+    @State private var showsStudySession = false
     @StateObject private var upsellStore = UpsellSuggestionStore()
 
+    @AppStorage(AppEnvironment.profileOverrideKey) private var profileOverride = ""
+    @AppStorage("IndooroIntroductionCompleted") private var introductionCompleted = false
+    @State private var showsIntroduction = false
     @State private var selectedSection: AppSection = .start
     @State private var targetProduct: Product?
     @State private var pendingShoppingImportPackage: ShoppingTransferPackage?
@@ -53,6 +58,7 @@ struct ContentView: View {
             }
             .tag(AppSection.planning)
 
+            if AppEnvironment.allowsExtendedFeatures {
             RecipesPage(
                 recipeStore: recipeStore,
                 listManager: shoppingListManager,
@@ -65,6 +71,7 @@ struct ContentView: View {
                 Label("Rezepte", systemImage: "fork.knife")
             }
             .tag(AppSection.recipes)
+            }
 
             ShoppingListsPage(
                 listManager: shoppingListManager,
@@ -97,11 +104,62 @@ struct ContentView: View {
             .tabItem {
                 Label("Karte", systemImage: "map.fill")
             }
+            .safeAreaInset(edge: .top) {
+                VStack(spacing: 0) {
+                    PermissionBanner(manager: beaconManager)
+                    ProductSearchFeedback(store: mapProductSearch)
+                }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if AppEnvironment.isStudyModeEnabled && studyStore.session != nil {
+                    VStack {
+                        if studyStore.running?.task.condition == .app { StudyRunningControls(store: studyStore) }
+                        Button("Testleitung") { showsStudySession = true }
+                    }
+                    .padding(.horizontal)
+                    .background(.regularMaterial)
+                }
+            }
             .tag(AppSection.map)
         }
         .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
         .preferredColorScheme(.light)
+        .alert("Filiale erkannt: \(beaconManager.suggestedPilotStore?.name ?? "") – öffnen?", isPresented: Binding(
+            get: { beaconManager.suggestedPilotStore != nil },
+            set: { if !$0 { beaconManager.suggestedPilotStore = nil } }
+        ), presenting: beaconManager.suggestedPilotStore) { store in
+            Button("Öffnen") { beaconManager.openSuggestedPilotStore(store) }
+            Button("Abbrechen", role: .cancel) { beaconManager.suggestedPilotStore = nil }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: StudySessionStore.openRequested)) { _ in
+            guard AppEnvironment.isStudyModeEnabled else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showsStudySession = true }
+        }
+        .sheet(isPresented: $showsStudySession) { StudySessionView(store: studyStore, beaconManager: beaconManager) }
+        .onChange(of: mapProductSearch.errorMessage) { _, message in if let message { studyStore.recordError(message) } }
+        .onChange(of: productsSearch.errorMessage) { _, message in if let message { studyStore.recordError(message) } }
+        .sheet(isPresented: $showsIntroduction) {
+            PilotIntroduction { introductionCompleted = true; showsIntroduction = false }
+        }
         .onAppear {
+            studyStore.onStartAppTask = { task in
+                showsStudySession = false
+                pendingLastStoreLayoutOpenRequest = UUID()
+                focusProductOnMap(Product(id: task.productId, name: task.productName, price: 0, layoutCode: task.layoutCode ?? ""))
+            }
+            studyStore.counterSnapshot = { [weak navigationSession] in
+                guard let navigationSession else { return StudyCounters() }
+                return StudyCounters(routeBuildCount: navigationSession.routeBuildCount,
+                                     rerouteCount: navigationSession.rerouteCount,
+                                     stopChangeWithoutEventCount: navigationSession.stopChangeWithoutEventCount,
+                                     manualPositionCount: navigationSession.manualPositionCount)
+            }
+            showsIntroduction = !introductionCompleted
+            let provider: () -> MobileStoreSummary? = { [weak beaconManager] in
+                beaconManager?.activeLayoutStore ?? beaconManager?.detectedStore
+            }
+            mapProductSearch.storeProvider = provider
+            productsSearch.storeProvider = provider
             navigationSession.attach(to: beaconManager)
             shoppingSessionManager.bind(navigationSession: navigationSession)
             syncShoppingSession()
@@ -120,6 +178,10 @@ struct ContentView: View {
         .onChange(of: shoppingListManager.revision) { _, _ in
             guard shoppingSessionManager.isActive else { return }
             syncShoppingSession()
+        }
+        .onChange(of: profileOverride) { _, _ in
+            upsellStore.resetSession()
+            if !AppEnvironment.allowsExtendedFeatures && selectedSection == .recipes { selectedSection = .start }
         }
         .onOpenURL { url in
             handleIncomingShoppingTransfer(url)
@@ -144,7 +206,7 @@ struct ContentView: View {
 
     private var upsellPromptBinding: Binding<UpsellPrompt?> {
         Binding(
-            get: { upsellStore.activePrompt },
+            get: { AppEnvironment.allowsExtendedFeatures ? upsellStore.activePrompt : nil },
             set: { newValue in
                 if newValue == nil {
                     upsellStore.clearPrompt(reason: "sheet_binding_nil")

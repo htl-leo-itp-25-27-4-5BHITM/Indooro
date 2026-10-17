@@ -8,6 +8,7 @@ struct SettingsSheet: View {
     let userPosition: CGPoint?
     let onShowAR: () -> Void
 
+    @AppStorage(AppEnvironment.profileOverrideKey) private var profileOverride = ""
     @Environment(\.dismiss) private var dismiss
     #if DEBUG
     @ObservedObject private var recorder = NavigationRecorder.shared
@@ -17,10 +18,18 @@ struct SettingsSheet: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Tracking") {
+                if AppEnvironment.isStudyModeEnabled {
+                    Section {
+                        Button("Testleitung") {
+                            dismiss()
+                            NotificationCenter.default.post(name: StudySessionStore.openRequested, object: nil)
+                        }
+                    }
+                }
+                Section("Ortung") {
                     Picker("Modus", selection: $trackingMode) {
-                        Text("Beacon").tag(TrackingMode.beacon)
-                        Text("Debug (kein Beacon)").tag(TrackingMode.debugNoBeacons)
+                        Text("Mit Ortung").tag(TrackingMode.beacon)
+                        Text("Ohne Ortung").tag(TrackingMode.debugNoBeacons)
                     }
 
                     if let pos = userPosition {
@@ -46,11 +55,18 @@ struct SettingsSheet: View {
                     }
                     .padding(.vertical, 2)
 
-                    Toggle("Tap setzt Ziel", isOn: $tapSetsTarget)
+                    #if DEBUG
+                    Toggle("Tippen setzt Ziel", isOn: $tapSetsTarget)
+                    #endif
                 }
 
                 #if DEBUG
                 Section("Debug") {
+                    Picker("Funktionsprofil", selection: $profileOverride) {
+                        Text("Aus Build").tag("")
+                        Text("Pilot").tag("pilot")
+                        Text("Vollständig").tag("full")
+                    }
                     Toggle("Messungen aufzeichnen", isOn: Binding(
                         get: { recorder.isRecording },
                         set: { $0 ? recorder.start() : recorder.stop() }
@@ -74,6 +90,7 @@ struct SettingsSheet: View {
                 }
                 #endif
 
+                if AppEnvironment.allowsExtendedFeatures {
                 Section("AR") {
                     Button {
                         onShowAR()
@@ -87,6 +104,7 @@ struct SettingsSheet: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+                }
                 }
             }
             #if DEBUG
