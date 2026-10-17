@@ -1,0 +1,66 @@
+# Synonyme fuer die Produktsuche (Solr-Format, UTF-8).
+# Jede Zeile ist eine Gruppe gleichwertiger Begriffe: "a, b, c".
+# Zeilen mit # sind Kommentare. Die Begriffe werden zur Laufzeit wie Suchtext normalisiert
+# (kleingeschrieben, Umlaute und ß aufgeloest), siehe ProductIndexDefinition.
+#
+# Oesterreichische Begriffe sind bewusst enthalten (Pilotmarkt Leonding).
+
+# Gemuese und Obst
+paradeiser, tomaten, tomate
+erdäpfel, erdapfel, kartoffel, kartoffeln
+karfiol, blumenkohl
+melanzani, aubergine
+fisolen, grüne bohnen
+marillen, aprikosen
+ribisel, johannisbeere
+gurkerl, gurke
+karotte, karotten, möhre, möhren
+lauch, porree
+schwammerl, pilze
+
+# Milchprodukte
+topfen, quark
+kase, käse
+obers, sahne, rahm
+schlagobers, schlagsahne
+jogurt, joghurt, yoghurt
+dotter, eigelb
+eiweiß, eiklar
+sonnencreme, sonnenmilch
+h-milch, haltbare milch, haltbarmilch
+
+# Teigwaren, Backwaren, Beilagen
+nudeln, pasta, spaghetti, penne, fusilli, tagliatelle
+semmel, brötchen, weckerl
+palatschinken, pfannkuchen
+grieß, gries
+chips, kartoffelchips, erdäpfelchips
+
+# Fleisch und Gefluegel
+faschiertes, hackfleisch
+würstel, würstchen, wiener
+hendl, huhn, hähnchen
+schlögel, schlegel, keule
+rindfleisch, rindsfleisch
+
+# Kuehlregal, Getraenke, Saucen, Gewuerze
+ketschup, ketchup
+mayonnaise, mayo, majonäse
+sojasauce, sojasoße
+kren, meerrettich
+powidl, pflaumenmus
+cola, coca-cola
+mineralwasser, sprudel
+suppenwürfel, brühwürfel
+eis, speiseeis
+
+# Haushalt und Drogerie
+klopapier, toilettenpapier, wc-papier
+küchenrolle, küchenpapier, haushaltspapier
+taschentücher, papiertaschentücher
+müllbeutel, müllsack, mistsackerl
+sackerl, tüte
+zahncreme, zahnpasta
+spülmittel, geschirrspülmittel
+waschmittel, waschpulver
+reinigungsmittel, putzmittel

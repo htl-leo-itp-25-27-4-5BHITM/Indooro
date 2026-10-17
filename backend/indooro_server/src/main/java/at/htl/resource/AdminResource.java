@@ -65,6 +65,42 @@ public class AdminResource {
     }
 
     /**
+     * Kopiert die Produkte in den naechsten Versionsindex (products_vN). Loescht nichts.
+     * POST /api/admin/index/reindex
+     */
+    @POST
+    @Path("/index/reindex")
+    @RolesAllowed("admin")
+    public Response reindexProducts() {
+        adminAccessService.requireAdmin();
+        try {
+            return Response.ok(openSearchService.reindexProducts()).build();
+        } catch (IOException e) {
+            LOG.error("Error reindexing products", e);
+            throw new WebApplicationException("Reindex fehlgeschlagen: OpenSearch nicht erreichbar oder Fehler beim Kopieren.",
+                    Response.Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Schaltet den Produkt-Alias atomar auf einen Versionsindex um. Loescht keinen Index.
+     * POST /api/admin/index/activate?index=products_vN
+     */
+    @POST
+    @Path("/index/activate")
+    @RolesAllowed("admin")
+    public Response activateIndex(@QueryParam("index") String index) {
+        adminAccessService.requireAdmin();
+        try {
+            return Response.ok(openSearchService.activateIndex(index)).build();
+        } catch (IOException e) {
+            LOG.error("Error activating index " + index, e);
+            throw new WebApplicationException("Alias-Umschaltung fehlgeschlagen: OpenSearch nicht erreichbar oder Fehler beim Schreiben der Aliase.",
+                    Response.Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
      * Health Check
      * GET /api/admin/health
      */

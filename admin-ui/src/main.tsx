@@ -79,8 +79,8 @@ function AdminCandidate() {
             : window.location.pathname.includes("/stores") ? <StoresPage api={api} user={user} />
             : window.location.pathname.includes("/regions") ? <RegionsPage api={api} user={user} />
             : window.location.pathname.includes("/beacons") ? <BeaconsPage api={api} user={user} />
-            : window.location.pathname.includes("/recipes") ? <RecipesPage api={api} />
-            : window.location.pathname.includes("/products") ? <ProductsPage api={api} />
+            : window.location.pathname.includes("/recipes") ? <RecipesPage api={api} user={user} />
+            : window.location.pathname.includes("/products") ? <ProductsPage api={api} user={user} />
             : window.location.pathname.includes("/categories") ? <CategoriesPage api={api} />
             : window.location.pathname.includes("/server-logs") ? <DiagnosticsPage api={api} user={user} />
             : <Dashboard api={api} user={user} />)}
