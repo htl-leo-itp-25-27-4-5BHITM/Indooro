@@ -24,7 +24,13 @@ enum AppEnvironment {
         #endif
     }
 
-    static var isStudyModeEnabled: Bool { Bundle.main.object(forInfoDictionaryKey: "IndooroStudyMode") as? Bool ?? false }
+    static var isStudyModeEnabled: Bool {
+        #if DEBUG
+        // UI tests switch the test-lead entry on without a second build of the app.
+        if ProcessInfo.processInfo.environment["INDOORO_STUDY_MODE"] == "1" { return true }
+        #endif
+        return Bundle.main.object(forInfoDictionaryKey: "IndooroStudyMode") as? Bool ?? false
+    }
 
     static var allowsExtendedFeatures: Bool { featureProfile == .full }
 
