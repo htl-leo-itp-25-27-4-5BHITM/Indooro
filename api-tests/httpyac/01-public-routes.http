@@ -106,3 +106,47 @@ Accept: application/json
 
 ?? status matches ^(200|404)$
 ?? header content-type includes json
+
+###
+# Anonymous legacy layout write is rejected (admin only)
+POST {{baseUrl}}/api/layout/current
+Content-Type: application/json
+Accept: application/json
+
+{"elements":[]}
+
+?? status matches ^(302|401)$
+
+###
+# Anonymous PDF import is rejected (admin only)
+POST {{baseUrl}}/api/convert/pdf-to-json
+Content-Type: multipart/form-data; boundary=indooroProbe
+
+--indooroProbe
+Content-Disposition: form-data; name="file"; filename="probe.pdf"
+Content-Type: application/pdf
+
+%PDF-1.4
+--indooroProbe--
+
+?? status matches ^(302|401)$
+
+###
+# Anonymous PDF export is rejected (admin only)
+POST {{baseUrl}}/api/export/pdf
+Content-Type: application/json
+Accept: application/pdf
+
+[]
+
+?? status matches ^(302|401)$
+
+###
+# Anonymous mobile upsell suggestions stay anonymous (not 401/403)
+POST {{baseUrl}}/api/mobile/upsell/suggestions
+Content-Type: application/json
+Accept: application/json
+
+{"storeId":"{{ACTIVE_STORE_ID}}","storeCode":"demo-store","checkedProductId":1,"shoppingListId":"probe","currentListProductIds":[1],"completedProductIds":[1],"source":"shopping_session"}
+
+?? status matches ^(?!401$|403$)\d{3}$

@@ -29,6 +29,25 @@ test("approved dashboard, regions, stores, store detail, beacons, products, cate
   }
 });
 
+test("the editor entry covers store and global links, keeps query and fragment, and falls back with legacy=1", () => {
+  const on = { ...ROUTE_CUTOVER, editor: true };
+  assert.equal(cutoverTarget("/admin/editor/", "?storeId=abc&layoutId=def", "#x", on), "/admin/next/editor/?storeId=abc&layoutId=def#x");
+  assert.equal(cutoverTarget("/admin/editor/", "", "", on), "/admin/next/editor/");
+  assert.equal(cutoverTarget("/admin/editor", "?layoutId=def", "", on), "/admin/next/editor/?layoutId=def");
+  assert.equal(cutoverTarget("/admin/editor/", "?storeId=abc&legacy=1", "", on), null);
+  assert.equal(cutoverTarget("/admin/editor/", "", "", { ...ROUTE_CUTOVER, editor: false }), null);
+});
+
+test("legacy=1 keeps one visit on the original page even when the route is switched", () => {
+  const allOn = Object.fromEntries(Object.keys(ROUTE_CUTOVER).map((key) => [key, true]));
+  for (const path of paths) {
+    assert.ok(cutoverTarget(path, "?storeId=abc", "", allOn), `${path} redirects without the fallback`);
+    assert.equal(cutoverTarget(path, "?storeId=abc&legacy=1", "", allOn), null, path);
+    assert.equal(cutoverTarget(path, "?legacy=1", "#panel", allOn), null, path);
+    assert.ok(cutoverTarget(path, "?legacy=0", "", allOn), `${path} ignores other legacy values`);
+  }
+});
+
 test("each route can switch and roll back independently without losing a deep link", () => {
   const disabledFlags = Object.fromEntries(Object.keys(ROUTE_CUTOVER).map((key) => [key, false]));
   for (const path of paths) {

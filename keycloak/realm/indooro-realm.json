@@ -17,7 +17,7 @@
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "indooro-admin-secret",
+      "secret": "${KC_ADMIN_WEB_CLIENT_SECRET}",
       "standardFlowEnabled": true,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
@@ -46,7 +46,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "admin",
+          "value": "${KC_DEMO_ADMIN_PASSWORD}",
           "temporary": false
         }
       ],
@@ -63,7 +63,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "region",
+          "value": "${KC_DEMO_REGION_PASSWORD}",
           "temporary": false
         }
       ],
@@ -80,7 +80,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "store",
+          "value": "${KC_DEMO_STORE_PASSWORD}",
           "temporary": false
         }
       ],

@@ -121,3 +121,20 @@ test("snap setting changes numeric movement and the inspector step", async ({ pa
   await x.fill("9.4");
   await expect(x).toHaveValue("9.4");
 });
+
+test("90 degree turn swaps the inspector footprint and is disabled for locked shelves", async ({ page }) => {
+  await openEditor(page);
+  await page.locator(".le-layers button").filter({ hasText: "Obst & Gemüse" }).click();
+  const width = page.getByRole("spinbutton", { name: "Breite", exact: true });
+  const height = page.getByRole("spinbutton", { name: "Höhe", exact: true });
+  await expect(width).toHaveValue("4");
+  await expect(height).toHaveValue("8");
+
+  const turn = page.getByRole("button", { name: "90° drehen" });
+  await turn.click();
+  await expect(width).toHaveValue("8");
+  await expect(height).toHaveValue("4");
+
+  await page.getByRole("checkbox", { name: "Gesperrt" }).check();
+  await expect(turn).toBeDisabled();
+});

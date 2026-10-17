@@ -38,8 +38,9 @@ export type EditorCommand =
   | { type: "move"; id: ElementId; x: number; y: number }
   | { type: "resize"; id: ElementId; width: number; height: number }
   | { type: "rotate"; id: ElementId; rotation: number }
+  | { type: "rotate90"; id: ElementId }
   | { type: "delete"; id: ElementId }
-  | { type: "duplicate"; id: ElementId; duplicateId: ElementId }
+  | { type: "duplicate"; id: ElementId; duplicateId: ElementId; anchorId?: string }
   | { type: "reorder"; id: ElementId; direction: "forward" | "backward" }
   | { type: "patch"; id: ElementId; changes: Partial<LayoutElement> }
   | { type: "document"; changes: Partial<Pick<LayoutDocument, "shopName" | "gridSize">> };
@@ -146,9 +147,24 @@ export function constrainElement(element: LayoutElement, document: LayoutDocumen
   const point = isPoint(element);
   const width = point ? 0 : Math.max(0.1, Math.min(Number(element.width) || 1, document.gridSize.width));
   const height = point ? 0 : Math.max(0.1, Math.min(Number(element.height) || 1, document.gridSize.height));
-  const x = clamp(snap(Number(element.x), snapStep, snapping), 0, Math.max(0, document.gridSize.width - width));
-  const y = clamp(snap(Number(element.y), snapStep, snapping), 0, Math.max(0, document.gridSize.height - height));
-  return point ? { ...element, x, y } : { ...element, x, y, width, height };
+  const snappedX = snap(Number(element.x), snapStep, snapping);
+  const snappedY = snap(Number(element.y), snapStep, snapping);
+  const rotation = point ? 0 : Number(element.rotation) || 0;
+  if (point || rotation % 360 === 0) {
+    const x = clamp(snappedX, 0, Math.max(0, document.gridSize.width - width));
+    const y = clamp(snappedY, 0, Math.max(0, document.gridSize.height - height));
+    return point ? { ...element, x, y } : { ...element, x, y, width, height };
+  }
+  // Rotated shapes keep their rotated bounding box inside the grid, using the same geometry as elementBounds (geometry.ts).
+  const radians = rotation * Math.PI / 180;
+  const halfX = (width * Math.abs(Math.cos(radians)) + height * Math.abs(Math.sin(radians))) / 2;
+  const halfY = (width * Math.abs(Math.sin(radians)) + height * Math.abs(Math.cos(radians))) / 2;
+  // Centre limits [half, W - half] expressed as top-left limits, so in-range coordinates are returned untouched.
+  const minX = Math.min(halfX, document.gridSize.width / 2) - width / 2;
+  const maxX = Math.max(document.gridSize.width - halfX, document.gridSize.width / 2) - width / 2;
+  const minY = Math.min(halfY, document.gridSize.height / 2) - height / 2;
+  const maxY = Math.max(document.gridSize.height - halfY, document.gridSize.height / 2) - height / 2;
+  return { ...element, x: clamp(snappedX, minX, maxX), y: clamp(snappedY, minY, maxY), width, height };
 }
 
 export function applyCommand(state: EditorState, command: EditorCommand, snapStep = 1, snapping = true): EditorState {
@@ -189,8 +205,18 @@ export function applyCommand(state: EditorState, command: EditorCommand, snapSte
       break;
     case "rotate":
       if (index < 0 || before.elements[index].locked || !Number.isFinite(command.rotation)) return state;
-      next = replace({ ...before.elements[index], rotation: ((Math.round(command.rotation * 10) / 10 % 360) + 360) % 360 });
+      // Snapping stays off here: rotation must not move a fractional position, only keep the rotated shape inside the grid.
+      next = replace(constrainElement({ ...before.elements[index], rotation: ((Math.round(command.rotation * 10) / 10 % 360) + 360) % 360 }, before, 1, false));
       break;
+    case "rotate90": {
+      // Swaps the footprint only; the stored rotation angle is kept as-is.
+      if (index < 0 || before.elements[index].locked || isPoint(before.elements[index])) return state;
+      const source = before.elements[index];
+      const width = snap(Number(source.height) || 1, snapStep, snapping);
+      const height = snap(Number(source.width) || 1, snapStep, snapping);
+      next = replace(constrainElement({ ...source, width, height }, before, snapStep, snapping));
+      break;
+    }
     case "delete":
       if (index < 0 || before.elements[index].locked) return state;
       next = { ...before, elements: before.elements.filter((_, at) => at !== index) };
@@ -203,6 +229,11 @@ export function applyCommand(state: EditorState, command: EditorCommand, snapSte
         // Beacon hardware identity is unique to one placement.
         ...(source.type === "beacon" ? { beaconId: undefined, beaconCode: undefined, beaconDbId: undefined, beaconIdentity: undefined, identityKey: undefined, uuid: undefined, beaconUUID: undefined, major: undefined, minor: undefined, beaconMajor: undefined, beaconMinor: undefined } : {})
       }, before, snapStep, snapping);
+      if (source.type === "anchor") {
+        // Printed QR anchor IDs are unique per layout: a copy only gets an ID that the caller allocated for it.
+        if (command.anchorId) copy.anchorId = command.anchorId;
+        else delete copy.anchorId;
+      }
       next = { ...before, elements: [...before.elements.slice(0, index + 1), copy, ...before.elements.slice(index + 1)] };
       selectedId = command.duplicateId;
       break;

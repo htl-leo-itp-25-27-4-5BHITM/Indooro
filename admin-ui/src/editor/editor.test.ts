@@ -37,6 +37,52 @@ test("move, resize, rotate and inspector edits are atomic and reversible", () =>
   assert.equal(state.document.elements[0].x, 1);
 });
 
+test("90 degree turn swaps width and height, keeps position and angle, and is one undo step", () => {
+  const initial = createEditorState(fixture());
+  const turned = applyCommand({ ...initial, document: { ...initial.document, elements: initial.document.elements.map((element) => element.id === "s-1" ? { ...element, rotation: 30 } : element) } }, { type: "rotate90", id: "s-1" });
+  const shelf = turned.document.elements[1];
+  assert.deepEqual([shelf.width, shelf.height], [2, 5]);
+  assert.deepEqual([shelf.x, shelf.y], [4, 4]);
+  assert.equal(shelf.rotation, 30);
+  assert.equal(turned.past.length, 1);
+  assert.deepEqual(undo(turned).document.elements[1], { ...initial.document.elements[1], rotation: 30 });
+});
+
+test("90 degree turn clamps the swapped footprint to the right and bottom grid edges", () => {
+  const source: LayoutDocument = { shopName: "Rand", gridSize: { width: 40, height: 30 }, elements: [
+    { id: "right", type: "shelf", x: 37, y: 27, width: 2, height: 5 },
+    { id: "bottom", type: "shelf", x: 1, y: 27, width: 5, height: 2 },
+  ] };
+  const initial = createEditorState(source);
+  const right = applyCommand(initial, { type: "rotate90", id: "right" }).document.elements[0];
+  assert.deepEqual([right.width, right.height], [5, 2]);
+  assert.deepEqual([right.x, right.y], [35, 27]);
+  const bottom = applyCommand(initial, { type: "rotate90", id: "bottom" }).document.elements[1];
+  assert.deepEqual([bottom.width, bottom.height], [2, 5]);
+  assert.deepEqual([bottom.x, bottom.y], [1, 25]);
+  for (const element of [right, bottom]) assert.ok(element.x + element.width! <= 40 && element.y + element.height! <= 30);
+});
+
+test("90 degree turn ignores locked elements and beacons without changing state", () => {
+  const source = fixture();
+  source.elements.push({ id: "b", type: "beacon", x: 3, y: 3, beaconId: "B-1" });
+  source.elements.push({ id: "locked", type: "shelf", x: 10, y: 10, width: 6, height: 2, locked: true });
+  const state = createEditorState(source);
+  assert.equal(applyCommand(state, { type: "rotate90", id: "locked" }), state);
+  assert.equal(applyCommand(state, { type: "rotate90", id: "b" }), state);
+  assert.equal(applyCommand(state, { type: "rotate90", id: "missing" }), state);
+});
+
+test("90 degree turn limits a swapped footprint larger than the grid to the grid size", () => {
+  const source: LayoutDocument = { shopName: "Schmal", gridSize: { width: 20, height: 40 }, elements: [
+    { id: "tall", type: "wall", x: 0, y: 0, width: 3, height: 25 },
+  ] };
+  const state = applyCommand(createEditorState(source), { type: "rotate90", id: "tall" });
+  const tall = state.document.elements[0];
+  assert.deepEqual([tall.width, tall.height], [20, 3]);
+  assert.deepEqual([tall.x, tall.y], [0, 0]);
+});
+
 test("pointer rotation rounds floating point drift and ignores invalid angles", () => {
   const initial = createEditorState(fixture());
   const rotated = applyCommand(initial, { type: "rotate", id: "s-1", rotation: 90.00001049872242 });

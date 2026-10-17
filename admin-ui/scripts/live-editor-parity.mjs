@@ -8,7 +8,7 @@ import { chromium } from "@playwright/test";
 // archives its Store fixture in finally.
 const base = process.env.ADMIN_SMOKE_BASE_URL || "http://localhost:8080";
 assert.ok(["localhost", "127.0.0.1", "host.docker.internal"].includes(new URL(base).hostname), "editor parity probe only permits the disposable local stack");
-const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8"));
+const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8").replace(/\$\{(\w+)\}/g, (match, name) => process.env[name] ?? match));
 const [adminUser, regionUser, storeUser] = realm.users;
 const browser = await chromium.launch({ args: process.env.ADMIN_SMOKE_HOST_ALIAS ? ["--host-resolver-rules=MAP host.docker.internal 127.0.0.1"] : [] });
 const created = { region: null, store: null, foreignStore: null };
@@ -126,7 +126,7 @@ try {
   }), "create foreign fixture Store");
 
   const suffix = `Probe ${stamp}`;
-  await admin.goto(`${base}/admin/editor/?probe=${stamp}`, { waitUntil: "domcontentloaded" });
+  await admin.goto(`${base}/admin/editor/?probe=${stamp}&legacy=1`, { waitUntil: "domcontentloaded" });
   await admin.locator("#toolSelect").waitFor();
   await waitInputValue(admin.locator("#shopName"), `Seed ${stamp}`, "legacy global seed load");
   await admin.locator("#shopName").fill(`Legacy ${suffix}`);
@@ -175,7 +175,7 @@ try {
   assert.equal(stillInitial.layoutId, initial.layoutId, "draft must not replace the public active version");
   assert.equal(stillInitial.layout.shopName, `Initial ${suffix}`);
   evidence.draftIsNotPublic = true;
-  await admin.goto(`${base}/admin/editor/?storeId=${created.store.id}&layoutId=${draftId}`, { waitUntil: "domcontentloaded" });
+  await admin.goto(`${base}/admin/editor/?storeId=${created.store.id}&layoutId=${draftId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await admin.locator("#storeContextBox").waitFor();
   await admin.locator("#shopName").waitFor();
   await waitInputValue(admin.locator("#shopName"), `Draft ${suffix}`, "legacy store direct link opens the selected draft");

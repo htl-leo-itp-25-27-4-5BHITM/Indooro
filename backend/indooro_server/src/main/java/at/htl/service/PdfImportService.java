@@ -29,21 +29,32 @@ public class PdfImportService {
             String layoutCode
     ) {}
 
-    // Header (überall im Text)
-    private static final Pattern HEADER_ANYWHERE =
-            Pattern.compile("BELEGPLAN:\\s*KATEGORIE\\s+(\\d+)\\s*-\\s*METER\\s+(\\d+)", Pattern.CASE_INSENSITIVE);
+    static final long MAX_PDF_BYTES = 10L * 1024 * 1024;
+    static final int MAX_PDF_PAGES = 50;
 
-    // Item: POS + ID + Name + LayoutCode (zeilenunabhängig, DOTALL)
-    private static final Pattern ITEM_ANYWHERE =
-            Pattern.compile("(B(\\d+)-P(\\d+))\\s+(\\d+)\\s+(.+?)\\s+((\\d+)/(\\d+)/(\\d+)/(\\d+))", Pattern.DOTALL);
+    // Header (überall im Text), Zahlen begrenzt
+    private static final Pattern HEADER_ANYWHERE =
+            Pattern.compile("BELEGPLAN:\\s*KATEGORIE\\s+(\\d{1,9})\\s*-\\s*METER\\s+(\\d{1,9})", Pattern.CASE_INSENSITIVE);
+
+    // Item-Zeile: POS + ID + Name + LayoutCode. Wird zeilenweise mit find() angewendet (ohne DOTALL);
+    // die Zeile kann durch Shelf-Beschriftungen davor verunreinigt sein, daher kein ^-Anker.
+    // Alle Zahlengruppen sind in der Laenge begrenzt, Name ist auf 200 Zeichen begrenzt.
+    private static final Pattern ITEM_LINE =
+            Pattern.compile("(B(\\d{1,3})-P(\\d{1,3}))\\s+(\\d{1,9})\\s+(.{1,200}?)\\s+((\\d{1,9})/(\\d{1,3})/(\\d{1,3})/(\\d{1,3}))\\s*$");
 
     public List<ImportItem> parsePdf(File pdfFile) throws IOException {
         if (pdfFile == null || !pdfFile.exists()) return List.of();
+        if (pdfFile.length() > MAX_PDF_BYTES) {
+            throw new PdfInputException("PDF-Datei ist zu gross (maximal 10 MB).");
+        }
         byte[] pdfBytes = Files.readAllBytes(pdfFile.toPath());
         return importFromPdf(pdfBytes);
     }
 
     public List<ImportItem> importFromPdf(byte[] pdfBytes) throws IOException {
+        if (pdfBytes != null && pdfBytes.length > MAX_PDF_BYTES) {
+            throw new PdfInputException("PDF-Datei ist zu gross (maximal 10 MB).");
+        }
         String text = extractText(pdfBytes);
         return parseExtractedText(text);
     }
@@ -70,6 +81,9 @@ public class PdfImportService {
     private String extractText(byte[] pdfBytes) throws IOException {
         if (pdfBytes == null || pdfBytes.length == 0) return "";
         try (PDDocument doc = Loader.loadPDF(pdfBytes)) {
+            if (doc.getNumberOfPages() > MAX_PDF_PAGES) {
+                throw new PdfInputException("PDF hat zu viele Seiten (maximal " + MAX_PDF_PAGES + ").");
+            }
             PDFTextStripper stripper = new PDFTextStripper();
             stripper.setSortByPosition(true);
             stripper.setLineSeparator("\n");
@@ -77,7 +91,7 @@ public class PdfImportService {
         }
     }
 
-    private List<ImportItem> parseExtractedText(String text) {
+    List<ImportItem> parseExtractedText(String text) {
         if (text == null || text.isBlank()) return List.of();
 
         String normalized = text
@@ -112,8 +126,10 @@ public class PdfImportService {
     private List<ImportItem> parseItemsInBlock(String block, String category, String meter) {
         List<ImportItem> items = new ArrayList<>();
 
-        Matcher mi = ITEM_ANYWHERE.matcher(block);
-        while (mi.find()) {
+        for (String line : block.split("\n")) {
+            Matcher mi = ITEM_LINE.matcher(line.strip());
+            if (!mi.find()) continue;
+
             String pos = mi.group(1);
             int level = Integer.parseInt(mi.group(2));
             int position = Integer.parseInt(mi.group(3));

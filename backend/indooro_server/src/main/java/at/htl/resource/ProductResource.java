@@ -9,6 +9,7 @@ import at.htl.service.CatalogStoreResolver.ResolvedStore;
 import at.htl.service.LegacyDocumentGuard;
 import at.htl.service.OpenSearchService;
 import at.htl.service.ProductBulkService;
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
@@ -54,6 +55,7 @@ public class ProductResource {
      */
     @GET
     @Path("/search")
+    @PermitAll
     public Response searchProducts(
             @QueryParam("q") String query,
             @QueryParam("size") @DefaultValue("10") Integer size,
@@ -84,6 +86,7 @@ public class ProductResource {
      * GET /api/products?storeCode=SPAR-Leonding-001
      */
     @GET
+    @PermitAll
     public Response getAllProducts(@QueryParam("size") @DefaultValue("100") Integer size,
                                    @QueryParam("storeId") String storeId,
                                    @QueryParam("storeCode") String storeCode) {
@@ -105,6 +108,7 @@ public class ProductResource {
      */
     @GET
     @Path("/{id}")
+    @PermitAll
     public Response getProductById(@PathParam("id") Integer id,
                                    @QueryParam("storeId") String storeId,
                                    @QueryParam("storeCode") String storeCode) {

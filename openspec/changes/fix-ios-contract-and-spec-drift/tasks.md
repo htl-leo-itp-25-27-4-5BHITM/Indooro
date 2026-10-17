@@ -6,10 +6,10 @@
 
 ## 2. Backend Dismissal Bound
 
-- [ ] 2.1 Change `UpsellDtos.UpsellDismissRequest.suppressMinutes` to `@Min(1) @Max(43200)`.
-- [ ] 2.2 Add a `MobileUpsellResourceTest` case that posts `suppressMinutes=1440` and expects HTTP 2xx.
-- [ ] 2.3 Add a test case that posts `suppressMinutes=43201` and expects HTTP 400.
-- [ ] 2.4 Add a dismissal request with `suppressMinutes=1440` to `api-tests/httpyac/06-upsell.http`.
+- [x] 2.1 Change `UpsellDtos.UpsellDismissRequest.suppressMinutes` to `@Min(1) @Max(43200)`. (implemented in release-pilot-backend)
+- [x] 2.2 Add a `MobileUpsellResourceTest` case that posts `suppressMinutes=1440` and expects HTTP 2xx. (implemented in release-pilot-backend)
+- [x] 2.3 Add a test case that posts `suppressMinutes=43201` and expects HTTP 400. (implemented in release-pilot-backend)
+- [x] 2.4 Add a dismissal request with `suppressMinutes=1440` to `api-tests/httpyac/06-upsell.http`. (implemented in release-pilot-backend)
 
 ## 3. Shared Decoding
 

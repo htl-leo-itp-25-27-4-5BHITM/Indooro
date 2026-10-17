@@ -33,7 +33,6 @@ public class AuditLogService {
 
     /**
      * Schreibt einen Eintrag, der dem angemeldeten Admin-Benutzer zugeordnet wird.
-     * Same change as main (d454101): actor is role + username, not SYSTEM.
      */
     @Transactional
     public void logByAdmin(CurrentAdminUser admin,

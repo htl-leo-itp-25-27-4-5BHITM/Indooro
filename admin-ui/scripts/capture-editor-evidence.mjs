@@ -14,7 +14,7 @@ const evidenceDir = resolve(repoRoot, "docs/admin-rebuild/evidence/editor");
 const base = process.env.ADMIN_SMOKE_BASE_URL || "http://localhost:8080";
 assert.ok(["localhost", "127.0.0.1", "host.docker.internal"].includes(new URL(base).hostname), "editor evidence only permits the local packaged stack");
 
-const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8"));
+const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8").replace(/\$\{(\w+)\}/g, (match, name) => process.env[name] ?? match));
 const [adminUser, regionUser, storeUser] = realm.users;
 assert.ok(adminUser && regionUser && storeUser, "realm must provide admin, region-manager, and store-manager fixtures");
 const browser = await chromium.launch({
@@ -210,7 +210,7 @@ try {
   // Legacy Store editor at the direct link. Keep the changes local; capture the
   // initial state and an edited draft without invoking legacy save behavior.
   const legacyStore = await admin.context().newPage();
-  await legacyStore.goto(`${base}/admin/editor/?storeId=${scopedStore.id}&layoutId=${initial.layoutId}`, { waitUntil: "domcontentloaded" });
+  await legacyStore.goto(`${base}/admin/editor/?storeId=${scopedStore.id}&layoutId=${initial.layoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await waitLegacyStore(legacyStore);
   await capture(legacyStore, "legacy-store-initial", "initial", { storeId: scopedStore.id, layoutId: initial.layoutId });
   await legacyStore.locator("#shopName").fill(`Legacy Evidence Draft ${stamp}`);
@@ -231,7 +231,7 @@ try {
   await candidateGlobal.close();
 
   const legacyGlobal = await admin.context().newPage();
-  await legacyGlobal.goto(`${base}/admin/editor/`, { waitUntil: "domcontentloaded" });
+  await legacyGlobal.goto(`${base}/admin/editor/?legacy=1`, { waitUntil: "domcontentloaded" });
   await legacyGlobal.locator("#shopName").waitFor({ timeout: 15_000 });
   await legacyGlobal.locator("#publishBtn").waitFor();
   await capture(legacyGlobal, "legacy-global-initial", "initial");

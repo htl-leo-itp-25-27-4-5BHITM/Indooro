@@ -30,3 +30,18 @@ Non-goals: Keycloak production redesign beyond the selected tasks, NetworkPolicy
 ## Migration / Rollback
 
 Manifest changes are reversible by applying the previous version; image rollback by previous SHA tag; data rollback by restoring the latest dump.
+
+## Baseline
+
+2026-10-17, `main` at `a47c5e6` (merged into `pilot/release-backend`): `cd backend/indooro_server && sh ./mvnw -B test` → 186 tests, 0 failures, 0 errors, no external services needed (all services are mocked). `admin-ui`: `npm run typecheck` and `npm test` (93 tests) green.
+
+## Implementation notes
+
+- **Phase gate is open.** The admin rebuild is in `main` (release `a47c5e6`), so phase A also contains the backend work that phase B listed for the pilot: `protect-legacy-write-endpoints` sections 2, 3.1, 3.4, 4 and `harden-platform-security-baseline` 4.2, 4.3 (all marked there as „implemented in release-pilot-backend“). Done in phase B: `protect-legacy-write-endpoints` 3.2 CORS (profile-specific origin lists, `CORS_ORIGINS` overrides the prod default so a GitHub Pages site under `www.indooro.at` may read the API cross-origin) and 3.3 body limit (stays 14 MB, because the admin underlay needs it). Not done here: 5.3 and 6.3 (live checks). `fix-ios-contract-and-spec-drift` 2.1–2.4 (upsell dismissal bound) is done in phase B.
+- **Secrets in the Keycloak realm.** Keycloak substitutes `${NAME}` from environment variables while importing a realm (verified with Keycloak 26.2 in Docker). `k8s/keycloak.yaml` and `keycloak/realm/indooro-realm.json` therefore contain only placeholders (`KC_ADMIN_WEB_CLIENT_SECRET`, `KC_DEMO_*_PASSWORD`). The k8s values come from `indooro-keycloak-secret`, the local values from `.env`. A missing secret key keeps the pod in `CreateContainerConfigError` instead of starting with a literal `${…}` password.
+- **Keycloak state on LeoCloud.** `start-dev` with `KC_DB=dev-file` and no volume re-imports the realm on every pod start. Passwords changed only in the console are lost on restart; the secret is the source of truth. `SECRET_ROTATION.md` documents this.
+- **Image tag.** `k8s/backend.yaml` pins `:a47c5e6` with `imagePullPolicy: IfNotPresent`. CI tags the short commit SHA (same format as the live tag) and `latest`. Service type of `indooro-backend` stays `NodePort` (unchanged, reachable through the ingress as before).
+- **Postgres.** Strategy `Recreate`, because a RWO data directory must never be mounted by two Postgres pods. Moving `POSTGRES_PASSWORD` to a secret changes the pod template, so applying `k8s/postgres.yaml` restarts Postgres once; the secret must contain the current password first (`SECRET_ROTATION.md` step 1).
+- **Verified against a real stack (local, prod profile jar + Keycloak 26.2 + PostgreSQL 16, OpenSearch not running).** Anonymous write routes answer 302 (hybrid OIDC redirect; the unit tests with `@TestSecurity` see 401), store-manager and region-manager get 403, admin passes; `GET /api/mobile/stores` stays 200 anonymously and `POST /api/mobile/upsell/suggestions` is not blocked. OpenSearch-backed reads answer 500 there because OpenSearch was not started; they are not blocked by security. A missing `OIDC_CLIENT_SECRET` does **not** stop the application from starting when the OIDC server is unreachable; the Kubernetes deployment supplies `QUARKUS_OIDC_CREDENTIALS_SECRET` from a required secret key instead.
+- **PDF export strictness.** Layout codes must now have exactly four numeric parts within bounds; the 153 demo products all comply.
+- **Dev tooling.** The `admin-ui/scripts/live-*.mjs` scripts and `scripts/dev/seed_readiness_demo.py` read the demo credentials from the realm file. They now resolve the `${…}` placeholders from the environment (export the values of `.env`).
