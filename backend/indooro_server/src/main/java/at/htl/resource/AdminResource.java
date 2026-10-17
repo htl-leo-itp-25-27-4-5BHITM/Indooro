@@ -70,6 +70,7 @@ public class AdminResource {
      */
     @GET
     @Path("/health")
+    @RolesAllowed("admin")
     public Response health() {
         return Response.ok("{\"status\": \"UP\"}").build();
     }

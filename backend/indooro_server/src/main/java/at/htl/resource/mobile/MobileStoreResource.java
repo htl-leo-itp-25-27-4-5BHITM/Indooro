@@ -2,6 +2,7 @@ package at.htl.resource.mobile;
 
 import at.htl.admin.dto.MobileDtos;
 import at.htl.admin.service.MobileStoreService;
+import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
@@ -14,6 +15,7 @@ import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.UUID;
 
+@PermitAll
 @Path("/api/mobile/stores")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

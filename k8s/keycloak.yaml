@@ -1,14 +1,4 @@
 apiVersion: v1
-kind: Secret
-metadata:
-  name: indooro-keycloak-secret
-type: Opaque
-stringData:
-  bootstrap-admin-username: admin
-  bootstrap-admin-password: admin
-  admin-web-client-secret: indooro-admin-secret
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: indooro-keycloak-realm
@@ -33,7 +23,7 @@ data:
           "enabled": true,
           "protocol": "openid-connect",
           "publicClient": false,
-          "secret": "indooro-admin-secret",
+          "secret": "${KC_ADMIN_WEB_CLIENT_SECRET}",
           "standardFlowEnabled": true,
           "directAccessGrantsEnabled": true,
           "serviceAccountsEnabled": false,
@@ -77,7 +67,7 @@ data:
           "emailVerified": true,
           "requiredActions": [],
           "credentials": [
-            { "type": "password", "value": "admin", "temporary": false }
+            { "type": "password", "value": "${KC_DEMO_ADMIN_PASSWORD}", "temporary": false }
           ],
           "realmRoles": ["admin"]
         },
@@ -91,7 +81,7 @@ data:
           "emailVerified": true,
           "requiredActions": [],
           "credentials": [
-            { "type": "password", "value": "region", "temporary": false }
+            { "type": "password", "value": "${KC_DEMO_REGION_PASSWORD}", "temporary": false }
           ],
           "realmRoles": ["region-manager"]
         },
@@ -105,7 +95,7 @@ data:
           "emailVerified": true,
           "requiredActions": [],
           "credentials": [
-            { "type": "password", "value": "store", "temporary": false }
+            { "type": "password", "value": "${KC_DEMO_STORE_PASSWORD}", "temporary": false }
           ],
           "realmRoles": ["store-manager"]
         }
@@ -162,6 +152,26 @@ spec:
                 secretKeyRef:
                   name: indooro-keycloak-secret
                   key: bootstrap-admin-password
+            - name: KC_ADMIN_WEB_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: indooro-keycloak-secret
+                  key: admin-web-client-secret
+            - name: KC_DEMO_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: indooro-keycloak-secret
+                  key: demo-admin-password
+            - name: KC_DEMO_REGION_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: indooro-keycloak-secret
+                  key: demo-region-password
+            - name: KC_DEMO_STORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: indooro-keycloak-secret
+                  key: demo-store-password
             - name: KC_DB
               value: "dev-file"
           ports:

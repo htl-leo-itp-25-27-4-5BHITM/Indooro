@@ -39,16 +39,15 @@ Das bedeutet:
 
 ## Was aktuell zusammenpasst
 
-- Das Backend-Image im Cluster ist `ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:latest`
+- Das Backend-Image im Cluster ist `ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2` mit festem Tag = Commit-SHA (live aktuell `a47c5e6`). `:latest` wird nicht mehr verwendet. Rollout/Rollback siehe `docs/pilot-readiness/operations/RELEASE_RUNBOOK.md`
 - Die GitHub Action baut ebenfalls `.../indooro-backend-v2`
-- `k8s/backend.yaml` zeigt ebenfalls auf `.../indooro-backend-v2:latest`
+- `k8s/backend.yaml` zeigt ebenfalls auf `.../indooro-backend-v2:a47c5e6` (fester Commit-SHA-Tag)
 - Das Backend spricht in Production intern mit dem Kubernetes-Service `opensearch`
 - Das Admin-Datenmodell nutzt PostgreSQL ueber den internen Kubernetes-Service `postgres`
 
 ## Was aktuell nicht sauber zusammenpasst
 
 - `backend/indooro_server/build.sh` pusht noch `ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend:latest` ohne `-v2`
-- `k8s/volume-claim.yaml` ist sehr wahrscheinlich ein alter Rest, weil `k8s/opensearch.yaml` bereits den aktuell verwendeten PVC `opensearch-data` enthaelt
 - `build.sh` kennt den neuen PostgreSQL-/Admin-Stack noch nicht explizit, auch wenn das Quarkus-Backend jetzt darauf vorbereitet ist
 
 ## Wie das Deployment aktuell funktioniert
@@ -60,7 +59,7 @@ Bei einem Push auf `main` oder `master` baut GitHub Actions automatisch das Back
 Relevant ist:
 
 - Workflow: `.github/workflows/ci.yaml`
-- Ziel-Image: `ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:latest`
+- Ziel-Image: `ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:<Commit-SHA>` (fester Tag, siehe `docs/pilot-readiness/operations/RELEASE_RUNBOOK.md`)
 
 ### 2. Kubernetes Manifeste anwenden
 
@@ -72,10 +71,11 @@ kubectl apply -n student-it220209 -f k8s/opensearch.yaml
 kubectl apply -n student-it220209 -f k8s/backend.yaml
 ```
 
-Wenn das Image mit dem Tag `latest` neu gebaut wurde, ist oft noch ein Rollout noetig:
+Ein neues Backend-Image wird nicht per `rollout restart` ausgerollt, sondern per festem SHA-Tag. Ablauf, Pruefungen und Rollback stehen in `docs/pilot-readiness/operations/RELEASE_RUNBOOK.md`. Kern:
 
 ```bash
-kubectl rollout restart deployment/indooro-backend -n student-it220209
+kubectl -n student-it220209 set image deployment/indooro-backend indooro-backend=ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:<SHA>
+kubectl -n student-it220209 rollout status deployment/indooro-backend --timeout=300s
 ```
 
 ## Wie die URL ueber LeoCloud funktioniert
@@ -239,19 +239,22 @@ Das kann fuer den bestehenden Stand bleiben. Fuer einen sauberen `Ingress`-Betri
 - der Service intern bleibt
 - die URL nicht von NodePorts abhaengt
 
+OpenSearch und Dashboards sind `ClusterIP`, Dashboards ist auf 0 Replikate skaliert. Zugriff nur per `kubectl port-forward`.
+
 ## Praktische Reihenfolge fuer euch
 
 Wenn ihr das heute neu oder sauber aufsetzen wollt:
 
 1. Backend-Code auf `main` pushen
-2. Warten, bis GitHub Actions das Image `indooro-backend-v2:latest` gebaut hat
-3. `kubectl apply -n student-it220209 -f k8s/postgres.yaml`
-4. `kubectl apply -n student-it220209 -f k8s/opensearch.yaml`
-5. `kubectl apply -n student-it220209 -f k8s/keycloak.yaml`
-6. `kubectl apply -n student-it220209 -f k8s/backend.yaml`
-7. `kubectl apply -n student-it220209 -f k8s/backend-ingress.yaml`
-8. Falls noetig: `kubectl rollout restart deployment/indooro-backend -n student-it220209`
-9. Testen: `https://it220209.cloud.htl-leonding.ac.at/api/mobile/stores`
+2. Warten, bis GitHub Actions das Image mit dem Commit-SHA gebaut hat
+3. Secrets anlegen, bevor Manifeste angewendet werden (`indooro-postgres-secret`, `indooro-keycloak-secret`, `indooro-openai-secret`; siehe `docs/pilot-readiness/operations/SECRET_ROTATION.md`, Vorlage `k8s/secrets.example.yaml`)
+4. `kubectl apply -n student-it220209 -f k8s/postgres.yaml`
+5. `kubectl apply -n student-it220209 -f k8s/opensearch.yaml`
+6. `kubectl apply -n student-it220209 -f k8s/keycloak.yaml`
+7. `kubectl apply -n student-it220209 -f k8s/backend.yaml` (vorher Image-Tag pruefen)
+8. `kubectl apply -n student-it220209 -f k8s/backend-ingress.yaml`
+9. Falls noetig: Image-Tag per `kubectl set image` setzen (siehe `RELEASE_RUNBOOK.md`)
+10. Testen: `https://it220209.cloud.htl-leonding.ac.at/api/mobile/stores`
 
 ## Keycloak Admin Login
 
@@ -285,9 +288,12 @@ Der lokale Realm liegt unter:
 
 - `keycloak/realm/indooro-realm.json`
 
+Passwoerter und Secrets kommen ausschliesslich aus `.env`, nicht aus dem Repo. Vorlage ist `.env.example`; die Werte setzt man selbst. Betrieb auf LeoCloud siehe `docs/pilot-readiness/operations/SECRET_ROTATION.md`.
+
 Start mit Docker Compose:
 
 ```bash
+cp .env.example .env
 docker compose up keycloak
 ```
 
@@ -295,16 +301,16 @@ Keycloak ist lokal unter `http://localhost:8180/` erreichbar. Der Realm ist:
 
 - Realm: `indooro`
 - Client: `indooro-admin-web`
-- Client Secret: `indooro-admin-secret`
+- Client Secret: aus `.env` (`KC_ADMIN_WEB_CLIENT_SECRET`)
 - Auth Server URL fuer Quarkus: `http://localhost:8180/realms/indooro`
 
-Demo-Benutzer:
+Demo-Benutzer (Passwoerter: `KC_DEMO_ADMIN_PASSWORD`, `KC_DEMO_REGION_PASSWORD`, `KC_DEMO_STORE_PASSWORD` aus `.env`):
 
-| Benutzer | Passwort | Keycloak-Rolle | Subject |
-| --- | --- | --- | --- |
-| `indooro-admin` | `admin` | `admin` | `11111111-1111-1111-1111-111111111111` |
-| `indooro-region` | `region` | `region-manager` | `22222222-2222-2222-2222-222222222222` |
-| `indooro-store` | `store` | `store-manager` | `33333333-3333-3333-3333-333333333333` |
+| Benutzer | Keycloak-Rolle | Subject |
+| --- | --- | --- |
+| `indooro-admin` | `admin` | `11111111-1111-1111-1111-111111111111` |
+| `indooro-region` | `region-manager` | `22222222-2222-2222-2222-222222222222` |
+| `indooro-store` | `store-manager` | `33333333-3333-3333-3333-333333333333` |
 
 Die Migration `V4__user_access_assignments.sql` legt den Admin-Demozugang automatisch an. Fuer `region-manager` und `store-manager` muessen nach dem Anlegen von Region und Filiale passende Indooro-Scope-Zuordnungen gesetzt werden, weil diese Rollen echte Domain-IDs brauchen.
 
@@ -338,10 +344,11 @@ Wenn Benutzer im Keycloak Admin UI neu angelegt werden, ist der stabile Wert fue
 
 Das Manifest `k8s/keycloak.yaml` erstellt:
 
-- `Secret` `indooro-keycloak-secret`
-- `ConfigMap` `indooro-keycloak-realm`
+- `ConfigMap` `indooro-keycloak-realm` (ohne Klartext-Passwoerter; Werte werden beim Import aus den Umgebungsvariablen ersetzt)
 - Deployment/Service `indooro-keycloak`
 - Ingress `keycloak-it220209.cloud.htl-leonding.ac.at`
+
+Das Secret `indooro-keycloak-secret` erstellt das Manifest **nicht** mehr. Es muss vorher per `kubectl create secret generic` angelegt werden (Anleitung: `docs/pilot-readiness/operations/SECRET_ROTATION.md`, Vorlage: `k8s/secrets.example.yaml`). Reihenfolge: erst Secrets, dann `kubectl apply`.
 
 Anwenden:
 
@@ -352,11 +359,12 @@ kubectl rollout status deployment/indooro-keycloak -n student-it220209
 
 Der Backend-Container bekommt die OIDC-Konfiguration ueber `k8s/backend.yaml`:
 
-- `OIDC_AUTH_SERVER_URL=https://it220209.cloud.htl-leonding.ac.at/keycloak/realms/indooro`
-- `OIDC_CLIENT_ID=indooro-admin-web`
-- `OIDC_CLIENT_SECRET` aus `indooro-keycloak-secret`
+- `QUARKUS_OIDC_AUTH_SERVER_URL=https://it220209.cloud.htl-leonding.ac.at/keycloak/realms/indooro`
+- `QUARKUS_OIDC_CLIENT_ID=indooro-admin-web`
+- `QUARKUS_OIDC_CREDENTIALS_SECRET` aus `indooro-keycloak-secret` (Key `admin-web-client-secret`). **Pflicht in Produktion.**
+- Lokal heisst die Variable `OIDC_CLIENT_SECRET` (aus `.env`, gleicher Wert wie `KC_ADMIN_WEB_CLIENT_SECRET`). Lokal braucht das Backend ausserdem `DB_PASSWORD` aus `.env`.
 
-Fuer echte Deployments sollten die Werte in `indooro-keycloak-secret` vor dem Anwenden angepasst werden.
+Die Werte werden nicht im Repo gepflegt. Anlage und Rotation: `docs/pilot-readiness/operations/SECRET_ROTATION.md`.
 
 ### Auth-Verifikation
 
@@ -412,13 +420,11 @@ Bei Backend-Code-Aenderungen:
 - Code committen und auf `main` pushen
 - GitHub Actions baut das Backend-Image automatisch neu und pusht es nach GHCR
 
-Was oft trotzdem noch noetig ist:
+Was noetig ist:
 
-- `kubectl rollout restart deployment/indooro-backend -n student-it220209`
+- Neuen Commit-SHA-Tag per `kubectl set image` setzen, siehe `RELEASE_RUNBOOK.md`
 
-Der Grund ist das Image-Tag `latest`. Das neue Image wird zwar gebaut, aber der laufende Pod wird nicht immer automatisch neu erstellt.
-
-Wenn ihr spaeter ein saubereres Deployment wollt, solltet ihr statt `latest` mit festen Versionen oder SHA-Tags arbeiten.
+Das Image-Tag ist ein fester Commit-SHA. Ein neuer Pod entsteht daher nur, wenn der Tag geaendert wird. `:latest` wird nicht mehr verwendet.
 
 Bei Daten-Aenderungen:
 
@@ -430,4 +436,3 @@ Bei Daten-Aenderungen:
 
 - `postgres` sollte ins Repo uebernommen werden, wenn es wirklich zu Indooro gehoert
 - `build.sh` sollte auf `indooro-backend-v2` umgestellt werden
-- `k8s/volume-claim.yaml` kann wahrscheinlich entfernt werden, wenn es wirklich nur ein Altbestand ist

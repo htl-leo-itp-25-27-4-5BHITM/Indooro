@@ -3,6 +3,8 @@ package at.htl.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import at.htl.admin.service.AdminAccessService;
+import at.htl.admin.service.AuditLogService;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -37,6 +39,12 @@ public class LayoutService {
 
     @Inject
     LayoutDocumentValidator layoutDocumentValidator;
+
+    @Inject
+    AdminAccessService adminAccessService;
+
+    @Inject
+    AuditLogService auditLogService;
 
     @ConfigProperty(name = "opensearch.layout-index")
     String layoutIndexName;
@@ -124,7 +132,15 @@ public class LayoutService {
                 .refresh(Refresh.True));
 
         LOG.info("Saved current layout to OpenSearch index " + layoutIndexName);
-        return toHistoryEntry(versionDocument);
+        LayoutHistoryEntry savedEntry = toHistoryEntry(versionDocument);
+        try {
+            auditLogService.logByAdmin(adminAccessService.currentUser(), "LEGACY_LAYOUT", UUID.fromString(layoutId),
+                    "SAVE", "Legacy-Layout gespeichert", null, savedEntry);
+        } catch (RuntimeException e) {
+            // Das Layout ist bereits gespeichert; ein fehlgeschlagener Audit-Eintrag darf das nicht verdecken.
+            LOG.warn("Audit entry for legacy layout save failed", e);
+        }
+        return savedEntry;
     }
 
     private void ensureLayoutIndex() throws IOException {

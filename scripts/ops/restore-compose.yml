@@ -1,0 +1,26 @@
+# Lokale Wegwerf-PostgreSQL fuer Restore-Proben (siehe scripts/ops/restore_postgres.py).
+#
+# Aufruf nur ueber das Skript, das den eigenen Projektnamen (-p indooro-restore) setzt.
+# Keine Passwoerter in dieser Datei: RESTORE_PASSWORD kommt zur Laufzeit aus der Umgebung.
+#
+# Daten: Das Datenverzeichnis liegt in einem tmpfs (Wegwerf-Datenbank, kein Volume). Damit gilt bei
+# jedem Lauf das frische Zufallspasswort, und "docker compose -p indooro-restore down" (ohne
+# Volume-Option) hinterlaesst nichts. Die Option zum Loeschen von Volumes wird nie verwendet.
+
+services:
+  db:
+    image: ${RESTORE_IMAGE:-postgres:16-alpine}
+    restart: "no"
+    environment:
+      POSTGRES_DB: indooro
+      POSTGRES_USER: indooro
+      POSTGRES_PASSWORD: ${RESTORE_PASSWORD:?RESTORE_PASSWORD wird vom Skript gesetzt}
+    ports:
+      - "127.0.0.1:${RESTORE_PORT:-55432}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U indooro -d indooro"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
