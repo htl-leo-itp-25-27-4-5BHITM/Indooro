@@ -11,5 +11,5 @@
 
 ## 3. Close The Evidence Change
 
-- [ ] 3.1 Update `docs/admin-rebuild/` matrices and OpenSpec task references using only observed results; run the relevant frontend/backend/live and strict OpenSpec checks.
+- [x] 3.1 Update `docs/admin-rebuild/` matrices and OpenSpec task references using only observed results; run the relevant frontend/backend/live and strict OpenSpec checks. The timeboxed partial result and remaining gates are recorded in `docs/admin-rebuild/ADMIN_PARITY_TIMEBOX.md`.
 - [ ] 3.2 Verify all requirements and scenarios for this evidence change and archive it through the normal OpenSpec workflow when complete.
