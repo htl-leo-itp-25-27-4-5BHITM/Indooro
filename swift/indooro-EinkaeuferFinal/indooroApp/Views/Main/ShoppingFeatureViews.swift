@@ -45,14 +45,16 @@ struct ShoppingSessionPanel: View {
     let onReplan: () -> Void
 
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
+    @ScaledMetric(relativeTo: .title) private var arrowIconSize: CGFloat = 30
 
     var body: some View {
         VStack(alignment: .leading, spacing: 9) {
             if let currentStop = snapshot.currentStop {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 30))
+                        .font(.system(size: arrowIconSize))
                         .foregroundStyle(.white, accent)
+                        .accessibilityHidden(true)
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(currentStop.title)
@@ -68,13 +70,13 @@ struct ShoppingSessionPanel: View {
 
                         Text(currentStop.itemNamesPreview)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                             .lineLimit(1)
 
                         if let routeOriginText {
                             Text(routeOriginText)
                                 .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.a11ySecondaryText)
                                 .lineLimit(1)
                         }
                     }
@@ -88,6 +90,8 @@ struct ShoppingSessionPanel: View {
                         .font(.caption2.weight(.semibold))
                         .buttonStyle(.plain)
                         .foregroundStyle(accent)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
 
                         Button("Neu planen") {
                             onReplan()
@@ -95,10 +99,12 @@ struct ShoppingSessionPanel: View {
                         .font(.caption2.weight(.semibold))
                         .buttonStyle(.plain)
                         .foregroundStyle(accent)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
 
                         Text("\(snapshot.remainingStopCount) Stopps · \(snapshot.remainingProductCount) offen")
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                             .lineLimit(1)
                     }
                 }
@@ -112,7 +118,7 @@ struct ShoppingSessionPanel: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.white)
-                    .frame(height: 36)
+                    .frame(height: 44)
                     .background(accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                     Button("Überspringen") {
@@ -120,7 +126,7 @@ struct ShoppingSessionPanel: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(accent)
-                    .frame(height: 36)
+                    .frame(height: 44)
                     .padding(.horizontal, 10)
                     .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
@@ -128,11 +134,12 @@ struct ShoppingSessionPanel: View {
                         onOpenList()
                     } label: {
                         Image(systemName: "list.bullet")
-                            .frame(width: 36, height: 36)
+                            .frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(accent)
                     .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .accessibilityLabel("Einkaufsliste öffnen")
                 }
             } else {
                 HStack(spacing: 10) {
@@ -157,7 +164,7 @@ struct ShoppingSessionPanel: View {
                     systemImage: "exclamationmark.triangle"
                 )
                 .font(.caption2)
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.a11yWarningText)
             }
         }
         .padding(12)
@@ -167,6 +174,7 @@ struct ShoppingSessionPanel: View {
                 .stroke(Color.primary.opacity(0.055), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.05), radius: 12, y: 6)
+        .accessibilityIdentifier("tourPanel")
     }
 }
 
@@ -228,6 +236,8 @@ struct UpsellPromptSheet: View {
                                     }
                                     .buttonStyle(.plain)
                                     .foregroundStyle(accent)
+                                    .frame(minWidth: 44, minHeight: 44)
+                                    .contentShape(Rectangle())
                                     .accessibilityLabel("\(suggestion.product.name) hinzufügen")
                                 }
 
@@ -586,9 +596,12 @@ struct ProductsPage: View {
                     dismissKeyboard()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Suche löschen")
             }
         }
         .padding(.horizontal, 12)
@@ -625,7 +638,7 @@ struct ProductsPage: View {
 
                         Text("\(selectedList?.openItemCount ?? 0) Artikel offen")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                     }
 
                     Spacer(minLength: 0)
@@ -635,9 +648,11 @@ struct ProductsPage: View {
                     } label: {
                         Text("Einkaufen")
                             .font(.caption.weight(.semibold))
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.bordered)
-                    .controlSize(.mini)
+                    .controlSize(.small)
                     .tint(accent)
                 }
                 .padding(.vertical, 2)
@@ -684,6 +699,7 @@ struct ProductsPage: View {
                         categoryTile(category)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityAddTraits(selectedCategory == category ? .isSelected : [])
                 }
             }
             .padding(.vertical, 4)
@@ -727,6 +743,8 @@ struct ProductsPage: View {
                     .foregroundStyle(accent)
                     .frame(width: 34, height: 34)
                     .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Weitere Kategorie")
@@ -1126,6 +1144,7 @@ private struct PlannedProductRow: View {
             Image(systemName: "checkmark.circle.fill")
                 .font(.title3)
                 .foregroundStyle(accent)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
@@ -1163,7 +1182,9 @@ private struct PlannedProductRow: View {
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.title3)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Aus Planung entfernen")
@@ -1319,6 +1340,7 @@ struct ShoppingListsPage: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .accessibilityLabel("Neue Einkaufsliste")
                 }
             }
         }
@@ -1415,6 +1437,7 @@ struct ShoppingListsPage: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(list.name)
                             .font(.title3.weight(.semibold))
+                            .accessibilityAddTraits(.isHeader)
 
                         Text("\(list.openItemCount) offen, \(list.completedItemCount) erledigt")
                             .font(.subheadline)
@@ -1489,6 +1512,7 @@ struct ShoppingListsPage: View {
                         Image(systemName: "ellipsis.circle")
                             .font(.title3)
                             .foregroundStyle(.secondary)
+                            .accessibilityLabel("Listenaktionen")
                     }
                 }
 
@@ -1603,7 +1627,7 @@ struct ShoppingListsPage: View {
                         "\(preview.unresolvedItems.count) Artikel konnten keinem Regal zugeordnet werden",
                         systemImage: "exclamationmark.triangle"
                     )
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.a11yWarningText)
                 }
             )
         }
@@ -1812,6 +1836,7 @@ private struct ShoppingChecklistRow: View {
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
                     .foregroundStyle(isCompleted ? .green : .blue)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
@@ -1853,5 +1878,7 @@ private struct ShoppingChecklistRow: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityValue(AccessibilityText.shoppingItemValue(isChecked: isCompleted))
+        .accessibilityAddTraits(.isButton)
     }
 }
