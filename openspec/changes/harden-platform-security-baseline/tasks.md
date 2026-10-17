@@ -36,11 +36,11 @@
 
 ## 5. Infrastructure
 
-- [ ] 5.1 Change `opensearch` and `dashboards` services to `ClusterIP`, set dashboards replicas to 0, and add `k8s/network-policy.yaml`.
-- [ ] 5.2 Create secret `indooro-postgres-secret` and reference it from `k8s/postgres.yaml` and `k8s/backend.yaml`.
+- [ ] 5.1 Change `opensearch` and `dashboards` services to `ClusterIP`, set dashboards replicas to 0, and add `k8s/network-policy.yaml`. (ClusterIP and dashboards replicas 0 implemented in release-pilot-backend; the NetworkPolicy stays open until task 1.3 confirms LeoCloud enforces it)
+- [x] 5.2 Create secret `indooro-postgres-secret` and reference it from `k8s/postgres.yaml` and `k8s/backend.yaml`. (manifests implemented in release-pilot-backend; the secret itself is created in phase B)
 - [ ] 5.3 Switch the Dockerfile to a JRE base image with a non-root user; add `securityContext`, `/tmp` `emptyDir`, and the CI SHA image tag to `k8s/backend.yaml`; change the backend service to `ClusterIP`.
 - [ ] 5.4 Add `quarkus-smallrye-health` and replace TCP probes with `/q/health/live` and `/q/health/ready`.
-- [ ] 5.5 Delete the unreferenced `k8s/volume-claim.yaml`.
+- [x] 5.5 Delete the unreferenced `k8s/volume-claim.yaml`. (implemented in release-pilot-backend)
 
 ## 6. Tests
 
