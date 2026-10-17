@@ -1,4 +1,7 @@
 """Unit tests: rule loading, layout rules, candidates, HDOP and the readiness mirror."""
+import contextlib
+import csv
+import io
 import json
 import math
 import os
@@ -8,6 +11,8 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import export_plan_fixtures  # noqa: E402
+import export_vectors  # noqa: E402
 from candidates import MOUNT_CHECKOUT_TOP, MOUNT_SHELF_TOP, MOUNT_WALL, generate_candidates  # noqa: E402
 from coverage import hdop, readiness_report  # noqa: E402
 from layout import (  # noqa: E402
@@ -19,6 +24,7 @@ from layout import (  # noqa: E402
     ios_blocked_cells,
     walkable_cells,
 )
+from outputs import NumberedBeacon, write_csv, write_layout_patch  # noqa: E402
 from rule import DEFAULT_RULE_PATH, CoverageRule, RuleError, load_rule, parse_rule  # noqa: E402
 
 UUID_HEX = "0f0e0d0c0b0a09080706050403020100"
@@ -308,6 +314,68 @@ class ReadinessMirrorTests(unittest.TestCase):
         report = readiness_report(layout, [], _RULE)
         self.assertEqual(report["walkable"], 0)
         self.assertTrue(report["ok"])
+
+
+class SharedVectorTests(unittest.TestCase):
+    """fixtures/vectors.json is read by admin-ui/src/editor/coverage.test.ts; it must match the generator."""
+
+    def test_checked_in_vectors_match_the_generator(self):
+        checked_in = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "vectors.json")
+        with open(checked_in, encoding="utf-8", newline="") as handle:
+            stored = handle.read()
+        with tempfile.TemporaryDirectory() as tmp:
+            regenerated = os.path.join(tmp, "vectors.json")
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(export_vectors.main([regenerated]), 0)
+            with open(regenerated, encoding="utf-8", newline="") as handle:
+                fresh = handle.read()
+        self.assertEqual(fresh, stored, "fixtures/vectors.json ist veraltet: python3 -I scripts/beacon-planner/export_vectors.py")
+
+    def test_vectors_have_the_expected_shape(self):
+        vectors = export_vectors.build_vectors()
+        self.assertGreaterEqual(len(vectors), 6)
+        self.assertLessEqual(len(vectors), 10)
+        for vector in vectors:
+            with self.subTest(vector=vector["name"]):
+                expected = vector["expected"]
+                self.assertEqual(len(expected["counts"]), vector["layout"]["gridSize"]["height"])
+                self.assertTrue(all(len(row) == vector["layout"]["gridSize"]["width"] for row in expected["counts"]))
+                self.assertEqual(sum(1 for row in expected["counts"] for c in row if c is not None),
+                                 expected["walkableCells"])
+
+
+class PlanImportFixtureTests(unittest.TestCase):
+    """beacons-plan.csv and layout-with-beacons.json must agree; fixtures/ is read by admin-ui/src/editor/planImport.test.ts."""
+
+    def test_csv_and_layout_patch_agree_on_minor_and_position(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            csv_path = os.path.join(tmp, "beacons-plan.csv")
+            patch_path = os.path.join(tmp, "layout-with-beacons.json")
+            beacons = export_plan_fixtures.BEACONS
+            write_csv(csv_path, beacons)
+            write_layout_patch(patch_path, parse_layout(export_plan_fixtures.INPUT_LAYOUT), beacons)
+            with open(csv_path, encoding="utf-8", newline="") as handle:
+                rows = list(csv.DictReader(handle))
+            with open(patch_path, encoding="utf-8") as handle:
+                patched = json.load(handle)
+        self.assertEqual(tuple(rows[0].keys()), ("minor", "x_m", "y_m", "mount", "notes"))
+        added = [e for e in patched["elements"] if e.get("type") == "beacon"]
+        self.assertEqual(len(rows), 3)
+        self.assertEqual(len(added), 3)
+        for row, element in zip(rows, added):
+            with self.subTest(minor=row["minor"]):
+                self.assertEqual(int(row["minor"]), element["beaconMinor"])
+                self.assertEqual(float(row["x_m"]), element["x"])
+                self.assertEqual(float(row["y_m"]), element["y"])
+                self.assertEqual(element["beaconId"], f"Indooro{row['minor']}")
+
+    def test_checked_in_plan_fixtures_match_the_generator(self):
+        fixtures = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
+        with tempfile.TemporaryDirectory() as scratch:
+            csv_text, elements_text = export_plan_fixtures.build_plan_fixtures(scratch)
+        for name, fresh in (("beacons-plan.sample.csv", csv_text), ("plan-elements.sample.json", elements_text)):
+            with self.subTest(fixture=name), open(os.path.join(fixtures, name), encoding="utf-8", newline="") as handle:
+                self.assertEqual(handle.read(), fresh, f"fixtures/{name} ist veraltet: python3 -I scripts/beacon-planner/export_plan_fixtures.py")
 
 
 if __name__ == "__main__":

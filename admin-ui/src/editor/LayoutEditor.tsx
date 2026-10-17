@@ -5,6 +5,8 @@ import { assignShelfSections, chooseShelfCategory, elementFill, nextAnchorId, sh
 import { applyCommand, createEditorState, isDirty, isMobileElementId, markSaved, newElementId, parseImportedDocument, redo, repairMobileElementIds, replaceDocument, selectElement, undo, type EditorCommand, type EditorState, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
 import { validateLayout, type AssignedBeacon } from "./validation";
 import { UnderlayPanel } from "./UnderlayPanel";
+import { CoverageLayer, CoveragePanel, PlanImportBlock } from "./CoveragePanel";
+import { useCoverageOverlay } from "./useCoverageOverlay";
 import type { LayoutUnderlay } from "./underlay";
 import "./LayoutEditor.css";
 
@@ -105,6 +107,12 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
   const selected = document.elements.find((element) => element.id === editor.selectedId) ?? null;
   const selectedIndex = document.elements.findIndex((element) => element.id === editor.selectedId);
   const placedBeaconCodes = new Set(document.elements.filter((element) => element.type === "beacon" && element.id !== selected?.id).map((element) => element.beaconId));
+  // The coverage overlay follows the drag preview too, but it is never written into the document.
+  const coverageElements = useMemo(() => {
+    if (!preview) return document.elements;
+    return document.elements.some((element) => element.id === preview.id) ? document.elements.map((element) => element.id === preview.id ? preview : element) : [...document.elements, preview];
+  }, [document.elements, preview]);
+  const coverage = useCoverageOverlay(document.gridSize, coverageElements);
 
   useEffect(() => { setNewPosition(""); }, [editor.selectedId]);
 
@@ -390,6 +398,12 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
     }
   };
 
+  const importPlan = (elements: LayoutElement[], skipped: string[]) => {
+    dispatch({ type: "createMany", elements });
+    setTool("select");
+    setMessage(`${elements.length} Beacons übernommen. Bitte Zuordnung zu echten Beacons prüfen und speichern.${skipped.length ? ` Übersprungen, weil bereits vorhanden: ${skipped.join(", ")}.` : ""}`);
+  };
+
   const startNewLayout = () => {
     if (!window.confirm("Neues Layout starten? Alle aktuellen Elemente werden entfernt. Rückgängig bleibt möglich.")) return;
     setEditor((current) => replaceDocument(current, { ...current.document, elements: [] }));
@@ -447,6 +461,8 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
         <h2>Vorlagen</h2>
         <div className="le-templates">{TEMPLATES.map((template) => <button type="button" key={template.label} disabled={!!working} onClick={() => applyTemplate(template)}>{template.label}<span>{template.width} × {template.height} m</span></button>)}</div>
         {mode === "store" && api && storeId && <UnderlayPanel api={api} storeId={storeId} underlay={underlay} onChange={setUnderlay} />}
+        <CoveragePanel overlay={coverage} />
+        {mode === "store" && <PlanImportBlock disabled={!!working} getDocument={() => editorRef.current.document} onImport={importPlan} />}
         <h2>Elemente</h2><p id="le-keyboard-help" className="le-hint">Tastatur: Element wählen, Tab zum Grundriss, Pfeile positionieren, Enter platzieren. Bei ausgewählter Ebene bewegen Pfeile das Element; Shift + Pfeil bewegt schneller. Escape beendet das Werkzeug. Eigenschaften stehen rechts.</p>
         <div className="le-library">{TYPES.map((item) => <button type="button" key={item.type} aria-pressed={tool === "create" && createType === item.type} onClick={() => { setCreateType(item.type); setTool("create"); setKeyboardPoint({ x: document.gridSize.width / 2, y: document.gridSize.height / 2 }); }}><span className="le-swatch" style={{ background: item.color }} />{item.label}</button>)}</div>
         <h2>Ebenen <span>{document.elements.length}</span></h2>
@@ -476,6 +492,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
               return <g clipPath="url(#le-underlay-clip)" pointerEvents="none"><image href={`data:${underlay.contentType};base64,${underlay.imageBase64}`} x={underlay.offsetXM} y={underlay.offsetYM} width={width} height={height} opacity={underlay.opacity} transform={`rotate(${underlay.rotationDeg} ${cx} ${cy})`} preserveAspectRatio="none" /></g>;
             })()}
             {showGrid && <rect x={0} y={0} width={document.gridSize.width} height={document.gridSize.height} fill="url(#le-grid)" pointerEvents="none" />}
+            <CoverageLayer result={coverage.result} />
             {tool === "create" && createType !== "beacon" && <rect className="le-keyboard-preview" x={keyboardPoint.x - (TYPES.find((item) => item.type === createType)?.width || 0) / 2} y={keyboardPoint.y - (TYPES.find((item) => item.type === createType)?.height || 0) / 2} width={TYPES.find((item) => item.type === createType)?.width} height={TYPES.find((item) => item.type === createType)?.height} rx=".2" />}
             {tool === "create" && createType === "beacon" && <circle className="le-keyboard-preview" cx={keyboardPoint.x} cy={keyboardPoint.y} r=".35" />}
             {[...document.elements, ...(preview && !document.elements.some((item) => item.id === preview.id) ? [preview] : [])].map((stored, index) => {
