@@ -1,0 +1,6 @@
+﻿id;name;marke;menge;regal_label;kategorie;meter;fach;reihe;preis
+1001;Vollmilch;Bergbauer;1 l;Gang 1 · links · Milchprodukte;520;1;1;1;1,29
+1002;Joghurt Erdbeer;Sonnenhof;150 g;Gang 1 · links · Milchprodukte;520;1;2;1;0,79
+;Käse Gouda jung;Almhof;200 g;Gang 1 · links · Milchprodukte;520;2;1;1;2,49
+;Äpfel Gala lose;Obstgarten;1 kg;Gang 2 · rechts · Obst & Gemüse;310;1;1;1;2,99
+;Müsli Früchte Crunch;Waldkorn;500 g;;310;1;1;2;3,49
