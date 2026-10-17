@@ -7,6 +7,7 @@ import at.htl.service.CatalogBulkResult;
 import at.htl.service.CatalogStoreResolver;
 import at.htl.service.CatalogStoreResolver.CatalogStoreException;
 import at.htl.service.CatalogStoreResolver.ResolvedStore;
+import at.htl.service.LegacyDocumentGuard;
 import at.htl.service.OpenSearchService;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -40,6 +41,9 @@ public class ProductResource {
 
     @Inject
     CatalogStoreResolver storeResolver;
+
+    @Inject
+    LegacyDocumentGuard legacyDocumentGuard;
 
     /** Store used for read requests that name no store. Empty = no default, old behavior (no store filter). */
     @ConfigProperty(name = "indooro.catalog.default-store-code")
@@ -139,6 +143,7 @@ public class ProductResource {
             return errorResponse(Response.Status.BAD_REQUEST, exception.getMessage());
         }
         applyStore(product, store);
+        legacyDocumentGuard.requireNoLegacyDocuments(store.storeCode());
 
         try {
             String result = openSearchService.indexProduct(product);

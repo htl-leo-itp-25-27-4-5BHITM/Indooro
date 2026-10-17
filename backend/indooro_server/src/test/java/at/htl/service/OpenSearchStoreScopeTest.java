@@ -8,6 +8,8 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.CountRequest;
+import org.opensearch.client.opensearch.core.CountResponse;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.DeleteResponse;
@@ -163,6 +165,25 @@ class OpenSearchStoreScopeTest {
         List<Query> excluded = captor.getValue().query().bool().mustNot();
         assertFalse(excluded.isEmpty());
         assertTrue(excluded.stream().allMatch(Query::isExists));
+    }
+
+    @Test
+    void countLegacyProductsCountsDocumentsWithoutStoreCode() throws IOException {
+        when(client.count(any(CountRequest.class))).thenReturn(
+                CountResponse.of(c -> c.count(7L).shards(sh -> sh.total(1).successful(1).failed(0).skipped(0))));
+
+        assertEquals(7L, service.countLegacyProducts());
+
+        ArgumentCaptor<CountRequest> captor = ArgumentCaptor.forClass(CountRequest.class);
+        verify(client).count(captor.capture());
+        assertEquals("products", captor.getValue().index().get(0));
+        Query query = captor.getValue().query();
+        assertTrue(query.isBool());
+        assertTrue(query.bool().must().isEmpty());
+        List<Query> excluded = query.bool().mustNot();
+        assertEquals(1, excluded.size());
+        assertTrue(excluded.get(0).isExists());
+        assertEquals("storeCode", excluded.get(0).exists().field());
     }
 
     static Product product(int id, String storeId, String storeCode) {

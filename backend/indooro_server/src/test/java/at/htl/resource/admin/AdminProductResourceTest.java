@@ -18,6 +18,7 @@ import java.util.UUID;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -127,6 +128,25 @@ class AdminProductResourceTest {
                 .body("[0].id", equalTo(17));
 
         verify(openSearchService).searchProducts("pear", 40, STORE_ID.toString(), STORE_CODE);
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void storeScopedUpsertReturns409WhileLegacyDocumentsExist() throws Exception {
+        stubStore();
+        when(openSearchService.countLegacyProducts()).thenReturn(153L);
+
+        given()
+                .contentType("application/json")
+                .body("{\"id\":17,\"name\":\"Pear\",\"price\":1.0,\"layoutCode\":\"310/1/1/1\",\"storeCode\":\"" + STORE_CODE + "\"}")
+                .when().post("/api/admin/products")
+                .then()
+                .statusCode(409)
+                .body("error", equalTo("Legacy products without storeCode still exist (153). "
+                        + "Run the catalog migration (docs/pilot-readiness/operations/CATALOG_MIGRATION.md) "
+                        + "before writing store-scoped products."));
+
+        verify(openSearchService, never()).indexProduct(any());
     }
 
     private static Product product(int id, String name) {
