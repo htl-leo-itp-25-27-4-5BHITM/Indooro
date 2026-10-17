@@ -1,4 +1,5 @@
 import XCTest
+@testable import IndooroPilotSupport
 @testable import IndooroNavigationCore
 
 /// Lädt anonymisierte Live-Antworten bzw. handgemachte Fixtures aus `Fixtures/`.
@@ -34,12 +35,12 @@ final class ContractDecodingTests: XCTestCase {
         XCTAssertEqual(try XCTUnwrap(first.latitude), 48.2680495, accuracy: 1e-7)
         XCTAssertEqual(try XCTUnwrap(first.longitude), 14.2618747, accuracy: 1e-7)
 
-        // Defekt (siehe Bericht): stores.json liefert "address" als einen String, MobileStoreSummary
-        // kennt nur street/zipCode/country. Die Adresse geht deshalb verloren; das Test-Verhalten
-        // hält den aktuellen Stand fest.
+        // stores.json liefert "address" als einen String; MobileStoreSummary bildet ihn auf `address` ab
+        // (prepare-pilot-ios-build), street/zipCode bleiben leer.
         XCTAssertNil(first.street)
         XCTAssertNil(first.zipCode)
-        XCTAssertEqual(first.displaySubtitle, "Leonding")
+        XCTAssertEqual(first.address, "Poststraße 10, 4060 Leonding")
+        XCTAssertEqual(first.displaySubtitle, "Poststraße 10, 4060 Leonding")
     }
 
     // MARK: - Layout
@@ -86,14 +87,24 @@ final class ContractDecodingTests: XCTestCase {
         XCTAssertEqual(products[0].layoutCode, "520/2/1/1")
     }
 
-    func testProductListWithOneMalformedElementFailsAsWhole() throws {
-        // Reales Verhalten: ProductSearchStore.decodeProducts dekodiert die Liste nicht lossy.
-        // Fehlt in einem Element ein Pflichtfeld (hier layoutCode), schlägt die gesamte Dekodierung
-        // fehl; der Fallback über ProductCollectionResponse scheitert ebenfalls, und die Suche
-        // zeigt leere Ergebnisse. Siehe Bericht (Defekt-Kandidat).
+    func testPlainProductArrayDecoderIsStrictAboutMalformedElements() throws {
+        // `[Product]` mit dem Standard-Decoder bleibt strikt. Die App liest Trefferlisten lossy
+        // (ProductSearchStore.decodeProducts, prepare-pilot-ios-build 4.2): ein defektes Element
+        // wird übersprungen. Das prüft MCindooroAppTests/ProductSearchStoreTests.
         let data = try ContractFixtures.data("products-search-one-malformed.json")
 
         XCTAssertThrowsError(try JSONDecoder().decode([Product].self, from: data))
+    }
+
+    func testLossyArrayDropsMalformedProductAndKeepsTheRest() throws {
+        // Die App liest Trefferlisten über LossyDecodableArray (ProductSearchStore.decodeProducts,
+        // prepare-pilot-ios-build 4.2). Hier mit dem echten Produktmodell; die Store-Logik selbst
+        // (Seitenform, Fehlerfall) liegt nur in der App und ist in MCindooroAppTests/ProductSearchStoreTests.
+        let data = try ContractFixtures.data("products-search-one-malformed.json")
+
+        let products = try JSONDecoder.indooro.decode(LossyDecodableArray<Product>.self, from: data).elements
+
+        XCTAssertEqual(products.map(\.id), [92, 94])
     }
 
     // MARK: - Rezepte

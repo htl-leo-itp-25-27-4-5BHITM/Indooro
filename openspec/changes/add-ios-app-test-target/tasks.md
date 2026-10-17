@@ -14,9 +14,9 @@
 
 - [x] 3.1 Decoding tests for stores, layout response, products (lossy array if present), recipes, upsell plan/suggestion. (in the SwiftPM test target: the pure models are part of the package, so `swift test` covers decoding)
 - [x] 3.2 Shopping list tests: v1 decoding, persistence round trip (`UserDefaults` suite per test), merge/deduplication of recipe- and upsell-sourced items. (`MCindooroAppTests/ShoppingListManagerTests.swift`, 10 tests, own `UserDefaults` suite per test; `ShoppingListManager.init(defaults:)` added, default `.standard`. v1 decoding is also covered in `ShoppingListDecodingTests`.)
-- [ ] 3.3 `AppEnvironment` tests (if `prepare-pilot-ios-build` is merged; otherwise mark waiting). Waiting: `prepare-pilot-ios-build` not merged (target 1.2 exists now).
-- [ ] 3.4 Search URL building tests (`Milch & Käse`, `a+b`, `50%`, `#1`). Waiting: `prepare-pilot-ios-build` 4.1 (encoded query items) not merged; current `ProductSearchStore` uses `.urlQueryAllowed`, which leaves `&`, `+`, `#` unescaped.
-- [ ] 3.5 Study export formatting tests (if `add-pilot-study-mode` is merged; otherwise mark waiting). Waiting: `add-pilot-study-mode` not merged.
+- [x] 3.3 `AppEnvironment` tests. (implemented in `prepare-pilot-ios-build` 3.5 as `Tests/IndooroPilotSupportTests/AppEnvironmentTests.swift` (SwiftPM) and again against the app module in `MCindooroAppTests/AppEnvironmentTests.swift`; done on `integration/ios-person-a`.)
+- [x] 3.4 Search URL building tests (`Milch & Käse`, `a+b`, `50%`, `#1`). (`MCindooroAppTests/ProductSearchStoreTests.swift` and `PilotNetworkingTests`; the search encodes query items since `prepare-pilot-ios-build` 4.1. The lossy product list is tested there too.)
+- [x] 3.5 Study export formatting tests. (`MCindooroAppTests/StudyExportTests.swift`: header, 16 columns, one decimal, `-` for missing counters, CSV quoting, UTC timestamps, JSONL lines; pure logic also in `Tests/IndooroPilotSupportTests/StudyTests.swift`.)
 - [x] 3.6 Record every defect found by the tests as a blocker for the file owner in `STATUS.md`; do not fix files owned by others. (defects recorded in `STATUS.md`, section „Hinweise an Personen“)
 
 ## 4. CI

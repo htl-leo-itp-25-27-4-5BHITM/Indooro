@@ -31,3 +31,18 @@ Non-goals: server upload, analytics SDK, questionnaires in the app (paper/separa
 ## Migration / Rollback
 
 Flag off = feature invisible.
+
+## Baseline
+
+2026-10-16: `pilot/ios-study-mode`, `git fetch origin`; `origin/pilot/first-store` aktuell, danach gemäß Davids ausdrücklichem Fallback `git merge origin/pilot/ios-pilot-build` (Fast-forward auf `a20d385`). A ist noch nicht im Integrationsbranch; dieser Fallback ersetzt nur für B das ursprüngliche Start-Gate. Vor Source-Änderungen: swift test 77 + 9 Tests, 0 Fehler, Exit 0; Simulator-Build Exit 0, BUILD SUCCEEDED. DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer.
+
+## Implementation notes
+
+- NavigationSession ist vorhanden, veröffentlicht aber keinen der vier geforderten Zähler. routeBuildCount existiert nur intern in NavigationSessionCore. Keine Reflection/Änderung an Eriks Session; fehlende Werte bleiben „-“ statt als null Messwert ausgegeben zu werden.
+- Task 4.1 nennt einen Export unter kit/study-export-sample. Der Kit-Pfad gehört Person C; ein tatsächlich erzeugtes synthetisches Beispiel wird zunächst unter evidence/add-pilot-study-mode abgelegt. Übernahme durch C ist ein Eigentums-Gate.
+- Automatische und UI-Tests verwenden nur synthetische Test-IDs/Produktdaten, keine echten Personen.
+
+- Lesender Gegencheck, Korrekturrunde 1: ältere Sitzungen waren gespeichert, aber nicht mehr auswählbar. Gespeicherte Sitzungen werden jetzt angeboten und können vor dem Export ausgewählt werden; zusätzlicher Persistenztest mit zwei Sitzungen innerhalb derselben Sekunde. Persistierte und exportierte Zeitstempel behalten Millisekunden.
+- Export-Diagnose: DEBUG protokolliert nur Methode/Pfad der gemeinsamen Backend-Session (keine Querywerte/Bodys) und markiert Beginn/Ende des lokalen Exports. Der Beobachter übernimmt keinen Transport.
+
+- Studienstart nutzt in ContentView den bestehenden pendingLastStoreLayoutOpenRequest-Einstieg: aktive Filiale öffnen, sonst Übersicht beibehalten. Lesender Gegencheck ohne Befund; StoreMapPage bleibt unverändert.

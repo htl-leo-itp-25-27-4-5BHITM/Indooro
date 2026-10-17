@@ -1,0 +1,1 @@
+Das App-Icon ist `swift/indooro-EinkaeuferFinal/indooroApp/Assets.xcassets/AppIcon.appiconset/AppIcon.png`; ein Duplikat (`app-icon.png`) wurde aus der Evidence entfernt. Screenshots sind auf höchstens 1200 px (größere auf 900 px) Kantenlänge verkleinert.

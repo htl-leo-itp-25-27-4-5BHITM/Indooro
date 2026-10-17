@@ -110,3 +110,25 @@ Folge: Aenderung nur an der Erwartung, nicht an der Pipeline. `testWrongAisleCau
 zusaetzlich `projectedJumps == 1` und `maxProjectedStepMeters ≈ 17.0 ± 0.5`; ein Pipeline-Defekt (Gate gibt zu frueh frei,
 Projektion springt auf eine ferne Kante) wuerde diesen Wert ueberschreiten oder zusaetzliche Spruenge erzeugen.
 Echte Aufnahmen kennen diesen Sprung nicht: dort ist der Weg zwischen Gaengen stetig, und `maxStep` ist eine echte Kennzahl.
+
+## Nach improve-positioning-with-motion 2.1 und 3.1-3.3 (Flag `motionAided` aus)
+
+Beweis, dass das Verhalten mit Flag aus bitgenau gleich bleibt: Die `REPLAY ...`-Zeilen der zehn synthetischen Szenarien
+(`NavigationReplayTests`, ohne den nicht deterministischen Teil `planning=`) sind vor und nach der Aenderung Zeichen fuer Zeichen
+identisch (`swift test 2>&1 | grep REPLAY | sed 's/ planning=.*//'`, Diff leer; 170 Tests davor, 193 danach). Die Tabellen
+oben bleiben unveraendert gueltig. Zusaetzlich pruefen `MotionRecordingTests` und `MotionAidedTests` mit `ReplayMetrics ==`:
+
+- eine Aufnahme mit eingestreuten `step`/`heading`-Zeilen (auch ausserhalb des Zeitbereichs) liefert mit Flag aus dieselben Metriken wie ohne;
+- Flag an, aber keine Bewegungszeilen (alte Aufnahme), liefert dieselben Metriken wie Flag aus (walkClean, stationary60s, dropout);
+- `PoseFusionService.update` mit `motion: nil` und ohne den Parameter liefert identische Punkte.
+
+Synthetische Kennzahlen des Bewegungsmodells (Flag an, Seeds fest, **keine Evidenz**, nur Plausibilitaet; Parameter provisional):
+
+| Kennzahl | Flag aus | Flag an |
+| --- | --- | --- |
+| Pfadlaenge im Stand (stationary-Szenario, ab 5 s) | 2.92 m | 0.87 m |
+| Mittlerer Lag beim Gehen (gerader Gang, Schritte + Kompass) | 3.22 m | 2.01 m |
+| Tick der Uebernahme eines BLE-Sprungs im Stand | 11 | 20 |
+| Tick der Uebernahme eines BLE-Sprungs beim Gehen | gleich | gleich (0 Ticks Verzoegerung) |
+
+Die Auswertung mit echten Aufnahmen (Task 4.1) steht aus und braucht >= 5 Aufnahmen mit Truth-Markern aus zwei Orten.

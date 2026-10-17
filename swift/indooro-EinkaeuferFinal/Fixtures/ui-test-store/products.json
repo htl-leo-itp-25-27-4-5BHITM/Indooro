@@ -238,5 +238,13 @@
     "layoutCode": "510/6/2/2",
     "storeId": null,
     "storeCode": null
+  },
+  {
+    "id": 1031,
+    "name": "Milch & Käse Frühstücksbox 300g",
+    "price": 3.49,
+    "layoutCode": "520/2/4/2",
+    "storeId": null,
+    "storeCode": null
   }
 ]
