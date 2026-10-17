@@ -90,6 +90,11 @@ final class IndoorGraph {
         adjacencyByNode[nodeID]?.count ?? 0
     }
 
+    /// Kartenpunkte der Nachbarknoten; leer, wenn der Knoten unbekannt ist.
+    func neighborPoints(of nodeID: Int) -> [SIMD2<Float>] {
+        (adjacencyByNode[nodeID] ?? []).compactMap { nodesByID[$0.neighborNodeID]?.mapPoint }
+    }
+
     func areEdgesConnected(_ edgeA: Int, _ edgeB: Int) -> Bool {
         if edgeA == edgeB {
             return true
