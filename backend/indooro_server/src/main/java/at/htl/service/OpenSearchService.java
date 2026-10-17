@@ -18,6 +18,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.Operator;
 import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.indices.ExistsRequest;
 
 import java.io.IOException;
 import java.text.Collator;
@@ -58,29 +59,58 @@ public class OpenSearchService {
                 .size(finalSize)
                 .query(qry -> qry.bool(b -> {
                     b
-                            // 1) Exakter Name (z.B. "Nutella") => maximaler Boost
+                            // 1) Exakter Name in Originalschreibweise (z.B. "Nutella") => maximaler Boost
                             .should(sh -> sh.term(t -> t
                                     .field("name.keyword")
                                     .value(v -> v.stringValue(q))
                                     .boost(10f)
                             ))
-                            // 2) Phrase Match (z.B. "Milch 1L") => sehr wichtig
+                            // 2) Phrase (z.B. "Milch 1L")
                             .should(sh -> sh.matchPhrase(mp -> mp
                                     .field("name")
                                     .query(q)
+                                    .boost(6f)
+                            ))
+                            // 3) Alle Wörter im Namen, deutsche Analyse (Umlaute, Stamm, Synonyme)
+                            .should(sh -> sh.match(m -> m
+                                    .field("name")
+                                    .query(FieldValue.of(q))
+                                    .operator(Operator.And)
                                     .boost(4f)
                             ))
-                            // 3) Fuzzy Match für Tippfehler ("Nutela", "Milsch")
+                            // 4) Präfix beim Tippen ("backp" => "Backpulver")
+                            .should(sh -> sh.match(m -> m
+                                    .field("name.prefix")
+                                    .query(FieldValue.of(q))
+                                    .operator(Operator.And)
+                                    .boost(3f)
+                            ))
+                            // 5) Tippfehler ("Nutela", "Milsch"); erste Buchstaben bleiben stabil
                             .should(sh -> sh.match(m -> m
                                     .field("name")
                                     .query(FieldValue.of(q))
                                     .fuzziness("AUTO")
-                                    .prefixLength(1)      // lässt 1. Buchstaben stabil, hilft gegen Chaos
-                                    .maxExpansions(50)    // mehr Kandidaten bei Tippfehlern
+                                    .prefixLength(1)
+                                    .maxExpansions(50)
                                     .operator(Operator.And)
-                                    .boost(2f)
+                                    .boost(1.5f)
                             ))
-                            // 4) layoutCode exakt (falls jemand danach sucht)
+                            // 6) Wortteile innerhalb eines Namens ("wasser" in "Mineralwasser")
+                            .should(sh -> sh.match(m -> m
+                                    .field("name.parts")
+                                    .query(FieldValue.of(q))
+                                    .operator(Operator.And)
+                                    .boost(1f)
+                            ))
+                            // 6b) Entspannt: bei mehreren Suchwoertern genuegen 75 % ("frische milch" findet "Frischmilch")
+                            .should(sh -> sh.match(m -> m
+                                    .field("name")
+                                    .query(FieldValue.of(q))
+                                    .operator(Operator.Or)
+                                    .minimumShouldMatch("75%")
+                                    .boost(0.6f)
+                            ))
+                            // 7) layoutCode exakt (bestehendes Verhalten)
                             .should(sh -> sh.term(t -> t
                                     .field("layoutCode")
                                     .value(v -> v.stringValue(q))
@@ -88,19 +118,7 @@ public class OpenSearchService {
                             ))
                             .minimumShouldMatch("1");
 
-                    if (normalizedStoreId != null) {
-                        b.filter(filter -> filter.term(term -> term
-                                .field("storeId")
-                                .value(v -> v.stringValue(normalizedStoreId))
-                        ));
-                    }
-                    if (normalizedStoreCode != null) {
-                        b.filter(filter -> filter.term(term -> term
-                                .field("storeCode")
-                                .value(v -> v.stringValue(normalizedStoreCode))
-                        ));
-                    }
-
+                    applyStoreFilter(b, normalizedStoreId, normalizedStoreCode);
                     return b;
                 }))
         );
@@ -452,26 +470,13 @@ public class OpenSearchService {
     }
 
     /**
-     * Erstellt den Index mit Mapping
+     * Erstellt den Index mit der Definition aus {@link ProductIndexDefinition} (deutsche Analyse, Synonyme, Mapping).
      */
     public void createIndex() throws IOException {
-        if (client.indices().exists(e -> e.index(indexName)).value()) {
+        if (client.indices().exists(ExistsRequest.of(e -> e.index(indexName))).value()) {
             throw new WebApplicationException("Produktindex existiert bereits.", Response.Status.CONFLICT);
         }
-        client.indices().create(c -> c
-                    .index(indexName)
-                    .mappings(m -> m
-                            .properties("id", p -> p.integer(i -> i))
-                            .properties("name", p -> p.text(t -> t
-                                    .analyzer("standard")
-                                    .fields("keyword", f -> f.keyword(k -> k.ignoreAbove(256)))
-                            ))
-                            .properties("price", p -> p.double_(d -> d))
-                            .properties("layoutCode", p -> p.keyword(k -> k))
-                            .properties("storeId", p -> p.keyword(k -> k))
-                            .properties("storeCode", p -> p.keyword(k -> k))
-                    )
-            );
+        client.indices().create(ProductIndexDefinition.createIndexRequest(indexName));
         LOG.info("Index " + indexName + " created successfully");
     }
 
