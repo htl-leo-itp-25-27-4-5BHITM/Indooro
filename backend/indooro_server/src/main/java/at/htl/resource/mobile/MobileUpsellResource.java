@@ -2,6 +2,7 @@ package at.htl.resource.mobile;
 
 import at.htl.admin.dto.UpsellDtos;
 import at.htl.admin.service.UpsellSuggestionService;
+import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
@@ -11,6 +12,7 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+@PermitAll
 @Path("/api/mobile/upsell")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

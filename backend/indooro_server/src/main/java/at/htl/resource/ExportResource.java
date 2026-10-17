@@ -1,7 +1,9 @@
 package at.htl.resource;
 
+import at.htl.admin.service.AdminAccessService;
 import at.htl.model.Product;
 import at.htl.service.PdfExportService;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -18,11 +20,16 @@ public class ExportResource {
     @Inject
     PdfExportService pdfExportService;
 
+    @Inject
+    AdminAccessService adminAccessService;
+
     @POST
     @Path("/pdf")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces("application/pdf")
+    @RolesAllowed("admin")
     public Response exportBelegplanPdf(List<Product> products) {
+        adminAccessService.requireAdmin();
         try {
             // 1. PDF generieren
             byte[] pdfBytes = pdfExportService.generatePdf(products);

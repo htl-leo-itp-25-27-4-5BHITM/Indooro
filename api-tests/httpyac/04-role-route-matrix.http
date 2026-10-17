@@ -355,3 +355,69 @@ Accept: application/json
 Authorization: Bearer {{$global.storeToken}}
 
 ?? status == 403
+
+###
+# Store manager: legacy layout save denied (admin only; 403 is raised before any write)
+POST {{baseUrl}}/api/layout/current
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{$global.storeToken}}
+
+{"elements":[]}
+
+?? status == 403
+
+###
+# Region manager: legacy layout save denied (admin only; 403 is raised before any write)
+POST {{baseUrl}}/api/layout/current
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{$global.regionToken}}
+
+{"elements":[]}
+
+?? status == 403
+
+###
+# Store manager: legacy PDF export denied (admin only)
+POST {{baseUrl}}/api/export/pdf
+Content-Type: application/json
+Accept: application/pdf
+Authorization: Bearer {{$global.storeToken}}
+
+[]
+
+?? status == 403
+
+###
+# Region manager: legacy PDF export denied (admin only)
+POST {{baseUrl}}/api/export/pdf
+Content-Type: application/json
+Accept: application/pdf
+Authorization: Bearer {{$global.regionToken}}
+
+[]
+
+?? status == 403
+
+###
+# Store manager: index creation denied (admin only; DELETE /api/admin/index is intentionally not called here)
+POST {{baseUrl}}/api/admin/index/create
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{$global.storeToken}}
+
+{}
+
+?? status == 403
+
+###
+# Region manager: index creation denied (admin only)
+POST {{baseUrl}}/api/admin/index/create
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{$global.regionToken}}
+
+{}
+
+?? status == 403

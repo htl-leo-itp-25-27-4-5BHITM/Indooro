@@ -1,6 +1,8 @@
 package at.htl.resource;
 
+import at.htl.admin.service.AdminAccessService;
 import at.htl.service.PdfImportService;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -20,6 +22,9 @@ public class ImportResource {
     @Inject
     PdfImportService pdfImportService;
 
+    @Inject
+    AdminAccessService adminAccessService;
+
     public record ProductJson(
             Integer id,
             String name,
@@ -30,7 +35,9 @@ public class ImportResource {
     @Path("/pdf-to-json")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("admin")
     public Response convertPdfToJson(@RestForm("file") File file) {
+        adminAccessService.requireAdmin();
 
         if (file == null || !file.exists()) {
             return Response.status(Response.Status.BAD_REQUEST)
