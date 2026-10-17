@@ -94,7 +94,7 @@ try {
   const mobileBefore = await anonymousCurrent(store.id);
   assert.equal(mobileBefore.layoutId, initial.layoutId);
 
-  await admin.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${initial.layoutId}`, { waitUntil: "domcontentloaded" });
+  await admin.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${initial.layoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await admin.locator("#shopName").waitFor();
   const assignedList = admin.locator("#assignedBeaconsList");
   await assignedList.getByText(beacons[0].beaconCode, { exact: true }).waitFor();

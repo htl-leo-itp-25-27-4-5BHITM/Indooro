@@ -50,9 +50,16 @@ export interface LayoutEditorProps {
   onBack?: () => void;
 }
 
+// Legacy global editor numbering: the smallest free Indooro<n> (n >= 1) that no other beacon uses yet.
+const nextLegacyBeaconId = (document: LayoutDocument) => {
+  const used = new Set(document.elements.filter((element) => element.type === "beacon").map((element) => element.beaconId));
+  let n = 1;
+  while (used.has(`Indooro${n}`)) n += 1;
+  return `Indooro${n}`;
+};
 const labelFor = (element: LayoutElement) => element.label || TYPES.find((item) => item.type === element.type)?.label || element.type;
 const number = (value: string, fallback: number) => Number.isFinite(Number(value)) && value !== "" ? Number(value) : fallback;
-const confirmCriticalDelete = (element: LayoutElement) => !(["entrance", "exit", "checkout", "cashier", "wall", "shelf", "aisle", "beacon", "navigation-node"].includes(element.type)
+const confirmCriticalDelete = (element: LayoutElement) => !(["entrance", "exit", "checkout", "cashier", "wall", "shelf", "counter", "cooler", "freezer", "aisle", "beacon", "navigation-node"].includes(element.type)
   || (Array.isArray(element.productPositions) && element.productPositions.length > 0)
   || !!element.layoutCode) || window.confirm(`„${labelFor(element)}“ löschen? Die Karte oder Produktpositionen können danach ungültig sein.`);
 const publishWarningNote = (issues: ReturnType<typeof validateLayout>) => {
@@ -131,8 +138,9 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
     }
     const x = type === "beacon" ? world.x : world.x - definition.width / 2;
     const y = type === "beacon" ? world.y : world.y - definition.height / 2;
+    const legacyBeaconId = type === "beacon" && mode === "legacy" ? nextLegacyBeaconId(editorRef.current.document) : undefined;
     dispatch({ type: "create", element: { id: newElementId(editorRef.current.document), type, x, y, accessAngle: 90,
-      ...(type === "beacon" ? { beaconId: beacon?.beaconCode, beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } : { width: definition.width, height: definition.height }),
+      ...(type === "beacon" ? { beaconId: beacon?.beaconCode ?? legacyBeaconId, beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } : { width: definition.width, height: definition.height }),
       ...(type === "anchor" ? { anchorId: nextAnchorId(editorRef.current.document) } : {}) } });
     setTool("select");
   };
@@ -248,7 +256,9 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   };
   const capture = (event: ReactPointerEvent<SVGElement>) => svgRef.current?.setPointerCapture(event.pointerId);
-  const startGesture = (event: ReactPointerEvent<SVGElement>, next: Gesture) => { gesture.current = next; capture(event); event.stopPropagation(); event.preventDefault(); };
+  // preventDefault stops the browser from focusing the canvas, so focus it explicitly: Entf, Pfeile and Strg+Z then act on the canvas selection.
+  const focusCanvas = () => svgRef.current?.focus({ preventScroll: true });
+  const startGesture = (event: ReactPointerEvent<SVGElement>, next: Gesture) => { gesture.current = next; capture(event); focusCanvas(); event.stopPropagation(); event.preventDefault(); };
 
   const onBackgroundDown = (event: ReactPointerEvent<SVGSVGElement>) => {
     const at = localPoint(event);
@@ -265,12 +275,13 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
         const element: LayoutElement = { id: newElementId(editorRef.current.document), type: createType, x: world.x - definition.width / 2, y: world.y - definition.height / 2, width: definition.width, height: definition.height, accessAngle: 90 };
         startGesture(event, { kind: "create", start: world, element });
       }
-    } else setEditor((current) => selectElement(current, null));
+    } else { focusCanvas(); setEditor((current) => selectElement(current, null)); }
   };
 
   const onElementDown = (event: ReactPointerEvent<SVGElement>, element: LayoutElement) => {
     if (tool === "pan" || spaceHeld.current || event.button === 1) { startGesture(event, { kind: "pan", start: localPoint(event), viewport }); return; }
     if (tool === "create") return;
+    focusCanvas();
     setEditor((current) => selectElement(current, element.id ?? null));
     if (element.locked || element.id == null) { event.stopPropagation(); return; }
     startGesture(event, { kind: "move", id: element.id, start: screenToWorld(localPoint(event), viewport), element });

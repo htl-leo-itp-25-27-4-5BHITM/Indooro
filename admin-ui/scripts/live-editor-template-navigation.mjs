@@ -99,7 +99,7 @@ async function expectNativeBeforeUnloadStay(page, target) {
 }
 
 async function legacyWorkflow(page, versionsPath, baselineCount) {
-  const route = `${base}/admin/editor/?storeId=${store.id}`;
+  const route = `${base}/admin/editor/?storeId=${store.id}&legacy=1`;
   await page.goto(route, { waitUntil: "domcontentloaded" });
   await page.locator("#shopName").waitFor();
   await page.waitForFunction((expected) => document.querySelectorAll("#layersList button.layer-item").length === expected, baselineCount);
@@ -267,7 +267,7 @@ try {
   assert.deepEqual(beforeVersions, [initial.layoutId]);
 
   const legacy = await login();
-  await legacy.goto(`${base}/admin/editor/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
+  await legacy.goto(`${base}/admin/editor/?storeId=${store.id}&legacy=1`, { waitUntil: "domcontentloaded" });
   await legacy.locator("#shopName").waitFor();
   await legacy.waitForFunction(() => document.querySelectorAll("#layersList button.layer-item").length === 2);
   assert.equal(await legacy.locator("#layersList button.layer-item").count(), 2);

@@ -135,7 +135,7 @@ async function seedActive(store, label) {
 
 async function managerLegacyDraft(role, page, store, seed) {
   const versions = `/api/stores/${store.id}/layout/versions`;
-  await page.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${seed.version.layoutId}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${seed.version.layoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await page.locator("#shopName").waitFor();
   await page.reload({ waitUntil: "domcontentloaded" });
   await page.locator("#shopName").waitFor();

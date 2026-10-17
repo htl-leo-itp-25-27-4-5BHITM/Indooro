@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("draw, selection, move, undo and redo preserve completed editor states", async ({ page }) => {
-  await page.goto("/admin/editor/?storeId=store-1");
+  await page.goto("/admin/editor/?storeId=store-1&legacy=1");
   const canvas = page.locator("#canvasContainer");
   const elements = canvas.locator(".element-box");
   await expect(elements).toHaveCount(1);
@@ -35,7 +35,7 @@ test("draw, selection, move, undo and redo preserve completed editor states", as
 });
 
 test("property, duplicate and delete edits each restore through undo and redo", async ({ page }) => {
-  await page.goto("/admin/editor/?storeId=store-1");
+  await page.goto("/admin/editor/?storeId=store-1&legacy=1");
   const elements = page.locator("#canvasContainer .element-box");
   await page.locator("#layersList [data-layer-id]").first().click();
   await page.locator("#propW").fill("4");

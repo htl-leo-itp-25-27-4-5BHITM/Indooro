@@ -7,7 +7,7 @@ const unloadWouldWarn = (page) => page.evaluate(() => {
 });
 
 test("editor warns for unsaved edits and clears the warning only after a successful save", async ({ page }) => {
-  await page.goto("/admin/editor/?storeId=store-1");
+  await page.goto("/admin/editor/?storeId=store-1&legacy=1");
   const name = page.locator("#shopName");
   const status = page.locator("#saveStatus");
   expect(await unloadWouldWarn(page)).toBe(false);

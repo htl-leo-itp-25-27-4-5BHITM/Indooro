@@ -74,7 +74,7 @@ try {
   const mobileBefore = await mobileBeforeResponse.json();
   assert.equal(mobileBefore.layoutId, initial.layoutId);
 
-  await admin.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${initial.layoutId}`, { waitUntil: "domcontentloaded" });
+  await admin.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${initial.layoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await admin.locator("#shopName").waitFor();
   const modeButtons = [
     ["select", "#toolSelect", "Auswahlmodus"], ["move", "#toolMove", "Verschieben"],

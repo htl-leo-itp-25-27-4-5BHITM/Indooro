@@ -24,7 +24,7 @@ test("editor renders malicious layout and store values literally", async ({ page
     }
   }));
 
-  const response = await page.goto("/admin/editor/?storeId=store-1");
+  const response = await page.goto("/admin/editor/?storeId=store-1&legacy=1");
   expect(response.headers()["content-security-policy"]).toContain("script-src 'self'");
   await expect(page.locator("#storeContextBox")).toContainText(attack);
   await expect(page.locator("#assignedBeaconsList")).toContainText(attack);

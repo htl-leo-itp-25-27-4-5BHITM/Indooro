@@ -109,7 +109,7 @@ try {
   evidence.initial.anonymous = baseline.anonymous;
   evidence.initial.unchanged = true;
 
-  await legacy.goto(`${base}/admin/editor/`, { waitUntil: "domcontentloaded" });
+  await legacy.goto(`${base}/admin/editor/?legacy=1`, { waitUntil: "domcontentloaded" });
   await legacy.locator("#launchBtn").waitFor();
   const initialStorage = await legacy.evaluate(() => localStorage.getItem("indooro_live_layout"));
   evidence.legacy.preview.localStorageBefore = initialStorage;

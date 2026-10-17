@@ -92,7 +92,7 @@ try {
   assert.equal(currentBeforeLegacy.layoutId, active.layoutId);
 
   const legacy = await admin.context().newPage();
-  await legacy.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${active.layoutId}`, { waitUntil: "domcontentloaded" });
+  await legacy.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${active.layoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await legacy.locator("#shopName").waitFor();
   await legacy.evaluate(() => localStorage.removeItem("indooro_live_layout"));
   const legacyPreviewName = `Legacy preview ${stamp}`;

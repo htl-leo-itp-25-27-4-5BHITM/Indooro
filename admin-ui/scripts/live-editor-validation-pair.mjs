@@ -78,7 +78,7 @@ async function importCandidateFixture(page, storeId) {
 }
 
 async function importLegacyFixture(page, storeId, activeLayoutId) {
-  await page.goto(`${base}/admin/editor/?storeId=${storeId}&layoutId=${activeLayoutId}`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${base}/admin/editor/?storeId=${storeId}&layoutId=${activeLayoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await page.locator("#storeContextBox").waitFor();
   await page.locator("#shopName").waitFor();
   await page.locator("#fileInput").setInputFiles({ name: "validation.json", mimeType: "application/json", buffer: fixtureBytes });
