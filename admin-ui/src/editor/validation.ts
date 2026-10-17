@@ -55,6 +55,9 @@ function shelfProductTargets(shelf: LayoutElement): string[] {
   return [...new Set([...positions, ...(layoutCode ? [layoutCode] : [])])];
 }
 
+/** Same rule as the backend's LayoutDocumentValidator.validateAnchors: printed codes address a unique, URL-safe id. */
+export const ANCHOR_ID_PATTERN = /^[A-Z0-9-]{1,12}$/;
+
 export function validateLayout(document: LayoutDocument, assignedBeacons: AssignedBeacon[] = [], requireAssignedBeacons = false): LayoutIssue[] {
   const issues: LayoutIssue[] = [];
   const add = (severity: LayoutIssue["severity"], code: string, message: string, elementId: ElementId | null = null) => issues.push({ severity, code, message, elementId });
@@ -66,6 +69,7 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
   if (!document.elements.some((element) => element.type === "entrance")) add("error", "entrance", "Ein Eingang ist für die Navigation erforderlich.");
   const beaconIds = new Set<string>();
   const elementIds = new Set<string>();
+  const anchorIds = new Set<string>();
   const shelfAddresses = new Set<string>();
   const assigned = new Set(assignedBeacons.flatMap((beacon) => [beacon.id, beacon.beaconCode, beacon.identityKey].filter((value): value is string => Boolean(value))));
 
@@ -77,6 +81,16 @@ export function validateLayout(document: LayoutDocument, assignedBeacons: Assign
       const key = `${typeof id}:${String(id)}`;
       if (elementIds.has(key)) add("error", "element-duplicate", `${name} hat eine doppelte Element-ID.`, id);
       elementIds.add(key);
+    }
+    if (element.type === "anchor") {
+      const anchorId = element.anchorId;
+      if (typeof anchorId !== "string" || !ANCHOR_ID_PATTERN.test(anchorId)) {
+        add("error", "anchor-format", `${name} braucht eine QR-Anker-ID aus 1 bis 12 Zeichen A-Z, 0-9 oder Bindestrich.`, id);
+      } else if (anchorIds.has(anchorId)) {
+        add("error", "anchor-duplicate", `${name}: QR-Anker-ID ${anchorId} ist bereits vergeben.`, id);
+      } else {
+        anchorIds.add(anchorId);
+      }
     }
     const bounds = elementBounds(element);
     if (!Number.isFinite(element.x) || !Number.isFinite(element.y) || bounds.left < -1e-8 || bounds.top < -1e-8 || bounds.right > width + 1e-8 || bounds.bottom > height + 1e-8) {

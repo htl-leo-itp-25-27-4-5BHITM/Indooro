@@ -34,10 +34,15 @@ struct ShoppingStopMarker: View {
 
 struct ShoppingSessionPanel: View {
     let snapshot: ShoppingRouteSnapshot
+    /// „Route ab …“ bei Fallback-Ursprung, sonst nil.
+    let routeOriginText: String?
+    /// Kundensprachlicher Standorttext eines Stopps (Regal des ersten Artikels).
+    let locationText: (ShoppingStop) -> String?
     let onOpenList: () -> Void
     let onMarkCurrentStopDone: () -> Void
     let onSkipCurrentStop: () -> Void
     let onToggleMode: () -> Void
+    let onReplan: () -> Void
 
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
 
@@ -54,10 +59,24 @@ struct ShoppingSessionPanel: View {
                             .font(.subheadline.weight(.bold))
                             .lineLimit(1)
 
+                        if let location = locationText(currentStop) {
+                            Text(location)
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(accent)
+                                .lineLimit(1)
+                        }
+
                         Text(currentStop.itemNamesPreview)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
+
+                        if let routeOriginText {
+                            Text(routeOriginText)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
                     }
 
                     Spacer(minLength: 0)
@@ -65,6 +84,13 @@ struct ShoppingSessionPanel: View {
                     VStack(alignment: .trailing, spacing: 3) {
                         Button(snapshot.routeMode.title) {
                             onToggleMode()
+                        }
+                        .font(.caption2.weight(.semibold))
+                        .buttonStyle(.plain)
+                        .foregroundStyle(accent)
+
+                        Button("Neu planen") {
+                            onReplan()
                         }
                         .font(.caption2.weight(.semibold))
                         .buttonStyle(.plain)
@@ -619,6 +645,7 @@ struct ProductsPage: View {
                 ForEach(plannedItems.prefix(7)) { item in
                     PlannedProductRow(
                         item: item,
+                        locationText: shelfPrimaryText(for: item, shelves: beaconManager.shelves),
                         onRemove: {
                             removePlannedItem(item)
                         }
@@ -1078,8 +1105,16 @@ private struct ProductSuggestion: Identifiable {
     let tint: Color
 }
 
+/// Regaltext eines Artikels in Kundensprache (Primaertext des Descriptors); nil ohne passendes Regal.
+private func shelfPrimaryText(for item: ShoppingListItem, shelves: [LayoutElement]) -> String? {
+    guard let layoutCode = item.layoutCode else { return nil }
+    return ShelfLocationDescriptor.make(layoutCode: layoutCode, shelves: shelves)?.primary
+}
+
 private struct PlannedProductRow: View {
     let item: ShoppingListItem
+    /// Standorttext aus dem Elternview; ohne Wert: „Freier Eintrag“ bzw. Testbereich-Hinweis.
+    let locationText: String?
     let onRemove: () -> Void
 
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
@@ -1107,7 +1142,7 @@ private struct PlannedProductRow: View {
                     }
                 }
 
-                Text(item.layoutCode.map { "Regal \($0)" } ?? "Freier Eintrag")
+                Text(locationText ?? (item.layoutCode == nil ? "Freier Eintrag" : ShelfLocationDescriptor.notInTestAreaText))
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
@@ -1159,6 +1194,7 @@ struct ShoppingListsPage: View {
     @State private var sharePresentation: ShoppingSharePresentation?
     @State private var showsCompletedItems = false
     @State private var showsUnresolvedItems = false
+    @State private var storedPreview: ShoppingRouteSnapshot?
 
     private let accent = Color(red: 0.12, green: 0.50, blue: 0.39)
 
@@ -1178,16 +1214,57 @@ struct ShoppingListsPage: View {
         beaconManager.activeLayoutStore ?? beaconManager.detectedStore
     }
 
+    /// Vorschau der gewaehlten Liste. Die aktive Tour-Liste liest den gespeicherten Snapshot der
+    /// Einkaufs-Session; andere Listen nutzen `storedPreview`, das nur bei Aenderung von Liste,
+    /// offenen Artikeln, Fahrmodus oder Layout-Revision neu berechnet wird (nie im View-Body).
     private var selectedPreview: ShoppingRouteSnapshot? {
         guard let selectedList else {
             return nil
         }
+        if selectedList.id == sessionManager.activeListID,
+           let snapshot = sessionManager.snapshot,
+           snapshot.listID == selectedList.id {
+            return snapshot
+        }
+        return storedPreview
+    }
 
-        return sessionManager.previewSnapshot(
+    private struct PreviewKey: Equatable {
+        struct Item: Equatable {
+            let id: UUID
+            let layoutCode: String?
+            let sortOrder: Int
+        }
+
+        let listID: UUID?
+        let openItems: [Item]
+        let routeMode: ShoppingRouteMode
+        let layoutRevision: Int
+        let isActiveList: Bool
+    }
+
+    private var previewKey: PreviewKey {
+        PreviewKey(
+            listID: selectedList?.id,
+            openItems: openItems.map {
+                PreviewKey.Item(id: $0.id, layoutCode: $0.layoutCode, sortOrder: $0.effectiveSortOrder)
+            },
+            routeMode: sessionManager.routeMode,
+            layoutRevision: beaconManager.layoutRevision,
+            isActiveList: selectedList?.id == sessionManager.activeListID
+        )
+    }
+
+    private func recomputeStoredPreview() {
+        guard let selectedList, selectedList.id != sessionManager.activeListID else {
+            storedPreview = nil
+            return
+        }
+        storedPreview = sessionManager.previewSnapshot(
             for: selectedList.id,
             listManager: listManager,
             beaconManager: beaconManager,
-            mode: selectedList.id == sessionManager.activeListID ? sessionManager.routeMode : .optimized
+            mode: .optimized
         )
     }
 
@@ -1304,6 +1381,9 @@ struct ShoppingListsPage: View {
             ShareSheet(activityItems: [presentation.fileURL]) { completed in
                 completeShare(presentation, completed: completed)
             }
+        }
+        .onChange(of: previewKey, initial: true) { _, _ in
+            recomputeStoredPreview()
         }
         .onAppear {
             preloadUpcomingUpsells()
@@ -1471,6 +1551,7 @@ struct ShoppingListsPage: View {
                 ForEach(openItems) { item in
                     ShoppingChecklistRow(
                         item: item,
+                        locationText: shelfPrimaryText(for: item, shelves: beaconManager.shelves),
                         isCompleted: false,
                         onToggle: {
                             completeItem(item, status: .done, source: "shopping_list")
@@ -1498,6 +1579,7 @@ struct ShoppingListsPage: View {
                     ForEach(preview.unresolvedItems) { item in
                         ShoppingChecklistRow(
                             item: item,
+                            locationText: shelfPrimaryText(for: item, shelves: beaconManager.shelves),
                             isCompleted: false,
                             onToggle: {
                                 completeItem(item, status: .missing, source: "shopping_list")
@@ -1533,6 +1615,7 @@ struct ShoppingListsPage: View {
                     ForEach(completedItems) { item in
                         ShoppingChecklistRow(
                             item: item,
+                            locationText: shelfPrimaryText(for: item, shelves: beaconManager.shelves),
                             isCompleted: true,
                             onToggle: {
                                 if let selectedList {
@@ -1716,6 +1799,8 @@ struct ShoppingListsPage: View {
 
 private struct ShoppingChecklistRow: View {
     let item: ShoppingListItem
+    /// Standorttext aus dem Elternview; ohne Wert: „Keine Regalposition“ bzw. Testbereich-Hinweis.
+    let locationText: String?
     let isCompleted: Bool
     let onToggle: () -> Void
 
@@ -1743,7 +1828,7 @@ private struct ShoppingChecklistRow: View {
                         }
                     }
 
-                    Text(item.layoutCode.map { "Regal \($0)" } ?? "Keine Regalposition")
+                    Text(locationText ?? (item.layoutCode == nil ? "Keine Regalposition" : ShelfLocationDescriptor.notInTestAreaText))
                         .font(.caption)
                         .foregroundStyle(.secondary)
 

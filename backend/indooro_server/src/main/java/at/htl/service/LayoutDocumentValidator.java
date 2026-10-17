@@ -9,6 +9,7 @@ import jakarta.ws.rs.core.Response;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /** Validates the shared legacy and per-store layout document before it reaches persistence. */
 @ApplicationScoped
@@ -19,6 +20,7 @@ public class LayoutDocumentValidator {
     public static final int MAX_TEXT_LENGTH = 200;
     public static final double MAX_GRID_DIMENSION = 1_000;
     public static final long MAX_MOBILE_ELEMENT_ID = 9_007_199_254_740_991L;
+    private static final Pattern ANCHOR_ID_PATTERN = Pattern.compile("[A-Z0-9-]{1,12}");
 
     /** Published layouts are decoded as Int64 by the iOS client. Drafts may retain legacy IDs for repair. */
     public void validateMobileElementIds(JsonNode document) {
@@ -31,6 +33,28 @@ public class LayoutDocumentValidator {
             if (id == null || !id.isIntegralNumber() || !id.canConvertToLong()
                     || id.longValue() <= 0 || id.longValue() > MAX_MOBILE_ELEMENT_ID) {
                 throw badRequest("elements[" + index + "].id muss fuer die iOS-Karte eine positive sichere Ganzzahl sein.");
+            }
+        }
+    }
+
+    /** QR anchors must be addressable by a unique, URL-safe id. Drafts may hold incomplete anchors. */
+    public void validateAnchors(JsonNode document) {
+        JsonNode elements = document == null ? null : document.get("elements");
+        if (elements == null || !elements.isArray()) {
+            throw badRequest("elements muss eine Liste sein.");
+        }
+        Set<String> anchorIds = new HashSet<>();
+        for (int index = 0; index < elements.size(); index++) {
+            JsonNode element = elements.get(index);
+            if (!"anchor".equals(element.path("type").asText())) {
+                continue;
+            }
+            JsonNode anchorId = element.get("anchorId");
+            if (anchorId == null || !anchorId.isTextual() || !ANCHOR_ID_PATTERN.matcher(anchorId.asText()).matches()) {
+                throw badRequest("elements[" + index + "].anchorId muss aus 1 bis 12 Zeichen A-Z, 0-9 oder Bindestrich bestehen.");
+            }
+            if (!anchorIds.add(anchorId.asText())) {
+                throw badRequest("elements[" + index + "].anchorId „" + anchorId.asText() + "“ ist bereits einem anderen QR-Anker zugeordnet.");
             }
         }
     }

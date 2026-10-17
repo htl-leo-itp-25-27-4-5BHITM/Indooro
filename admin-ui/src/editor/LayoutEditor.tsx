@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { ApiClient } from "../api/client";
 import { fitViewport, screenToWorld, zoomAt, type Point, type Viewport } from "./geometry";
-import { assignShelfSections, chooseShelfCategory, elementFill, shelfMetadata, shelfMetadataChanges } from "./metadata";
+import { assignShelfSections, chooseShelfCategory, elementFill, nextAnchorId, shelfMetadata, shelfMetadataChanges } from "./metadata";
 import { applyCommand, createEditorState, isDirty, isMobileElementId, markSaved, newElementId, parseImportedDocument, redo, repairMobileElementIds, replaceDocument, selectElement, undo, type EditorCommand, type EditorState, type ElementId, type LayoutDocument, type LayoutElement } from "./model";
 import { validateLayout, type AssignedBeacon } from "./validation";
 import { UnderlayPanel } from "./UnderlayPanel";
@@ -18,6 +18,7 @@ const TYPES = [
   { type: "wall", label: "Wand", color: "#667085", width: 5, height: 0.5 },
   { type: "poi", label: "POI", color: "#947da6", width: 2, height: 2 },
   { type: "beacon", label: "Beacon", color: "#b6635f", width: 0, height: 0 },
+  { type: "anchor", label: "QR-Anker", color: "#1f2937", width: 1, height: 1 },
 ] as const;
 
 const TEMPLATES = [
@@ -131,7 +132,8 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
     const x = type === "beacon" ? world.x : world.x - definition.width / 2;
     const y = type === "beacon" ? world.y : world.y - definition.height / 2;
     dispatch({ type: "create", element: { id: newElementId(editorRef.current.document), type, x, y, accessAngle: 90,
-      ...(type === "beacon" ? { beaconId: beacon?.beaconCode, beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } : { width: definition.width, height: definition.height }) } });
+      ...(type === "beacon" ? { beaconId: beacon?.beaconCode, beaconDbId: beacon?.beaconId, identityKey: beacon?.identityKey, uuid: beacon?.uuid, major: beacon?.major, minor: beacon?.minor } : { width: definition.width, height: definition.height }),
+      ...(type === "anchor" ? { anchorId: nextAnchorId(editorRef.current.document) } : {}) } });
     setTool("select");
   };
   const placeKeyboardElement = () => createAtWorld(keyboardPointRef.current, placementTypeRef.current);
@@ -255,7 +257,8 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
     }
     if (tool === "create") {
       const world = screenToWorld(at, viewport);
-      if (createType === "beacon") createAtWorld(world, createType);
+      // Beacons and QR anchors are placed by a single click at a fixed size.
+      if (createType === "beacon" || createType === "anchor") createAtWorld(world, createType);
       else {
         const definition = TYPES.find((item) => item.type === createType)!;
         const element: LayoutElement = { id: newElementId(editorRef.current.document), type: createType, x: world.x - definition.width / 2, y: world.y - definition.height / 2, width: definition.width, height: definition.height, accessAngle: 90 };
@@ -486,7 +489,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
               const cy = element.y + h / 2;
               const rotation = element.rotation || 0;
               return <g key={`${element.id ?? "missing"}-${index}`} transform={`rotate(${rotation} ${cx} ${cy})`}>
-                {point ? <g onPointerDown={(event) => onElementDown(event, element)}><circle cx={element.x} cy={element.y} r={Math.max(0.32, 8 / viewport.scale)} fill={elementFill(element, definition?.color || "#b6635f")} stroke={active ? "#123f40" : "white"} strokeWidth={2 / viewport.scale} /><circle cx={element.x} cy={element.y} r={Math.max(0.55, 14 / viewport.scale)} fill="transparent" /></g> : <g onPointerDown={(event) => onElementDown(event, element)}><rect x={element.x} y={element.y} width={w} height={h} rx={Math.min(0.25, h / 5)} fill={elementFill(element, definition?.color || "#7d91a0")} stroke={active ? "#123f40" : issueFor(element.id) ? "#c23b42" : "#ffffff"} strokeWidth={(active ? 3 : 1.5) / viewport.scale} /><text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={Math.min(0.7, Math.max(0.3, w / 8))} pointerEvents="none">{w >= 2 ? labelFor(element).slice(0, 16) : ""}</text></g>}
+                {point ? <g onPointerDown={(event) => onElementDown(event, element)}><circle cx={element.x} cy={element.y} r={Math.max(0.32, 8 / viewport.scale)} fill={elementFill(element, definition?.color || "#b6635f")} stroke={active ? "#123f40" : "white"} strokeWidth={2 / viewport.scale} /><circle cx={element.x} cy={element.y} r={Math.max(0.55, 14 / viewport.scale)} fill="transparent" /></g> : <g onPointerDown={(event) => onElementDown(event, element)}><rect x={element.x} y={element.y} width={w} height={h} rx={Math.min(0.25, h / 5)} fill={elementFill(element, definition?.color || "#7d91a0")} stroke={active ? "#123f40" : issueFor(element.id) ? "#c23b42" : "#ffffff"} strokeWidth={(active ? 3 : 1.5) / viewport.scale} /><text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fill="white" fontSize={element.type === "anchor" ? 0.45 : Math.min(0.7, Math.max(0.3, w / 8))} pointerEvents="none">{element.type === "anchor" ? "QR" : w >= 2 ? labelFor(element).slice(0, 16) : ""}</text></g>}
                 {active && !element.locked && !point && <><circle className="le-handle" cx={element.x + w} cy={element.y + h} r={7 / viewport.scale} strokeWidth={2 / viewport.scale} onPointerDown={(event) => startGesture(event, { kind: "resize", id: element.id!, start: screenToWorld(localPoint(event), viewport), element })} /><line x1={cx} y1={element.y} x2={cx} y2={element.y - 18 / viewport.scale} stroke="#123f40" strokeWidth={2 / viewport.scale} pointerEvents="none" /><circle className="le-handle le-rotate" cx={cx} cy={element.y - 18 / viewport.scale} r={7 / viewport.scale} strokeWidth={2 / viewport.scale} onPointerDown={(event) => { const world = screenToWorld(localPoint(event), viewport); startGesture(event, { kind: "rotate", id: element.id!, start: world, element, initialAngle: Math.atan2(world.y - cy, world.x - cx) * 180 / Math.PI }); }} /></>}
               </g>;
             })}
@@ -501,7 +504,9 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
           <p className="le-hint">Elementtyp: {TYPES.find((item) => item.type === selected.type)?.label || selected.type}</p>
           <label>Bezeichnung<input type="text" maxLength={200} value={selected.label || ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { label: event.target.value } })} /></label>
           <div className="le-number-grid">{(["x", "y", ...(selected.type === "beacon" ? [] : ["width", "height"]), "rotation"] as const).map((field) => <label key={field}>{({ x: "X", y: "Y", width: "Breite", height: "Höhe", rotation: "Winkel" } as Record<string, string>)[field]}<input type="number" step={field === "rotation" ? 1 : snapping ? 1 : 0.1} value={Number(selected[field] ?? 0)} disabled={selected.locked} onChange={(event) => changeNumber(field as "x" | "y" | "width" | "height" | "rotation", event.target.value)} /></label>)}</div>
-          {selected.type !== "beacon" && <label>Zugriffswinkel<input type="number" min={0} max={360} step={1} value={Number(selected.accessAngle ?? 90)} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { accessAngle: Math.max(0, Math.min(360, number(event.target.value, Number(selected.accessAngle ?? 90)))) } })} /></label>}
+          {selected.type === "anchor" && <label>QR-Anker-ID<input type="text" maxLength={12} value={selected.anchorId ?? ""} placeholder="A1" disabled={selected.locked} aria-describedby="le-anchor-id-hint" onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { anchorId: event.target.value.toUpperCase() } })} /></label>}
+          {selected.type === "anchor" && <p id="le-anchor-id-hint" className="le-hint">Eindeutige ID pro Layout: A–Z, 0–9 und Bindestrich, höchstens 12 Zeichen. Diese ID steht auf dem Ausdruck.</p>}
+          {selected.type !== "beacon" && selected.type !== "anchor" && <label>Zugriffswinkel<input type="number" min={0} max={360} step={1} value={Number(selected.accessAngle ?? 90)} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: { accessAngle: Math.max(0, Math.min(360, number(event.target.value, Number(selected.accessAngle ?? 90)))) } })} /></label>}
           {selected.type === "shelf" && <><div className="le-number-grid"><label>Kategoriecode<input type="text" maxLength={180} value={shelfMetadata(selected).code} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { code: event.target.value }) })} /></label><label>Abschnitt<input type="number" min={1} step={1} value={shelfMetadata(selected).section ?? ""} disabled={selected.locked} onChange={(event) => dispatch({ type: "patch", id: selected.id!, changes: shelfMetadataChanges(selected, { section: event.target.value === "" ? null : number(event.target.value, shelfMetadata(selected).section || 1) }) })} /></label></div>
           {api && <label>Produktkategorie auswählen<select value={categories.some((item) => String(item.categoryCode) === shelfMetadata(selected).code) ? shelfMetadata(selected).code : ""} disabled={selected.locked || categories.length === 0} onChange={(event) => { if (event.target.value) dispatch({ type: "patch", id: selected.id!, changes: chooseShelfCategory(document, selected, event.target.value) }); }}><option value="">Kategorie wählen</option>{categories.map((item) => <option key={item.categoryCode} value={item.categoryCode}>{item.categoryCode} · {item.categoryName}</option>)}</select></label>}
           {api && categoryError && <p className="le-category-error" role="status">Kategorien nicht verfügbar. Code kann manuell eingegeben werden. <button type="button" onClick={() => setCategoryRevision((value) => value + 1)}>Erneut laden</button></p>}

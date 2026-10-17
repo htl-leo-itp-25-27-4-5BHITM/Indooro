@@ -1,0 +1,46 @@
+.anchor-print-page .anchor-print-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+.anchor-print-page .anchor-print-notice { color: var(--text-muted); margin: 0 0 1rem; }
+
+.anchor-print-page .anchor-sheet {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(9rem, auto);
+  gap: .75rem;
+  margin-bottom: 1.5rem;
+}
+
+.anchor-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: .75rem;
+  border: 1px dashed var(--border-strong);
+  border-radius: .5rem;
+  background: #ffffff;
+  color: #111111;
+  text-align: center;
+  break-inside: avoid;
+}
+.anchor-card p { margin: .15rem 0; }
+.anchor-qr { width: 4.5cm; height: 4.5cm; max-width: 100%; }
+.anchor-label { font-weight: 700; font-size: 1rem; }
+.anchor-id { font-family: ui-monospace, monospace; font-size: .9rem; }
+.anchor-store, .anchor-hint { font-size: .85rem; }
+.anchor-hint { color: #444444; }
+
+@media print {
+  @page { size: A4; margin: 1cm; }
+  body, .admin-shell, .workspace, .content { background: #ffffff !important; }
+  .skip-link, .masthead, .sidebar, .content > h1, .anchor-print-toolbar, .anchor-print-notice { display: none !important; }
+  .workspace { display: block; min-height: 0; }
+  .content { width: 100%; max-width: none; padding: 0; overflow: visible; }
+  .anchor-print-page .anchor-sheet {
+    grid-auto-rows: 8.9cm;
+    gap: 0;
+    margin: 0;
+    break-after: page;
+  }
+  .anchor-print-page .anchor-sheet:last-child { break-after: auto; }
+  .anchor-card { height: 8.9cm; border-color: transparent; }
+}

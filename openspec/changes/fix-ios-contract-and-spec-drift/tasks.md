@@ -40,25 +40,25 @@
 
 ## 7. Layout Fallback And Cache
 
-- [ ] 7.1 Add `LayoutCacheStore` that writes and reads `Application Support/LayoutCache/<storeId>.json` and `default.json` with `isExcludedFromBackup = true`.
-- [ ] 7.2 Save the decoded layout response after every successful store or default layout application.
-- [ ] 7.3 On store layout failure, apply the cached layout for that store if present and set the description to „<store> • Offline-Kopie vom <Datum>“; otherwise keep the current failure behavior.
-- [ ] 7.4 On default layout failure, try `default.json` before the history fallback.
+- [x] 7.1 Add `LayoutCacheStore` that writes and reads `Application Support/LayoutCache/<storeId>.json` and `default.json` with `isExcludedFromBackup = true`. (implemented in add-pilot-guided-tour-fallbacks)
+- [x] 7.2 Save the decoded layout response after every successful store or default layout application. (implemented in add-pilot-guided-tour-fallbacks)
+- [x] 7.3 On store layout failure, apply the cached layout for that store if present and set the description to „<store> • Offline-Kopie vom <Datum>“; otherwise keep the current failure behavior. (implemented in add-pilot-guided-tour-fallbacks)
+- [x] 7.4 On default layout failure, try `default.json` before the history fallback. (implemented in add-pilot-guided-tour-fallbacks)
 - [ ] 7.5 When `fallback == true`, set the description to „<store> • Standard-Layout (kein aktives Filial-Layout)“ and show a warning badge in the indoor header.
 
 ## 8. Low-Confidence Rendering
 
-- [ ] 8.1 Publish `isPositionTrusted` from `BeaconManager` as `trackingMode == .debugNoBeacons || (!isLowConfidence && activeMeasurementCount >= 3)`.
-- [ ] 8.2 Add `isTrusted` to `UserLocationMarker`; draw 45 % opacity plus a dashed 3 m uncertainty ring when not trusted.
-- [ ] 8.3 Show the status banner with `navigationStatusMessage ?? "Position ungenau"` and „Position setzen“ in the indoor header while not trusted.
-- [ ] 8.4 Implement „Position setzen“ by setting `tapSetsTarget = false` and showing the „Tippen setzt Position“ badge.
+- [x] 8.1 Publish `isPositionTrusted` from `BeaconManager` as `trackingMode == .debugNoBeacons || (!isLowConfidence && activeMeasurementCount >= 3)`. (implemented in add-pilot-guided-tour-fallbacks)
+- [x] 8.2 Add `isTrusted` to `UserLocationMarker`; draw 45 % opacity plus a dashed 3 m uncertainty ring when not trusted. (implemented in add-pilot-guided-tour-fallbacks)
+- [x] 8.3 Show the status banner with `navigationStatusMessage ?? "Position ungenau"` and „Position setzen“ in the indoor header while not trusted. (implemented in add-pilot-guided-tour-fallbacks)
+- [x] 8.4 Implement „Position setzen“ by setting `tapSetsTarget = false` and showing the „Tippen setzt Position“ badge. (implemented in add-pilot-guided-tour-fallbacks)
 - [ ] 8.5 Change the AR low-confidence text to „Signal schwach. Kalibrierung empfohlen (Position setzen).“
 
 ## 9. Walkable Graph
 
-- [ ] 9.1 Replace axis-aligned blocking in `IndoorGraphBuilder.fromLayout` with rotated-rectangle cell coverage.
-- [ ] 9.2 Add unit-testable geometry helpers for rotated-rectangle cell coverage (cell center inside, edge intersection).
-- [ ] 9.3 Log shelves whose nearest free node is unreachable from the layout entrance in DEBUG builds.
+- [x] 9.1 Replace axis-aligned blocking in `IndoorGraphBuilder.fromLayout` with rotated-rectangle cell coverage. (implemented in add-pilot-guided-tour-fallbacks)
+- [x] 9.2 Add unit-testable geometry helpers for rotated-rectangle cell coverage (cell center inside, edge intersection). (implemented in add-pilot-guided-tour-fallbacks)
+- [x] 9.3 Log shelves whose nearest free node is unreachable from the layout entrance in DEBUG builds. (implemented in add-pilot-guided-tour-fallbacks)
 - [x] 9.4 Record in `docs/specs/ROADMAP.md` that `accessAngle` semantics must be defined in `store-layout-management` and the editor before the client uses it.
 
 ## 10. Cleanup And Copy

@@ -1,0 +1,20 @@
+[
+  {
+    "id": "5a1d0e2f-8c3b-4d7e-9f10-2b3c4d5e6f70",
+    "storeCode": "UITEST-001",
+    "name": "UI-Testmarkt",
+    "city": "Leonding",
+    "address": "Poststraße 10, 4060 Leonding",
+    "latitude": 48.2680495,
+    "longitude": 14.2618747
+  },
+  {
+    "id": "b7e2c1d0-4f3a-4e5b-9a6c-1d2e3f4a5b6c",
+    "storeCode": "UITEST-002",
+    "name": "UI-Testmarkt 2",
+    "city": "Leonding",
+    "address": "Teststraße 2, 4060 Leonding",
+    "latitude": 48.2701,
+    "longitude": 14.2650
+  }
+]

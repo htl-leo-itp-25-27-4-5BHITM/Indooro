@@ -54,9 +54,15 @@ struct LayoutElement: Codable, Identifiable, Sendable {
     let rotation: Double?
     let accessAngle: Double?
     let locked: Bool?
+    /// Nur fuer `type == "anchor"`: QR-Anker-Kennung (`[A-Z0-9-]{1,12}`, eindeutig pro Layout).
+    let anchorId: String?
 
     var isBeacon: Bool {
         type == "beacon"
+    }
+
+    var isAnchor: Bool {
+        type == "anchor"
     }
 
     var categoryBase: String? {
@@ -77,6 +83,8 @@ struct LayoutElement: Codable, Identifiable, Sendable {
     }
 
     /// Match a product's complete category segment, not a numeric prefix such as 31 in 310.
+    /// Layout codes need at least two segments with a numeric second segment (meter).
+    /// An element without a meter matches any meter.
     func matchesProductLayoutCode(_ layoutCode: String) -> Bool {
         let parts = layoutCode.split(separator: "/", omittingEmptySubsequences: false)
         guard parts.count >= 2,
@@ -104,6 +112,7 @@ struct LayoutElement: Codable, Identifiable, Sendable {
         case rotation
         case accessAngle
         case locked
+        case anchorId
     }
 
     private enum AliasCodingKeys: String, CodingKey {
@@ -147,6 +156,7 @@ struct LayoutElement: Codable, Identifiable, Sendable {
         rotation = try container.decodeIfPresent(Double.self, forKey: .rotation)
         accessAngle = try container.decodeIfPresent(Double.self, forKey: .accessAngle)
         locked = try container.decodeIfPresent(Bool.self, forKey: .locked)
+        anchorId = try container.decodeIfPresent(String.self, forKey: .anchorId)
     }
 
     private static func parseMeter(from category: String?) -> Int? {

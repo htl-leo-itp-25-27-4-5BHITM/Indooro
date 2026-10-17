@@ -12,6 +12,7 @@ import java.io.InputStream;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LayoutDocumentValidatorTest {
 
@@ -227,6 +228,70 @@ class LayoutDocumentValidatorTest {
         inconsistentKey.put("minor", 1);
         ((ArrayNode) missingKeyParts.get("elements")).add(inconsistentKey);
         assertBadRequest(missingKeyParts);
+    }
+
+    @Test
+    void acceptsValidAnchorsAndLayoutsWithoutAnchors() {
+        ObjectNode withoutAnchors = layout();
+        ((ArrayNode) withoutAnchors.get("elements")).add(elementWithoutId(1, 1));
+        assertDoesNotThrow(() -> validator.validateAnchors(withoutAnchors));
+
+        ObjectNode anchored = layout();
+        ((ArrayNode) anchored.get("elements"))
+                .add(anchor("A1", 1, 1))
+                .add(anchor("A12", 5, 1))
+                .add(anchor("GANG-4-ENDE", 9, 1));
+        assertDoesNotThrow(() -> validator.validate(anchored));
+        assertDoesNotThrow(() -> validator.validateAnchors(anchored));
+    }
+
+    @Test
+    void publicationRejectsDuplicateAnchorIdsWithElementIndex() {
+        ObjectNode layout = layout();
+        ((ArrayNode) layout.get("elements"))
+                .add(anchor("A1", 1, 1))
+                .add(anchor("A2", 2, 1))
+                .add(anchor("A1", 3, 1));
+        assertDoesNotThrow(() -> validator.validate(layout)); // Drafts may keep duplicates until publication.
+        WebApplicationException duplicate = assertThrows(WebApplicationException.class,
+                () -> validator.validateAnchors(layout));
+        assertEquals(400, duplicate.getResponse().getStatus());
+        assertTrue(duplicate.getMessage().contains("elements[2]"));
+    }
+
+    @Test
+    void publicationRejectsMalformedAnchorIds() {
+        for (String anchorId : new String[]{"a1", "A1234567890123", "A1_2", "A 1", "A/1", "Ä1", ""}) {
+            ObjectNode layout = layout();
+            ((ArrayNode) layout.get("elements")).add(anchor(anchorId, 1, 1));
+            assertDoesNotThrow(() -> validator.validate(layout)); // Drafts remain repairable.
+            WebApplicationException malformed = assertThrows(WebApplicationException.class,
+                    () -> validator.validateAnchors(layout));
+            assertEquals(400, malformed.getResponse().getStatus(), anchorId);
+        }
+    }
+
+    @Test
+    void publicationRejectsAnchorWithoutTextualId() {
+        ObjectNode layout = layout();
+        ObjectNode withoutId = anchor("A1", 1, 1);
+        withoutId.remove("anchorId");
+        ((ArrayNode) layout.get("elements")).add(withoutId);
+        assertDoesNotThrow(() -> validator.validate(layout));
+        assertEquals(400, assertThrows(WebApplicationException.class,
+                () -> validator.validateAnchors(layout)).getResponse().getStatus());
+
+        withoutId.put("anchorId", 12);
+        assertEquals(400, assertThrows(WebApplicationException.class,
+                () -> validator.validateAnchors(layout)).getResponse().getStatus());
+    }
+
+    private ObjectNode anchor(String anchorId, double x, double y) {
+        ObjectNode anchor = elementWithoutId(x, y);
+        anchor.put("type", "anchor");
+        anchor.put("anchorId", anchorId);
+        anchor.put("label", "Gang 4 - Anfang");
+        return anchor;
     }
 
     private ObjectNode layout() {

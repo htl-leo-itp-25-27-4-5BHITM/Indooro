@@ -2,8 +2,11 @@ import SwiftUI
 
 struct MapView: View {
     @ObservedObject var beaconManager: BeaconManager
+    @ObservedObject var navigationSession: NavigationSession
     let pixelsPerMeter: Double
     @Binding var mapScale: Double
+    /// One-shot-Modus „Ich bin hier“: der naechste Tap setzt die Position und beendet den Modus.
+    @Binding var nextTapSetsPosition: Bool
     let targetProduct: Product?
     let shoppingStops: [ShoppingStop]
     let activeShoppingStopID: String?
@@ -11,6 +14,11 @@ struct MapView: View {
     let topInset: CGFloat
     let bottomInset: CGFloat
     let showsDebugMapElements: Bool
+
+    #if DEBUG
+    /// Waehrend eines langen Drucks (Wahrheitsmarkierung) wird der folgende Tap ignoriert.
+    @State private var truthPressActive = false
+    #endif
 
     private let routeAccent = Color(red: 0.15, green: 0.57, blue: 0.88)
     private let minimumMapScale: CGFloat = 0.65
@@ -31,10 +39,10 @@ struct MapView: View {
             let fittedPixelsPerMeter = pixelsPerMeter * Double(fitScale)
             let mapWidth = CGFloat(beaconManager.gridWidth * fittedPixelsPerMeter)
             let mapHeight = CGFloat(beaconManager.gridHeight * fittedPixelsPerMeter)
-            let routePoints = beaconManager.navigationRoute.cgPoints.map {
+            let routePoints = navigationSession.remainingRoute.cgPoints.map {
                 CGPoint(x: $0.x * fittedPixelsPerMeter, y: $0.y * fittedPixelsPerMeter)
             }
-            let allowsManualMapTap = showsDebugMapElements || !beaconManager.tapSetsTarget
+            let allowsManualMapTap = showsDebugMapElements || !beaconManager.tapSetsTarget || nextTapSetsPosition
 
             VStack(spacing: 0) {
                 Color.clear
@@ -63,11 +71,12 @@ struct MapView: View {
                                 .zIndex(80)
                         }
 
-                        ForEach(beaconManager.shelves) { element in
+                        // QR-Anker sind keine Regale und werden nicht als solche gezeichnet.
+                        ForEach(beaconManager.shelves.filter { !$0.isAnchor }) { element in
                             ShelfView(element: element, pixelsPerMeter: fittedPixelsPerMeter)
                         }
 
-                        if !showsShoppingSession, let targetPosition = beaconManager.targetPosition {
+                        if !showsShoppingSession, let targetPosition = navigationSession.targetPosition {
                             TargetMapMarker()
                                 .position(
                                     x: CGFloat(targetPosition.x * fittedPixelsPerMeter),
@@ -104,19 +113,33 @@ struct MapView: View {
                                         y: CGFloat(beacon.positionY * fittedPixelsPerMeter)
                                     )
                             }
+
+                            ForEach(beaconManager.shelves.filter(\.isAnchor)) { anchor in
+                                Label(anchor.anchorId ?? "?", systemImage: "qrcode")
+                                    .font(.caption2.weight(.bold))
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(.thinMaterial, in: Capsule())
+                                    .position(
+                                        x: CGFloat((anchor.x + (anchor.width ?? 1) / 2) * fittedPixelsPerMeter),
+                                        y: CGFloat((anchor.y + (anchor.height ?? 1) / 2) * fittedPixelsPerMeter)
+                                    )
+                            }
                         }
 
                         if let position = displayUserPosition {
                             UserLocationMarker(
                                 headingRadians: beaconManager.userHeadingRadians,
-                                isReliable: beaconManager.isUserHeadingReliable
+                                isReliable: beaconManager.isUserHeadingReliable,
+                                isTrusted: beaconManager.isPositionTrusted,
+                                pixelsPerMeter: fittedPixelsPerMeter
                             )
                             .position(
                                 x: CGFloat(position.x * fittedPixelsPerMeter),
                                 y: CGFloat(position.y * fittedPixelsPerMeter)
                             )
                             .zIndex(130)
-                            .animation(.easeInOut(duration: 0.5), value: position)
+                            .animation(.linear(duration: StabilizedNavigationConfig.default.beacon.updateIntervalSeconds), value: position)
                             .animation(.easeInOut(duration: 0.16), value: beaconManager.userHeadingRadians)
                         }
 
@@ -125,22 +148,50 @@ struct MapView: View {
                                 .frame(width: mapWidth, height: mapHeight)
                                 .contentShape(Rectangle())
                                 .onTapGesture { location in
+                                    #if DEBUG
+                                    if truthPressActive { return }
+                                    #endif
                                     let xMeter = Double(location.x) / fittedPixelsPerMeter
                                     let yMeter = Double(location.y) / fittedPixelsPerMeter
                                     let point = CGPoint(x: xMeter, y: yMeter)
-                                    if beaconManager.tapSetsTarget {
-                                        beaconManager.setManualTargetPosition(point)
+                                    if nextTapSetsPosition {
+                                        beaconManager.setManualUserPosition(point)
+                                        nextTapSetsPosition = false
+                                    } else if beaconManager.tapSetsTarget {
+                                        navigationSession.setSingleTarget(point)
                                     } else {
                                         beaconManager.setManualUserPosition(point)
                                     }
                                 }
+                                #if DEBUG
+                                .simultaneousGesture(
+                                    LongPressGesture(minimumDuration: 0.6)
+                                        .sequenced(before: DragGesture(minimumDistance: 0))
+                                        .onChanged { value in
+                                            guard !truthPressActive,
+                                                  case .second(true, let drag?) = value else { return }
+                                            truthPressActive = true
+                                            NavigationRecorder.shared.recordTruth(
+                                                x: Float(drag.location.x / fittedPixelsPerMeter),
+                                                y: Float(drag.location.y / fittedPixelsPerMeter)
+                                            )
+                                        }
+                                        .onEnded { _ in
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+                                                truthPressActive = false
+                                            }
+                                        }
+                                )
+                                #endif
                         }
                     }
                     .frame(width: mapWidth, height: mapHeight)
                     .overlay(alignment: .topTrailing) {
                         if allowsManualMapTap {
                             MapCanvasStatusBadge(
-                                title: beaconManager.tapSetsTarget ? "Tippen setzt Ziel" : "Tippen setzt Position",
+                                title: nextTapSetsPosition
+                                    ? "Tippe auf deinen Standort"
+                                    : (beaconManager.tapSetsTarget ? "Tippen setzt Ziel" : "Tippen setzt Position"),
                                 systemImage: "hand.tap",
                                 tint: .orange
                             )
@@ -150,6 +201,7 @@ struct MapView: View {
                 }
                 .padding(mapPadding)
                 .frame(maxWidth: .infinity, maxHeight: visibleHeight, alignment: .center)
+                .accessibilityIdentifier("storeMap")
 
                 Color.clear
                     .frame(height: bottomInset)

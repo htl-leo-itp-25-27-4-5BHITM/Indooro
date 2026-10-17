@@ -3,6 +3,7 @@ import MapKit
 
 struct StoreMapPage: View {
     @ObservedObject var beaconManager: BeaconManager
+    @ObservedObject var navigationSession: NavigationSession
     @ObservedObject var shoppingListManager: ShoppingListManager
     @ObservedObject var shoppingSessionManager: ShoppingSessionManager
     @ObservedObject var productSearch: ProductSearchStore
@@ -20,6 +21,13 @@ struct StoreMapPage: View {
     @State private var mapScale: Double = 1.0
     @State private var showSettings = false
     @State private var isShowingStoreOverview = true
+    @State private var nextTapSetsPosition = false
+    @State private var showAnchorScanner = false
+    @State private var anchorScanStatusMessage: String?
+    /// Payload eines Scans einer anderen Filiale; solange gesetzt, zeigt ein Alert den Wechsel an.
+    @State private var pendingStoreSwitchPayload: AnchorPayload?
+    /// Gescannter Anker, der nach dem Store-Wechsel automatisch gesetzt wird.
+    @State private var pendingAnchorScan: PendingAnchorScan?
     @State private var pendingStoreSelectionID: UUID?
     @State private var storeCameraPosition: MapCameraPosition = .region(
         MKCoordinateRegion(
@@ -37,6 +45,12 @@ struct StoreMapPage: View {
 
     private var activeStore: MobileStoreSummary? {
         beaconManager.activeLayoutStore ?? beaconManager.detectedStore
+    }
+
+    /// Offline-Start: die Filialliste ist leer (kein Netz), aber eine Offline-Kopie des Stores ist aktiv.
+    /// Dann gibt es in der Filialuebersicht nichts zu waehlen und die Karte wird direkt gezeigt.
+    private var hasOfflineStoreLayoutWithoutStoreList: Bool {
+        beaconManager.mobileStores.isEmpty && beaconManager.activeLayoutStore != nil
     }
 
     private var displayUserPosition: CGPoint? {
@@ -74,7 +88,7 @@ struct StoreMapPage: View {
                 return
             }
             withAnimation(.snappy(duration: 0.2)) {
-                isShowingStoreOverview = !beaconManager.isActiveLayoutFromDetectedStore
+                isShowingStoreOverview = !(beaconManager.isActiveLayoutFromDetectedStore || hasOfflineStoreLayoutWithoutStoreList)
             }
         }
         .onChange(of: beaconManager.mobileStores, initial: false) { _, _ in
@@ -82,7 +96,9 @@ struct StoreMapPage: View {
         }
         .onChange(of: beaconManager.activeLayoutStore?.id, initial: false) { _, newValue in
             guard newValue != nil else { return }
-            let shouldOpenLayout = beaconManager.isActiveLayoutFromDetectedStore || pendingStoreSelectionID == newValue
+            let shouldOpenLayout = beaconManager.isActiveLayoutFromDetectedStore
+                || pendingStoreSelectionID == newValue
+                || hasOfflineStoreLayoutWithoutStoreList
             if shouldOpenLayout {
                 pendingStoreSelectionID = nil
                 clearSearchAndDismissKeyboard()
@@ -90,6 +106,9 @@ struct StoreMapPage: View {
                     isShowingStoreOverview = false
                 }
             }
+        }
+        .onChange(of: beaconManager.activeLayoutStore?.id, initial: false) { _, _ in
+            resolvePendingAnchorScan()
         }
         .onChange(of: beaconManager.activeLayoutStoreSource, initial: false) { _, newValue in
             guard newValue == .beacon, beaconManager.activeLayoutStore != nil else { return }
@@ -146,7 +165,7 @@ struct StoreMapPage: View {
             searchText = ""
         }
         .fullScreenCover(isPresented: $showARRoute) {
-            ARRouteContainerView(beaconManager: beaconManager)
+            ARRouteContainerView(beaconManager: beaconManager, navigationSession: navigationSession)
         }
         .sheet(isPresented: $showSettings) {
             SettingsSheet(
@@ -156,7 +175,7 @@ struct StoreMapPage: View {
                     get: { beaconManager.tapSetsTarget },
                     set: { beaconManager.tapSetsTarget = $0 }
                 ),
-                canShowAR: beaconManager.navigationRoute.pointCount >= 2,
+                canShowAR: navigationSession.navigationRoute.pointCount >= 2,
                 userPosition: displayUserPosition,
                 onShowAR: {
                     showSettings = false
@@ -166,6 +185,118 @@ struct StoreMapPage: View {
                 }
             )
             .presentationDetents([.medium])
+        }
+        .sheet(isPresented: $showAnchorScanner) {
+            AnchorScannerView(
+                statusMessage: anchorScanStatusMessage,
+                onPayload: handleScannedAnchorPayload,
+                onClose: {
+                    pendingAnchorScan = nil
+                    showAnchorScanner = false
+                }
+            )
+            .presentationDetents([.large])
+            .alert(
+                storeSwitchAlertTitle,
+                isPresented: Binding(
+                    get: { pendingStoreSwitchPayload != nil },
+                    set: { if !$0 { pendingStoreSwitchPayload = nil } }
+                )
+            ) {
+                if let target = storeSwitchTargetStore {
+                    Button("Wechseln") {
+                        // Der Scan wird nach dem Laden des Stores automatisch gesetzt; der Scanner bleibt offen.
+                        if let payload = pendingStoreSwitchPayload {
+                            pendingAnchorScan = PendingAnchorScan(payload: payload)
+                        }
+                        pendingStoreSwitchPayload = nil
+                        anchorScanStatusMessage = "Filiale wird geladen …"
+                        beaconManager.loadStoreLayout(storeId: target.id)
+                    }
+                    Button("Abbrechen", role: .cancel) {
+                        pendingStoreSwitchPayload = nil
+                    }
+                } else {
+                    Button("OK", role: .cancel) {
+                        pendingStoreSwitchPayload = nil
+                    }
+                }
+            } message: {
+                if storeSwitchTargetStore == nil {
+                    Text("Bitte wechsle zuerst in die passende Filiale.")
+                }
+            }
+        }
+    }
+
+    private var storeSwitchTargetStore: MobileStoreSummary? {
+        guard let code = pendingStoreSwitchPayload?.storeCode else { return nil }
+        return beaconManager.mobileStores.first { $0.storeCode.lowercased() == code.lowercased() }
+    }
+
+    private var storeSwitchAlertTitle: String {
+        if let target = storeSwitchTargetStore {
+            return "Dieser Code gehört zu \(target.name). Wechseln?"
+        }
+        return "Dieser Code gehört zu einer anderen Filiale."
+    }
+
+    private func openAnchorScanner() {
+        anchorScanStatusMessage = nil
+        pendingAnchorScan = nil
+        showAnchorScanner = true
+    }
+
+    private func handleScannedAnchorPayload(_ text: String) {
+        // Waehrend der Wechsel-Abfrage und waehrend der Zielstore laedt, werden weitere Scans ignoriert
+        // (der Scanner kann denselben Code erneut melden). Schliessen des Scanners hebt das auf.
+        guard pendingStoreSwitchPayload == nil, pendingAnchorScan == nil else { return }
+
+        let outcome = AnchorPayload.resolve(
+            text,
+            activeStoreCode: beaconManager.activeLayoutStore?.storeCode,
+            anchors: beaconManager.shelves.filter(\.isAnchor)
+        )
+
+        switch outcome {
+        case .setPosition(_, let point):
+            anchorScanStatusMessage = nil
+            nextTapSetsPosition = false
+            beaconManager.setManualUserPosition(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+            showAnchorScanner = false
+        case .storeMismatch:
+            anchorScanStatusMessage = nil
+            pendingStoreSwitchPayload = AnchorPayload.parse(text)
+        case .unknownAnchor, .invalid:
+            anchorScanStatusMessage = "Unbekannter Code – bitte anderen Code scannen"
+        }
+    }
+
+    /// Wertet einen wartenden Store-Wechsel-Scan aus, sobald das Layout der Ziel-Filiale aktiv ist.
+    private func resolvePendingAnchorScan() {
+        guard let pending = pendingAnchorScan else { return }
+        // Scanner wurde zwischenzeitlich geschlossen: nichts mehr setzen.
+        guard showAnchorScanner else {
+            pendingAnchorScan = nil
+            return
+        }
+
+        guard let outcome = pending.resolve(
+            activeStoreCode: beaconManager.activeLayoutStore?.storeCode,
+            anchors: beaconManager.shelves.filter(\.isAnchor)
+        ) else {
+            return
+        }
+        pendingAnchorScan = nil
+
+        switch outcome {
+        case .setPosition(_, let point):
+            anchorScanStatusMessage = nil
+            nextTapSetsPosition = false
+            beaconManager.setManualUserPosition(CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+            showAnchorScanner = false
+        case .unknownAnchor, .invalid, .storeMismatch:
+            anchorScanStatusMessage = "Unbekannter Code – bitte anderen Code scannen"
         }
     }
 
@@ -201,8 +332,10 @@ struct StoreMapPage: View {
 
                     MapView(
                         beaconManager: beaconManager,
+                        navigationSession: navigationSession,
                         pixelsPerMeter: basePixelsPerMeter,
                         mapScale: $mapScale,
+                        nextTapSetsPosition: $nextTapSetsPosition,
                         targetProduct: targetProduct,
                         shoppingStops: activeShoppingSnapshot?.orderedStops ?? [],
                         activeShoppingStopID: activeShoppingSnapshot?.currentStop?.id,
@@ -383,6 +516,8 @@ struct StoreMapPage: View {
         VStack(spacing: 10) {
             mapPageHeader
 
+            indoorPositionControls
+
             searchBarCard
 
             if productSearch.isSearching {
@@ -465,6 +600,81 @@ struct StoreMapPage: View {
         .padding(.horizontal, 2)
     }
 
+    private var indoorPositionControls: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Button {
+                    nextTapSetsPosition.toggle()
+                } label: {
+                    Label("Ich bin hier", systemImage: "location.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(nextTapSetsPosition ? Color.white : accent)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background(
+                            nextTapSetsPosition ? accent : accent.opacity(0.11),
+                            in: Capsule()
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Ich bin hier")
+
+                Button {
+                    openAnchorScanner()
+                } label: {
+                    Label("QR-Code scannen", systemImage: "qrcode.viewfinder")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(accent)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 9)
+                        .background(accent.opacity(0.11), in: Capsule())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("QR-Code scannen")
+
+                Spacer(minLength: 0)
+            }
+
+            if !beaconManager.isPositionTrusted {
+                untrustedPositionBanner
+            }
+        }
+        .padding(.horizontal, 2)
+    }
+
+    private var untrustedPositionBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.orange)
+
+            Text(navigationSession.navigationStatusMessage ?? "Position ungenau")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.primary)
+                .lineLimit(2)
+
+            Spacer(minLength: 0)
+
+            Button("QR-Code scannen") {
+                openAnchorScanner()
+            }
+            .font(.caption.weight(.semibold))
+            .buttonStyle(.plain)
+            .foregroundStyle(accent)
+
+            Button("Position setzen") {
+                nextTapSetsPosition = true
+            }
+            .font(.caption.weight(.semibold))
+            .buttonStyle(.plain)
+            .foregroundStyle(accent)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(MapFloatingSurface())
+        .accessibilityIdentifier("positionBanner")
+    }
+
     private var searchBarCard: some View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
@@ -523,6 +733,8 @@ struct StoreMapPage: View {
         if let snapshot = activeShoppingSnapshot {
             ShoppingSessionPanel(
                 snapshot: snapshot,
+                routeOriginText: routeOriginText,
+                locationText: { stop in stopLocationText(for: stop) },
                 onOpenList: onOpenLists,
                 onMarkCurrentStopDone: {
                     let completedStop = activeShoppingSnapshot?.currentStop
@@ -542,6 +754,12 @@ struct StoreMapPage: View {
                 },
                 onToggleMode: {
                     shoppingSessionManager.toggleRouteMode(
+                        listManager: shoppingListManager,
+                        beaconManager: beaconManager
+                    )
+                },
+                onReplan: {
+                    shoppingSessionManager.replan(
                         listManager: shoppingListManager,
                         beaconManager: beaconManager
                     )
@@ -565,7 +783,7 @@ struct StoreMapPage: View {
 
     private func targetNavigationCard(_ target: Product) -> some View {
         let isAlreadyInList = shoppingListManager.containsProduct(target)
-        let hasMatchingShelf = matchingShelf(for: target) != nil
+        let shelfDescriptor = ShelfLocationDescriptor.make(layoutCode: target.layoutCode, shelves: beaconManager.shelves)
 
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
@@ -580,18 +798,35 @@ struct StoreMapPage: View {
                         .foregroundStyle(.primary)
                         .lineLimit(2)
 
-                    HStack(spacing: 8) {
-                        Text(targetZoneLabel(for: target))
+                    if let shelfDescriptor {
+                        Text(shelfDescriptor.primary)
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(.primary)
                             .lineLimit(1)
 
-                        Text("·")
+                        if let detail = shelfDescriptor.detail {
+                            Text(detail)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
 
-                        Text(String(format: "%.2f EUR", target.price))
-                            .fontWeight(.semibold)
-                            .foregroundStyle(accent)
+                        #if DEBUG
+                        Text(shelfDescriptor.debugCode)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        #endif
+                    } else {
+                        Label(ShelfLocationDescriptor.notInTestAreaText, systemImage: "exclamationmark.triangle")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.orange)
+                            .lineLimit(2)
                     }
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+
+                    Text(String(format: "%.2f EUR", target.price))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(accent)
                 }
 
                 Spacer(minLength: 0)
@@ -610,11 +845,10 @@ struct StoreMapPage: View {
                 .buttonStyle(.plain)
             }
 
-            HStack(spacing: 8) {
-                targetCompactMetric(title: "Gang", value: targetAisleText(for: target))
-                targetCompactMetric(title: "Regal", value: targetShelfNumberText(for: target))
-                targetCompactMetric(title: "Etage", value: "EG")
-                Spacer(minLength: 0)
+            if let routeOriginText {
+                Text(routeOriginText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             HStack(spacing: 10) {
@@ -626,7 +860,7 @@ struct StoreMapPage: View {
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
                 }
-                .disabled(!hasMatchingShelf)
+                .disabled(shelfDescriptor == nil)
                 .buttonStyle(.plain)
                 .foregroundStyle(.white)
                 .background(accent, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -680,16 +914,11 @@ struct StoreMapPage: View {
     }
 
     private var activeRouteDistanceMeters: Double? {
-        let routePoints = beaconManager.navigationRoute.points
-        if routePoints.count > 1 {
-            return zip(routePoints, routePoints.dropFirst()).reduce(0) { partialResult, segment in
-                let deltaX = Double(segment.1.x - segment.0.x)
-                let deltaY = Double(segment.1.y - segment.0.y)
-                return partialResult + hypot(deltaX, deltaY)
-            }
+        if navigationSession.remainingRoute.pointCount > 1 {
+            return Double(navigationSession.remainingRouteLength)
         }
 
-        guard let user = displayUserPosition, let target = beaconManager.targetPosition else {
+        guard let user = displayUserPosition, let target = navigationSession.targetPosition else {
             return nil
         }
         return hypot(target.x - user.x, target.y - user.y)
@@ -712,7 +941,7 @@ struct StoreMapPage: View {
         upsellStore.authorizePlanPreloading(for: store, reason: "manual_store_tap")
         pendingStoreSelectionID = store.id
         targetProduct = nil
-        beaconManager.clearRouteTarget()
+        navigationSession.clearTarget()
         beaconManager.loadStoreLayout(storeId: store.id)
     }
 
@@ -749,6 +978,7 @@ struct StoreMapPage: View {
 
     private func showStoreOverview() {
         pendingStoreSelectionID = nil
+        nextTapSetsPosition = false
         targetProduct = nil
         clearSearchAndDismissKeyboard()
         withAnimation(.snappy(duration: 0.28)) {
@@ -829,33 +1059,23 @@ struct StoreMapPage: View {
         )
     }
 
-    private func targetCompactMetric(title: String, value: String) -> some View {
-        HStack(spacing: 4) {
-            Text(title)
-                .foregroundStyle(.secondary)
-
-            Text(value)
-                .fontWeight(.bold)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
+    /// Herkunft der aktiven Route in Kundensprache; nil bei vertrauenswuerdiger Position oder ohne Route.
+    private var routeOriginText: String? {
+        guard navigationSession.navigationRoute.pointCount >= 2 else { return nil }
+        switch navigationSession.routeOriginKind {
+        case .position:
+            return nil
+        case .entrance:
+            return "Route ab Eingang"
+        case .lastStop(let title):
+            return "Route ab \(title)"
         }
-        .font(.caption)
-        .padding(.horizontal, 9)
-        .padding(.vertical, 6)
-        .background(Color(uiColor: .secondarySystemGroupedBackground).opacity(0.72), in: Capsule())
     }
 
-    private func targetAisleText(for product: Product) -> String {
-        let parts = product.layoutCode.components(separatedBy: "/")
-        guard let first = parts.first, !first.isEmpty else { return "-" }
-        return first
-    }
-
-    private func targetShelfNumberText(for product: Product) -> String {
-        let parts = product.layoutCode.components(separatedBy: "/")
-        guard parts.count > 1, !parts[1].isEmpty else { return "-" }
-        return parts[1]
+    /// Standorttext eines Stopps: Regal des ersten Artikels mit layoutCode.
+    private func stopLocationText(for stop: ShoppingStop) -> String? {
+        guard let layoutCode = stop.items.compactMap(\.layoutCode).first else { return nil }
+        return ShelfLocationDescriptor.make(layoutCode: layoutCode, shelves: beaconManager.shelves)?.primary
     }
 
     private func startRouteToTarget(_ target: Product) {
@@ -873,18 +1093,6 @@ struct StoreMapPage: View {
         }
     }
 
-    private func targetZoneLabel(for product: Product) -> String {
-        if let shelf = matchingShelf(for: product) {
-            if let label = shelf.displayMapTitle {
-                return label
-            }
-        }
-        return "Kein passendes Regal auf der Karte"
-    }
-
-    private func matchingShelf(for product: Product) -> LayoutElement? {
-        beaconManager.shelves.first { $0.matchesProductLayoutCode(product.layoutCode) }
-    }
 }
 
 private struct StoreMapPin: Identifiable {
@@ -990,6 +1198,7 @@ private struct StoreOverviewCard: View {
         }
         .buttonStyle(.plain)
         .disabled(isLoading)
+        .accessibilityIdentifier("storeCard-\(store.storeCode)")
     }
 }
 
