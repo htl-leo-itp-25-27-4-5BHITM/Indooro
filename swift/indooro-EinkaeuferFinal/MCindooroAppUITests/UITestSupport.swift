@@ -32,7 +32,8 @@ enum UITestSupport {
 
     /// Startet die App mit dem Test-Launch-Zustand. `apiBase` ueberschreibt die API-Basis.
     /// `studyMode` schaltet im DEBUG-Build die Testleitung (INDOORO_STUDY_MODE=1) ein.
-    static func launchApp(apiBase: String = mockAPIBase, studyMode: Bool = false) -> XCUIApplication {
+    /// `contentSize` setzt die Dynamic-Type-Stufe nur für diesen Start, z. B. „UICTContentSizeCategoryAccessibilityXXL“.
+    static func launchApp(apiBase: String = mockAPIBase, studyMode: Bool = false, contentSize: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
             "-uiTesting",
@@ -42,6 +43,9 @@ enum UITestSupport {
             // Die Einführung beim ersten Start (prepare-pilot-ios-build 5.5) würde die Tab-Leiste verdecken.
             "-IndooroIntroductionCompleted", "YES",
         ]
+        if let contentSize {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", contentSize]
+        }
         app.launchEnvironment["INDOORO_API_BASE_URL"] = apiBase
         if studyMode {
             app.launchEnvironment["INDOORO_STUDY_MODE"] = "1"
