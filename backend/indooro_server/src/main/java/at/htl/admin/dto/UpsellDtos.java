@@ -126,7 +126,7 @@ public final class UpsellDtos {
             UUID storeId,
             @Size(max = 50) String storeCode,
             @Size(max = 120) String sessionId,
-            @Min(1) @Max(30) Integer suppressMinutes
+            @Min(1) @Max(43200) Integer suppressMinutes
     ) {
     }
 

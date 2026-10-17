@@ -51,8 +51,9 @@ Run this only on a disposable local database. The smoke check creates regions, s
 From the repository root:
 
 ```bash
+# POSTGRES_PASSWORD vorher aus .env laden: set -a; . ./.env; set +a
 docker run --name indooro-admin-rebuild-pg \
-  -e POSTGRES_USER=indooro -e POSTGRES_PASSWORD=indooro -e POSTGRES_DB=indooro \
+  -e POSTGRES_USER=indooro -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" -e POSTGRES_DB=indooro \
   -p 127.0.0.1:55433:5432 -d postgres:17
 docker compose -p indooro-admin-rebuild up -d keycloak opensearch
 cd backend/indooro_server
@@ -72,7 +73,7 @@ npm run test:live
 npm run test:live:cutover
 ```
 
-`test:live` reads the local demo account credentials from `keycloak/realm/indooro-realm.json`; it does not print them. It initializes an empty product index through the protected admin operation and accepts the expected 409 conflict on later runs. It inserts local scope assignments because migration V5 only seeds those when named demo region/store records already exist. It tests both candidate editor modes through the browser, checks draft isolation against the anonymous mobile endpoint, verifies global publication and history through OpenSearch, checks six anonymous store/catalog/recipe contracts including a recipe draft → publish → deactivate lifecycle, and checks concurrent saves and activations against PostgreSQL. It does not clean up the created records or global layout versions, so use dedicated local PostgreSQL and OpenSearch data only.
+`test:live` reads the local demo account names from `keycloak/realm/indooro-realm.json` and resolves the `${KC_DEMO_*}` / `${KC_ADMIN_WEB_CLIENT_SECRET}` placeholders from the environment (export the values from your local `.env`, for example `set -a; . ./.env; set +a`); it does not print them. It initializes an empty product index through the protected admin operation and accepts the expected 409 conflict on later runs. It inserts local scope assignments because migration V5 only seeds those when named demo region/store records already exist. It tests both candidate editor modes through the browser, checks draft isolation against the anonymous mobile endpoint, verifies global publication and history through OpenSearch, checks six anonymous store/catalog/recipe contracts including a recipe draft → publish → deactivate lifecycle, and checks concurrent saves and activations against PostgreSQL. It does not clean up the created records or global layout versions, so use dedicated local PostgreSQL and OpenSearch data only.
 
 `test:live:cutover` authenticates and exercises each of the ten current-route switches and their rollback by intercepting the served map; it does not alter the committed flags. On 2026-10-12 it passed all ten switch/rollback pairs with query parameters and URL fragments preserved. The later `test:live` run also passed in-scope store updates for both manager roles, a region-manager store creation, and denial of foreign store updates/layout saves and store-manager creation.
 

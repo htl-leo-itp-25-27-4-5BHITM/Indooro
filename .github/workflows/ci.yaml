@@ -7,6 +7,13 @@ on:
       - 'backend/indooro_server/**' # Nur wenn sich was im Backend ändert
       - 'admin-ui/**' # Neues Admin-Frontend wird ins Backend-Image gepackt
       - '.github/workflows/ci.yaml'
+  pull_request: # Tests laufen auch auf Pull Requests; Image wird dort nicht gebaut/gepusht
+    branches: [ "main", "master" ]
+    paths:
+      - 'backend/indooro_server/**'
+      - 'admin-ui/**'
+      - 'scripts/ops/**'
+      - '.github/workflows/ci.yaml'
 
 env:
   REGISTRY: ghcr.io
@@ -37,18 +44,23 @@ jobs:
           cache: 'npm'
           cache-dependency-path: admin-ui/package-lock.json
 
-      - name: Build admin UI into backend resources (/admin/next/)
+      - name: Test and build admin UI into backend resources (/admin/next/)
         working-directory: admin-ui
         run: |
           npm ci --no-audit --no-fund
+          npm test
           npm run package:candidate
           test -f ../backend/indooro_server/src/main/resources/META-INF/resources/admin/next/index.html
 
-      - name: Build with Maven
+      - name: Test and build with Maven (tests must pass before the image is built)
         working-directory: backend/indooro_server
-        run: mvn -B package -DskipTests
+        run: mvn -B verify
+
+      - name: Test ops scripts
+        run: python3 -I -m unittest discover scripts/ops
 
       - name: Log in to the Container registry
+        if: github.event_name == 'push'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -56,15 +68,17 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata (tags, labels) for Docker
+        if: github.event_name == 'push'
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
+            type=sha,prefix=,format=short
             type=raw,value=latest
-            type=sha,prefix=
 
       - name: Build and push Docker image
+        if: github.event_name == 'push'
         uses: docker/build-push-action@v5
         with:
           context: backend/indooro_server

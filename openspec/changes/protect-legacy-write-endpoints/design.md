@@ -27,8 +27,8 @@ Rebuild coordination, 2026-10-12: the admin candidate's live category workflow e
 1. **Method-scoped HTTP permissions plus annotations (defense in depth).** Split the `public` permission into `public-static` (all methods, static assets and `/api/mobile/*`) and `public-read` (`GET` only for `/api/products*`, `/api/categories*`, `/api/layout*`). Add `admin-write` with `policy=authenticated` for `/api/products*`, `/api/categories*`, `/api/layout*`, `/api/convert/*`, `/api/export/*`. Add `@RolesAllowed("admin")` on the four resources' write methods and `AdminAccessService.requireAdmin()` so the role is enforced even if a path permission is misconfigured.
 2. **Deny unmatched paths in prod.** Set `%prod.quarkus.security.jaxrs.deny-unannotated-endpoints=true` and annotate the remaining public resources (`ProductResource` GETs, `CategoryResource` GETs, `LayoutResource` GETs, mobile resources, `ExampleResource` removed) with `@PermitAll`.
 3. **Secrets.** Replace `quarkus.oidc.credentials.secret=${OIDC_CLIENT_SECRET:indooro-admin-secret}` with `%dev`/`%test` defaults and `%prod.quarkus.oidc.credentials.secret=${OIDC_CLIENT_SECRET}` so a missing variable fails start-up; the existing Kubernetes variable `QUARKUS_OIDC_CREDENTIALS_SECRET` (from a `secretKeyRef` in `k8s/backend.yaml`) still overrides the property directly.
-4. **CORS.** `%prod.quarkus.http.cors.origins=https://it220209.cloud.htl-leonding.ac.at`, `%dev.quarkus.http.cors.origins=http://localhost:8080,http://localhost:5173`.
-5. **Upload limit.** `quarkus.http.limits.max-body-size=10M` and `quarkus.http.limits.max-form-attribute-size=10M`.
+4. **CORS.** prod origins from env `CORS_ORIGINS` (default: LeoCloud host, www.indooro.at, indooro.at), dev and test: `http://localhost:8080,http://localhost:5173`.
+5. **Upload limit.** `quarkus.http.limits.max-body-size=14M` (not 10M: the admin underlay is 10 MiB, which Base64-encodes in JSON to about 13.4 MiB) and `quarkus.http.limits.max-form-attribute-size` unchanged, since no form uploads exist.
 
 ## Auth Coverage Checklist
 

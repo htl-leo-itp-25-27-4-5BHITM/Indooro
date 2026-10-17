@@ -7,7 +7,7 @@ import { chromium } from "@playwright/test";
 // are confined to random fixtures and a private Store draft on the local stack.
 const base = process.env.ADMIN_SMOKE_BASE_URL || "http://localhost:8080";
 assert.ok(["localhost", "127.0.0.1", "host.docker.internal"].includes(new URL(base).hostname), "legacy Beacon probe permits local hosts only");
-const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8"));
+const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8").replace(/\$\{(\w+)\}/g, (match, name) => process.env[name] ?? match));
 const [adminUser] = realm.users;
 const browser = await chromium.launch({ args: process.env.ADMIN_SMOKE_HOST_ALIAS ? ["--host-resolver-rules=MAP localhost 127.0.0.1,MAP host.docker.internal 127.0.0.1"] : [] });
 let admin = null;
@@ -94,7 +94,7 @@ try {
   const mobileBefore = await anonymousCurrent(store.id);
   assert.equal(mobileBefore.layoutId, initial.layoutId);
 
-  await admin.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${initial.layoutId}`, { waitUntil: "domcontentloaded" });
+  await admin.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${initial.layoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await admin.locator("#shopName").waitFor();
   const assignedList = admin.locator("#assignedBeaconsList");
   await assignedList.getByText(beacons[0].beaconCode, { exact: true }).waitFor();

@@ -162,11 +162,15 @@ def load_realm_credentials():
         if not cred or not cred.get("value"):
             raise SeedError(f"Kein Passwort fuer {ADMIN_USER} in der Realm-Datei gefunden.")
         password = cred["value"]
+        if password.startswith("${"):
+            raise SeedError("Realm-Datei enthaelt Platzhalter: INDOORO_ADMIN_PASSWORD (KC_DEMO_ADMIN_PASSWORD aus .env) setzen.")
     if not secret:
         client = next((c for c in realm.get("clients", []) if c.get("clientId") == CLIENT_ID), None)
         if not client or not client.get("secret"):
             raise SeedError(f"Kein Client-Secret fuer {CLIENT_ID} in der Realm-Datei gefunden.")
         secret = client["secret"]
+        if secret.startswith("${"):
+            raise SeedError("Realm-Datei enthaelt Platzhalter: Client-Secret (KC_ADMIN_WEB_CLIENT_SECRET aus .env) per Umgebung setzen.")
     return password, secret
 
 

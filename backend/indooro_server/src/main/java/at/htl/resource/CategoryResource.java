@@ -7,6 +7,7 @@ import at.htl.service.CatalogBulkResult;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.ResponseException;
 import io.smallrye.common.annotation.Blocking;
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -38,6 +39,7 @@ public class CategoryResource {
     AdminAccessService adminAccessService;
 
     @GET
+    @PermitAll
     public Response getAllCategories(@QueryParam("size") @DefaultValue("100") Integer size) {
         try {
             return Response.ok(categoryService.getAllCategories(size)).build();
@@ -48,6 +50,7 @@ public class CategoryResource {
 
     @GET
     @Path("/{categoryCode}")
+    @PermitAll
     public Response getCategoryByCode(@PathParam("categoryCode") Integer categoryCode) {
         try {
             Category category = categoryService.getCategoryByCode(categoryCode);

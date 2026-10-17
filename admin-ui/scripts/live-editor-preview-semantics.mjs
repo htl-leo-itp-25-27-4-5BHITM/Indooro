@@ -7,7 +7,7 @@ import { chromium } from "@playwright/test";
 // disposable data. This probe never visits or writes the global editor.
 const base = process.env.ADMIN_SMOKE_BASE_URL || "http://localhost:8080";
 assert.ok(["localhost", "127.0.0.1", "host.docker.internal"].includes(new URL(base).hostname), "preview probe only permits local hosts");
-const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8"));
+const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8").replace(/\$\{(\w+)\}/g, (match, name) => process.env[name] ?? match));
 const [adminUser] = realm.users;
 const browser = await chromium.launch({ args: process.env.ADMIN_SMOKE_HOST_ALIAS ? ["--host-resolver-rules=MAP localhost 127.0.0.1,MAP host.docker.internal 127.0.0.1"] : [] });
 let admin = null;
@@ -92,7 +92,7 @@ try {
   assert.equal(currentBeforeLegacy.layoutId, active.layoutId);
 
   const legacy = await admin.context().newPage();
-  await legacy.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${active.layoutId}`, { waitUntil: "domcontentloaded" });
+  await legacy.goto(`${base}/admin/editor/?storeId=${store.id}&layoutId=${active.layoutId}&legacy=1`, { waitUntil: "domcontentloaded" });
   await legacy.locator("#shopName").waitFor();
   await legacy.evaluate(() => localStorage.removeItem("indooro_live_layout"));
   const legacyPreviewName = `Legacy preview ${stamp}`;

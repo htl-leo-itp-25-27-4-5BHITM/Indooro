@@ -1,6 +1,9 @@
 package at.htl.resource;
 
+import at.htl.admin.service.AdminAccessService;
 import at.htl.service.PdfImportService;
+import at.htl.service.PdfInputException;
+import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
@@ -13,12 +16,16 @@ import org.jboss.resteasy.reactive.RestForm;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 @Path("/api/convert")
 public class ImportResource {
 
     @Inject
     PdfImportService pdfImportService;
+
+    @Inject
+    AdminAccessService adminAccessService;
 
     public record ProductJson(
             Integer id,
@@ -30,7 +37,9 @@ public class ImportResource {
     @Path("/pdf-to-json")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @Produces(MediaType.APPLICATION_JSON)
+    @RolesAllowed("admin")
     public Response convertPdfToJson(@RestForm("file") File file) {
+        adminAccessService.requireAdmin();
 
         if (file == null || !file.exists()) {
             return Response.status(Response.Status.BAD_REQUEST)
@@ -51,6 +60,11 @@ public class ImportResource {
 
             return Response.ok(out).build();
 
+        } catch (PdfInputException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .type(MediaType.APPLICATION_JSON)
+                    .entity(Map.of("error", e.getMessage()))
+                    .build();
         } catch (IOException e) {
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
                     .entity("Fehler beim Verarbeiten: " + e.getMessage())

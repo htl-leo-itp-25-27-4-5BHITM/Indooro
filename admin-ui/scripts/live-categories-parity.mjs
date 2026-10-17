@@ -10,7 +10,7 @@ const base = process.env.ADMIN_SMOKE_BASE_URL || "http://localhost:8080";
 const searchBase = process.env.ADMIN_SMOKE_OPENSEARCH_URL || "http://127.0.0.1:9200";
 assert.ok(["127.0.0.1", "localhost"].includes(new URL(searchBase).hostname), "fixture cleanup requires local OpenSearch");
 const evidenceDir = new URL("../../docs/admin-rebuild/evidence/categories/", import.meta.url);
-const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8"));
+const realm = JSON.parse(readFileSync(new URL("../../keycloak/realm/indooro-realm.json", import.meta.url), "utf8").replace(/\$\{(\w+)\}/g, (match, name) => process.env[name] ?? match));
 const [adminUser, regionUser, storeUser] = realm.users;
 const browser = await chromium.launch({ args: process.env.ADMIN_SMOKE_HOST_ALIAS ? ["--host-resolver-rules=MAP host.docker.internal 127.0.0.1"] : [] });
 const stamp = randomUUID().slice(0, 8).toUpperCase();

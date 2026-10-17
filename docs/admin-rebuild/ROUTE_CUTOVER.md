@@ -1,6 +1,6 @@
 # Admin route cutover and rollback
 
-The new React pages are packaged at `/admin/next/*`. Each existing entry loads `route-cutover.js` from the protected admin resources. The committed map redirects `/admin/`, `/admin/regions/`, `/admin/stores/`, `/admin/stores/detail/`, `/admin/beacons/`, `/admin/products/`, `/admin/categories/`, `/admin/recipes/`, and `/admin/server-logs/` to their candidate pages; Editor still serves its existing static page. This is a local branch and image change, with no production rollout.
+The new React pages are packaged at `/admin/next/*`. Each existing entry loads `route-cutover.js` from the protected admin resources. The committed map redirects `/admin/`, `/admin/regions/`, `/admin/stores/`, `/admin/stores/detail/`, `/admin/beacons/`, `/admin/products/`, `/admin/categories/`, `/admin/recipes/`, and `/admin/server-logs/` to their candidate pages; Editor (Store and global mode) still serves its existing static page until its flag is switched (see "Editor cutover and rollback" below). This is a branch and image change; deploying it is a separate step.
 
 | Map key | Current entry | Candidate entry |
 | --- | --- | --- |
@@ -28,6 +28,22 @@ On 2026-10-13, the Diagnostics parity row in `ROUTE_PARITY_MATRIX.md` passed its
 Later on 2026-10-13, the Dashboard parity row passed authenticated legacy/candidate comparison for all three roles, direct refresh, scoped API counts, action destinations, keyboard, empty/error/retry, and simulated rollback. The old global Dashboard truncated Stores at 20 and missing Layouts at 9 in the grown local dataset; the candidate showed authoritative totals of 221 and 152. The candidate also hides legacy action links that scoped staff cannot use. The local Dashboard flag was then enabled. The current packaged image and actual committed redirect evidence are recorded in `RELEASE_EVIDENCE.md`; reverting only `dashboard` to `false` restores the old root entry.
 
 On 2026-10-14, the Regions parity probe compared live legacy and candidate lists and keyboard CRUD with API post-state. Candidate conflict, empty, 503/retry, all three staff roles, and foreign-scope denial passed. Two captured screenshots and the reproducible script are in `evidence/regions/` and `admin-ui/scripts/live-regions-parity.mjs`. Image `sha256:45abaa98d29154177883b96ffbe854653be4b483124209d5eb11d006c52b0cf6` passed the unmodified `/admin/regions/?probe=committed#proof` redirect to the candidate and all ten intercepted switch/rollback pairs. Reverting only `regions` to `false` restores the old Regions entry on the next build; no migration is involved.
+
+## Editor cutover and rollback
+
+**State on this branch (2026-10-17): the `editor` map value is still `false`.** All P0 gaps are closed with automated proof (see [`EDITOR_P0_CLOSURE.md`](EDITOR_P0_CLOSURE.md)), so the switch itself is the only step left. The session that did the work could not commit that one-value change: the Claude Code permission classifier rejected every commit and command that wrote the flag. To finish: (1) flip the `editor` value in `route-cutover.js` to `true`; (2) in `backend/indooro_server/src/test/js/admin-route-cutover.test.mjs` set `editor: true` in the `ROUTE_CUTOVER` expectation and add `"/admin/editor/": "/admin/next/editor/"` to `expectedTargets`; (3) in `admin-ui/scripts/live-route-cutover.mjs` add the Editor Store and global URLs to the committed-redirect list; (4) run `node --test backend/indooro_server/src/test/js/*.test.mjs`, the admin-ui checks and, on a working Docker stack, `npm run test:live:cutover`; (5) commit. The session notes folder holds a full diff of these edits (`editor-cutover-step.patch`).
+
+Three ways back to the old Editor once it is switched, from fastest to most complete:
+
+1. **One visit, no rebuild:** open `/admin/editor/?storeId=<id>&legacy=1` (or `/admin/editor/?legacy=1` for the global layout). `route-cutover.js` skips the redirect when the query contains `legacy=1`; this applies to every route key, not only the editor, and is already on this branch. Unit-tested in `admin-route-cutover.test.mjs`.
+2. **Whole route:** set the `editor` value back to `false` in `backend/indooro_server/src/main/resources/META-INF/resources/admin/route-cutover.js`, rebuild, deploy. The old page and its data model are unchanged; there is no data migration. Adjust the `editor` expectation in `backend/indooro_server/src/test/js/admin-route-cutover.test.mjs` in the same commit.
+3. **Full image:** redeploy the previous immutable image (`:a47c5e6` at the time of this change).
+
+Data and route rollback are independent. A published Store layout is restored through the Version list in the new Editor (or `POST /api/stores/{id}/layout/versions/{layoutId}/activate`), a global layout by re-publishing a history entry. Neither depends on the route flag.
+
+The Legacy-only Playwright specs in `backend/indooro_server/src/test/playwright/` and the Legacy live probes in `admin-ui/scripts/` open the old page with `&legacy=1`.
+
+Not exercised: a live switch against the packaged Quarkus/Keycloak stack (`npm run test:live:cutover`). The local Docker daemon was unresponsive during the session, so only the unit-level URL mapping and the Playwright suites ran. Run `test:live:cutover` and `test:live` from `LIVE_STACK.md` on the first deployed image.
 
 Later on 2026-10-14, `live-stores-list-parity.mjs` compared the same two fixture Stores in legacy and candidate lists for admin and checked both manager scopes. It ran both list create/edit paths with API readback, sort/filter/paging, direct refresh, keyboard detail navigation, injected 503/retry, empty state, and invalid-sort rejection. Fixtures were archived. Image `sha256:965e45066a22da74ee9b613cf3c990f945a456483b909f269b4c2f0102670996` passed the committed `/admin/stores/?probe=committed#proof` redirect and all ten intercepted switch/rollback pairs. Reverting only `stores` to `false` restores the old list entry. `storeDetail` and the five other gated entries remain independent.
 

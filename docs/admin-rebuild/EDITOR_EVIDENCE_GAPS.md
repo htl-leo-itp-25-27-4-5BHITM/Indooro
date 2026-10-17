@@ -1,5 +1,21 @@
 # Editor-Belege und offene Nachweise
 
+## Aktueller Stand (2026-10-17)
+
+**Alle drei P0-Lücken sind geschlossen. Der Editor-Flag steht im Branch noch auf `false`:** das Commit des einen Wertes wurde in der Claude-Code-Sitzung vom Berechtigungsklassifikator abgelehnt; die Schritte zum Umschalten stehen in `ROUTE_CUTOVER.md` („Editor cutover and rollback“). Nachweis je Lücke mit Dateien und Testnamen: [`EDITOR_P0_CLOSURE.md`](EDITOR_P0_CLOSURE.md).
+
+| Lücke | Stand | Nachweis |
+| --- | --- | --- |
+| P0 – 1.2 Aktions-/Zustandsinventar | geschlossen | `legacy-parity-map.json` + `legacy-parity-map.test.ts` (jede Legacy-`id` abgebildet, Nachweis und Entscheidung je Eintrag), `editor-states.spec.ts`, `editor-edge-cases.test.ts`, `editor-canvas-edge-cases.spec.ts`, `editor-gap-closure.spec.ts` |
+| P0 – 3.10 Rollen-/Scope-UI-Abnahme | geschlossen | `editor-roles.spec.ts` (3 Rollen × 6 Fälle), `StoreLayoutAdminResourceRoleTest`, `AdminAccessServiceStoreScopeTest`, `StoreLayoutAdminServiceScopeTest` |
+| P0 – 3.10 Legacy-Aktionsvergleich | geschlossen | fehlende Funktionen nachgebaut („90° drehen“, globale Beacon-ID `Indooro<n>`, Löschbestätigung für Theke/Kühl-/Tiefkühlregal), drei gefundene Fehler behoben, jeder Unterschied mit `decision` in `legacy-parity-map.json` |
+| P1 – Screenshots je Zustand | teilweise | 20 Zustandsaufnahmen unter `evidence/editor-states/`; Fehler-/Konfliktkombinationen darüber hinaus nicht |
+| P1 – Accessibility | offen | Tastatur/Fokus automatisiert; kein Screenreader-Audit |
+| P1 – Mobile-Geräteweg | offen | kein physisches Gerät; Simulator/API gelten nicht als Gerätetest |
+| P1 – Rollback als Cutover-Beleg | teilweise | URL-Mapping und `?legacy=1`-Fallback unit-getestet (`admin-route-cutover.test.mjs`); der echte Flag-Wechsel und der Live-Lauf `test:live:cutover` gegen den gepackten Stack stehen aus (Flag-Commit abgelehnt, Docker-Daemon nicht nutzbar) |
+
+Die Entscheidungen `accepted-improvement` / `accepted-removed` hat der übernehmende Agent vorgeschlagen und im Test verankert; nur die drei Punkte vom 2026-10-16 sind Product-Owner-Entscheidungen. Der folgende Text beschreibt den Stand vom 2026-10-16 vor dem Abschluss und bleibt als Historie erhalten.
+
 Stand: 2026-10-16. Diese Bestandsaufnahme ordnet vorhandene Nachweise für OpenSpec `rebuild-admin-platform` den Tasks 1.2 und 3.10 zu. „Mock“ bezeichnet Browser-Tests mit abgefangenen API-Antworten; „Live“ bezeichnet die in `ROUTE_PARITY_MATRIX.md` dokumentierten Probes am gepackten lokalen Quarkus-/Keycloak-Stack. Ein Test oder Screenshot belegt nur die darin ausgeführte Aktion und den Zustand.
 
 ## Was die OpenSpec-Gates verlangen
@@ -25,9 +41,21 @@ Stand: 2026-10-16. Diese Bestandsaufnahme ordnet vorhandene Nachweise für OpenS
 
 ## Priorisierte fehlende Belege
 
+### Zwischenstand Sitzung 1/3 (2026-10-16)
+
+`admin-ui/scripts/live-editor-manager-publication.mjs` führt jetzt für Region Manager und Store Manager denselben aktiven Store-Ausgangsstand erst im Legacy- und dann im Candidate-Editor aus. Beide Rollen laden den Legacy-Direktlink nach Refresh, ändern die Rasterhöhe von 20 auf 22, duplizieren das Regal, löschen das Duplikat im Inspector, machen die Löschung rückgängig, speichern einen privaten Draft und lesen Höhe und drei Elemente über die scoped API zurück. Legacy löscht im Inspector sofort; Candidate verlangt eine Bestätigung. Der anonyme Mobile-Current bleibt bei der aktiven Zwei-Element-Version. Vier Aufnahmen unter `evidence/editor/*-paired.png` zeigen die bearbeiteten Ansichten. Candidate lädt die Ausgangsversion explizit per `layoutId`; ohne diesen Parameter würde nach dem Legacy-Draft die jüngste Draft-Version geladen und der Paarvergleich wäre ungültig. Die Candidate-Publikation des duplizierten Regals ist wegen doppelter Shelf-Adresse blockiert. Ein separater gültiger Candidate-Draft wurde von beiden Rollen bestätigt veröffentlicht und anschließend auf die ursprüngliche aktive Version zurückgesetzt. Fremde Store- und globale API-/Direktlinks waren für beide Managerrollen gesperrt. Temporäre Rollen-Zuordnungen wurden wiederhergestellt, alle Probe-Stores und Regionen archiviert. Der lokale Probe-Lauf war grün.
+
+Dieser Paarlauf schließt nur Rasterhöhe, reguläres Duplikat, privaten Draft, Manager-Scope und Candidate-Veröffentlichung/Rücksetzung für die genannte Fixture. Canvas-, Beacon-, Inspector-, History-, Import-/Export- und Fehler-Varianten sind damit nicht vollständig abgenommen. Die P0-Gates und der Editor-Flag bleiben offen.
+
+Der Product Owner hat am 2026-10-16 drei beobachtete Änderungen als gewünschte Candidate-Semantik abgenommen: Export und Preview erzeugen keinen impliziten Draft, beim JSON-Import bleiben zusätzliche Metadaten erhalten, und ohne Eingang wird die Veröffentlichung blockiert. Diese Entscheidung akzeptiert die Unterschiede; sie ersetzt keine Tests der übrigen Aktionen, Rollen und Fehlerzustände.
+
+### Zwischenstand Sitzung 2/3 (2026-10-16)
+
+Die vorhandenen lokalen Paar-Probes `live-editor-import-parity.mjs`, `live-editor-export-semantics.mjs`, `live-editor-preview-semantics.mjs` und `live-editor-validation-pair.mjs` wurden nach dieser Entscheidung erneut grün ausgeführt. Sie bestätigten die drei abgenommenen Semantiken mit privatem Draft-/öffentlichem Current-Readback beziehungsweise ohne neue Version bei Candidate-Export und blockierter Candidate-Publikation ohne Eingang. Der erweiterte Manager-Paarlauf prüfte außerdem Inspector-Löschen/Undo: Legacy löscht sofort, Candidate erst nach Bestätigung. Diese vier Probes nutzen lokale Wegwerf-Fixtures und belegen keine echte Geräteführung oder alle Editor-Zustände.
+
 1. **P0 – 1.2 Aktions-/Zustandsinventar mit reproduzierbaren Belegen:** Für Store und globalen Editor eine zeilenweise Legacy-zu-Candidate-Matrix führen, die jede tatsächlich vorhandene Aktion und jeden relevanten Lade-, Leer-, Validierungs-, Fehler-, Erfolgs- und ungespeicherten Zustand auf Fixture/Test/Live-Probe/Screenshot abbildet. Bereits dokumentierte Unterschiede (Import-Metadaten, Export-Draft-Nebeneffekt, Missing-Entrance-Regel) explizit mit Abnahmeentscheidung versehen. Der Inventartext selbst bestätigt die Lücke „nicht jede Aktion und jeder Zustand“.
-2. **P0 – 3.10 vollständige Rollen-/Scope-UI-Abnahme:** Eigene Draft-Saves, bestätigte Publikation und Datenrollback beider Manager, fremde Store-/Global-Denials und Admin-Globalzugriff sind live belegt. Weitere UI-Werkzeuge je Rolle, Legacy/Candidate-Gleichlauf und vollständiger Direct-Link/Refresh-Vergleich je Scope fehlen.
-3. **P0 – 3.10 kompletter Legacy-Aktionsvergleich:** Die Live-Coverage umfasst jetzt wichtige Candidate-Aktionen, 16 konkrete Legacy Store-Werkzeugaktionen sowie paarige New/Template/Undo/Back- und Validate/Issue-Selektionsläufe zusätzlich zu Import/Export/Preview/Globalpfaden. Es fehlt ein dokumentierter gleicher Fixture-Lauf für verbleibende Canvas-/Beacon-/Inspector-/Validierungs-/History-Sonderfälle und eine Bewertung der beobachteten Unterschiede. `EDITOR_ACTION_MATRIX.md` schlüsselt diese auf.
+2. **P0 – 3.10 vollständige Rollen-/Scope-UI-Abnahme:** Eigene Draft-Saves, bestätigte Publikation und Datenrollback beider Manager, fremde Store-/Global-Denials und Admin-Globalzugriff sind live belegt. Ein gleicher Legacy/Candidate-Lauf für Rasterhöhe, Duplikat, Inspector-Löschen/Undo sowie Legacy-Refresh liegt jetzt für beide Manager vor. Weitere UI-Werkzeuge je Rolle und vollständiger Direct-Link/Refresh-Vergleich je Scope fehlen.
+3. **P0 – 3.10 kompletter Legacy-Aktionsvergleich:** Die Live-Coverage umfasst jetzt wichtige Candidate-Aktionen, 16 konkrete Legacy Store-Werkzeugaktionen sowie paarige New/Template/Undo/Back-, Validate/Issue-Selektions- und Manager-Rasterhöhen-/Duplikat-Läufe zusätzlich zu Import/Export/Preview/Globalpfaden. Es fehlt ein dokumentierter gleicher Fixture-Lauf für verbleibende Canvas-/Beacon-/Inspector-/Validierungs-/History-Sonderfälle und eine Bewertung der beobachteten Unterschiede. `EDITOR_ACTION_MATRIX.md` schlüsselt diese auf.
 4. **P1 – Zustands-/Fehlerabdeckung und Screenshots:** Die 14 neuen Captures decken ausgewählte Draft-, Rollen- und Ladefehlerzustände ab. Für weitere Validierungs-, Konflikt-, Fehler- und Leerfälle fehlen reproduzierbare Screenshots oder andere gespeicherte Artefakte; ein einzelner Zustand belegt keine Fehlerrückgewinnung.
 5. **P1 – Accessibility-Abnahme:** Vollständige Tastatur-/Fokus- und Assistive-Technology-Prüfung beider Modi abschließen und Ergebnisse festhalten. Drei zusätzliche Issue-/Lock-/Back-Browserfälle und einzelne Live-Tastaturpfade schließen diesen explizit offenen Matrixpunkt nicht.
 6. **P1 – Mobile-Geräteweg:** Für die im Cutover-Gate geforderte Kundenauswirkung einen physischen Geräte-/Beacon-Weg über relevante veröffentlichte Store-Layouts belegen. Simulator und Swift-Decoding sind vorhandene, begrenzte Nachweise und dürfen nicht als physischer Beacon-Test berichtet werden.

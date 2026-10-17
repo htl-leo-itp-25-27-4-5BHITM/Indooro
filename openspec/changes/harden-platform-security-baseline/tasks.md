@@ -25,8 +25,8 @@
 ## 4. Backend Hardening
 
 - [x] 4.1 Add `LayoutDocumentValidator` and call it from `LayoutService.saveCurrentLayout` and `StoreLayoutAdminService.saveLayoutVersion`.
-- [ ] 4.2 Bound `PdfExportService` inputs (products, name length, level/position/meter ranges) and replace unencodable characters.
-- [ ] 4.3 Bound `PdfImportService` inputs (10 MB, 50 pages) and replace the `DOTALL` item regex with line-based parsing with bounded numeric groups.
+- [x] 4.2 Bound `PdfExportService` inputs (products, name length, level/position/meter ranges) and replace unencodable characters. (implemented in release-pilot-backend)
+- [x] 4.3 Bound `PdfImportService` inputs (10 MB, 50 pages) and replace the `DOTALL` item regex with line-based parsing with bounded numeric groups. (implemented in release-pilot-backend)
 - [ ] 4.4 Change `ErrorLogService` and both exception mappers to persist only 5xx and authenticated admin 4xx, return generic 5xx messages with `correlationId`, and guard persistence with `try/catch`.
 - [ ] 4.5 Add `quarkus-scheduler` and a daily retention job for `error_logs` (30 days, 50 000 rows).
 - [ ] 4.6 Add `V13__audit_actor_subject.sql` and resolve the acting user in `AuditLogService`, `StoreLayoutAdminService`, and `RecipeService`.
@@ -36,11 +36,11 @@
 
 ## 5. Infrastructure
 
-- [ ] 5.1 Change `opensearch` and `dashboards` services to `ClusterIP`, set dashboards replicas to 0, and add `k8s/network-policy.yaml`.
-- [ ] 5.2 Create secret `indooro-postgres-secret` and reference it from `k8s/postgres.yaml` and `k8s/backend.yaml`.
+- [ ] 5.1 Change `opensearch` and `dashboards` services to `ClusterIP`, set dashboards replicas to 0, and add `k8s/network-policy.yaml`. (ClusterIP and dashboards replicas 0 implemented in release-pilot-backend; the NetworkPolicy stays open until task 1.3 confirms LeoCloud enforces it)
+- [x] 5.2 Create secret `indooro-postgres-secret` and reference it from `k8s/postgres.yaml` and `k8s/backend.yaml`. (manifests implemented in release-pilot-backend; the secret itself is created in phase B)
 - [ ] 5.3 Switch the Dockerfile to a JRE base image with a non-root user; add `securityContext`, `/tmp` `emptyDir`, and the CI SHA image tag to `k8s/backend.yaml`; change the backend service to `ClusterIP`.
 - [ ] 5.4 Add `quarkus-smallrye-health` and replace TCP probes with `/q/health/live` and `/q/health/ready`.
-- [ ] 5.5 Delete the unreferenced `k8s/volume-claim.yaml`.
+- [x] 5.5 Delete the unreferenced `k8s/volume-claim.yaml`. (implemented in release-pilot-backend)
 
 ## 6. Tests
 
