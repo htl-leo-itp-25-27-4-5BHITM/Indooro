@@ -1,0 +1,5 @@
+2026-10-16 · nur anonyme HTTPS-GETs an Mobile-API; keine Auth-Daten, keine POSTs.
+GET /api/mobile/stores: HTTP 200, TLS geprüft
+GET /api/mobile/stores/beacon-identities: HTTP 200, TLS geprüft
+GET /api/mobile/stores/[id]/layout/current: HTTP 200, TLS geprüft
+Nicht geprüft: vollständiger Full-Profil-Request-Mix, Hardware und schreibende Endpunkte.

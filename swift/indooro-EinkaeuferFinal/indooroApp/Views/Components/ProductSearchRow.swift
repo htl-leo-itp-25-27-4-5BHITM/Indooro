@@ -44,7 +44,7 @@ struct ProductSearchRow: View {
                     }
                 }
 
-                Text("Regal \(product.layoutCode)")
+                Text(product.layoutCode.isEmpty ? "Keine Regalposition" : "Regal auf der Karte")
                     .font(.caption)
                     .foregroundColor(.secondary)
 

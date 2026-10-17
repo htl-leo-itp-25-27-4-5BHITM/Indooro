@@ -11,11 +11,11 @@
 
 ## 3. Tests
 
-- [ ] 3.1 Search „Milch & Käse“ and a typo: **waiting for `prepare-pilot-ios-build`** (encoded query items; today `&` and `+` are not encoded in `ProductSearchStore`). Plain search („Milch“, „Bananen“, „Brot“) is used inside the tour and shelf-text tests.
+- [x] 3.1 Search „Milch & Käse“ and a typo: `SearchUITests` (ampersand finds only the matching fixture product `Milch & Käse Frühstücksbox 300g`; typo and `a+b` show „Keine Treffer für …“). Encoded query items come from `prepare-pilot-ios-build` 4.1; done on `integration/ios-person-a`.
 - [x] 3.2 Tour: `TourFlowUITests` (3 products planned, tour start, „Route ab Eingang“, „Erledigt“, „Route ab <Regal>“).
 - [x] 3.3 „Ich bin hier“: `PositionUITests`. Also `ShelfTextUITests` (shelf in words), `AnchorScanUITests` (valid and unknown anchor through the DEBUG payload field) and `StoreSwitchUITests` (one scan across stores).
 - [x] 3.4 Offline start: `OfflineStartUITests` (online load, relaunch with unreachable API, store from the offline copy).
-- [ ] 3.5 Study mode export: **waiting for `add-pilot-study-mode`** (not merged).
+- [x] 3.5 Study mode export: `StudyExportUITests` (DEBUG `INDOORO_STUDY_MODE=1`; invalid id „Anna“ blocked, session T01, two tasks, „Gefunden“ / „Hilfe gebraucht“, export prepared, all sessions deleted). The test checks the UI only; file formats are covered by `MCindooroAppTests/StudyExportTests`.
 
 ## 4. CI and Handover
 
