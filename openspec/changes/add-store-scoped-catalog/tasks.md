@@ -11,11 +11,11 @@
 
 ## 3. Admin UI
 
-- [ ] 3.1 Store selector on products page; list/edit within store; tests.
+- [x] 3.1 Store selector on products page; list/edit within store; tests.
 
 ## 4. Migration
 
-- [ ] 4.1 `scripts/ops/migrate_products_to_store.py` with dry run; tests with sample data.
+- [x] 4.1 `scripts/ops/migrate_products_to_store.py` with dry run; tests with sample data.
 - [ ] 4.2 Local rehearsal; document LeoCloud commands for Erik (after backup).
 - [ ] 4.3 Verify the iOS app sends store parameters (search request log); report gaps to Person A.
 
