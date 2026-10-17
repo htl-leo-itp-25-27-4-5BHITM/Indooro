@@ -9,6 +9,7 @@ import at.htl.service.CatalogBulkResult;
 import at.htl.service.CatalogStoreResolver;
 import at.htl.service.CatalogStoreResolver.CatalogStoreException;
 import at.htl.service.CatalogStoreResolver.ResolvedStore;
+import at.htl.service.LegacyDocumentGuard;
 import at.htl.service.OpenSearchService;
 import at.htl.service.ProductBulkService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -74,6 +75,9 @@ public class AdminProductResource extends AdminApiSupport {
     static final String IDEMPOTENT_REPLAY_HEADER = "Idempotent-Replay";
     private static final Pattern IDEMPOTENCY_KEY = Pattern.compile("[A-Za-z0-9._-]{1,100}");
 
+    @Inject
+    LegacyDocumentGuard legacyDocumentGuard;
+
     @GET
     public Object listProducts(@QueryParam("page") Integer page,
                                @QueryParam("size") Integer size,
@@ -127,6 +131,7 @@ public class AdminProductResource extends AdminApiSupport {
         ResolvedStore store = requireStoreAccess(product.getStoreId(), product.getStoreCode());
         product.setStoreId(store.id().toString());
         product.setStoreCode(store.storeCode());
+        legacyDocumentGuard.requireNoLegacyDocuments(store.storeCode());
 
         try {
             openSearchService.indexProduct(product);
@@ -149,6 +154,7 @@ public class AdminProductResource extends AdminApiSupport {
             throw badRequest("Produkt-ID muss eine positive ganze Zahl sein.");
         }
         ResolvedStore store = requireStoreAccess(storeId, storeCode);
+        legacyDocumentGuard.requireNoLegacyDocuments(store.storeCode());
 
         try {
             boolean deleted = openSearchService.deleteProduct(id, store.storeCode());

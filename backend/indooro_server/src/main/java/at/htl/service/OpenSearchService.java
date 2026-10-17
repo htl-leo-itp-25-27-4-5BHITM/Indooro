@@ -377,6 +377,19 @@ public class OpenSearchService {
     }
 
     /**
+     * Zaehlt Altdokumente ohne storeCode (Doc-ID `<productId>`). Solange welche existieren, sperrt
+     * {@link LegacyDocumentGuard} store-scoped Admin-Schreibzugriffe, sonst entstehen Doppelte neben `<storeCode>:<id>`.
+     * Gleiche Abfrage wie LEGACY_QUERY in scripts/ops/migrate_products_to_store.py.
+     */
+    public long countLegacyProducts() throws IOException {
+        CountResponse response = client.count(c -> c
+                .index(indexName)
+                .query(q -> q.bool(b -> b.mustNot(mn -> mn.exists(e -> e.field("storeCode")))))
+        );
+        return response.count();
+    }
+
+    /**
      * Dokument-ID: `<storeCode>:<productId>` fuer Produkte mit Markt, sonst `<productId>` (Altbestand).
      * Gleiche Produkt-IDs in zwei Maerkten kollidieren dadurch nicht.
      */

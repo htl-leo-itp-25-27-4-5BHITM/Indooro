@@ -96,6 +96,10 @@ Platzhalter: `<DEMO_STORE_CODE>` ist der Markt-Code des Demo-Markts. Diese Entsc
 
 <!-- Ergebnis der lokalen Probe: wird nachgetragen. -->
 
+## Schreibsperre für store-scoped Admin-Schreibzugriffe
+
+Solange Altdokumente ohne `storeCode` im Index liegen, antwortet das Backend auf store-scoped Schreibzugriffe mit HTTP 409: `POST /api/admin/products`, `DELETE /api/admin/products/{id}` und `POST /api/products` (jeweils mit Markt). Grund: Doc-IDs `<storeCode>:<id>` würden neben `<id>` Doppelte erzeugen. Die Sperre hebt sich erst, wenn die Legacy-Dokumente nach Schritt 6 gelöscht sind. Der Bulk-Import `POST /api/products/bulk` ist nicht gesperrt, weil ihn das Migrationsskript für die Schritte 4 und 8 braucht.
+
 ## Wichtig: Default-Markt und die iOS-App
 
 Stand 2026-10-17 sendet die iOS-Produktsuche (`ProductSearchStore.swift`, `BeaconManager.swift`) **keinen** `storeCode` (nur das Rezept-Mapping tut das). Anfragen ohne Markt landen im Default-Markt (`CATALOG_DEFAULT_STORE_CODE`). Solange die App den Markt nicht mitsendet, muss der Default der Markt sein, in dem die App benutzt wird: für den Pilot `SPAR-Leonding-001`, sobald dessen Produkte geladen sind (Schritt 8). Wer den Default auf den Demo-Markt setzt, zeigt der App im Pilotmarkt die Demo-Produkte. Lösung dauerhaft: Person A sendet `storeCode` in der Suche (Datei gehört Person A).
