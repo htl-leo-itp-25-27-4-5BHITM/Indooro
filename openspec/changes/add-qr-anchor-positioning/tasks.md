@@ -29,4 +29,4 @@
 ## 5. Verification
 
 - [x] 5.1 All checks green; OpenSpec strict validation; screenshots in `docs/pilot-readiness/evidence/qr-anchors/`. Checks green (swift 152, backend 146, admin-ui 81 + browser 115); screenshots in `docs/pilot-readiness/evidence/qr-anchors/`. The printed-code device check remains open.
-- [ ] 5.2 Pull request `pilot/qr-anchors` → `pilot/first-store` (admin/backend parts: also review by Person B); update `STATUS.md`.
+- [x] 5.2 Pull request `pilot/qr-anchors` → `pilot/first-store` (admin/backend parts: also review by Person B); update `STATUS.md`.
