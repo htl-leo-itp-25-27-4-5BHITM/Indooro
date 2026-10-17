@@ -11,4 +11,4 @@
 
 ## 3. Handover
 
-- [ ] 3.1 Checks green; PR; `STATUS.md`.
+- [x] 3.1 Checks green; PR; `STATUS.md`.
