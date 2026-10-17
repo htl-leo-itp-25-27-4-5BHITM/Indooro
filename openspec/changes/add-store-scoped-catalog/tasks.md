@@ -4,20 +4,20 @@
 
 ## 2. Backend
 
-- [ ] 2.1 Store-scoped document ids and required `storeId`/`storeCode` on writes; validation errors in German.
-- [ ] 2.2 Search and list filter by store; default store configuration; tests.
-- [ ] 2.3 Admin product endpoints: required store, scope checks; `@QuarkusTest` for admin/region/store manager/anonymous.
-- [ ] 2.4 Bulk import requires store; NDJSON from `scripts/pilot-data` accepted unchanged.
+- [x] 2.1 Store-scoped document ids and required `storeId`/`storeCode` on writes; validation errors in German.
+- [x] 2.2 Search and list filter by store; default store configuration; tests.
+- [x] 2.3 Admin product endpoints: required store, scope checks; `@QuarkusTest` for admin/region/store manager/anonymous.
+- [x] 2.4 Bulk import requires store; NDJSON from `scripts/pilot-data` accepted unchanged.
 
 ## 3. Admin UI
 
-- [ ] 3.1 Store selector on products page; list/edit within store; tests.
+- [x] 3.1 Store selector on products page; list/edit within store; tests.
 
 ## 4. Migration
 
-- [ ] 4.1 `scripts/ops/migrate_products_to_store.py` with dry run; tests with sample data.
+- [x] 4.1 `scripts/ops/migrate_products_to_store.py` with dry run; tests with sample data.
 - [ ] 4.2 Local rehearsal; document LeoCloud commands for Erik (after backup).
-- [ ] 4.3 Verify the iOS app sends store parameters (search request log); report gaps to Person A.
+- [x] 4.3 Verify the iOS app sends store parameters (search request log); report gaps to Person A. (Checked in code on 2026-10-17: `ProductSearchStore.swift:29` and `BeaconManager.swift:563` call `/products/search?q=…&size=…` **without** `storeCode`/`storeId`; only `RecipeStore.swift:92` sends `storeCode`. Gap for Person A / Erik: until the app sends the store, set `CATALOG_DEFAULT_STORE_CODE` to the store the app is used in, i.e. `SPAR-Leonding-001` for the pilot.)
 
 ## 5. Handover
 

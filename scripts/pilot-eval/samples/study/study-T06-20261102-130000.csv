@@ -1,0 +1,5 @@
+test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count
+T06,d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39,SYNTH,1,9100,SYNTH Kokosraspeln 200 g,ohne_app,-,2026-11-02T13:00:00.000Z,2026-11-02T13:01:41.100Z,101.1,gefunden,-,-,-,0
+T06,d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39,SYNTH,2,9100,SYNTH Kokosraspeln 200 g,app,mit_ortung,2026-11-02T13:02:04.100Z,2026-11-02T13:02:52.600Z,48.5,gefunden,1,1,0,0
+T06,d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39,SYNTH,3,9105,SYNTH Tahin Glas 370 g,ohne_app,-,2026-11-02T13:03:17.600Z,2026-11-02T13:05:53.400Z,155.8,gefunden,-,-,-,0
+T06,d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39,SYNTH,4,9105,SYNTH Tahin Glas 370 g,app,mit_ortung,2026-11-02T13:06:13.400Z,2026-11-02T13:07:45.600Z,92.2,gefunden,1,2,0,0

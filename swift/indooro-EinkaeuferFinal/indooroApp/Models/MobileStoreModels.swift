@@ -5,6 +5,7 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
     let storeCode: String
     let name: String
     let city: String
+    let address: String?
     let street: String?
     let zipCode: String?
     let country: String?
@@ -16,6 +17,7 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
         case storeCode
         case name
         case city
+        case address
         case street
         case zipCode
         case country
@@ -41,6 +43,7 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
         storeCode: String,
         name: String,
         city: String,
+        address: String? = nil,
         street: String? = nil,
         zipCode: String? = nil,
         country: String? = nil,
@@ -51,6 +54,7 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
         self.storeCode = storeCode
         self.name = name
         self.city = city
+        self.address = address
         self.street = street
         self.zipCode = zipCode
         self.country = country
@@ -64,6 +68,7 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
         storeCode = try container.decode(String.self, forKey: .storeCode)
         name = try container.decode(String.self, forKey: .name)
         city = try container.decode(String.self, forKey: .city)
+        address = try container.decodeIfPresent(String.self, forKey: .address)
         street = try container.decodeIfPresent(String.self, forKey: .street)
         zipCode = try container.decodeIfPresent(String.self, forKey: .zipCode)
         country = try container.decodeIfPresent(String.self, forKey: .country)
@@ -79,7 +84,8 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
     }
 
     var displaySubtitle: String {
-        [street, city]
+        if let address = address?.trimmingCharacters(in: .whitespacesAndNewlines), !address.isEmpty { return address }
+        return [street, city]
             .compactMap { value in
                 let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines)
                 return trimmed?.isEmpty == false ? trimmed : nil
@@ -132,6 +138,8 @@ struct StoreByBeaconResponse: Decodable, Sendable {
 struct MobileLayoutResponse: Decodable, Sendable {
     let storeId: UUID?
     let layoutId: UUID?
+    let source: String?
+    let fallback: Bool?
     let layout: LayoutData
 }
 

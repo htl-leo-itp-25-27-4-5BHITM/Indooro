@@ -41,7 +41,7 @@ class OpenSearchProductPagingTest {
                 .hits(List.of(hit))));
         when(client.search(any(SearchRequest.class), eq(Product.class))).thenReturn(response);
 
-        CommonDtos.PageResponse<Product> result = service.searchAdminProductsPage("pear", 0, 20);
+        CommonDtos.PageResponse<Product> result = service.searchAdminProductsPage("pear", 0, 20, "id", null, null, null);
 
         assertEquals(0, result.page());
         assertEquals(20, result.size());
@@ -71,7 +71,7 @@ class OpenSearchProductPagingTest {
                 .hits(List.of())));
         when(client.search(any(SearchRequest.class), eq(Product.class))).thenReturn(response);
 
-        service.searchAdminProductsPage("  ", 0, 20);
+        service.searchAdminProductsPage("  ", 0, 20, "id", null, null, null);
 
         ArgumentCaptor<SearchRequest> request = ArgumentCaptor.forClass(SearchRequest.class);
         verify(client).search(request.capture(), eq(Product.class));
@@ -89,7 +89,7 @@ class OpenSearchProductPagingTest {
                 .hits(hits -> hits.total(total -> total.value(0).relation(TotalHitsRelation.Eq)).hits(List.of())));
         when(client.search(any(SearchRequest.class), eq(Product.class))).thenReturn(response);
 
-        service.searchAdminProductsPage(null, 2, 25, "name", true);
+        service.searchAdminProductsPage(null, 2, 25, "name", true, null, null);
 
         ArgumentCaptor<SearchRequest> request = ArgumentCaptor.forClass(SearchRequest.class);
         verify(client).search(request.capture(), eq(Product.class));
@@ -113,7 +113,7 @@ class OpenSearchProductPagingTest {
         );
         when(client.search(any(SearchRequest.class), eq(Product.class))).thenReturn(searchResponse(4, hits));
 
-        CommonDtos.PageResponse<Product> result = service.searchAdminProductsPage(null, 0, 10, "name", null);
+        CommonDtos.PageResponse<Product> result = service.searchAdminProductsPage(null, 0, 10, "name", null, null, null);
 
         assertEquals(List.of("Apfel", "äpfel", "Artikel 2", "Artikel 10"),
                 result.content().stream().map(Product::getName).toList());
@@ -131,7 +131,7 @@ class OpenSearchProductPagingTest {
         when(client.search(any(SearchRequest.class), eq(Product.class)))
                 .thenReturn(searchResponse(502, first), searchResponse(502, second));
 
-        CommonDtos.PageResponse<Product> result = service.searchAdminProductsPage(null, 100, 1, "id", null);
+        CommonDtos.PageResponse<Product> result = service.searchAdminProductsPage(null, 100, 1, "id", null, null, null);
 
         assertEquals(502, result.totalElements());
         assertEquals(101, result.content().get(0).getId());

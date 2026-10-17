@@ -11,6 +11,8 @@ let package = Package(
         .library(name: "IndooroNavigationCore", targets: ["IndooroNavigationCore"])
     ],
     targets: [
+        .target(name: "IndooroPilotSupport", path: "indooroApp", sources: ["App/AppEnvironment.swift", "Utilities/PilotNetworking.swift", "Models/StudyModels.swift", "Managers/StudySessionStore.swift"]),
+        .testTarget(name: "IndooroPilotSupportTests", dependencies: ["IndooroPilotSupport"], path: "Tests/IndooroPilotSupportTests"),
         .target(
             name: "IndooroNavigationCore",
             path: "indooroApp",
@@ -34,14 +36,18 @@ let package = Package(
                 "Utilities/NavigationSessionCore.swift",
                 "Utilities/TourPlanner.swift",
                 "Utilities/PositioningPipeline.swift",
+                "Utilities/MotionTracker.swift",
                 "Utilities/NavigationReplay.swift",
                 "Utilities/StabilizedNavigationConfig.swift",
-                "Utilities/AnchorPayload.swift"
+                "Utilities/AnchorPayload.swift",
+                "Utilities/AccessibilityText.swift",
+                "Utilities/AccessibilityPalette.swift",
+                "Utilities/ProductEndpoint.swift"
             ]
         ),
         .testTarget(
             name: "IndooroNavigationCoreTests",
-            dependencies: ["IndooroNavigationCore"],
+            dependencies: ["IndooroNavigationCore", "IndooroPilotSupport"],
             path: "Tests/IndooroNavigationCoreTests",
             resources: [.copy("Resources")]
         )

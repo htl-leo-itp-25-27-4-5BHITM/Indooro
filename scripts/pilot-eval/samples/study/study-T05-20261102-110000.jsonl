@@ -1,0 +1,15 @@
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 1, "testId": "T05", "t": "2026-11-02T11:00:00.000Z", "type": "taskStart"}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 1, "testId": "T05", "t": "2026-11-02T11:00:09.187Z", "type": "manualPosition"}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 1, "testId": "T05", "t": "2026-11-02T11:00:27.649Z", "type": "reroute"}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 1, "testId": "T05", "t": "2026-11-02T11:00:30.319Z", "type": "note", "text": "Schild war verdeckt"}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 1, "testId": "T05", "t": "2026-11-02T11:00:45.800Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 1, "rerouteCount": 1, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 2, "testId": "T05", "t": "2026-11-02T11:01:10.800Z", "type": "taskStart"}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 2, "testId": "T05", "t": "2026-11-02T11:02:24.600Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 3, "testId": "T05", "t": "2026-11-02T11:02:39.600Z", "type": "taskStart"}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 3, "testId": "T05", "t": "2026-11-02T11:02:49.481Z", "type": "manualPosition"}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 3, "testId": "T05", "t": "2026-11-02T11:03:37.683Z", "type": "reroute"}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 3, "testId": "T05", "t": "2026-11-02T11:03:50.456Z", "type": "note", "text": "Regal war schwer zu finden"}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 3, "testId": "T05", "t": "2026-11-02T11:03:51.733Z", "type": "reroute"}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 3, "testId": "T05", "t": "2026-11-02T11:03:53.200Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 1, "rerouteCount": 2, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 4, "testId": "T05", "t": "2026-11-02T11:04:22.200Z", "type": "taskStart"}
+{"sessionId": "2bcfbe01-a28d-4fe3-9bf0-027312476f57", "taskNo": 4, "testId": "T05", "t": "2026-11-02T11:06:36.300Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}

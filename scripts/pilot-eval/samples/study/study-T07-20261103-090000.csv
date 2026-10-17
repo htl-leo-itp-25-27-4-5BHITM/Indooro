@@ -1,0 +1,5 @@
+test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count
+T07,a491f0b2-ea1f-4a65-a27a-984d654821d0,SYNTH,1,9107,SYNTH Perlgraupen 500 g,app,mit_ortung,2026-11-03T09:00:00.000Z,2026-11-03T09:01:36.100Z,96.1,gefunden,2,1,0,0
+T07,a491f0b2-ea1f-4a65-a27a-984d654821d0,SYNTH,2,9107,SYNTH Perlgraupen 500 g,ohne_app,-,2026-11-03T09:01:58.100Z,2026-11-03T09:03:23.600Z,85.5,gefunden,-,-,-,0
+T07,a491f0b2-ea1f-4a65-a27a-984d654821d0,SYNTH,3,9102,SYNTH Miso-Paste weiß 300 g,app,mit_ortung,2026-11-03T09:03:41.600Z,2026-11-03T09:05:13.600Z,92.0,gefunden,2,0,0,0
+T07,a491f0b2-ea1f-4a65-a27a-984d654821d0,SYNTH,4,9102,SYNTH Miso-Paste weiß 300 g,ohne_app,-,2026-11-03T09:05:36.600Z,2026-11-03T09:07:33.600Z,117.0,gefunden,-,-,-,0

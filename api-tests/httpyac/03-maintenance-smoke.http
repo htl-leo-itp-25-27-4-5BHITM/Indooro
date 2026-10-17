@@ -31,7 +31,7 @@ Authorization: Bearer {{$global.adminToken}}
 
 ###
 # Product bulk import smoke
-POST {{baseUrl}}/api/products/bulk
+POST {{baseUrl}}/api/products/bulk?storeCode={{ACTIVE_STORE_CODE}}
 Content-Type: application/json
 Accept: application/json
 Authorization: Bearer {{$global.adminToken}}
@@ -42,7 +42,8 @@ Authorization: Bearer {{$global.adminToken}}
     "name": "{{TEST_PRODUCT_NAME}}",
     "price": {{TEST_PRODUCT_PRICE}},
     "layoutCode": "{{TEST_PRODUCT_LAYOUT_CODE}}",
-    "storeId": "{{ACTIVE_STORE_ID}}"
+    "storeId": "{{ACTIVE_STORE_ID}}",
+    "storeCode": "{{ACTIVE_STORE_CODE}}"
   }
 ]
 
@@ -61,7 +62,8 @@ Authorization: Bearer {{$global.adminToken}}
   "name": "{{TEST_PRODUCT_NAME}}",
   "price": {{TEST_PRODUCT_PRICE}},
   "layoutCode": "{{TEST_PRODUCT_LAYOUT_CODE}}",
-  "storeId": "{{ACTIVE_STORE_ID}}"
+  "storeId": "{{ACTIVE_STORE_ID}}",
+  "storeCode": "{{ACTIVE_STORE_CODE}}"
 }
 
 ?? status startsWith 20

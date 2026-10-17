@@ -9,6 +9,7 @@ struct ProductSearchRow: View {
 
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
     private let routeAccent = Color(red: 0.15, green: 0.57, blue: 0.88)
+    @ScaledMetric(relativeTo: .title) private var productIconSize: CGFloat = 34
 
     init(
         product: Product,
@@ -27,8 +28,9 @@ struct ProductSearchRow: View {
     var body: some View {
         HStack(spacing: 13) {
             Image(systemName: "cart.circle.fill")
-                .font(.system(size: 34))
+                .font(.system(size: productIconSize))
                 .foregroundStyle(.white, routeAccent)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 5) {
                 HStack(spacing: 6) {
@@ -41,10 +43,11 @@ struct ProductSearchRow: View {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.caption)
                             .foregroundStyle(accent)
+                            .accessibilityLabel("Auf der Einkaufsliste")
                     }
                 }
 
-                Text("Regal \(product.layoutCode)")
+                Text(product.layoutCode.isEmpty ? "Keine Regalposition" : "Regal auf der Karte")
                     .font(.caption)
                     .foregroundColor(.secondary)
 
@@ -61,10 +64,13 @@ struct ProductSearchRow: View {
                 } label: {
                     Image(systemName: "arrow.right.circle.fill")
                         .font(.title2)
-                        .foregroundStyle(routeAccent)
+                        .foregroundStyle(Color.a11yRouteBlueText)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(navigateLabel)
+                .accessibilityHint("\(product.name) auf der Karte anzeigen")
 
                 Button {
                     onAddToList()
@@ -74,9 +80,12 @@ struct ProductSearchRow: View {
                         .foregroundStyle(accent)
                         .frame(width: 30, height: 30)
                         .background(accent.opacity(0.10), in: Circle())
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(isInShoppingList ? "Noch eins" : "Einplanen")
+                .accessibilityHint("\(product.name) zur Einkaufsliste hinzufügen")
             }
         }
         .padding(14)

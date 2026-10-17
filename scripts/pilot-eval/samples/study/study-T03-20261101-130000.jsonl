@@ -1,0 +1,14 @@
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 1, "testId": "T03", "t": "2026-11-01T13:00:00.000Z", "type": "taskStart"}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 1, "testId": "T03", "t": "2026-11-01T13:00:24.958Z", "type": "reroute"}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 1, "testId": "T03", "t": "2026-11-01T13:00:53.355Z", "type": "manualPosition"}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 1, "testId": "T03", "t": "2026-11-01T13:01:26.375Z", "type": "note", "text": "Produkt lag im falschen Fach"}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 1, "testId": "T03", "t": "2026-11-01T13:01:33.100Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 1, "rerouteCount": 1, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 2, "testId": "T03", "t": "2026-11-01T13:01:39.100Z", "type": "taskStart"}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 2, "testId": "T03", "t": "2026-11-01T13:03:40.500Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 3, "testId": "T03", "t": "2026-11-01T13:03:47.500Z", "type": "taskStart"}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 3, "testId": "T03", "t": "2026-11-01T13:04:33.939Z", "type": "manualPosition"}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 3, "testId": "T03", "t": "2026-11-01T13:04:41.384Z", "type": "reroute"}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 3, "testId": "T03", "t": "2026-11-01T13:04:43.020Z", "type": "reroute"}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 3, "testId": "T03", "t": "2026-11-01T13:05:32.000Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 1, "rerouteCount": 2, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 4, "testId": "T03", "t": "2026-11-01T13:05:44.000Z", "type": "taskStart"}
+{"sessionId": "a0ee89ae-d453-4d32-8b0d-bb418d5288f1", "taskNo": 4, "testId": "T03", "t": "2026-11-01T13:07:55.000Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}

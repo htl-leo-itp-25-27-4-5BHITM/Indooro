@@ -12,6 +12,7 @@ struct AnchorScannerView: View {
     let onClose: () -> Void
 
     @State private var cameraStatus = AVCaptureDevice.authorizationStatus(for: .video)
+    @ScaledMetric(relativeTo: .title) private var fallbackIconSize: CGFloat = 48
     #if DEBUG
     @State private var debugPayload = ""
     #endif
@@ -63,7 +64,7 @@ struct AnchorScannerView: View {
     private func fallback(message: String) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "qrcode.viewfinder")
-                .font(.system(size: 48, weight: .regular))
+                .font(.system(size: fallbackIconSize, weight: .regular))
                 .foregroundStyle(.secondary)
 
             Text(message)

@@ -139,6 +139,31 @@ class UpsellSuggestionServiceTest {
     }
 
     @Test
+    void storeFallbackNeverSuggestsProductsFromOtherMarkets() {
+        openSearchService.storeScopedEmpty = true;
+        openSearchService.foreignStoreProducts.add(
+                new Product(200, "Fremdmarkt-Artikel", 1.0, "310/1/1/9", "other-store-id", "OTHER-001"));
+
+        UpsellDtos.UpsellSuggestionResponse response = service.suggestions(new UpsellDtos.UpsellSuggestionRequest(
+                null,
+                "SPAR-Leonding-001",
+                1,
+                "local-list",
+                List.of(),
+                List.of(),
+                "shopping_session",
+                null
+        ));
+
+        List<Integer> ids = response.suggestions().stream()
+                .map(suggestion -> suggestion.product().id())
+                .toList();
+        assertFalse(ids.isEmpty());
+        assertFalse(ids.contains(200), ids::toString);
+        assertTrue(response.suggestions().stream().allMatch(suggestion -> suggestion.product().storeCode() == null));
+    }
+
+    @Test
     void emptyCandidatePoolReturnsEmptySuggestions() {
         openSearchService.emptyCandidates = true;
 
@@ -792,7 +817,10 @@ class UpsellSuggestionServiceTest {
     private static final class FakeOpenSearchService extends OpenSearchService {
         int productLookups = 0;
         boolean emptyCandidates = false;
+        boolean storeScopedEmpty = false;
         final Map<Integer, Product> products = new LinkedHashMap<>();
+        /** Products of other markets; only the old global (unscoped) candidate query could return them. */
+        final List<Product> foreignStoreProducts = new java.util.ArrayList<>();
 
         FakeOpenSearchService() {
             products.put(1, new Product(1, "Spaghetti", 1.49, "430/1/1/1"));
@@ -834,7 +862,30 @@ class UpsellSuggestionServiceTest {
         }
 
         @Override
+        public Product getProductById(Integer id, String storeId, String storeCode) throws IOException {
+            return getProductById(id);
+        }
+
+        @Override
         public List<Product> findUpsellCandidates(Integer size, String storeId, String storeCode) throws IOException {
+            if (emptyCandidates) {
+                return List.of();
+            }
+            boolean scoped = storeId != null || storeCode != null;
+            if (scoped && storeScopedEmpty) {
+                return List.of();
+            }
+            List<Product> pool = new java.util.ArrayList<>(products.values());
+            if (!scoped) {
+                pool.addAll(foreignStoreProducts);
+            }
+            return pool.stream()
+                    .limit(size == null ? pool.size() : size)
+                    .toList();
+        }
+
+        @Override
+        public List<Product> findUnscopedUpsellCandidates(Integer size) throws IOException {
             if (emptyCandidates) {
                 return List.of();
             }
