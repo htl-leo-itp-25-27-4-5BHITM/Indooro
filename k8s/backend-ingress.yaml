@@ -1,3 +1,8 @@
+# Ingress fuer Backend und den oeffentlichen Keycloak-Teil.
+#
+# Keycloak: nur die OIDC-Endpunkte (Login, Token, Discovery, Statics) sind extern erreichbar.
+# Die Admin-Konsole (/keycloak/admin/) und alles uebrige unter /keycloak ist NICHT ueber den
+# Ingress erreichbar; Administration nur per `kubectl port-forward` (siehe DEPLOYMENT.md).
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -8,6 +13,20 @@ spec:
     - host: it220209.cloud.htl-leonding.ac.at
       http:
         paths:
+          - path: /keycloak/realms/
+            pathType: Prefix
+            backend:
+              service:
+                name: indooro-keycloak
+                port:
+                  number: 8080
+          - path: /keycloak/resources/
+            pathType: Prefix
+            backend:
+              service:
+                name: indooro-keycloak
+                port:
+                  number: 8080
           - path: /
             pathType: Prefix
             backend:

@@ -97,6 +97,12 @@
             <artifactId>quarkus-smallrye-openapi</artifactId>
         </dependency>
 
+        <!-- Health-Endpunkte /q/health/live und /q/health/ready fuer Kubernetes-Probes -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
+
         <!-- Arc CDI -->
         <dependency>
             <groupId>io.quarkus</groupId>
