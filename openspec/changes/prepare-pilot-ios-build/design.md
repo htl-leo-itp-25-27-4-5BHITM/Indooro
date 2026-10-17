@@ -46,3 +46,24 @@ This change owns the files listed in the proposal's Impact. It must not edit `Na
 ## Migration / Rollback
 
 Set `IndooroFeatureProfile = full` to restore all entry points. No data migration.
+
+## Baseline
+
+2026-10-16: eigener Worktree, `pilot/ios-pilot-build` bei `46b9ad1`; `git fetch origin` und `git merge origin/pilot/first-store` (already up to date). Vollständiges Xcode unter `/Applications/Xcode.app`, Aufrufe mit `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`, da systemweit Command Line Tools ausgewählt sind. Vor Source-Änderungen: Swift-Test Exit 0, 77 Tests mit 0 Fehlern; Simulator-Build Exit 0, `** BUILD SUCCEEDED **`. Logs: `docs/pilot-readiness/evidence/prepare-pilot-ios-build/baseline-{swift,build}.txt`.
+
+## Implementation notes
+
+Abgleich Alt-Change (Task 1.2):
+- 3.1–3.5 und 4.1–4.2 gelten weiter: kein gemeinsamer toleranter Decoder, Produktlisten werden streng decodiert, `address`/`source`/`fallback` fehlen, Suche unterscheidet Fehler nicht von leeren Ergebnissen. RecipeStore hat schon `errorMessage`, prüft HTTP-Status aber nicht.
+- 3.2 benötigt eine Anpassung: Decoder-Änderungen im Layout-/Cache-Teil von BeaconManager und in ShoppingTransferService sind außerhalb des ausdrücklich erlaubten Dateibesitzes; dort nur nach Eigentümerfreigabe.
+- 4.3, 5.2 und 6.1–6.4 benötigen Änderungen an Eriks StoreMapPage. Die Planung kann hier umgesetzt werden; Kartenintegration/Filialübersicht bleiben als Eigentums-Gate offen.
+- 5.1 und 5.3 gelten weiter; die redundante Suche existiert noch in BeaconManager.
+- 10.1–10.2 gelten weiter: irreführender Empfehlungs-Titel und ungenutzte alte Upsell-Typen sind vorhanden.
+- Die vier API-Literale wurden inzwischen bereits über IndooroAPI zentralisiert. Task 2.3 wird deshalb als Migration dieses bestehenden Einstiegspunkts zu AppEnvironment ausgeführt; DEBUG-Umgebungsvariable INDOORO_API_BASE_URL bleibt erhalten.
+- Keine der zugewiesenen Aufgaben ist allein aufgrund des Alters als erledigt markiert.
+- Geräte unbekannt (Davids Rückmeldung am 2026-10-16). Tasks 1.3/6.4/7.3 bleiben Human steps; bisheriges Deployment-Target bleibt erhalten.
+
+- Suchfehler und Store-Scope in der Karte werden über ContentView (`safeAreaInset` und `storeProvider`) integriert; StoreMapPage bleibt unverändert. Damit entfallen die Eigentums-Gates für Alt-Tasks 4.3/5.2 und die Banner-Einbindung.
+- `MobileStoreModels` ist ausdrücklich im Impact zugewiesen; `address`, `source`, `fallback` ergänzt. Die tolerante Decoder-Nutzung in BeaconManager-Layout-/Fallback-Methoden bleibt gemäß direkter Grenze offen (A 4.2, Alt 3.2); ShoppingTransferService gehört nicht zu den gesperrten Navigationsteilen und ist für den explizit übernommenen Alt-Task angepasst.
+
+- Abschnitt-4-Build: SearchOverlayView wird trotz fehlender Nutzung mitkompiliert und referenzierte die entfernte BeaconManager-Suche. Als zugewiesene Suchansicht auf ProductSearchStore migriert; keine Löschung ohne Freigabe.

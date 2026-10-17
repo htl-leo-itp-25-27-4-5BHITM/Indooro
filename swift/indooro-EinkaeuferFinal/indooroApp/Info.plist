@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>IndooroStudyMode</key>
+	<false/>
+	<key>IndooroAPIBaseURL</key>
+	<string></string>
+	<key>IndooroFeatureProfile</key>
+	<string>pilot</string>
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -17,11 +23,6 @@
 			</array>
 		</dict>
 	</array>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

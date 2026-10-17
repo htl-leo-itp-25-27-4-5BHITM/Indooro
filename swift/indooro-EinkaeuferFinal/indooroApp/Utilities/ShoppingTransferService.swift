@@ -92,8 +92,7 @@ enum ShoppingTransferService {
     }
 
     static func decodePackage(from data: Data) throws -> ShoppingTransferPackage {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        let decoder = JSONDecoder.indooro
 
         guard let package = try? decoder.decode(ShoppingTransferPackage.self, from: data) else {
             throw ShoppingTransferError.invalidFile
