@@ -1,0 +1,15 @@
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 1, "testId": "T09", "t": "2026-11-03T13:00:00.000Z", "type": "taskStart"}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 1, "testId": "T09", "t": "2026-11-03T13:00:13.145Z", "type": "manualPosition"}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 1, "testId": "T09", "t": "2026-11-03T13:02:04.988Z", "type": "reroute"}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 1, "testId": "T09", "t": "2026-11-03T13:02:33.139Z", "type": "reroute"}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 1, "testId": "T09", "t": "2026-11-03T13:02:35.300Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 1, "rerouteCount": 2, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 2, "testId": "T09", "t": "2026-11-03T13:02:40.300Z", "type": "taskStart"}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 2, "testId": "T09", "t": "2026-11-03T13:04:36.100Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 3, "testId": "T09", "t": "2026-11-03T13:04:58.100Z", "type": "taskStart"}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 3, "testId": "T09", "t": "2026-11-03T13:05:05.556Z", "type": "manualPosition"}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 3, "testId": "T09", "t": "2026-11-03T13:05:18.736Z", "type": "manualPosition"}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 3, "testId": "T09", "t": "2026-11-03T13:05:22.457Z", "type": "note", "text": "Regal war schwer zu finden"}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 3, "testId": "T09", "t": "2026-11-03T13:06:04.663Z", "type": "reroute"}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 3, "testId": "T09", "t": "2026-11-03T13:06:04.900Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 2, "rerouteCount": 1, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 4, "testId": "T09", "t": "2026-11-03T13:06:33.900Z", "type": "taskStart"}
+{"sessionId": "61b1cd22-6280-4c45-9043-5a1098ae4334", "taskNo": 4, "testId": "T09", "t": "2026-11-03T13:08:47.100Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}

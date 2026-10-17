@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "source": "docs/pilot-readiness/03_PILOT_READINESS.md 6.2/6.3 (vorläufig)",
+  "metrics": {
+    "task_success": {
+      "label": "Suchaufgaben ohne Hilfe erfolgreich abgeschlossen",
+      "op": ">=",
+      "value": 0.9,
+      "min_n": 10,
+      "unit": "Anteil",
+      "n_unit": "Aufgaben mit App"
+    },
+    "faster_share": {
+      "label": "Mit App schneller bei seltenen Produkten (gepaart)",
+      "op": ">=",
+      "value": 0.6,
+      "min_n": 10,
+      "unit": "Anteil",
+      "n_unit": "Paare"
+    },
+    "manual_corrections_median": {
+      "label": "Manuelle Positionskorrekturen pro Tour (Median)",
+      "op": "<=",
+      "value": 2,
+      "min_n": 5,
+      "unit": "Korrekturen pro Tour",
+      "n_unit": "Touren"
+    },
+    "unjustified_stop_changes": {
+      "label": "Unbegründete Zielwechsel",
+      "op": "==",
+      "value": 0,
+      "min_n": 5,
+      "unit": "Anzahl",
+      "n_unit": "Touren"
+    },
+    "false_reroutes_per_tour": {
+      "label": "Falsche Routenänderungen pro Tour",
+      "op": "<=",
+      "value": 1,
+      "min_n": 5,
+      "unit": "Reroutes pro Tour",
+      "n_unit": "Touren"
+    },
+    "abort_rate": {
+      "label": "Navigationsabbrüche",
+      "op": "<=",
+      "value": 0.1,
+      "min_n": 10,
+      "unit": "Anteil",
+      "n_unit": "Aufgaben"
+    },
+    "reuse_share": {
+      "label": "Würde die App wieder nutzen (Wert 4 oder 5)",
+      "op": ">=",
+      "value": 0.6,
+      "min_n": 10,
+      "unit": "Anteil",
+      "n_unit": "Personen"
+    },
+    "staff_hours": {
+      "label": "Aufwand Marktpersonal gesamt",
+      "op": "<=",
+      "value": 2,
+      "min_n": 1,
+      "unit": "Stunden gesamt",
+      "n_unit": "Messtermine"
+    },
+    "incident_rate": {
+      "label": "Technische Vorfälle je Tour (Absturz, Hänger, falsche Daten)",
+      "op": "<=",
+      "value": 0.05,
+      "min_n": 20,
+      "unit": "Vorfälle pro Tour (1 je 20 Touren)",
+      "n_unit": "Touren"
+    },
+    "field_reroutes": {
+      "label": "Reroutes ohne Abweichung im Feldlauf",
+      "op": "<=",
+      "value": 1,
+      "min_n": 1,
+      "unit": "Reroutes pro Tour",
+      "n_unit": "Feldläufe"
+    }
+  }
+}

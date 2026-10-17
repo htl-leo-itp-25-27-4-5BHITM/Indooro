@@ -1,0 +1,4 @@
+site,date,device,median_error_m,p90_error_m,correct_aisle_share,reroutes_per_tour
+Testraum,2026-10-20,SYNTH iPhone A,2.4,4.6,0.82,0.4
+Grosser Raum,2026-10-27,SYNTH iPhone B,3.1,5.8,0.74,1.2
+SYNTH-Markt,2026-11-05,SYNTH iPhone A,2.8,5.1,0.78,0.7

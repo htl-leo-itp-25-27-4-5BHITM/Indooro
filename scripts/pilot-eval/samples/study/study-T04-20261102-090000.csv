@@ -1,0 +1,5 @@
+test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count
+T04,47294739-614f-43d7-99db-3ad0ddd1dfb2,SYNTH,1,9107,SYNTH Perlgraupen 500 g,ohne_app,-,2026-11-02T09:00:00.000Z,2026-11-02T09:02:30.900Z,150.9,gefunden,-,-,-,0
+T04,47294739-614f-43d7-99db-3ad0ddd1dfb2,SYNTH,2,9107,SYNTH Perlgraupen 500 g,app,mit_ortung,2026-11-02T09:02:46.900Z,2026-11-02T09:05:32.700Z,165.8,gefunden,2,0,0,1
+T04,47294739-614f-43d7-99db-3ad0ddd1dfb2,SYNTH,3,9110,SYNTH Bambussprossen Dose 225 g,ohne_app,-,2026-11-02T09:05:58.700Z,2026-11-02T09:07:17.800Z,79.1,gefunden,-,-,-,0
+T04,47294739-614f-43d7-99db-3ad0ddd1dfb2,SYNTH,4,9110,SYNTH Bambussprossen Dose 225 g,app,mit_ortung,2026-11-02T09:07:42.800Z,2026-11-02T09:08:27.900Z,45.1,abgebrochen,1,1,0,0
