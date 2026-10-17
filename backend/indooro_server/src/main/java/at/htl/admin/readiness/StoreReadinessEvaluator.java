@@ -35,12 +35,13 @@ import java.util.regex.Pattern;
  */
 public final class StoreReadinessEvaluator {
 
-    public static final double DEFAULT_RADIUS = 8.0;
-    public static final double MIN_RADIUS = 0.5;
-    public static final double MAX_RADIUS = 30.0;
+    /** Coverage rule values come from the shared {@link CoverageRule} (resource coverage-rule.json). */
+    public static final double DEFAULT_RADIUS = CoverageRule.DEFAULT.radiusMeters();
+    public static final double MIN_RADIUS = CoverageRule.DEFAULT.minRadiusMeters();
+    public static final double MAX_RADIUS = CoverageRule.DEFAULT.maxRadiusMeters();
 
-    static final int MIN_BEACONS_PER_CELL = 3;
-    static final double MAX_LOW_COVERAGE_SHARE = 0.05;
+    static final int MIN_BEACONS_PER_CELL = CoverageRule.DEFAULT.minBeaconsPerCell();
+    static final double MAX_LOW_COVERAGE_SHARE = CoverageRule.DEFAULT.maxLowCoverageShare();
     static final double MIN_GRID_EDGE = 5.0;
     static final double MAX_GRID_EDGE = 200.0;
     /** Upper bound for coverage grids; the layout validator allows at most 1000 x 1000. */

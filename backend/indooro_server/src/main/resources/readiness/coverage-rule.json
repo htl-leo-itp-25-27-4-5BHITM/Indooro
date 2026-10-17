@@ -1,0 +1,8 @@
+{
+  "_comment": "Gemeinsame Abdeckungsregel von Store-Readiness (Java) und Beacon-Planer (scripts/beacon-planner). Endgueltige Werte entscheidet das Team (US-31); hier nur die Defaults. Aenderungen wirken in beiden Werkzeugen.",
+  "radiusMeters": 8.0,
+  "minRadiusMeters": 0.5,
+  "maxRadiusMeters": 30.0,
+  "minBeaconsPerCell": 3,
+  "maxLowCoverageShare": 0.05
+}

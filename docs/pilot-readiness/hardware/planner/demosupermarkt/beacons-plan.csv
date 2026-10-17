@@ -1,0 +1,74 @@
+minor,x_m,y_m,mount,notes
+1,3.00,0.00,wall,Rasterrand
+2,9.00,0.00,wall,Rasterrand
+3,17.00,0.00,wall,Rasterrand
+4,19.00,0.00,wall,Rasterrand
+5,23.00,0.00,wall,Rasterrand
+6,25.00,0.00,wall,Rasterrand
+7,33.00,0.00,wall,Rasterrand
+8,37.00,0.00,wall,Rasterrand
+9,40.00,3.00,wall,Rasterrand
+10,3.00,6.00,shelf-top,Regal 610/1 (Haushalt & Reinigung)
+11,5.00,6.00,shelf-top,Regal 610/1 (Haushalt & Reinigung)
+12,11.00,6.00,shelf-top,Regal 610/2 (Haushalt & Reinigung)
+13,40.00,9.00,wall,Rasterrand
+14,13.50,11.83,shelf-top,Regal 470/1 (Snacks & Süßwaren)
+15,18.50,11.83,shelf-top,Regal 445/1 (Backmittel)
+16,21.50,11.83,shelf-top,Regal Leer
+17,26.50,11.83,shelf-top,Regal 430/1 (Teigwaren & Nudeln)
+18,29.50,11.83,shelf-top,Regal 520/1 (Molkereiprodukte)
+19,34.00,11.94,shelf-top,Regal Leer
+20,5.50,13.50,shelf-top,Regal 510/1 (Alkoholfreie Getränke)
+21,26.50,13.50,shelf-top,Regal 430/1 (Teigwaren & Nudeln)
+22,34.00,13.81,shelf-top,Regal Leer
+23,5.50,15.17,shelf-top,Regal 510/1 (Alkoholfreie Getränke)
+24,10.50,15.17,shelf-top,Regal Leer
+25,10.50,18.50,shelf-top,Regal Leer
+26,5.50,20.17,shelf-top,Regal 510/2 (Alkoholfreie Getränke)
+27,10.50,21.83,shelf-top,Regal 610/3 (Haushalt & Reinigung)
+28,29.50,21.83,shelf-top,Regal 520/3 (Molkereiprodukte)
+29,29.50,23.50,shelf-top,Regal 520/3 (Molkereiprodukte)
+30,34.00,25.06,shelf-top,Regal Leer
+31,5.50,25.17,shelf-top,Regal 510/3 (Alkoholfreie Getränke)
+32,10.50,25.17,shelf-top,Regal 610/3 (Haushalt & Reinigung)
+33,21.50,28.83,shelf-top,Regal 450/1 (Öle & Essig)
+34,5.50,28.88,shelf-top,Regal 640/1 (Körperpflege & Hygiene)
+35,10.50,28.88,shelf-top,Regal 640/2 (Körperpflege & Hygiene)
+36,29.50,29.00,shelf-top,Regal 440/1 (Müsli & Frühstück)
+37,18.50,30.50,shelf-top,Regal Leer
+38,0.00,31.00,wall,Rasterrand
+39,38.50,31.83,shelf-top,Regal 310/3 (Obst & Gemüse)
+40,18.50,32.17,shelf-top,Regal Leer
+41,34.00,33.00,shelf-top,Regal Leer
+42,13.50,34.12,shelf-top,Regal 640/3 (Körperpflege & Hygiene)
+43,29.50,35.00,shelf-top,Regal 440/1 (Müsli & Frühstück)
+44,0.00,37.00,wall,Rasterrand
+45,26.50,37.17,shelf-top,Regal Leer
+46,21.50,38.83,shelf-top,Regal 450/3 (Öle & Essig)
+47,21.50,40.50,shelf-top,Regal 450/3 (Öle & Essig)
+48,36.50,41.00,shelf-top,Regal 525/2 (Käse & Wurst)
+49,3.50,42.00,checkout-top,Kasse Leer
+50,13.00,42.00,checkout-top,Kasse Selbstbedienungskasse
+51,18.50,42.17,shelf-top,Regal 510/4 (Alkoholfreie Getränke)
+52,21.50,42.17,shelf-top,Regal 450/3 (Öle & Essig)
+53,8.50,44.00,checkout-top,Kasse Leer
+54,0.00,45.00,wall,Rasterrand
+55,36.50,45.00,shelf-top,Regal 525/2 (Käse & Wurst)
+56,8.50,46.00,checkout-top,Kasse Leer
+57,13.00,46.00,checkout-top,Kasse Selbstbedienungskasse
+58,36.50,47.00,shelf-top,Regal 525/2 (Käse & Wurst)
+59,36.50,51.00,shelf-top,Regal 525/2 (Käse & Wurst)
+60,3.00,52.00,checkout-top,Kasse Selbstbedienungskasse
+61,8.00,52.00,checkout-top,Kasse Selbstbedienungskasse
+62,36.50,53.00,shelf-top,Regal 525/2 (Käse & Wurst)
+63,40.00,53.00,wall,Rasterrand
+64,29.90,57.50,shelf-top,Regal 525/1 (Käse & Wurst)
+65,33.50,57.50,shelf-top,Regal 525/1 (Käse & Wurst)
+66,5.00,60.00,wall,Rasterrand
+67,7.00,60.00,wall,Rasterrand
+68,13.00,60.00,wall,Rasterrand
+69,15.00,60.00,wall,Rasterrand
+70,19.00,60.00,wall,Rasterrand
+71,21.00,60.00,wall,Rasterrand
+72,25.00,60.00,wall,Rasterrand
+73,27.00,60.00,wall,Rasterrand
