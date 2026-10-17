@@ -6,7 +6,7 @@
 ## 2. Recording
 
 - [x] 2.1 Ensure the recorder writes step and heading events; replay ignores unknown events gracefully; tests.
-- [ ] 2.2 Ask Person C for two new walks with motion data per site (announced in `STATUS.md`; the walks themselves are a human step).
+- [x] 2.2 Ask Person C for two new walks with motion data per site (announced in `STATUS.md`; the walks themselves are a human step).
 
 ## 3. Model
 
