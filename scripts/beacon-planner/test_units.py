@@ -1,4 +1,6 @@
 """Unit tests: rule loading, layout rules, candidates, HDOP and the readiness mirror."""
+import contextlib
+import io
 import json
 import math
 import os
@@ -8,6 +10,7 @@ import unittest
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import export_vectors  # noqa: E402
 from candidates import MOUNT_CHECKOUT_TOP, MOUNT_SHELF_TOP, MOUNT_WALL, generate_candidates  # noqa: E402
 from coverage import hdop, readiness_report  # noqa: E402
 from layout import (  # noqa: E402
@@ -308,6 +311,34 @@ class ReadinessMirrorTests(unittest.TestCase):
         report = readiness_report(layout, [], _RULE)
         self.assertEqual(report["walkable"], 0)
         self.assertTrue(report["ok"])
+
+
+class SharedVectorTests(unittest.TestCase):
+    """fixtures/vectors.json is read by admin-ui/src/editor/coverage.test.ts; it must match the generator."""
+
+    def test_checked_in_vectors_match_the_generator(self):
+        checked_in = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures", "vectors.json")
+        with open(checked_in, encoding="utf-8", newline="") as handle:
+            stored = handle.read()
+        with tempfile.TemporaryDirectory() as tmp:
+            regenerated = os.path.join(tmp, "vectors.json")
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(export_vectors.main([regenerated]), 0)
+            with open(regenerated, encoding="utf-8", newline="") as handle:
+                fresh = handle.read()
+        self.assertEqual(fresh, stored, "fixtures/vectors.json ist veraltet: python3 -I scripts/beacon-planner/export_vectors.py")
+
+    def test_vectors_have_the_expected_shape(self):
+        vectors = export_vectors.build_vectors()
+        self.assertGreaterEqual(len(vectors), 6)
+        self.assertLessEqual(len(vectors), 10)
+        for vector in vectors:
+            with self.subTest(vector=vector["name"]):
+                expected = vector["expected"]
+                self.assertEqual(len(expected["counts"]), vector["layout"]["gridSize"]["height"])
+                self.assertTrue(all(len(row) == vector["layout"]["gridSize"]["width"] for row in expected["counts"]))
+                self.assertEqual(sum(1 for row in expected["counts"] for c in row if c is not None),
+                                 expected["walkableCells"])
 
 
 if __name__ == "__main__":
