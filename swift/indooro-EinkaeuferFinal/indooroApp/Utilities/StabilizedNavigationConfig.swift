@@ -6,8 +6,20 @@ struct StabilizedNavigationConfig {
     var route = RouteStabilityConfig()
     var confidence = ConfidenceConfig()
     var planning = PlanningConfig()
+    var motion = MotionConfig()
 
     static let `default` = StabilizedNavigationConfig()
+}
+
+// Bewegungsgestuetzte Schaetzung (improve-positioning-with-motion). Flag aus = Verhalten unveraendert.
+// Alle Werte sind provisional bis zur Auswertung echter Aufnahmen (improve-positioning-with-motion Gruppe 4).
+struct MotionConfig {
+    var motionAided: Bool = false // provisional (Flag, Default AUS)
+    var standingAfterSeconds: TimeInterval = 1.5 // provisional
+    var standingAlphaFactor: Float = 0.2 // provisional
+    var stepLengthMeters: Float = 0.7 // provisional
+    var headingToleranceRadians: Float = .pi / 3 // provisional
+    var standingJumpConfirmations: Int = 12 // provisional
 }
 
 struct BeaconPositioningConfig {
