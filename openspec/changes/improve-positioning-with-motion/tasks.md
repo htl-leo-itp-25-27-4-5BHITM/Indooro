@@ -1,12 +1,12 @@
 ## 1. Gate and Setup
 
-- [ ] 1.1 Confirm ≥ 5 real recordings with truth markers from two sites exist; otherwise stop and record „wartet auf Messungen“.
-- [ ] 1.2 Branch `pilot/motion-positioning`; validate the change.
+- [x] 1.1 Gate adjusted (decision Erik, 2026-10-17): groups 2 and 3 are built before the field measurements, behind flag `motionAided` (default off, behavior with the flag off is bit-identical). Only group 4 (evaluation with real recordings and the decision to enable) waits for ≥ 5 real recordings with truth markers from two sites; until then record „wartet auf Messungen“ in `STATUS.md`. Reason: Person C records real beacon walks soon, and recordings without step and heading data would be useless for this change.
+- [x] 1.2 Branch `pilot/motion-positioning`; validate the change.
 
 ## 2. Recording
 
 - [ ] 2.1 Ensure the recorder writes step and heading events; replay ignores unknown events gracefully; tests.
-- [ ] 2.2 Ask Person C for two new walks with motion data per site.
+- [ ] 2.2 Ask Person C for two new walks with motion data per site (announced in `STATUS.md`; the walks themselves are a human step).
 
 ## 3. Model
 
