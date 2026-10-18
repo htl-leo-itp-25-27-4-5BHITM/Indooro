@@ -18,6 +18,7 @@ let package = Package(
         .library(name: "IndooroNetworking", type: .static, targets: ["IndooroNetworking"]),
         .library(name: "IndooroNavigation", type: .static, targets: ["IndooroNavigation"]),
         .library(name: "IndooroPersistence", type: .static, targets: ["IndooroPersistence"]),
+        .library(name: "IndooroPositioning", type: .static, targets: ["IndooroPositioning"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.6.0"),
@@ -31,6 +32,7 @@ let package = Package(
         // Nur für Tests: JSON-Fixtures als Paketressource (Task 3.4). Kein Produkt, wird nie in die App gelinkt.
         .target(
             name: "IndooroTestSupport",
+            dependencies: ["IndooroPositioning"],
             resources: [.copy("Resources")]
         ),
         .testTarget(
@@ -58,6 +60,16 @@ let package = Package(
         .testTarget(
             name: "IndooroPersistenceTests",
             dependencies: ["IndooroPersistence", "IndooroModels"]
+        ),
+        // Ortung (Phase 9): Funk-Protokolle, `PositioningEngine`, `StoreDetectionService`, `LayoutRepository`.
+        // Parallel zu `BeaconManager`, in der App hinter einem Flag (Standard AUS).
+        .target(
+            name: "IndooroPositioning",
+            dependencies: ["IndooroModels", "IndooroNavigation", "IndooroNetworking", "IndooroPersistence"]
+        ),
+        .testTarget(
+            name: "IndooroPositioningTests",
+            dependencies: ["IndooroPositioning", "IndooroModels", "IndooroNavigation", "IndooroTestSupport"]
         ),
         .target(
             name: "IndooroNetworking",

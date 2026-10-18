@@ -176,6 +176,11 @@ public final class BeaconMeasurementStore {
     }
 
     /// Eingang des Solvers: eine Messung pro Beacon aus der gewaehlten Quelle.
+    /// Anzahl der Beacons mit gueltiger, frischer Messung (Anzeige und Tests ausserhalb des Pakets).
+    public func activeMeasurementCount(at timestamp: TimeInterval) -> Int {
+        activeMeasurements(at: timestamp).count
+    }
+
     func activeMeasurements(at timestamp: TimeInterval) -> [BeaconAnchorMeasurement] {
         anchors.keys.sorted().compactMap { name in
             guard let anchor = anchors[name],

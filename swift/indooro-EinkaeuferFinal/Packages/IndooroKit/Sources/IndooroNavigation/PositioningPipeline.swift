@@ -3,7 +3,7 @@ import CoreGraphics
 import simd
 
 /// Naehe-Klasse eines iBeacon-Rangings (Spiegel von `CLProximity`, damit Paket und Aufzeichnung ohne CoreLocation auskommen).
-public enum BeaconProximityClass: String, Codable, Equatable {
+public enum BeaconProximityClass: String, Codable, Equatable, Sendable {
     case immediate
     case near
     case far
@@ -46,13 +46,13 @@ public struct RSSISampleBuffer {
 }
 
 /// Ergebnis eines Positionierungs-Ticks.
-public struct PositioningTick {
+public struct PositioningTick: Sendable {
     public let timestamp: TimeInterval
     /// Vom Solver geloester Rohpunkt; `nil`, wenn zu wenige Beacons vorlagen.
     public let solvedPoint: SIMD2<Float>?
     public let confidence: Float
     /// `true`, wenn das Sprung-Gate den geloesten Punkt gehalten hat.
-    let wasHeld: Bool
+    public let wasHeld: Bool
     /// Projizierte Position (Eingang der Navigations-Session); `nil` ohne Loesung.
     public let projectedPoint: SIMD2<Float>?
 }
@@ -89,13 +89,13 @@ public final class PositioningPipeline {
     // MARK: - Bewegung
 
     /// Schrittzaehler-Zeile (kumulativ). Ohne `motionAided` ohne Wirkung.
-    func recordStep(cumulativeSteps: Int, at timestamp: TimeInterval) {
+    public func recordStep(cumulativeSteps: Int, at timestamp: TimeInterval) {
         guard config.motion.motionAided else { return }
         motion.recordStep(cumulativeSteps: cumulativeSteps, at: timestamp)
     }
 
     /// Kompasspeilung. Ohne `motionAided` ohne Wirkung.
-    func recordHeading(bearingDegrees: Double, accuracy: Double, at timestamp: TimeInterval) {
+    public func recordHeading(bearingDegrees: Double, accuracy: Double, at timestamp: TimeInterval) {
         guard config.motion.motionAided else { return }
         motion.recordHeading(bearingDegrees: bearingDegrees, accuracy: accuracy, at: timestamp)
     }
