@@ -3,8 +3,8 @@ import XCTest
 import IndooroNetworking
 
 /// Prueft, dass die aus `api/openapi/indooro-mobile.yaml` generierten Typen die Fixtures aus
-/// `SP/Fixtures` dekodieren. Abweichungen zwischen Fixture und Vertrag werden hier als
-/// erwartete Dekodierfehler festgehalten, der Vertrag selbst wird nicht veraendert.
+/// `SP/Fixtures` vollstaendig dekodieren. Fixtures muessen dem Vertrag entsprechen; es gibt
+/// keine dokumentierten Abweichungen.
 final class GeneratedContractDecodingTests: XCTestCase {
     /// Gleiche Datumsstrategie wie `JSONDecoder.indooro` in `indooroApp/Utilities/PilotNetworking.swift`.
     /// Die App-Extension ist nicht Teil dieses Pakets, daher hier gespiegelt.
@@ -47,26 +47,9 @@ final class GeneratedContractDecodingTests: XCTestCase {
 
     // MARK: - Layout
 
-    /// Dokumentierte Abweichung 1: Der Vertrag typisiert `LayoutElement.id` als `[string, integer]`
-    /// (Entwuerfe duerfen Strings behalten), der Generator erzeugt `String?`. Das Fixture liefert
-    /// ganzzahlige IDs, daher schlaegt das Dekodieren am Feld `id` fehl.
-    func testStoreLayoutFixtureFailsOnIntegerElementIDsDocumentedMismatch() throws {
-        try assertTypeMismatch(on: "id", in: try fixtureData("store-layout-current.json"))
-    }
-
-    /// Dokumentierte Abweichung 2: `LayoutElement.meter` ist ebenfalls `[string, integer]`, das Fixture
-    /// liefert eine Zahl. Nach dem Entfernen der IDs schlaegt das Dekodieren am Feld `meter` fehl.
-    func testStoreLayoutFixtureFailsOnIntegerMeterDocumentedMismatch() throws {
-        let stripped = try layoutFixture(removingElementKeys: ["id"])
-        try assertTypeMismatch(on: "meter", in: stripped)
-    }
-
-    /// Die uebrigen Felder des Layouts entsprechen dem Vertrag: Ohne die beiden dokumentierten
-    /// Abweichungen dekodiert das Fixture vollstaendig.
-    func testStoreLayoutFixtureDecodesOnceDocumentedMismatchesAreRemoved() throws {
-        let stripped = try layoutFixture(removingElementKeys: ["id", "meter"])
-
-        let response = try decoder.decode(Components.Schemas.MobileLayoutResponse.self, from: stripped)
+    /// Das Fixture dekodiert unveraendert vollstaendig gegen den Vertrag.
+    func testStoreLayoutFixtureDecodesCompletely() throws {
+        let response = try decoder.decode(Components.Schemas.MobileLayoutResponse.self, from: fixtureData("store-layout-current.json"))
 
         XCTAssertEqual(response.storeId, "ad61389a-7486-48fa-afa2-9b5e4132f6a8")
         XCTAssertEqual(response.source, .ACTIVE)
@@ -74,25 +57,43 @@ final class GeneratedContractDecodingTests: XCTestCase {
         XCTAssertEqual(response.layout.elements?.count, 48)
     }
 
-    private func layoutFixture(removingElementKeys keys: [String]) throws -> Data {
-        var root = try XCTUnwrap(JSONSerialization.jsonObject(with: try fixtureData("store-layout-current.json")) as? [String: Any])
-        var layout = try XCTUnwrap(root["layout"] as? [String: Any])
-        let elements = try XCTUnwrap(layout["elements"] as? [[String: Any]])
-        layout["elements"] = elements.map { element in
-            var copy = element
-            keys.forEach { copy.removeValue(forKey: $0) }
-            return copy
+    /// `LayoutElement.id` ist `integer (int64)`, `meter` ist `integer | null`. Die Werte werden
+    /// gegen die Rohwerte aus dem JSON geprueft.
+    func testStoreLayoutElementIdAndMeterAreIntegers() throws {
+        let data = try fixtureData("store-layout-current.json")
+        let response = try decoder.decode(Components.Schemas.MobileLayoutResponse.self, from: data)
+        let elements = try XCTUnwrap(response.layout.elements)
+
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let layout = try XCTUnwrap(root["layout"] as? [String: Any])
+        let rawElements = try XCTUnwrap(layout["elements"] as? [[String: Any]])
+        XCTAssertEqual(elements.count, rawElements.count)
+
+        let expectedFirstID = try XCTUnwrap((rawElements.first?["id"] as? NSNumber)?.int64Value)
+        XCTAssertEqual(try XCTUnwrap(elements.first?.id), expectedFirstID)
+
+        for (element, raw) in zip(elements, rawElements) {
+            XCTAssertEqual(element.id, (raw["id"] as? NSNumber)?.int64Value)
+            XCTAssertEqual(element.meter, (raw["meter"] as? NSNumber)?.intValue)
         }
-        root["layout"] = layout
-        return try JSONSerialization.data(withJSONObject: root)
+
+        let withMeter = try XCTUnwrap(zip(elements, rawElements).first { $0.0.meter != nil })
+        let expectedMeter = try XCTUnwrap((withMeter.1["meter"] as? NSNumber)?.intValue)
+        XCTAssertEqual(withMeter.0.meter, expectedMeter)
     }
 
-    private func assertTypeMismatch(on field: String, in data: Data, file: StaticString = #filePath, line: UInt = #line) throws {
-        XCTAssertThrowsError(try decoder.decode(Components.Schemas.MobileLayoutResponse.self, from: data), file: file, line: line) { error in
-            guard case DecodingError.typeMismatch(_, let context) = error else {
-                return XCTFail("Erwartet typeMismatch, erhalten: \(error)", file: file, line: line)
-            }
-            XCTAssertEqual(context.codingPath.last?.stringValue, field, "codingPath: \(context.codingPath.map(\.stringValue))", file: file, line: line)
+    /// Veroeffentlichter Layout-Vertrag: Eine Element-ID als String ist kein gueltiger Wert mehr.
+    func testElementWithStringIdIsRejected() throws {
+        var root = try XCTUnwrap(JSONSerialization.jsonObject(with: try fixtureData("store-layout-current.json")) as? [String: Any])
+        var layout = try XCTUnwrap(root["layout"] as? [String: Any])
+        var elements = try XCTUnwrap(layout["elements"] as? [[String: Any]])
+        elements[0]["id"] = "legacy-1"
+        layout["elements"] = elements
+        root["layout"] = layout
+        let data = try JSONSerialization.data(withJSONObject: root)
+
+        XCTAssertThrowsError(try decoder.decode(Components.Schemas.MobileLayoutResponse.self, from: data)) { error in
+            XCTAssertTrue(error is DecodingError, "Erwartet DecodingError, erhalten: \(error)")
         }
     }
 

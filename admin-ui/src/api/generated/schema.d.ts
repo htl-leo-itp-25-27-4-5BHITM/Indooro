@@ -1417,8 +1417,11 @@ export interface components {
         };
         /** @description Editor element. Unknown keys are preserved. */
         LayoutElement: {
-            /** @description Drafts may retain historical strings; published layouts require positive numeric IDs at most 9007199254740991. */
-            id?: string | number;
+            /**
+             * Format: int64
+             * @description Positive integer, at most 9007199254740991 (iOS decodes Int64). Drafts may hold historical string IDs; see DraftLayoutElement.
+             */
+            id?: number;
             /**
              * @example shelf
              * @example wall
@@ -1438,8 +1441,48 @@ export interface components {
             locked?: boolean;
             /** @description Untrusted text; clients must escape it (finding SEC-02). */
             label?: string;
-            category?: string | number;
-            meter?: string | number;
+            category?: string | null;
+            /** @description Shelf section number; when category is `<code>/<section>` it equals <section>. */
+            meter?: number | null;
+            /** @description When published on a shelf, its category/section prefix must equal that shelf's category field. */
+            layoutCode?: string;
+            color?: string;
+            /** @description Untrusted text; clients must escape it. */
+            beaconId?: string;
+            beaconCode?: string;
+            identityKey?: string;
+            uuid?: string;
+            major?: number;
+            minor?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Editor element. Unknown keys are preserved. */
+        DraftLayoutElement: {
+            /** @description Drafts may retain historical string IDs; activation/publishing requires a positive integer. */
+            id?: number | string;
+            /**
+             * @example shelf
+             * @example wall
+             * @example aisle
+             * @example cashier
+             * @example entrance
+             * @example poi
+             * @example beacon
+             */
+            type?: string;
+            x?: number;
+            y?: number;
+            width?: number;
+            height?: number;
+            rotation?: number;
+            accessAngle?: number;
+            locked?: boolean;
+            /** @description Untrusted text; clients must escape it (finding SEC-02). */
+            label?: string;
+            category?: string | null;
+            /** @description Shelf section number; when category is `<code>/<section>` it equals <section>. */
+            meter?: number | null;
             /** @description When published on a shelf, its category/section prefix must equal that shelf's category field. */
             layoutCode?: string;
             color?: string;
@@ -1461,6 +1504,17 @@ export interface components {
                 height?: number;
             };
             elements?: components["schemas"]["LayoutElement"][];
+        } & {
+            [key: string]: unknown;
+        };
+        DraftLayoutDocument: {
+            shopName?: string;
+            exportDate?: string;
+            gridSize?: {
+                width?: number;
+                height?: number;
+            };
+            elements?: components["schemas"]["DraftLayoutElement"][];
         } & {
             [key: string]: unknown;
         };
@@ -1951,7 +2005,7 @@ export interface components {
             changeNote?: string | null;
             /** @description Explicit false saves a draft, including the first version. True activates it. Omitted or null preserves legacy first-save activation. */
             activate?: boolean | null;
-            layout: components["schemas"]["LayoutDocument"];
+            layout: components["schemas"]["DraftLayoutDocument"];
         };
         StoreLayoutResponse: {
             /** Format: uuid */
@@ -1965,7 +2019,7 @@ export interface components {
             createdAt?: string | null;
             /** Format: date-time */
             activatedAt?: string | null;
-            layout?: components["schemas"]["LayoutDocument"];
+            layout?: components["schemas"]["DraftLayoutDocument"];
         };
         LayoutVersionSummary: {
             /** Format: uuid */
