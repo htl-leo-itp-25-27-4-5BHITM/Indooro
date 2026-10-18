@@ -223,6 +223,58 @@ public class OpenSearchService {
     }
 
     /**
+     * Holt mehrere Produkte per Produkt-ID in einer Anfrage, ohne Store-Filter wie {@link #getProductById(Integer)}.
+     * Die Dokument-IDs sind `<storeCode>:<id>`, daher wird ueber das Feld `id` gesucht statt per mget ueber `_id`.
+     * Je Produkt-ID liefert `collapse` hoechstens einen Treffer. Fehlende Produkte fehlen in der Map.
+     * Eine leere Eingabe ergibt eine leere Map ohne Anfrage.
+     */
+    public Map<String, Product> getProductsByIds(Collection<String> productIds) throws IOException {
+        if (productIds == null || productIds.isEmpty()) {
+            return Map.of();
+        }
+        List<FieldValue> values = productIds.stream()
+                .map(this::parseProductId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .map(id -> FieldValue.of(id.intValue()))
+                .toList();
+        if (values.isEmpty()) {
+            return Map.of();
+        }
+
+        SearchRequest searchRequest = SearchRequest.of(s -> s
+                .index(indexName)
+                .size(values.size())
+                .query(q -> q.terms(t -> t
+                        .field("id")
+                        .terms(terms -> terms.value(values))
+                ))
+                .collapse(c -> c.field("id"))
+        );
+
+        SearchResponse<Product> response = client.search(searchRequest, Product.class);
+        return response.hits().hits().stream()
+                .map(Hit::source)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(
+                        product -> String.valueOf(product.getId()),
+                        product -> product,
+                        (first, second) -> first,
+                        LinkedHashMap::new));
+    }
+
+    private Integer parseProductId(String productId) {
+        if (productId == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(productId.trim());
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    /**
      * Holt Produkte, optional nur eines Marktes
      */
     public List<Product> getAllProducts(Integer size, String storeId, String storeCode) throws IOException {

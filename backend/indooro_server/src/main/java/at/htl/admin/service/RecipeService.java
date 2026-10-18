@@ -22,8 +22,6 @@ import at.htl.admin.repository.recipe.RecipeTagRepository;
 import at.htl.admin.repository.recipe.RecipeUnitRepository;
 import at.htl.model.Product;
 import at.htl.service.OpenSearchService;
-import io.quarkus.hibernate.orm.panache.PanacheQuery;
-import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -312,12 +310,18 @@ public class RecipeService {
 
     public RecipeDtos.RecipeProductMappingResponse mappingStatus(UUID recipeId, UUID storeId, String storeCode, boolean requirePublished) {
         RecipeEntity recipe = requirePublished ? requirePublishedRecipe(recipeId) : requireRecipe(recipeId);
+        List<RecipeIngredientEntity> ingredients = sortedIngredients(recipe);
+        Map<UUID, List<IngredientProductMappingEntity>> activeMappings = new HashMap<>();
+        for (RecipeIngredientEntity ingredient : ingredients) {
+            activeMappings.put(ingredient.id, mappingRepository.listActiveByIngredient(ingredient.id));
+        }
+        Map<String, Product> products = resolveProducts(activeMappings.values().stream().flatMap(List::stream).toList());
         return new RecipeDtos.RecipeProductMappingResponse(
                 recipe.id,
                 storeId,
                 normalizeOptional(storeCode),
-                sortedIngredients(recipe).stream()
-                        .map(ingredient -> mappingStatusFor(ingredient, storeId, storeCode))
+                ingredients.stream()
+                        .map(ingredient -> mappingStatusFor(ingredient, storeId, storeCode, activeMappings.get(ingredient.id), products))
                         .toList()
         );
     }
@@ -380,7 +384,8 @@ public class RecipeService {
 
         mappingRepository.persist(mapping);
         auditLogService.log("RECIPE", recipeId, "CONFIRM_MAPPING", "Zutat einem Produkt zugeordnet", null, mapping.productNameSnapshot);
-        return mappingStatusFor(ingredient, request.storeId(), mapping.storeCode);
+        List<IngredientProductMappingEntity> activeMappings = mappingRepository.listActiveByIngredient(ingredient.id);
+        return mappingStatusFor(ingredient, request.storeId(), mapping.storeCode, activeMappings, resolveProducts(activeMappings));
     }
 
     @Transactional
@@ -414,38 +419,60 @@ public class RecipeService {
             params.put("query", "%" + query.trim().toLowerCase(Locale.ROOT) + "%");
         }
         if (tag != null && !tag.isBlank()) {
-            // Panache supplies the outer RecipeEntity alias. An unqualified `id`
+            // The outer RecipeEntity alias is `r`. An unqualified `id`
             // inside the subquery resolves to the assignment instead and fails HQL
             // interpretation. Keep the tag predicate as a non-correlated ID set.
             hql.append(" and id in (select assignment.recipe.id from RecipeTagAssignmentEntity assignment where lower(assignment.tag.code) = :tag)");
             params.put("tag", tag.trim().toLowerCase(Locale.ROOT));
         }
 
-        PanacheQuery<RecipeEntity> panacheQuery = recipeRepository.find(
-                hql.toString(),
-                Sort.descending("publishedAt").and("title"),
-                params
-        );
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = Math.max(size, 1);
+        List<UUID> pageIds;
+        long total;
         if (sort != null) {
             // Sort the complete filtered result before taking a page. Sorting a page would
             // produce incorrect cross-page order for the legacy numeric-aware Title sort.
-            List<RecipeEntity> sorted = new ArrayList<>(panacheQuery.list());
+            List<RecipeEntity> sorted = new ArrayList<>(recipeRepository.find(
+                    hql.toString(),
+                    Sort.descending("publishedAt").and("title"),
+                    params
+            ).list());
             sorted.sort(RecipeSort.comparator(sort));
-            int normalizedPage = Math.max(page, 0);
-            int normalizedSize = Math.max(size, 1);
             long start = (long) normalizedPage * normalizedSize;
-            List<RecipeEntity> slice = start >= sorted.size() ? List.of()
-                    : sorted.subList((int) start, (int) Math.min(start + normalizedSize, sorted.size()));
-            return new CommonDtos.PageResponse<>(slice.stream().map(recipe -> toSummary(recipe, storeId)).toList(),
-                    normalizedPage, normalizedSize, sorted.size());
+            pageIds = start >= sorted.size() ? List.of()
+                    : sorted.subList((int) start, (int) Math.min(start + normalizedSize, sorted.size()))
+                    .stream()
+                    .map(recipe -> recipe.id)
+                    .toList();
+            total = sorted.size();
+        } else {
+            pageIds = recipeRepository.listPageIds(hql.toString(), params, normalizedPage, normalizedSize);
+            total = recipeRepository.countMatching(hql.toString(), params);
         }
-        panacheQuery.page(Page.of(Math.max(page, 0), Math.max(size, 1)));
-        return new CommonDtos.PageResponse<>(
-                panacheQuery.list().stream().map(recipe -> toSummary(recipe, storeId)).toList(),
-                Math.max(page, 0),
-                Math.max(size, 1),
-                panacheQuery.count()
-        );
+        return new CommonDtos.PageResponse<>(toSummaries(pageIds, storeId), normalizedPage, normalizedSize, total);
+    }
+
+    /**
+     * Summaries for one page of recipe ids. Uses a fixed number of queries per page: recipes with tags,
+     * then one grouped count each for mapped ingredients, ingredients and steps. No OpenSearch calls.
+     */
+    private List<RecipeDtos.RecipeSummaryResponse> toSummaries(List<UUID> pageIds, UUID storeId) {
+        if (pageIds.isEmpty()) {
+            return List.of();
+        }
+        Map<UUID, RecipeEntity> recipesById = new HashMap<>();
+        for (RecipeEntity recipe : recipeRepository.listWithTagsByIds(pageIds)) {
+            recipesById.put(recipe.id, recipe);
+        }
+        Map<UUID, Long> mappedCounts = mappingRepository.countMappedIngredientsByRecipeIds(pageIds, storeId);
+        Map<UUID, Long> ingredientCounts = ingredientRepository.countByRecipeIds(pageIds);
+        Map<UUID, Long> stepCounts = stepRepository.countByRecipeIds(pageIds);
+        return pageIds.stream()
+                .map(recipesById::get)
+                .filter(Objects::nonNull)
+                .map(recipe -> toSummary(recipe, mappedCounts, ingredientCounts, stepCounts))
+                .toList();
     }
 
     private void applyRecipeRequest(RecipeEntity recipe, RecipeDtos.RecipeUpsertRequest request) {
@@ -544,8 +571,11 @@ public class RecipeService {
                 : RecordStatus.valueOf(request.status().trim().toUpperCase(Locale.ROOT));
     }
 
-    private RecipeDtos.IngredientMappingStatusResponse mappingStatusFor(RecipeIngredientEntity ingredient, UUID storeId, String storeCode) {
-        List<IngredientProductMappingEntity> activeMappings = mappingRepository.listActiveByIngredient(ingredient.id);
+    private RecipeDtos.IngredientMappingStatusResponse mappingStatusFor(RecipeIngredientEntity ingredient,
+                                                                        UUID storeId,
+                                                                        String storeCode,
+                                                                        List<IngredientProductMappingEntity> activeMappings,
+                                                                        Map<String, Product> products) {
         List<IngredientProductMappingEntity> preferred = preferredMappings(activeMappings, storeId, storeCode);
         if (preferred.isEmpty()) {
             return new RecipeDtos.IngredientMappingStatusResponse(
@@ -561,7 +591,7 @@ public class RecipeService {
         }
 
         List<RecipeDtos.MappedRecipeProduct> candidates = preferred.stream()
-                .map(this::mappedProductFor)
+                .map(mapping -> mappedProductFor(mapping, products))
                 .filter(Objects::nonNull)
                 .toList();
         if (candidates.isEmpty()) {
@@ -619,8 +649,8 @@ public class RecipeService {
                 .toList();
     }
 
-    private RecipeDtos.MappedRecipeProduct mappedProductFor(IngredientProductMappingEntity mapping) {
-        Product product = resolveProduct(mapping.productId);
+    private RecipeDtos.MappedRecipeProduct mappedProductFor(IngredientProductMappingEntity mapping, Map<String, Product> products) {
+        Product product = products.get(String.valueOf(mapping.productId));
         if (product != null) {
             return toMappedProduct(product);
         }
@@ -637,12 +667,20 @@ public class RecipeService {
         );
     }
 
-    private Product resolveProduct(Integer productId) {
+    /** Resolves all distinct products of the given mappings with one catalog request. Failures leave products unresolved. */
+    private Map<String, Product> resolveProducts(List<IngredientProductMappingEntity> mappings) {
+        List<String> productIds = mappings.stream()
+                .map(mapping -> String.valueOf(mapping.productId))
+                .distinct()
+                .toList();
+        if (productIds.isEmpty()) {
+            return Map.of();
+        }
         try {
-            return openSearchService.getProductById(productId);
+            return openSearchService.getProductsByIds(productIds);
         } catch (IOException exception) {
-            LOG.warn("Could not resolve recipe product " + productId, exception);
-            return null;
+            LOG.warn("Could not resolve recipe products", exception);
+            return Map.of();
         }
     }
 
@@ -684,11 +722,10 @@ public class RecipeService {
         );
     }
 
-    private RecipeDtos.RecipeSummaryResponse toSummary(RecipeEntity recipe, UUID storeId) {
-        List<RecipeIngredientEntity> ingredients = sortedIngredients(recipe);
-        long mapped = ingredients.stream()
-                .filter(ingredient -> !"UNMAPPED".equals(mappingStatusFor(ingredient, storeId, null).status()))
-                .count();
+    private RecipeDtos.RecipeSummaryResponse toSummary(RecipeEntity recipe,
+                                                       Map<UUID, Long> mappedCounts,
+                                                       Map<UUID, Long> ingredientCounts,
+                                                       Map<UUID, Long> stepCounts) {
         return new RecipeDtos.RecipeSummaryResponse(
                 recipe.id,
                 recipe.slug,
@@ -699,11 +736,11 @@ public class RecipeService {
                 recipe.prepTimeMinutes,
                 recipe.cookTimeMinutes,
                 recipe.totalTimeMinutes,
-                recipe.steps.size(),
+                stepCounts.getOrDefault(recipe.id, 0L).intValue(),
                 recipe.status.name(),
                 recipe.publishedAt,
-                (int) mapped,
-                ingredients.size(),
+                mappedCounts.getOrDefault(recipe.id, 0L).intValue(),
+                ingredientCounts.getOrDefault(recipe.id, 0L).intValue(),
                 sortedTags(recipe)
         );
     }

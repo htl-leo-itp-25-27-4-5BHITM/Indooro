@@ -120,6 +120,10 @@ public class MobileStoreService {
             if (exactMatch != null && exactMatch.status == RecordStatus.ACTIVE) {
                 return exactMatch;
             }
+            // Without an exact match only a UUID-only registration may answer. A beacon with another major or
+            // minor must not be picked for a different identity.
+            return beaconRepository.findActiveUuidOnly(normalizedUuid)
+                    .orElseThrow(() -> new NotFoundException("Kein passender Beacon gefunden."));
         }
 
         List<BeaconEntity> uuidMatches = beaconRepository.listActiveByUuid(normalizedUuid);

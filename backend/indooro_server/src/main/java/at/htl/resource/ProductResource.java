@@ -81,7 +81,7 @@ public class ProductResource {
         }
 
         try {
-            List<Product> products = openSearchService.searchProducts(query, size, storeId,
+            List<Product> products = openSearchService.searchProducts(query, clamp(size, 1, 100), storeId,
                     effectiveStoreCode(storeId, storeCode));
             LOG.info("Search for '" + query + "' returned " + products.size() + " results");
             return Response.ok(products).build();
@@ -104,7 +104,7 @@ public class ProductResource {
                                    @QueryParam("storeId") String storeId,
                                    @QueryParam("storeCode") String storeCode) {
         try {
-            List<Product> products = openSearchService.getAllProducts(size, storeId,
+            List<Product> products = openSearchService.getAllProducts(clamp(size, 1, 500), storeId,
                     effectiveStoreCode(storeId, storeCode));
             return Response.ok(products).build();
         } catch (IOException e) {
@@ -241,6 +241,11 @@ public class ProductResource {
     }
 
     /** Explicit store parameter wins; without any store parameter the configured default store applies (if set). */
+    /** Out-of-range sizes are clamped to the bounds instead of rejected; a missing size keeps the default. */
+    static int clamp(Integer value, int min, int max) {
+        return Math.min(Math.max(value == null ? min : value, min), max);
+    }
+
     private String effectiveStoreCode(String storeId, String storeCode) {
         if (isBlank(storeId) && isBlank(storeCode)) {
             return defaultStoreCode

@@ -299,6 +299,34 @@ Die Befunde **C1–C10** aus [docs/specs/AUDIT.md §2](../specs/AUDIT.md) wurden
 
 ---
 
+## 5a. Umsetzungsstand PERF- und BUG-Befunde (Change `optimize-backend-data-access`)
+
+Stand 2026-10-18, Repo-Stand, Migration `V18` noch nicht ausgerollt. „Offen“: im Change zurückgestellt, siehe `tasks.md`.
+
+| ID | Stand | Nachweis / offen |
+| --- | --- | --- |
+| PERF-01 | offen | Tasks 2.1 und 2.2 (Transaktionsaufteilung, `OpenAiRankingClient`) zurückgestellt, weil `UpsellSuggestionService` parallel von `stabilize-upsell-quality-and-request-lifecycle` geändert wird. |
+| PERF-02 | behoben im Repo | `RecipeService`: Seiten-IDs, Join-Fetch der Tags, je ein Aggregat für Zuordnungen, Zutaten und Schritte; keine OpenSearch-Aufrufe in der Liste (`RecipeServiceTest`). Die Sortierpfade laden die gefilterte Liste weiter im Speicher. |
+| PERF-03 | teilweise | `OpenSearchService.getProductsByIds` (eine Anfrage) für `mappingStatus`; Trigger-Auflösung im Upsell offen. |
+| PERF-04 | offen | Task 2.4 zurückgestellt. |
+| PERF-05 | behoben im Repo | `StoreAdminService.listStores`: gruppierte Zählabfrage und eine Abfrage für aktive Layouts je Seite. |
+| PERF-06 | behoben im Repo | `BeaconAdminService.listBeacons`: zwei Abfragen statt je Beacon (`BeaconAdminServiceListTest`). |
+| PERF-07 | behoben im Repo | `RequestCurrentAdminUser` (`@RequestScoped`), Join-Fetch der Zuweisung. |
+| PERF-08 | offen | Tasks 5.2 und 5.3 (Start-up-Observer, Readiness) zurückgestellt. |
+| PERF-09 | teilweise | `limit` auf 1..50 begrenzt, `unmappedType` für `savedAt`; der Java-Nachfilter bleibt. |
+| PERF-25 | behoben im Repo | `size` auf 1..500 (`/api/products`) und 1..100 (`/search`) begrenzt (`ProductSizeClampTest`). |
+| PERF-26, PERF-27, PERF-29 | offen | Tasks 5.5, 2.1, 5.6 zurückgestellt. |
+| PERF-28 | behoben im Repo | `OpenSearchClientConfig` erzeugt einen `@Singleton`-Client mit `@Disposes`. `@ApplicationScoped` scheitert, weil ArC den Client nicht proxien kann. |
+| PERF-30, PERF-31 | behoben im Repo | `V18`: funktionale Unique-Indizes auf `lower(...)`, Trigram-Indizes (nur mit `pg_trgm`). Offen (Mensch): Duplikat-Vorprüfung auf der LeoCloud-Kopie (Task 1.2). |
+| PERF-32 | teilweise | `V18`: Index `idx_audit_logs_created_at`; `error_logs` unverändert. |
+| PERF-33 | offen | Task 6.5 (Retention-Jobs) zurückgestellt. Der Scheduler kommt mit `harden-platform-security-baseline`. |
+| BUG-01 | teilweise | `suggestions()` filtert aktive Dismissals vor dem Ranking. `plan()` unverändert. `UpsellSuggestionRequest` hat keine `sessionId`, daher greifen nur Dismissals ohne Session. |
+| BUG-02 | behoben im Repo | `UpsellDismissalRepository.findMatching` ist null-sicher (`UpsellDismissalRepositoryTest`). |
+| BUG-03 | behoben im Repo | Store-Zeile wird beim Speichern und Aktivieren gesperrt (Task 6.2, vorher erledigt). Eindeutigkeitsverletzungen liefern 409 (`ApiThrowableUniqueViolationTest`). |
+| BUG-08 | behoben im Repo | `@Min(0) @Max(65535)` in `BeaconDtos`; DB-Check in `V18`. Mobile GET-Parameter sind nicht bereichsgeprüft. |
+| BUG-09 | behoben im Repo | UUID-only-Fallback nur für Beacons ohne Major und Minor (`MobileStoreBeaconResolutionTest`). |
+| BUG-11 | teilweise | `createIndex` liefert 409 (Change `protect-legacy-write-endpoints`). `deleteIndex` ohne 404 und 503 offen (Task 5.7). |
+
 ## 6. Abdeckung durch bestehende OpenSpec-Changes
 
 | Befund(e) | Abgedeckt durch | Lücke |

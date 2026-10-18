@@ -1999,7 +1999,7 @@ export interface components {
             beaconCode: string;
             /** @description 32 hex characters, hyphens allowed. */
             uuid: string;
-            /** @description Required together with minor. No 0..65535 range check yet (finding BUG-08). */
+            /** @description Required together with minor. */
             major?: number | null;
             /** @description Required together with major. */
             minor?: number | null;

@@ -11,7 +11,18 @@ import java.util.UUID;
 @ApplicationScoped
 public class UserAccessAssignmentRepository implements PanacheRepositoryBase<UserAccessAssignmentEntity, UUID> {
 
+    /** Active assignment with region, store and store region loaded, so the detached entity can be read after the call. */
     public Optional<UserAccessAssignmentEntity> findActiveBySubject(String subject) {
-        return find("keycloakSubject = ?1 and status = ?2", subject, UserAccessStatus.ACTIVE).firstResultOptional();
+        return getEntityManager()
+                .createQuery("select a from UserAccessAssignmentEntity a "
+                        + "left join fetch a.region "
+                        + "left join fetch a.store st "
+                        + "left join fetch st.region "
+                        + "where a.keycloakSubject = :subject and a.status = :status", UserAccessAssignmentEntity.class)
+                .setParameter("subject", subject)
+                .setParameter("status", UserAccessStatus.ACTIVE)
+                .setMaxResults(1)
+                .getResultStream()
+                .findFirst();
     }
 }
