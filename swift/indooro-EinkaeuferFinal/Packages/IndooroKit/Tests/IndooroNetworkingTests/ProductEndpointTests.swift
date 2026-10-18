@@ -1,5 +1,5 @@
 import XCTest
-@testable import IndooroNavigationCore
+@testable import IndooroNetworking
 
 /// Prueft die URL-Bildung der Produktabfragen (Suche, Liste, Produkt per ID) inkl. `storeCode`.
 /// Reine String-/URL-Tests, kein Netzwerk.

@@ -5,7 +5,7 @@ import Foundation
 ///
 /// Jede Produktanfrage traegt `storeCode=<Filialcode>` als letzten Parameter, sofern eine
 /// Filiale bekannt ist. Ohne (oder mit leerem) Filialcode entsteht die alte URL ohne Parameter.
-enum ProductEndpoint {
+public enum ProductEndpoint {
     /// Erlaubte Zeichen im Filialcode: ASCII-Buchstaben, Ziffern und `-._~`.
     /// Alles andere (Leerzeichen, `/`, `&`, `=`, ...) wird prozentkodiert.
     private static let storeCodeAllowed = CharacterSet(
@@ -21,7 +21,7 @@ enum ProductEndpoint {
     }()
 
     /// Trimmt den Filialcode. Leer oder nur Whitespace ergibt `nil`.
-    static func normalizedStoreCode(_ raw: String?) -> String? {
+    public static func normalizedStoreCode(_ raw: String?) -> String? {
         guard let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines),
               !trimmed.isEmpty else {
             return nil
@@ -31,7 +31,7 @@ enum ProductEndpoint {
 
     /// `GET {base}/products/search?q=<q>&size=<n>[&storeCode=<code>]`
     /// Der Suchtext wird mit `.urlQueryAllowed` ohne `& + = # ?` kodiert.
-    static func searchURL(base: String, query: String, size: Int, storeCode: String?) -> URL? {
+    public static func searchURL(base: String, query: String, size: Int, storeCode: String?) -> URL? {
         let encoded = query.addingPercentEncoding(withAllowedCharacters: queryValueAllowed) ?? ""
         let resultSize = max(1, size)
         let urlString = "\(base)/products/search?q=\(encoded)&size=\(resultSize)"
@@ -39,14 +39,14 @@ enum ProductEndpoint {
     }
 
     /// `GET {base}/products?size=<n>[&storeCode=<code>]`
-    static func listURL(base: String, size: Int, storeCode: String?) -> URL? {
+    public static func listURL(base: String, size: Int, storeCode: String?) -> URL? {
         let resultSize = max(1, size)
         let urlString = "\(base)/products?size=\(resultSize)"
         return URL(string: appendingStoreCode(to: urlString, storeCode: storeCode))
     }
 
     /// `GET {base}/products/<id>[?storeCode=<code>]`
-    static func productURL(base: String, id: Int, storeCode: String?) -> URL? {
+    public static func productURL(base: String, id: Int, storeCode: String?) -> URL? {
         let urlString = "\(base)/products/\(id)"
         return URL(string: appendingStoreCode(to: urlString, storeCode: storeCode))
     }

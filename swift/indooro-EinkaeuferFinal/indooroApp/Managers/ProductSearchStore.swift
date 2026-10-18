@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNetworking
 
 final class ProductSearchStore: ObservableObject {
     @Published private(set) var searchResults: [Product] = []

@@ -52,6 +52,7 @@ jobs:
             -scheme MCindooroApp \
             -configuration Debug \
             -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
+            -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Start mobile API mock (ui-test-store)
@@ -82,6 +83,7 @@ jobs:
               -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj \
               -scheme MCindooroApp \
               -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
+              -skipPackagePluginValidation \
               CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$1"
             return "${PIPESTATUS[0]}"
           }
