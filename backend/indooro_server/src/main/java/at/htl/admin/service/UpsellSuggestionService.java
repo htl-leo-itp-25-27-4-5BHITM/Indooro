@@ -220,7 +220,8 @@ public class UpsellSuggestionService {
             ));
         }
 
-        String contextHash = planContextHash(request, opportunities);
+        List<UpsellDismissalEntity> dismissals = activePlanDismissals(request, opportunities);
+        String contextHash = dismissalAwareHash(planContextHash(request, opportunities), dismissals);
         Optional<UpsellDtos.UpsellPlanResponse> cached = findCachedPlanResponse(contextHash);
         if (cached.isPresent()) {
             UpsellDtos.UpsellPlanResponse response = cached.get();
@@ -257,7 +258,8 @@ public class UpsellSuggestionService {
             return response;
         }
 
-        List<RankedOpportunity> rankedOpportunities = rankPlanCandidates(request, opportunities, candidates, requestId, resolved);
+        List<RankedOpportunity> rankedOpportunities = withoutDismissedPlanCandidates(
+                rankPlanCandidates(request, opportunities, candidates, requestId, resolved), dismissals);
         int rankedCandidateCount = rankedOpportunities.stream()
                 .mapToInt(opportunity -> opportunity.candidates().size())
                 .sum();
@@ -617,15 +619,73 @@ public class UpsellSuggestionService {
         eventRepository.persist(entity);
     }
 
-    /** Dismissals in force for this checked product and store. Suggestion requests carry no session id (see D2). */
+    /** Dismissals in force for this checked product, store and session (the session id is hashed as on dismiss). */
     @Transactional
     List<UpsellDismissalEntity> activeDismissals(UpsellDtos.UpsellSuggestionRequest request) {
         return dismissalRepository.findActiveForCheckedProduct(
                 request.checkedProductId(),
                 request.storeId(),
-                null,
+                hashOptional(request.sessionId()),
                 Instant.now()
         );
+    }
+
+    /**
+     * Dismissals in force for the trigger products of all opportunities, in one query (no query without triggers).
+     * Store and session scope follow the request, as for {@link #activeDismissals}.
+     */
+    @Transactional
+    List<UpsellDismissalEntity> activePlanDismissals(
+            UpsellDtos.UpsellPlanRequest request,
+            List<UpsellDtos.UpsellOpportunityRequest> opportunities
+    ) {
+        List<Integer> triggerIds = opportunities.stream()
+                .flatMap(opportunity -> normalizedProductIds(opportunity.triggerProductIds(), null, false).stream())
+                .distinct()
+                .toList();
+        if (triggerIds.isEmpty()) {
+            return List.of();
+        }
+        return dismissalRepository.findActiveForCheckedProducts(
+                triggerIds,
+                request.storeId(),
+                hashOptional(request.sessionId()),
+                Instant.now()
+        );
+    }
+
+    /**
+     * Removes, per opportunity, every candidate that a product-specific dismissal of one of its trigger products
+     * suppresses. An opportunity whose trigger products are all dismissed as a whole gets no candidates.
+     */
+    List<RankedOpportunity> withoutDismissedPlanCandidates(
+            List<RankedOpportunity> rankedOpportunities,
+            List<UpsellDismissalEntity> dismissals
+    ) {
+        if (dismissals.isEmpty()) {
+            return rankedOpportunities;
+        }
+        return rankedOpportunities.stream()
+                .map(ranked -> {
+                    Set<Integer> triggerIds = new HashSet<>(normalizedProductIds(ranked.opportunity().triggerProductIds(), null, false));
+                    boolean everyTriggerDismissed = !triggerIds.isEmpty() && triggerIds.stream()
+                            .allMatch(triggerId -> dismissals.stream().anyMatch(dismissal ->
+                                    dismissal.suggestedProductId == null && Objects.equals(dismissal.checkedProductId, triggerId)));
+                    if (everyTriggerDismissed) {
+                        return new RankedOpportunity(ranked.opportunity(), ranked.input(), List.of());
+                    }
+                    Set<Integer> suppressed = dismissals.stream()
+                            .filter(dismissal -> dismissal.suggestedProductId != null && triggerIds.contains(dismissal.checkedProductId))
+                            .map(dismissal -> dismissal.suggestedProductId)
+                            .collect(Collectors.toSet());
+                    if (suppressed.isEmpty()) {
+                        return ranked;
+                    }
+                    return new RankedOpportunity(ranked.opportunity(), ranked.input(), ranked.candidates().stream()
+                            .filter(candidate -> !suppressed.contains(candidate.product().getId()))
+                            .toList());
+                })
+                .toList();
     }
 
     /** A dismissal without a suggested product suppresses every candidate. */
@@ -646,14 +706,16 @@ public class UpsellSuggestionService {
 
     /**
      * Cache key that also covers the active dismissal set, so a new or expired dismissal never serves a stale
-     * cached ranking. Without dismissals the key is the plain context hash.
+     * cached ranking. Each dismissal contributes its checked product and suggested product ("*" for the whole
+     * product), sorted, so the same set always yields the same key. Without dismissals the key is the plain context hash.
      */
     String dismissalAwareHash(String contextHash, List<UpsellDismissalEntity> dismissals) {
         if (dismissals.isEmpty()) {
             return contextHash;
         }
         String suppressedKeys = dismissals.stream()
-                .map(dismissal -> dismissal.suggestedProductId == null ? "*" : String.valueOf(dismissal.suggestedProductId))
+                .map(dismissal -> dismissal.checkedProductId + ":"
+                        + (dismissal.suggestedProductId == null ? "*" : String.valueOf(dismissal.suggestedProductId)))
                 .distinct()
                 .sorted()
                 .collect(Collectors.joining(","));
