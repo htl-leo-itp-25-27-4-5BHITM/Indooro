@@ -1,12 +1,15 @@
 import IndooroModels
 import Foundation
 import IndooroNetworking
+import Observation
 import os
 
+/// Upsell-Zustand der Einkaufssitzung (Prompt, Plan-Cache, Drosselung). Nur `activePrompt` und `isLoading` sind für Views beobachtbar.
+@Observable
 @MainActor
-final class UpsellSuggestionStore: ObservableObject {
-    @Published var activePrompt: UpsellPrompt?
-    @Published private(set) var isLoading = false
+final class UpsellModel {
+    var activePrompt: UpsellPrompt?
+    private(set) var isLoading = false
 
     private struct PlanKey: Hashable {
         let opportunityId: String
@@ -48,32 +51,32 @@ final class UpsellSuggestionStore: ObservableObject {
         let originalRequestID: UUID
     }
 
-    private let minSecondsBetweenPrompts: TimeInterval = 8
-    private let maxPromptsPerSession = 10
-    private let maxSuggestionsShown = 3
-    private let minConfidence = 0.45
-    private let maxPendingOpportunityAge: TimeInterval = 30
-    private let debugEnabled = true
-    private let decoder = JSONDecoder.indooro
-    private let encoder = JSONEncoder()
-    private let client: any APIClientProtocol
+    @ObservationIgnored private let minSecondsBetweenPrompts: TimeInterval = 8
+    @ObservationIgnored private let maxPromptsPerSession = 10
+    @ObservationIgnored private let maxSuggestionsShown = 3
+    @ObservationIgnored private let minConfidence = 0.45
+    @ObservationIgnored private let maxPendingOpportunityAge: TimeInterval = 30
+    @ObservationIgnored private let debugEnabled = true
+    @ObservationIgnored private let decoder = JSONDecoder.indooro
+    @ObservationIgnored private let encoder = JSONEncoder()
+    @ObservationIgnored private let client: any APIClientProtocol
 
-    private var lastPromptShownAt: Date?
-    private var shownCountForSession = 0
-    private var dismissedProductIDs: Set<Int> = []
-    private var planTask: Task<Void, Never>?
-    private var latestPlanRequestID = UUID()
-    private var cachedOpportunities: [PlanKey: CachedOpportunity] = [:]
-    private var pendingOpportunities: [PlanKey: PendingOpportunity] = [:]
-    private var authorizedStoreId: UUID?
-    private var activePlanSignature: PlanRequestSignature?
-    private var lastCompletedPlanSignature: PlanRequestSignature?
-    private var handledOpportunities = HandledOpportunitySet()
-    private var retryState: PlanRetryState
-    private var pendingRetry: PendingPlanRetry?
-    private var retryTask: Task<Void, Never>?
+    @ObservationIgnored private var lastPromptShownAt: Date?
+    @ObservationIgnored private var shownCountForSession = 0
+    @ObservationIgnored private var dismissedProductIDs: Set<Int> = []
+    @ObservationIgnored private var planTask: Task<Void, Never>?
+    @ObservationIgnored private var latestPlanRequestID = UUID()
+    @ObservationIgnored private var cachedOpportunities: [PlanKey: CachedOpportunity] = [:]
+    @ObservationIgnored private var pendingOpportunities: [PlanKey: PendingOpportunity] = [:]
+    @ObservationIgnored private var authorizedStoreId: UUID?
+    @ObservationIgnored private var activePlanSignature: PlanRequestSignature?
+    @ObservationIgnored private var lastCompletedPlanSignature: PlanRequestSignature?
+    @ObservationIgnored private var handledOpportunities = HandledOpportunitySet()
+    @ObservationIgnored private var retryState: PlanRetryState
+    @ObservationIgnored private var pendingRetry: PendingPlanRetry?
+    @ObservationIgnored private var retryTask: Task<Void, Never>?
     /// Changes on every reset or explicit store change so that delayed work from an older session is ignored.
-    private var sessionEpoch = UUID()
+    @ObservationIgnored private var sessionEpoch = UUID()
 
     init(
         session: URLSession = AppEnvironment.session,

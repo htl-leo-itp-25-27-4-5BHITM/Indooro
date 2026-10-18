@@ -8,7 +8,7 @@ struct StoreMapPage: View {
     @ObservedObject var shoppingListManager: ShoppingListManager
     @ObservedObject var shoppingSessionManager: ShoppingSessionManager
     @ObservedObject var productSearch: ProductSearchStore
-    @ObservedObject var upsellStore: UpsellSuggestionStore
+    var upsellStore: UpsellModel
 
     @Binding var targetProduct: Product?
     @Binding var pendingLastStoreLayoutOpenRequest: UUID?
@@ -1121,7 +1121,7 @@ struct StoreMapPage: View {
         }
 
         upsellStore.showOpportunity(
-            opportunityId: UpsellSuggestionStore.stationOpportunityId(for: stop),
+            opportunityId: UpsellModel.stationOpportunityId(for: stop),
             checkedItems: stop.items,
             list: list,
             store: activeStore,

@@ -112,9 +112,9 @@ final class UpsellStubURLProtocol: URLProtocol {
     }
 }
 
-/// Store-level lifecycle tests for UpsellSuggestionStore (sections 9 to 11 of the upsell quality change).
+/// Store-level lifecycle tests for UpsellModel (sections 9 to 11 of the upsell quality change).
 /// Pure rules are covered in SwiftPM (UpsellPlanLogicTests); these tests check the wiring with a stubbed transport.
-final class UpsellSuggestionStoreTests: XCTestCase {
+final class UpsellModelTests: XCTestCase {
     private var session: URLSession!
     private let mobileStoreID = UUID(uuidString: "aaaaaaaa-0000-4000-8000-000000000001")!
 
@@ -143,9 +143,9 @@ final class UpsellSuggestionStoreTests: XCTestCase {
         let milk = makeItem(92, name: "Bio-Milch")
         let list = makeList([milk])
         let mobileStore = makeStore()
-        let opportunityID = UpsellSuggestionStore.itemOpportunityId(for: milk)
+        let opportunityID = UpsellModel.itemOpportunityId(for: milk)
         UpsellStubURLProtocol.reset { _ in (200, Self.lookupFailureJSON(opportunityID: opportunityID)) }
-        let store = UpsellSuggestionStore(session: session, retryDelay: 0.05)
+        let store = UpsellModel(session: session, retryDelay: 0.05)
 
         store.authorizePlanPreloading(for: mobileStore, reason: "test")
         store.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
@@ -165,9 +165,9 @@ final class UpsellSuggestionStoreTests: XCTestCase {
         let milk = makeItem(92, name: "Bio-Milch")
         let list = makeList([milk])
         let mobileStore = makeStore()
-        let opportunityID = UpsellSuggestionStore.itemOpportunityId(for: milk)
+        let opportunityID = UpsellModel.itemOpportunityId(for: milk)
         UpsellStubURLProtocol.reset { _ in (200, Self.lookupFailureJSON(opportunityID: opportunityID)) }
-        let store = UpsellSuggestionStore(session: session, retryDelay: 0.5)
+        let store = UpsellModel(session: session, retryDelay: 0.5)
 
         store.authorizePlanPreloading(for: mobileStore, reason: "test")
         store.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
@@ -186,9 +186,9 @@ final class UpsellSuggestionStoreTests: XCTestCase {
         let milk = makeItem(92, name: "Bio-Milch")
         let list = makeList([milk])
         let mobileStore = makeStore()
-        let opportunityID = UpsellSuggestionStore.itemOpportunityId(for: milk)
+        let opportunityID = UpsellModel.itemOpportunityId(for: milk)
         UpsellStubURLProtocol.reset { _ in (200, Self.aiEmptyJSON(opportunityID: opportunityID)) }
-        let store = UpsellSuggestionStore(session: session, retryDelay: 0.05)
+        let store = UpsellModel(session: session, retryDelay: 0.05)
 
         store.authorizePlanPreloading(for: mobileStore, reason: "test")
         store.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
@@ -218,9 +218,9 @@ final class UpsellSuggestionStoreTests: XCTestCase {
         let milk = makeItem(92, name: "Bio-Milch")
         let list = makeList([milk])
         let mobileStore = makeStore()
-        let opportunityID = UpsellSuggestionStore.itemOpportunityId(for: milk)
+        let opportunityID = UpsellModel.itemOpportunityId(for: milk)
         UpsellStubURLProtocol.reset { _ in (200, Self.aiEmptyJSON(opportunityID: opportunityID)) }
-        let store = UpsellSuggestionStore(session: session, retryDelay: 0.05)
+        let store = UpsellModel(session: session, retryDelay: 0.05)
 
         store.authorizePlanPreloading(for: mobileStore, reason: "test")
         store.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
@@ -248,7 +248,7 @@ final class UpsellSuggestionStoreTests: XCTestCase {
         let list = makeList([milk])
         let mobileStore = makeStore()
         UpsellStubURLProtocol.reset { _ in (503, Data()) }
-        let store = UpsellSuggestionStore(session: session, retryDelay: 0.05)
+        let store = UpsellModel(session: session, retryDelay: 0.05)
 
         store.authorizePlanPreloading(for: mobileStore, reason: "test")
         store.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
@@ -268,7 +268,7 @@ final class UpsellSuggestionStoreTests: XCTestCase {
         let list = makeList([milk])
         let mobileStore = makeStore()
         UpsellStubURLProtocol.reset { _ in (503, Data()) }
-        let store = UpsellSuggestionStore(session: session, retryDelay: 0.05)
+        let store = UpsellModel(session: session, retryDelay: 0.05)
 
         store.authorizePlanPreloading(for: mobileStore, reason: "test")
         store.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
@@ -292,9 +292,9 @@ final class UpsellSuggestionStoreTests: XCTestCase {
         let upsellBread = makeItem(93, name: "Brot", fromUpsell: true)
         let list = makeList([milk, duplicateMilkDone, eggs, upsellBread])
         let mobileStore = makeStore()
-        let opportunityID = UpsellSuggestionStore.itemOpportunityId(for: milk)
+        let opportunityID = UpsellModel.itemOpportunityId(for: milk)
         UpsellStubURLProtocol.reset { _ in (200, Self.aiEmptyJSON(opportunityID: opportunityID)) }
-        let store = UpsellSuggestionStore(session: session, retryDelay: 0.05)
+        let store = UpsellModel(session: session, retryDelay: 0.05)
 
         store.authorizePlanPreloading(for: mobileStore, reason: "test")
         store.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
@@ -309,6 +309,128 @@ final class UpsellSuggestionStoreTests: XCTestCase {
         let opportunities = try XCTUnwrap(json["opportunities"] as? [[String: Any]])
         XCTAssertEqual(opportunities.count, 1, "the addedFromUpsell item must not become a trigger")
         XCTAssertEqual(opportunities.first?["triggerProductIds"] as? [Int], [92])
+    }
+
+    // MARK: - Model state (10.4, 13.3)
+
+    @MainActor
+    func testRateLimitedPlanYieldsNoSuggestionsAndIsNeverRetried() async throws {
+        let milk = makeItem(92, name: "Bio-Milch")
+        let list = makeList([milk])
+        let mobileStore = makeStore()
+        UpsellStubURLProtocol.reset { _ in (429, Data()) }
+        let model = UpsellModel(session: session, retryDelay: 0.05)
+
+        model.authorizePlanPreloading(for: mobileStore, reason: "test")
+        model.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
+        try await waitUntil { UpsellStubURLProtocol.planRequestCount() == 1 && !model.isLoading }
+        try await sleep(milliseconds: 300)
+
+        model.showOpportunity(
+            opportunityId: UpsellModel.itemOpportunityId(for: milk),
+            checkedItems: [milk],
+            list: list,
+            store: mobileStore,
+            source: "shopping_list"
+        )
+        XCTAssertNil(model.activePrompt, "429 means empty suggestions")
+        XCTAssertEqual(UpsellStubURLProtocol.planRequestCount(), 1, "429 is not retried")
+    }
+
+    @MainActor
+    func testLoadedPlanIsServedFromCacheOnceWithoutNewRequest() async throws {
+        let milk = makeItem(92, name: "Bio-Milch")
+        let list = makeList([milk])
+        let mobileStore = makeStore()
+        let opportunityID = UpsellModel.itemOpportunityId(for: milk)
+        UpsellStubURLProtocol.reset { _ in (200, Self.suggestionJSON([(opportunityID, 92, 200)])) }
+        let model = UpsellModel(session: session, retryDelay: 0.05)
+
+        model.authorizePlanPreloading(for: mobileStore, reason: "test")
+        model.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
+        try await waitUntil { UpsellStubURLProtocol.planRequestCount() == 1 && !model.isLoading }
+
+        model.showOpportunity(opportunityId: opportunityID, checkedItems: [milk], list: list, store: mobileStore, source: "shopping_list")
+        XCTAssertEqual(model.activePrompt?.opportunityId, opportunityID)
+        XCTAssertEqual(model.activePrompt?.suggestions.map(\.product.id), [200])
+
+        model.clearPrompt()
+        model.showOpportunity(opportunityId: opportunityID, checkedItems: [milk], list: list, store: mobileStore, source: "shopping_list")
+        XCTAssertNil(model.activePrompt, "the cached plan is consumed by the first prompt")
+        XCTAssertEqual(UpsellStubURLProtocol.planRequestCount(), 1)
+        // Let the fire-and-forget "shown" event finish before tearDown invalidates the session.
+        try await sleep(milliseconds: 200)
+    }
+
+    @MainActor
+    func testOpportunityRequestedWhilePlanIsLoadingIsShownWhenPlanArrives() async throws {
+        let milk = makeItem(92, name: "Bio-Milch")
+        let list = makeList([milk])
+        let mobileStore = makeStore()
+        let opportunityID = UpsellModel.itemOpportunityId(for: milk)
+        UpsellStubURLProtocol.reset { _ in (200, Self.suggestionJSON([(opportunityID, 92, 200)])) }
+        let model = UpsellModel(session: session, retryDelay: 0.05)
+
+        model.authorizePlanPreloading(for: mobileStore, reason: "test")
+        model.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
+        model.showOpportunity(opportunityId: opportunityID, checkedItems: [milk], list: list, store: mobileStore, source: "shopping_list")
+        XCTAssertNil(model.activePrompt, "plan not loaded yet: opportunity stays pending")
+
+        try await waitUntil { model.activePrompt != nil }
+        XCTAssertEqual(model.activePrompt?.opportunityId, opportunityID)
+        // Let the fire-and-forget "shown" event finish before tearDown invalidates the session.
+        try await sleep(milliseconds: 200)
+    }
+
+    @MainActor
+    func testSecondPromptWithinCooldownIsThrottled() async throws {
+        let milk = makeItem(92, name: "Bio-Milch")
+        let eggs = makeItem(40, name: "Eier")
+        let list = makeList([milk, eggs])
+        let mobileStore = makeStore()
+        let milkID = UpsellModel.itemOpportunityId(for: milk)
+        let eggsID = UpsellModel.itemOpportunityId(for: eggs)
+        UpsellStubURLProtocol.reset { _ in (200, Self.suggestionJSON([(milkID, 92, 200), (eggsID, 40, 201)])) }
+        let model = UpsellModel(session: session, retryDelay: 0.05)
+
+        model.authorizePlanPreloading(for: mobileStore, reason: "test")
+        model.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
+        try await waitUntil { UpsellStubURLProtocol.planRequestCount() == 1 && !model.isLoading }
+
+        model.showOpportunity(opportunityId: milkID, checkedItems: [milk], list: list, store: mobileStore, source: "shopping_list")
+        XCTAssertNotNil(model.activePrompt)
+        model.clearPrompt()
+
+        model.showOpportunity(opportunityId: eggsID, checkedItems: [eggs], list: list, store: mobileStore, source: "shopping_list")
+        XCTAssertNil(model.activePrompt, "8 s cooldown between prompts")
+        // Let the fire-and-forget "shown" event finish before tearDown invalidates the session.
+        try await sleep(milliseconds: 200)
+    }
+
+    @MainActor
+    func testResetSessionClearsPromptCacheAndLoadingState() async throws {
+        let milk = makeItem(92, name: "Bio-Milch")
+        let list = makeList([milk])
+        let mobileStore = makeStore()
+        let opportunityID = UpsellModel.itemOpportunityId(for: milk)
+        UpsellStubURLProtocol.reset { _ in (200, Self.suggestionJSON([(opportunityID, 92, 200)])) }
+        let model = UpsellModel(session: session, retryDelay: 0.05)
+
+        model.authorizePlanPreloading(for: mobileStore, reason: "test")
+        model.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
+        try await waitUntil { UpsellStubURLProtocol.planRequestCount() == 1 && !model.isLoading }
+        model.showOpportunity(opportunityId: opportunityID, checkedItems: [milk], list: list, store: mobileStore, source: "shopping_list")
+        XCTAssertNotNil(model.activePrompt)
+
+        model.resetSession()
+        XCTAssertNil(model.activePrompt)
+        XCTAssertFalse(model.isLoading)
+
+        // Cache is gone and the cooldown is reset: without a new plan nothing is shown.
+        model.showOpportunity(opportunityId: opportunityID, checkedItems: [milk], list: list, store: mobileStore, source: "shopping_list")
+        XCTAssertNil(model.activePrompt)
+        // Let the fire-and-forget "shown" event finish before tearDown invalidates the session.
+        try await sleep(milliseconds: 200)
     }
 
     // MARK: - Helpers
@@ -334,6 +456,20 @@ final class UpsellSuggestionStoreTests: XCTestCase {
         item.status = status
         item.addedFromUpsell = fromUpsell
         return item
+    }
+
+    private static func suggestionJSON(_ entries: [(opportunityID: String, trigger: Int, suggested: Int)]) -> Data {
+        let opportunities = entries.map { entry in
+            """
+            {"opportunityId":"\(entry.opportunityID)","triggerProductIds":[\(entry.trigger)],"suggestions":[
+              {"product":{"id":\(entry.suggested),"name":"Vorschlag \(entry.suggested)","price":1.5,"layoutCode":"520/2/1/1","hasLayoutPosition":true},
+               "reason":"passt dazu","confidence":0.9}]}
+            """
+        }.joined(separator: ",")
+        return Data("""
+        {"opportunities":[\(opportunities)],"source":"openai","expiresAt":null,
+         "debug":{"requestId":"req-test","responseSource":"openai","fallbackReason":null,"retryable":false}}
+        """.utf8)
     }
 
     private static func lookupFailureJSON(opportunityID: String) -> Data {
