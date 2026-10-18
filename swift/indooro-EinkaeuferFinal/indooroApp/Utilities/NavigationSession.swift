@@ -16,6 +16,8 @@ struct ArrivalSuggestion: Equatable {
 /// Zielwuensche, Layoutwechsel) mit genau einem Satz Combine-Abonnements.
 @MainActor
 final class NavigationSession: ObservableObject {
+    nonisolated deinit {}
+
     @Published private(set) var mode: NavigationSessionMode = .idle
     @Published private(set) var plan: [NavigationStop] = []
     @Published private(set) var activeStopID: String?

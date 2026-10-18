@@ -8,6 +8,8 @@ import os
 @Observable
 @MainActor
 final class UpsellModel {
+    nonisolated deinit {}
+
     var activePrompt: UpsellPrompt?
     private(set) var isLoading = false
 

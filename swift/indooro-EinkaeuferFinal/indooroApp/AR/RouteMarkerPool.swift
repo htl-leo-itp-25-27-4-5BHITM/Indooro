@@ -11,6 +11,8 @@ private func normalizeAngle(_ angle: Float) -> Float {
 }
 
 final class RouteMarkerPool {
+    nonisolated deinit {}
+
     let markers: [PooledRouteMarker]
     let breadcrumbs: [PooledBreadcrumb]
 
@@ -48,6 +50,8 @@ final class RouteMarkerPool {
 }
 
 final class PooledRouteMarker {
+    nonisolated deinit {}
+
     let rootEntity = Entity()
 
     private let wingA: ModelEntity
@@ -134,6 +138,8 @@ final class PooledRouteMarker {
 }
 
 final class PooledBreadcrumb {
+    nonisolated deinit {}
+
     let rootEntity: ModelEntity
 
     private var currentPosition = SIMD3<Float>(repeating: 0)

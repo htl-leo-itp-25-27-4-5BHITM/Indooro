@@ -8,7 +8,7 @@ import Foundation
 
 /// Deduplicated, sorted and disjoint product ID sets for one list snapshot.
 /// The same arrays feed `PlanRequestSignature` and the `UpsellPlanRequest` payload.
-struct CanonicalShoppingState: Equatable {
+nonisolated struct CanonicalShoppingState: Equatable {
     /// Sorted unique product IDs of open items.
     let currentProductIds: [Int]
     /// Sorted unique product IDs of completed items minus every open ID (open wins).
@@ -23,7 +23,7 @@ struct CanonicalShoppingState: Equatable {
 
 /// Identity of one upsell opportunity within a shopping session.
 /// Sorted, deduplicated trigger IDs make a materially changed station a new identity.
-struct HandledOpportunityIdentity: Hashable {
+nonisolated struct HandledOpportunityIdentity: Hashable {
     let listID: UUID
     let storeID: UUID?
     let source: String
@@ -52,7 +52,7 @@ struct HandledOpportunityIdentity: Hashable {
 
 /// Session-scoped set of opportunities that were shown, accepted or completed.
 /// Independent of cached plan responses and pending requests.
-struct HandledOpportunitySet: Equatable {
+nonisolated struct HandledOpportunitySet: Equatable {
     private(set) var identities: Set<HandledOpportunityIdentity> = []
 
     var count: Int {
@@ -85,7 +85,7 @@ struct HandledOpportunitySet: Equatable {
 // MARK: - Request signature
 
 /// One opportunity inside a plan request, with canonical trigger IDs.
-struct PlanOpportunitySignature: Hashable {
+nonisolated struct PlanOpportunitySignature: Hashable {
     let opportunityId: String
     let triggerProductIds: [Int]
 
@@ -96,7 +96,7 @@ struct PlanOpportunitySignature: Hashable {
 }
 
 /// Canonical identity of one plan request. Built from the same canonical arrays that the payload uses.
-struct PlanRequestSignature: Hashable {
+nonisolated struct PlanRequestSignature: Hashable {
     let listID: UUID
     let storeId: UUID
     let storeCode: String?
@@ -131,7 +131,7 @@ struct PlanRequestSignature: Hashable {
 // MARK: - Retry
 
 /// Non-sensitive evidence taken from a plan response (debug object plus source).
-struct PlanResponseEvidence: Equatable {
+nonisolated struct PlanResponseEvidence: Equatable {
     let responseSource: String?
     let fallbackReason: String?
     let retryable: Bool?
@@ -178,7 +178,7 @@ struct PlanResponseEvidence: Equatable {
 }
 
 /// Retry bookkeeping keyed by canonical `PlanRequestSignature`. At most `maxRetries` retries per signature.
-struct PlanRetryState: Equatable {
+nonisolated struct PlanRetryState: Equatable {
     enum Decision: Equatable {
         case scheduleRetry(delay: TimeInterval, retryNumber: Int)
         case stop(reason: String)
@@ -243,7 +243,7 @@ struct PlanRetryState: Equatable {
 
 // MARK: - Helpers
 
-enum UpsellPlanLogic {
+nonisolated enum UpsellPlanLogic {
     static let candidateLookupFailedReason = "candidate_lookup_failed"
     static let defaultRetryDelay: TimeInterval = 1.0
     static let maxRetriesPerSignature = 1
