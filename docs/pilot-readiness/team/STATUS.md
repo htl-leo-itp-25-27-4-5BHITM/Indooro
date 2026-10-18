@@ -58,6 +58,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Xcode: beim ersten Build einmal „Trust & Enable“ für das Plugin `OpenAPIGenerator` bestätigen (seit #147). Skripte und CI nutzen `-skipPackagePluginValidation` | Erik, Person A | 2026-10-18 |
 | Freigabe: vier tote iOS-Dateien löschen (`HeaderView`, `SearchOverlayView`, `MapHeaderView`, `LayoutSelectionSheet`; `fix-ios-contract-and-spec-drift` 6.5), projektweit unreferenziert | Erik | 2026-10-18 |
 | VoiceOver und Accessibility Inspector am Gerät (`improve-ios-accessibility` 1.1) | Person A / Erik | 2026-10-18 |
+| **Entscheidung API-Vertrag für Release #162:** Der `contract`-Check (oasdiff gegen `main`) meldet 49 Breaking Changes, alle aus geprüften Absichten: LayoutElement-Typen (#148), Paging-Grenzen (#144), Beacon major/minor 0..65535. Laut Spec `shared-api` bräuchte das `/api/v2`. Vorschlag: als Vertragskorrektur akzeptieren (Liste `api/openapi/oasdiff-accepted-breaking.txt`, oasdiff per `--err-ignore`); Entwurf liegt lokal im Scratch-Worktree `wtoas` (Branch `pilot/contract-accept-148`, nicht gepusht). Der Agent durfte den Gate nicht selbst lockern. | Erik | 2026-10-18 |
 
 ## Hinweise an Personen
 
