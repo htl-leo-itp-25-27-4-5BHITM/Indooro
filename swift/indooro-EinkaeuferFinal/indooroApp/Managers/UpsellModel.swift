@@ -1,6 +1,7 @@
 import IndooroModels
 import Foundation
 import IndooroNetworking
+import IndooroUpsell
 import Observation
 import os
 

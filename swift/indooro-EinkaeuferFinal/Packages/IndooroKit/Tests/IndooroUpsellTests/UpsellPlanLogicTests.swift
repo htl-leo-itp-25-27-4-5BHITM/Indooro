@@ -1,6 +1,6 @@
 import IndooroModels
 import XCTest
-@testable import IndooroNavigationCore
+@testable import IndooroUpsell
 
 /// Pure upsell plan logic: canonical shopping state (8.8), handled opportunity lifecycle (9.13, 9.14),
 /// one-retry rule (10.10) and the lifecycle regressions behind 11.5 to 11.7.

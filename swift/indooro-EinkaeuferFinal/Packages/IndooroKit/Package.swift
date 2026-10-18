@@ -19,6 +19,7 @@ let package = Package(
         .library(name: "IndooroNavigation", type: .static, targets: ["IndooroNavigation"]),
         .library(name: "IndooroPersistence", type: .static, targets: ["IndooroPersistence"]),
         .library(name: "IndooroPositioning", type: .static, targets: ["IndooroPositioning"]),
+        .library(name: "IndooroUpsell", type: .static, targets: ["IndooroUpsell"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.6.0"),
@@ -70,6 +71,15 @@ let package = Package(
         .testTarget(
             name: "IndooroPositioningTests",
             dependencies: ["IndooroPositioning", "IndooroModels", "IndooroNavigation", "IndooroTestSupport"]
+        ),
+        // Reine Upsell-Plan-Logik (kanonischer Einkaufszustand, Opportunity-Identitaet, Retry-Regel); Foundation only.
+        .target(
+            name: "IndooroUpsell",
+            dependencies: ["IndooroModels"]
+        ),
+        .testTarget(
+            name: "IndooroUpsellTests",
+            dependencies: ["IndooroUpsell", "IndooroModels"]
         ),
         .target(
             name: "IndooroNetworking",
