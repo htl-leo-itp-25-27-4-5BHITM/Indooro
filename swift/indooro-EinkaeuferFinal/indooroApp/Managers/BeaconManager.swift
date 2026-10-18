@@ -245,9 +245,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private var isScanningBeacons = false
     private var rssiSamples = RSSISampleBuffer()
     private let measurementStore = BeaconMeasurementStore(config: StabilizedNavigationConfig.default.beacon)
-    private var updateTimer: Timer?
+    nonisolated(unsafe) private var updateTimer: Timer?
     private let startTime = Date()
-    private let locationManager = CLLocationManager()
+    nonisolated(unsafe) private let locationManager = CLLocationManager()
     private var rangingConstraints: [CLBeaconIdentityConstraint] = []
     private var activeRangingConstraints: [CLBeaconIdentityConstraint] = []
     private var isRangingIBeacons = false
@@ -297,7 +297,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private var lastHeadingRadians: Float?
     private var lastHeadingTimestamp: TimeInterval?
 
-    private let motionManager = CMMotionManager()
+    nonisolated(unsafe) private let motionManager = CMMotionManager()
     private var rawDeviceHeadingRadians: Float?
     private var smoothedDisplayHeadingRadians: Float?
     private let headingDisplaySmoothingAlpha: Float = 0.24
@@ -371,7 +371,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         refreshLayoutHistory()
     }
 
-    isolated deinit {
+    deinit {
         updateTimer?.invalidate()
         motionManager.stopDeviceMotionUpdates()
         locationManager.stopUpdatingHeading()
