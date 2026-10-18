@@ -8,6 +8,7 @@ import io.quarkus.test.security.TestSecurity;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.transport.TransportException;
 
 import java.io.IOException;
 import java.util.List;
@@ -67,6 +68,44 @@ class AdminIndexResourceTest {
                 .contentType("application/json")
                 .body("status", org.hamcrest.Matchers.equalTo(409))
                 .body("error", org.hamcrest.Matchers.containsString("Produktindex existiert bereits"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void deletingMissingProductIndexReportsNotFound() throws IOException {
+        doThrow(new WebApplicationException("Produktindex existiert nicht.", Response.Status.NOT_FOUND))
+                .when(openSearchService).deleteIndex();
+
+        given().contentType("application/json")
+                .delete("/api/admin/index").then()
+                .statusCode(404)
+                .contentType("application/json")
+                .body("status", org.hamcrest.Matchers.equalTo(404))
+                .body("error", org.hamcrest.Matchers.containsString("existiert nicht"));
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void unreachableOpenSearchOnCreateReportsServiceUnavailableWithoutInternals() throws IOException {
+        doThrow(new TransportException("connect to opensearch:9200 timed out"))
+                .when(openSearchService).createIndex();
+
+        given().contentType("application/json").body("{}")
+                .post("/api/admin/index/create").then()
+                .statusCode(503)
+                .body(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("timed out")));
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void unreachableOpenSearchOnDeleteReportsServiceUnavailableWithoutInternals() throws IOException {
+        doThrow(new TransportException("connect to opensearch:9200 timed out"))
+                .when(openSearchService).deleteIndex();
+
+        given().contentType("application/json")
+                .delete("/api/admin/index").then()
+                .statusCode(503)
+                .body(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("timed out")));
     }
 
     @Test

@@ -11,17 +11,13 @@ import at.htl.admin.repository.BeaconRepository;
 import at.htl.admin.repository.LayoutVersionRepository;
 import at.htl.admin.repository.StoreRepository;
 import at.htl.admin.util.BeaconIdentityUtil;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import at.htl.service.DefaultLayoutProvider;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,7 +39,7 @@ public class MobileStoreService {
     LayoutVersionRepository layoutVersionRepository;
 
     @Inject
-    ObjectMapper objectMapper;
+    DefaultLayoutProvider defaultLayoutProvider;
 
     public List<MobileDtos.MobileStoreSummary> listStores() {
         return storeRepository.find("status = ?1 order by name", RecordStatus.ACTIVE)
@@ -102,7 +98,7 @@ public class MobileStoreService {
                 null,
                 "DEFAULT",
                 true,
-                loadDefaultLayout(store.name)
+                defaultLayoutProvider.forStore(store.name)
         );
     }
 
@@ -175,18 +171,4 @@ public class MobileStoreService {
         return String.format("%s, %s %s", store.street, store.zipCode, store.city);
     }
 
-    private JsonNode loadDefaultLayout(String storeName) {
-        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("default-layout.json")) {
-            if (input == null) {
-                ObjectNode fallback = objectMapper.createObjectNode();
-                fallback.put("shopName", storeName);
-                return fallback;
-            }
-            ObjectNode layout = (ObjectNode) objectMapper.readTree(input);
-            layout.put("shopName", storeName);
-            return layout;
-        } catch (IOException e) {
-            throw new IllegalStateException("Standard-Layout konnte nicht geladen werden.", e);
-        }
-    }
 }

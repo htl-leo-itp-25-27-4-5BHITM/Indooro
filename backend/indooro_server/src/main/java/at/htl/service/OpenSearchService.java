@@ -608,6 +608,9 @@ public class OpenSearchService {
      * Löscht den Index
      */
     public void deleteIndex() throws IOException {
+        if (!client.indices().exists(ExistsRequest.of(e -> e.index(indexName))).value()) {
+            throw new WebApplicationException("Produktindex existiert nicht.", Response.Status.NOT_FOUND);
+        }
         client.indices().delete(d -> d.index(indexName));
         forgetNameSubfieldSupport();
         LOG.info("Index " + indexName + " deleted successfully");

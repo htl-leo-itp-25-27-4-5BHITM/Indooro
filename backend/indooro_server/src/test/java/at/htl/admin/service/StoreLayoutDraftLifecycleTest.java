@@ -11,6 +11,7 @@ import at.htl.admin.entity.StoreEntity;
 import at.htl.admin.repository.LayoutVersionRepository;
 import at.htl.admin.repository.BeaconAssignmentRepository;
 import at.htl.admin.repository.StoreRepository;
+import at.htl.service.DefaultLayoutProvider;
 import at.htl.service.LayoutDocumentValidator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -91,6 +92,7 @@ class StoreLayoutDraftLifecycleTest {
         when(audit.currentActor()).thenReturn(AuditLogService.Actor.SYSTEM);
         adminService.auditLogService = audit;
         adminService.objectMapper = mapper;
+        adminService.defaultLayoutProvider = new DefaultLayoutProvider(mapper);
         adminService.layoutDocumentValidator = new LayoutDocumentValidator();
 
         StoreRepository storesRepository = mock(StoreRepository.class);
@@ -98,7 +100,7 @@ class StoreLayoutDraftLifecycleTest {
         mobileService = new MobileStoreService();
         mobileService.storeRepository = storesRepository;
         mobileService.layoutVersionRepository = versionsRepository;
-        mobileService.objectMapper = mapper;
+        mobileService.defaultLayoutProvider = new DefaultLayoutProvider(mapper);
     }
 
     @Test

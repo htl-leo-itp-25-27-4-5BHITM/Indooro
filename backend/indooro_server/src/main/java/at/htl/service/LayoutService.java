@@ -20,7 +20,6 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +44,9 @@ public class LayoutService {
     LayoutDocumentValidator layoutDocumentValidator;
 
     @Inject
+    DefaultLayoutProvider defaultLayoutProvider;
+
+    @Inject
     AdminAccessService adminAccessService;
 
     @Inject
@@ -66,7 +68,7 @@ public class LayoutService {
         }
 
         LOG.info("No saved layout found in OpenSearch, falling back to bundled default layout");
-        return loadDefaultLayout();
+        return defaultLayoutProvider.bundled();
     }
 
     public JsonNode getLayoutVersion(String layoutId) throws IOException {
@@ -164,20 +166,6 @@ public class LayoutService {
             LOG.info("Created layout index " + layoutIndexName);
         } catch (Exception e) {
             LOG.debug("Layout index already exists or could not be created again: " + e.getMessage());
-        }
-    }
-
-    private JsonNode loadDefaultLayout() throws IOException {
-        try (InputStream input = Thread.currentThread()
-                .getContextClassLoader()
-                .getResourceAsStream("default-layout.json")) {
-            if (input == null) {
-                return objectMapper.createObjectNode();
-            }
-            ObjectNode layout = (ObjectNode) objectMapper.readTree(input);
-            layout.put("layoutId", "bundled-default");
-            layout.put("recordType", "bundled");
-            return layout;
         }
     }
 

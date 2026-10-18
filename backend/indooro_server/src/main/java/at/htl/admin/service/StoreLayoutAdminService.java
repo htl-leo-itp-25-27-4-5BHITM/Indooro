@@ -7,6 +7,7 @@ import at.htl.admin.entity.LayoutVersionStatus;
 import at.htl.admin.entity.StoreEntity;
 import at.htl.admin.repository.BeaconAssignmentRepository;
 import at.htl.admin.repository.LayoutVersionRepository;
+import at.htl.service.DefaultLayoutProvider;
 import at.htl.service.LayoutDocumentValidator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,8 +18,6 @@ import jakarta.transaction.Transactional;
 import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +40,9 @@ public class StoreLayoutAdminService {
     ObjectMapper objectMapper;
 
     @Inject
+    DefaultLayoutProvider defaultLayoutProvider;
+
+    @Inject
     LayoutDocumentValidator layoutDocumentValidator;
 
     @Inject
@@ -61,7 +63,7 @@ public class StoreLayoutAdminService {
                         "DEFAULT",
                         null,
                         null,
-                        loadDefaultLayout(store.name)
+                        defaultLayoutProvider.forStore(store.name)
                 ));
     }
 
@@ -240,21 +242,6 @@ public class StoreLayoutAdminService {
             document.put("exportDate", Instant.now().toString());
         }
         return document;
-    }
-
-    private JsonNode loadDefaultLayout(String storeName) {
-        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("default-layout.json")) {
-            if (input == null) {
-                ObjectNode fallback = objectMapper.createObjectNode();
-                fallback.put("shopName", storeName);
-                return fallback;
-            }
-            ObjectNode layout = (ObjectNode) objectMapper.readTree(input);
-            layout.put("shopName", storeName);
-            return layout;
-        } catch (IOException e) {
-            throw new IllegalStateException("Standard-Layout konnte nicht geladen werden.", e);
-        }
     }
 
     private String trimToNull(String value) {
