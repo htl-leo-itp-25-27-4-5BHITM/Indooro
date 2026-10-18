@@ -59,7 +59,7 @@ public class MobileUpsellResource {
         return Response.accepted().build();
     }
 
-    /** Nicht-Admins sehen nur requestId, responseSource und fallbackReason im debug-Objekt. */
+    /** Nicht-Admins sehen nur requestId, responseSource, fallbackReason und retryable im debug-Objekt. */
     private UpsellDtos.UpsellPlanResponse withDebugForCaller(UpsellDtos.UpsellPlanResponse response) {
         UpsellDtos.UpsellPlanDebug debug = response == null ? null : response.debug();
         if (debug == null || isAdmin()) {
@@ -78,7 +78,8 @@ public class MobileUpsellResource {
                 null,
                 debug.fallbackReason(),
                 null,
-                null
+                null,
+                debug.retryable()
         );
         return new UpsellDtos.UpsellPlanResponse(
                 response.opportunities(),

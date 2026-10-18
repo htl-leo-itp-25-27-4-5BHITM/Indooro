@@ -1749,6 +1749,8 @@ export interface components {
             fallbackReason?: string | null;
             opportunityCount?: number | null;
             candidateCount?: number | null;
+            /** @description True when the same plan request may be retried once (transient candidate lookup failure before any OpenAI call). */
+            retryable?: boolean | null;
         };
         UpsellPlanResponse: {
             opportunities?: components["schemas"]["UpsellOpportunityResponse"][];

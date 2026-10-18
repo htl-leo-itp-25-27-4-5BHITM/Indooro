@@ -173,6 +173,16 @@ Rollback:
 - The cache-version bump is harmless on rollback; cache rows expire without migration.
 - If only mobile lifecycle behavior regresses, ship the previous iOS build while leaving the backward-compatible backend active.
 
+## Backend Implementation Notes
+
+Discovered while implementing the backend part (sections 2-7):
+
+- `ProductEquivalence` uses an explicit `STRONG_CLASSES` allow-set plus alias classes (apple, kitchen_paper, toothpaste, cola, cleaner). Service classes such as `soft_drink`, `fruit`, `cheese` or `personal_care` are too broad and never prove equivalence.
+- Name fragments block false class hits (Apfelsaft, Erdnussbutter, Buttermilch, Schokomilch). Known false negative: "Butter Alpenmilch" gets no butter class.
+- `UpsellPlanDebug.retryable` is a nullable `Boolean` and is also passed through the reduced non-admin debug in `MobileUpsellResource`; no validation or rate limit changed. `fallbackReason=candidate_lookup_failed` stays the primary signal.
+- An OpenAI answer with an empty top-level `opportunities` array is now a successful `source=openai` result and no longer triggers the deterministic fallback (no backfill).
+- Out of scope, still open: the single-product `/suggestions` path caches an IOException as `none`; OpenAI timeout/invalid fallback is cached for the full TTL; cross-opportunity `dedupePlanCandidates` has no call site.
+
 ## Open Questions
 
 None required before implementation. Exact synonym/normalization fixtures should be derived from the current test catalog and expanded only with evidence from logs.
