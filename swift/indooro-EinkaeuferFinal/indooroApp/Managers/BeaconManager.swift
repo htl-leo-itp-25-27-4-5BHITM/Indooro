@@ -8,6 +8,7 @@ import CoreMotion
 import simd
 import IndooroNetworking
 import IndooroNavigation
+import IndooroPositioning
 import IndooroPersistence
 
 /// Ein Tick der Ortung fuer die Navigations-Session: projizierte Position (falls es eine
@@ -249,6 +250,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let startTime = Date()
     /// Neue Ortungs-Engine im Schattenbetrieb; `nil`, solange der Schalter aus ist (Standard).
     private var shadowPositioning: ShadowPositioning?
+
+    /// Strom der Engine-Snapshots fuer `NavigationSession`; `nil`, solange der Schalter aus ist.
+    func positionSnapshots() -> AsyncStream<PositionSnapshot>? {
+        shadowPositioning?.snapshots()
+    }
     nonisolated(unsafe) private let locationManager = CLLocationManager()
     private var rangingConstraints: [CLBeaconIdentityConstraint] = []
     private var activeRangingConstraints: [CLBeaconIdentityConstraint] = []
