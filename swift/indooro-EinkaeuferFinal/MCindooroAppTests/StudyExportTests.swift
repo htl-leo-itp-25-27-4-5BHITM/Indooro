@@ -1,6 +1,7 @@
 import XCTest
 @testable import MCindooroApp
 
+@MainActor
 final class StudyExportTests: XCTestCase {
     private let sessionID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
     /// 2026-10-16T12:00:00Z

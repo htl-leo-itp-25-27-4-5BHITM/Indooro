@@ -3,6 +3,7 @@ import IndooroPersistence
 import XCTest
 @testable import MCindooroApp
 
+@MainActor
 final class ShoppingListManagerTests: XCTestCase {
     private var suiteName: String!
     private var defaults: UserDefaults!
