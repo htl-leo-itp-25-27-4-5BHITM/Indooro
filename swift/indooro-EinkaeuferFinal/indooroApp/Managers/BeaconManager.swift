@@ -247,6 +247,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let measurementStore = BeaconMeasurementStore(config: StabilizedNavigationConfig.default.beacon)
     nonisolated(unsafe) private var updateTimer: Timer?
     private let startTime = Date()
+    /// Neue Ortungs-Engine im Schattenbetrieb; `nil`, solange der Schalter aus ist (Standard).
+    private var shadowPositioning: ShadowPositioning?
     nonisolated(unsafe) private let locationManager = CLLocationManager()
     private var rangingConstraints: [CLBeaconIdentityConstraint] = []
     private var activeRangingConstraints: [CLBeaconIdentityConstraint] = []
@@ -360,6 +362,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }
         NavigationRecorder.shared.layoutProvider = { [weak self] in self?.currentLayoutRecord }
         #endif
+        if AppEnvironment.isShadowPositioningEnabled {
+            shadowPositioning = ShadowPositioning(legacyPosition: { [weak self] in self?.userPosition })
+        }
         loadBundleLayoutFallback()
         startMotionUpdates()
 
@@ -521,12 +526,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         switch mode {
         case .beacon:
+            shadowPositioning?.start()
             resetManualHoldOnNextTick = true
             if centralManager == nil { centralManager = CBCentralManager(delegate: self, queue: nil) }
             requestLocationAuthorizationIfNeeded()
             configureBeaconScanningForCurrentMode()
 
         case .debugNoBeacons:
+            shadowPositioning?.stop()
             stopIBeaconRanging()
             stopBeaconScan()
             clearBeaconMeasurements()
@@ -737,6 +744,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         lastHeadingTimestamp = nil
         smoothedDisplayHeadingRadians = nil
 
+        shadowPositioning?.calibrate(to: effectivePoint)
         manualCalibrationRevision += 1
         let event = ManualCalibrationEvent(
             revision: manualCalibrationRevision,
@@ -1612,6 +1620,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             id: layout.layoutId, revision: layoutRevision, shopName: layout.shopName
         )
         #endif
+        shadowPositioning?.setLayout(layout, revision: layoutRevision)
         setFixedTargetIfNeeded()
         configureBeaconScanningForCurrentMode()
     }

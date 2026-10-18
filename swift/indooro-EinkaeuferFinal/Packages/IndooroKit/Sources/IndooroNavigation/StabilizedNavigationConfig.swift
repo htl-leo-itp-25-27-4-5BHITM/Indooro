@@ -1,6 +1,6 @@
 import Foundation
 
-public struct StabilizedNavigationConfig {
+public struct StabilizedNavigationConfig : Sendable {
     public var beacon = BeaconPositioningConfig()
     var poseFusion = PoseFusionConfig()
     public var route = RouteStabilityConfig()
@@ -13,7 +13,7 @@ public struct StabilizedNavigationConfig {
 
 // Bewegungsgestuetzte Schaetzung (improve-positioning-with-motion). Flag aus = Verhalten unveraendert.
 // Alle Werte sind provisional bis zur Auswertung echter Aufnahmen (improve-positioning-with-motion Gruppe 4).
-struct MotionConfig {
+struct MotionConfig : Sendable {
     var motionAided: Bool = false // provisional (Flag, Default AUS)
     var standingAfterSeconds: TimeInterval = 1.5 // provisional
     var standingAlphaFactor: Float = 0.2 // provisional
@@ -25,7 +25,7 @@ struct MotionConfig {
     var headingMaxAgeSeconds: TimeInterval = 2.0 // provisional
 }
 
-public struct BeaconPositioningConfig {
+public struct BeaconPositioningConfig : Sendable {
     public init() {}
 
     public var updateIntervalSeconds: TimeInterval = 0.35
@@ -40,7 +40,7 @@ public struct BeaconPositioningConfig {
     var solverDamping: Float = 0.55
 }
 
-struct PoseFusionConfig {
+struct PoseFusionConfig : Sendable {
     // Glaettung: estimate += alpha * (punkt - estimate), alpha linear nach Konfidenz.
     var estimatorHighConfidenceAlpha: Float = 0.46 // provisional
     var estimatorLowConfidenceAlpha: Float = 0.18 // provisional
@@ -52,7 +52,7 @@ struct PoseFusionConfig {
     var jumpClusterRadius: Float = 1.275 // provisional (m)
 }
 
-public struct RouteStabilityConfig {
+public struct RouteStabilityConfig : Sendable {
     /// Abbiegestrafe der Routensuche in Metern pro Richtungswechsel.
     static let defaultTurnPenaltyMeters: Float = 1.5 // provisional
 
@@ -65,13 +65,13 @@ public struct RouteStabilityConfig {
     var offRouteHoldSeconds: TimeInterval = 2.5 // provisional
 }
 
-public struct ConfidenceConfig {
+public struct ConfidenceConfig : Sendable {
     public var lowThreshold: Float = 0.35
     var recoverThreshold: Float = 0.55
     var minBeaconCountForTracking: Int = 3
 }
 
-public struct PlanningConfig {
+public struct PlanningConfig : Sendable {
     // 2-opt auf dem offenen Pfad: ein Zug wird nur angewendet, wenn er mehr als dieses Minimum spart.
     var twoOptMinimumGainMeters: Float = 0.01 // provisional
     var twoOptMaxPasses: Int = 50 // provisional

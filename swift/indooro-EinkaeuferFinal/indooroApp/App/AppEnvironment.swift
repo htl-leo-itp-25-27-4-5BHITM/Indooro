@@ -36,6 +36,15 @@ nonisolated enum AppEnvironment {
 
     static var allowsExtendedFeatures: Bool { featureProfile == .full }
 
+    /// Schalter fuer den Schattenbetrieb der neuen Ortungs-Engine (`ShadowPositioning`). Standard: aus.
+    /// Info.plist `IndooroShadowPositioning`; DEBUG-Builds lesen zusaetzlich `INDOORO_SHADOW_POSITIONING=1`.
+    static var isShadowPositioningEnabled: Bool {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["INDOORO_SHADOW_POSITIONING"] == "1" { return true }
+        #endif
+        return Bundle.main.object(forInfoDictionaryKey: "IndooroShadowPositioning") as? Bool ?? false
+    }
+
     /// Feldtuning der Ankunftsvorschläge. `nil` heißt: Standardwert der App (ArrivalSuggestionConfig.defaults()).
     struct ArrivalSuggestionTuning: Equatable {
         let radiusMeters: Double?
