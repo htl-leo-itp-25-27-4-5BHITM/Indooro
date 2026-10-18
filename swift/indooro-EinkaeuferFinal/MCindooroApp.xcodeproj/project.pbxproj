@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		091CC0BB80378EADBC3E8E46 /* IndooroNetworking in Frameworks */ = {isa = PBXBuildFile; productRef = 0E97E3EBAD2C9E8977EC41EF /* IndooroNetworking */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		5D8096DF4A8CF6EDD516E54A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -76,6 +80,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				091CC0BB80378EADBC3E8E46 /* IndooroNetworking in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -128,6 +133,9 @@
 				6776726D2F0E50DB00242147 /* indooroApp */,
 			);
 			name = MCindooroApp;
+			packageProductDependencies = (
+				0E97E3EBAD2C9E8977EC41EF /* IndooroNetworking */,
+			);
 			productName = indooroApp;
 			productReference = 6776726B2F0E50DB00242147 /* MCindooroApp.app */;
 			productType = "com.apple.product-type.application";
@@ -198,6 +206,9 @@
 			);
 			mainGroup = 677672622F0E50DB00242147;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				7D6C9233EA5082C979276FAF /* XCLocalSwiftPackageReference "IndooroKit" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6776726C2F0E50DB00242147 /* Products */;
 			projectDirPath = "";
@@ -587,6 +598,21 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		7D6C9233EA5082C979276FAF /* XCLocalSwiftPackageReference "IndooroKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/IndooroKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0E97E3EBAD2C9E8977EC41EF /* IndooroNetworking */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D6C9233EA5082C979276FAF /* XCLocalSwiftPackageReference "IndooroKit" */;
+			productName = IndooroNetworking;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 677672632F0E50DB00242147 /* Project object */;
 }

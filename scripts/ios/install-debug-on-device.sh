@@ -67,6 +67,7 @@ xcodebuild build \
   -configuration Debug \
   -destination 'generic/platform=iOS' \
   -derivedDataPath "$DERIVED" \
+  -skipPackagePluginValidation \
   -allowProvisioningUpdates
 
 APP="$DERIVED/Build/Products/Debug-iphoneos/$SCHEME.app"

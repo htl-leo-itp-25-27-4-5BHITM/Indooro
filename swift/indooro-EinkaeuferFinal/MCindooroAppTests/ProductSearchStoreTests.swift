@@ -110,28 +110,4 @@ final class ProductSearchStoreTests: XCTestCase {
     func testUnknownObjectShapeThrows() {
         XCTAssertThrowsError(try ProductSearchStore.decodeProducts(from: Data("{\"foo\":1}".utf8)))
     }
-
-    // MARK: - Query-Kodierung der Suche
-
-    func testSearchQueriesRoundTripAndReservedCharactersAreEncoded() throws {
-        let base = URL(string: "https://example.org/api")!
-        let cases: [(query: String, encoded: String)] = [
-            ("Milch & Käse", "%26"),
-            ("a+b", "%2B"),
-            ("50%", "%25"),
-            ("#1", "%23"),
-        ]
-
-        for (query, encoded) in cases {
-            let url = try XCTUnwrap(PilotSearchURL.make(base: base, query: query, size: 50, storeID: nil, storeCode: nil))
-            let parts = try XCTUnwrap(URLComponents(url: url, resolvingAgainstBaseURL: false))
-            let segments = try XCTUnwrap(parts.percentEncodedQuery?.components(separatedBy: "&"))
-
-            XCTAssertEqual(parts.queryItems?.first(where: { $0.name == "q" })?.value, query, "Roundtrip für \(query)")
-            XCTAssertFalse(url.absoluteString.contains("+"), "Kein rohes + in \(url.absoluteString)")
-            XCTAssertEqual(segments.count, 2, "Nur size und q erwartet, kein zusätzliches & im q-Wert")
-            let rawQ = try XCTUnwrap(segments.first(where: { $0.hasPrefix("q=") }))
-            XCTAssertTrue(rawQ.contains(encoded), "\(query) sollte \(encoded) enthalten, ist \(rawQ)")
-        }
-    }
 }

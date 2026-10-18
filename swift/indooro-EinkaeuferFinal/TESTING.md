@@ -55,7 +55,12 @@ calls.
   `MCindooroAppTests/`, shared scheme `MCindooroApp`) covers what does not build in the package
   (`ShoppingListManager`, later `AppEnvironment`). It was created by `scripts/ios/add_unit_test_target.rb`
   (xcodeproj gem, idempotent), not by hand. Run it with
-  `xcodebuild test -project MCindooroApp.xcodeproj -scheme MCindooroApp -destination 'platform=iOS Simulator,name=iPhone 16 Pro' CODE_SIGNING_ALLOWED=NO`.
+  `xcodebuild test -project MCindooroApp.xcodeproj -scheme MCindooroApp -destination 'platform=iOS Simulator,name=iPhone 16 Pro' -skipPackagePluginValidation CODE_SIGNING_ALLOWED=NO`.
+  Das lokale Paket `Packages/IndooroKit` nutzt ein Build-Tool-Plugin (swift-openapi-generator); deshalb ist
+  `-skipPackagePluginValidation` in allen `xcodebuild`-Aufrufen dieses Projekts Pflicht.
+  Das Paket ist nur am App-Target `MCindooroApp` gelinkt, nicht am Test-Bundle: ein statisches Produkt in zwei
+  Targets ist ein Linkfehler, und dynamische Frameworks im Test-Bundle lassen den Test-Host beim Start hängen
+  ("test runner hung before establishing connection"). Das Skript `scripts/ios/add_indoorokit_package.rb` setzt das.
 - `scripts/ios/install-debug-on-device.sh` builds the Debug app for a connected iPhone and installs it
   with `devicectl` (device must be plugged in, unlocked and trusted).
 - `.github/workflows/ios.yaml` runs on pull requests to `pilot/first-store` and `main`
@@ -123,7 +128,7 @@ The app build is still verified with:
 ```bash
 xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj \
   -scheme MCindooroApp -configuration Debug -sdk iphonesimulator \
-  -destination 'generic/platform=iOS Simulator' build CODE_SIGNING_ALLOWED=NO
+  -destination 'generic/platform=iOS Simulator' -skipPackagePluginValidation build CODE_SIGNING_ALLOWED=NO
 ```
 
 ## UI-Tests (add-ios-pilot-ui-tests)

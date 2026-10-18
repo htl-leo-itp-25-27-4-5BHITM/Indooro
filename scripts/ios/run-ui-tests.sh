@@ -83,6 +83,7 @@ xcodebuild test \
   -destination "platform=iOS Simulator,id=$UDID" \
   -derivedDataPath "$DERIVED" \
   ${UI_TEST_ONLY:+-only-testing:"$UI_TEST_ONLY"} \
+  -skipPackagePluginValidation \
   CODE_SIGNING_ALLOWED=NO
 status=$?
 set -e
