@@ -20,11 +20,23 @@
     "api:test:maintenance": "npx -y httpyac send api-tests/httpyac/00-auth.http api-tests/httpyac/03-maintenance-smoke.http --all --bail",
     "api:test:maintenance:tokens": "npx -y httpyac send api-tests/httpyac/00-auth-env-tokens.http api-tests/httpyac/03-maintenance-smoke.http --all --bail",
     "api:test:recipes": "npx -y httpyac send api-tests/httpyac/00-auth.http api-tests/httpyac/05-recipes.http --all --bail",
-    "api:test:upsell": "npx -y httpyac send api-tests/httpyac/06-upsell.http --all --bail"
+    "api:test:upsell": "npx -y httpyac send api-tests/httpyac/06-upsell.http --all --bail",
+    "contract:lint": "redocly lint --config redocly.yaml",
+    "contract:export": "node scripts/contract/export-generated.mjs",
+    "contract:parity": "node scripts/contract/export-generated.mjs && node scripts/contract/check-parity.mjs backend/indooro_server/target/openapi/openapi.json",
+    "contract:mobile": "node scripts/export-mobile-openapi.mjs",
+    "contract:mobile:check": "node scripts/export-mobile-openapi.mjs --check",
+    "contract:types": "node scripts/contract/generate-types.mjs",
+    "contract:types:check": "node scripts/contract/generate-types.mjs --check",
+    "contract:check": "npm run contract:lint && npm run contract:types:check && npm run contract:mobile:check && npm run contract:parity",
+    "contract:test": "node --test scripts/contract/*.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",
+    "@redocly/cli": "2.64.1",
     "ajv": "^8.20.0",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
     "yaml": "^2.9.1"
   }
 }

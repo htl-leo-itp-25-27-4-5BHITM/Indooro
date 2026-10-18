@@ -18,6 +18,7 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.UUID;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @PermitAll
@@ -42,7 +43,7 @@ public class MobileRecipeResource {
     @Operation(operationId = "searchMobileRecipes")
     @GET
     @Path("/search")
-    public CommonDtos.PageResponse<RecipeDtos.RecipeSummaryResponse> searchRecipes(@QueryParam("q") String query,
+    public CommonDtos.PageResponse<RecipeDtos.RecipeSummaryResponse> searchRecipes(@Parameter(required = true) @QueryParam("q") String query,
                                                                                    @QueryParam("tag") String tag,
                                                                                    @QueryParam("storeId") UUID storeId,
                                                                                    @QueryParam("page") @DefaultValue("0") int page,

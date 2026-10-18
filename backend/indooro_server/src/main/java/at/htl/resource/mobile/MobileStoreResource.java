@@ -15,6 +15,7 @@ import jakarta.ws.rs.core.MediaType;
 import java.util.List;
 import java.util.UUID;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @PermitAll
@@ -43,7 +44,7 @@ public class MobileStoreResource {
     @Operation(operationId = "findMobileStoreByBeacon")
     @GET
     @Path("/by-beacon")
-    public MobileDtos.StoreByBeaconResponse findStoreByBeacon(@QueryParam("uuid") String uuid,
+    public MobileDtos.StoreByBeaconResponse findStoreByBeacon(@Parameter(required = true) @QueryParam("uuid") String uuid,
                                                               @QueryParam("major") Integer major,
                                                               @QueryParam("minor") Integer minor) {
         return mobileStoreService.findStoreByBeacon(uuid, major, minor);

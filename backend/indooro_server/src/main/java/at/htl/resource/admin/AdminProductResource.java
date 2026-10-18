@@ -186,6 +186,7 @@ public class AdminProductResource extends AdminApiSupport {
      * Ein Replikat im Cluster (replicas=1); siehe BulkIdempotencyCache.
      * POST /api/admin/products/bulk?storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "bulkImportAdminProducts")
     @POST
     @Path("/bulk")
     public Response bulkImport(@QueryParam("storeId") String storeId,

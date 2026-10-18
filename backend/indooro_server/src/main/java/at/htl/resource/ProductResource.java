@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/products")
@@ -61,7 +62,7 @@ public class ProductResource {
     @Path("/search")
     @PermitAll
     public Response searchProducts(
-            @QueryParam("q") String query,
+            @Parameter(required = true) @QueryParam("q") String query,
             @QueryParam("size") @DefaultValue("10") Integer size,
             @QueryParam("storeId") String storeId,
             @QueryParam("storeCode") String storeCode) {

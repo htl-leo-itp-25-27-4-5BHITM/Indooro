@@ -73,6 +73,7 @@ public class AdminResource {
      * Kopiert die Produkte in den naechsten Versionsindex (products_vN). Loescht nichts.
      * POST /api/admin/index/reindex
      */
+    @Operation(operationId = "reindexProducts")
     @POST
     @Path("/index/reindex")
     @RolesAllowed("admin")
@@ -92,6 +93,7 @@ public class AdminResource {
      * Weichen die Dokumentzahlen von Quelle und Ziel ab, antwortet der Endpunkt mit 409, ausser mit force=true.
      * POST /api/admin/index/activate?index=products_vN[&amp;force=true]
      */
+    @Operation(operationId = "activateProductIndex")
     @POST
     @Path("/index/activate")
     @RolesAllowed("admin")
