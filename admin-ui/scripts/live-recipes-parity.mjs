@@ -21,6 +21,7 @@ const parityFailures = [];
 const recipeIds = [];
 const productCandidates = [1_800_000_000 + Math.floor(Math.random() * 100_000), 1_900_000_000 + Math.floor(Math.random() * 100_000)];
 const productIds = [];
+let fixtureStoreCode = null;
 const productNames = [`Parity Legacy Produkt ${stamp}`, `Parity Candidate Produkt ${stamp}`];
 let recipeId = null;
 let tagId = null;
@@ -97,15 +98,20 @@ try {
   assert.ok(recipeId, "fixture create must return an ID for guaranteed archive cleanup");
 
   await check("isolated catalog products for legacy and candidate create", async () => {
-    const inventory = ok(await api(admin, "GET", "/api/admin/products?size=1000"), "product inventory for fixture safety");
+    // The admin product API is store-scoped; fixtures live in the first active store.
+    const stores = ok(await api(admin, "GET", "/api/stores?status=ACTIVE&page=0&size=1"), "active store for product fixtures");
+    assert.ok(stores.content?.length > 0, "an active store is required for product fixtures");
+    fixtureStoreCode = stores.content[0].storeCode;
+    const fixtureScope = `storeCode=${encodeURIComponent(fixtureStoreCode)}`;
+    const inventory = ok(await api(admin, "GET", `/api/admin/products?size=1000&${fixtureScope}`), "product inventory for fixture safety");
     assert.ok(Array.isArray(inventory), "legacy product inventory must be an array");
     for (let index = 0; index < productCandidates.length; index++) {
       assert.equal(inventory.some((product) => product.id === productCandidates[index]), false, `fixture product id ${productCandidates[index]} must be unused`);
-      ok(await api(admin, "POST", "/api/admin/products", { id: productCandidates[index], name: productNames[index], price: 1.25, layoutCode: "310/1/1/1" }), `recipe create product ${index + 1}`);
+      ok(await api(admin, "POST", "/api/admin/products", { id: productCandidates[index], name: productNames[index], price: 1.25, layoutCode: "310/1/1/1", storeCode: fixtureStoreCode }), `recipe create product ${index + 1}`);
       productIds.push(productCandidates[index]);
       let indexed = false;
       for (let attempt = 0; attempt < 24; attempt++) {
-        const search = ok(await api(admin, "GET", `/api/admin/products?page=0&size=100&q=${encodeURIComponent(productNames[index] )}&sort=id`), `recipe create product ${index + 1} search`);
+        const search = ok(await api(admin, "GET", `/api/admin/products?page=0&size=100&q=${encodeURIComponent(productNames[index] )}&sort=id&${fixtureScope}`), `recipe create product ${index + 1} search`);
         if (search.content.some((product) => product.id === productCandidates[index])) { indexed = true; break; }
         await new Promise((resolve) => setTimeout(resolve, 250));
       }
@@ -779,7 +785,7 @@ try {
     try {
       const admin = await login(adminUser);
       for (const id of productIds) {
-        const result = await api(admin, "DELETE", `/api/admin/products/${id}`);
+        const result = await api(admin, "DELETE", `/api/admin/products/${id}?storeCode=${encodeURIComponent(fixtureStoreCode)}`);
         if (![204, 404].includes(result.status)) cleanupFailures.push(`fixture product ${id} cleanup: HTTP ${result.status}`);
       }
       if (cleanupFailures.length) {
