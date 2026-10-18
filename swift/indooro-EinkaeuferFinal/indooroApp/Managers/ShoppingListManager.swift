@@ -291,6 +291,8 @@ enum ShoppingStopResolver {
 }
 
 final class ShoppingListManager: ObservableObject {
+    nonisolated deinit {}
+
     @Published private(set) var lists: [ShoppingList] = []
     @Published private(set) var selectedListID: UUID?
     @Published private(set) var revision = 0
@@ -996,6 +998,8 @@ extension ShoppingStop {
 
 @MainActor
 final class ShoppingSessionManager: ObservableObject {
+    nonisolated deinit {}
+
     @Published private(set) var activeListID: UUID?
     @Published private(set) var routeMode: ShoppingRouteMode = .optimized
     @Published private(set) var snapshot: ShoppingRouteSnapshot?

@@ -4,6 +4,8 @@ import IndooroNetworking
 
 @MainActor
 final class RecipeStore: ObservableObject {
+    nonisolated deinit {}
+
     @Published private(set) var recipes: [RecipeSummary] = []
     @Published private(set) var selectedRecipe: RecipeDetail?
     @Published private(set) var mappingResponse: RecipeProductMappingResponse?

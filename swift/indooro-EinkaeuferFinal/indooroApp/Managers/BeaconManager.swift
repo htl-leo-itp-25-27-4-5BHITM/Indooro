@@ -371,7 +371,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         refreshLayoutHistory()
     }
 
-    deinit {
+    nonisolated deinit {
         updateTimer?.invalidate()
         motionManager.stopDeviceMotionUpdates()
         locationManager.stopUpdatingHeading()

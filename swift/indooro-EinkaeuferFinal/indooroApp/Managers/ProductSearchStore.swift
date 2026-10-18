@@ -3,6 +3,8 @@ import Foundation
 import IndooroNetworking
 
 final class ProductSearchStore: ObservableObject {
+    nonisolated deinit {}
+
     @Published private(set) var searchResults: [Product] = []
     @Published private(set) var isSearching = false
     @Published private(set) var errorMessage: String?
