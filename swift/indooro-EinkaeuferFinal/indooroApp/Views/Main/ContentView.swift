@@ -21,6 +21,7 @@ struct ContentView: View {
     @State private var showsStudySession = false
     @State private var upsellStore = UpsellModel()
 
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage(AppEnvironment.profileOverrideKey) private var profileOverride = ""
     @AppStorage("IndooroIntroductionCompleted") private var introductionCompleted = false
     @State private var showsIntroduction = false
@@ -181,6 +182,15 @@ struct ContentView: View {
                 syncShoppingSession(event: .layoutChanged)
             } else if let targetProduct {
                 beaconManager.setTargetProduct(targetProduct)
+            }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Listen werden um 300 ms entprellt geschrieben; beim Verlassen der App sofort sichern.
+            if phase != .active {
+                Task {
+                    await shoppingSessionManager.drainPendingWrites()
+                    await shoppingListManager.flush()
+                }
             }
         }
         .onChange(of: shoppingListManager.revision) { _, _ in

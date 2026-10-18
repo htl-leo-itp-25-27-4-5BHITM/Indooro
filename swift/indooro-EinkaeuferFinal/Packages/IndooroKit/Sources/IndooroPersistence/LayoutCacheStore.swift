@@ -7,20 +7,20 @@ import os
 /// (Default-Layout ohne Store). Gespeichert werden exakt die Server-Antwortdaten, die
 /// `decodeMobileLayout` / `decodeLayout` verarbeiten. Das Aenderungsdatum der Datei gilt als
 /// Zeitpunkt der Speicherung. Fehler werden protokolliert, nie geworfen.
-struct LayoutCacheStore {
-    static let defaultFileName = "default"
+public struct LayoutCacheStore: Sendable {
+    public static let defaultFileName = "default"
 
     /// Verzeichnis, in dem die Cache-Dateien liegen. `nil` nur, wenn kein Application-Support-Verzeichnis
     /// ermittelt werden kann; dann sind Speichern und Laden wirkungslos.
     private let directory: URL?
 
     /// - Parameter directory: Cache-Verzeichnis selbst. Standard: `<Application Support>/LayoutCache`.
-    init(directory: URL? = nil) {
+    public init(directory: URL? = nil) {
         self.directory = directory ?? Self.defaultDirectory()
     }
 
     /// Speichert die Rohdaten atomar. `storeID == nil` schreibt `default.json`.
-    func save(_ data: Data, storeID: String?) {
+    public func save(_ data: Data, storeID: String?) {
         guard let url = fileURL(storeID: storeID) else { return }
 
         do {
@@ -35,12 +35,12 @@ struct LayoutCacheStore {
             var excludedURL = url
             try excludedURL.setResourceValues(values)
         } catch {
-            AppLog.persistence.error("LayoutCache: Speichern fehlgeschlagen (\(url.lastPathComponent, privacy: .private(mask: .hash))): \(error.localizedDescription, privacy: .public)")
+            PersistenceLog.logger.error("LayoutCache: Speichern fehlgeschlagen (\(url.lastPathComponent, privacy: .private(mask: .hash))): \(error.localizedDescription, privacy: .public)")
         }
     }
 
     /// Liefert die gespeicherten Rohdaten und deren Speicherzeitpunkt, sonst `nil`.
-    func load(storeID: String?) -> (data: Data, savedAt: Date)? {
+    public func load(storeID: String?) -> (data: Data, savedAt: Date)? {
         guard let url = fileURL(storeID: storeID),
               FileManager.default.fileExists(atPath: url.path) else {
             return nil
@@ -54,14 +54,14 @@ struct LayoutCacheStore {
             }
             return (data, savedAt)
         } catch {
-            AppLog.persistence.error("LayoutCache: Laden fehlgeschlagen (\(url.lastPathComponent, privacy: .private(mask: .hash))): \(error.localizedDescription, privacy: .public)")
+            PersistenceLog.logger.error("LayoutCache: Laden fehlgeschlagen (\(url.lastPathComponent, privacy: .private(mask: .hash))): \(error.localizedDescription, privacy: .public)")
             return nil
         }
     }
 
     /// Store-IDs bestehen nur aus Buchstaben, Ziffern und `-` (UUID-Zeichen). `default` ist reserviert,
     /// damit die Store-Datei nie mit `default.json` kollidiert (auch nicht auf case-insensitiven Dateisystemen).
-    static func isValidStoreID(_ storeID: String) -> Bool {
+    public static func isValidStoreID(_ storeID: String) -> Bool {
         guard !storeID.isEmpty, storeID.lowercased() != defaultFileName else {
             return false
         }
@@ -90,7 +90,7 @@ struct LayoutCacheStore {
         let name: String
         if let storeID {
             guard Self.isValidStoreID(storeID) else {
-                AppLog.persistence.error("LayoutCache: Ungültige Store-ID abgelehnt")
+                PersistenceLog.logger.error("LayoutCache: Ungültige Store-ID abgelehnt")
                 return nil
             }
             name = storeID

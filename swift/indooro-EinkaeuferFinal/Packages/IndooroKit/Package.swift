@@ -17,6 +17,7 @@ let package = Package(
         .library(name: "IndooroModels", type: .static, targets: ["IndooroModels"]),
         .library(name: "IndooroNetworking", type: .static, targets: ["IndooroNetworking"]),
         .library(name: "IndooroNavigation", type: .static, targets: ["IndooroNavigation"]),
+        .library(name: "IndooroPersistence", type: .static, targets: ["IndooroPersistence"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.6.0"),
@@ -43,6 +44,15 @@ let package = Package(
             dependencies: ["IndooroNavigation", "IndooroModels"],
             resources: [.copy("Resources")],
             swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        // Persistenz (Phase 8): ShoppingListRepository (Schema v2, Migration aus UserDefaults) und LayoutCacheStore.
+        .target(
+            name: "IndooroPersistence",
+            dependencies: ["IndooroModels"]
+        ),
+        .testTarget(
+            name: "IndooroPersistenceTests",
+            dependencies: ["IndooroPersistence", "IndooroModels"]
         ),
         .target(
             name: "IndooroNetworking",

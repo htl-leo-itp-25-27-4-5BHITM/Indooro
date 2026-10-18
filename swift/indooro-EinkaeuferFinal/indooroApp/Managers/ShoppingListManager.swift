@@ -4,11 +4,7 @@ import Combine
 import CoreGraphics
 import simd
 import IndooroNavigation
-
-private struct ShoppingListStore: Codable {
-    var lists: [ShoppingList]
-    var selectedListID: UUID?
-}
+import IndooroPersistence
 
 private struct ResolvedShoppingShelf {
     let id: Int64
@@ -299,13 +295,24 @@ final class ShoppingListManager: ObservableObject {
     @Published private(set) var selectedListID: UUID?
     @Published private(set) var revision = 0
 
-    private let storeKey = "shoppingListStore.v1"
-    private let defaults: UserDefaults
+    private let repository: ShoppingListRepository
+    private var persistGeneration = 0
+    private var lastSend: Task<Void, Never>?
 
-    init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
+    /// Der Startzustand wird synchron aus dem Repository uebernommen (`initialSnapshot`), damit der erste
+    /// Frame dieselben Listen zeigt wie zuvor. Aenderungen gehen entprellt in die Datei `lists.json`.
+    init(repository: ShoppingListRepository = ShoppingPersistence.shared) {
+        self.repository = repository
         load()
         ensureDefaultListExists()
+    }
+
+    /// Schreibt ausstehende Aenderungen sofort (App geht in den Hintergrund, Tests). Wartet zuerst, bis alle
+    /// bisherigen Aenderungen beim Repository angekommen sind.
+    @MainActor
+    func flush() async {
+        await lastSend?.value
+        await repository.flush()
     }
 
     var selectedList: ShoppingList? {
@@ -952,20 +959,22 @@ final class ShoppingListManager: ObservableObject {
     }
 
     private func load() {
-        guard let data = defaults.data(forKey: storeKey),
-              let store = try? JSONDecoder().decode(ShoppingListStore.self, from: data) else {
-            return
-        }
-
-        self.lists = store.lists.filter { !$0.isArchived }
-        self.selectedListID = store.selectedListID
+        let snapshot = repository.initialSnapshot
+        self.lists = snapshot.lists.filter { !$0.isArchived }
+        self.selectedListID = snapshot.selectedListID
     }
 
     private func persist() {
         revision += 1
-        let store = ShoppingListStore(lists: lists, selectedListID: selectedListID)
-        if let data = try? JSONEncoder().encode(store) {
-            defaults.set(data, forKey: storeKey)
+        persistGeneration += 1
+        let repository = repository
+        let lists = lists
+        let selectedListID = selectedListID
+        let generation = persistGeneration
+        let previous = lastSend
+        lastSend = Task {
+            await previous?.value
+            await repository.setLists(lists, selectedListID: selectedListID, generation: generation)
         }
     }
 }
@@ -993,19 +1002,16 @@ final class ShoppingSessionManager: ObservableObject {
     @Published private(set) var revision = 0
 
     private weak var navigationSession: NavigationSession?
-    private let activeListKey = "shoppingSession.activeListID"
-    private let routeModeKey = "shoppingSession.routeMode"
+    private let repository: ShoppingListRepository
+    private var persistGeneration = 0
+    private var lastSend: Task<Void, Never>?
 
-    init() {
-        if let rawValue = UserDefaults.standard.string(forKey: routeModeKey),
-           let routeMode = ShoppingRouteMode(rawValue: rawValue) {
-            self.routeMode = routeMode
-        }
-
-        if let rawUUID = UserDefaults.standard.string(forKey: activeListKey),
-           let uuid = UUID(uuidString: rawUUID) {
-            self.activeListID = uuid
-        }
+    /// Aktive Tour-Liste und Routenmodus liegen mit den Listen in `lists.json` (vorher `UserDefaults`).
+    init(repository: ShoppingListRepository = ShoppingPersistence.shared) {
+        self.repository = repository
+        let snapshot = repository.initialSnapshot
+        self.routeMode = snapshot.routeMode
+        self.activeListID = snapshot.activeTourListID
     }
 
     var isActive: Bool {
@@ -1238,11 +1244,20 @@ final class ShoppingSessionManager: ObservableObject {
     }
 
     private func persistState() {
-        if let activeListID {
-            UserDefaults.standard.set(activeListID.uuidString, forKey: activeListKey)
-        } else {
-            UserDefaults.standard.removeObject(forKey: activeListKey)
+        persistGeneration += 1
+        let repository = repository
+        let activeListID = activeListID
+        let routeMode = routeMode
+        let generation = persistGeneration
+        let previous = lastSend
+        lastSend = Task {
+            await previous?.value
+            await repository.setSession(activeTourListID: activeListID, routeMode: routeMode, generation: generation)
         }
-        UserDefaults.standard.set(routeMode.rawValue, forKey: routeModeKey)
+    }
+
+    /// Wartet, bis alle Zustandsaenderungen beim Repository angekommen sind (vor `ShoppingListManager.flush()`).
+    func drainPendingWrites() async {
+        await lastSend?.value
     }
 }

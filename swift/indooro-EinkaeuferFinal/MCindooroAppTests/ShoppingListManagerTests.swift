@@ -1,12 +1,14 @@
 import IndooroModels
+import IndooroPersistence
 import XCTest
 @testable import MCindooroApp
 
 final class ShoppingListManagerTests: XCTestCase {
     private var suiteName: String!
     private var defaults: UserDefaults!
+    private var directory: URL!
 
-    private let storeKey = "shoppingListStore.v1"
+    private let storeKey = ShoppingListLegacyKeys.store
 
     private let milk = Product(id: 92, name: "Naturpur Bio-Milch 1L", price: 1.79, layoutCode: "520/2/1/1")
     private let apples = Product(id: 1, name: "Gala Aepfel lose", price: 2.99, layoutCode: "310/1/1/1")
@@ -15,23 +17,33 @@ final class ShoppingListManagerTests: XCTestCase {
         super.setUp()
         suiteName = "ShoppingListManagerTests.\(UUID().uuidString)"
         defaults = UserDefaults(suiteName: suiteName)!
+        directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ShoppingListManagerTests-\(UUID().uuidString)", isDirectory: true)
     }
 
     override func tearDown() {
         defaults.removePersistentDomain(forName: suiteName)
         defaults = nil
+        try? FileManager.default.removeItem(at: directory)
+        directory = nil
         suiteName = nil
         super.tearDown()
     }
 
     // MARK: - Persistenz
 
-    func testPersistenceRoundTripKeepsListItemsAndSelection() throws {
-        let manager = ShoppingListManager(defaults: defaults)
+    /// Jeder Manager bekommt ein eigenes Repository im temporaeren Verzeichnis; `defaults` ist die Migrationsquelle.
+    private func makeManager() -> ShoppingListManager {
+        ShoppingListManager(repository: ShoppingListRepository(directory: directory, defaults: defaults))
+    }
+
+    func testPersistenceRoundTripKeepsListItemsAndSelection() async throws {
+        let manager = makeManager()
         let listID = try XCTUnwrap(manager.selectedList?.id)
         let added = try XCTUnwrap(manager.addProduct(milk, to: listID))
+        await manager.flush()
 
-        let reloaded = ShoppingListManager(defaults: defaults)
+        let reloaded = makeManager()
 
         XCTAssertEqual(reloaded.lists, manager.lists)
         XCTAssertEqual(reloaded.selectedListID, listID)
@@ -41,12 +53,14 @@ final class ShoppingListManagerTests: XCTestCase {
         XCTAssertEqual(reloaded.lists.first?.items.first?.quantity, 1)
     }
 
-    func testFreshStoreCreatesDefaultListAndPersistsIt() throws {
-        let manager = ShoppingListManager(defaults: defaults)
+    func testFreshStoreCreatesDefaultListAndPersistsIt() async throws {
+        let manager = makeManager()
 
         XCTAssertEqual(manager.lists.map(\.name), ["Meine Einkaufsliste"])
         XCTAssertEqual(manager.selectedListID, manager.lists.first?.id)
-        XCTAssertNotNil(defaults.data(forKey: storeKey))
+        await manager.flush()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: directory.appendingPathComponent("lists.json").path))
+        XCTAssertEqual(makeManager().lists, manager.lists)
     }
 
     // MARK: - Decoding des Altformats (v1)
@@ -106,7 +120,7 @@ final class ShoppingListManagerTests: XCTestCase {
         """
         defaults.set(Data(json.utf8), forKey: storeKey)
 
-        let manager = ShoppingListManager(defaults: defaults)
+        let manager = makeManager()
 
         XCTAssertEqual(manager.lists.count, 1)
         let list = try XCTUnwrap(manager.lists.first)
@@ -157,7 +171,7 @@ final class ShoppingListManagerTests: XCTestCase {
         """
         defaults.set(Data(json.utf8), forKey: storeKey)
 
-        let manager = ShoppingListManager(defaults: defaults)
+        let manager = makeManager()
 
         XCTAssertEqual(manager.lists.map(\.name), ["Aktuell"])
         XCTAssertFalse(manager.lists.contains { $0.id == archivedID })
@@ -169,7 +183,7 @@ final class ShoppingListManagerTests: XCTestCase {
     // MARK: - Merge und Deduplizierung einzelner Produkte
 
     func testAddingSameProductTwiceMergesIntoOneOpenItem() throws {
-        let manager = ShoppingListManager(defaults: defaults)
+        let manager = makeManager()
         let listID = try XCTUnwrap(manager.selectedList?.id)
 
         let first = try XCTUnwrap(manager.addProduct(milk, to: listID))
@@ -184,7 +198,7 @@ final class ShoppingListManagerTests: XCTestCase {
     }
 
     func testAddedFromUpsellStaysTrueOnceSetByAnyAdd() throws {
-        let manager = ShoppingListManager(defaults: defaults)
+        let manager = makeManager()
         let listID = try XCTUnwrap(manager.selectedList?.id)
 
         manager.addProduct(milk, to: listID, addedFromUpsell: false)
@@ -202,7 +216,7 @@ final class ShoppingListManagerTests: XCTestCase {
     }
 
     func testAddingDoneProductCreatesNewOpenItem() throws {
-        let manager = ShoppingListManager(defaults: defaults)
+        let manager = makeManager()
         let listID = try XCTUnwrap(manager.selectedList?.id)
 
         let first = try XCTUnwrap(manager.addProduct(apples, to: listID))
@@ -224,7 +238,7 @@ final class ShoppingListManagerTests: XCTestCase {
     // MARK: - Rezepte
 
     func testAddingSameRecipeTwiceMergesMappedIngredients() throws {
-        let manager = ShoppingListManager(defaults: defaults)
+        let manager = makeManager()
         let listID = try XCTUnwrap(manager.selectedList?.id)
         let recipe = try decode(RecipeDetail.self, from: Self.recipeJSON)
         let mapping = try decode(RecipeProductMappingResponse.self, from: Self.mappingJSON)
@@ -258,7 +272,7 @@ final class ShoppingListManagerTests: XCTestCase {
     }
 
     func testRecipeWithoutFreeIngredientsSkipsUnmappedIngredient() throws {
-        let manager = ShoppingListManager(defaults: defaults)
+        let manager = makeManager()
         let listID = try XCTUnwrap(manager.selectedList?.id)
         let recipe = try decode(RecipeDetail.self, from: Self.recipeJSON)
         let mapping = try decode(RecipeProductMappingResponse.self, from: Self.mappingWithUnmappedButterJSON)
@@ -277,7 +291,7 @@ final class ShoppingListManagerTests: XCTestCase {
     }
 
     func testFreeIngredientsAreAddedOnceAndMergedOnRepeat() throws {
-        let manager = ShoppingListManager(defaults: defaults)
+        let manager = makeManager()
         let listID = try XCTUnwrap(manager.selectedList?.id)
         let recipe = try decode(RecipeDetail.self, from: Self.recipeJSON)
         let mapping = try decode(RecipeProductMappingResponse.self, from: Self.mappingWithUnmappedButterJSON)
