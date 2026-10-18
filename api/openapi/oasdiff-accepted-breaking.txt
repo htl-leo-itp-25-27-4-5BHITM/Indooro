@@ -1,0 +1,59 @@
+# Breaking-change findings accepted on review (oasdiff --err-ignore).
+# Each line: METHOD PATH <oasdiff message>. Only add lines for reviewed, intentional changes
+# and name the PR. Remove the lines once main contains the change (the check then no longer reports them).
+#
+# Accepted 2026-10-18 for the release pilot/first-store -> main (PR #162):
+# - #148: LayoutElement id/meter/category typed as the backend actually stores and the iOS app
+#   already decodes (id int64, meter integer|null, category string|null). Runtime payloads unchanged.
+# - #144: paging bounds (products/search size 1..100, products size 1..500, layout/history limit 1..50).
+#   Clients stay within them (iOS uses 80 and 500, admin-ui defaults lower).
+# - Beacon major/minor bounded to 0..65535 (iBeacon value range; larger values were never valid).
+GET /api/layout/history for the `query` request parameter `limit`, the max was set to `50.00`
+GET /api/layout/history for the `query` request parameter `limit`, the min was set to `1.00`
+GET /api/mobile/stores/{storeId}/layout/current the `layout/elements/items/category` response's property `type` changed from `string, integer` to `string, null` for status `200`
+GET /api/mobile/stores/{storeId}/layout/current the `layout/elements/items/meter` response's property `type` changed from `string, integer` to `integer, null` for status `200`
+GET /api/mobile/stores/{storeId}/layout/current the response property `layout/elements/items/category` became nullable for the status `200`
+GET /api/mobile/stores/{storeId}/layout/current the response property `layout/elements/items/meter` became nullable for the status `200`
+GET /api/products for the `query` request parameter `size`, the max was set to `500.00`
+GET /api/products for the `query` request parameter `size`, the min was set to `1.00`
+GET /api/products/search for the `query` request parameter `size`, the max was set to `100.00`
+GET /api/products/search for the `query` request parameter `size`, the min was set to `1.00`
+GET /api/stores/{storeId}/layout/current response property `layout/elements/items/id` list-of-types was widened by adding types `integer` to media type `application/json` of response `200`
+GET /api/stores/{storeId}/layout/current the `layout/elements/items/category` response's property `type` changed from `string, integer` to `string, null` for status `200`
+GET /api/stores/{storeId}/layout/current the `layout/elements/items/meter` response's property `type` changed from `string, integer` to `integer, null` for status `200`
+GET /api/stores/{storeId}/layout/current the response property `layout/elements/items/category` became nullable for the status `200`
+GET /api/stores/{storeId}/layout/current the response property `layout/elements/items/meter` became nullable for the status `200`
+GET /api/stores/{storeId}/layout/editor-context response property `currentLayout/layout/elements/items/id` list-of-types was widened by adding types `integer` to media type `application/json` of response `200`
+GET /api/stores/{storeId}/layout/editor-context the `currentLayout/layout/elements/items/category` response's property `type` changed from `string, integer` to `string, null` for status `200`
+GET /api/stores/{storeId}/layout/editor-context the `currentLayout/layout/elements/items/meter` response's property `type` changed from `string, integer` to `integer, null` for status `200`
+GET /api/stores/{storeId}/layout/editor-context the response property `currentLayout/layout/elements/items/category` became nullable for the status `200`
+GET /api/stores/{storeId}/layout/editor-context the response property `currentLayout/layout/elements/items/meter` became nullable for the status `200`
+GET /api/stores/{storeId}/layout/versions/{layoutId} response property `layout/elements/items/id` list-of-types was widened by adding types `integer` to media type `application/json` of response `200`
+GET /api/stores/{storeId}/layout/versions/{layoutId} the `layout/elements/items/category` response's property `type` changed from `string, integer` to `string, null` for status `200`
+GET /api/stores/{storeId}/layout/versions/{layoutId} the `layout/elements/items/meter` response's property `type` changed from `string, integer` to `integer, null` for status `200`
+GET /api/stores/{storeId}/layout/versions/{layoutId} the response property `layout/elements/items/category` became nullable for the status `200`
+GET /api/stores/{storeId}/layout/versions/{layoutId} the response property `layout/elements/items/meter` became nullable for the status `200`
+POST /api/beacons the `major` request property's max was set to `65535.00`
+POST /api/beacons the `major` request property's min was set to `0.00`
+POST /api/beacons the `minor` request property's max was set to `65535.00`
+POST /api/beacons the `minor` request property's min was set to `0.00`
+POST /api/beacons/bulk the `items/items/minor` request property's max was set to `65535.00`
+POST /api/beacons/bulk the `items/items/minor` request property's min was set to `0.00`
+POST /api/beacons/bulk the `major` request property's max was set to `65535.00`
+POST /api/beacons/bulk the `major` request property's min was set to `0.00`
+POST /api/stores/{storeId}/layout/versions response property `layout/elements/items/id` list-of-types was widened by adding types `integer` to media type `application/json` of response `200`
+POST /api/stores/{storeId}/layout/versions the `layout/elements/items/category` request property `type` changed from `string, integer` to `string, null`
+POST /api/stores/{storeId}/layout/versions the `layout/elements/items/category` response's property `type` changed from `string, integer` to `string, null` for status `200`
+POST /api/stores/{storeId}/layout/versions the `layout/elements/items/meter` request property `type` changed from `string, integer` to `integer, null`
+POST /api/stores/{storeId}/layout/versions the `layout/elements/items/meter` response's property `type` changed from `string, integer` to `integer, null` for status `200`
+POST /api/stores/{storeId}/layout/versions the response property `layout/elements/items/category` became nullable for the status `200`
+POST /api/stores/{storeId}/layout/versions the response property `layout/elements/items/meter` became nullable for the status `200`
+POST /api/stores/{storeId}/layout/versions/{layoutId}/activate response property `layout/elements/items/id` list-of-types was widened by adding types `integer` to media type `application/json` of response `200`
+POST /api/stores/{storeId}/layout/versions/{layoutId}/activate the `layout/elements/items/category` response's property `type` changed from `string, integer` to `string, null` for status `200`
+POST /api/stores/{storeId}/layout/versions/{layoutId}/activate the `layout/elements/items/meter` response's property `type` changed from `string, integer` to `integer, null` for status `200`
+POST /api/stores/{storeId}/layout/versions/{layoutId}/activate the response property `layout/elements/items/category` became nullable for the status `200`
+POST /api/stores/{storeId}/layout/versions/{layoutId}/activate the response property `layout/elements/items/meter` became nullable for the status `200`
+PUT /api/beacons/{beaconId} the `major` request property's max was set to `65535.00`
+PUT /api/beacons/{beaconId} the `major` request property's min was set to `0.00`
+PUT /api/beacons/{beaconId} the `minor` request property's max was set to `65535.00`
+PUT /api/beacons/{beaconId} the `minor` request property's min was set to `0.00`
