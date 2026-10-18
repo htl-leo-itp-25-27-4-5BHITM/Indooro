@@ -364,6 +364,7 @@ flowchart LR
 - PostgreSQL-Backup: `CronJob` mit `pg_dump` (täglich, 7 Generationen) auf ein separates PVC; Restore-Probe monatlich.
 - Probes und Ressourcen für alle Deployments (Keycloak, PostgreSQL, OpenSearch).
 - Observability: `/q/health`, `/q/metrics` (nur cluster-intern), strukturierte JSON-Logs.
+- Readiness: `/q/health/ready` enthält den Check `opensearch-indices`; er ist DOWN, bis Produkt-, Kategorie- und Layout-Indizes vorbereitet sind (Start-up plus Retry alle 30 s).
 
 ---
 

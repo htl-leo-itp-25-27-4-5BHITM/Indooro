@@ -56,8 +56,6 @@ public class LayoutService {
     String layoutIndexName;
 
     public JsonNode getCurrentLayout() throws IOException {
-        ensureLayoutIndex();
-
         GetResponse<JsonNode> response = client.get(
                 g -> g.index(layoutIndexName).id(CURRENT_LAYOUT_ID),
                 JsonNode.class
@@ -72,8 +70,6 @@ public class LayoutService {
     }
 
     public JsonNode getLayoutVersion(String layoutId) throws IOException {
-        ensureLayoutIndex();
-
         GetResponse<JsonNode> response = client.get(
                 g -> g.index(layoutIndexName).id(layoutId),
                 JsonNode.class
@@ -87,8 +83,6 @@ public class LayoutService {
     }
 
     public List<LayoutHistoryEntry> getRecentLayouts(Integer limit) throws IOException {
-        ensureLayoutIndex();
-
         int finalLimit = historyLimit(limit);
 
         // Legacy versions only (recordType = version), newest first. unmappedType keeps the sort from failing
@@ -127,7 +121,6 @@ public class LayoutService {
         layoutDocumentValidator.validateMobileElementIds(layout);
         layoutDocumentValidator.validatePublishedShelfRouting(layout);
         layoutDocumentValidator.validateAnchors(layout);
-        ensureLayoutIndex();
 
         String layoutId = UUID.randomUUID().toString();
         String savedAt = Instant.now().toString();
@@ -158,15 +151,6 @@ public class LayoutService {
             LOG.warn("Audit entry for legacy layout save failed", e);
         }
         return savedEntry;
-    }
-
-    private void ensureLayoutIndex() throws IOException {
-        try {
-            client.indices().create(c -> c.index(layoutIndexName));
-            LOG.info("Created layout index " + layoutIndexName);
-        } catch (Exception e) {
-            LOG.debug("Layout index already exists or could not be created again: " + e.getMessage());
-        }
     }
 
     private ObjectNode enrichLayout(JsonNode layout, String layoutId, String savedAt, String recordType) {
