@@ -288,7 +288,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     let navigationTargetRequests = PassthroughSubject<NavigationTargetRequest, Never>()
     let manualCalibrations = PassthroughSubject<ManualCalibrationEvent, Never>()
     /// Wird einmal je Layout-Revision gebaut und von Session und Planer nur gelesen.
-    private(set) var navigationGraph: IndoorGraph?
+    private(set) var navigationGraphSnapshot: LayoutGraphSnapshot?
+    var navigationGraph: IndoorGraph? { navigationGraphSnapshot?.graph }
     /// Pro-Tick-Kette (Solver, Schaetzer, Projektion), gemeinsam mit `NavigationReplay`.
     private var positioningPipeline: PositioningPipeline?
 
@@ -1949,13 +1950,16 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func rebuildNavigationPipeline() {
-        let graph = IndoorGraphBuilder.fromLayout(
+        // `layoutRevision` wird erst nach dem Neubau erhoeht; der Snapshot traegt die neue Revision.
+        let snapshot = LayoutGraphSnapshot(
+            revision: layoutRevision + 1,
             gridWidth: Int(gridWidth),
             gridHeight: Int(gridHeight),
             elements: shelves
         )
+        let graph = snapshot.graph
 
-        navigationGraph = graph
+        navigationGraphSnapshot = snapshot
         #if DEBUG
         if let entrance = IndoorGraph.entrancePoint(in: shelves) {
             let unreachable = graph.unreachableShelves(in: shelves, from: entrance)
