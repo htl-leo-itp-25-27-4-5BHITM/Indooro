@@ -484,10 +484,11 @@ components:
       description: Editor element. Unknown keys are preserved.
       properties:
         id:
-          type:
-            - string
-            - integer
-          description: Drafts may retain historical strings; published layouts require positive numeric IDs at most 9007199254740991.
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 9007199254740991
+          description: Positive integer, at most 9007199254740991 (iOS decodes Int64). Drafts may hold historical string IDs; see DraftLayoutElement.
         type:
           type: string
           examples:
@@ -518,11 +519,12 @@ components:
         category:
           type:
             - string
-            - integer
+            - "null"
         meter:
           type:
-            - string
             - integer
+            - "null"
+          description: Shelf section number; when category is `<code>/<section>` it equals <section>.
         layoutCode:
           type: string
           description: When published on a shelf, its category/section prefix must equal that shelf's category field.

@@ -146,6 +146,7 @@ public class LayoutDocumentValidator {
             validateText(element, "label", path);
             validateText(element, "beaconId", path);
             validateText(element, "category", path);
+            validateMeter(element, path);
 
             double x = requiredNumber(element, "x", path + ".x");
             double y = requiredNumber(element, "y", path + ".y");
@@ -187,6 +188,17 @@ public class LayoutDocumentValidator {
         if (value != null && !value.isNull()
                 && (!value.isTextual() || value.asText().length() > MAX_TEXT_LENGTH)) {
             throw badRequest(path + "." + field + " muss Text mit hoechstens 200 Zeichen sein.");
+        }
+    }
+
+    /** The editor writes meter as a whole number or null; the iOS client decodes it as Int?. */
+    private void validateMeter(JsonNode element, String path) {
+        JsonNode meter = element.get("meter");
+        if (meter == null || meter.isNull()) {
+            return;
+        }
+        if (!meter.isIntegralNumber() || !meter.canConvertToInt() || meter.intValue() < 0) {
+            throw badRequest(path + ".meter muss eine ganze Zahl oder null sein.");
         }
     }
 
