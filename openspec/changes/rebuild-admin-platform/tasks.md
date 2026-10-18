@@ -1,6 +1,6 @@
 ## 1. Baseline And Change Coordination
 
-- [ ] 1.1 Verify this proposal, delta specs, and design against a running local stack; record corrections before implementation. A dated runtime/spec review is now in `docs/admin-rebuild/BASELINE.md`, but it postdates implementation and therefore does not meet the stated timing gate.
+- [ ] 1.1 Verify this proposal, delta specs, and design against a running local stack; record corrections before implementation. The additional review in `docs/admin-rebuild/ADMIN_REBUILD_EVIDENCE_2026-10-18.md` is retrospective, as is `BASELINE.md`; neither can satisfy the original pre-implementation timing gate.
 - [ ] 1.2 Inventory every current admin route, user action, API call, role, scope, and page state with reproducible fixtures and screenshots. Partially evidenced; see `docs/admin-rebuild/EDITOR_EVIDENCE_GAPS.md`. The remaining fixtures/screenshots are deferred to `complete-admin-parity-evidence` and are not claimed as Pilot-Cut completion.
 - [x] 1.3 Record current backend, frontend, database, Keycloak, OpenSearch, and public mobile/customer smoke results, separating observed behavior from specifications. See the dated evidence boundary in `docs/admin-rebuild/LIVE_STACK.md`.
 - [x] 1.4 Map each `fix-admin-dashboard-contract-drift` UI task to an old-route fix or replacement-route acceptance test; preserve its backend/API tasks and obtain coordinated task updates before closing any overlap.

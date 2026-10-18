@@ -1,0 +1,35 @@
+# Admin-Neubau: Restnachweise auf der Pilot-Basis
+
+Stand 18.10.2026, Branch `pilot/admin-rebuild-evidence`, Basis `origin/pilot/first-store` (`34eb290`). Laufzeitbasis war ein lokal paketiertes Quarkus-`prod`-Image `sha256:4daa322aa8d6687d7a292834e4efc76842f21d61c1e8b7f95c1bce7d8dd1f69b` mit PostgreSQL, OpenSearch und Keycloak-Dev-Realm. Demo-Zugänge waren zufällig erzeugte, nur lokale Umgebungsvariablen; Flyway-Demo-Zuordnungen waren nur im lokalen Container aktiviert. Es gab keinen LeoCloud-, Produktions- oder physischen Gerätetest.
+
+## Retrospektiver Review (Task 1.1)
+
+Der aktuelle Quarkus-/OIDC-/Datenbank-/OpenSearch-Stack, die zehn Route-Flags, `proposal.md`, `design.md` und die sieben Delta-Specs wurden gegen die vorhandenen Laufzeitproben abgeglichen. Die Trennung zwischen Store-Layout in PostgreSQL und globalem Layout in OpenSearch sowie Draft/Publish und Backend-Scope entspricht den dokumentierten Entscheidungen. Seit der ursprünglichen Implementierung wurde die Admin-Produkt-API storegebunden: Anfragen ohne `storeId` oder `storeCode` liefern 400. Ältere Rollen-, Produkt- und Rezeptproben setzen noch eine globale Produktliste voraus; ihre Ergebnisse sind unten abgegrenzt. Diese Prüfung erfolgte **nach** Implementierungsbeginn. Sie kann die zeitliche Bedingung von Task 1.1 nicht rückwirkend erfüllen; die Checkbox bleibt offen.
+
+## Aktuelle Routen- und Rollenbelege (Tasks 1.2, 3.10, 5.4)
+
+Die vollständige Quellinventur der URLs, Aktionen, API-Aufrufe, Rollen, Scopes und Seitenzustände steht in [`ROUTE_INVENTORY.md`](ROUTE_INVENTORY.md), die historische Aktions-/Zustandsmatrix in [`ROUTE_PARITY_MATRIX.md`](ROUTE_PARITY_MATRIX.md). Diese Tabelle nennt **nur** die auf dem oben genannten lokalen Image erneut beobachteten Fälle. „Bestanden“ bedeutet keinen vollständigen Zustandssatz oder Produktivzugang.
+
+| Route(n) | Erneut ausgeführte Probe und beobachteter Umfang | Ergebnis / Grenze |
+| --- | --- | --- |
+| Dashboard `/admin/` | `live-dashboard-parity.mjs`: Legacy/Candidate für drei Rollen, scoped Kennzahlen, Links, Leerzustand, Fehler/Keyboard-Retry. | Bestanden; Legacy zählt große Listen teilweise nur bis zur ersten Seite. |
+| Regionen `/admin/regions/` | `live-regions-parity.mjs`: Legacy/Candidate Create/Edit/Archive, API-Readback, Region-Manager-Scope, Store-Manager-Denial, Konflikt, Empty/503/Retry, Direktlink/Refresh. | Bestanden; Wegwerf-Regionen aufgeräumt. Bestehende Screenshots unter `evidence/regions/` sind ältere Fixture-Aufnahmen. |
+| Stores `/admin/stores/` und Detail `/admin/stores/detail/` | `live-stores-list-parity.mjs`: Sortierung, Filter vor Paging, beide Create/Edit-Wege, Detail-Fehler/Beacon/Archiv, drei Rollen, echte Store-ID im committed Redirect. | Erster Lauf stoppte mangels >20 aktiver Stores. Nach 21 lokalen Wegwerf-Stores vollständig bestanden; alle 21 Stores und ihre Region danach archiviert. |
+| Beacons `/admin/beacons/` | `live-beacons-parity.mjs`: Legacy/Candidate Sort/Filter, drei Scopes, Edit/Release, Konflikte, Store-Zuordnung, Bulk und Keyboard-Retry. | Bestanden; Test-Fixtures aufgeräumt. Kein physisches Beacon-Gerät. |
+| Produkte `/admin/products/` | `live-products-parity.mjs` erreichte den Region-Manager-API-Denial; `live-api-role-matrix.mjs` erreichte den Admin-Produkt-Read. | Beide Proben rot: `GET /api/admin/products` ohne Store-Kontext liefert 400 statt der älteren Erwartungen 403/200. Die aktuelle `AdminProductResource` verlangt `storeId`/`storeCode`; Produktcode und Katalog-Import gehören Person B. Kein aktueller vollständiger Produkt-Paritätsbeleg. |
+| Kategorien `/admin/categories/` | `live-categories-parity.mjs`: beide CRUD-Wege, Duplicate Guard, Import-Review ohne Write, Scoped-Denial, Empty/503/Retry, Keyboard und committed Redirect. | Bestanden; lokale Fixtures aufgeräumt. |
+| Rezepte `/admin/recipes/` | `live-recipes-parity.mjs`: mehrstufige Create/Edit/Mapping/Preview/Publish-/Fehlerpfade. | Teilweise: Publikations-Retry und öffentliche Sichtbarkeit bestanden, aber die Produkt-Fixture-Anlage stoppte mit HTTP 400 „Markt fehlt: storeId oder storeCode angeben“. Darauf aufbauende Mapping-/Preview-Fälle scheiterten oder blieben unbelegt. Vier Rezept-Fixtures und der Tag wurden archiviert. Kein vollständiger Rezept-Paritätsbeleg. |
+| Diagnostik `/admin/server-logs/` | Authentifizierte Dev-Realm-Direktlinks und `GET /api/admin/logs`, `GET /api/admin/error-logs` für alle drei Rollen; Admin aktualisierte per Tastatur. | Admin 200/200 und sichtbare Bereiche; Region-/Store-Manager 403/403 und „Zugriff verweigert“. Leer-/Fehlerzustände sind nur in älteren Browserproben belegt. |
+| Store/globaler Editor `/admin/editor/` | `live-editor-role-actions.mjs` und `live-editor-manager-publication.mjs`: eigene private Drafts, bestätigte Manager-Publikation und Mobile-Readback, fremde Store-/globale 403, Admin global, paariger Legacy/Candidate-Inspector/Raster/Undo. | Beide Proben bestanden mit Scope-Restore und Fixture-Archiv. Auf dieser **Basis** steht der Route-Flag noch auf `false`; das tatsächliche Cutover wird separat in [PR #153](https://github.com/htl-leo-itp-25-27-4-5BHITM/Indooro/pull/153) geprüft, nicht in diesen Branch übernommen. |
+
+`test:live:cutover` bestand auf der Basis 10/10 simulierte Switch-/Rollback-Paare mit Query/Fragment und neun committed Redirects. `test:live:roles` stoppte nach 11 Checks beim Produkt-Read ohne Store-Kontext. Der vollständige `test:live`-Workflow stoppte ebenfalls bei der Produktsuche: Ein neu angelegtes Produkt erschien binnen 30 Sekunden nicht in der Tabelle. Diesen Fehler und die storegebundene API müssen die Produkt-/Katalog-Eigentümer mit den betroffenen Proben klären. Ein erfolgreiches Teilstück des Rezeptlaufs ersetzt die abgebrochene Gesamtkette nicht.
+
+## Offene Gates und Menschen-Schritte
+
+- **1.1:** Der verlangte Review *vor* Implementierungsbeginn ist historisch nicht nachholbar. Der obige Review ist ausdrücklich retrospektiv.
+- **1.2:** Nicht jede Aktion, jeder API-Aufruf und jeder Lade-/Leer-/Validierungs-/Konflikt-/Fehler-/Erfolgszustand besitzt einen aktuellen reproduzierbaren Fixture- und Screenshot-Beleg. Die Produkt- und Rezeptpfade sind nach der Store-Bindung insbesondere neu abzugleichen. Task bleibt offen.
+- **3.10:** Neun bestehende Flags sind aktiv; die aktuelle Produkt-/Rezept-Parität ist nicht erneut vollständig grün. Der Editor-Cutover liegt in PR #153 und ist auf dieser Basis noch nicht enthalten. Task bleibt offen.
+- **5.4:** Demo-Rollen belegen wichtige eigene/fremde Store- und Editor-Flows; die globale Rollenmatrix und der volle Admin-Workflow sind durch Produkt/Katalog blockiert. **Mensch: Erik prüft nach späterem Merge die drei realen LeoCloud-Logins, ihre tatsächlichen Scope-Zuordnungen und fremde Direktlinks/Mutationen mit geeigneten Testkonten.** Lokale Demo-Rollen ersetzen das nicht.
+- **5.7:** Nicht archivieren. **Mensch: Erik entscheidet erst nach den offenen Restnachweisen und OpenSpec-Verifikation über die Archivierung.**
+
+Keine Dateien aus Produkt/Katalog, Upsell, Backend-Datenzugriff, LayoutElement-Vertrag, `swift/**`, `k8s/**` oder `scripts/ops/**` wurden für diesen Nachweis geändert.
