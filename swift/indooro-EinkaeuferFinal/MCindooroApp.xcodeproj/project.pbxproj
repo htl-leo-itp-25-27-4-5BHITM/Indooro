@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		091CC0BB80378EADBC3E8E46 /* IndooroNetworking in Frameworks */ = {isa = PBXBuildFile; productRef = 0E97E3EBAD2C9E8977EC41EF /* IndooroNetworking */; };
+		A3B1C2D3E4F5061728394A5B /* IndooroNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = B4C2D3E4F5061728394A5B6C /* IndooroNavigation */; };
 		E7D7A4A8552AA29214A67EF6 /* IndooroModels in Frameworks */ = {isa = PBXBuildFile; productRef = 4701EBF738DFDA77BB781980 /* IndooroModels */; };
 /* End PBXBuildFile section */
 
@@ -87,6 +88,7 @@
 			files = (
 				091CC0BB80378EADBC3E8E46 /* IndooroNetworking in Frameworks */,
 				E7D7A4A8552AA29214A67EF6 /* IndooroModels in Frameworks */,
+				A3B1C2D3E4F5061728394A5B /* IndooroNavigation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -155,6 +157,7 @@
 			packageProductDependencies = (
 				0E97E3EBAD2C9E8977EC41EF /* IndooroNetworking */,
 				4701EBF738DFDA77BB781980 /* IndooroModels */,
+				B4C2D3E4F5061728394A5B6C /* IndooroNavigation */,
 			);
 			productName = indooroApp;
 			productReference = 6776726B2F0E50DB00242147 /* MCindooroApp.app */;
@@ -218,9 +221,10 @@
 				};
 			};
 			buildConfigurationList = 677672662F0E50DB00242147 /* Build configuration list for PBXProject "MCindooroApp" */;
-			developmentRegion = en;
+			developmentRegion = de;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				de,
 				en,
 				Base,
 			);
@@ -926,6 +930,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D6C9233EA5082C979276FAF /* XCLocalSwiftPackageReference "IndooroKit" */;
 			productName = IndooroModels;
+		};
+		B4C2D3E4F5061728394A5B6C /* IndooroNavigation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D6C9233EA5082C979276FAF /* XCLocalSwiftPackageReference "IndooroKit" */;
+			productName = IndooroNavigation;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

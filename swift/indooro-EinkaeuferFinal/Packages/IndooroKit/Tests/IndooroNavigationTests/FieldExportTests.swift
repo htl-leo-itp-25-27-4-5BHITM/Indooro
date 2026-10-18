@@ -1,7 +1,7 @@
 import IndooroModels
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Feld-Export der Replay-Ticks (Task 4.3, establish-pilot-field-measurement).
 ///

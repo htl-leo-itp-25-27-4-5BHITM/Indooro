@@ -1,7 +1,7 @@
 import IndooroModels
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Tasks 3.6-3.8: Replay-Treiber, Metriken, Determinismus und synthetische Spec-Szenarien.
 final class NavigationReplayTests: XCTestCase {

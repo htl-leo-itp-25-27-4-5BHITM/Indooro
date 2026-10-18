@@ -1,5 +1,6 @@
 import IndooroModels
 import SwiftUI
+import IndooroNavigation
 
 struct MapView: View {
     @ObservedObject var beaconManager: BeaconManager

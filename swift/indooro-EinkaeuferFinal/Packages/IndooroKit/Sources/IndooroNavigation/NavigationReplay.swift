@@ -6,20 +6,20 @@ import simd
 // MARK: - Aufzeichnungsformat (JSON Lines, design.md D11)
 
 /// Ein Stopp eines aufgezeichneten Plans.
-struct RecordedStop: Codable, Equatable {
+public struct RecordedStop: Codable, Equatable {
     var id: String
     var title: String
     var x: Float
     var y: Float
 
-    init(id: String, title: String, x: Float, y: Float) {
+    public init(id: String, title: String, x: Float, y: Float) {
         self.id = id
         self.title = title
         self.x = x
         self.y = y
     }
 
-    init(_ stop: NavigationStop) {
+    public init(_ stop: NavigationStop) {
         self.init(id: stop.id, title: stop.title, x: stop.mapPoint.x, y: stop.mapPoint.y)
     }
 
@@ -28,13 +28,13 @@ struct RecordedStop: Codable, Equatable {
     }
 }
 
-enum MeasurementSourceKind: String, Codable, Equatable {
+public enum MeasurementSourceKind: String, Codable, Equatable {
     case rssi
     case ranging
 }
 
 /// Rohmessung: RSSI-Sample (CoreBluetooth) oder Ranging-Callback (CoreLocation) eines Layout-Beacons.
-struct MeasurementRecord: Codable, Equatable {
+public struct MeasurementRecord: Codable, Equatable {
     var t: TimeInterval
     var source: MeasurementSourceKind
     var beacon: String
@@ -42,16 +42,41 @@ struct MeasurementRecord: Codable, Equatable {
     var accuracy: Double?
     var proximity: BeaconProximityClass?
     var txPower: Float?
+
+    public init(
+        t: TimeInterval,
+        source: MeasurementSourceKind,
+        beacon: String,
+        rssi: Int,
+        accuracy: Double? = nil,
+        proximity: BeaconProximityClass? = nil,
+        txPower: Float? = nil
+    ) {
+        self.t = t
+        self.source = source
+        self.beacon = beacon
+        self.rssi = rssi
+        self.accuracy = accuracy
+        self.proximity = proximity
+        self.txPower = txPower
+    }
 }
 
-struct LayoutRecord: Codable, Equatable {
+public struct LayoutRecord: Codable, Equatable {
     var t: TimeInterval
     var layoutId: String?
     var revision: Int
     var shopName: String?
+
+    public init(t: TimeInterval, layoutId: String? = nil, revision: Int, shopName: String? = nil) {
+        self.t = t
+        self.layoutId = layoutId
+        self.revision = revision
+        self.shopName = shopName
+    }
 }
 
-enum NavigationEventKind: String, Codable, Equatable {
+public enum NavigationEventKind: String, Codable, Equatable {
     case startTour
     case stopDone
     case stopSkipped
@@ -64,7 +89,7 @@ enum NavigationEventKind: String, Codable, Equatable {
     case clearTarget
 }
 
-struct EventRecord: Codable, Equatable {
+public struct EventRecord: Codable, Equatable {
     var t: TimeInterval
     var kind: NavigationEventKind
     /// Plan, wie ihn die App an die Session gegeben hat (Reihenfolge der App).
@@ -76,7 +101,7 @@ struct EventRecord: Codable, Equatable {
     /// (synthetische Fixtures); die App schreibt es nie.
     var optimize: Bool?
 
-    init(
+    public init(
         t: TimeInterval,
         kind: NavigationEventKind,
         plan: [RecordedStop]? = nil,
@@ -94,33 +119,53 @@ struct EventRecord: Codable, Equatable {
 }
 
 /// Bodenwahrheit (Long-Press auf der Karte im Debug-Modus).
-struct TruthRecord: Codable, Equatable {
+public struct TruthRecord: Codable, Equatable {
     var t: TimeInterval
     var x: Float
     var y: Float
+
+    public init(t: TimeInterval, x: Float, y: Float) {
+        self.t = t
+        self.x = x
+        self.y = y
+    }
 }
 
 /// Schrittzaehler (CMPedometer). `steps` ist kumulativ seit Aufzeichnungsstart.
-struct StepRecord: Codable, Equatable {
+public struct StepRecord: Codable, Equatable {
     var t: TimeInterval
     var steps: Int
     /// Meter (kumulativ, sofern vom Schrittzaehler geliefert).
     var distance: Double?
     var source: String // "pedometer"
+
+    public init(t: TimeInterval, steps: Int, distance: Double? = nil, source: String) {
+        self.t = t
+        self.steps = steps
+        self.distance = distance
+        self.source = source
+    }
 }
 
 /// Kompasspeilung (CLHeading).
-struct HeadingRecord: Codable, Equatable {
+public struct HeadingRecord: Codable, Equatable {
     var t: TimeInterval
     /// Kompasspeilung 0-360, true north wenn verfuegbar.
     var degrees: Double
     /// Grad, >= 0.
     var accuracy: Double
     var source: String // "compass"
+
+    public init(t: TimeInterval, degrees: Double, accuracy: Double, source: String) {
+        self.t = t
+        self.degrees = degrees
+        self.accuracy = accuracy
+        self.source = source
+    }
 }
 
 /// Eine Zeile der Aufzeichnung: `{"type":"measurement"|"layout"|"event"|"truth"|"step"|"heading", ...}`.
-enum NavigationRecordLine: Codable, Equatable {
+public enum NavigationRecordLine: Codable, Equatable {
     case measurement(MeasurementRecord)
     case layout(LayoutRecord)
     case event(EventRecord)
@@ -147,7 +192,7 @@ enum NavigationRecordLine: Codable, Equatable {
         }
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let type = try decoder.container(keyedBy: TypeKey.self).decode(LineType.self, forKey: .type)
         switch type {
         case .measurement: self = .measurement(try MeasurementRecord(from: decoder))
@@ -159,7 +204,7 @@ enum NavigationRecordLine: Codable, Equatable {
         }
     }
 
-    func encode(to encoder: Encoder) throws {
+    public func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: TypeKey.self)
         switch self {
         case .measurement(let record):
@@ -192,7 +237,7 @@ enum NavigationRecordLine: Codable, Equatable {
     }()
 
     /// Eine JSON-Zeile ohne Zeilenumbruch.
-    func jsonLine() throws -> String {
+    public func jsonLine() throws -> String {
         String(decoding: try Self.encoder.encode(self), as: UTF8.self)
     }
 
@@ -313,7 +358,7 @@ struct ReplayTick: Equatable {
 /// Spielt eine Aufzeichnung durch dieselbe Kette wie die App: `PositioningPipeline`
 /// (Messspeicher -> Solver -> Schaetzer -> Projektion) und `NavigationSessionCore` (+ `TourPlanner`).
 /// Die virtuelle Uhr tickt alle `updateIntervalSeconds` ab der ersten Zeile.
-enum NavigationReplay {
+public enum NavigationReplay {
     /// `entrance`: Eingangspunkt fuer den Routenstart ohne vertraute Position (Default nil = kein Eingang).
     static func run(
         recording: [NavigationRecordLine],

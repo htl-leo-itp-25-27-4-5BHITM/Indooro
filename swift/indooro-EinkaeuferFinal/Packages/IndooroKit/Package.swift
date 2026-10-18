@@ -16,6 +16,7 @@ let package = Package(
         // Statisch: die App und ihr Test-Bundle binden das Paket ein, ohne eigene dynamische Frameworks.
         .library(name: "IndooroModels", type: .static, targets: ["IndooroModels"]),
         .library(name: "IndooroNetworking", type: .static, targets: ["IndooroNetworking"]),
+        .library(name: "IndooroNavigation", type: .static, targets: ["IndooroNavigation"]),
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-openapi-generator", from: "1.6.0"),
@@ -26,9 +27,27 @@ let package = Package(
         .target(
             name: "IndooroModels"
         ),
+        // Nur für Tests: JSON-Fixtures als Paketressource (Task 3.4). Kein Produkt, wird nie in die App gelinkt.
+        .target(
+            name: "IndooroTestSupport",
+            resources: [.copy("Resources")]
+        ),
         .testTarget(
             name: "IndooroModelsTests",
-            dependencies: ["IndooroModels"]
+            dependencies: ["IndooroModels", "IndooroTestSupport"]
+        ),
+        // Navigationskern (Phase 5): Graph, Positionierung, Session, Tourplanung, Replay.
+        // Die Quellen wurden fuer Swift 5 geschrieben; Umstellung auf Swift 6 folgt in Task 11.1.
+        .target(
+            name: "IndooroNavigation",
+            dependencies: ["IndooroModels"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
+        ),
+        .testTarget(
+            name: "IndooroNavigationTests",
+            dependencies: ["IndooroNavigation", "IndooroModels"],
+            resources: [.copy("Resources")],
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .target(
             name: "IndooroNetworking",
@@ -41,7 +60,7 @@ let package = Package(
         ),
         .testTarget(
             name: "IndooroNetworkingTests",
-            dependencies: ["IndooroNetworking"]
+            dependencies: ["IndooroNetworking", "IndooroTestSupport"]
         ),
     ]
 )

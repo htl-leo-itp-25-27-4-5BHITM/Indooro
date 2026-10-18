@@ -1,14 +1,14 @@
 import Foundation
 
-struct StabilizedNavigationConfig {
-    var beacon = BeaconPositioningConfig()
+public struct StabilizedNavigationConfig {
+    public var beacon = BeaconPositioningConfig()
     var poseFusion = PoseFusionConfig()
-    var route = RouteStabilityConfig()
-    var confidence = ConfidenceConfig()
-    var planning = PlanningConfig()
+    public var route = RouteStabilityConfig()
+    public var confidence = ConfidenceConfig()
+    public var planning = PlanningConfig()
     var motion = MotionConfig()
 
-    static let `default` = StabilizedNavigationConfig()
+    public static let `default` = StabilizedNavigationConfig()
 }
 
 // Bewegungsgestuetzte Schaetzung (improve-positioning-with-motion). Flag aus = Verhalten unveraendert.
@@ -25,9 +25,11 @@ struct MotionConfig {
     var headingMaxAgeSeconds: TimeInterval = 2.0 // provisional
 }
 
-struct BeaconPositioningConfig {
-    var updateIntervalSeconds: TimeInterval = 0.35
-    var warmupSeconds: TimeInterval = 1.2
+public struct BeaconPositioningConfig {
+    public init() {}
+
+    public var updateIntervalSeconds: TimeInterval = 0.35
+    public var warmupSeconds: TimeInterval = 1.2
     var staleMeasurementSeconds: TimeInterval = 2.0
     var minBeaconCountForSolution: Int = 3
     var minDistanceMeters: Float = 0.35
@@ -50,7 +52,7 @@ struct PoseFusionConfig {
     var jumpClusterRadius: Float = 1.275 // provisional (m)
 }
 
-struct RouteStabilityConfig {
+public struct RouteStabilityConfig {
     /// Abbiegestrafe der Routensuche in Metern pro Richtungswechsel.
     static let defaultTurnPenaltyMeters: Float = 1.5 // provisional
 
@@ -63,13 +65,13 @@ struct RouteStabilityConfig {
     var offRouteHoldSeconds: TimeInterval = 2.5 // provisional
 }
 
-struct ConfidenceConfig {
-    var lowThreshold: Float = 0.35
+public struct ConfidenceConfig {
+    public var lowThreshold: Float = 0.35
     var recoverThreshold: Float = 0.55
     var minBeaconCountForTracking: Int = 3
 }
 
-struct PlanningConfig {
+public struct PlanningConfig {
     // 2-opt auf dem offenen Pfad: ein Zug wird nur angewendet, wenn er mehr als dieses Minimum spart.
     var twoOptMinimumGainMeters: Float = 0.01 // provisional
     var twoOptMaxPasses: Int = 50 // provisional

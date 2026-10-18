@@ -1,6 +1,6 @@
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 final class LayoutAndGraphTests: XCTestCase {
     func testDemoLayoutDecodesWithInjectedBeaconGrid() throws {

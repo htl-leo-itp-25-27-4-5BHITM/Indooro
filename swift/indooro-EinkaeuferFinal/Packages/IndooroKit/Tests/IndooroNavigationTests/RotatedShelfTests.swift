@@ -1,6 +1,6 @@
 import IndooroModels
 import XCTest
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 final class RotatedShelfTests: XCTestCase {
     private func blocked(x: Double, y: Double, width: Double, height: Double, rotation: Double, grid: Int = 10) -> Set<GridPoint> {
