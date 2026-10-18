@@ -219,6 +219,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     // MARK: - Config
 
     private var apiBase: String { AppEnvironment.apiBaseURL.absoluteString }
+    private let apiClient: any APIClientProtocol = AppEnvironment.apiClient
     private let allowServerSearch = true
     private let layoutHistoryLimit = 12
     private let selectedLayoutModeDefaultsKey = "selectedLayoutMode"
@@ -1120,7 +1121,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         appendDebugLog("Store-Lookup startet rssi=\(rssi) url=\(url.absoluteString)")
 
-        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
+        performRequest(url: url) { [weak self] result in
             guard let self else { return }
 
             defer {
@@ -1131,51 +1132,38 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 }
             }
 
-            if let error {
-                AppLog.network.error("Store-Detection fehlgeschlagen: \(error.localizedDescription, privacy: .private)")
-                self.appendDebugLog("Store-Lookup Netzwerkfehler: \(error.localizedDescription)")
-                return
-            }
-
-            guard let httpResponse = response as? HTTPURLResponse else {
-                self.appendDebugLog("Store-Lookup ohne HTTPURLResponse")
-                return
-            }
-
-            self.appendDebugLog(
-                "Store-Lookup HTTP \(httpResponse.statusCode) bytes=\(data?.count ?? 0) body=\(self.bodyPreview(data))"
-            )
-
-            if httpResponse.statusCode == 404 {
-                DispatchQueue.main.async {
-                    self.lastFailedStoreLookupIdentityKey = storeLookupKey
-                    self.lastFailedStoreLookupAt = Date().timeIntervalSince1970
-                    self.clearDetectedStore()
-                    if self.selectedLayoutMode == .currentServer {
-                        self.loadDefaultCurrentServerLayout()
+            switch result {
+            case .failure(let error):
+                if case LayoutLoadingError.httpStatus(404) = error {
+                    self.appendDebugLog("Store-Lookup HTTP 404")
+                    DispatchQueue.main.async {
+                        self.lastFailedStoreLookupIdentityKey = storeLookupKey
+                        self.lastFailedStoreLookupAt = Date().timeIntervalSince1970
+                        self.clearDetectedStore()
+                        if self.selectedLayoutMode == .currentServer {
+                            self.loadDefaultCurrentServerLayout()
+                        }
                     }
+                    return
                 }
-                return
-            }
-
-            guard (200...299).contains(httpResponse.statusCode), let data else {
-                self.appendDebugLog("Store-Lookup abgebrochen wegen HTTP \(httpResponse.statusCode)")
-                return
-            }
-
-            do {
-                let detection = try JSONDecoder.indooro.decode(StoreByBeaconResponse.self, from: data)
-                self.appendDebugLog(
-                    "Store-Lookup decodiert store=\(detection.store.name) id=\(detection.store.id.uuidString)"
-                )
-                DispatchQueue.main.async {
-                    self.applyDetectedStore(detection, identityKey: storeLookupKey)
+                AppLog.network.error("Store-Detection fehlgeschlagen: \(error.localizedDescription, privacy: .private)")
+                self.appendDebugLog("Store-Lookup Fehler: \(error.localizedDescription)")
+            case .success(let data):
+                self.appendDebugLog("Store-Lookup bytes=\(data.count) body=\(self.bodyPreview(data))")
+                do {
+                    let detection = try JSONDecoder.indooro.decode(StoreByBeaconResponse.self, from: data)
+                    self.appendDebugLog(
+                        "Store-Lookup decodiert store=\(detection.store.name) id=\(detection.store.id.uuidString)"
+                    )
+                    DispatchQueue.main.async {
+                        self.applyDetectedStore(detection, identityKey: storeLookupKey)
+                    }
+                } catch {
+                    AppLog.network.error("Store-Detection konnte nicht decodiert werden: \(error.localizedDescription, privacy: .private)")
+                    self.appendDebugLog("Store-Lookup Decode-Fehler: \(error.localizedDescription)")
                 }
-            } catch {
-                AppLog.network.error("Store-Detection konnte nicht decodiert werden: \(error.localizedDescription, privacy: .private)")
-                self.appendDebugLog("Store-Lookup Decode-Fehler: \(error.localizedDescription)")
             }
-        }.resume()
+        }
     }
 
     @Published var suggestedPilotStore: MobileStoreSummary?
@@ -1725,33 +1713,19 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         lastStoreDetectionBeaconRefreshAt = now
         appendDebugLog("Store-Beacon-Identities Request url=\(url.absoluteString)")
 
-        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
+        performRequest(url: url) { [weak self] result in
             guard let self else { return }
 
-            if let error {
+            let data: Data
+            switch result {
+            case .failure(let error):
                 DispatchQueue.main.async {
                     self.isLoadingStoreDetectionBeacons = false
                 }
                 self.appendDebugLog("Store-Beacon-Identities Fehler: \(error.localizedDescription)")
                 return
-            }
-
-            guard let response = response as? HTTPURLResponse else {
-                DispatchQueue.main.async {
-                    self.isLoadingStoreDetectionBeacons = false
-                }
-                self.appendDebugLog("Store-Beacon-Identities ohne HTTPURLResponse")
-                return
-            }
-
-            guard (200...299).contains(response.statusCode), let data else {
-                DispatchQueue.main.async {
-                    self.isLoadingStoreDetectionBeacons = false
-                }
-                self.appendDebugLog(
-                    "Store-Beacon-Identities HTTP \(response.statusCode) body=\(self.bodyPreview(data))"
-                )
-                return
+            case .success(let body):
+                data = body
             }
 
             do {
@@ -1777,7 +1751,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 }
                 self.appendDebugLog("Store-Beacon-Identities Decode-Fehler: \(error.localizedDescription)")
             }
-        }.resume()
+        }
     }
 
     private func markDetectedStoreLayoutFailed(
@@ -1806,40 +1780,39 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func performRequest(url: URL, completion: @escaping (Result<Data, Error>) -> Void) {
-        AppEnvironment.session.dataTask(with: url) { data, response, error in
-            if let error {
-                self.appendDebugLog("HTTP Fehler \(url.path): \(error.localizedDescription)")
-                completion(.failure(error))
-                return
-            }
-
-            guard let response = response as? HTTPURLResponse else {
-                self.appendDebugLog("HTTP ungueltige Response \(url.path)")
-                completion(.failure(LayoutLoadingError.invalidResponse))
-                return
-            }
-
-            guard (200...299).contains(response.statusCode) else {
+        guard let endpoint = LegacyGETEndpoint(url: url) else {
+            appendDebugLog("HTTP ungueltige URL \(url.path)")
+            completion(.failure(LayoutLoadingError.invalidResponse))
+            return
+        }
+        let client = apiClient
+        Task { [weak self] in
+            let result = await client.sendResult(endpoint)
+            guard let self else { return }
+            switch result {
+            case .failure(let error):
+                self.appendDebugLog("HTTP Fehler \(url.path): \(error)")
+                completion(.failure(Self.legacyError(from: error)))
+            case .success(let raw):
                 self.appendDebugLog(
-                    "HTTP \(response.statusCode) \(url.path) body=\(self.bodyPreview(data))"
+                    "HTTP 200 \(url.path) bytes=\(raw.data.count)",
+                    key: "http-success-\(url.path)",
+                    minInterval: 1
                 )
-                completion(.failure(LayoutLoadingError.httpStatus(response.statusCode)))
-                return
+                completion(.success(raw.data))
             }
+        }
+    }
 
-            guard let data else {
-                self.appendDebugLog("HTTP \(response.statusCode) \(url.path) ohne Body")
-                completion(.failure(LayoutLoadingError.emptyData))
-                return
-            }
-
-            self.appendDebugLog(
-                "HTTP \(response.statusCode) \(url.path) bytes=\(data.count)",
-                key: "http-success-\(url.path)",
-                minInterval: 1
-            )
-            completion(.success(data))
-        }.resume()
+    /// Bildet `APIError` auf die Fehler ab, die die Aufrufer bisher von `URLSession` bekamen.
+    nonisolated private static func legacyError(from error: APIError) -> Error {
+        switch error {
+        case .offline: URLError(.notConnectedToInternet)
+        case .transport(let code): URLError(code)
+        case .cancelled: URLError(.cancelled)
+        case .http(let status, _): LayoutLoadingError.httpStatus(status)
+        case .decoding: LayoutLoadingError.invalidResponse
+        }
     }
 
     private func decodeLayout(from data: Data) throws -> LayoutData {
