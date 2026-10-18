@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.Duration;
+import java.util.Collection;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -859,6 +860,94 @@ class UpsellSuggestionServiceTest {
     }
 
     @Test
+    void planResolvesAllTriggerAndListProductsWithExactlyOneBatchLookup() {
+        UpsellDtos.UpsellPlanResponse response = service.plan(planRequest(
+                List.of(40),
+                List.of(41),
+                opportunity("station:1", List.of(1, 2), "Spaghetti", "Parmesan"),
+                opportunity("station:2", List.of(3, 4)),
+                opportunity("station:3", List.of(20, 21)),
+                opportunity("station:4", List.of(22, 23)),
+                opportunity("station:5", List.of(24, 30))
+        ));
+
+        assertEquals(5, response.opportunities().size());
+        assertEquals(1, openSearchService.batchLookups);
+        assertEquals(0, openSearchService.productLookups);
+    }
+
+    @Test
+    void planCandidateQueryCarriesTriggerAndComplementCategoriesOfAllOpportunities() {
+        service.plan(planRequest(
+                List.of(),
+                List.of(),
+                opportunity("station:1", List.of(1), "Spaghetti"),
+                opportunity("station:2", List.of(30))
+        ));
+
+        assertEquals(List.of("430", "525"), openSearchService.lastTriggerCategories);
+        assertTrue(openSearchService.lastComplementaryCategories.containsAll(List.of("420", "450", "445", "510", "520")));
+    }
+
+    @Test
+    void failedBatchLookupKeepsPlanTolerantAndStillRunsCandidateQuery() {
+        openSearchService.failProductBatch = true;
+
+        UpsellDtos.UpsellPlanResponse response = service.plan(planRequest(
+                List.of(40),
+                List.of(),
+                opportunity("station:1", List.of(1, 2), "Spaghetti", "Parmesan")
+        ));
+
+        assertEquals(1, response.opportunities().size());
+        assertEquals(1, openSearchService.batchLookups);
+        assertEquals(0, openSearchService.productLookups);
+        assertFalse("candidate_lookup_failed".equals(response.debug().fallbackReason()));
+        assertEquals(List.of(), openSearchService.lastTriggerCategories);
+    }
+
+    @Test
+    void singleSuggestionResolvesListWithOneBatchLookupAndPassesCheckedCategory() {
+        UpsellDtos.UpsellSuggestionResponse response = service.suggestions(new UpsellDtos.UpsellSuggestionRequest(
+                null,
+                null,
+                1,
+                "local-list",
+                List.of(3, 40),
+                List.of(41),
+                "shopping_session",
+                null
+        ));
+
+        assertNotNull(response);
+        assertEquals(1, openSearchService.batchLookups);
+        // Only the checked product itself is looked up one by one (store-scoped), never the list entries.
+        assertEquals(1, openSearchService.productLookups);
+        assertEquals(List.of("430"), openSearchService.lastTriggerCategories);
+        assertTrue(openSearchService.lastComplementaryCategories.containsAll(List.of("420", "450", "525", "445")));
+    }
+
+    @Test
+    void failedBatchLookupKeepsSingleSuggestionTolerant() {
+        openSearchService.failProductBatch = true;
+
+        UpsellDtos.UpsellSuggestionResponse response = service.suggestions(new UpsellDtos.UpsellSuggestionRequest(
+                null,
+                null,
+                1,
+                "local-list",
+                List.of(3, 40),
+                List.of(41),
+                "shopping_session",
+                null
+        ));
+
+        assertNotNull(response);
+        assertEquals(1, openSearchService.batchLookups);
+        assertEquals(List.of("430"), openSearchService.lastTriggerCategories);
+    }
+
+    @Test
     void emptyCandidateLookupIsCachedAsNonRetryableNoCandidates() {
         FakeOpenAiService fakeService = useFakeOpenAi();
         // Both the store-scoped and the unscoped lookup come back empty (applePlanRequest also queries unscoped).
@@ -1252,6 +1341,10 @@ class UpsellSuggestionServiceTest {
 
     private static final class FakeOpenSearchService extends OpenSearchService {
         int productLookups = 0;
+        int batchLookups = 0;
+        boolean failProductBatch = false;
+        List<String> lastTriggerCategories = List.of();
+        List<String> lastComplementaryCategories = List.of();
         boolean emptyCandidates = false;
         boolean failCandidateLookup = false;
         boolean storeScopedEmpty = false;
@@ -1318,7 +1411,31 @@ class UpsellSuggestionServiceTest {
         }
 
         @Override
+        public Map<Integer, Product> getProductsByNumericIds(Collection<Integer> ids) throws IOException {
+            batchLookups++;
+            if (failProductBatch) {
+                throw new IOException("simulated OpenSearch outage");
+            }
+            Map<Integer, Product> result = new LinkedHashMap<>();
+            for (Integer id : ids) {
+                if (products.containsKey(id)) {
+                    result.put(id, products.get(id));
+                }
+            }
+            return result;
+        }
+
+        @Override
         public List<Product> findUpsellCandidates(Integer size, String storeId, String storeCode) throws IOException {
+            return findUpsellCandidates(size, storeId, storeCode, List.of(), List.of());
+        }
+
+        @Override
+        public List<Product> findUpsellCandidates(Integer size, String storeId, String storeCode,
+                                                  Collection<String> triggerCategories,
+                                                  Collection<String> complementaryCategories) throws IOException {
+            lastTriggerCategories = List.copyOf(triggerCategories);
+            lastComplementaryCategories = List.copyOf(complementaryCategories);
             if (failCandidateLookup) {
                 throw new IOException("simulated OpenSearch outage");
             }
@@ -1340,6 +1457,13 @@ class UpsellSuggestionServiceTest {
 
         @Override
         public List<Product> findUnscopedUpsellCandidates(Integer size) throws IOException {
+            return findUnscopedUpsellCandidates(size, List.of(), List.of());
+        }
+
+        @Override
+        public List<Product> findUnscopedUpsellCandidates(Integer size,
+                                                          Collection<String> triggerCategories,
+                                                          Collection<String> complementaryCategories) throws IOException {
             if (failCandidateLookup) {
                 throw new IOException("simulated OpenSearch outage");
             }
