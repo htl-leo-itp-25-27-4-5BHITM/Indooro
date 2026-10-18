@@ -144,6 +144,18 @@ classDiagram
 | Abhängigkeiten | keine Swift Packages |
 | Tests | keine |
 
+**Zwischenstand der Zielstruktur (Change `modernize-ios-client-architecture`, Stand 2026-10):**
+
+| Baustein | Ort | Stand |
+| --- | --- | --- |
+| `IndooroModels` | `swift/indooro-EinkaeuferFinal/Packages/IndooroKit/Sources/IndooroModels` | umgesetzt (Phase 4): reine Datenmodelle, `public` und `Sendable`, ohne UI- oder Radio-Frameworks |
+| `IndooroNetworking` | `Packages/IndooroKit/Sources/IndooroNetworking` | umgesetzt (Phase 1 bis 2b): `APIClient`, `Endpoint`, `RetryPolicy`, generierte Typen aus `api/openapi/indooro-mobile.yaml`; Umstellung aller App-Aufrufe läuft (Task 6.4) |
+| `IndooroNavigationCore` | `swift/indooro-EinkaeuferFinal/Package.swift` (Quellen unter `indooroApp/…`) | bleibt bis Task 5.1 ein eigenes lokales SwiftPM-Paket mit Test-Target `IndooroNavigationCoreTests`; geht danach in `IndooroNavigation` auf |
+| Konfiguration | `swift/indooro-EinkaeuferFinal/Config/*.xcconfig` | umgesetzt: Schemes `MCindooroApp`, `MCindooroApp (Local)`, `MCindooroApp (LeoCloud)`, `MCindooroApp (Release)` |
+| Übrige Ziel-Targets (`IndooroPositioning`, `IndooroPersistence`, `Feature*`, `IndooroDesignSystem`) | – | noch nicht angelegt; Reihenfolge und Status in `openspec/changes/modernize-ios-client-architecture/tasks.md` |
+
+Tests: `swift test` in `swift/indooro-EinkaeuferFinal` (Navigation, Vertragsdekodierung), `swift test` in `Packages/IndooroKit` (Modelle, Netzwerk), `MCindooroAppTests` und `MCindooroAppUITests` über `sh scripts/ios/run-ui-tests.sh` (Details in `swift/indooro-EinkaeuferFinal/TESTING.md`). Das Paket IndooroKit ist nur am App-Target gelinkt, nicht am Test-Bundle; `xcodebuild` braucht `-skipPackagePluginValidation`.
+
 ### 2.2 Ziel-Architektur [SOLL] (Change `modernize-ios-client-architecture`)
 
 ```mermaid

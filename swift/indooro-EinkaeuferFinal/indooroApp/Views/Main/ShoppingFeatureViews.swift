@@ -1206,7 +1206,7 @@ struct ShoppingListsPage: View {
     @ObservedObject var listManager: ShoppingListManager
     @ObservedObject var sessionManager: ShoppingSessionManager
     @ObservedObject var beaconManager: BeaconManager
-    @ObservedObject var upsellStore: UpsellSuggestionStore
+    var upsellStore: UpsellModel
     @Binding var pendingImportPackage: ShoppingTransferPackage?
     @Binding var importErrorMessage: String?
 
@@ -1710,7 +1710,7 @@ struct ShoppingListsPage: View {
         }
 
         upsellStore.showOpportunity(
-            opportunityId: UpsellSuggestionStore.itemOpportunityId(for: item),
+            opportunityId: UpsellModel.itemOpportunityId(for: item),
             checkedItems: [item],
             list: updatedList,
             store: activeStore,

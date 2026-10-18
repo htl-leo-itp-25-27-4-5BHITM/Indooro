@@ -18,7 +18,7 @@ enum ContractFixtures {
 }
 
 /// Prüft, dass die Backend-Antworten mit den Modellen dekodieren, so wie es die App-Stores tun
-/// (JSONDecoder() ohne Strategie, außer UpsellSuggestionStore: dateDecodingStrategy = .iso8601).
+/// (JSONDecoder() ohne Strategie, außer UpsellModel: dateDecodingStrategy = .iso8601).
 final class ContractDecodingTests: XCTestCase {
 
     // MARK: - Stores
