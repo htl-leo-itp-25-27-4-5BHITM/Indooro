@@ -51,7 +51,7 @@ final class UpsellStubURLProtocol: URLProtocol {
         Self.lock.lock()
         if isPlan {
             let index = Self.planBodies.count
-            Self.planBodies.append(request.httpBody)
+            Self.planBodies.append(Self.body(of: request))
             let responder = Self.planResponder
             Self.lock.unlock()
             (status, body) = responder?(index) ?? (500, Data())
@@ -77,6 +77,28 @@ final class UpsellStubURLProtocol: URLProtocol {
     }
 
     override func stopLoading() {}
+
+    /// URLSession hands the body to URLProtocol as a stream, so `httpBody` is usually nil here.
+    private static func body(of request: URLRequest) -> Data? {
+        if let body = request.httpBody {
+            return body
+        }
+        guard let stream = request.httpBodyStream else {
+            return nil
+        }
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        while stream.hasBytesAvailable {
+            let read = stream.read(&buffer, maxLength: buffer.count)
+            if read <= 0 {
+                break
+            }
+            data.append(buffer, count: read)
+        }
+        return data
+    }
 }
 
 /// Store-level lifecycle tests for UpsellSuggestionStore (sections 9 to 11 of the upsell quality change).
@@ -227,7 +249,9 @@ final class UpsellSuggestionStoreTests: XCTestCase {
 
         let body = try XCTUnwrap(UpsellStubURLProtocol.planRequestBodies().first ?? nil)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: body) as? [String: Any])
-        XCTAssertEqual(json["currentListProductIds"] as? [Int], [92], "open precedence: 92 is not also completed")
+        // Open precedence: 92 is open (and also done in a duplicate row), so it is only in the current set.
+        // The open upsell item 93 stays in the current set as before; it is excluded from triggers only.
+        XCTAssertEqual(json["currentListProductIds"] as? [Int], [92, 93])
         XCTAssertEqual(json["completedProductIds"] as? [Int], [40])
         let opportunities = try XCTUnwrap(json["opportunities"] as? [[String: Any]])
         XCTAssertEqual(opportunities.count, 1, "the addedFromUpsell item must not become a trigger")
