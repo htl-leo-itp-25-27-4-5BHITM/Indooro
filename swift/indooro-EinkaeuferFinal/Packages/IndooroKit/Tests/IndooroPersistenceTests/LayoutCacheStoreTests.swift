@@ -1,5 +1,5 @@
 import XCTest
-@testable import IndooroNavigationCore
+@testable import IndooroPersistence
 
 /// Task 6.1: Datei-Cache fuer Layout-Antworten (Offline-Start).
 final class LayoutCacheStoreTests: XCTestCase {

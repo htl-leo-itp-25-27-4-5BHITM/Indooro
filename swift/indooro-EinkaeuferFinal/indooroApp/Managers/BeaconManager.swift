@@ -8,6 +8,7 @@ import CoreMotion
 import simd
 import IndooroNetworking
 import IndooroNavigation
+import IndooroPersistence
 
 /// Ein Tick der Ortung fuer die Navigations-Session: projizierte Position (falls es eine
 /// Loesung gab) und Konfidenz. Kommt ueber ein Subject, damit Views nicht pro Tick neu rendern.

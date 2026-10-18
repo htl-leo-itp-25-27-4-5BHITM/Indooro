@@ -25,7 +25,6 @@ let package = Package(
             ],
             path: "indooroApp",
             sources: [
-                "Utilities/LayoutCacheStore.swift",
                 "Utilities/AppLog.swift",
                 "Utilities/AnchorPayload.swift",
                 "Utilities/AccessibilityText.swift",
