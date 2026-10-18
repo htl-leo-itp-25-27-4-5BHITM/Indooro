@@ -117,8 +117,9 @@ public class RecipeService {
         RecipeDtos.RecipeUpsertRequest recipeRequest = request.recipe();
         RecipeEntity recipe = new RecipeEntity();
         applyRecipeRequest(recipe, recipeRequest);
-        recipe.createdByRole = "admin";
-        recipe.createdByLabel = "admin";
+        AuditLogService.Actor actor = auditLogService.currentActor();
+        recipe.createdByRole = actor.role();
+        recipe.createdByLabel = actor.label();
         recipeRepository.persist(recipe);
         assignTags(recipe, recipeRequest.tagIds());
 
@@ -272,7 +273,10 @@ public class RecipeService {
         RecipeTagEntity tag = new RecipeTagEntity();
         applyTagRequest(tag, request);
         tagRepository.persist(tag);
-        return toTag(tag);
+        RecipeDtos.RecipeTagResponse response = toTag(tag);
+        auditLogService.logByAdmin(adminAccessService.currentUser(), "RECIPE_TAG", tag.id, "CREATE",
+                "Rezept-Tag angelegt", null, response);
+        return response;
     }
 
     @Transactional
@@ -285,8 +289,12 @@ public class RecipeService {
                 .ifPresent(existing -> {
                     throw conflict("Ein Rezept-Tag mit diesem Code existiert bereits.");
                 });
+        RecipeDtos.RecipeTagResponse before = toTag(tag);
         applyTagRequest(tag, request);
-        return toTag(tag);
+        RecipeDtos.RecipeTagResponse after = toTag(tag);
+        auditLogService.logByAdmin(adminAccessService.currentUser(), "RECIPE_TAG", tag.id, "UPDATE",
+                "Rezept-Tag aktualisiert", before, after);
+        return after;
     }
 
     @Transactional
@@ -294,8 +302,12 @@ public class RecipeService {
         adminAccessService.requireAdmin();
         RecipeTagEntity tag = tagRepository.findByIdOptional(tagId)
                 .orElseThrow(() -> new NotFoundException("Rezept-Tag nicht gefunden."));
+        RecipeDtos.RecipeTagResponse before = toTag(tag);
         tag.status = RecordStatus.ARCHIVED;
-        return toTag(tag);
+        RecipeDtos.RecipeTagResponse after = toTag(tag);
+        auditLogService.logByAdmin(adminAccessService.currentUser(), "RECIPE_TAG", tag.id, "ARCHIVE",
+                "Rezept-Tag archiviert", before, after);
+        return after;
     }
 
     public RecipeDtos.RecipeProductMappingResponse mappingStatus(UUID recipeId, UUID storeId, String storeCode, boolean requirePublished) {

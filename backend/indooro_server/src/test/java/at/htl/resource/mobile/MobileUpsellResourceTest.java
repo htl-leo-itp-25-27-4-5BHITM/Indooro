@@ -4,6 +4,7 @@ import at.htl.admin.dto.UpsellDtos;
 import at.htl.admin.service.UpsellSuggestionService;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.security.TestSecurity;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.Test;
@@ -11,13 +12,18 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @QuarkusTest
@@ -250,5 +256,109 @@ class MobileUpsellResourceTest {
                 .when().post("/api/mobile/upsell/dismiss")
                 .then()
                 .statusCode(400);
+    }
+
+    @Test
+    void rejectsMoreThanThirtyOpportunities() {
+        String opportunities = IntStream.rangeClosed(1, 31)
+                .mapToObj(i -> "{\"opportunityId\":\"station:" + i + "\",\"triggerProductIds\":[1]}")
+                .collect(Collectors.joining(","));
+
+        given()
+                .contentType("application/json")
+                .body("{\"opportunities\":[" + opportunities + "]}")
+                .when().post("/api/mobile/upsell/plan")
+                .then()
+                .statusCode(400);
+
+        verify(upsellSuggestionService, never()).plan(any());
+    }
+
+    @Test
+    void validatesNestedOpportunityFields() {
+        given()
+                .contentType("application/json")
+                .body("{\"opportunities\":[{\"opportunityId\":\"\",\"triggerProductIds\":[1]}]}")
+                .when().post("/api/mobile/upsell/plan")
+                .then()
+                .statusCode(400);
+
+        verify(upsellSuggestionService, never()).plan(any());
+    }
+
+    @Test
+    void rejectsOversizedCurrentListInput() {
+        String ids = IntStream.rangeClosed(1, 201).mapToObj(String::valueOf).collect(Collectors.joining(","));
+
+        given()
+                .contentType("application/json")
+                .body("{\"opportunities\":[],\"currentListProductIds\":[" + ids + "]}")
+                .when().post("/api/mobile/upsell/plan")
+                .then()
+                .statusCode(400);
+
+        verify(upsellSuggestionService, never()).plan(any());
+    }
+
+    @Test
+    void anonymousCallersGetReducedPlanDebug() {
+        when(upsellSuggestionService.plan(any())).thenReturn(planWithDebug());
+
+        given()
+                .contentType("application/json")
+                .body("{\"opportunities\":[{\"opportunityId\":\"station:shelf-430\",\"triggerProductIds\":[1]}]}")
+                .when().post("/api/mobile/upsell/plan")
+                .then()
+                .statusCode(200)
+                .body("debug.requestId", equalTo("req-1"))
+                .body("debug.responseSource", equalTo("fallback"))
+                .body("debug.fallbackReason", equalTo("openai_disabled"))
+                .body("debug.model", nullValue())
+                .body("debug.elapsedMs", nullValue())
+                .body("debug.openAiElapsedMs", nullValue())
+                .body("debug.inputTokens", nullValue())
+                .body("debug.totalTokens", nullValue())
+                .body("debug.opportunityCount", nullValue())
+                .body("debug.candidateCount", nullValue());
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void adminCallersKeepFullPlanDebug() {
+        when(upsellSuggestionService.plan(any())).thenReturn(planWithDebug());
+
+        given()
+                .contentType("application/json")
+                .body("{\"opportunities\":[{\"opportunityId\":\"station:shelf-430\",\"triggerProductIds\":[1]}]}")
+                .when().post("/api/mobile/upsell/plan")
+                .then()
+                .statusCode(200)
+                .body("debug.requestId", equalTo("req-1"))
+                .body("debug.model", equalTo("gpt-test"))
+                .body("debug.inputTokens", equalTo(42))
+                .body("debug.candidateCount", equalTo(7));
+    }
+
+    private UpsellDtos.UpsellPlanResponse planWithDebug() {
+        return new UpsellDtos.UpsellPlanResponse(
+                List.of(),
+                "fallback",
+                Instant.parse("2026-06-02T12:00:00Z"),
+                new UpsellDtos.UpsellPlanDebug(
+                        "req-1",
+                        "gpt-test",
+                        "fallback",
+                        120L,
+                        80L,
+                        42,
+                        10,
+                        52,
+                        0,
+                        0,
+                        "openai_disabled",
+                        1,
+                        7
+                )
+        );
     }
 }

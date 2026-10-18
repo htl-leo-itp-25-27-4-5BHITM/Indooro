@@ -57,11 +57,24 @@ KEYCLOAK_TOKEN_URL=https://it220209.cloud.htl-leonding.ac.at/keycloak/realms/ind
 OIDC_CLIENT_ID=indooro-admin-web
 ```
 
+## Dev-Realm (lokal) gegen Produktion (LeoCloud): zwei Auth-Wege
+
+Es gibt zwei Keycloak-Realms mit unterschiedlichen Regeln:
+
+- **Dev-Realm** (`keycloak/realm/indooro-realm.json`, lokal per Docker Compose):
+  enthaelt Demo-Benutzer und erlaubt Direct Access Grants (ROPC). Nur hier laufen
+  die Suites mit Benutzername/Passwort (`00-auth.http`).
+- **Produktions-Realm** (`k8s/keycloak-realm-prod.json`, LeoCloud): ohne Benutzer,
+  ohne Direct Access Grants (`directAccessGrantsEnabled: false`), mit Brute-Force-Schutz.
+  Gegen LeoCloud funktioniert der Login mit Benutzername/Passwort daher **nicht**.
+
+**Gegen LeoCloud nur die token-basierten Suites ausfuehren** (`00-auth-env-tokens.http`).
+Die Access Tokens werden manuell in `.env` eingetragen (siehe Abschnitt "Token-Suites").
+Die Suite `api:test` (ROPC) ist fuer LeoCloud nicht vorgesehen.
+
 ## Muss ich Tokens eintragen?
 
-Normalerweise: nein.
-
-Diese Felder bleiben leer:
+Lokal (Dev-Realm): normalerweise nein. Diese Felder bleiben leer:
 
 ```text
 ADMIN_TOKEN=
@@ -69,26 +82,33 @@ REGION_TOKEN=
 STORE_TOKEN=
 ```
 
-Der normale Testlauf holt sich die Access Tokens automatisch bei Keycloak mit:
+Der lokale Testlauf holt sich die Access Tokens automatisch bei Keycloak mit den
+Benutzern `indooro-admin`, `indooro-region` und `indooro-store`. Dafuer muss der
+Client `indooro-admin-web` Direct Access Grants erlauben (nur Dev-Realm).
 
-- `indooro-admin`
-- `indooro-region`
-- `indooro-store`
-
-Dafuer muss beim Keycloak-Client `indooro-admin-web` Direct Access Grants aktiv
-sein. Das ist aktuell so konfiguriert.
-
-Tokens musst du nur dann manuell eintragen, wenn der automatische Login gegen
-Keycloak nicht funktioniert und du kurzfristig mit kopierten Access Tokens testen
-willst. Dann nutzt du die `:tokens` Scripts.
+Gegen LeoCloud: ja, die Tokens muessen eingetragen werden (siehe unten).
 
 ## Ausfuehren
 
-Alle API-Smoke- und Rollen-Tests:
+Lokal (Dev-Realm), alle API-Smoke- und Rollen-Tests:
 
 ```bash
 npm run api:test
 ```
+
+Gegen LeoCloud: Token-Suites (Public-Routes brauchen keinen Login):
+
+```bash
+npm run api:test:public -- --output none --output-failed response
+npm run api:test:rbac:tokens -- --output none --output-failed response
+npm run api:test:roles:tokens -- --output none --output-failed response
+npm run api:test:maintenance:tokens -- --output none --output-failed response
+```
+
+Hinweis: Fuer `05-recipes.http` und `06-upsell.http` gibt es noch keine
+`:tokens`-Variante. Gegen LeoCloud werden diese beiden Suites derzeit nicht ausgefuehrt.
+
+Mit weniger Ausgabe, praktisch fuer schnelle Checks (lokal):
 
 Mit weniger Ausgabe, praktisch fuer schnelle Checks:
 
@@ -347,9 +367,11 @@ Upsell-Smoke-Tests:
 npm run api:test:upsell -- --output none --output-failed response
 ```
 
-## Token-Fallback
+## Token-Suites (LeoCloud)
 
-Nur verwenden, wenn du Access Tokens manuell in `.env` eingetragen hast:
+Diese Suites brauchen Access Tokens in `.env` (`ADMIN_TOKEN`, `REGION_TOKEN`,
+`STORE_TOKEN`). Die Tokens holt man sich im Browser nach dem Login am Admin-Bereich
+und kopiert sie hinein; sie laufen nach kurzer Zeit ab und muessen dann erneuert werden.
 
 ```bash
 npm run api:test:rbac:tokens -- --output none --output-failed response
@@ -357,7 +379,7 @@ npm run api:test:roles:tokens -- --output none --output-failed response
 npm run api:test:maintenance:tokens -- --output none --output-failed response
 ```
 
-Fuer den normalen Stand brauchst du diese Variante nicht.
+Lokal im Dev-Realm brauchst du diese Variante nicht.
 
 ## Was wird getestet?
 

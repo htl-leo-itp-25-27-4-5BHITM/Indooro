@@ -2,6 +2,7 @@ package at.htl.resource.admin;
 
 import at.htl.admin.dto.ErrorLogDtos;
 import at.htl.admin.service.ErrorLogService;
+import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Priorities;
@@ -15,6 +16,7 @@ import jakarta.ws.rs.ext.ExceptionMapper;
 import jakarta.ws.rs.ext.Provider;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Provider
 @Priority(Priorities.USER)
@@ -22,6 +24,9 @@ public class ApiWebApplicationExceptionMapper implements ExceptionMapper<WebAppl
 
     @Inject
     ErrorLogService errorLogService;
+
+    @Inject
+    SecurityIdentity identity;
 
     @Context
     UriInfo uriInfo;
@@ -37,19 +42,22 @@ public class ApiWebApplicationExceptionMapper implements ExceptionMapper<WebAppl
         String method = request == null ? "UNKNOWN" : request.getMethod();
         String path = uriInfo == null ? "unknown" : uriInfo.getPath();
         String message = normalizeMessage(exception, status);
+        boolean serverError = status >= 500;
+        String correlationId = serverError ? UUID.randomUUID().toString() : null;
 
         try {
-            errorLogService.logError(status, method, path, message, exception);
+            errorLogService.record(status, method, path, message, exception, correlationId, isAuthenticated());
         } catch (RuntimeException logFailure) {
             // Error logging must never hide the API status that triggered the mapper.
         }
 
         ErrorLogDtos.ApiErrorResponse payload = new ErrorLogDtos.ApiErrorResponse(
                 status,
-                message,
+                serverError ? ErrorLogService.SERVER_ERROR_MESSAGE : message,
                 method,
                 path,
-                Instant.now()
+                Instant.now(),
+                correlationId
         );
 
         return Response.status(status)
@@ -64,5 +72,9 @@ public class ApiWebApplicationExceptionMapper implements ExceptionMapper<WebAppl
             return "Request failed with status " + status;
         }
         return raw;
+    }
+
+    private boolean isAuthenticated() {
+        return identity != null && !identity.isAnonymous();
     }
 }

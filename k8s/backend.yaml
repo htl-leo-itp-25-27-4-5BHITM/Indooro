@@ -17,26 +17,44 @@ spec:
       # Falls das GHCR-Repo privat ist, musst du hier ein imagePullSecret eintragen:
       # imagePullSecrets:
       #   - name: ghcr-credentials
+      # Pod-weit: Nicht-root (UID 10001 wie im Dockerfile).
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
       containers:
         - name: indooro-backend
-          # Fester Tag = Git-Commit-SHA der CI (live laeuft a47c5e6).
+          # Fester Tag = Git-Commit-SHA der CI. Der Tag a47c5e6 ist ein Image mit altem Dockerfile
+          # (root, JDK 25). Mit runAsNonRoot startet der Pod damit NICHT: vor dem Apply einen neuen
+          # SHA-Tag aus der CI (Dockerfile mit Nicht-root-Benutzer) eintragen.
           # Rollout/Rollback siehe docs/pilot-readiness/operations/RELEASE_RUNBOOK.md.
           # Vor `kubectl apply` den Tag pruefen.
+          # ACHTUNG: Tag a47c5e6 ist ein Root-Image (JDK 25) und startet mit runAsNonRoot nicht.
+          # Vor `kubectl apply` den Tag auf das neue CI-Image (Dockerfile mit UID 10001) setzen.
           image: ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:a47c5e6
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+          # Quarkus SmallRye Health (Abhaengigkeit quarkus-smallrye-health).
+          startupProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8080
+            periodSeconds: 5
+            failureThreshold: 24
+          livenessProbe:
+            httpGet:
+              path: /q/health/live
+              port: 8080
+            periodSeconds: 10
+            failureThreshold: 3
           readinessProbe:
-            tcpSocket:
+            httpGet:
+              path: /q/health/ready
               port: 8080
             initialDelaySeconds: 10
             periodSeconds: 5
             failureThreshold: 12
-          startupProbe:
-            tcpSocket:
-              port: 8080
-            periodSeconds: 5
-            failureThreshold: 24
           env:
             - name: DB_HOST
               value: "postgres"
@@ -89,6 +107,16 @@ spec:
             - name: QUARKUS_OIDC_TOKEN_STATE_MANAGER_SPLIT_TOKENS
               value: "true"
 
+          # Container-Haertung: Root-Dateisystem read-only, nur /tmp ist beschreibbar (emptyDir).
+          securityContext:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: "100m"
@@ -96,6 +124,9 @@ spec:
             limits:
               cpu: "500m"
               memory: "512Mi"
+      volumes:
+        - name: tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -110,4 +141,5 @@ spec:
     - name: http
       port: 8080
       targetPort: 8080
-  type: NodePort
+  # Nur intern; der externe Zugriff laeuft ueber k8s/backend-ingress.yaml.
+  type: ClusterIP
