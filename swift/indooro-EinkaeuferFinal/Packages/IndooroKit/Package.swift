@@ -26,9 +26,14 @@ let package = Package(
         .target(
             name: "IndooroModels"
         ),
+        // Nur für Tests: JSON-Fixtures als Paketressource (Task 3.4). Kein Produkt, wird nie in die App gelinkt.
+        .target(
+            name: "IndooroTestSupport",
+            resources: [.copy("Resources")]
+        ),
         .testTarget(
             name: "IndooroModelsTests",
-            dependencies: ["IndooroModels"]
+            dependencies: ["IndooroModels", "IndooroTestSupport"]
         ),
         .target(
             name: "IndooroNetworking",
@@ -41,7 +46,7 @@ let package = Package(
         ),
         .testTarget(
             name: "IndooroNetworkingTests",
-            dependencies: ["IndooroNetworking"]
+            dependencies: ["IndooroNetworking", "IndooroTestSupport"]
         ),
     ]
 )

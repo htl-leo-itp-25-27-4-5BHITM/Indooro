@@ -1,0 +1,59 @@
+{
+  "opportunities": [
+    {
+      "opportunityId": "opp-milch-muesli",
+      "triggerProductIds": [92],
+      "suggestions": [
+        {
+          "product": {
+            "id": 93,
+            "name": "S-BUDGET H-Milch 1L",
+            "price": 1.29,
+            "layoutCode": "520/2/1/2",
+            "storeId": "ad61389a-7486-48fa-afa2-9b5e4132f6a8",
+            "storeCode": "HA-01",
+            "brand": "S-BUDGET",
+            "category": "Milch",
+            "imageUrl": null,
+            "hasLayoutPosition": true
+          },
+          "reason": "Passt zur Bio-Milch als guenstige Alternative.",
+          "confidence": 0.72
+        },
+        {
+          "product": {
+            "id": 44,
+            "name": "S-BUDGET Haferflocken 500g",
+            "price": null,
+            "layoutCode": null,
+            "storeId": null,
+            "storeCode": null,
+            "brand": null,
+            "category": "Getreide",
+            "imageUrl": "https://example.invalid/images/haferflocken.jpg",
+            "hasLayoutPosition": false
+          },
+          "reason": "Haeufig zusammen mit Milch gekauft.",
+          "confidence": 0.58
+        }
+      ]
+    }
+  ],
+  "source": "openai",
+  "expiresAt": "2026-10-16T12:30:00Z",
+  "debug": {
+    "requestId": "req-handmade-0001",
+    "model": "handmade-fixture",
+    "responseSource": "openai",
+    "elapsedMs": 812,
+    "openAiElapsedMs": 790,
+    "inputTokens": 310,
+    "outputTokens": 96,
+    "totalTokens": 406,
+    "cachedInputTokens": 0,
+    "reasoningTokens": 0,
+    "fallbackReason": null,
+    "opportunityCount": 1,
+    "candidateCount": 2
+  }
+}
