@@ -42,9 +42,7 @@ public class AdminResource {
             return Response.ok("{\"message\": \"Index created successfully\"}").build();
         } catch (IOException e) {
             LOG.error("Error creating index", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
-                    .build();
+            throw new WebApplicationException("OpenSearch ist nicht erreichbar.", Response.Status.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -63,9 +61,7 @@ public class AdminResource {
             return Response.ok("{\"message\": \"Index deleted successfully\"}").build();
         } catch (IOException e) {
             LOG.error("Error deleting index", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
-                    .build();
+            throw new WebApplicationException("OpenSearch ist nicht erreichbar.", Response.Status.SERVICE_UNAVAILABLE);
         }
     }
 

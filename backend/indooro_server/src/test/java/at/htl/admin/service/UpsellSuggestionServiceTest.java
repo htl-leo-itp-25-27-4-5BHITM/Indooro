@@ -13,19 +13,26 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
+import java.util.Collection;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -73,6 +80,7 @@ class UpsellSuggestionServiceTest {
                 List.of(3),
                 List.of(4),
                 "shopping_session",
+                null,
                 null
         ));
 
@@ -97,6 +105,7 @@ class UpsellSuggestionServiceTest {
                 List.of(2),
                 List.of(),
                 "shopping_session",
+                null,
                 null
         ));
 
@@ -122,6 +131,7 @@ class UpsellSuggestionServiceTest {
                         List.of(),
                         List.of(),
                         "shopping_session",
+                        null,
                         null
                 ))
         );
@@ -143,6 +153,7 @@ class UpsellSuggestionServiceTest {
                 List.of(),
                 List.of(),
                 "shopping_session",
+                null,
                 null
         ));
 
@@ -164,6 +175,7 @@ class UpsellSuggestionServiceTest {
                 List.of(),
                 List.of(),
                 "shopping_session",
+                null,
                 null
         ));
 
@@ -187,6 +199,7 @@ class UpsellSuggestionServiceTest {
                 List.of(),
                 List.of(),
                 "shopping_session",
+                null,
                 null
         ));
 
@@ -204,6 +217,7 @@ class UpsellSuggestionServiceTest {
                 List.of(1, 3),
                 List.of(4),
                 "shopping_session",
+                null,
                 null
         );
 
@@ -232,7 +246,8 @@ class UpsellSuggestionServiceTest {
                         "station:shelf-430",
                         List.of(1, 3),
                         List.of("Spaghetti", "Tomatensauce")
-                ))
+                )),
+                null
         ));
 
         assertEquals("none", response.source());
@@ -269,7 +284,8 @@ class UpsellSuggestionServiceTest {
                                 List.of(4),
                                 List.of("Basilikum")
                         )
-                )
+                ),
+                null
         ));
 
         assertEquals("none", response.source());
@@ -293,7 +309,8 @@ class UpsellSuggestionServiceTest {
                         "station:shelf-430",
                         List.of(1),
                         List.of("Spaghetti")
-                ))
+                )),
+                null
         ));
 
         assertEquals("none", response.source());
@@ -313,7 +330,8 @@ class UpsellSuggestionServiceTest {
                         List.of(),
                         List.of(),
                         "shopping_session",
-                        List.of()
+                        List.of(),
+                        null
                 ))
         );
 
@@ -333,7 +351,8 @@ class UpsellSuggestionServiceTest {
                         "station:shelf-430",
                         List.of(1, 3),
                         List.of("Spaghetti", "Tomatensauce")
-                ))
+                )),
+                null
         );
 
         UpsellDtos.UpsellPlanResponse first = service.plan(request);
@@ -360,6 +379,7 @@ class UpsellSuggestionServiceTest {
                 List.of(1, 3),
                 List.of(4),
                 "shopping_session",
+                null,
                 null
         );
         UpsellDtos.UpsellSuggestionRequest completed = new UpsellDtos.UpsellSuggestionRequest(
@@ -370,6 +390,7 @@ class UpsellSuggestionServiceTest {
                 List.of(3),
                 List.of(1, 4),
                 "shopping_session",
+                null,
                 null
         );
 
@@ -463,7 +484,8 @@ class UpsellSuggestionServiceTest {
                         "station:shelf-525",
                         List.of(30),
                         List.of("Butter 250g")
-                ))
+                )),
+                null
         ));
 
         List<Integer> ids = response.opportunities().get(0).suggestions().stream()
@@ -496,7 +518,8 @@ class UpsellSuggestionServiceTest {
                                 List.of(30),
                                 List.of("Butter")
                         )
-                )
+                ),
+                null
         ));
 
         List<Integer> pastaIds = response.opportunities().get(0).suggestions().stream()
@@ -524,7 +547,8 @@ class UpsellSuggestionServiceTest {
                         "station:fruit",
                         List.of(40),
                         List.of("Aepfel")
-                ))
+                )),
+                null
         ));
 
         List<Integer> ids = response.opportunities().get(0).suggestions().stream()
@@ -548,7 +572,8 @@ class UpsellSuggestionServiceTest {
                         "station:oats",
                         List.of(42),
                         List.of("Haferflocken")
-                ))
+                )),
+                null
         ));
 
         List<Integer> ids = response.opportunities().get(0).suggestions().stream()
@@ -572,7 +597,8 @@ class UpsellSuggestionServiceTest {
                         "station:unknown",
                         List.of(60),
                         List.of("Batterie")
-                ))
+                )),
+                null
         ));
 
         assertEquals("none", response.source());
@@ -611,7 +637,8 @@ class UpsellSuggestionServiceTest {
                         "item:cola",
                         List.of(70),
                         List.of("Coca-Cola 1.5L")
-                ))
+                )),
+                null
         ));
 
         List<Integer> ids = response.opportunities().get(0).suggestions().stream()
@@ -638,7 +665,8 @@ class UpsellSuggestionServiceTest {
                         "item:risotto",
                         List.of(80),
                         List.of("Risotto Reis")
-                ))
+                )),
+                null
         ));
 
         List<Integer> ids = response.opportunities().get(0).suggestions().stream()
@@ -662,7 +690,8 @@ class UpsellSuggestionServiceTest {
                         "item:cleaner",
                         List.of(90),
                         List.of("Bad-Reiniger")
-                ))
+                )),
+                null
         ));
 
         List<Integer> ids = response.opportunities().get(0).suggestions().stream()
@@ -686,7 +715,8 @@ class UpsellSuggestionServiceTest {
                         "item:softener",
                         List.of(100),
                         List.of("Weichspueler")
-                ))
+                )),
+                null
         ));
 
         List<Integer> ids = response.opportunities().get(0).suggestions().stream()
@@ -710,7 +740,8 @@ class UpsellSuggestionServiceTest {
                         "item:apple",
                         List.of(40),
                         List.of("Aepfel")
-                ))
+                )),
+                null
         ));
 
         List<Integer> ids = response.opportunities().get(0).suggestions().stream()
@@ -741,7 +772,8 @@ class UpsellSuggestionServiceTest {
                                 List.of(22),
                                 List.of("Eier")
                         )
-                )
+                ),
+                null
         ));
 
         long flourOccurrences = response.opportunities().stream()
@@ -780,7 +812,8 @@ class UpsellSuggestionServiceTest {
                         "item:risotto",
                         List.of(80),
                         List.of("Risotto Reis")
-                ))
+                )),
+                null
         ));
 
         List<Integer> ids = response.opportunities().get(0).suggestions().stream()
@@ -812,7 +845,8 @@ class UpsellSuggestionServiceTest {
                         "item:cola",
                         List.of(70),
                         List.of("Coca-Cola 1.5L")
-                ))
+                )),
+                null
         ));
 
         List<Integer> ids = response.opportunities().get(0).suggestions().stream()
@@ -856,6 +890,96 @@ class UpsellSuggestionServiceTest {
         assertEquals("openai", retried.source());
         assertEquals(List.of(41), suggestionIds(retried.opportunities().get(0)));
         assertEquals(1, fakeService.rankPlanCalls);
+    }
+
+    @Test
+    void planResolvesAllTriggerAndListProductsWithExactlyOneBatchLookup() {
+        UpsellDtos.UpsellPlanResponse response = service.plan(planRequest(
+                List.of(40),
+                List.of(41),
+                opportunity("station:1", List.of(1, 2), "Spaghetti", "Parmesan"),
+                opportunity("station:2", List.of(3, 4)),
+                opportunity("station:3", List.of(20, 21)),
+                opportunity("station:4", List.of(22, 23)),
+                opportunity("station:5", List.of(24, 30))
+        ));
+
+        assertEquals(5, response.opportunities().size());
+        assertEquals(1, openSearchService.batchLookups);
+        assertEquals(0, openSearchService.productLookups);
+    }
+
+    @Test
+    void planCandidateQueryCarriesTriggerAndComplementCategoriesOfAllOpportunities() {
+        service.plan(planRequest(
+                List.of(),
+                List.of(),
+                opportunity("station:1", List.of(1), "Spaghetti"),
+                opportunity("station:2", List.of(30))
+        ));
+
+        assertEquals(List.of("430", "525"), openSearchService.lastTriggerCategories);
+        assertTrue(openSearchService.lastComplementaryCategories.containsAll(List.of("420", "450", "445", "510", "520")));
+    }
+
+    @Test
+    void failedBatchLookupKeepsPlanTolerantAndStillRunsCandidateQuery() {
+        openSearchService.failProductBatch = true;
+
+        UpsellDtos.UpsellPlanResponse response = service.plan(planRequest(
+                List.of(40),
+                List.of(),
+                opportunity("station:1", List.of(1, 2), "Spaghetti", "Parmesan")
+        ));
+
+        assertEquals(1, response.opportunities().size());
+        assertEquals(1, openSearchService.batchLookups);
+        assertEquals(0, openSearchService.productLookups);
+        assertFalse("candidate_lookup_failed".equals(response.debug().fallbackReason()));
+        assertEquals(List.of(), openSearchService.lastTriggerCategories);
+    }
+
+    @Test
+    void singleSuggestionResolvesListWithOneBatchLookupAndPassesCheckedCategory() {
+        UpsellDtos.UpsellSuggestionResponse response = service.suggestions(new UpsellDtos.UpsellSuggestionRequest(
+                null,
+                null,
+                1,
+                "local-list",
+                List.of(3, 40),
+                List.of(41),
+                "shopping_session",
+                null,
+                null
+        ));
+
+        assertNotNull(response);
+        assertEquals(1, openSearchService.batchLookups);
+        // Only the checked product itself is looked up one by one (store-scoped), never the list entries.
+        assertEquals(1, openSearchService.productLookups);
+        assertEquals(List.of("430"), openSearchService.lastTriggerCategories);
+        assertTrue(openSearchService.lastComplementaryCategories.containsAll(List.of("420", "450", "525", "445")));
+    }
+
+    @Test
+    void failedBatchLookupKeepsSingleSuggestionTolerant() {
+        openSearchService.failProductBatch = true;
+
+        UpsellDtos.UpsellSuggestionResponse response = service.suggestions(new UpsellDtos.UpsellSuggestionRequest(
+                null,
+                null,
+                1,
+                "local-list",
+                List.of(3, 40),
+                List.of(41),
+                "shopping_session",
+                null,
+                null
+        ));
+
+        assertNotNull(response);
+        assertEquals(1, openSearchService.batchLookups);
+        assertEquals(List.of("430"), openSearchService.lastTriggerCategories);
     }
 
     @Test
@@ -1160,6 +1284,13 @@ class UpsellSuggestionServiceTest {
 
     // ---- helpers for the tests above ----
 
+    /** OpenAI path returning two apple-plan picks (41, 42), so plan tests have suggestions to dismiss. */
+    private FakeOpenAiService useAppleOpenAiPicks() {
+        FakeOpenAiService fakeService = useFakeOpenAi();
+        fakeService.openAiSuggestions = List.of(aiOpportunity("item:apple", suggestion(41), suggestion(42)));
+        return fakeService;
+    }
+
     private FakeOpenAiService useFakeOpenAi() {
         FakeOpenAiService fakeService = new FakeOpenAiService();
         service = fakeService;
@@ -1196,7 +1327,8 @@ class UpsellSuggestionServiceTest {
                 currentListProductIds,
                 completedProductIds,
                 "shopping_session",
-                List.of(opportunities)
+                List.of(opportunities),
+                null
         );
     }
 
@@ -1252,6 +1384,10 @@ class UpsellSuggestionServiceTest {
 
     private static final class FakeOpenSearchService extends OpenSearchService {
         int productLookups = 0;
+        int batchLookups = 0;
+        boolean failProductBatch = false;
+        List<String> lastTriggerCategories = List.of();
+        List<String> lastComplementaryCategories = List.of();
         boolean emptyCandidates = false;
         boolean failCandidateLookup = false;
         boolean storeScopedEmpty = false;
@@ -1318,7 +1454,31 @@ class UpsellSuggestionServiceTest {
         }
 
         @Override
+        public Map<Integer, Product> getProductsByNumericIds(Collection<Integer> ids) throws IOException {
+            batchLookups++;
+            if (failProductBatch) {
+                throw new IOException("simulated OpenSearch outage");
+            }
+            Map<Integer, Product> result = new LinkedHashMap<>();
+            for (Integer id : ids) {
+                if (products.containsKey(id)) {
+                    result.put(id, products.get(id));
+                }
+            }
+            return result;
+        }
+
+        @Override
         public List<Product> findUpsellCandidates(Integer size, String storeId, String storeCode) throws IOException {
+            return findUpsellCandidates(size, storeId, storeCode, List.of(), List.of());
+        }
+
+        @Override
+        public List<Product> findUpsellCandidates(Integer size, String storeId, String storeCode,
+                                                  Collection<String> triggerCategories,
+                                                  Collection<String> complementaryCategories) throws IOException {
+            lastTriggerCategories = List.copyOf(triggerCategories);
+            lastComplementaryCategories = List.copyOf(complementaryCategories);
             if (failCandidateLookup) {
                 throw new IOException("simulated OpenSearch outage");
             }
@@ -1340,6 +1500,13 @@ class UpsellSuggestionServiceTest {
 
         @Override
         public List<Product> findUnscopedUpsellCandidates(Integer size) throws IOException {
+            return findUnscopedUpsellCandidates(size, List.of(), List.of());
+        }
+
+        @Override
+        public List<Product> findUnscopedUpsellCandidates(Integer size,
+                                                          Collection<String> triggerCategories,
+                                                          Collection<String> complementaryCategories) throws IOException {
             if (failCandidateLookup) {
                 throw new IOException("simulated OpenSearch outage");
             }
@@ -1433,7 +1600,181 @@ class UpsellSuggestionServiceTest {
         assertFalse(withOne.equals(service.dismissalAwareHash("ctx", List.of(dismissal(1, 3, null)))));
     }
 
+    @Test
+    void dismissedCandidatesAreRemovedBeforeTheDeterministicFallbackRanks() {
+        // Plan candidates are unscored without OpenAI, so the fallback is checked directly on strongly scored candidates.
+        UpsellSuggestionService.RankedOpportunity ranked = new UpsellSuggestionService.RankedOpportunity(appleOpportunity(), null, List.of(
+                new UpsellSuggestionService.ScoredCandidate(openSearchService.products.get(41), "520", null, 120, List.of("family_strong"), true),
+                new UpsellSuggestionService.ScoredCandidate(openSearchService.products.get(42), "440", null, 120, List.of("family_strong"), true)
+        ));
+
+        List<UpsellDtos.AiOpportunitySuggestion> fallback = service.fallbackPlanRank(
+                service.withoutDismissedPlanCandidates(List.of(ranked), List.of(dismissal(40, 41, null))));
+
+        assertEquals(List.of(42), fallback.get(0).suggestions().stream().map(UpsellDtos.AiSuggestion::productId).toList());
+    }
+
+    @Test
+    void planNeverSendsDismissedCandidatesToOpenAiAndDropsDismissedAiOutput() {
+        FakeOpenAiService fakeService = useFakeOpenAi();
+        fakeService.openAiSuggestions = List.of(aiOpportunity("item:apple", suggestion(41)));
+        service.plan(applePlanRequest());
+        int dismissedId = candidateIds(fakeService.lastRanked, "item:apple").get(0);
+
+        dismissals.add(40, dismissedId, null, null, Instant.now().plus(Duration.ofHours(1)));
+        // A misbehaving model that still names the dismissed product must not get it returned.
+        fakeService.openAiSuggestions = List.of(aiOpportunity("item:apple", suggestion(dismissedId), suggestion(41)));
+        UpsellDtos.UpsellPlanResponse response = service.plan(applePlanRequest());
+
+        assertEquals(2, fakeService.rankPlanCalls);
+        assertFalse(candidateIds(fakeService.lastRanked, "item:apple").contains(dismissedId));
+        assertFalse(suggestionIds(response.opportunities().get(0)).contains(dismissedId));
+    }
+
+    @Test
+    void wholeProductDismissalOfTheOnlyTriggerYieldsEmptyOpportunityWithoutOpenAi() {
+        FakeOpenAiService fakeService = useFakeOpenAi();
+        dismissals.add(40, null, null, null, Instant.now().plus(Duration.ofHours(1)));
+
+        UpsellDtos.UpsellPlanResponse response = service.plan(applePlanRequest());
+
+        assertEquals(1, response.opportunities().size());
+        assertEquals("item:apple", response.opportunities().get(0).opportunityId());
+        assertTrue(response.opportunities().get(0).suggestions().isEmpty());
+        assertEquals("none", response.source());
+        assertEquals("no_ranked_candidates", response.debug().fallbackReason());
+        assertEquals(0, fakeService.rankPlanCalls);
+    }
+
+    @Test
+    void wholeProductDismissalOfOneOfSeveralTriggersKeepsTheOpportunity() {
+        FakeOpenAiService fakeService = useFakeOpenAi();
+        dismissals.add(40, null, null, null, Instant.now().plus(Duration.ofHours(1)));
+
+        service.plan(planRequest(List.of(), List.of(), opportunity("item:mix", List.of(40, 1), "Aepfel 1kg", "Spaghetti")));
+
+        assertFalse(candidateIds(fakeService.lastRanked, "item:mix").isEmpty());
+    }
+
+    @Test
+    void dismissalsApplyPerOpportunityNotAcrossOpportunities() {
+        FakeOpenAiService fakeService = useFakeOpenAi();
+        service.plan(planRequest(List.of(), List.of(),
+                opportunity("item:apple", List.of(40), "Aepfel 1kg"),
+                opportunity("item:pasta", List.of(1), "Spaghetti")));
+        int pastaCandidateId = candidateIds(fakeService.lastRanked, "item:pasta").get(0);
+
+        dismissals.add(40, null, null, null, Instant.now().plus(Duration.ofHours(1)));
+        dismissals.add(1, pastaCandidateId, null, null, Instant.now().plus(Duration.ofHours(1)));
+        service.plan(planRequest(List.of(), List.of(),
+                opportunity("item:apple", List.of(40), "Aepfel 1kg"),
+                opportunity("item:pasta", List.of(1), "Spaghetti")));
+
+        assertTrue(candidateIds(fakeService.lastRanked, "item:apple").isEmpty());
+        List<Integer> pastaCandidates = candidateIds(fakeService.lastRanked, "item:pasta");
+        assertFalse(pastaCandidates.isEmpty());
+        assertFalse(pastaCandidates.contains(pastaCandidateId));
+    }
+
+    @Test
+    void dismissalOfAnotherStoreOrSessionDoesNotSuppressPlanSuggestions() {
+        useAppleOpenAiPicks();
+        UUID storeA = UUID.randomUUID();
+        UUID storeB = UUID.randomUUID();
+        UpsellDtos.UpsellPlanRequest storeBRequest = sessionPlanRequest(storeB, null, appleOpportunity());
+        int candidateId = firstSuggestionId(service.plan(storeBRequest));
+
+        dismissals.add(40, candidateId, storeA, null, Instant.now().plus(Duration.ofHours(1)));
+        dismissals.add(40, candidateId, storeB, sessionHash("sess-A"), Instant.now().plus(Duration.ofHours(1)));
+
+        assertTrue(suggestionIds(service.plan(storeBRequest).opportunities().get(0)).contains(candidateId));
+        assertTrue(suggestionIds(service.plan(sessionPlanRequest(storeB, "sess-B", appleOpportunity()))
+                .opportunities().get(0)).contains(candidateId));
+    }
+
+    @Test
+    void sessionScopedPlanDismissalAppliesOnlyToItsSession() {
+        useAppleOpenAiPicks();
+        int candidateId = firstSuggestionId(service.plan(sessionPlanRequest(null, "sess-A", appleOpportunity())));
+
+        dismissals.add(40, candidateId, null, sessionHash("sess-A"), Instant.now().plus(Duration.ofHours(1)));
+
+        assertFalse(suggestionIds(service.plan(sessionPlanRequest(null, "sess-A", appleOpportunity()))
+                .opportunities().get(0)).contains(candidateId));
+        assertTrue(suggestionIds(service.plan(sessionPlanRequest(null, "sess-B", appleOpportunity()))
+                .opportunities().get(0)).contains(candidateId));
+        assertTrue(suggestionIds(service.plan(applePlanRequest()).opportunities().get(0)).contains(candidateId));
+    }
+
+    @Test
+    void expiredPlanDismissalIsIgnored() {
+        useAppleOpenAiPicks();
+        UpsellDtos.UpsellPlanRequest request = applePlanRequest();
+        UpsellDtos.UpsellPlanResponse baseline = service.plan(request);
+        int candidateId = firstSuggestionId(baseline);
+
+        dismissals.add(40, candidateId, null, null, Instant.now().minus(Duration.ofMinutes(1)));
+
+        assertEquals(suggestionIds(baseline.opportunities().get(0)),
+                suggestionIds(service.plan(request).opportunities().get(0)));
+    }
+
+    @Test
+    void newPlanDismissalIsNotServedFromStaleCacheAndIdenticalDismissalSetHitsCache() {
+        useAppleOpenAiPicks();
+        UpsellDtos.UpsellPlanRequest request = applePlanRequest();
+        int dismissedId = firstSuggestionId(service.plan(request));
+        assertEquals("cache", service.plan(request).source());
+
+        dismissals.add(40, dismissedId, null, null, Instant.now().plus(Duration.ofHours(1)));
+        UpsellDtos.UpsellPlanResponse afterDismissal = service.plan(request);
+
+        assertNotEquals("cache", afterDismissal.source());
+        assertFalse(suggestionIds(afterDismissal.opportunities().get(0)).contains(dismissedId));
+        assertEquals("cache", service.plan(request).source());
+    }
+
+    @Test
+    void planLooksUpDismissalsOfAllTriggersInOneBatchedQuery() {
+        int batchesBefore = dismissals.batchQueries;
+        int singlesBefore = dismissals.singleQueries;
+
+        service.plan(planRequest(List.of(), List.of(),
+                opportunity("item:apple", List.of(40), "Aepfel 1kg"),
+                opportunity("item:pasta", List.of(1, 2), "Spaghetti", "Parmesan")));
+
+        assertEquals(batchesBefore + 1, dismissals.batchQueries);
+        assertEquals(singlesBefore, dismissals.singleQueries);
+        assertEquals(Set.of(1, 2, 40), Set.copyOf(dismissals.lastBatchIds));
+        assertEquals(3, dismissals.lastBatchIds.size());
+    }
+
+    @Test
+    void suggestionsMatchSessionScopedDismissalOnlyForThatSession() {
+        UpsellDtos.UpsellSuggestionRequest anonymous = suggestionRequest(1, null);
+        int candidateId = service.suggestions(anonymous).suggestions().get(0).product().id();
+
+        dismissals.add(1, candidateId, null, sessionHash("sess-A"), Instant.now().plus(Duration.ofHours(1)));
+
+        UpsellDtos.UpsellSuggestionResponse sessionResponse = service.suggestions(suggestionRequest(1, null, "sess-A"));
+        assertFalse(sessionResponse.suggestions().stream().anyMatch(suggestion -> suggestion.product().id() == candidateId));
+        UpsellDtos.UpsellSuggestionResponse anonymousResponse = service.suggestions(anonymous);
+        assertTrue(anonymousResponse.suggestions().stream().anyMatch(suggestion -> suggestion.product().id() == candidateId));
+    }
+
+    @Test
+    void sessionIdDoesNotChangeThePlainContextHashes() {
+        assertEquals(service.contextHash(suggestionRequest(1, null)), service.contextHash(suggestionRequest(1, null, "sess-A")));
+        UpsellDtos.UpsellPlanRequest withSession = sessionPlanRequest(null, "sess-A", appleOpportunity());
+        assertEquals(service.planContextHash(applePlanRequest(), applePlanRequest().opportunities()),
+                service.planContextHash(withSession, withSession.opportunities()));
+    }
+
     private UpsellDtos.UpsellSuggestionRequest suggestionRequest(Integer checkedProductId, UUID storeId) {
+        return suggestionRequest(checkedProductId, storeId, null);
+    }
+
+    private UpsellDtos.UpsellSuggestionRequest suggestionRequest(Integer checkedProductId, UUID storeId, String sessionId) {
         return new UpsellDtos.UpsellSuggestionRequest(
                 storeId,
                 null,
@@ -1442,8 +1783,56 @@ class UpsellSuggestionServiceTest {
                 List.of(),
                 List.of(),
                 "shopping_session",
-                null
+                null,
+                sessionId
         );
+    }
+
+    private static UpsellDtos.UpsellOpportunityRequest appleOpportunity() {
+        return opportunity("item:apple", List.of(40), "Aepfel 1kg");
+    }
+
+    private static UpsellDtos.UpsellPlanRequest sessionPlanRequest(
+            UUID storeId,
+            String sessionId,
+            UpsellDtos.UpsellOpportunityRequest... opportunities
+    ) {
+        return new UpsellDtos.UpsellPlanRequest(
+                storeId,
+                "SPAR",
+                "local-list",
+                List.of(),
+                List.of(),
+                "shopping_session",
+                List.of(opportunities),
+                sessionId
+        );
+    }
+
+    private static int firstSuggestionId(UpsellDtos.UpsellPlanResponse response) {
+        List<Integer> ids = suggestionIds(response.opportunities().get(0));
+        assertFalse(ids.isEmpty(), "fixture needs a suggestion to dismiss");
+        return ids.get(0);
+    }
+
+    private static List<Integer> candidateIds(List<UpsellSuggestionService.RankedOpportunity> rankedOpportunities, String opportunityId) {
+        assertNotNull(rankedOpportunities, "OpenAI was not called");
+        return rankedOpportunities.stream()
+                .filter(ranked -> ranked.opportunity().opportunityId().equals(opportunityId))
+                .findFirst()
+                .orElseThrow()
+                .candidates().stream()
+                .map(candidate -> candidate.product().getId())
+                .toList();
+    }
+
+    private static String sessionHash(String sessionId) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(sessionId.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException(exception);
+        }
     }
 
     private static UpsellDismissalEntity dismissal(Integer checkedProductId, Integer suggestedProductId, UUID storeId) {
@@ -1457,6 +1846,9 @@ class UpsellSuggestionServiceTest {
 
     private static final class FakeDismissalRepository extends UpsellDismissalRepository {
         private final List<UpsellDismissalEntity> rows = new ArrayList<>();
+        int singleQueries = 0;
+        int batchQueries = 0;
+        List<Integer> lastBatchIds = List.of();
 
         void add(Integer checkedProductId, Integer suggestedProductId, UUID storeId, String sessionHash, Instant suppressedUntil) {
             UpsellDismissalEntity entity = dismissal(checkedProductId, suggestedProductId, storeId);
@@ -1468,8 +1860,22 @@ class UpsellSuggestionServiceTest {
         @Override
         public List<UpsellDismissalEntity> findActiveForCheckedProduct(Integer checkedProductId, UUID storeId,
                                                                       String sessionHash, Instant now) {
+            singleQueries++;
+            return active(row -> Objects.equals(row.checkedProductId, checkedProductId), storeId, sessionHash, now);
+        }
+
+        @Override
+        public List<UpsellDismissalEntity> findActiveForCheckedProducts(Collection<Integer> checkedProductIds, UUID storeId,
+                                                                       String sessionHash, Instant now) {
+            batchQueries++;
+            lastBatchIds = List.copyOf(checkedProductIds);
+            return active(row -> checkedProductIds.contains(row.checkedProductId), storeId, sessionHash, now);
+        }
+
+        private List<UpsellDismissalEntity> active(java.util.function.Predicate<UpsellDismissalEntity> checked,
+                                                   UUID storeId, String sessionHash, Instant now) {
             return rows.stream()
-                    .filter(row -> Objects.equals(row.checkedProductId, checkedProductId))
+                    .filter(checked)
                     .filter(row -> Objects.equals(row.storeId, storeId))
                     .filter(row -> Objects.equals(row.sessionHash, sessionHash))
                     .filter(row -> row.suppressedUntil != null && row.suppressedUntil.isAfter(now))
@@ -1502,11 +1908,14 @@ class UpsellSuggestionServiceTest {
         boolean openAiCalled = false;
         /** Number of rankPlanWithOpenAi calls; the service must make exactly one per plan request. */
         int rankPlanCalls = 0;
+        /** Candidates exactly as they were sent to OpenAI on the last call. */
+        List<RankedOpportunity> lastRanked;
 
         @Override
         Optional<OpenAiPlanResult> rankPlanWithOpenAi(List<RankedOpportunity> rankedOpportunities, String requestId) {
             openAiCalled = true;
             rankPlanCalls++;
+            lastRanked = rankedOpportunities;
             if (openAiSuggestions == null) {
                 return Optional.empty();
             }

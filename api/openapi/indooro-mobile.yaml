@@ -114,13 +114,43 @@ paths:
       summary: Active layout of an active store, or the bundled default layout.
       parameters:
         - $ref: "#/components/parameters/StoreIdPath"
+        - name: If-None-Match
+          in: header
+          required: false
+          description: ETag from an earlier response. Quoted, weak (W/) or a comma-separated list; `*` matches any current layout. A match answers 304 without body.
+          schema:
+            type: string
       responses:
         "200":
           description: Layout with source information.
+          headers:
+            ETag:
+              description: Strong entity tag (quoted SHA-256 hex) of layoutId and activatedAt, or of the bundled default layout for a store without an active version.
+              schema:
+                type: string
+            Cache-Control:
+              description: Always `no-cache`; clients revalidate with If-None-Match.
+              schema:
+                type: string
+                enum:
+                  - no-cache
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/MobileLayoutResponse"
+        "304":
+          description: Not modified. The layout named in If-None-Match is still current; no body.
+          headers:
+            ETag:
+              description: Current entity tag.
+              schema:
+                type: string
+            Cache-Control:
+              description: Always `no-cache`.
+              schema:
+                type: string
+                enum:
+                  - no-cache
         "404":
           $ref: "#/components/responses/NotFound"
   /api/mobile/recipes:
@@ -1082,6 +1112,12 @@ components:
             - string
             - "null"
           maxLength: 50
+        sessionId:
+          type:
+            - string
+            - "null"
+          maxLength: 120
+          description: Session-scoped dismissals apply only when this matches.
         opportunities:
           type: array
           minItems: 1

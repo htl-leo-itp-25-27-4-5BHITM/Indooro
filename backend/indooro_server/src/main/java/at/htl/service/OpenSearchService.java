@@ -14,6 +14,7 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch._types.Refresh;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.mapping.FieldType;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
@@ -43,6 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -51,7 +53,10 @@ import java.util.stream.Collectors;
 public class OpenSearchService {
 
     private static final Logger LOG = Logger.getLogger(OpenSearchService.class);
-    private static final String ROUTABLE_LAYOUT_SCRIPT = "doc['layoutCode'].size() != 0 && /[0-9]{1,4}\\/[0-9]{1,3}\\/[0-9]{1,2}\\/[0-9]{1,2}/.matcher(doc['layoutCode'].value.trim()).matches()";
+    private static final float UPSELL_TRIGGER_BOOST = 3.0f;
+    private static final float UPSELL_COMPLEMENT_BOOST = 2.0f;
+    private static final float UPSELL_BASE_BOOST = 0.1f;
+    private static final String ROUTABLE_LAYOUT_SCRIPT ="doc['layoutCode'].size() != 0 && /[0-9]{1,4}\\/[0-9]{1,3}\\/[0-9]{1,2}\\/[0-9]{1,2}/.matcher(doc['layoutCode'].value.trim()).matches()";
 
     /** Ergebnis eines Reindex: Quelle, Zielindex und die beiden verglichenen Dokumentzahlen. */
     public record ReindexResult(String source, String target, long sourceCount, long targetCount, String status) {}
@@ -263,6 +268,49 @@ public class OpenSearchService {
                         LinkedHashMap::new));
     }
 
+    /**
+     * Holt mehrere Produkte per numerischer Produkt-ID in einer Anfrage, ueber alle Maerkte wie {@link #getProductById(Integer)}
+     * ohne Store-Filter. Liegt eine ID in mehreren Markt-Dokumenten, gewinnt das in storeCode aufsteigend erste Dokument
+     * (`collapse` liefert je ID hoechstens einen Treffer). Fehlende Produkte fehlen in der Map, leere Eingabe ergibt
+     * eine leere Map ohne Anfrage.
+     */
+    public Map<Integer, Product> getProductsByNumericIds(Collection<Integer> productIds) throws IOException {
+        if (productIds == null || productIds.isEmpty()) {
+            return Map.of();
+        }
+        List<FieldValue> values = productIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .map(id -> FieldValue.of(id.intValue()))
+                .toList();
+        if (values.isEmpty()) {
+            return Map.of();
+        }
+
+        SearchRequest searchRequest = SearchRequest.of(s -> s
+                .index(indexName)
+                .size(values.size())
+                .query(q -> q.terms(t -> t
+                        .field("id")
+                        .terms(terms -> terms.value(values))
+                ))
+                .collapse(c -> c.field("id"))
+                .sort(sort -> sort.field(field -> field.field("storeCode")
+                        .order(SortOrder.Asc)
+                        .unmappedType(FieldType.Keyword)))
+        );
+
+        SearchResponse<Product> response = client.search(searchRequest, Product.class);
+        Map<Integer, Product> products = new LinkedHashMap<>();
+        for (Hit<Product> hit : response.hits().hits()) {
+            Product product = hit.source();
+            if (product != null && product.getId() != null) {
+                products.putIfAbsent(product.getId(), product);
+            }
+        }
+        return products;
+    }
+
     private Integer parseProductId(String productId) {
         if (productId == null) {
             return null;
@@ -446,56 +494,91 @@ public class OpenSearchService {
     }
 
     public List<Product> findUpsellCandidates(Integer size, String storeId, String storeCode) throws IOException {
+        return findUpsellCandidates(size, storeId, storeCode, List.of(), List.of());
+    }
+
+    /**
+     * Upsell-Kandidaten eines Marktes, relevanzsortiert. Produkte, deren layoutCode zu einer Trigger-Kategorie passt
+     * (`<kat>/...` oder genau `<kat>`), zaehlen mit Boost 3.0, Komplementaer-Kategorien mit 2.0. Der Basis-Treffer
+     * `match_all` (0.1) laesst Produkte ohne Kategorie-Treffer weiter zu. Sortierung: _score absteigend, dann id aufsteigend.
+     */
+    public List<Product> findUpsellCandidates(Integer size, String storeId, String storeCode,
+                                              Collection<String> triggerCategories,
+                                              Collection<String> complementaryCategories) throws IOException {
         final Integer finalSize = (size == null) ? 50 : Math.min(Math.max(size, 1), 200);
         final String normalizedStoreId = normalizeOptionalFilter(storeId);
         final String normalizedStoreCode = normalizeOptionalFilter(storeCode);
 
-        SearchRequest searchRequest = SearchRequest.of(s -> s
-                .index(indexName)
-                .query(q -> q.bool(b -> {
-                    b.must(m -> m.matchAll(ma -> ma));
+        SearchRequest searchRequest = upsellCandidateRequest(finalSize, triggerCategories, complementaryCategories,
+                b -> applyStoreFilter(b, normalizedStoreId, normalizedStoreCode));
 
-                    if (normalizedStoreId != null) {
-                        b.filter(filter -> filter.term(term -> term
-                                .field("storeId")
-                                .value(v -> v.stringValue(normalizedStoreId))
-                        ));
-                    }
-                    if (normalizedStoreCode != null) {
-                        b.filter(filter -> filter.term(term -> term
-                                .field("storeCode")
-                                .value(v -> v.stringValue(normalizedStoreCode))
-                        ));
-                    }
-
-                    return b;
-                }))
-                .size(finalSize)
-        );
-
-        SearchResponse<Product> response = client.search(searchRequest, Product.class);
-
-        return response.hits().hits().stream()
-                .map(Hit::source)
-                .filter(p -> p != null)
-                .collect(Collectors.toList());
+        return searchUpsellCandidates(searchRequest);
     }
 
     /** Upsell-Fallback: nur Produkte ohne Markt (Altbestand), niemals Produkte anderer Maerkte. */
     public List<Product> findUnscopedUpsellCandidates(Integer size) throws IOException {
+        return findUnscopedUpsellCandidates(size, List.of(), List.of());
+    }
+
+    /** Wie {@link #findUpsellCandidates(Integer, String, String, Collection, Collection)}, aber nur Produkte ohne Markt. */
+    public List<Product> findUnscopedUpsellCandidates(Integer size,
+                                                      Collection<String> triggerCategories,
+                                                      Collection<String> complementaryCategories) throws IOException {
         final Integer finalSize = (size == null) ? 50 : Math.min(Math.max(size, 1), 200);
 
-        SearchRequest searchRequest = SearchRequest.of(s -> s
+        SearchRequest searchRequest = upsellCandidateRequest(finalSize, triggerCategories, complementaryCategories, b -> {
+            b.mustNot(mn -> mn.exists(e -> e.field("storeCode")));
+            b.mustNot(mn -> mn.exists(e -> e.field("storeId")));
+        });
+
+        return searchUpsellCandidates(searchRequest);
+    }
+
+    private SearchRequest upsellCandidateRequest(Integer size,
+                                                 Collection<String> triggerCategories,
+                                                 Collection<String> complementaryCategories,
+                                                 Consumer<BoolQuery.Builder> scope) {
+        List<String> triggers = normalizeCategories(triggerCategories);
+        List<String> complements = normalizeCategories(complementaryCategories).stream()
+                .filter(category -> !triggers.contains(category))
+                .toList();
+
+        return SearchRequest.of(s -> s
                 .index(indexName)
                 .query(q -> q.bool(b -> {
-                    b.must(m -> m.matchAll(ma -> ma));
-                    b.mustNot(mn -> mn.exists(e -> e.field("storeCode")));
-                    b.mustNot(mn -> mn.exists(e -> e.field("storeId")));
+                    scope.accept(b);
+                    b.should(should -> should.matchAll(ma -> ma.boost(UPSELL_BASE_BOOST)));
+                    triggers.forEach(category -> addCategoryShoulds(b, category, UPSELL_TRIGGER_BOOST));
+                    complements.forEach(category -> addCategoryShoulds(b, category, UPSELL_COMPLEMENT_BOOST));
+                    b.minimumShouldMatch("1");
                     return b;
                 }))
-                .size(finalSize)
+                .sort(sort -> sort.score(score -> score.order(SortOrder.Desc)))
+                .sort(sort -> sort.field(field -> field.field("id")
+                        .order(SortOrder.Asc)
+                        .unmappedType(FieldType.Integer)))
+                .size(size)
         );
+    }
 
+    private void addCategoryShoulds(BoolQuery.Builder bool, String category, float boost) {
+        // layoutCode ist ein keyword: "430/12/3/4" beginnt mit "430/", ein reiner Kategoriewert "430" steht allein.
+        bool.should(should -> should.prefix(prefix -> prefix.field("layoutCode").value(category + "/").boost(boost)));
+        bool.should(should -> should.term(term -> term.field("layoutCode").value(v -> v.stringValue(category)).boost(boost)));
+    }
+
+    private List<String> normalizeCategories(Collection<String> categories) {
+        if (categories == null) {
+            return List.of();
+        }
+        return categories.stream()
+                .map(this::normalizeOptionalFilter)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+    }
+
+    private List<Product> searchUpsellCandidates(SearchRequest searchRequest) throws IOException {
         SearchResponse<Product> response = client.search(searchRequest, Product.class);
 
         return response.hits().hits().stream()
@@ -608,6 +691,9 @@ public class OpenSearchService {
      * Löscht den Index
      */
     public void deleteIndex() throws IOException {
+        if (!client.indices().exists(ExistsRequest.of(e -> e.index(indexName))).value()) {
+            throw new WebApplicationException("Produktindex existiert nicht.", Response.Status.NOT_FOUND);
+        }
         client.indices().delete(d -> d.index(indexName));
         forgetNameSubfieldSupport();
         LOG.info("Index " + indexName + " deleted successfully");

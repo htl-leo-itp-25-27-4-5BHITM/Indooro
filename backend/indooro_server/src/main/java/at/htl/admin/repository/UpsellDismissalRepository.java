@@ -5,6 +5,7 @@ import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,6 +57,29 @@ public class UpsellDismissalRepository implements PanacheRepositoryBase<UpsellDi
                 .createQuery("from UpsellDismissalEntity d where d.checkedProductId = :checkedProductId and "
                         + STORE_AND_SESSION + " and d.suppressedUntil > :now", UpsellDismissalEntity.class)
                 .setParameter("checkedProductId", checkedProductId)
+                .setParameter("storeId", storeId)
+                .setParameter("sessionHash", sessionHash)
+                .setParameter("now", now)
+                .getResultList();
+    }
+
+    /**
+     * Same rules as {@link #findActiveForCheckedProduct}, for several checked products in one query (for plans with
+     * many trigger products). An empty id collection means nothing to match and runs no query.
+     */
+    public List<UpsellDismissalEntity> findActiveForCheckedProducts(
+            Collection<Integer> checkedProductIds,
+            UUID storeId,
+            String sessionHash,
+            Instant now
+    ) {
+        if (checkedProductIds == null || checkedProductIds.isEmpty()) {
+            return List.of();
+        }
+        return getEntityManager()
+                .createQuery("from UpsellDismissalEntity d where d.checkedProductId in :checkedProductIds and "
+                        + STORE_AND_SESSION + " and d.suppressedUntil > :now", UpsellDismissalEntity.class)
+                .setParameter("checkedProductIds", checkedProductIds)
                 .setParameter("storeId", storeId)
                 .setParameter("sessionHash", sessionHash)
                 .setParameter("now", now)

@@ -26,7 +26,8 @@ public final class UpsellDtos {
             @Size(max = 200) List<Integer> currentListProductIds,
             @Size(max = 200) List<Integer> completedProductIds,
             @Size(max = 50) String source,
-            UUID recipeId
+            UUID recipeId,
+            @Size(max = 120) String sessionId
     ) {
     }
 
@@ -66,7 +67,8 @@ public final class UpsellDtos {
             @Size(max = 200) List<Integer> currentListProductIds,
             @Size(max = 200) List<Integer> completedProductIds,
             @Size(max = 50) String source,
-            @Valid @Size(max = 30) List<UpsellOpportunityRequest> opportunities
+            @Valid @Size(max = 30) List<UpsellOpportunityRequest> opportunities,
+            @Size(max = 120) String sessionId
     ) {
     }
 

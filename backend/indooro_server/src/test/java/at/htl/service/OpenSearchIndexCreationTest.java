@@ -10,6 +10,7 @@ import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexResponse;
 import org.opensearch.client.opensearch.indices.ExistsRequest;
 import org.opensearch.client.opensearch.indices.OpenSearchIndicesClient;
+import org.opensearch.client.transport.TransportException;
 import org.opensearch.client.transport.endpoints.BooleanResponse;
 
 import java.io.IOException;
@@ -21,6 +22,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 class OpenSearchIndexCreationTest {
@@ -71,5 +73,25 @@ class OpenSearchIndexCreationTest {
 
         assertEquals(Response.Status.CONFLICT.getStatusCode(), error.getResponse().getStatus());
         verify(indices, never()).create(any(CreateIndexRequest.class));
+    }
+
+    @Test
+    void createIndexLetsUnreachableOpenSearchFailWithTransportException() throws IOException {
+        when(indices.exists(any(ExistsRequest.class))).thenThrow(new TransportException("connection refused"));
+
+        assertThrows(TransportException.class, () -> service.createIndex());
+
+        verify(indices, never()).create(any(CreateIndexRequest.class));
+    }
+
+    @Test
+    void deleteIndexOnMissingIndexThrowsNotFoundWithoutDeleting() throws IOException {
+        when(indices.exists(any(ExistsRequest.class))).thenReturn(new BooleanResponse(false));
+
+        WebApplicationException error = assertThrows(WebApplicationException.class, () -> service.deleteIndex());
+
+        assertEquals(Response.Status.NOT_FOUND.getStatusCode(), error.getResponse().getStatus());
+        verify(indices).exists(any(ExistsRequest.class));
+        verifyNoMoreInteractions(indices);
     }
 }

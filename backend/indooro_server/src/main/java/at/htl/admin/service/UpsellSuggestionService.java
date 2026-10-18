@@ -21,16 +21,13 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -89,6 +86,9 @@ public class UpsellSuggestionService {
     @Inject
     UpsellSuggestionCacheRepository cacheRepository;
 
+    @Inject
+    OpenAiRankingClient openAiRankingClient;
+
     @ConfigProperty(name = "upsell.enabled", defaultValue = "true")
     boolean upsellEnabled;
 
@@ -125,7 +125,10 @@ public class UpsellSuggestionService {
     @ConfigProperty(name = "openai.upsell.timeout-ms", defaultValue = "4500")
     long openAiTimeoutMs;
 
-    @Transactional
+    /**
+     * No transaction spans this method: the DB work happens in the short @Transactional helpers, so no connection is
+     * held across OpenSearch or OpenAI calls.
+     */
     public UpsellDtos.UpsellSuggestionResponse suggestions(UpsellDtos.UpsellSuggestionRequest request) {
         if (!upsellEnabled) {
             return emptyResponse(request == null ? null : request.checkedProductId(), "disabled");
@@ -150,7 +153,8 @@ public class UpsellSuggestionService {
             return response;
         }
 
-        List<ScoredCandidate> rankedCandidates = rankSingleCandidates(request, checkedProduct, candidates);
+        List<ScoredCandidate> rankedCandidates = rankSingleCandidates(request, checkedProduct, candidates,
+                resolveRankingProducts(checkedProduct, request.currentListProductIds(), request.completedProductIds()));
         if (rankedCandidates.isEmpty()) {
             UpsellDtos.UpsellSuggestionResponse response = emptyResponse(request.checkedProductId(), "none");
             storeCachedResponse(request, contextHash, response);
@@ -196,7 +200,7 @@ public class UpsellSuggestionService {
         return response;
     }
 
-    @Transactional
+    /** No transaction spans this method; see {@link #suggestions(UpsellDtos.UpsellSuggestionRequest)}. */
     public UpsellDtos.UpsellPlanResponse plan(UpsellDtos.UpsellPlanRequest request) {
         String requestId = UUID.randomUUID().toString();
         long planStartedNanos = System.nanoTime();
@@ -216,7 +220,8 @@ public class UpsellSuggestionService {
             ));
         }
 
-        String contextHash = planContextHash(request, opportunities);
+        List<UpsellDismissalEntity> dismissals = activePlanDismissals(request, opportunities);
+        String contextHash = dismissalAwareHash(planContextHash(request, opportunities), dismissals);
         Optional<UpsellDtos.UpsellPlanResponse> cached = findCachedPlanResponse(contextHash);
         if (cached.isPresent()) {
             UpsellDtos.UpsellPlanResponse response = cached.get();
@@ -224,7 +229,8 @@ public class UpsellSuggestionService {
             return response;
         }
 
-        CandidateLookup lookup = loadPlanCandidates(request, opportunities);
+        Map<Integer, Product> resolved = resolveProducts(planLookupProductIds(request, opportunities));
+        CandidateLookup lookup = loadPlanCandidates(request, opportunities, resolved);
         if (lookup.failed()) {
             // Transient catalog failure: not cached, so the client can retry the same request.
             LOG.warnf(
@@ -252,7 +258,8 @@ public class UpsellSuggestionService {
             return response;
         }
 
-        List<RankedOpportunity> rankedOpportunities = rankPlanCandidates(request, opportunities, candidates, requestId);
+        List<RankedOpportunity> rankedOpportunities = withoutDismissedPlanCandidates(
+                rankPlanCandidates(request, opportunities, candidates, requestId, resolved), dismissals);
         int rankedCandidateCount = rankedOpportunities.stream()
                 .mapToInt(opportunity -> opportunity.candidates().size())
                 .sum();
@@ -354,7 +361,8 @@ public class UpsellSuggestionService {
         return response;
     }
 
-    private Optional<UpsellDtos.UpsellSuggestionResponse> findCachedResponse(String contextHash) {
+    @Transactional
+    Optional<UpsellDtos.UpsellSuggestionResponse> findCachedResponse(String contextHash) {
         return cacheRepository.findFreshByContextHash(contextHash, Instant.now())
                 .flatMap(entity -> {
                     try {
@@ -375,7 +383,8 @@ public class UpsellSuggestionService {
                 });
     }
 
-    private Optional<UpsellDtos.UpsellPlanResponse> findCachedPlanResponse(String contextHash) {
+    @Transactional
+    Optional<UpsellDtos.UpsellPlanResponse> findCachedPlanResponse(String contextHash) {
         return cacheRepository.findFreshByContextHash(contextHash, Instant.now())
                 .flatMap(entity -> {
                     try {
@@ -414,7 +423,9 @@ public class UpsellSuggestionService {
                 });
     }
 
-    private void storeCachedResponse(
+    /** Own transaction, so the write never joins a caller's transaction; failures are logged, not thrown. */
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    void storeCachedResponse(
             UpsellDtos.UpsellSuggestionRequest request,
             String contextHash,
             UpsellDtos.UpsellSuggestionResponse response
@@ -434,7 +445,9 @@ public class UpsellSuggestionService {
         }
     }
 
-    private void storeCachedPlanResponse(
+    /** Own transaction, so the write never joins a caller's transaction; failures are logged, not thrown. */
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    void storeCachedPlanResponse(
             UpsellDtos.UpsellPlanRequest request,
             String contextHash,
             UpsellDtos.UpsellPlanResponse response
@@ -606,14 +619,73 @@ public class UpsellSuggestionService {
         eventRepository.persist(entity);
     }
 
-    /** Dismissals in force for this checked product and store. Suggestion requests carry no session id (see D2). */
-    private List<UpsellDismissalEntity> activeDismissals(UpsellDtos.UpsellSuggestionRequest request) {
+    /** Dismissals in force for this checked product, store and session (the session id is hashed as on dismiss). */
+    @Transactional
+    List<UpsellDismissalEntity> activeDismissals(UpsellDtos.UpsellSuggestionRequest request) {
         return dismissalRepository.findActiveForCheckedProduct(
                 request.checkedProductId(),
                 request.storeId(),
-                null,
+                hashOptional(request.sessionId()),
                 Instant.now()
         );
+    }
+
+    /**
+     * Dismissals in force for the trigger products of all opportunities, in one query (no query without triggers).
+     * Store and session scope follow the request, as for {@link #activeDismissals}.
+     */
+    @Transactional
+    List<UpsellDismissalEntity> activePlanDismissals(
+            UpsellDtos.UpsellPlanRequest request,
+            List<UpsellDtos.UpsellOpportunityRequest> opportunities
+    ) {
+        List<Integer> triggerIds = opportunities.stream()
+                .flatMap(opportunity -> normalizedProductIds(opportunity.triggerProductIds(), null, false).stream())
+                .distinct()
+                .toList();
+        if (triggerIds.isEmpty()) {
+            return List.of();
+        }
+        return dismissalRepository.findActiveForCheckedProducts(
+                triggerIds,
+                request.storeId(),
+                hashOptional(request.sessionId()),
+                Instant.now()
+        );
+    }
+
+    /**
+     * Removes, per opportunity, every candidate that a product-specific dismissal of one of its trigger products
+     * suppresses. An opportunity whose trigger products are all dismissed as a whole gets no candidates.
+     */
+    List<RankedOpportunity> withoutDismissedPlanCandidates(
+            List<RankedOpportunity> rankedOpportunities,
+            List<UpsellDismissalEntity> dismissals
+    ) {
+        if (dismissals.isEmpty()) {
+            return rankedOpportunities;
+        }
+        return rankedOpportunities.stream()
+                .map(ranked -> {
+                    Set<Integer> triggerIds = new HashSet<>(normalizedProductIds(ranked.opportunity().triggerProductIds(), null, false));
+                    boolean everyTriggerDismissed = !triggerIds.isEmpty() && triggerIds.stream()
+                            .allMatch(triggerId -> dismissals.stream().anyMatch(dismissal ->
+                                    dismissal.suggestedProductId == null && Objects.equals(dismissal.checkedProductId, triggerId)));
+                    if (everyTriggerDismissed) {
+                        return new RankedOpportunity(ranked.opportunity(), ranked.input(), List.of());
+                    }
+                    Set<Integer> suppressed = dismissals.stream()
+                            .filter(dismissal -> dismissal.suggestedProductId != null && triggerIds.contains(dismissal.checkedProductId))
+                            .map(dismissal -> dismissal.suggestedProductId)
+                            .collect(Collectors.toSet());
+                    if (suppressed.isEmpty()) {
+                        return ranked;
+                    }
+                    return new RankedOpportunity(ranked.opportunity(), ranked.input(), ranked.candidates().stream()
+                            .filter(candidate -> !suppressed.contains(candidate.product().getId()))
+                            .toList());
+                })
+                .toList();
     }
 
     /** A dismissal without a suggested product suppresses every candidate. */
@@ -634,14 +706,16 @@ public class UpsellSuggestionService {
 
     /**
      * Cache key that also covers the active dismissal set, so a new or expired dismissal never serves a stale
-     * cached ranking. Without dismissals the key is the plain context hash.
+     * cached ranking. Each dismissal contributes its checked product and suggested product ("*" for the whole
+     * product), sorted, so the same set always yields the same key. Without dismissals the key is the plain context hash.
      */
     String dismissalAwareHash(String contextHash, List<UpsellDismissalEntity> dismissals) {
         if (dismissals.isEmpty()) {
             return contextHash;
         }
         String suppressedKeys = dismissals.stream()
-                .map(dismissal -> dismissal.suggestedProductId == null ? "*" : String.valueOf(dismissal.suggestedProductId))
+                .map(dismissal -> dismissal.checkedProductId + ":"
+                        + (dismissal.suggestedProductId == null ? "*" : String.valueOf(dismissal.suggestedProductId)))
                 .distinct()
                 .sorted()
                 .collect(Collectors.joining(","));
@@ -685,16 +759,22 @@ public class UpsellSuggestionService {
     }
 
     List<Product> loadCandidates(UpsellDtos.UpsellSuggestionRequest request, Product checkedProduct) {
+        String checkedCategory = categoryCode(checkedProduct == null ? null : checkedProduct.getLayoutCode());
+        Set<String> triggerCategories = checkedCategory == null ? Set.of() : Set.of(checkedCategory);
+        Set<String> complementCategories = complementaryCategories(checkedCategory);
         try {
             List<Product> storeScoped = openSearchService.findUpsellCandidates(
                     Math.max(maxCandidates, maxSuggestions),
                     request.storeId() == null ? null : request.storeId().toString(),
-                    request.storeCode()
+                    request.storeCode(),
+                    triggerCategories,
+                    complementCategories
             );
             List<Product> candidates = filterCandidates(request, checkedProduct, storeScoped);
 
             if (candidates.size() < maxSuggestions && (request.storeId() != null || normalizeOptional(request.storeCode()) != null)) {
-                List<Product> fallback = unscopedOnly(openSearchService.findUnscopedUpsellCandidates(Math.max(maxCandidates, maxSuggestions)));
+                List<Product> fallback = unscopedOnly(openSearchService.findUnscopedUpsellCandidates(
+                        Math.max(maxCandidates, maxSuggestions), triggerCategories, complementCategories));
                 candidates = mergeCandidates(candidates, filterCandidates(request, checkedProduct, fallback));
             }
 
@@ -719,16 +799,32 @@ public class UpsellSuggestionService {
             UpsellDtos.UpsellPlanRequest request,
             List<UpsellDtos.UpsellOpportunityRequest> opportunities
     ) {
+        return loadPlanCandidates(request, opportunities, resolveProducts(planLookupProductIds(request, opportunities)));
+    }
+
+    /** Candidate query relevance-ranked by the trigger categories of all opportunities and their complements. */
+    CandidateLookup loadPlanCandidates(
+            UpsellDtos.UpsellPlanRequest request,
+            List<UpsellDtos.UpsellOpportunityRequest> opportunities,
+            Map<Integer, Product> resolved
+    ) {
+        Set<String> triggerCategories = planTriggerCategories(opportunities, resolved);
+        Set<String> complementCategories = triggerCategories.stream()
+                .flatMap(category -> complementaryCategories(category).stream())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         try {
             List<Product> storeScoped = openSearchService.findUpsellCandidates(
                     Math.max(maxCandidates, maxSuggestions),
                     request.storeId() == null ? null : request.storeId().toString(),
-                    request.storeCode()
+                    request.storeCode(),
+                    triggerCategories,
+                    complementCategories
             );
             List<Product> candidates = filterPlanCandidates(request, opportunities, storeScoped);
 
             if (candidates.size() < maxSuggestions && (request.storeId() != null || normalizeOptional(request.storeCode()) != null)) {
-                List<Product> fallback = unscopedOnly(openSearchService.findUnscopedUpsellCandidates(Math.max(maxCandidates, maxSuggestions)));
+                List<Product> fallback = unscopedOnly(openSearchService.findUnscopedUpsellCandidates(
+                        Math.max(maxCandidates, maxSuggestions), triggerCategories, complementCategories));
                 candidates = mergeCandidates(candidates, filterPlanCandidates(request, opportunities, fallback));
             }
 
@@ -809,11 +905,21 @@ public class UpsellSuggestionService {
             List<Product> candidates,
             String requestId
     ) {
+        return rankPlanCandidates(request, opportunities, candidates, requestId, null);
+    }
+
+    List<RankedOpportunity> rankPlanCandidates(
+            UpsellDtos.UpsellPlanRequest request,
+            List<UpsellDtos.UpsellOpportunityRequest> opportunities,
+            List<Product> candidates,
+            String requestId,
+            Map<Integer, Product> resolved
+    ) {
         String storeId = request.storeId() == null ? null : request.storeId().toString();
         String storeCode = normalizeOptional(request.storeCode());
         List<RankedOpportunity> ranked = new ArrayList<>();
         for (UpsellDtos.UpsellOpportunityRequest opportunity : opportunities) {
-            OpportunityRankingInput input = rankingInput(opportunity);
+            OpportunityRankingInput input = rankingInput(opportunity, resolved);
             List<ScoredCandidate> scored = candidates.stream()
                     .map(candidate -> aiCatalogCandidate(candidate, storeId, storeCode))
                     .toList();
@@ -828,14 +934,23 @@ public class UpsellSuggestionService {
             Product checkedProduct,
             List<Product> candidates
     ) {
+        return rankSingleCandidates(request, checkedProduct, candidates, null);
+    }
+
+    List<ScoredCandidate> rankSingleCandidates(
+            UpsellDtos.UpsellSuggestionRequest request,
+            Product checkedProduct,
+            List<Product> candidates,
+            Map<Integer, Product> resolved
+    ) {
         String storeId = request.storeId() == null ? null : request.storeId().toString();
         String storeCode = normalizeOptional(request.storeCode());
         OpportunityRankingInput input = rankingInput(new UpsellDtos.UpsellOpportunityRequest(
                 "checked:" + checkedProduct.getId(),
                 List.of(checkedProduct.getId()),
                 List.of(checkedProduct.getName())
-        ));
-        Set<String> globallyExcludedClasses = excludedClassKeys(request.currentListProductIds(), request.completedProductIds());
+        ), resolved);
+        Set<String> globallyExcludedClasses = excludedClassKeys(request.currentListProductIds(), request.completedProductIds(), resolved);
         return candidates.stream()
                 .map(candidate -> scoreCandidate(input, candidate, storeId, storeCode, globallyExcludedClasses))
                 .filter(candidate -> candidate.score() >= Math.max(0, minDeterministicScore))
@@ -859,9 +974,14 @@ public class UpsellSuggestionService {
     }
 
     OpportunityRankingInput rankingInput(UpsellDtos.UpsellOpportunityRequest opportunity) {
+        return rankingInput(opportunity, null);
+    }
+
+    /** With {@code resolved} (batch result) products are only looked up in that map; {@code null} resolves per id. */
+    OpportunityRankingInput rankingInput(UpsellDtos.UpsellOpportunityRequest opportunity, Map<Integer, Product> resolved) {
         List<Integer> triggerProductIds = normalizedProductIds(opportunity.triggerProductIds(), null, false);
         List<Product> triggerProducts = triggerProductIds.stream()
-                .map(this::resolveTriggerProduct)
+                .map(id -> resolveTriggerProduct(id, resolved))
                 .flatMap(Optional::stream)
                 .toList();
 
@@ -941,6 +1061,77 @@ public class UpsellSuggestionService {
             LOG.debugf(exception, "Upsell trigger product lookup failed productId=%s", productId);
             return Optional.empty();
         }
+    }
+
+    private Optional<Product> resolveTriggerProduct(Integer productId, Map<Integer, Product> resolved) {
+        if (resolved == null) {
+            return resolveTriggerProduct(productId);
+        }
+        return Optional.ofNullable(resolved.get(productId)).filter(product -> product.getId() != null);
+    }
+
+    /**
+     * Resolves all product ids of one planning run with a single OpenSearch request. A failed lookup yields an empty
+     * map, which behaves like the per-id lookups that failed before (products are simply unknown).
+     */
+    Map<Integer, Product> resolveProducts(Collection<Integer> productIds) {
+        List<Integer> ids = productIds == null ? List.of() : productIds.stream()
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            Map<Integer, Product> products = openSearchService.getProductsByNumericIds(ids);
+            return products == null ? Map.of() : products;
+        } catch (Exception exception) {
+            LOG.debugf(exception, "Upsell product batch lookup failed productCount=%d", ids.size());
+            return Map.of();
+        }
+    }
+
+    /** Products of a single-suggestion run: the checked product plus the current and completed list, one lookup at most. */
+    private Map<Integer, Product> resolveRankingProducts(
+            Product checkedProduct,
+            List<Integer> currentListProductIds,
+            List<Integer> completedProductIds
+    ) {
+        Set<Integer> ids = new LinkedHashSet<>();
+        ids.addAll(normalizedProductIds(currentListProductIds, null, false));
+        ids.addAll(normalizedProductIds(completedProductIds, null, false));
+        Map<Integer, Product> resolved = new LinkedHashMap<>(resolveProducts(ids));
+        resolved.put(checkedProduct.getId(), checkedProduct);
+        return resolved;
+    }
+
+    /** Every product id a plan needs (triggers of all valid opportunities, current and completed list). */
+    private List<Integer> planLookupProductIds(
+            UpsellDtos.UpsellPlanRequest request,
+            List<UpsellDtos.UpsellOpportunityRequest> opportunities
+    ) {
+        Set<Integer> ids = new LinkedHashSet<>();
+        for (UpsellDtos.UpsellOpportunityRequest opportunity : opportunities) {
+            ids.addAll(normalizedProductIds(opportunity.triggerProductIds(), null, false));
+        }
+        ids.addAll(normalizedProductIds(request.currentListProductIds(), null, false));
+        ids.addAll(normalizedProductIds(request.completedProductIds(), null, false));
+        return List.copyOf(ids);
+    }
+
+    private Set<String> planTriggerCategories(
+            List<UpsellDtos.UpsellOpportunityRequest> opportunities,
+            Map<Integer, Product> resolved
+    ) {
+        Set<String> categories = new LinkedHashSet<>();
+        for (UpsellDtos.UpsellOpportunityRequest opportunity : opportunities) {
+            for (Integer productId : normalizedProductIds(opportunity.triggerProductIds(), null, false)) {
+                resolveTriggerProduct(productId, resolved)
+                        .map(product -> categoryCode(product.getLayoutCode()))
+                        .ifPresent(categories::add);
+            }
+        }
+        return categories;
     }
 
     ScoredCandidate scoreCandidate(
@@ -1366,12 +1557,20 @@ public class UpsellSuggestionService {
     }
 
     private Set<String> excludedClassKeys(List<Integer> currentListProductIds, List<Integer> completedProductIds) {
+        return excludedClassKeys(currentListProductIds, completedProductIds, null);
+    }
+
+    private Set<String> excludedClassKeys(
+            List<Integer> currentListProductIds,
+            List<Integer> completedProductIds,
+            Map<Integer, Product> resolved
+    ) {
         Set<String> excluded = new LinkedHashSet<>();
         List<Integer> ids = new ArrayList<>();
         ids.addAll(normalizedProductIds(currentListProductIds, null, false));
         ids.addAll(normalizedProductIds(completedProductIds, null, false));
         for (Integer id : ids) {
-            resolveTriggerProduct(id)
+            resolveTriggerProduct(id, resolved)
                     .map(this::classifyProduct)
                     .map(ProductClassification::classKey)
                     .filter(Objects::nonNull)
@@ -1634,24 +1833,15 @@ public class UpsellSuggestionService {
         }
 
         try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofMillis(Math.max(500, openAiTimeoutMs)))
-                    .build();
             String body = objectMapper.writeValueAsString(openAiRequestBody(checkedProduct, candidates));
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.openai.com/v1/responses"))
-                    .timeout(Duration.ofMillis(Math.max(500, openAiTimeoutMs)))
-                    .header("Authorization", "Bearer " + apiKey.get())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                    .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                LOG.warn("OpenAI upsell ranking failed with status " + response.statusCode());
+            Optional<String> responseBody = openAiRankingClient.post(apiKey.get(), body);
+            if (responseBody.isEmpty()) {
+                // The client has already logged the status or the transport error.
+                LOG.warn("OpenAI upsell ranking unavailable; falling back");
                 return Optional.empty();
             }
 
-            String outputJson = extractResponsesText(response.body());
+            String outputJson = extractResponsesText(responseBody.get());
             if (outputJson == null || outputJson.isBlank()) {
                 return Optional.empty();
             }
@@ -1681,31 +1871,20 @@ public class UpsellSuggestionService {
 
         long openAiStartedNanos = System.nanoTime();
         try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofMillis(Math.max(500, openAiTimeoutMs)))
-                    .build();
             String body = objectMapper.writeValueAsString(openAiPlanRequestBody(rankedOpportunities));
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.openai.com/v1/responses"))
-                    .timeout(Duration.ofMillis(Math.max(500, openAiTimeoutMs)))
-                    .header("Authorization", "Bearer " + apiKey.get())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                    .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            Optional<String> responseBody = openAiRankingClient.post(apiKey.get(), body);
             long openAiElapsedMs = elapsedMs(openAiStartedNanos);
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            if (responseBody.isEmpty()) {
+                // The client has already logged the status or the transport error.
                 LOG.warnf(
-                        "OpenAI upsell plan ranking failed requestId=%s status=%d elapsedMs=%d response=%s",
+                        "OpenAI upsell plan ranking unavailable requestId=%s elapsedMs=%d",
                         requestId,
-                        response.statusCode(),
-                        openAiElapsedMs,
-                        truncateForLog(response.body(), 500)
+                        openAiElapsedMs
                 );
                 return Optional.empty();
             }
 
-            String outputJson = extractResponsesText(response.body());
+            String outputJson = extractResponsesText(responseBody.get());
             if (outputJson == null || outputJson.isBlank()) {
                 LOG.warnf(
                         "OpenAI upsell plan ranking returned empty output requestId=%s elapsedMs=%d",
@@ -1716,7 +1895,7 @@ public class UpsellSuggestionService {
             }
 
             UpsellDtos.AiPlanResponse parsed = objectMapper.readValue(outputJson, UpsellDtos.AiPlanResponse.class);
-            OpenAiUsage usage = extractOpenAiUsage(response.body());
+            OpenAiUsage usage = extractOpenAiUsage(responseBody.get());
             LOG.infof(
                     "OpenAI upsell plan ranking succeeded requestId=%s model=%s elapsedMs=%d inputTokens=%s outputTokens=%s totalTokens=%s cachedInputTokens=%s reasoningTokens=%s opportunities=%d candidates=%d output=%s",
                     requestId,
