@@ -105,8 +105,31 @@ public final class UpsellDtos {
             Integer reasoningTokens,
             String fallbackReason,
             Integer opportunityCount,
-            Integer candidateCount
+            Integer candidateCount,
+            /** True when the caller may retry the same request later (for example a transient candidate lookup failure). */
+            Boolean retryable
     ) {
+
+        /** Constructor for callers that predate the retryable flag. */
+        public UpsellPlanDebug(
+                String requestId,
+                String model,
+                String responseSource,
+                Long elapsedMs,
+                Long openAiElapsedMs,
+                Integer inputTokens,
+                Integer outputTokens,
+                Integer totalTokens,
+                Integer cachedInputTokens,
+                Integer reasoningTokens,
+                String fallbackReason,
+                Integer opportunityCount,
+                Integer candidateCount
+        ) {
+            this(requestId, model, responseSource, elapsedMs, openAiElapsedMs, inputTokens, outputTokens,
+                    totalTokens, cachedInputTokens, reasoningTokens, fallbackReason, opportunityCount,
+                    candidateCount, null);
+        }
     }
 
     public record UpsellEventRequest(

@@ -2737,6 +2737,9 @@ components:
         fallbackReason: { type: [string, "null"] }
         opportunityCount: { type: [integer, "null"] }
         candidateCount: { type: [integer, "null"] }
+        retryable:
+          type: [boolean, "null"]
+          description: True when the same plan request may be retried once (transient candidate lookup failure before any OpenAI call).
     UpsellPlanResponse:
       type: object
       properties:

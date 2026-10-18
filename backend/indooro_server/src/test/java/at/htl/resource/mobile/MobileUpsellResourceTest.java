@@ -339,6 +339,83 @@ class MobileUpsellResourceTest {
                 .body("debug.candidateCount", equalTo(7));
     }
 
+    @Test
+    void anonymousCallersSeeRetryableFlagForCandidateLookupFailure() {
+        when(upsellSuggestionService.plan(any())).thenReturn(planWithFailureDebug("candidate_lookup_failed", true));
+
+        given()
+                .contentType("application/json")
+                .body("{\"opportunities\":[{\"opportunityId\":\"station:shelf-430\",\"triggerProductIds\":[1]}]}")
+                .when().post("/api/mobile/upsell/plan")
+                .then()
+                .statusCode(200)
+                .body("source", equalTo("none"))
+                .body("debug.requestId", equalTo("req-1"))
+                .body("debug.responseSource", equalTo("none"))
+                .body("debug.fallbackReason", equalTo("candidate_lookup_failed"))
+                .body("debug.retryable", equalTo(true))
+                .body("debug.model", nullValue())
+                .body("debug.inputTokens", nullValue())
+                .body("debug.totalTokens", nullValue())
+                .body("debug.candidateCount", nullValue());
+    }
+
+    @Test
+    void anonymousCallersSeeNonRetryableFlagForGenuineEmptyResult() {
+        when(upsellSuggestionService.plan(any())).thenReturn(planWithFailureDebug("no_candidates", false));
+
+        given()
+                .contentType("application/json")
+                .body("{\"opportunities\":[{\"opportunityId\":\"station:shelf-430\",\"triggerProductIds\":[1]}]}")
+                .when().post("/api/mobile/upsell/plan")
+                .then()
+                .statusCode(200)
+                .body("debug.fallbackReason", equalTo("no_candidates"))
+                .body("debug.retryable", equalTo(false))
+                .body("debug.model", nullValue());
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void adminCallersKeepRetryableFlagWithFullDebug() {
+        when(upsellSuggestionService.plan(any())).thenReturn(planWithFailureDebug("candidate_lookup_failed", true));
+
+        given()
+                .contentType("application/json")
+                .body("{\"opportunities\":[{\"opportunityId\":\"station:shelf-430\",\"triggerProductIds\":[1]}]}")
+                .when().post("/api/mobile/upsell/plan")
+                .then()
+                .statusCode(200)
+                .body("debug.fallbackReason", equalTo("candidate_lookup_failed"))
+                .body("debug.retryable", equalTo(true))
+                .body("debug.model", equalTo("gpt-test"))
+                .body("debug.candidateCount", equalTo(0));
+    }
+
+    private UpsellDtos.UpsellPlanResponse planWithFailureDebug(String fallbackReason, Boolean retryable) {
+        return new UpsellDtos.UpsellPlanResponse(
+                List.of(),
+                "none",
+                Instant.parse("2026-06-02T12:00:00Z"),
+                new UpsellDtos.UpsellPlanDebug(
+                        "req-1",
+                        "gpt-test",
+                        "none",
+                        15L,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        fallbackReason,
+                        1,
+                        0,
+                        retryable
+                )
+        );
+    }
+
     private UpsellDtos.UpsellPlanResponse planWithDebug() {
         return new UpsellDtos.UpsellPlanResponse(
                 List.of(),

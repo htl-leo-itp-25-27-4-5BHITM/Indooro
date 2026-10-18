@@ -109,10 +109,21 @@ enum UITestSupport {
             XCTFail("Filialkarte \(storeCode) erscheint nicht (Mock läuft?)")
             return
         }
-        card.tap()
-        XCTAssertTrue(storeMap(in: app).waitForExistence(timeout: timeout), "Karte mit Layout erscheint nicht")
+        XCTAssertTrue(tapStoreCardUntilMapShown(card, in: app), "Karte mit Layout erscheint nicht")
         XCTAssertTrue(app.staticTexts[headerName].waitForExistence(timeout: timeout), "Kopfzeile \(headerName) fehlt")
         XCTAssertTrue(card.waitForNonExistence(timeout: timeout), "Filialübersicht bleibt sichtbar")
+    }
+
+    /// Tippt die Filialkarte und wartet auf die Karte; ein verschluckter Tap (Karte noch im Aufbau)
+    /// wird bis zu dreimal wiederholt, solange die Filialkarte sichtbar bleibt.
+    @discardableResult
+    static func tapStoreCardUntilMapShown(_ card: XCUIElement, in app: XCUIApplication, attempts: Int = 3) -> Bool {
+        let map = storeMap(in: app)
+        for _ in 0..<attempts {
+            if card.exists && card.isHittable { card.tap() }
+            if map.waitForExistence(timeout: timeout) { return true }
+        }
+        return map.exists
     }
 
     /// Zeigt die Karte schon das Layout, passiert nichts; zeigt sie die Filialuebersicht, wird die Filialkarte getippt.
@@ -123,8 +134,7 @@ enum UITestSupport {
         while Date() < deadline {
             if map.exists { return }
             if card.exists {
-                card.tap()
-                XCTAssertTrue(map.waitForExistence(timeout: timeout), "Karte mit Layout erscheint nicht")
+                XCTAssertTrue(tapStoreCardUntilMapShown(card, in: app), "Karte mit Layout erscheint nicht")
                 return
             }
             _ = map.waitForExistence(timeout: 0.5)
