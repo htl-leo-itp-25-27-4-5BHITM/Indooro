@@ -10,6 +10,7 @@
 		091CC0BB80378EADBC3E8E46 /* IndooroNetworking in Frameworks */ = {isa = PBXBuildFile; productRef = 0E97E3EBAD2C9E8977EC41EF /* IndooroNetworking */; };
 		A3B1C2D3E4F5061728394A5B /* IndooroNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = B4C2D3E4F5061728394A5B6C /* IndooroNavigation */; };
 		F7A5B6C7D8E9F0A1B2C3D4E5 /* IndooroPositioning in Frameworks */ = {isa = PBXBuildFile; productRef = A8B6C7D8E9F0A1B2C3D4E5F6 /* IndooroPositioning */; };
+		C9D7E8F9A0B1C2D3E4F5A6B7 /* IndooroUpsell in Frameworks */ = {isa = PBXBuildFile; productRef = D0E8F9A0B1C2D3E4F5A6B7C8 /* IndooroUpsell */; };
 		C5D3E4F50617283940A5B6C7 /* IndooroPersistence in Frameworks */ = {isa = PBXBuildFile; productRef = D6E4F5061728394A5B6C7D8E /* IndooroPersistence */; };
 		E7D7A4A8552AA29214A67EF6 /* IndooroModels in Frameworks */ = {isa = PBXBuildFile; productRef = 4701EBF738DFDA77BB781980 /* IndooroModels */; };
 /* End PBXBuildFile section */
@@ -92,6 +93,7 @@
 				E7D7A4A8552AA29214A67EF6 /* IndooroModels in Frameworks */,
 				A3B1C2D3E4F5061728394A5B /* IndooroNavigation in Frameworks */,
 				F7A5B6C7D8E9F0A1B2C3D4E5 /* IndooroPositioning in Frameworks */,
+				C9D7E8F9A0B1C2D3E4F5A6B7 /* IndooroUpsell in Frameworks */,
 				C5D3E4F50617283940A5B6C7 /* IndooroPersistence in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -163,6 +165,7 @@
 				4701EBF738DFDA77BB781980 /* IndooroModels */,
 				B4C2D3E4F5061728394A5B6C /* IndooroNavigation */,
 				A8B6C7D8E9F0A1B2C3D4E5F6 /* IndooroPositioning */,
+				D0E8F9A0B1C2D3E4F5A6B7C8 /* IndooroUpsell */,
 				D6E4F5061728394A5B6C7D8E /* IndooroPersistence */,
 			);
 			productName = indooroApp;
@@ -954,6 +957,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D6C9233EA5082C979276FAF /* XCLocalSwiftPackageReference "IndooroKit" */;
 			productName = IndooroPositioning;
+		};
+		D0E8F9A0B1C2D3E4F5A6B7C8 /* IndooroUpsell */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D6C9233EA5082C979276FAF /* XCLocalSwiftPackageReference "IndooroKit" */;
+			productName = IndooroUpsell;
 		};
 		D6E4F5061728394A5B6C7D8E /* IndooroPersistence */ = {
 			isa = XCSwiftPackageProductDependency;

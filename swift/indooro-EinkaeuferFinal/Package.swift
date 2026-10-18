@@ -29,8 +29,7 @@ let package = Package(
                 "Utilities/AnchorPayload.swift",
                 "Utilities/AccessibilityText.swift",
                 "Utilities/AccessibilityPalette.swift",
-                "Utilities/ArrivalSuggestionDetector.swift",
-                "Utilities/UpsellPlanLogic.swift"
+                "Utilities/ArrivalSuggestionDetector.swift"
             ]
         ),
         .testTarget(
