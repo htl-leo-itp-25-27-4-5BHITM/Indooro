@@ -28,7 +28,7 @@
 - [x] 3.7 Rebuild recipe list/detail/edit, tags, ingredients, steps, mapping, preview, and publication controls; pass a seeded-recipe no-data-loss test.
 - [x] 3.8 Rebuild admin-only diagnostics within the shell and verify scoped staff cannot see logs or trigger their APIs.
 - [x] 3.9 Review current catalog bulk APIs; implement parse/review/commit/summary only for supported behavior and document any blocked transaction/preview gap before enabling it.
-- [ ] 3.10 For each migrated route, record direct-link, role/scope, keyboard, empty/error, existing-action parity, and rollback evidence before switching its entry. Nine routes have local cutover evidence; the Editor remains on Legacy for the Pilot-Cut unless its existing focused live probes pass. The remaining complete action/state matrix is partially evidenced in `docs/admin-rebuild/EDITOR_EVIDENCE_GAPS.md` and deferred to `complete-admin-parity-evidence`.
+- [ ] 3.10 For each migrated route, record direct-link, role/scope, keyboard, empty/error, existing-action parity, and rollback evidence before switching its entry. The 2026-10-18 packaged-stack rerun in `ADMIN_REBUILD_EVIDENCE_2026-10-18.md` passed 10 route-switch/rollback pairs and focused parity for seven route groups; Product/Recipe probes are blocked by outdated global Product API assumptions. Editor cutover is in separate PR #153 and is not present on this base. The complete matrix remains unproven.
 
 ## 4. Layout Editor And Backend Workflow Gaps
 
