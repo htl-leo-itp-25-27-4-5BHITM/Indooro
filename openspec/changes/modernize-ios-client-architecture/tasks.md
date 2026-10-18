@@ -15,10 +15,10 @@
 
 ## 3. Package Skeleton And Tests
 
-- [ ] 3.1 Create `swift/indooro-EinkaeuferFinal/Packages/IndooroKit/Package.swift` (tools 6.0, platform iOS 18) with the targets from design Decision 1. (Phase 1: nur IndooroNetworking; Package.swift nutzt iOS 18.5 wie das App-Target. Inzwischen auch IndooroModels und IndooroNavigation (Swift-5-Sprachmodus bis 11.1).)
-- [ ] 3.2 Add test targets for Models, Navigation, Networking, Persistence, and Upsell plus `IndooroTestSupport`. (Teilstand: IndooroModelsTests, IndooroNetworkingTests und IndooroNavigationTests vorhanden; Persistence, Upsell und `IndooroTestSupport` stehen aus.)
-- [ ] 3.3 Add the local package to `MCindooroApp.xcodeproj` and link the feature targets.
-- [ ] 3.4 Copy the JSON fixtures from `fix-ios-contract-and-spec-drift` into `IndooroTestSupport/Resources`.
+- [ ] 3.1 Create `swift/indooro-EinkaeuferFinal/Packages/IndooroKit/Package.swift` (tools 6.0, platform iOS 18) with the targets from design Decision 1. (Phase 1: nur IndooroNetworking; Package.swift nutzt iOS 18.5 wie das App-Target. Stand: IndooroModels, IndooroNetworking, IndooroNavigation (Swift-5-Sprachmodus bis 11.1) und IndooroTestSupport existieren; Persistence folgt mit 8.x, Positioning mit 9.x, danach ist 3.1 erfüllt.)
+- [ ] 3.2 Add test targets for Models, Navigation, Networking, Persistence, and Upsell plus `IndooroTestSupport`. (Teilstand: `IndooroModelsTests`, `IndooroNetworkingTests`, `IndooroNavigationTests` und `IndooroTestSupport` stehen; die Navigationstests führen vorerst eigene Kopien der Hilfsdateien und des Demo-Layouts statt `IndooroTestSupport` zu nutzen. Persistence- (mit 8.x) und Upsell-Test-Targets folgen, sobald der Upsell-Plan-Code im Paket liegt.)
+- [ ] 3.3 Add the local package to `MCindooroApp.xcodeproj` and link the feature targets. (Teilstand: Paket ist eingebunden und am App-Target gelinkt (`IndooroModels`, `IndooroNetworking`); Feature-Targets entstehen mit 10.2.)
+- [x] 3.4 Copy the JSON fixtures from `fix-ios-contract-and-spec-drift` into `IndooroTestSupport/Resources`. (`Packages/IndooroKit/Sources/IndooroTestSupport/Resources/` mit den 10 Contract-Fixtures und `Layouts/layout-demosupermarkt.json`; `TestFixtures.data(_:)` liest sie aus dem Bundle, die Tests in `IndooroModelsTests` und `IndooroNetworkingTests` nutzen es statt `#filePath`-Pfaden. `FixtureSyncTests` vergleicht die Kopie byteweise mit `SP/Fixtures`, das für SP-Tests und den UI-Test-Mock bleibt. `ui-test-store` wurde nicht kopiert (nur Mock).)
 
 ## 4. Models Extraction
 
@@ -68,7 +68,7 @@
 
 - [ ] 10.1 Implement `AppEnvironment`, `AppRouter`, and the `@Observable @MainActor` models from design Decision 2.
 - [ ] 10.2 Move views into the feature targets and switch them to `@Environment` models.
-- [ ] 10.3 Switch the root `TabView` to the `Tab` API.
+- [x] 10.3 Switch the root `TabView` to the `Tab` API. (`ContentView`: `Tab(title, systemImage:, value:)` in unveränderter Reihenfolge; Rezepte weiter nur bei `allowsExtendedFeatures`; Titel und Symbole unverändert, die UI-Tests finden die Tabs über diese Labels. Zusätzlich `.tabViewStyle(.tabBarOnly)`, damit das iPad die untere Tab-Leiste behält.)
 - [x] 10.4 Move upsell state from `UpsellSuggestionStore` into `UpsellModel` without behavior change and add `UpsellModelTests` for cache, pending opportunity, throttling, and session reset. (`UpsellSuggestionStore` ist zu `@Observable @MainActor UpsellModel` umbenannt und umgestellt (Logik unverändert, nur `activePrompt`/`isLoading` beobachtbar); Views nutzen `var`/`@State` statt `@ObservedObject`/`@StateObject`. `UpsellModelTests` (12): Cache einmalig, Pending-Opportunity, 8-s-Cooldown, Session-Reset sowie die bisherigen Retry-/Handled-/Payload-Tests.)
 - [ ] 10.5 Delete `HeaderView`, `MapHeaderView`, `SearchOverlayView`, and `LayoutSelectionSheet` unless the layout version picker is intentionally reintroduced in the settings sheet.
 
@@ -80,7 +80,7 @@
 
 ## 12. Localization And Accessibility
 
-- [ ] 12.1 Add `Localizable.xcstrings` with development language `de` and extract all UI strings.
+- [x] 12.1 Add `Localizable.xcstrings` with development language `de` and extract all UI strings. (`indooroApp/Localizable.xcstrings`, Quellsprache `de`, 241 Schlüssel aus den vom Compiler erzeugten `.stringsdata` des App-Targets; Wert je Schlüssel gleich dem Schlüssel, damit alle Texte unverändert bleiben. Entwicklungsregion des Projekts ist jetzt `de`, `knownRegions` enthält `de`. Fehlende oder neue Texte ergänzt Xcode beim Bearbeiten des Katalogs; Texte, die als `String` statt als Literal an SwiftUI gehen, sind nicht extrahiert (12.2 bis 12.4 offen).)
 - [ ] 12.2 Replace ASCII transliterations in user-facing error messages with umlauts. (Teilstand, bleibt offen: `ShoppingTransferError` nutzt Umlaute, Test `ShoppingTransferErrorTests`. Zurückgestellt: die ASCII-Texte in `BeaconManager` (Layout-Antwort, Store-URL; Ortungs-Datei, nicht anfassen) und der Suchbegriff „Gemuese“ in `ShoppingFeatureViews` (Anfrage an das Backend, kein Anzeigetext).)
 - [ ] 12.3 Add accessibility labels and values for the indoor map, stop markers, tour panel, and upsell sheet. (Teilstand, bleibt offen: Upsell-Sheet hat Überschrift-Trait, Hinweis und Begründung als Wert der Hinzufügen-Schaltfläche. Zurückgestellt: Karte, Stopp-Marker und Tourpanel; `StoreMapPage` und Tour sind pilotkritisch und die UI-Tests suchen dort nach Labels und Identifiern.)
 - [ ] 12.4 Verify Dynamic Type up to Accessibility XL on all tabs.

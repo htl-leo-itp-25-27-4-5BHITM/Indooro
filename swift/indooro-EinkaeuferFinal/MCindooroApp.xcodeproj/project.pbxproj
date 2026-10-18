@@ -221,9 +221,10 @@
 				};
 			};
 			buildConfigurationList = 677672662F0E50DB00242147 /* Build configuration list for PBXProject "MCindooroApp" */;
-			developmentRegion = en;
+			developmentRegion = de;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				de,
 				en,
 				Base,
 			);

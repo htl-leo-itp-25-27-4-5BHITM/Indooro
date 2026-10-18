@@ -1,4 +1,5 @@
 import Foundation
+import IndooroTestSupport
 @testable import IndooroNetworking
 
 // Test-Doppel fuer den Transport. Die Schritte einer Session werden in der Reihenfolge abgespielt,
@@ -112,14 +113,7 @@ actor RecordingSleeper: RetrySleeper {
     }
 }
 
-/// Fixture aus `SP/Fixtures` (fuenf Ebenen ueber dieser Datei).
+/// Fixture aus `IndooroTestSupport`.
 func fixtureData(_ name: String) throws -> Data {
-    let fixtures = URL(fileURLWithPath: #filePath)
-        .deletingLastPathComponent() // IndooroNetworkingTests
-        .deletingLastPathComponent() // Tests
-        .deletingLastPathComponent() // IndooroKit
-        .deletingLastPathComponent() // Packages
-        .deletingLastPathComponent() // indooro-EinkaeuferFinal
-        .appendingPathComponent("Fixtures")
-    return try Data(contentsOf: fixtures.appendingPathComponent(name))
+    try TestFixtures.data(name)
 }
