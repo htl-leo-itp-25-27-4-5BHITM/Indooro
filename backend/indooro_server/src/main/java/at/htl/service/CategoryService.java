@@ -25,18 +25,15 @@ public class CategoryService {
     ObjectMapper objectMapper;
 
     public List<Category> getAllCategories(Integer size) throws IOException {
-        ensureSeeded();
         return categoryRepository.findAll(normalizeSize(size));
     }
 
     public Category getCategoryByCode(Integer categoryCode) throws IOException {
-        ensureSeeded();
         return categoryRepository.findByCode(categoryCode);
     }
 
     public CatalogBulkResult bulkInsert(List<Category> categories) throws IOException {
         validate(categories);
-        categoryRepository.ensureIndex();
         return CatalogBulkResult.fromResponse(
                 categories.stream().map(category -> String.valueOf(category.getCategoryCode())).toList(),
                 categoryRepository.bulkIndex(categories));
@@ -44,13 +41,15 @@ public class CategoryService {
 
     public Category create(Category category) throws IOException {
         validate(java.util.Collections.singletonList(category));
-        categoryRepository.ensureIndex();
         categoryRepository.create(category);
         return category;
     }
 
-    private void ensureSeeded() throws IOException {
-        categoryRepository.ensureIndex();
+    /**
+     * Seeds the bundled categories when the category index is empty. Called from start-up
+     * ({@code OpenSearchStartup}), the only place that seeds; the index must already exist.
+     */
+    public void seedIfEmpty() throws IOException {
         if (categoryRepository.count() > 0) {
             return;
         }

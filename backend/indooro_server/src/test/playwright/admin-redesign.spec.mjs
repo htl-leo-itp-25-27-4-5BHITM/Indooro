@@ -12,21 +12,20 @@ async function useLegacyRoute(page, routeKey) {
 }
 
 const routes = [
-  ["/admin/", "Dashboard"],
-  ["/admin/regions/", "Regionen"],
-  ["/admin/stores/", "Stores"],
-  ["/admin/stores/detail/?storeId=store-1", "Store Detail"],
-  ["/admin/beacons/", "Beacons"],
-  ["/admin/products/", "Produkte"],
-  ["/admin/categories/", "Kategorien"],
-  ["/admin/recipes/", "Rezepte"],
-  ["/admin/server-logs/", "Diagnose"]
+  ["/admin/", "Dashboard", "dashboard"],
+  ["/admin/regions/", "Regionen", "regions"],
+  ["/admin/stores/", "Stores", "stores"],
+  ["/admin/stores/detail/?storeId=store-1", "Store Detail", "storeDetail"],
+  ["/admin/beacons/", "Beacons", "beacons"],
+  ["/admin/products/", "Produkte", "products"],
+  ["/admin/categories/", "Kategorien", "categories"],
+  ["/admin/recipes/", "Rezepte", "recipes"],
+  ["/admin/server-logs/", "Diagnose", "diagnostics"]
 ];
 
-for (const [path, title] of routes) {
+for (const [path, title, routeKey] of routes) {
   test(`renders ${path}`, async ({ page }) => {
-    if (path.startsWith("/admin/stores/detail/")) await useLegacyRoute(page, "storeDetail");
-    if (path.startsWith("/admin/recipes/")) await useLegacyRoute(page, "recipes");
+    await useLegacyRoute(page, routeKey);
     await page.goto(path);
     await expect(page.getByRole("heading", { name: title })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Admin Navigation" })).toBeVisible();
@@ -34,8 +33,9 @@ for (const [path, title] of routes) {
 }
 
 test("logout uses the configured OIDC path", async ({ page }) => {
+  await useLegacyRoute(page, "dashboard");
   await page.goto("/admin/");
-  await page.getByRole("link", { name: "Logout" }).click();
+  await page.getByRole("button", { name: "Logout" }).click();
   await expect(page).toHaveURL(/\/admin\/logout$/);
 });
 
@@ -62,6 +62,7 @@ test("recipe list shows missing steps from summary stepCount", async ({ page }) 
 });
 
 test("product form shows the documented layout code", async ({ page }) => {
+  await useLegacyRoute(page, "products");
   await page.goto("/admin/products/");
   await page.getByRole("button", { name: "Produkt anlegen" }).click();
   await expect(page.getByPlaceholder("310/1/1/1")).toBeVisible();

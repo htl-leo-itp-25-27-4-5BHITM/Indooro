@@ -17,16 +17,21 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @PermitAll
 @Path("/api/mobile/recipes")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "mobile-recipes")
 public class MobileRecipeResource {
 
     @Inject
     RecipeService recipeService;
 
+    @Operation(operationId = "listMobileRecipes")
     @GET
     public CommonDtos.PageResponse<RecipeDtos.RecipeSummaryResponse> listRecipes(@QueryParam("tag") String tag,
                                                                                  @QueryParam("storeId") UUID storeId,
@@ -35,9 +40,10 @@ public class MobileRecipeResource {
         return recipeService.listMobileRecipes(null, tag, normalizePage(page), normalizeSize(size), storeId);
     }
 
+    @Operation(operationId = "searchMobileRecipes")
     @GET
     @Path("/search")
-    public CommonDtos.PageResponse<RecipeDtos.RecipeSummaryResponse> searchRecipes(@QueryParam("q") String query,
+    public CommonDtos.PageResponse<RecipeDtos.RecipeSummaryResponse> searchRecipes(@Parameter(required = true) @QueryParam("q") String query,
                                                                                    @QueryParam("tag") String tag,
                                                                                    @QueryParam("storeId") UUID storeId,
                                                                                    @QueryParam("page") @DefaultValue("0") int page,
@@ -48,12 +54,14 @@ public class MobileRecipeResource {
         return recipeService.listMobileRecipes(query, tag, normalizePage(page), normalizeSize(size), storeId);
     }
 
+    @Operation(operationId = "getMobileRecipe")
     @GET
     @Path("/{recipeId}")
     public RecipeDtos.RecipeDetailResponse getRecipe(@PathParam("recipeId") UUID recipeId) {
         return recipeService.getMobileRecipe(recipeId);
     }
 
+    @Operation(operationId = "getMobileRecipeProductMapping")
     @GET
     @Path("/{recipeId}/product-mapping")
     public RecipeDtos.RecipeProductMappingResponse getProductMapping(@PathParam("recipeId") UUID recipeId,

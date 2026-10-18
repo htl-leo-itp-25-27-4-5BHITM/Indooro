@@ -14,7 +14,7 @@
     "remotion": "4.0.530"
   },
   "devDependencies": {
-    "@remotion/eslint-config-flat": "4.0.530",
+    "@remotion/eslint-config-flat": "4.0.536",
     "@types/react": "19.2.7",
     "@types/web": "0.0.166",
     "eslint": "9.39.5",

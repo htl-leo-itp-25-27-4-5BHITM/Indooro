@@ -2,6 +2,7 @@ import UIKit
 import ARKit
 import RealityKit
 import simd
+import os
 
 final class ARNavViewController: UIViewController, ARSessionDelegate {
     private let arView = ARView(frame: .zero)
@@ -420,7 +421,7 @@ final class ARNavViewController: UIViewController, ARSessionDelegate {
         }
 
         if routeChanged {
-            print("🧭 AR Route Debug -> \(text)")
+            AppLog.ar.debug("AR Route Debug -> \(text, privacy: .private(mask: .hash))")
         }
     }
 
@@ -503,7 +504,7 @@ final class ARNavViewController: UIViewController, ARSessionDelegate {
     private func updateTrackingState(_ state: ARCamera.TrackingState, externalLowConfidence: Bool) {
         if externalLowConfidence {
             overlayOpacityFactor = 0.32
-            publishTrackingMessage("Signal schwach. Kalibrierung empfohlen (Ich stehe hier).", dim: true)
+            publishTrackingMessage("Signal schwach. Kalibrierung empfohlen (Position setzen).", dim: true)
             return
         }
 
@@ -672,19 +673,18 @@ final class ARNavViewController: UIViewController, ARSessionDelegate {
             -frame.camera.transform.columns.2.z
         )
 
-        print(
-            String(
-                format: "➡️ AR Waypoint Debug | idx=%d | camForward=(%.3f, %.3f) | mapHeading=%.3f | worldYaw=%.3f | worldPos=(%.3f, %.3f, %.3f)",
-                routeIndex,
-                cameraForward.x,
-                cameraForward.y,
-                mapHeadingRadians,
-                worldYawRadians,
-                worldPosition.x,
-                worldPosition.y,
-                worldPosition.z
-            )
+        let waypointText = String(
+            format: "➡️ AR Waypoint Debug | idx=%d | camForward=(%.3f, %.3f) | mapHeading=%.3f | worldYaw=%.3f | worldPos=(%.3f, %.3f, %.3f)",
+            routeIndex,
+            cameraForward.x,
+            cameraForward.y,
+            mapHeadingRadians,
+            worldYawRadians,
+            worldPosition.x,
+            worldPosition.y,
+            worldPosition.z
         )
+        AppLog.ar.debug("\(waypointText, privacy: .private(mask: .hash))")
     }
 
     private func clamp(_ value: Float, minValue: Float, maxValue: Float) -> Float {

@@ -137,7 +137,7 @@ class LegacyWriteSecurityMatrixTest {
         when(layoutService.getRecentLayouts(any())).thenReturn(List.of(
                 new LayoutService.LayoutHistoryEntry("layout-1", "Indooro", "2026-10-11T00:00:00Z", "2026-10-11T00:00:00Z", 0)));
         when(openSearchService.searchProducts(eq("milch"), any(), any(), any())).thenReturn(List.of());
-        when(openSearchService.getAllProducts(any())).thenReturn(List.of());
+        when(openSearchService.getAllProducts(any(), any(), any())).thenReturn(List.of());
         when(categoryService.getAllCategories(any())).thenReturn(List.of(new Category(310, "Obst")));
         when(mobileStoreService.listBeaconIdentities())
                 .thenReturn(new MobileDtos.BeaconIdentitiesResponse(List.of("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")));

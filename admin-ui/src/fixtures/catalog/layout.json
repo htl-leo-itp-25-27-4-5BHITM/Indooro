@@ -1,0 +1,12 @@
+{
+  "shopName": "Indooro Testfiliale Katalog",
+  "gridSize": { "width": 40, "height": 40 },
+  "elements": [
+    { "id": 1, "type": "entrance", "x": 4, "y": 0, "width": 3, "height": 1, "label": "Haupteingang" },
+    { "id": 2, "type": "shelf", "x": 2, "y": 4, "width": 1, "height": 6, "category": "310/1", "meter": 1, "label": "Gang 1 · links · Obst & Gemüse", "productPositions": [] },
+    { "id": 3, "type": "shelf", "x": 2, "y": 14, "width": 1, "height": 6, "category": "420/1", "meter": 1, "label": "Gang 2 · links · Milchprodukte", "productPositions": [] },
+    { "id": 4, "type": "shelf", "x": 10, "y": 4, "width": 1, "height": 6, "category": "515/2", "meter": 2, "label": "Gang 3 · rechts · Backwaren", "productPositions": [] },
+    { "id": 5, "type": "shelf", "x": 10, "y": 14, "width": 1, "height": 6, "category": "630/1", "meter": 1, "label": "Gang 4 · links · Tiefkühl", "productPositions": [] },
+    { "id": 6, "type": "beacon", "x": 6, "y": 6, "beaconId": "IN-001" }
+  ]
+}

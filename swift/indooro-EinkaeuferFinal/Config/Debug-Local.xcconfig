@@ -1,0 +1,7 @@
+// Debug-Build gegen ein lokal laufendes Backend (docker-compose / mvn spring-boot:run).
+// Schema: "MCindooroApp (Local)". Nur diese Konfiguration erlaubt unverschluesseltes HTTP
+// zu localhost (Info.plist, Define INDOORO_LOCAL_HTTP).
+#include "Shared.xcconfig"
+
+INDOORO_API_BASE_URL = http:/$()/localhost:8080/api
+INFOPLIST_OTHER_PREPROCESSOR_FLAGS = $(inherited) -DINDOORO_LOCAL_HTTP

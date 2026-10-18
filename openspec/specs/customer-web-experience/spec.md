@@ -17,30 +17,17 @@ The system SHALL serve the customer web experience from the Quarkus backend unde
 - **THEN** the page is reachable through the same public host as the backend APIs
 
 ### Requirement: Customer web uses public catalog and layout APIs
-The customer web experience SHALL use public product/category/search and legacy layout APIs so anonymous users can search products and view the map.
+The customer web experience SHALL use the public store list (`/api/mobile/stores`), the store's active layout (`/api/mobile/stores/{storeId}/layout/current`) and product search (`/api/products/search`) so anonymous users can search products and view the map. The search request SHALL include `storeCode` as soon as the store is known and SHALL omit the parameter otherwise.
 
 #### Scenario: Anonymous customer searches
-- **GIVEN** the customer page has loaded
+- **GIVEN** the customer page has loaded a store
 - **WHEN** the customer enters a product query
-- **THEN** the page calls public product search APIs without Keycloak login
+- **THEN** the page calls product search with `storeCode` of that store without Keycloak login
 
 #### Scenario: Customer map loads
-- **GIVEN** a legacy current layout exists
+- **GIVEN** the store has an active or default layout
 - **WHEN** the customer page needs a map
-- **THEN** it can load `/api/layout/current` without Admin Platform authentication
-
-### Requirement: Customer web remains a compatibility surface
-The system SHALL treat the customer web view as a compatibility/demo surface that may still use the legacy global layout flow until a future change migrates it to store-specific layouts.
-
-#### Scenario: Store-specific layouts exist
-- **GIVEN** store-specific layout versions exist in PostgreSQL
-- **WHEN** the current customer web view loads map data
-- **THEN** it is not assumed to consume `/api/mobile/stores/{storeId}/layout/current`
-
-#### Scenario: Customer web migration is requested
-- **GIVEN** the Admin Platform and mobile routes support store-specific layouts
-- **WHEN** a future change migrates `/customer/` to store-specific layout selection
-- **THEN** the change must define store selection, layout source, fallback, and public route behavior
+- **THEN** it loads `/api/mobile/stores/{storeId}/layout/current` without Admin Platform authentication
 
 ### Requirement: Customer web does not create customer accounts
 The customer web experience SHALL remain anonymous and SHALL NOT create customer profiles, payment flows, analytics tracking, or server-side live position storage as baseline behavior.
@@ -54,3 +41,16 @@ The customer web experience SHALL remain anonymous and SHALL NOT create customer
 - **GIVEN** a future change proposes customer analytics or behavior tracking
 - **WHEN** the change is proposed
 - **THEN** it must define consent, data retention, and privacy requirements before implementation
+
+### Requirement: Web product finder works per store from a QR link
+The customer web view SHALL accept `?store=<storeCode>` and optional `&a=<anchorId>`, SHALL load that store's active layout through the public mobile API, SHALL search products of that store, SHALL show each result's location in customer words (shelf label, board from the bottom, position) and highlight the shelf on an SVG map, SHALL let the customer build a list ordered by walking distance from the entrance or from the scanned anchor, and SHALL NOT set cookies or send analytics.
+
+#### Scenario: Android customer at the entrance
+- **GIVEN** the entrance QR code links to `/customer/?store=SPAR-Leonding-001&a=E1`
+- **WHEN** an Android user scans it and searches „Backpulver“
+- **THEN** the result shows „Gang 4 · links · Backzutaten“ and the shelf is highlighted on the map
+
+#### Scenario: Unknown store
+- **WHEN** the link contains an unknown store code
+- **THEN** the page shows the store list instead of an error
+

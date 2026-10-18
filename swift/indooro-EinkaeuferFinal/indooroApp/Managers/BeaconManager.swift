@@ -1,3 +1,4 @@
+import IndooroModels
 import Foundation
 import CoreBluetooth
 import Combine
@@ -5,6 +6,7 @@ import CoreGraphics
 import CoreLocation
 import CoreMotion
 import simd
+import IndooroNetworking
 
 /// Ein Tick der Ortung fuer die Navigations-Session: projizierte Position (falls es eine
 /// Loesung gab) und Konfidenz. Kommt ueber ein Subject, damit Views nicht pro Tick neu rendern.
@@ -85,9 +87,9 @@ enum TrackingMode: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .beacon:
-            return "Beacon"
+            return "Mit Ortung"
         case .debugNoBeacons:
-            return "Debug (ohne Beacons)"
+            return "Ohne Ortung"
         }
     }
 }
@@ -188,11 +190,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     @Published var navigationStatusMessage: String?
     @Published var manualCalibrationEvent: ManualCalibrationEvent?
 
-    @Published var searchResults: [Product] = []
-    @Published var isSearching = false
 
     @Published var tapSetsTarget = true
-    @Published private(set) var trackingMode: TrackingMode = .beacon
+    @Published private(set) var trackingMode: TrackingMode = .debugNoBeacons
+    @Published private(set) var bluetoothState: CBManagerState = .unknown
+    @Published private(set) var locationAuthorization: CLAuthorizationStatus = .notDetermined
     @Published private(set) var layoutHistory: [LayoutVersionSummary] = []
     @Published private(set) var isLoadingLayoutHistory = true
     @Published private(set) var isLoadingLayout = true
@@ -200,6 +202,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     @Published private(set) var selectedLayoutId: String?
     @Published private(set) var selectedLayoutName = "Aktuelles Server-Layout"
     @Published private(set) var activeLayoutDescription = "Bundle-Layout aktiv"
+    /// true, wenn das angewendete Layout ein Server-Fallback oder eine Offline-Kopie ist (Warnhinweis im Header).
+    @Published private(set) var appliedLayoutIsFallback = false
     @Published private(set) var layoutRevision = 0
     @Published private(set) var detectedStore: MobileStoreSummary?
     @Published private(set) var activeLayoutStore: MobileStoreSummary?
@@ -211,7 +215,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     // MARK: - Config
 
-    private let apiBase = IndooroAPI.baseURL
+    private var apiBase: String { AppEnvironment.apiBaseURL.absoluteString }
     private let allowServerSearch = true
     private let layoutHistoryLimit = 12
     private let selectedLayoutModeDefaultsKey = "selectedLayoutMode"
@@ -226,7 +230,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let storeLayoutFailureStatusMessage = "Store erkannt, Layout konnte nicht geladen werden."
     private let debugLogLimit = 80
     private let storeDetectionRefreshInterval: TimeInterval = 60
-    private var latestSearchRequestID = UUID()
 
     // MARK: - Bluetooth internals
 
@@ -308,6 +311,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         detectedStore?.name
     }
 
+    /// Filialcode der aktuell wirksamen Filiale (aktives Layout, sonst erkannte Filiale).
+    var effectiveStoreCode: String? {
+        ProductEndpoint.normalizedStoreCode((activeLayoutStore ?? detectedStore)?.storeCode)
+    }
+
     var activeLayoutStoreName: String? {
         activeLayoutStore?.name
     }
@@ -342,9 +350,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         locationManager.delegate = self
         locationManager.pausesLocationUpdatesAutomatically = true
-        requestLocationAuthorizationIfNeeded()
-
-        centralManager = CBCentralManager(delegate: self, queue: nil)
+        locationAuthorization = locationManager.authorizationStatus
         startUpdateTimer()
         refreshStoreDetectionBeaconsIfNeeded(force: true)
         restorePersistedLayoutSelection()
@@ -387,11 +393,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }
     }
 
-    func clearSearch() {
-        latestSearchRequestID = UUID()
-        isSearching = false
-        searchResults = []
-    }
+
 
     func clearDebugLog() {
         debugLogLines.removeAll()
@@ -503,6 +505,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         switch mode {
         case .beacon:
             resetManualHoldOnNextTick = true
+            if centralManager == nil { centralManager = CBCentralManager(delegate: self, queue: nil) }
+            requestLocationAuthorizationIfNeeded()
             configureBeaconScanningForCurrentMode()
 
         case .debugNoBeacons:
@@ -541,58 +545,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
     // MARK: - Search
 
-    func searchProducts(query: String) {
-        if !allowServerSearch {
-            DispatchQueue.main.async {
-                self.latestSearchRequestID = UUID()
-                self.isSearching = false
-                self.searchResults = []
-            }
-            return
-        }
 
-        guard !query.isEmpty else {
-            clearSearch()
-            return
-        }
-
-        let requestID = UUID()
-        latestSearchRequestID = requestID
-        isSearching = true
-        let encoded = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
-        let urlString = "\(apiBase)/products/search?q=\(encoded)&size=50"
-
-        guard let url = URL(string: urlString) else {
-            isSearching = false
-            return
-        }
-
-        URLSession.shared.dataTask(with: url) { [weak self] data, _, error in
-            DispatchQueue.main.async {
-                guard let self else { return }
-                guard self.latestSearchRequestID == requestID else { return }
-                self.isSearching = false
-
-                if let error {
-                    print("❌ Fehler bei Suche: \(error.localizedDescription)")
-                    self.searchResults = []
-                    return
-                }
-
-                guard let data else {
-                    self.searchResults = []
-                    return
-                }
-
-                do {
-                    self.searchResults = try JSONDecoder().decode([Product].self, from: data)
-                } catch {
-                    print("❌ JSON Fehler: \(error)")
-                    self.searchResults = []
-                }
-            }
-        }.resume()
-    }
 
     // MARK: - BLE update loop
 
@@ -1150,7 +1103,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
 
         appendDebugLog("Store-Lookup startet rssi=\(rssi) url=\(url.absoluteString)")
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             guard let self else { return }
 
             defer {
@@ -1194,7 +1147,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             }
 
             do {
-                let detection = try JSONDecoder().decode(StoreByBeaconResponse.self, from: data)
+                let detection = try JSONDecoder.indooro.decode(StoreByBeaconResponse.self, from: data)
                 self.appendDebugLog(
                     "Store-Lookup decodiert store=\(detection.store.name) id=\(detection.store.id.uuidString)"
                 )
@@ -1208,7 +1161,19 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }.resume()
     }
 
+    @Published var suggestedPilotStore: MobileStoreSummary?
+
+    func openSuggestedPilotStore(_ store: MobileStoreSummary) {
+        suggestedPilotStore = nil
+        detectedStore = store
+        loadStoreLayout(storeId: store.id)
+    }
+
     private func applyDetectedStore(_ detection: StoreByBeaconResponse, identityKey: String) {
+        if !AppEnvironment.allowsExtendedFeatures {
+            if activeLayoutStore == nil && detectedStore == nil { suggestedPilotStore = detection.store }
+            return
+        }
         let hasAppliedStoreLayout = activeLayoutStore?.id == detection.store.id
         let shouldLoadStoreLayout = !hasAppliedStoreLayout || selectedLayoutMode != .currentServer
 
@@ -1353,7 +1318,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 switch result {
                 case .success(let data):
                     do {
-                        let layout = try self.decodeMobileLayout(from: data)
+                        let (layout, isFallback) = try self.decodeMobileLayout(from: data)
                         self.applyLayout(layout)
                         self.activeLayoutStore = store
                         self.activeLayoutStoreSource = source
@@ -1361,9 +1326,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                         self.selectedLayoutMode = .currentServer
                         self.selectedLayoutId = nil
                         self.selectedLayoutName = store.name
-                        self.activeLayoutDescription = self.currentStoreLayoutDescription(
-                            for: layout,
-                            store: store
+                        self.appliedLayoutIsFallback = isFallback
+                        self.activeLayoutDescription = StoreLayoutDescription.storeLayout(
+                            storeName: store.name,
+                            fallback: isFallback,
+                            regularDescription: self.currentStoreLayoutDescription(for: layout, store: store)
                         )
                         self.isLoadingLayout = false
                         self.persistLayoutSelection()
@@ -1422,18 +1389,19 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         store: MobileStoreSummary,
         source: StoreLayoutActivationSource
     ) -> Bool {
-        guard let layout = try? decodeMobileLayout(from: data) else {
+        guard let decoded = try? decodeMobileLayout(from: data) else {
             appendDebugLog("Store-Offline-Kopie nicht lesbar store=\(store.name)")
             return false
         }
 
-        applyLayout(layout)
+        applyLayout(decoded.layout)
         activeLayoutStore = store
         activeLayoutStoreSource = source
         clearStoreLayoutFailureMessageIfNeeded()
         selectedLayoutMode = .currentServer
         selectedLayoutId = nil
         selectedLayoutName = store.name
+        appliedLayoutIsFallback = true
         activeLayoutDescription = "\(store.name) • Offline-Kopie vom \(offlineCopyDate(savedAt))"
         isLoadingLayout = false
         persistLayoutSelection()
@@ -1470,6 +1438,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         selectedLayoutMode = .currentServer
         selectedLayoutId = nil
         selectedLayoutName = "Aktuelles Server-Layout"
+        appliedLayoutIsFallback = true
         activeLayoutDescription = "\(layout.shopName) • Offline-Kopie vom \(offlineCopyDate(savedAt))"
         isLoadingLayout = false
         persistLayoutSelection()
@@ -1617,6 +1586,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func applyLayout(_ layout: LayoutData) {
+        appliedLayoutIsFallback = false
         gridWidth = layout.gridSize.width
         gridHeight = layout.gridSize.height
         shelves = layout.elements.filter { $0.type != "beacon" }
@@ -1738,7 +1708,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         lastStoreDetectionBeaconRefreshAt = now
         appendDebugLog("Store-Beacon-Identities Request url=\(url.absoluteString)")
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
+        AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
             guard let self else { return }
 
             if let error {
@@ -1768,7 +1738,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             }
 
             do {
-                let catalog = try JSONDecoder().decode(StoreDetectionBeaconCatalog.self, from: data)
+                let catalog = try JSONDecoder.indooro.decode(StoreDetectionBeaconCatalog.self, from: data)
                 let uuids = Set(catalog.uuidStrings.compactMap { BeaconUUIDNormalizer.uuid(from: $0) })
                 DispatchQueue.main.async {
                     self.isLoadingStoreDetectionBeacons = false
@@ -1819,7 +1789,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func performRequest(url: URL, completion: @escaping (Result<Data, Error>) -> Void) {
-        URLSession.shared.dataTask(with: url) { data, response, error in
+        AppEnvironment.session.dataTask(with: url) { data, response, error in
             if let error {
                 self.appendDebugLog("HTTP Fehler \(url.path): \(error.localizedDescription)")
                 completion(.failure(error))
@@ -1856,7 +1826,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func decodeLayout(from data: Data) throws -> LayoutData {
-        let decoder = JSONDecoder()
+        let decoder = JSONDecoder.indooro
 
         if let layout = try? decoder.decode(LayoutData.self, from: data) {
             return layout
@@ -1870,18 +1840,19 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         throw LayoutLoadingError.decodingFailed
     }
 
-    private func decodeMobileLayout(from data: Data) throws -> LayoutData {
-        let decoder = JSONDecoder()
+    /// Layout samt `fallback`-Flag aus `GET /mobile/stores/{id}/layout/current`; Roh-Layouts ohne Flag gelten als nicht fallback.
+    private func decodeMobileLayout(from data: Data) throws -> (layout: LayoutData, isFallback: Bool) {
+        let decoder = JSONDecoder.indooro
 
         if let response = try? decoder.decode(MobileLayoutResponse.self, from: data) {
-            return response.layout
+            return (response.layout, response.fallback == true)
         }
 
-        return try decodeLayout(from: data)
+        return (try decodeLayout(from: data), false)
     }
 
     private func decodeMobileStores(from data: Data) throws -> [MobileStoreSummary] {
-        let decoder = JSONDecoder()
+        let decoder = JSONDecoder.indooro
 
         if let stores = try? decoder.decode([MobileStoreSummary].self, from: data) {
             return stores
@@ -1895,7 +1866,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func decodeLayoutHistory(from data: Data) throws -> [LayoutVersionSummary] {
-        let decoder = JSONDecoder()
+        let decoder = JSONDecoder.indooro
 
         if let history = try? decoder.decode([LayoutVersionSummary].self, from: data) {
             return history
@@ -2098,9 +2069,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     // MARK: - RSSI helpers
 
     private func requestLocationAuthorizationIfNeeded() {
+        locationAuthorization = locationManager.authorizationStatus
         #if DEBUG
         if Self.isUITesting { return }
         #endif
+        guard trackingMode == .beacon else { return }
         guard CLLocationManager.locationServicesEnabled() else {
             navigationStatusMessage = "Ortungsdienste sind deaktiviert. iBeacon-Ranging braucht Standortfreigabe."
             appendDebugLog("Location Services deaktiviert")
@@ -2319,6 +2292,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
+        bluetoothState = central.state
         appendDebugLog("Bluetooth State: \(bluetoothStateDescription(central.state))")
         configureBeaconScanningForCurrentMode()
     }
@@ -2347,6 +2321,13 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         let headingDegrees = newHeading.trueHeading >= 0
             ? newHeading.trueHeading
             : newHeading.magneticHeading
+        #if DEBUG
+        NavigationRecorder.shared.recordHeading(
+            degrees: headingDegrees,
+            accuracy: newHeading.headingAccuracy,
+            at: Date().timeIntervalSince1970
+        )
+        #endif
 
         latestHeadingAccuracyDegrees = newHeading.headingAccuracy
         rawDeviceHeadingRadians = mapHeadingRadians(from: headingDegrees)

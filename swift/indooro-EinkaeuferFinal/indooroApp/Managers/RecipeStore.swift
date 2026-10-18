@@ -1,4 +1,6 @@
+import IndooroModels
 import Foundation
+import IndooroNetworking
 
 @MainActor
 final class RecipeStore: ObservableObject {
@@ -11,10 +13,14 @@ final class RecipeStore: ObservableObject {
     @Published private(set) var isLoadingMapping = false
     @Published var errorMessage: String?
 
-    private let apiBase = IndooroAPI.baseURL
+    private let client: any APIClientProtocol
     private var latestListRequestID = UUID()
     private var latestDetailRequestID = UUID()
     private var latestMappingRequestID = UUID()
+
+    init(client: any APIClientProtocol = AppEnvironment.apiClient) {
+        self.client = client
+    }
 
     func loadRecipes(page: Int = 0, size: Int = 20, tag: String? = nil) {
         latestListRequestID = UUID()
@@ -23,16 +29,9 @@ final class RecipeStore: ObservableObject {
         isSearching = false
         errorMessage = nil
 
-        var components = URLComponents(string: "\(apiBase)/mobile/recipes")
-        components?.queryItems = [
-            URLQueryItem(name: "page", value: String(max(0, page))),
-            URLQueryItem(name: "size", value: String(max(1, size)))
-        ]
-        if let tag, !tag.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            components?.queryItems?.append(URLQueryItem(name: "tag", value: tag))
-        }
-
-        fetchRecipePage(components: components, requestID: requestID)
+        // Ein leerer oder nur aus Leerzeichen bestehender Tag wird nicht gesendet; sonst bleibt er unverändert.
+        let activeTag = tag.flatMap { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : $0 }
+        fetchRecipePage(RecipeListEndpoint(page: page, size: size, tag: activeTag), requestID: requestID)
     }
 
     func searchRecipes(query: String, page: Int = 0, size: Int = 20) {
@@ -48,14 +47,7 @@ final class RecipeStore: ObservableObject {
         isSearching = true
         errorMessage = nil
 
-        var components = URLComponents(string: "\(apiBase)/mobile/recipes/search")
-        components?.queryItems = [
-            URLQueryItem(name: "q", value: trimmed),
-            URLQueryItem(name: "page", value: String(max(0, page))),
-            URLQueryItem(name: "size", value: String(max(1, size)))
-        ]
-
-        fetchRecipePage(components: components, requestID: requestID)
+        fetchRecipePage(RecipeSearchEndpoint(searchText: trimmed, page: page, size: size), requestID: requestID)
     }
 
     func loadRecipe(id: UUID) {
@@ -64,19 +56,13 @@ final class RecipeStore: ObservableObject {
         isLoadingDetail = true
         errorMessage = nil
 
-        guard let url = URL(string: "\(apiBase)/mobile/recipes/\(id.uuidString)") else {
-            isLoadingDetail = false
-            errorMessage = "Rezept-URL ist ungültig."
-            return
+        let client = client
+        Task { @MainActor [weak self] in
+            let result = await client.sendResult(RecipeDetailEndpoint(recipeID: id).asRaw)
+            guard let self, self.latestDetailRequestID == requestID else { return }
+            self.isLoadingDetail = false
+            self.handleDetailResponse(result)
         }
-
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-            Task { @MainActor in
-                guard let self, self.latestDetailRequestID == requestID else { return }
-                self.isLoadingDetail = false
-                self.handleDetailResponse(data: data, response: response, error: error)
-            }
-        }.resume()
     }
 
     func loadMapping(recipeId: UUID, store: MobileStoreSummary?) {
@@ -85,27 +71,14 @@ final class RecipeStore: ObservableObject {
         isLoadingMapping = true
         mappingResponse = nil
 
-        var components = URLComponents(string: "\(apiBase)/mobile/recipes/\(recipeId.uuidString)/product-mapping")
-        var queryItems: [URLQueryItem] = []
-        if let store {
-            queryItems.append(URLQueryItem(name: "storeId", value: store.id.uuidString))
-            queryItems.append(URLQueryItem(name: "storeCode", value: store.storeCode))
+        let endpoint = RecipeProductMappingEndpoint(recipeID: recipeId, storeID: store?.id, storeCode: store?.storeCode)
+        let client = client
+        Task { @MainActor [weak self] in
+            let result = await client.sendResult(endpoint.asRaw)
+            guard let self, self.latestMappingRequestID == requestID else { return }
+            self.isLoadingMapping = false
+            self.handleMappingResponse(result)
         }
-        components?.queryItems = queryItems.isEmpty ? nil : queryItems
-
-        guard let url = components?.url else {
-            isLoadingMapping = false
-            errorMessage = "Mapping-URL ist ungültig."
-            return
-        }
-
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-            Task { @MainActor in
-                guard let self, self.latestMappingRequestID == requestID else { return }
-                self.isLoadingMapping = false
-                self.handleMappingResponse(data: data, response: response, error: error)
-            }
-        }.resume()
     }
 
     func clearSelectedRecipe() {
@@ -113,83 +86,60 @@ final class RecipeStore: ObservableObject {
         mappingResponse = nil
     }
 
-    private func fetchRecipePage(components: URLComponents?, requestID: UUID) {
-        guard let url = components?.url else {
-            isLoading = false
-            isSearching = false
-            errorMessage = "Rezept-URL ist ungültig."
-            return
+    private func fetchRecipePage<E: Endpoint>(_ endpoint: E, requestID: UUID) {
+        let client = client
+        Task { @MainActor [weak self] in
+            let result = await client.sendResult(endpoint.asRaw)
+            guard let self, self.latestListRequestID == requestID else { return }
+            self.isLoading = false
+            self.isSearching = false
+            self.handleListResponse(result)
         }
+    }
 
-        URLSession.shared.dataTask(with: url) { [weak self] data, response, error in
-            Task { @MainActor in
-                guard let self, self.latestListRequestID == requestID else { return }
-                self.isLoading = false
-                self.isSearching = false
-                self.handleListResponse(data: data, response: response, error: error)
+    private func handleListResponse(_ result: Result<RawJSON, APIError>) {
+        switch result {
+        case .failure(let error):
+            recipes = []
+            errorMessage = PilotHTTP.message(for: error)
+        case .success(let raw):
+            do {
+                recipes = try Self.decodeRecipeSummaries(from: raw.data)
+            } catch {
+                recipes = []
+                errorMessage = "Rezepte konnten nicht gelesen werden."
             }
-        }.resume()
-    }
-
-    private func handleListResponse(data: Data?, response: URLResponse?, error: Error?) {
-        if let error {
-            recipes = []
-            errorMessage = error.localizedDescription
-            return
-        }
-
-        guard let data else {
-            recipes = []
-            errorMessage = "Keine Rezeptdaten erhalten."
-            return
-        }
-
-        do {
-            recipes = try Self.decodeRecipeSummaries(from: data)
-        } catch {
-            recipes = []
-            errorMessage = "Rezepte konnten nicht gelesen werden."
         }
     }
 
-    private func handleDetailResponse(data: Data?, response: URLResponse?, error: Error?) {
-        if let error {
-            errorMessage = error.localizedDescription
-            return
-        }
-
-        guard let data else {
-            errorMessage = "Keine Rezeptdetails erhalten."
-            return
-        }
-
-        do {
-            selectedRecipe = try JSONDecoder().decode(RecipeDetail.self, from: data)
-        } catch {
-            errorMessage = "Rezeptdetails konnten nicht gelesen werden."
+    private func handleDetailResponse(_ result: Result<RawJSON, APIError>) {
+        switch result {
+        case .failure(let error):
+            errorMessage = PilotHTTP.message(for: error)
+        case .success(let raw):
+            do {
+                selectedRecipe = try JSONDecoder.indooro.decode(RecipeDetail.self, from: raw.data)
+            } catch {
+                errorMessage = "Rezeptdetails konnten nicht gelesen werden."
+            }
         }
     }
 
-    private func handleMappingResponse(data: Data?, response: URLResponse?, error: Error?) {
-        if let error {
-            errorMessage = error.localizedDescription
-            return
-        }
-
-        guard let data else {
-            errorMessage = "Keine Produktzuordnung erhalten."
-            return
-        }
-
-        do {
-            mappingResponse = try JSONDecoder().decode(RecipeProductMappingResponse.self, from: data)
-        } catch {
-            errorMessage = "Produktzuordnung konnte nicht gelesen werden."
+    private func handleMappingResponse(_ result: Result<RawJSON, APIError>) {
+        switch result {
+        case .failure(let error):
+            errorMessage = PilotHTTP.message(for: error)
+        case .success(let raw):
+            do {
+                mappingResponse = try JSONDecoder.indooro.decode(RecipeProductMappingResponse.self, from: raw.data)
+            } catch {
+                errorMessage = "Produktzuordnung konnte nicht gelesen werden."
+            }
         }
     }
 
     private static func decodeRecipeSummaries(from data: Data) throws -> [RecipeSummary] {
-        let decoder = JSONDecoder()
+        let decoder = JSONDecoder.indooro
         if let recipes = try? decoder.decode([RecipeSummary].self, from: data) {
             return recipes
         }

@@ -10,10 +10,13 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/admin")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "maintenance")
 public class AdminResource {
 
     private static final Logger LOG = Logger.getLogger(AdminResource.class);
@@ -28,6 +31,7 @@ public class AdminResource {
      * Erstellt den Index
      * POST /api/admin/index/create
      */
+    @Operation(operationId = "createProductIndex")
     @POST
     @Path("/index/create")
     @RolesAllowed("admin")
@@ -38,9 +42,7 @@ public class AdminResource {
             return Response.ok("{\"message\": \"Index created successfully\"}").build();
         } catch (IOException e) {
             LOG.error("Error creating index", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
-                    .build();
+            throw new WebApplicationException("OpenSearch ist nicht erreichbar.", Response.Status.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -48,6 +50,7 @@ public class AdminResource {
      * Löscht den Index
      * DELETE /api/admin/index
      */
+    @Operation(operationId = "deleteProductIndex")
     @DELETE
     @Path("/index")
     @RolesAllowed("admin")
@@ -58,9 +61,47 @@ public class AdminResource {
             return Response.ok("{\"message\": \"Index deleted successfully\"}").build();
         } catch (IOException e) {
             LOG.error("Error deleting index", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
-                    .build();
+            throw new WebApplicationException("OpenSearch ist nicht erreichbar.", Response.Status.SERVICE_UNAVAILABLE);
+        }
+    }
+
+    /**
+     * Kopiert die Produkte in den naechsten Versionsindex (products_vN). Loescht nichts.
+     * POST /api/admin/index/reindex
+     */
+    @Operation(operationId = "reindexProducts")
+    @POST
+    @Path("/index/reindex")
+    @RolesAllowed("admin")
+    public Response reindexProducts() {
+        adminAccessService.requireAdmin();
+        try {
+            return Response.ok(openSearchService.reindexProducts()).build();
+        } catch (IOException e) {
+            LOG.error("Error reindexing products", e);
+            throw new WebApplicationException("Reindex fehlgeschlagen: OpenSearch nicht erreichbar oder Fehler beim Kopieren.",
+                    Response.Status.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Schaltet den Produkt-Alias atomar auf einen Versionsindex um. Loescht keinen Index.
+     * Weichen die Dokumentzahlen von Quelle und Ziel ab, antwortet der Endpunkt mit 409, ausser mit force=true.
+     * POST /api/admin/index/activate?index=products_vN[&amp;force=true]
+     */
+    @Operation(operationId = "activateProductIndex")
+    @POST
+    @Path("/index/activate")
+    @RolesAllowed("admin")
+    public Response activateIndex(@QueryParam("index") String index,
+                                  @QueryParam("force") @DefaultValue("false") boolean force) {
+        adminAccessService.requireAdmin();
+        try {
+            return Response.ok(openSearchService.activateIndex(index, force)).build();
+        } catch (IOException e) {
+            LOG.error("Error activating index " + index, e);
+            throw new WebApplicationException("Alias-Umschaltung fehlgeschlagen: OpenSearch nicht erreichbar oder Fehler beim Schreiben der Aliase.",
+                    Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -68,6 +109,7 @@ public class AdminResource {
      * Health Check
      * GET /api/admin/health
      */
+    @Operation(operationId = "adminHealth")
     @GET
     @Path("/health")
     @RolesAllowed("admin")

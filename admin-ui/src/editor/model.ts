@@ -33,6 +33,8 @@ export interface LayoutDocument {
 export type ElementId = string | number;
 export type EditorCommand =
   | { type: "create"; element: LayoutElement }
+  /** Several new elements as one undoable step. Rejected as a whole when an ID repeats or the 5000 limit is exceeded. */
+  | { type: "createMany"; elements: LayoutElement[] }
   | { type: "move"; id: ElementId; x: number; y: number }
   | { type: "resize"; id: ElementId; width: number; height: number }
   | { type: "rotate"; id: ElementId; rotation: number }
@@ -137,6 +139,7 @@ export function snap(value: number, step = 1, enabled = true): number {
   return enabled ? Math.round(value / Math.max(step, 0.001)) * Math.max(step, 0.001) : value;
 }
 
+const idKey = (id: unknown): string => `${typeof id}:${String(id)}`;
 const clamp = (value: number, low: number, high: number) => Math.min(Math.max(value, low), high);
 const isPoint = (element: LayoutElement) => element.type === "beacon";
 
@@ -177,6 +180,19 @@ export function applyCommand(state: EditorState, command: EditorCommand, snapSte
       const element = constrainElement(command.element, before, snapStep, snapping);
       next = { ...before, elements: [...before.elements, element] };
       selectedId = element.id ?? null;
+      break;
+    }
+    case "createMany": {
+      if (!command.elements.length || before.elements.length + command.elements.length > 5000) return state;
+      const keys = new Set(before.elements.map((element) => idKey(element.id)));
+      const added: LayoutElement[] = [];
+      for (const element of command.elements) {
+        if (element.id === undefined || element.id === null || keys.has(idKey(element.id))) return state;
+        keys.add(idKey(element.id));
+        // Imported plan coordinates keep their exact values: no snapping, only the grid bounds apply.
+        added.push(constrainElement(element, before, 1, false));
+      }
+      next = { ...before, elements: [...before.elements, ...added] };
       break;
     }
     case "move":

@@ -5,13 +5,14 @@ import { cutoverTarget, ROUTE_CUTOVER } from "../../main/resources/META-INF/reso
 
 const paths = ["/admin/", "/admin/regions/", "/admin/stores/", "/admin/stores/detail/", "/admin/beacons/", "/admin/products/", "/admin/categories/", "/admin/recipes/", "/admin/editor/", "/admin/server-logs/"];
 
-test("approved dashboard, regions, stores, store detail, beacons, products, categories, recipes, and diagnostics entries redirect independently", () => {
+test("approved admin entries including editor redirect independently", () => {
   assert.deepEqual(ROUTE_CUTOVER, {
     dashboard: true, regions: true, stores: true, storeDetail: true,
     beacons: true, products: true, categories: true, recipes: true,
-    editor: false, diagnostics: true
+    editor: true, diagnostics: true
   });
   const expectedTargets = {
+    "/admin/editor/": "/admin/next/editor/",
     "/admin/": "/admin/next/",
     "/admin/regions/": "/admin/next/regions/",
     "/admin/stores/": "/admin/next/stores/",

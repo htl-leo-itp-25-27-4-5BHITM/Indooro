@@ -111,11 +111,11 @@
 
 ## 12. Calibration With Recorded Walks
 
-- [ ] 12.1 Record at least three store walks with ground-truth markers in DEBUG: standing 60 s at two points, walking a full tour, deliberately entering a wrong aisle, and walking past two nearly equidistant stops.
-- [ ] 12.2 Store anonymized recordings (no device identifiers) under `swift/indooro-EinkaeuferFinal/NavigationFixtures/recordings/` and add them as replay tests.
-- [ ] 12.3 Replay each recording against the baseline commit and the new implementation; record metrics side by side in `NavigationFixtures/BASELINE.md`.
-- [ ] 12.4 Calibrate estimator alphas, jump margin, off-route distance, and off-route hold from the recordings; change only values with evidence, remove their `// provisional` marker, and update the spec delta numbers in this change.
-- [ ] 12.5 Record which measurement source delivered data in the field and the typical number of visible beacons; answer the open questions in `design.md`.
+- [ ] 12.1 Record at least three store walks with ground-truth markers in DEBUG: standing 60 s at two points, walking a full tour, deliberately entering a wrong aisle, and walking past two nearly equidistant stops. (Mensch: Messung in der Filiale)
+- [ ] 12.2 Store anonymized recordings (no device identifiers) under `swift/indooro-EinkaeuferFinal/NavigationFixtures/recordings/` and add them as replay tests. (Mensch: hängt an 12.1)
+- [ ] 12.3 Replay each recording against the baseline commit and the new implementation; record metrics side by side in `NavigationFixtures/BASELINE.md`. (Mensch: hängt an 12.2)
+- [ ] 12.4 Calibrate estimator alphas, jump margin, off-route distance, and off-route hold from the recordings; change only values with evidence, remove their `// provisional` marker, and update the spec delta numbers in this change. (Mensch: braucht echte Aufnahmen)
+- [ ] 12.5 Record which measurement source delivered data in the field and the typical number of visible beacons; answer the open questions in `design.md`. (Mensch: Feldmessung)
 
 ## 13. Verification
 
@@ -124,11 +124,11 @@
 - [x] 13.3 Run the same build with `SWIFT_STRICT_CONCURRENCY=complete` and confirm at most 120 unique concurrency diagnostics. (Gemessen auf `c0d6666`: BUILD SUCCEEDED, 106 eindeutige Concurrency-Diagnosen.)
 - [x] 13.4 Run a Release build and confirm the recorder and the „Messungen aufzeichnen“ toggle are absent.
 - [x] 13.5 Simulator check in debug tracking mode: start a tour, tap positions along the route, confirm no stop changes and no route rebuild; tap into a parallel aisle for more than 2.5 s and confirm one reroute to the same stop; „Erledigt“ advances to the planned next stop; „Neu planen“ re-plans. (Durchgefuehrt 2026-10-15 auf iPhone 16 Pro Simulator, iOS 26.3, Commit `c2b93af`, EUROSPAR Leonding/Hart, Liste mit 4 Artikeln / 3 Stopps: Tour-Start plant Snacks -> Teigwaren -> Molkerei; 7 Positions-Taps entlang und neben der Route aendern weder Plan noch aktiven Stopp, auch direkt neben Stopp 2 bleibt Stopp 1 aktiv und die Route fuehrt weiter zu Stopp 1; „Neu planen“ ordnet von der aktuellen Position neu (Teigwaren -> Molkerei -> Snacks); „Erledigt“ neben dem Snacks-Regal wechselt zum geplanten Stopp Molkerei. Aufzeichnung bestaetigt: nur Ereignisse calibrate/startTour/replan/stopDone, kein Plan-Wechsel durch Positionen. Einschraenkung: Im Debug-Modus ist jeder Tap eine manuelle Kalibrierung, die laut Spec die Route zum aktiven Stopp sofort neu baut; die 2,5-s-Off-Route-Regel ist daher nur durch Unit- und Replay-Tests belegt, nicht im Simulator. Nebenbefund: Erneutes Oeffnen derselben Filiale aus der Uebersicht erzeugt clearTarget + startTour mit identischem Plan.)
-- [ ] 13.6 Device check in the store: walk one tour with the recorder on; confirm the replay metrics meet the scenario expectations (0 active-stop changes without event, 0 reroutes while on route, 1 reroute for the wrong aisle).
+- [ ] 13.6 Device check in the store: walk one tour with the recorder on; confirm the replay metrics meet the scenario expectations (0 active-stop changes without event, 0 reroutes while on route, 1 reroute for the wrong aisle). (Mensch: Gerät in der Filiale)
 - [x] 13.7 Run `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
 
 ## 14. Archive
 
-- [ ] 14.1 Confirm every task is done or explicitly moved to a follow-up change.
-- [ ] 14.2 Archive with `npx -y @fission-ai/openspec@1.3.1 archive stabilize-ios-navigation-pipeline` after `fix-ios-contract-and-spec-drift` if both modify `mobile-positioning-navigation`.
-- [ ] 14.3 Replace any generated „TBD“ purpose text in the touched permanent specs and re-run `validate --all --strict`.
+- [ ] 14.1 Confirm every task is done or explicitly moved to a follow-up change. (Mensch: wartet auf 12.x und 13.6)
+- [ ] 14.2 Archive with `npx -y @fission-ai/openspec@1.3.1 archive stabilize-ios-navigation-pipeline` after `fix-ios-contract-and-spec-drift` if both modify `mobile-positioning-navigation`. (Mensch: erst nach 14.1 und `fix-ios-contract-and-spec-drift`)
+- [x] 14.3 Replace any generated „TBD“ purpose text in the touched permanent specs and re-run `validate --all --strict`. (Beleg: in den berührten Specs `mobile-positioning-navigation`, `ios-store-map-experience`, `mobile-shopping-lists` kein „TBD“; drei andere Specs mit „TBD“-Purpose ersetzt; `validate --all --strict` grün)

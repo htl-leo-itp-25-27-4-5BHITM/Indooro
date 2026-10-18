@@ -15,28 +15,34 @@ import jakarta.ws.rs.core.MediaType;
 
 import java.util.List;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/stores/{storeId}/layout")
 @RolesAllowed({"admin", "region-manager", "store-manager"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "store-layouts")
 public class StoreLayoutAdminResource {
 
     @Inject
     StoreLayoutAdminService storeLayoutAdminService;
 
+    @Operation(operationId = "getStoreCurrentLayout")
     @GET
     @Path("/current")
     public LayoutDtos.StoreLayoutResponse getCurrentLayout(@PathParam("storeId") UUID storeId) {
         return storeLayoutAdminService.getCurrentLayout(storeId);
     }
 
+    @Operation(operationId = "listStoreLayoutVersions")
     @GET
     @Path("/versions")
     public List<LayoutDtos.LayoutVersionSummary> listLayoutVersions(@PathParam("storeId") UUID storeId) {
         return storeLayoutAdminService.listLayoutVersions(storeId);
     }
 
+    @Operation(operationId = "getStoreLayoutVersion")
     @GET
     @Path("/versions/{layoutId}")
     public LayoutDtos.StoreLayoutResponse getLayoutVersion(@PathParam("storeId") UUID storeId,
@@ -44,6 +50,7 @@ public class StoreLayoutAdminResource {
         return storeLayoutAdminService.getLayoutVersion(storeId, layoutId);
     }
 
+    @Operation(operationId = "saveStoreLayoutVersion")
     @POST
     @Path("/versions")
     public LayoutDtos.StoreLayoutResponse saveLayoutVersion(@PathParam("storeId") UUID storeId,
@@ -51,6 +58,7 @@ public class StoreLayoutAdminResource {
         return storeLayoutAdminService.saveLayoutVersion(storeId, request);
     }
 
+    @Operation(operationId = "activateStoreLayoutVersion")
     @POST
     @Path("/versions/{layoutId}/activate")
     public LayoutDtos.StoreLayoutResponse activateLayoutVersion(@PathParam("storeId") UUID storeId,
@@ -58,6 +66,7 @@ public class StoreLayoutAdminResource {
         return storeLayoutAdminService.activateLayoutVersion(storeId, layoutId);
     }
 
+    @Operation(operationId = "getStoreEditorContext")
     @GET
     @Path("/editor-context")
     public LayoutDtos.EditorContextResponse getEditorContext(@PathParam("storeId") UUID storeId) {

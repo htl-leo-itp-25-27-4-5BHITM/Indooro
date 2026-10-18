@@ -248,13 +248,13 @@ Die Befunde **C1–C10** aus [docs/specs/AUDIT.md §2](../specs/AUDIT.md) wurden
 | --- | --- | --- | --- | --- |
 | **PERF-01** | `@Transactional` auf `UpsellSuggestionService.plan()` und `suggestions()` umschließt den synchronen OpenAI-Aufruf (Timeout 12 s in LeoCloud). Eine JDBC-Verbindung bleibt so lange belegt. Standard-Pool: 20 Verbindungen → 20 parallele anonyme Plan-Anfragen blockieren **alle** Admin- und Mobile-Endpunkte. | `UpsellSuggestionService.java:110,170`, `k8s/backend.yaml` (`OPENAI_UPSELL_TIMEOUT_MS=12000`) | 1 Verbindung × ≤ 12 s | **P0** |
 | PERF-02 | Öffentliche Rezeptliste `GET /api/mobile/recipes`: je Rezept Lazy-Load von Zutaten und Tags; je Zutat `listActiveByIngredient` (1 Query) und je Mapping `openSearchService.getProductById` (1 HTTP-Aufruf) – nur um `mappedIngredientCount` zu berechnen, für das ein DB-Count genügt. | `RecipeService.java:411,657`, `:589-613` | 20 Rezepte × ~8 Zutaten ≈ 180 SQL + ~160 OpenSearch-GETs | P1 |
-| PERF-03 | Upsell-Plan löst jede Trigger-Produkt-ID einzeln per OpenSearch-GET auf (`rankingInput` → `resolveTriggerProduct`); erlaubt sind 80 Opportunities × 20 IDs (Validierung greift wegen fehlendem `@Valid` nicht einmal). | `UpsellSuggestionService.java:739`, `UpsellDtos.java:68-75` | bis 1 600 OpenSearch-GETs | P1 |
-| PERF-04 | Upsell-Kandidaten = erste 150 Dokumente eines `match_all` ohne Sortierung → bei > 150 Produkten willkürliche Auswahl (Qualitäts- **und** Effizienzproblem); bei Store-Filter mit wenig Treffern zweiter Voll-Scan. | `OpenSearchService.java:139-173`, `UpsellSuggestionService.java:569-591` | 1–2 Suchen à 150 Docs | P1 |
+| PERF-03 | behoben im Repo | `getProductsByIds` für `mappingStatus`, `getProductsByNumericIds` für Trigger und Listen-IDs im Upsell, je eine Anfrage. Offen (Mensch): `collapse` mit Sortierung auf einem echten OpenSearch prüfen. |
+| PERF-04 | behoben im Repo | `findUpsellCandidates` mit Relevanzabfrage (Trigger- und Ergänzungskategorien, Sortierung `_score`, `id`) statt `match_all` (`OpenSearchUpsellCandidateQueryTest`). |
 | PERF-05 | `StoreAdminService.listStores`: je Store `countActiveByStore` + `findActiveByStoreId` + Lazy-Load der Region; `size` ohne Obergrenze im Service (Resource begrenzt auf 100). | `StoreAdminService.java:216-217` | 2N + Regionen | P1 |
 | PERF-06 | `BeaconAdminService.listBeacons`: lädt **alle** Beacons und **alle** aktiven Assignments, dann je Beacon `storeRepository.findByIdOptional` + `canSeeBeaconStore` → `currentUser()` (DB) + `requireStore` (DB). Keine Pagination. | `BeaconAdminService.java:47-60,236-242` | ~3N Queries | P1 |
 | PERF-07 | `AdminAccessService.currentUser()` lädt die Zuweisung bei **jedem** Aufruf neu; viele Service-Methoden rufen es 2–4× pro Request (`effectiveRegionFilter` + `effectiveStoreFilter` + `requireStoreAccess` …). | `AdminAccessService.java:30-51` | 2–4 zusätzliche Queries | P1 |
-| PERF-08 | `LayoutService.ensureLayoutIndex()` versucht bei **jedem** Lesezugriff `indices().create(...)` und fängt die Fehlermeldung ab; `CategoryService.ensureSeeded()` macht bei jedem GET `exists` + `count`. | `LayoutService.java:42,58,73,123-130`, `CategoryService.java:26,31,41-55` | +1 bis +2 OpenSearch-Roundtrips | P1 |
-| PERF-09 | `GET /api/layout/history`: Suche mit `size = max(limit*3, 20)` über `match_all`, Filter und Sortierung im Java-Code nach String-Zeitstempel; `limit` unbegrenzt → `limit=10000` erzeugt eine 30 000er-Suche (OpenSearch-Fehler > `max_result_window`). Außerdem liefert die Abfrage bei mehr Dokumenten als `size` nicht zwingend die neuesten Versionen. | `LayoutService.java:72-95` | – | P1 |
+| PERF-08 | behoben im Repo | `OpenSearchStartup` (Indizes, Kategorie-Seed, Wiederholung alle 30 s) und Readiness `/q/health/ready`; keine Index-Aufrufe mehr auf den Anfragepfaden. Offen (Mensch): Start gegen ein echtes OpenSearch prüfen. |
+| PERF-09 | teilweise | `limit` auf 1..50 begrenzt, `unmappedType` für `savedAt`; der Java-Nachfilter bleibt. Alte Versionen werden täglich auf 50 gekürzt (`DataRetentionJob`). |
 | PERF-25 | `GET /api/products?size=` ohne Obergrenze im Legacy-Pfad (Admin-Pfad begrenzt auf 1 000); `size` negativ → OpenSearch-Fehler → 500. | `ProductResource.java:65`, `OpenSearchService.java:123-137` | – | P2 |
 | PERF-26 | Default-Layout wird bei jeder Anfrage ohne aktives Layout vom Classpath gelesen und geparst – dreifach dupliziert. | `LayoutService.java:132`, `StoreLayoutAdminService.java:187`, `MobileStoreService.java:174` | Datei-I/O + Parse | P2 |
 | PERF-27 | Pro OpenAI-Aufruf ein neuer `HttpClient` (eigener Selector-Thread, kein Connection-Reuse). | `UpsellSuggestionService.java:1500,1547` | TLS-Handshake je Anfrage | P2 |
@@ -268,7 +268,7 @@ Die Befunde **C1–C10** aus [docs/specs/AUDIT.md §2](../specs/AUDIT.md) wurden
 | PERF-30 | Suchen mit `lower(code)`, `lower(storeCode)`, `lower(beaconCode)`, `lower(slug)` – nur `idx_recipe_tags_status_name` und Rezepttitel haben funktionale Indizes; die Unique-Constraints sind case-sensitiv, die Anwendung prüft case-insensitiv (Race → DB akzeptiert „ABC“ und „abc“ parallel). | Repositories, V1/V7 | P2 |
 | PERF-31 | Rezept-Freitextsuche `lower(description) like '%q%'` über TEXT-Spalten ohne Trigram-/Volltextindex. | `RecipeService.java:396` | P2 |
 | PERF-32 | `audit_logs` und `error_logs` werden nach `created_at` sortiert gelesen; `audit_logs` hat nur einen zusammengesetzten Index `(entity_type, entity_id, created_at)` → globale „letzte Events“ = Seq-Scan + Sort. | `AuditLogRepository.listRecent`, V1 | P2 |
-| PERF-33 | Unbegrenztes Wachstum: `layout_versions` (jede Speicherung eine volle JSONB-Kopie), `upsell_suggestion_cache` (abgelaufene Einträge bleiben), `upsell_events`, `upsell_dismissals`, `error_logs`, `audit_logs` (je Mutation vollständige `before/after`-Snapshots); OpenSearch-Index `layouts` wächst mit jeder anonymen Speicherung und hat dynamisches Mapping (Mapping-Explosion möglich). | Migrationen, `LayoutService.saveCurrentLayout` | P1 |
+| PERF-33 | behoben im Repo | `DataRetentionJob` (täglich 03:15): Upsell-Cache, -Events und -Dismissals sowie alte Legacy-Layout-Versionen (Schwellen `indooro.retention.*`). |
 
 ---
 
@@ -276,7 +276,7 @@ Die Befunde **C1–C10** aus [docs/specs/AUDIT.md §2](../specs/AUDIT.md) wurden
 
 | ID | Befund | Beleg | Stufe |
 | --- | --- | --- | --- |
-| BUG-01 | Upsell-Dismissals sind wirkungslos: `upsell_dismissals.suppressed_until` wird geschrieben, aber an keiner Stelle gelesen (Kandidatenfilter ignoriert es). | `UpsellSuggestionService.java:533-554`, Grep `suppressedUntil` | P1 |
+| BUG-01 | behoben im Repo | `suggestions()` und `plan()` filtern aktive Dismissals vor dem Ranking; `UpsellSuggestionRequest` und `UpsellPlanRequest` haben ein optionales `sessionId`; der Cache-Schlüssel enthält die aktiven Dismissals. |
 | BUG-02 | `UpsellDismissalRepository.findMatching` vergleicht nullable Spalten mit `= ?` → bei `suggestedProductId`/`storeId`/`sessionHash = null` nie ein Treffer → jede Dismissal erzeugt eine neue Zeile, `dismissal_count` bleibt 1. | `UpsellDismissalRepository.java:13-27` | P1 |
 | BUG-03 | Nicht-atomare Versionsnummer: `nextVersionNo` = `max+1` ohne Sperre; zwei parallele Speicherungen verletzen `uk_layout_version_store_no` → 500 statt 409. Gleiches Muster bei Aktivierung (partieller Unique-Index) und bei allen „check-then-insert“-Duplikatprüfungen (Region-/Store-/Beacon-Codes, Slugs, Positionen). | `LayoutVersionRepository.java`, Services | P1 |
 | BUG-04 | `LayoutService.saveCurrentLayout` schreibt Versions- und Current-Dokument in zwei getrennten Aufrufen – Teilzustand bei Fehler. | `LayoutService.java:107-117` | P2 |
@@ -286,7 +286,7 @@ Die Befunde **C1–C10** aus [docs/specs/AUDIT.md §2](../specs/AUDIT.md) wurden
 | BUG-08 | iBeacon-Major/Minor sind `UInt16`; weder DTO noch DB begrenzen auf 0…65 535 → nie auffindbare Beacons möglich. Admin-UI prüft nur `< 0`. | `BeaconDtos.java`, V1, `core.js:151-152` | P1 |
 | BUG-09 | `MobileStoreService.resolveBeacon`: wird eine exakte UUID/Major/Minor-Kombination nicht gefunden, fällt die Suche auf UUID-only zurück und liefert ggf. einen **anderen** Beacon/Store. | `MobileStoreService.java:117-131` | P1 |
 | BUG-10 | Seitenzahl-Überlauf: `page=Integer.MAX_VALUE` → `page*size` überläuft → Hibernate-Fehler → 500 (öffentliche Rezept-Route). | `MobileRecipeResource.java:63-65` | P2 |
-| BUG-11 | `OpenSearchService.createIndex()`/`deleteIndex()` schlucken alle Fehler und melden Erfolg (AUD-35). | `OpenSearchService.java:245-277` | P1 |
+| BUG-11 | behoben im Repo | `createIndex` liefert 409 und 503, `deleteIndex` 404 und 503 (`AdminIndexResourceTest`). |
 | BUG-12 | `ProductResource` und `AdminResource` bauen JSON per String-Konkatenation mit Exception-Texten → ungültiges JSON bei Anführungszeichen. | `ProductResource.java:44,55,72,96,114,118,140,144` | P2 |
 | BUG-13 | **Datenverlust beim Bearbeiten von Rezepten.** Die Liste übergibt die Summary-DTO (ohne `description`, `imageAlt`, Zutaten, Schritte) an den Drawer; der Speichern-Handler sendet `description` leer bzw. `null`, **kein** `imageUrl`/`imageAlt` und `tagIds: []`. `applyRecipeRequest` übernimmt die `null`-Werte, `assignTags` leert die Tag-Zuordnungen immer (auch bei `tagIds = null`). Jede Bearbeitung eines der 26 Seed-Rezepte entfernt Bild, Beschreibung und Tags. | `app.js:446,775-795`, `RecipeService.java:428-430,488-493` | **P0** |
 | BUG-14 | Beim Bearbeiten werden Zutaten- und Schrittänderungen verworfen (nur `PUT` der Metadaten), die Validierung verlangt aber trotzdem mindestens eine Zutat mit Produkt und einen Schritt – der Drawer zeigt für bestehende Rezepte leere Zeilen. | `app.js:771-797` | P1 |
@@ -298,6 +298,34 @@ Die Befunde **C1–C10** aus [docs/specs/AUDIT.md §2](../specs/AUDIT.md) wurden
 | SMELL-04 | Deutsch/Englisch-Mix und ASCII-Umschreibungen in Fehlermeldungen („ungueltig“, „Loeschen“); keine i18n im Admin. | – | P2 |
 
 ---
+
+## 5a. Umsetzungsstand PERF- und BUG-Befunde (Change `optimize-backend-data-access`)
+
+Stand 2026-10-18, Repo-Stand, Migration `V18` noch nicht ausgerollt. „Offen“: im Change zurückgestellt, siehe `tasks.md`.
+
+| ID | Stand | Nachweis / offen |
+| --- | --- | --- |
+| PERF-01 | behoben im Repo | `plan()` und `suggestions()` ohne `@Transactional`; kurze Lese- und `REQUIRES_NEW`-Schreib-Transaktionen für Cache und Dismissals; `OpenAiRankingClient` mit `@Bulkhead(4, 16)`, `@Timeout` und Fallback (`UpsellSuggestionTransactionTest`, `OpenAiRankingBulkheadTest`). Offen (Mensch): Lasttest (Task 8.3). |
+| PERF-02 | behoben im Repo | `RecipeService`: Seiten-IDs, Join-Fetch der Tags, je ein Aggregat für Zuordnungen, Zutaten und Schritte; keine OpenSearch-Aufrufe in der Liste (`RecipeServiceTest`). Die Sortierpfade laden die gefilterte Liste weiter im Speicher. |
+| PERF-03 | behoben im Repo | `getProductsByIds` für `mappingStatus`, `getProductsByNumericIds` für Trigger und Listen-IDs im Upsell, je eine Anfrage. Offen (Mensch): `collapse` mit Sortierung auf einem echten OpenSearch prüfen. |
+| PERF-04 | behoben im Repo | `findUpsellCandidates` mit Relevanzabfrage (Trigger- und Ergänzungskategorien, Sortierung `_score`, `id`) statt `match_all` (`OpenSearchUpsellCandidateQueryTest`). |
+| PERF-05 | behoben im Repo | `StoreAdminService.listStores`: gruppierte Zählabfrage und eine Abfrage für aktive Layouts je Seite. |
+| PERF-06 | behoben im Repo | `BeaconAdminService.listBeacons`: zwei Abfragen statt je Beacon (`BeaconAdminServiceListTest`). |
+| PERF-07 | behoben im Repo | `RequestCurrentAdminUser` (`@RequestScoped`), Join-Fetch der Zuweisung. |
+| PERF-08 | behoben im Repo | `OpenSearchStartup` (Indizes, Kategorie-Seed, Wiederholung alle 30 s) und Readiness `/q/health/ready`; keine Index-Aufrufe mehr auf den Anfragepfaden. Offen (Mensch): Start gegen ein echtes OpenSearch prüfen. |
+| PERF-09 | teilweise | `limit` auf 1..50 begrenzt, `unmappedType` für `savedAt`; der Java-Nachfilter bleibt. Alte Versionen werden täglich auf 50 gekürzt (`DataRetentionJob`). |
+| PERF-25 | behoben im Repo | `size` auf 1..500 (`/api/products`) und 1..100 (`/search`) begrenzt (`ProductSizeClampTest`). |
+| PERF-26, PERF-27, PERF-29 | behoben im Repo | `DefaultLayoutProvider` (Task 5.5), `OpenAiRankingClient` mit einem `HttpClient` (Task 2.1), `ETag` und 304 auf `GET /api/mobile/stores/{storeId}/layout/current` (Task 5.6). |
+| PERF-28 | behoben im Repo | `OpenSearchClientConfig` erzeugt einen `@Singleton`-Client mit `@Disposes`. `@ApplicationScoped` scheitert, weil ArC den Client nicht proxien kann. |
+| PERF-30, PERF-31 | behoben im Repo | `V18`: funktionale Unique-Indizes auf `lower(...)`, Trigram-Indizes (nur mit `pg_trgm`). Offen (Mensch): Duplikat-Vorprüfung auf der LeoCloud-Kopie (Task 1.2). |
+| PERF-32 | teilweise | `V18`: Index `idx_audit_logs_created_at`; `error_logs` unverändert. |
+| PERF-33 | behoben im Repo | `DataRetentionJob` (täglich 03:15): Upsell-Cache, -Events und -Dismissals sowie alte Legacy-Layout-Versionen (Schwellen `indooro.retention.*`). |
+| BUG-01 | behoben im Repo | `suggestions()` und `plan()` filtern aktive Dismissals vor dem Ranking; `UpsellSuggestionRequest` und `UpsellPlanRequest` haben ein optionales `sessionId`; der Cache-Schlüssel enthält die aktiven Dismissals. |
+| BUG-02 | behoben im Repo | `UpsellDismissalRepository.findMatching` ist null-sicher (`UpsellDismissalRepositoryTest`). |
+| BUG-03 | behoben im Repo | Store-Zeile wird beim Speichern und Aktivieren gesperrt (Task 6.2, vorher erledigt). Eindeutigkeitsverletzungen liefern 409 (`ApiThrowableUniqueViolationTest`). |
+| BUG-08 | behoben im Repo | `@Min(0) @Max(65535)` in `BeaconDtos`; DB-Check in `V18`. Mobile GET-Parameter sind nicht bereichsgeprüft. |
+| BUG-09 | behoben im Repo | UUID-only-Fallback nur für Beacons ohne Major und Minor (`MobileStoreBeaconResolutionTest`). |
+| BUG-11 | behoben im Repo | `createIndex` liefert 409 und 503, `deleteIndex` 404 und 503 (`AdminIndexResourceTest`). |
 
 ## 6. Abdeckung durch bestehende OpenSpec-Changes
 
@@ -311,3 +339,28 @@ Die Befunde **C1–C10** aus [docs/specs/AUDIT.md §2](../specs/AUDIT.md) wurden
 | PERF-01…09, PERF-25…33, BUG-01/02/03/08/09/11 | **neu:** `optimize-backend-data-access` | – |
 | API-20, API-21, API-27, Versionierung, Codegen | **neu:** `establish-shared-api-contract` | – |
 | DC-09…25, SMELL-01…04 | Blueprint Phase „Code Quality“ | kein eigener Change (Aufräumarbeiten) |
+
+---
+
+## 7. Umsetzungsstand der SEC-Befunde (Change `harden-platform-security-baseline`)
+
+Stand 2026-10-18, Repo-Stand. „Behoben im Repo, Rollout offen“: Manifest bzw. Code ist fertig, aber noch nicht auf LeoCloud ausgerollt. „Offen (Mensch)“: Schritte, die nur auf dem Cluster oder mit Personen ausgefuehrt werden koennen (Details: `DEPLOYMENT.md`, `tasks.md`). „Offen (Code)“: Umsetzung fehlt noch.
+
+| ID | Umsetzungsstand | Nachweis / offen |
+| --- | --- | --- |
+| SEC-01 | behoben im Repo, Rollout offen | Prod-Realm ohne Benutzer (`k8s/keycloak-realm-prod.json`); Demo-Zuweisungen per `V17` deaktiviert. Offen (Mensch): LeoCloud-Passwoerter pruefen und rotieren (Task 1.1), reale Admin-Zuweisung setzen. |
+| SEC-02 | behoben im Repo, Rollout offen | Escaping im Editor (Tasks 3.1, 3.5), CSP-Header (3.4). Offen (Mensch): Browser-Pruefung auf LeoCloud (8.3). |
+| SEC-03 | behoben im Repo, Rollout offen | Keycloak 26.0.8 mit `start` und PostgreSQL, Secrets ausgelagert, Admin nicht ueber Ingress. Offen (Mensch): DB, Secret und Realm-ConfigMap anlegen, Rollout, Pruefung (8.1). |
+| SEC-04 | behoben im Repo, Rollout offen | OpenSearch und Dashboards `ClusterIP`; `k8s/network-policy.yaml` vorhanden. Offen (Mensch): NetworkPolicy erst nach Task 1.3 anwenden, Pruefung (8.2). |
+| SEC-05 | behoben im Repo, Rollout offen | Schleifen- und Eingabegrenzen in `PdfExportService` (Task 4.2). Offen (Mensch): Pruefung (8.4). |
+| SEC-07 | behoben im Repo, Rollout offen | `ErrorLogService.record` (nur 5xx und authentifizierte Admin-4xx), `ErrorLogRetentionJob` (30 Tage, 50 000 Zeilen). |
+| SEC-10 | behoben im Repo, Rollout offen | `V16__audit_actor_subject.sql`, `AuditLogService.currentActor()`; Audit fuer Tags, Produkte, Kategorien. |
+| SEC-11 | behoben im Repo, Rollout offen | `PdfImportService`: 10 MB, 50 Seiten, zeilenweises Parsing (Task 4.3). |
+| SEC-12 | behoben im Repo, Rollout offen | `@Valid`/`@Size` in `UpsellDtos`, `MobileRateLimitFilter` (429 mit `Retry-After`). Der Limiter vertraut dem ersten `X-Forwarded-For`-Hop. |
+| SEC-13 | offen (Code) | Kein Task in `tasks.md`. Retention und Begrenzung von `POST /api/mobile/upsell/events` fehlen; Task 4.9 begrenzt nur die Rate. |
+| SEC-15 | behoben im Repo, Rollout offen | Kunden-Seite ohne `innerHTML` mit Nutzerdaten (Task 3.2). |
+| SEC-16 | behoben im Repo, Rollout offen | Tailwind Play CDN aus `customer/index.html` entfernt (Task 3.3). |
+| SEC-17 | behoben im Repo, Rollout offen | CSP, `X-Content-Type-Options`, `Referrer-Policy`, HSTS in `application.properties` (Task 3.4). Ingress-Header sind nicht gesetzt. |
+| SEC-20 | behoben im Repo, Rollout offen | 5xx-Antworten liefern generischen Text und `correlationId`. |
+| SEC-21 | behoben im Repo, Rollout offen | Anonyme Upsell-`debug`-Felder auf `requestId`, `responseSource`, `fallbackReason` reduziert (`MobileUpsellResource`). |
+| SEC-24 | behoben im Repo, Rollout offen | DB-Passwort aus Secret, Backend `ClusterIP`, Container als Nicht-root (UID 10001) mit Read-only-Dateisystem, fester SHA-Tag. Offen (Mensch): CI-Image mit neuem Dockerfile bauen (`a47c5e6` startet damit nicht), Passwoerter rotieren, NetworkPolicy. |

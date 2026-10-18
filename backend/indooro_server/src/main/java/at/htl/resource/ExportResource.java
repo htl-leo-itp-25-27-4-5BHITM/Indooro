@@ -15,8 +15,11 @@ import jakarta.ws.rs.core.Response;
 
 import java.util.List;
 import java.util.Map;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/export")
+@Tag(name = "utility")
 public class ExportResource {
 
     @Inject
@@ -25,6 +28,7 @@ public class ExportResource {
     @Inject
     AdminAccessService adminAccessService;
 
+    @Operation(operationId = "exportBelegplanPdf")
     @POST
     @Path("/pdf")
     @Consumes(MediaType.APPLICATION_JSON)

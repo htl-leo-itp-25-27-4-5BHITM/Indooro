@@ -5,6 +5,9 @@ These routes must stay anonymous according to OpenSpec:
 - catalog read APIs
 - mobile store detection APIs
 - mobile/current layout APIs
+
+Bodies of documented 2xx JSON responses are validated against
+openspec/specs/shared-api/openapi.yaml (see api-tests/httpyac/README.md).
 */
 
 @baseUrl={{BASE_URL}}
@@ -16,6 +19,11 @@ Accept: application/json
 
 ?? status startsWith 20
 ?? header content-type includes json
+
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("listProducts", response.statusCode, response.parsedBody);
+}}
 
 ###
 # Public product search rejects missing q
@@ -33,6 +41,11 @@ Accept: application/json
 ?? status startsWith 20
 ?? header content-type includes json
 
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("searchProducts", response.statusCode, response.parsedBody);
+}}
+
 ###
 # Public product search accepts an optional store scope
 GET {{baseUrl}}/api/products/search?q=milch&size=5&storeId={{ACTIVE_STORE_ID}}
@@ -40,6 +53,11 @@ Accept: application/json
 
 ?? status startsWith 20
 ?? header content-type includes json
+
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("searchProducts", response.statusCode, response.parsedBody);
+}}
 
 ###
 # Public product by id uses normal lookup semantics
@@ -49,6 +67,13 @@ Accept: application/json
 ?? status matches ^(200|404)$
 ?? header content-type includes json
 
+{{
+  if (response.statusCode === 200) {
+    const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+    validateResponse("getProduct", response.statusCode, response.parsedBody);
+  }
+}}
+
 ###
 # Public categories list stays anonymous
 GET {{baseUrl}}/api/categories?size=20
@@ -57,6 +82,11 @@ Accept: application/json
 ?? status startsWith 20
 ?? header content-type includes json
 
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("listCategories", response.statusCode, response.parsedBody);
+}}
+
 ###
 # Public category by code stays anonymous
 GET {{baseUrl}}/api/categories/{{TEST_CATEGORY_CODE}}
@@ -64,6 +94,13 @@ Accept: application/json
 
 ?? status matches ^(200|404)$
 ?? header content-type includes json
+
+{{
+  if (response.statusCode === 200) {
+    const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+    validateResponse("getCategory", response.statusCode, response.parsedBody);
+  }
+}}
 
 ###
 # Public mobile stores list stays anonymous
@@ -74,6 +111,11 @@ Accept: application/json
 ?? header content-type includes json
 ?? js Array.isArray(response.parsedBody) == true
 
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("listMobileStores", response.statusCode, response.parsedBody);
+}}
+
 ###
 # Public mobile beacon identities stay anonymous
 GET {{baseUrl}}/api/mobile/stores/beacon-identities
@@ -82,6 +124,11 @@ Accept: application/json
 ?? status == 200
 ?? header content-type includes json
 ?? body uuids isArray
+
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("listMobileBeaconIdentities", response.statusCode, response.parsedBody);
+}}
 
 ###
 # Public mobile store lookup rejects missing uuid explicitly
@@ -99,6 +146,13 @@ Accept: application/json
 ?? status matches ^(200|404|409)$
 ?? header content-type includes json
 
+{{
+  if (response.statusCode === 200) {
+    const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+    validateResponse("findMobileStoreByBeacon", response.statusCode, response.parsedBody);
+  }
+}}
+
 ###
 # Public mobile current layout stays anonymous
 GET {{baseUrl}}/api/mobile/stores/{{ACTIVE_STORE_ID}}/layout/current
@@ -106,6 +160,13 @@ Accept: application/json
 
 ?? status matches ^(200|404)$
 ?? header content-type includes json
+
+{{
+  if (response.statusCode === 200) {
+    const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+    validateResponse("getMobileStoreLayout", response.statusCode, response.parsedBody);
+  }
+}}
 
 ###
 # Anonymous legacy layout write is rejected (admin only)

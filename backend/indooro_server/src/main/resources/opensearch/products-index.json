@@ -1,0 +1,148 @@
+{
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 0,
+    "max_ngram_diff": 13,
+    "analysis": {
+      "filter": {
+        "de_wdg": {
+          "type": "word_delimiter_graph",
+          "generate_word_parts": true,
+          "generate_number_parts": true,
+          "split_on_case_change": false,
+          "split_on_numerics": false,
+          "preserve_original": false,
+          "catenate_words": true
+        },
+        "de_fold": {
+          "type": "asciifolding",
+          "preserve_original": false
+        },
+        "de_synonyms": {
+          "type": "synonym_graph",
+          "lenient": true,
+          "tokenizer": "standard",
+          "synonyms": []
+        },
+        "de_stem": {
+          "type": "stemmer",
+          "language": "light_german"
+        },
+        "de_edge": {
+          "type": "edge_ngram",
+          "min_gram": 2,
+          "max_gram": 15
+        },
+        "de_ngram": {
+          "type": "ngram",
+          "min_gram": 3,
+          "max_gram": 12
+        }
+      },
+      "analyzer": {
+        "de_name": {
+          "type": "custom",
+          "tokenizer": "whitespace",
+          "filter": [
+            "lowercase",
+            "de_wdg",
+            "german_normalization",
+            "de_fold",
+            "de_stem"
+          ]
+        },
+        "de_name_search": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "german_normalization",
+            "de_synonyms",
+            "de_fold",
+            "de_stem"
+          ]
+        },
+        "de_prefix_index": {
+          "type": "custom",
+          "tokenizer": "whitespace",
+          "filter": [
+            "lowercase",
+            "de_wdg",
+            "german_normalization",
+            "de_fold",
+            "de_edge"
+          ]
+        },
+        "de_prefix_search": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "german_normalization",
+            "de_fold"
+          ]
+        },
+        "de_parts_index": {
+          "type": "custom",
+          "tokenizer": "whitespace",
+          "filter": [
+            "lowercase",
+            "de_wdg",
+            "german_normalization",
+            "de_fold",
+            "de_ngram"
+          ]
+        },
+        "de_parts_search": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "german_normalization",
+            "de_fold"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "integer"
+      },
+      "name": {
+        "type": "text",
+        "analyzer": "de_name",
+        "search_analyzer": "de_name_search",
+        "fields": {
+          "keyword": {
+            "type": "keyword",
+            "ignore_above": 256
+          },
+          "prefix": {
+            "type": "text",
+            "analyzer": "de_prefix_index",
+            "search_analyzer": "de_prefix_search"
+          },
+          "parts": {
+            "type": "text",
+            "analyzer": "de_parts_index",
+            "search_analyzer": "de_parts_search"
+          }
+        }
+      },
+      "price": {
+        "type": "double"
+      },
+      "layoutCode": {
+        "type": "keyword"
+      },
+      "storeId": {
+        "type": "keyword"
+      },
+      "storeCode": {
+        "type": "keyword"
+      }
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 1, "testId": "T06", "t": "2026-11-02T13:00:00.000Z", "type": "taskStart"}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 1, "testId": "T06", "t": "2026-11-02T13:01:41.100Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 2, "testId": "T06", "t": "2026-11-02T13:02:04.100Z", "type": "taskStart"}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 2, "testId": "T06", "t": "2026-11-02T13:02:10.213Z", "type": "manualPosition"}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 2, "testId": "T06", "t": "2026-11-02T13:02:19.592Z", "type": "reroute"}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 2, "testId": "T06", "t": "2026-11-02T13:02:35.927Z", "type": "note", "text": "Produkt lag im falschen Fach"}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 2, "testId": "T06", "t": "2026-11-02T13:02:52.600Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 1, "rerouteCount": 1, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 3, "testId": "T06", "t": "2026-11-02T13:03:17.600Z", "type": "taskStart"}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 3, "testId": "T06", "t": "2026-11-02T13:05:53.400Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": null, "rerouteCount": null, "stopChangeWithoutEventCount": null, "appErrorCount": 0}}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 4, "testId": "T06", "t": "2026-11-02T13:06:13.400Z", "type": "taskStart"}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 4, "testId": "T06", "t": "2026-11-02T13:06:13.683Z", "type": "note", "text": "Produkt lag im falschen Fach"}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 4, "testId": "T06", "t": "2026-11-02T13:06:21.086Z", "type": "reroute"}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 4, "testId": "T06", "t": "2026-11-02T13:06:41.417Z", "type": "manualPosition"}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 4, "testId": "T06", "t": "2026-11-02T13:07:05.966Z", "type": "reroute"}
+{"sessionId": "d261a7ab-3aa2-44f9-8e51-f30dc6a7ee39", "taskNo": 4, "testId": "T06", "t": "2026-11-02T13:07:45.600Z", "type": "taskEnd", "outcome": "gefunden", "counters": {"manualPositionCount": 1, "rerouteCount": 2, "stopChangeWithoutEventCount": 0, "appErrorCount": 0}}

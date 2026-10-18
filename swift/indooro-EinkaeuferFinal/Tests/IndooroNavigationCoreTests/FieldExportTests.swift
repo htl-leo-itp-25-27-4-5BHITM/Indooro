@@ -1,3 +1,4 @@
+import IndooroModels
 import XCTest
 import simd
 @testable import IndooroNavigationCore
@@ -8,11 +9,12 @@ import simd
 /// Der Helfer `FieldExport.write` schreibt nach `FIELD_EXPORT_DIR`, sonst nach `NavigationFixtures/exports/`
 /// (gitignored, echte Felddaten bleiben lokal).
 ///
-/// Echte Aufnahmen aus `NavigationFixtures/incoming/` und `NavigationFixtures/recordings/` haben je ein eigenes
-/// Layout. Der Test `testFieldExportOfIncomingRecordings` ueberspringt deshalb mit Hinweis; echte Aufnahmen werden
-/// spaeter mit ihrem Layout exportiert.
+/// Exportiert werden nur Aufnahmen aus `NavigationFixtures/recordings/` mit Dateiname `<site>-YYYY-MM-DD-<n>.jsonl`.
+/// Jede Aufnahme braucht ihr Layout `Resources/layout-<site>.json`; `FIELD_EXPORT_LAYOUT` (Pfad zu einer Layout-JSON)
+/// ersetzt das Layout fuer alle Aufnahmen. `NavigationFixtures/incoming/` wird bewusst nicht exportiert.
 enum FieldExport {
     static let environmentKey = "FIELD_EXPORT_DIR"
+    static let layoutEnvironmentKey = "FIELD_EXPORT_LAYOUT"
 
     /// `NavigationFixtures/` im Repo, relativ zu dieser Datei.
     static var fixturesDirectory: URL {
@@ -31,6 +33,47 @@ enum FieldExport {
         return fixturesDirectory.appendingPathComponent("exports", isDirectory: true)
     }
 
+    /// `NavigationFixtures/recordings/`: anonymisierte Feldaufnahmen.
+    static var recordingsDirectory: URL {
+        fixturesDirectory.appendingPathComponent("recordings", isDirectory: true)
+    }
+
+    /// `Tests/IndooroNavigationCoreTests/Resources/`: Layouts `layout-<site>.json`.
+    static var layoutDirectory: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // IndooroNavigationCoreTests
+            .appendingPathComponent("Resources", isDirectory: true)
+    }
+
+    /// `FIELD_EXPORT_LAYOUT`: Layout-JSON, das fuer alle Aufnahmen gilt; sonst `nil`.
+    static var layoutOverride: URL? {
+        guard let path = ProcessInfo.processInfo.environment[layoutEnvironmentKey], !path.isEmpty else { return nil }
+        return URL(fileURLWithPath: path)
+    }
+
+    /// Site aus einem Aufnahmedateinamen `<site>-YYYY-MM-DD-<n>.jsonl`, z. B. `grosser-raum-2026-11-02-1.jsonl`
+    /// -> `grosser-raum`. `nil`, wenn der Name nicht diesem Muster folgt.
+    static func siteName(fromRecordingFileName fileName: String) -> String? {
+        let extensionSuffix = ".jsonl"
+        guard fileName.hasSuffix(extensionSuffix) else { return nil }
+        let stem = String(fileName.dropLast(extensionSuffix.count))
+        let parts = stem.split(separator: "-", omittingEmptySubsequences: false).map(String.init)
+        guard parts.count >= 5 else { return nil }
+        let year = parts[parts.count - 4]
+        let month = parts[parts.count - 3]
+        let day = parts[parts.count - 2]
+        let index = parts[parts.count - 1]
+        let site = parts.dropLast(4)
+        guard year.count == 4, year.allSatisfy({ $0.isNumber }),
+              month.count == 2, month.allSatisfy({ $0.isNumber }),
+              day.count == 2, day.allSatisfy({ $0.isNumber }),
+              !index.isEmpty, index.allSatisfy({ $0.isNumber }),
+              site.allSatisfy({ !$0.isEmpty }) else {
+            return nil
+        }
+        return site.joined(separator: "-")
+    }
+
     /// Replay mit Tick-Export; schreibt `<name>-ticks.csv` in `directory` (wird angelegt).
     @discardableResult
     static func write(
@@ -45,6 +88,74 @@ enum FieldExport {
         let url = directory.appendingPathComponent("\(name)-ticks.csv")
         try NavigationReplay.csv(ticks: ticks).write(to: url, atomically: true, encoding: .utf8)
         return (url, metrics)
+    }
+
+    /// `REPLAY`-Zeile mit den Kennzahlen des Replays (gleiches Format wie `NavigationReplayTests`).
+    static func replayLine(name: String, metrics: ReplayMetrics) -> String {
+        let delays = metrics.offRouteDetectionDelays.map { String(format: "%.2f", $0) }.joined(separator: ",")
+        return "REPLAY \(name) ticks=\(metrics.tickCount) duration=\(String(format: "%.1f", metrics.durationSeconds))s "
+            + "reroutes=\(metrics.rerouteCount) reroutesPerMin=\(String(format: "%.2f", metrics.reroutesPerMinute)) "
+            + "stopChanges=\(metrics.activeStopChangesWithoutEvent) jumps=\(metrics.projectedJumps) maxStep=\(String(format: "%.2f", metrics.maxProjectedStepMeters)) "
+            + "lagMean=\(metrics.meanLagMeters.map { String(format: "%.2f", $0) } ?? "-") "
+            + "lagP95=\(metrics.p95LagMeters.map { String(format: "%.2f", $0) } ?? "-") "
+            + "offRouteDelays=[\(delays)] lowConfToggles=\(metrics.lowConfidenceToggles) "
+            + "planning=\(metrics.planningSeconds.count)x"
+    }
+
+    struct ExportSummary: Equatable {
+        /// Zahl der `.jsonl`-Dateien im Aufnahmeverzeichnis.
+        var recordingCount: Int
+        /// Namen (ohne Endung) der exportierten Aufnahmen.
+        var exported: [String]
+        /// Dateinamen der uebersprungenen Aufnahmen (kein Layout).
+        var skipped: [String]
+    }
+
+    /// Exportiert jede `.jsonl`-Aufnahme aus `recordingsDirectory` mit ihrem Layout: `layoutOverride` falls gesetzt,
+    /// sonst `layoutDirectory/layout-<site>.json`. Aufnahmen ohne Layout werden uebersprungen. Je Aufnahme geht eine
+    /// Zeile an `report` (Standard: `print`).
+    @discardableResult
+    static func exportRecordings(
+        recordingsDirectory: URL,
+        layoutDirectory: URL,
+        layoutOverride: URL?,
+        to outputDirectory: URL,
+        report: (String) -> Void = { print($0) }
+    ) throws -> ExportSummary {
+        let contents = (try? FileManager.default.contentsOfDirectory(at: recordingsDirectory, includingPropertiesForKeys: nil)) ?? []
+        let recordings = contents
+            .filter { $0.pathExtension == "jsonl" }
+            .sorted { $0.lastPathComponent < $1.lastPathComponent }
+        var summary = ExportSummary(recordingCount: recordings.count, exported: [], skipped: [])
+
+        for recording in recordings {
+            let fileName = recording.lastPathComponent
+            let name = recording.deletingPathExtension().lastPathComponent
+            let site = siteName(fromRecordingFileName: fileName)
+
+            let layoutCandidate = site.map { layoutDirectory.appendingPathComponent("layout-\($0).json") }
+            let resolvedLayout: URL?
+            if let layoutOverride {
+                resolvedLayout = layoutOverride
+            } else if let layoutCandidate, FileManager.default.fileExists(atPath: layoutCandidate.path) {
+                resolvedLayout = layoutCandidate
+            } else {
+                resolvedLayout = nil
+            }
+            guard let layoutURL = resolvedLayout else {
+                let missing = site.map { "layout-\($0).json fehlt" } ?? "Site nicht erkennbar (<site>-YYYY-MM-DD-<n>.jsonl), kein Layout"
+                report("FIELD-EXPORT skipped \(fileName): \(missing)")
+                summary.skipped.append(fileName)
+                continue
+            }
+
+            let layout = try JSONDecoder().decode(LayoutData.self, from: Data(contentsOf: layoutURL))
+            let lines = try NavigationRecordLine.parse(jsonl: String(contentsOf: recording, encoding: .utf8))
+            let written = try write(recording: lines, layout: layout, name: name, to: outputDirectory)
+            report(replayLine(name: name, metrics: written.metrics))
+            summary.exported.append(name)
+        }
+        return summary
     }
 }
 
@@ -83,19 +194,80 @@ final class FieldExportTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: written.url, encoding: .utf8), csv)
     }
 
-    /// Echte Aufnahmen: Layout je Aufnahme verschieden, daher hier nur Erkennung und Skip.
-    /// Spaeter: Aufnahme mit ihrem Layout laden und `FieldExport.write(..., to: FieldExport.defaultDirectory)` aufrufen.
+    func testSiteNameFromRecordingFileName() {
+        XCTAssertEqual(FieldExport.siteName(fromRecordingFileName: "testraum-2026-10-20-3.jsonl"), "testraum")
+        XCTAssertEqual(FieldExport.siteName(fromRecordingFileName: "grosser-raum-2026-11-02-1.jsonl"), "grosser-raum")
+        XCTAssertNil(FieldExport.siteName(fromRecordingFileName: "foo.jsonl"))
+        XCTAssertNil(FieldExport.siteName(fromRecordingFileName: "testraum-2026-10-20-3.json"))
+        XCTAssertNil(FieldExport.siteName(fromRecordingFileName: "testraum-26-10-20-3.jsonl"))
+        XCTAssertNil(FieldExport.siteName(fromRecordingFileName: "-2026-10-20-3.jsonl"))
+    }
+
+    /// Hermetisch: Aufnahmen, Layouts und Ausgabe liegen in einem temporaeren Verzeichnis, `NavigationFixtures` bleibt unberuehrt.
+    func testExportRecordingsUsesLayoutPerSiteInTemporaryDirectories() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fieldexport-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let recordings = root.appendingPathComponent("recordings", isDirectory: true)
+        let layouts = root.appendingPathComponent("layouts", isDirectory: true)
+        let output = root.appendingPathComponent("exports", isDirectory: true)
+        try FileManager.default.createDirectory(at: recordings, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: layouts, withIntermediateDirectories: true)
+
+        // Kleine synthetische Aufnahme auf dem Demo-Layout; dieselbe Datei liegt fuer "testraum" und "unbekannt" vor.
+        var synthetic = SyntheticRecording(layout: try layout(), seed: 55)
+        synthetic.event(.startTour, plan: [RecordedStop(id: "A", title: "A", x: 30.5, y: 9.5)])
+        synthetic.walk([SIMD2(2.5, 9.5), SIMD2(10.5, 9.5)], speed: 1.2)
+        synthetic.stand(at: SIMD2(10.5, 9.5), seconds: 5)
+        let text = try NavigationRecordLine.jsonl(synthetic.lines)
+        try text.write(to: recordings.appendingPathComponent("testraum-2026-10-20-3.jsonl"), atomically: true, encoding: .utf8)
+        try text.write(to: recordings.appendingPathComponent("unbekannt-2026-10-20-1.jsonl"), atomically: true, encoding: .utf8)
+        try "keine Aufnahme".write(to: recordings.appendingPathComponent("notiz.txt"), atomically: true, encoding: .utf8)
+        // Layout nur fuer "testraum": "unbekannt" bleibt ohne Layout.
+        let layoutData = try TestLayouts.demoSupermarketData()
+        try layoutData.write(to: layouts.appendingPathComponent("layout-testraum.json"))
+
+        var lines: [String] = []
+        let summary = try FieldExport.exportRecordings(
+            recordingsDirectory: recordings,
+            layoutDirectory: layouts,
+            layoutOverride: nil,
+            to: output,
+            report: { lines.append($0) }
+        )
+
+        XCTAssertEqual(summary, FieldExport.ExportSummary(
+            recordingCount: 2,
+            exported: ["testraum-2026-10-20-3"],
+            skipped: ["unbekannt-2026-10-20-1.jsonl"]
+        ))
+        XCTAssertTrue(lines.contains { $0.hasPrefix("REPLAY testraum-2026-10-20-3 ") }, "REPLAY-Zeile fehlt: \(lines)")
+        XCTAssertTrue(lines.contains("FIELD-EXPORT skipped unbekannt-2026-10-20-1.jsonl: layout-unbekannt.json fehlt"), "Skip-Zeile fehlt: \(lines)")
+
+        // Export muss exakt dem Replay mit dem geladenen Layout entsprechen.
+        let decodedLayout = try JSONDecoder().decode(LayoutData.self, from: layoutData)
+        var ticks: [ReplayTick] = []
+        _ = NavigationReplay.run(recording: synthetic.lines, layout: decodedLayout, onTick: { ticks.append($0) })
+        let written = try String(contentsOf: output.appendingPathComponent("testraum-2026-10-20-3-ticks.csv"), encoding: .utf8)
+        XCTAssertEqual(written, NavigationReplay.csv(ticks: ticks))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: output.appendingPathComponent("unbekannt-2026-10-20-1-ticks.csv").path))
+    }
+
+    /// Echte Aufnahmen aus `NavigationFixtures/recordings/`: jede mit ihrem Layout exportieren.
+    /// Ohne Aufnahmen oder ohne passende Layouts wird uebersprungen (Gruende stehen in der Testausgabe).
     func testFieldExportOfIncomingRecordings() throws {
-        var files: [URL] = []
-        for folder in ["incoming", "recordings"] {
-            let directory = FieldExport.fixturesDirectory.appendingPathComponent(folder, isDirectory: true)
-            let contents = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
-            files += contents.filter { $0.pathExtension == "jsonl" }
+        let summary = try FieldExport.exportRecordings(
+            recordingsDirectory: FieldExport.recordingsDirectory,
+            layoutDirectory: FieldExport.layoutDirectory,
+            layoutOverride: FieldExport.layoutOverride,
+            to: FieldExport.defaultDirectory
+        )
+        guard summary.recordingCount > 0 else {
+            throw XCTSkip("Keine Aufnahmen in NavigationFixtures/recordings")
         }
-        guard !files.isEmpty else {
-            throw XCTSkip("Keine Aufnahmen in NavigationFixtures/incoming oder NavigationFixtures/recordings")
+        guard !summary.exported.isEmpty else {
+            throw XCTSkip("\(summary.recordingCount) Aufnahme(n) ohne Layout: Resources/layout-<site>.json ablegen oder FIELD_EXPORT_LAYOUT setzen")
         }
-        // Echte Aufnahmen werden spaeter mit ihrem Layout exportiert; das Layout ist je Aufnahme nicht festgelegt.
-        throw XCTSkip("\(files.count) Aufnahme(n) gefunden: Export braucht das Layout je Aufnahme, noch nicht zugeordnet")
+        XCTAssertEqual(summary.exported.count + summary.skipped.count, summary.recordingCount)
     }
 }

@@ -1,3 +1,4 @@
+import IndooroModels
 import SwiftUI
 
 struct RecipesPage: View {
@@ -274,7 +275,7 @@ struct AddRecipeToShoppingListSheet: View {
                         .foregroundStyle(.green)
                     if unmappedCount > 0 {
                         Label("\(unmappedCount) Zutaten ohne Produkt bleiben sichtbar", systemImage: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
+                                .foregroundStyle(Color.a11yWarningText)
                     }
                     if selectedCount == 0 {
                         Label("Wähle mindestens eine Zutat aus", systemImage: "info.circle.fill")
@@ -412,12 +413,12 @@ struct IngredientMappingStatusView: View {
     }
 
     private var tint: Color {
-        guard let status else { return .orange }
+        guard let status else { return Color.a11yWarningText }
         switch status.status {
         case .mapped:
             return .green
         case .productWithoutLayout, .multipleCandidates:
-            return .orange
+            return Color.a11yWarningText
         case .unavailableInStore, .unmapped:
             return .secondary
         }
@@ -457,7 +458,7 @@ private struct AddRecipeIngredientSelectionRow: View {
                     if let note = ingredient.localizedPreparationNote, !note.isEmpty {
                         Text(note)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                     }
                 }
 
@@ -465,6 +466,7 @@ private struct AddRecipeIngredientSelectionRow: View {
 
                 IngredientMappingStatusView(status: status)
             }
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -549,9 +551,10 @@ private struct RecipeHero: View {
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text(recipe.displayTitle)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .font(.system(.title, design: .rounded, weight: .bold))
                         .lineLimit(3)
                         .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
 
                     if let summary = recipe.displaySummary, !summary.isEmpty {
                         Text(summary)
@@ -619,6 +622,7 @@ private struct RecipeStepsView: View {
 private struct RecipeImage: View {
     let urlString: String?
     let title: String
+    @ScaledMetric(relativeTo: .title) private var fallbackIconSize: CGFloat = 34
 
     var body: some View {
         ZStack {
@@ -655,7 +659,7 @@ private struct RecipeImage: View {
 
     private var fallback: some View {
         Image(systemName: "fork.knife.circle.fill")
-            .font(.system(size: 34))
+            .font(.system(size: fallbackIconSize))
             .foregroundStyle(Color(red: 0.00, green: 0.43, blue: 0.36))
     }
 }
@@ -684,11 +688,12 @@ private struct RecipeStateView: View {
     let message: String
     let buttonTitle: String
     let action: () -> Void
+    @ScaledMetric(relativeTo: .title) private var iconSize: CGFloat = 42
 
     var body: some View {
         VStack(spacing: 14) {
             Image(systemName: systemImage)
-                .font(.system(size: 42))
+                .font(.system(size: iconSize))
                 .foregroundStyle(Color(red: 0.00, green: 0.43, blue: 0.36))
 
             Text(title)

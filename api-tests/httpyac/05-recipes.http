@@ -16,6 +16,11 @@ Accept: application/json
 ?? header content-type includes json
 ?? body content exists
 
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("listMobileRecipes", response.statusCode, response.parsedBody);
+}}
+
 ###
 # Mobile recipe search rejects missing q
 GET {{baseUrl}}/api/mobile/recipes/search
@@ -31,6 +36,11 @@ Accept: application/json
 ?? status == 200
 ?? header content-type includes json
 
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("searchMobileRecipes", response.statusCode, response.parsedBody);
+}}
+
 ###
 # Mobile recipe detail is public when fixture is published; unknown fixtures are 404
 GET {{baseUrl}}/api/mobile/recipes/{{ACTIVE_RECIPE_ID}}
@@ -39,6 +49,13 @@ Accept: application/json
 ?? status matches ^(200|404)$
 ?? header content-type includes json
 
+{{
+  if (response.statusCode === 200) {
+    const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+    validateResponse("getMobileRecipe", response.statusCode, response.parsedBody);
+  }
+}}
+
 ###
 # Mobile recipe product mapping is public when fixture exists; unknown fixtures are 404
 GET {{baseUrl}}/api/mobile/recipes/{{ACTIVE_RECIPE_ID}}/product-mapping?storeId={{ACTIVE_STORE_ID}}
@@ -46,6 +63,13 @@ Accept: application/json
 
 ?? status matches ^(200|404)$
 ?? header content-type includes json
+
+{{
+  if (response.statusCode === 200) {
+    const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+    validateResponse("getMobileRecipeProductMapping", response.statusCode, response.parsedBody);
+  }
+}}
 
 ###
 # Anonymous admin recipes request is rejected or redirected to Keycloak
@@ -64,6 +88,11 @@ Authorization: Bearer {{$global.adminToken}}
 ?? status == 200
 ?? header content-type includes json
 
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("listAdminRecipes", response.statusCode, response.parsedBody);
+}}
+
 ###
 # Admin can list recipe tags
 GET {{baseUrl}}/api/admin/recipe-tags
@@ -72,3 +101,8 @@ Authorization: Bearer {{$global.adminToken}}
 
 ?? status == 200
 ?? header content-type includes json
+
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("listRecipeTags", response.statusCode, response.parsedBody);
+}}

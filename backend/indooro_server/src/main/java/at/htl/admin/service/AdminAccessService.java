@@ -7,6 +7,8 @@ import at.htl.admin.repository.StoreRepository;
 import at.htl.admin.repository.UserAccessAssignmentRepository;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ContextNotActiveException;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.ForbiddenException;
 import jakarta.ws.rs.NotAuthorizedException;
@@ -27,11 +29,25 @@ public class AdminAccessService {
     @Inject
     StoreRepository storeRepository;
 
+    /** Null outside CDI (unit tests). Without an active request context the user is resolved on every call. */
+    @Inject
+    Instance<RequestCurrentAdminUser> requestCurrentUser;
+
     public CurrentAdminUser currentUser() {
         if (identity == null || identity.isAnonymous()) {
             throw new NotAuthorizedException("Admin-Login erforderlich.");
         }
 
+        CurrentAdminUser cached = cachedUser();
+        if (cached != null) {
+            return cached;
+        }
+        CurrentAdminUser user = resolveUser();
+        rememberUser(user);
+        return user;
+    }
+
+    private CurrentAdminUser resolveUser() {
         String subject = subject();
         UserAccessAssignmentEntity assignment = accessAssignmentRepository.findActiveBySubject(subject)
                 .orElseThrow(() -> new ForbiddenException("Kein aktiver Indooro Admin-Zugriff fuer diesen Benutzer."));
@@ -48,6 +64,28 @@ public class AdminAccessService {
                 role,
                 assignment
         );
+    }
+
+    private CurrentAdminUser cachedUser() {
+        if (requestCurrentUser == null) {
+            return null;
+        }
+        try {
+            return requestCurrentUser.get().current();
+        } catch (ContextNotActiveException exception) {
+            return null;
+        }
+    }
+
+    private void rememberUser(CurrentAdminUser user) {
+        if (requestCurrentUser == null) {
+            return;
+        }
+        try {
+            requestCurrentUser.get().remember(user);
+        } catch (ContextNotActiveException ignored) {
+            // No request scope (scheduled job, startup): nothing to cache for.
+        }
     }
 
     public AdminUserDtos.CurrentUserResponse currentUserResponse() {

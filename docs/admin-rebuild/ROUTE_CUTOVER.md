@@ -1,5 +1,7 @@
 # Admin route cutover and rollback
 
+**Local update 2026-10-18:** The packaged Dev-Realm gate run enabled `editor: true` on branch `pilot/editor-default`. Store and global direct links, query/fragment, refresh, all three roles and scope denials, `?legacy=1`, and simulated `editor:false` rollback passed. See [`EDITOR_CUTOVER_2026-10-18.md`](EDITOR_CUTOVER_2026-10-18.md) for fixtures, screenshots, observations, and limits. Earlier statements below that say the Editor flag is `false` describe the historical 2026-10-17 state. No production cutover occurred.
+
 The new React pages are packaged at `/admin/next/*`. Each existing entry loads `route-cutover.js` from the protected admin resources. The committed map redirects `/admin/`, `/admin/regions/`, `/admin/stores/`, `/admin/stores/detail/`, `/admin/beacons/`, `/admin/products/`, `/admin/categories/`, `/admin/recipes/`, and `/admin/server-logs/` to their candidate pages; Editor (Store and global mode) still serves its existing static page until its flag is switched (see "Editor cutover and rollback" below). This is a branch and image change; deploying it is a separate step.
 
 | Map key | Current entry | Candidate entry |

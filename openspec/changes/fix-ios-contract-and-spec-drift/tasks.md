@@ -1,8 +1,8 @@
 ## 1. Preparation
 
-- [ ] 1.1 Re-read `docs/specs/AUDIT.md` sections 2 and 3.2 and confirm each defect still reproduces on `main`.
-- [ ] 1.2 Capture a live `POST /api/mobile/upsell/plan` response from LeoCloud and record whether `expiresAt` contains fractional seconds.
-- [ ] 1.3 Capture live responses of `GET /api/mobile/stores` and `GET /api/mobile/stores/{storeId}/layout/current` as JSON fixtures under `swift/indooro-EinkaeuferFinal/Fixtures/`.
+- [x] 1.1 Re-read `docs/specs/AUDIT.md` sections 2 and 3.2 and confirm each defect still reproduces on `main`. (Beleg: am 2026-10-18 gegen den Code geprüft; behoben: C1–C4, C6, C7, C9, C10; Rest siehe `prepare-pilot-ios-build` 6.5 (toter `LayoutSelectionSheet`), Produkte ohne Preis/layoutCode fallen weiter einzeln weg, `accessAngle` wird vom Routing nicht genutzt)
+- [ ] 1.2 Capture a live `POST /api/mobile/upsell/plan` response from LeoCloud and record whether `expiresAt` contains fractional seconds. (Mensch: Live-System LeoCloud)
+- [ ] 1.3 Capture live responses of `GET /api/mobile/stores` and `GET /api/mobile/stores/{storeId}/layout/current` as JSON fixtures under `swift/indooro-EinkaeuferFinal/Fixtures/`. (Mensch: Live-System LeoCloud)
 
 ## 2. Backend Dismissal Bound
 
@@ -13,30 +13,30 @@
 
 ## 3. Shared Decoding
 
-- [ ] 3.1 Add `JSONDecoder.indooro` with ISO-8601 decoding that accepts fractional and non-fractional seconds.
-- [ ] 3.2 Use `JSONDecoder.indooro` in `UpsellSuggestionStore`, `RecipeStore`, `ProductSearchStore`, `BeaconManager`, and `ShoppingTransferService`.
-- [ ] 3.3 Add `LossyDecodableArray<Element: Decodable>` and decode product lists element-wise in `ProductSearchStore`.
-- [ ] 3.4 Extend `MobileStoreSummary` with optional `address` and use it as first choice in `displaySubtitle`.
-- [ ] 3.5 Extend `MobileLayoutResponse` with optional `source: String?` and `fallback: Bool?`.
+- [x] 3.1 Add `JSONDecoder.indooro` with ISO-8601 decoding that accepts fractional and non-fractional seconds. (implemented in prepare-pilot-ios-build)
+- [x] 3.2 Use `JSONDecoder.indooro` in `UpsellSuggestionStore`, `RecipeStore`, `ProductSearchStore`, `BeaconManager`, and `ShoppingTransferService`. (BeaconManager server decodes switched; others already did)
+- [x] 3.3 Add `LossyDecodableArray<Element: Decodable>` and decode product lists element-wise in `ProductSearchStore`. (implemented in prepare-pilot-ios-build)
+- [x] 3.4 Extend `MobileStoreSummary` with optional `address` and use it as first choice in `displaySubtitle`. (implemented in prepare-pilot-ios-build)
+- [x] 3.5 Extend `MobileLayoutResponse` with optional `source: String?` and `fallback: Bool?`. (implemented in prepare-pilot-ios-build)
 
 ## 4. HTTP Status And Errors
 
-- [ ] 4.1 Validate HTTP status 200–299 in `ProductSearchStore` and `RecipeStore` and map other codes to a German error message containing the status.
-- [ ] 4.2 Add `@Published var errorMessage: String?` to `ProductSearchStore`; set it on transport, HTTP, and decoding failures; clear it on a new request.
-- [ ] 4.3 Show „Suche fehlgeschlagen“ with the error message and a „Erneut versuchen“ button in the planning results section and the map search panel.
+- [x] 4.1 Validate HTTP status 200–299 in `ProductSearchStore` and `RecipeStore` and map other codes to a German error message containing the status. (implemented in prepare-pilot-ios-build)
+- [x] 4.2 Add `@Published var errorMessage: String?` to `ProductSearchStore`; set it on transport, HTTP, and decoding failures; clear it on a new request. (implemented in prepare-pilot-ios-build)
+- [x] 4.3 Show „Suche fehlgeschlagen“ with the error message and a „Erneut versuchen“ button in the planning results section and the map search panel. (implemented in prepare-pilot-ios-build)
 
 ## 5. Store-Scoped Search
 
-- [ ] 5.1 Add optional `store: MobileStoreSummary?` to `ProductSearchStore.searchProducts(query:size:)` and append `storeId` and `storeCode` query items when present.
-- [ ] 5.2 Pass `beaconManager.activeLayoutStore ?? beaconManager.detectedStore` from `ProductsPage` and `StoreMapPage`.
-- [ ] 5.3 Remove `BeaconManager.searchProducts`, `searchResults`, `isSearching`, `latestSearchRequestID`, and `clearSearch`.
+- [x] 5.1 Add optional `store: MobileStoreSummary?` to `ProductSearchStore.searchProducts(query:size:)` and append `storeId` and `storeCode` query items when present. (implemented in prepare-pilot-ios-build)
+- [x] 5.2 Pass `beaconManager.activeLayoutStore ?? beaconManager.detectedStore` from `ProductsPage` and `StoreMapPage`. (implemented in prepare-pilot-ios-build)
+- [x] 5.3 Remove `BeaconManager.searchProducts`, `searchResults`, `isSearching`, `latestSearchRequestID`, and `clearSearch`. (implemented in prepare-pilot-ios-build)
 
 ## 6. Store Overview
 
-- [ ] 6.1 Delete `StoreMapPage.fallbackCoordinate(for:)` and return `nil` from `coordinate(for:)` for missing or out-of-range values.
-- [ ] 6.2 Add the chip row „Ohne Kartenposition“ for active stores without coordinates, selectable with the same `selectStore` action.
-- [ ] 6.3 Show `displaySubtitle` (address) on `StoreOverviewCard`.
-- [ ] 6.4 Rename the overview title from „SPAR-Filialen“ to „Filialen“.
+- [x] 6.1 Delete `StoreMapPage.fallbackCoordinate(for:)` and return `nil` from `coordinate(for:)` for missing or out-of-range values.
+- [x] 6.2 Add the chip row „Ohne Kartenposition“ for active stores without coordinates, selectable with the same `selectStore` action.
+- [x] 6.3 Show `displaySubtitle` (address) on `StoreOverviewCard`.
+- [x] 6.4 Rename the overview title from „SPAR-Filialen“ to „Filialen“.
 
 ## 7. Layout Fallback And Cache
 
@@ -44,7 +44,7 @@
 - [x] 7.2 Save the decoded layout response after every successful store or default layout application. (implemented in add-pilot-guided-tour-fallbacks)
 - [x] 7.3 On store layout failure, apply the cached layout for that store if present and set the description to „<store> • Offline-Kopie vom <Datum>“; otherwise keep the current failure behavior. (implemented in add-pilot-guided-tour-fallbacks)
 - [x] 7.4 On default layout failure, try `default.json` before the history fallback. (implemented in add-pilot-guided-tour-fallbacks)
-- [ ] 7.5 When `fallback == true`, set the description to „<store> • Standard-Layout (kein aktives Filial-Layout)“ and show a warning badge in the indoor header.
+- [x] 7.5 When `fallback == true`, set the description to „<store> • Standard-Layout (kein aktives Filial-Layout)“ and show a warning badge in the indoor header.
 
 ## 8. Low-Confidence Rendering
 
@@ -52,7 +52,7 @@
 - [x] 8.2 Add `isTrusted` to `UserLocationMarker`; draw 45 % opacity plus a dashed 3 m uncertainty ring when not trusted. (implemented in add-pilot-guided-tour-fallbacks)
 - [x] 8.3 Show the status banner with `navigationStatusMessage ?? "Position ungenau"` and „Position setzen“ in the indoor header while not trusted. (implemented in add-pilot-guided-tour-fallbacks)
 - [x] 8.4 Implement „Position setzen“ by setting `tapSetsTarget = false` and showing the „Tippen setzt Position“ badge. (implemented in add-pilot-guided-tour-fallbacks)
-- [ ] 8.5 Change the AR low-confidence text to „Signal schwach. Kalibrierung empfohlen (Position setzen).“
+- [x] 8.5 Change the AR low-confidence text to „Signal schwach. Kalibrierung empfohlen (Position setzen).“
 
 ## 9. Walkable Graph
 
@@ -63,13 +63,13 @@
 
 ## 10. Cleanup And Copy
 
-- [ ] 10.1 Rename the planning section to „Passt gut dazu“.
-- [ ] 10.2 Delete `UpsellRequest` and `UpsellSuggestionResponse` from `UpsellModels.swift`.
+- [x] 10.1 Rename the planning section to „Passt gut dazu“. (implemented in prepare-pilot-ios-build)
+- [x] 10.2 Delete `UpsellRequest` and `UpsellSuggestionResponse` from `UpsellModels.swift`. (implemented in prepare-pilot-ios-build)
 
 ## 11. Verification
 
-- [ ] 11.1 Run `npx -y @fission-ai/openspec@1.3.1 validate fix-ios-contract-and-spec-drift --strict`.
-- [ ] 11.2 Run `./mvnw test` in `backend/indooro_server`.
-- [ ] 11.3 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme MCindooroApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build`.
-- [ ] 11.4 Manually verify in the simulator: dismissal returns 2xx in the debug log; store without coordinates appears only in „Ohne Kartenposition“; address is shown; search in a selected store sends `storeId`; airplane mode shows „Suche fehlgeschlagen“; debug layout with rotated shelf routes around it.
-- [ ] 11.5 Manually verify on a device with fewer than three beacons that the Blue Dot is degraded and the banner is shown.
+- [x] 11.1 Run `npx -y @fission-ai/openspec@1.3.1 validate fix-ios-contract-and-spec-drift --strict`.
+- [x] 11.2 Run `./mvnw test` in `backend/indooro_server`. (Beleg: `sh mvnw -q test` in `backend/indooro_server` grün am 2026-10-18)
+- [x] 11.3 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme MCindooroApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build`.
+- [ ] 11.4 Manually verify in the simulator: dismissal returns 2xx in the debug log; store without coordinates appears only in „Ohne Kartenposition“; address is shown; search in a selected store sends `storeId`; airplane mode shows „Suche fehlgeschlagen“; debug layout with rotated shelf routes around it. (Mensch: manuelle Simulator-Prüfung)
+- [ ] 11.5 Manually verify on a device with fewer than three beacons that the Blue Dot is degraded and the banner is shown. (Mensch: Gerät mit weniger als drei Beacons)

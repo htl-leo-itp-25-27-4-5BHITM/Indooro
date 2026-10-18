@@ -2,25 +2,38 @@ package at.htl.resource;
 
 
 import at.htl.admin.service.AdminAccessService;
+import at.htl.admin.service.AuditLogService;
+import at.htl.admin.util.AuditEntityIds;
 import at.htl.model.Product;
-import at.htl.service.OpenSearchService;
 import at.htl.service.CatalogBulkResult;
+import at.htl.service.CatalogStoreResolver;
+import at.htl.service.CatalogStoreResolver.CatalogStoreException;
+import at.htl.service.CatalogStoreResolver.ResolvedStore;
+import at.htl.service.LegacyDocumentGuard;
+import at.htl.service.OpenSearchService;
+import at.htl.service.ProductBulkService;
 import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Map;
+import java.util.Optional;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/products")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "catalog")
 public class ProductResource {
 
     private static final Logger LOG = Logger.getLogger(ProductResource.class);
@@ -31,15 +44,32 @@ public class ProductResource {
     @Inject
     AdminAccessService adminAccessService;
 
+    @Inject
+    CatalogStoreResolver storeResolver;
+
+    @Inject
+    ProductBulkService bulkService;
+
+    @Inject
+    LegacyDocumentGuard legacyDocumentGuard;
+
+    @Inject
+    AuditLogService auditLogService;
+
+    /** Store used for read requests that name no store. Empty = no default, old behavior (no store filter). */
+    @ConfigProperty(name = "indooro.catalog.default-store-code")
+    Optional<String> defaultStoreCode;
+
     /**
      * Suche nach Produkten
-     * GET /api/products/search?q=apfel&size=10
+     * GET /api/products/search?q=apfel&size=10&storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "searchProducts")
     @GET
     @Path("/search")
     @PermitAll
     public Response searchProducts(
-            @QueryParam("q") String query,
+            @Parameter(required = true) @QueryParam("q") String query,
             @QueryParam("size") @DefaultValue("10") Integer size,
             @QueryParam("storeId") String storeId,
             @QueryParam("storeCode") String storeCode) {
@@ -51,7 +81,8 @@ public class ProductResource {
         }
 
         try {
-            List<Product> products = openSearchService.searchProducts(query, size, storeId, storeCode);
+            List<Product> products = openSearchService.searchProducts(query, clamp(size, 1, 100), storeId,
+                    effectiveStoreCode(storeId, storeCode));
             LOG.info("Search for '" + query + "' returned " + products.size() + " results");
             return Response.ok(products).build();
         } catch (IOException e) {
@@ -63,14 +94,18 @@ public class ProductResource {
     }
 
     /**
-     * Holt alle Produkte
-     * GET /api/products
+     * Holt alle Produkte (eines Marktes)
+     * GET /api/products?storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "listProducts")
     @GET
     @PermitAll
-    public Response getAllProducts(@QueryParam("size") @DefaultValue("100") Integer size) {
+    public Response getAllProducts(@QueryParam("size") @DefaultValue("100") Integer size,
+                                   @QueryParam("storeId") String storeId,
+                                   @QueryParam("storeCode") String storeCode) {
         try {
-            List<Product> products = openSearchService.getAllProducts(size);
+            List<Product> products = openSearchService.getAllProducts(clamp(size, 1, 500), storeId,
+                    effectiveStoreCode(storeId, storeCode));
             return Response.ok(products).build();
         } catch (IOException e) {
             LOG.error("Error getting all products", e);
@@ -82,14 +117,17 @@ public class ProductResource {
 
     /**
      * Holt ein Produkt anhand der ID
-     * GET /api/products/1
+     * GET /api/products/1?storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "getProduct")
     @GET
     @Path("/{id}")
     @PermitAll
-    public Response getProductById(@PathParam("id") Integer id) {
+    public Response getProductById(@PathParam("id") Integer id,
+                                   @QueryParam("storeId") String storeId,
+                                   @QueryParam("storeCode") String storeCode) {
         try {
-            Product product = openSearchService.getProductById(id);
+            Product product = openSearchService.getProductById(id, storeId, effectiveStoreCode(storeId, storeCode));
             if (product != null) {
                 return Response.ok(product).build();
             } else {
@@ -106,18 +144,28 @@ public class ProductResource {
     }
 
     /**
-     * Indexiert ein einzelnes Produkt
+     * Indexiert ein einzelnes Produkt (Markt im Body: storeId oder storeCode)
      * POST /api/products
      */
+    @Operation(operationId = "indexProduct")
     @POST
     @RolesAllowed("admin")
     public Response indexProduct(Product product) {
         adminAccessService.requireAdmin();
-        validateProduct(product);
-        normalizeProductScope(product);
+        ProductBulkService.validateProduct(product);
+
+        ResolvedStore store;
+        try {
+            store = storeResolver.require(product.getStoreId(), product.getStoreCode());
+        } catch (CatalogStoreException exception) {
+            return errorResponse(Response.Status.BAD_REQUEST, exception.getMessage());
+        }
+        ProductBulkService.applyStore(product, store);
+        legacyDocumentGuard.requireNoLegacyDocuments(store.storeCode());
 
         try {
             String result = openSearchService.indexProduct(product);
+            auditProductWrite(product.getId(), store.storeCode(), "UPSERT", product);
             return Response.ok("{\"result\": \"" + result + "\"}").build();
         } catch (IOException e) {
             LOG.error("Error indexing product", e);
@@ -128,65 +176,94 @@ public class ProductResource {
     }
 
     /**
-     * Indexiert mehrere Produkte
-     * POST /api/products/bulk
+     * Indexiert mehrere Produkte. storeId/storeCode als Query-Parameter gelten als Vorgabe fuer Items ohne eigenen Markt;
+     * ein Item, das dem Parameter widerspricht, wird als fehlerhafte Zeile gemeldet.
+     * POST /api/products/bulk?storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "indexProductsBulk")
     @POST
     @Path("/bulk")
     @RolesAllowed("admin")
-    public Response indexProducts(List<Product> products) {
+    public Response indexProducts(@QueryParam("storeId") String storeId,
+                                  @QueryParam("storeCode") String storeCode,
+                                  List<Product> products) {
         adminAccessService.requireAdmin();
-        if (products == null || products.isEmpty()) {
-            throw new WebApplicationException("Produktliste ist erforderlich.", Response.Status.BAD_REQUEST);
-        }
-        products.forEach(this::validateProduct);
-        Set<Integer> ids = new HashSet<>();
-        for (Product product : products) {
-            if (product.getId() < 1 || !ids.add(product.getId())) {
-                throw new WebApplicationException("Produkt-IDs müssen positiv und eindeutig sein.", Response.Status.BAD_REQUEST);
-            }
-        }
-        products.forEach(this::normalizeProductScope);
-
         try {
-            CatalogBulkResult result = openSearchService.indexProducts(products);
-            return Response.ok(result).build();
-        } catch (IOException e) {
-            LOG.error("Error bulk indexing products", e);
-            return Response.status(Response.Status.SERVICE_UNAVAILABLE)
-                    .entity(CatalogBulkResult.unknown(products.stream().map(product -> String.valueOf(product.getId())).toList(),
-                            "Transport failed; some writes may have persisted. Verify before retrying."))
-                    .build();
+            bulkService.validateRequest(products);
+        } catch (ProductBulkService.CatalogBulkRequestException exception) {
+            return errorResponse(Response.Status.BAD_REQUEST, exception.getMessage());
+        }
+
+        ResolvedStore parameterStore;
+        try {
+            parameterStore = storeResolver.resolveOptional(storeId, storeCode);
+        } catch (CatalogStoreException exception) {
+            return errorResponse(Response.Status.BAD_REQUEST, exception.getMessage());
+        }
+        if (parameterStore == null && products.stream().anyMatch(ProductBulkService::hasNoStore)) {
+            return errorResponse(Response.Status.BAD_REQUEST, CatalogStoreResolver.MISSING_STORE);
+        }
+
+        ProductBulkService.Outcome outcome = bulkService.write(products, parameterStore);
+        if (outcome.transportFailed()) {
+            return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(outcome.result()).build();
+        }
+        auditProductBulk(parameterStore == null ? null : parameterStore.storeCode(), outcome.result());
+        return Response.ok(outcome.result()).build();
+    }
+
+    /** Ein Eintrag pro Einzelschreibvorgang; ein Auditfehler veraendert die Antwort nicht. */
+    private void auditProductWrite(Integer productId, String storeCode, String action, Object after) {
+        try {
+            auditLogService.logByAdmin(adminAccessService.currentUser(), "PRODUCT", AuditEntityIds.product(productId),
+                    action, "Produkt " + productId + " gespeichert (Markt " + storeCode + ")", null, after);
+        } catch (RuntimeException exception) {
+            LOG.warn("Audit-Eintrag fuer Produkt konnte nicht geschrieben werden", exception);
         }
     }
 
-    private void validateProduct(Product product) {
-        if (product == null) {
-            throw new WebApplicationException("Produktdaten fehlen.", Response.Status.BAD_REQUEST);
-        }
-        if (product.getId() == null) {
-            throw new WebApplicationException("Produkt-ID ist erforderlich.", Response.Status.BAD_REQUEST);
-        }
-        if (product.getName() == null || product.getName().isBlank()) {
-            throw new WebApplicationException("Produktname ist erforderlich.", Response.Status.BAD_REQUEST);
-        }
-        if (product.getPrice() == null || product.getPrice() < 0) {
-            throw new WebApplicationException("Preis ist erforderlich und darf nicht negativ sein.", Response.Status.BAD_REQUEST);
-        }
-        if (product.getLayoutCode() == null || product.getLayoutCode().isBlank()) {
-            throw new WebApplicationException("Layout-Code ist erforderlich.", Response.Status.BAD_REQUEST);
+    /** Ein Eintrag pro beantwortetem Bulk-Aufruf mit Zaehlern; ohne Markt-Parameter als "*". */
+    private void auditProductBulk(String storeCode, CatalogBulkResult result) {
+        try {
+            String marketKey = storeCode == null ? "*" : storeCode;
+            Map<String, Object> after = new LinkedHashMap<>();
+            after.put("storeCode", storeCode);
+            after.put("count", result.count());
+            after.put("saved", result.saved());
+            after.put("failed", result.failed());
+            after.put("unknown", result.unknown());
+            auditLogService.logByAdmin(adminAccessService.currentUser(), "PRODUCT", AuditEntityIds.productBulk(marketKey),
+                    "BULK_UPSERT", "Bulk: " + result.saved() + " gespeichert, " + result.failed() + " fehlgeschlagen (Markt "
+                            + marketKey + ")", null, after);
+        } catch (RuntimeException exception) {
+            LOG.warn("Audit-Eintrag fuer Produkt-Bulk konnte nicht geschrieben werden", exception);
         }
     }
 
-    private void normalizeProductScope(Product product) {
-        product.setStoreId(normalizeOptional(product.getStoreId()));
-        product.setStoreCode(normalizeOptional(product.getStoreCode()));
+    /** Explicit store parameter wins; without any store parameter the configured default store applies (if set). */
+    /** Out-of-range sizes are clamped to the bounds instead of rejected; a missing size keeps the default. */
+    static int clamp(Integer value, int min, int max) {
+        return Math.min(Math.max(value == null ? min : value, min), max);
     }
 
-    private String normalizeOptional(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
+    private String effectiveStoreCode(String storeId, String storeCode) {
+        if (isBlank(storeId) && isBlank(storeCode)) {
+            return defaultStoreCode
+                    .map(String::trim)
+                    .filter(value -> !value.isEmpty())
+                    .orElse(null);
         }
-        return value.trim();
+        return isBlank(storeCode) ? null : storeCode.trim();
+    }
+
+    private Response errorResponse(Response.Status status, String message) {
+        return Response.status(status)
+                .type(MediaType.APPLICATION_JSON)
+                .entity(Map.of("error", message))
+                .build();
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

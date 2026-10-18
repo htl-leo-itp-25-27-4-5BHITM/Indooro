@@ -1,5 +1,6 @@
 package at.htl.admin.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -22,10 +23,11 @@ public final class UpsellDtos {
             @Size(max = 50) String storeCode,
             @NotNull Integer checkedProductId,
             @Size(max = 80) String shoppingListId,
-            List<Integer> currentListProductIds,
-            List<Integer> completedProductIds,
+            @Size(max = 200) List<Integer> currentListProductIds,
+            @Size(max = 200) List<Integer> completedProductIds,
             @Size(max = 50) String source,
-            UUID recipeId
+            UUID recipeId,
+            @Size(max = 120) String sessionId
     ) {
     }
 
@@ -62,10 +64,11 @@ public final class UpsellDtos {
             UUID storeId,
             @Size(max = 50) String storeCode,
             @Size(max = 80) String shoppingListId,
-            List<Integer> currentListProductIds,
-            List<Integer> completedProductIds,
+            @Size(max = 200) List<Integer> currentListProductIds,
+            @Size(max = 200) List<Integer> completedProductIds,
             @Size(max = 50) String source,
-            @Size(max = 80) List<UpsellOpportunityRequest> opportunities
+            @Valid @Size(max = 30) List<UpsellOpportunityRequest> opportunities,
+            @Size(max = 120) String sessionId
     ) {
     }
 
@@ -104,8 +107,31 @@ public final class UpsellDtos {
             Integer reasoningTokens,
             String fallbackReason,
             Integer opportunityCount,
-            Integer candidateCount
+            Integer candidateCount,
+            /** True when the caller may retry the same request later (for example a transient candidate lookup failure). */
+            Boolean retryable
     ) {
+
+        /** Constructor for callers that predate the retryable flag. */
+        public UpsellPlanDebug(
+                String requestId,
+                String model,
+                String responseSource,
+                Long elapsedMs,
+                Long openAiElapsedMs,
+                Integer inputTokens,
+                Integer outputTokens,
+                Integer totalTokens,
+                Integer cachedInputTokens,
+                Integer reasoningTokens,
+                String fallbackReason,
+                Integer opportunityCount,
+                Integer candidateCount
+        ) {
+            this(requestId, model, responseSource, elapsedMs, openAiElapsedMs, inputTokens, outputTokens,
+                    totalTokens, cachedInputTokens, reasoningTokens, fallbackReason, opportunityCount,
+                    candidateCount, null);
+        }
     }
 
     public record UpsellEventRequest(

@@ -96,27 +96,12 @@ Fuer Indooro bedeutet das:
 
 ## Empfohlenes Ingress fuer Indooro
 
-Die Datei liegt bereits unter `k8s/backend-ingress.yaml`:
+Die Datei liegt unter `k8s/backend-ingress.yaml` und routet:
 
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: indooro-backend-ingress
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: it220209.cloud.htl-leonding.ac.at
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: indooro-backend
-                port:
-                  number: 8080
-```
+- `/` (Prefix) auf `indooro-backend:8080`
+- `/keycloak/realms/` und `/keycloak/resources/` (Prefix) auf `indooro-keycloak:8080`
+
+Die Keycloak-Admin-Konsole (`/keycloak/admin/`) und der restliche Keycloak-Pfad sind **nicht** ueber das Ingress erreichbar.
 
 Anwenden mit:
 
@@ -229,32 +214,50 @@ private let apiBase = "https://it220209.cloud.htl-leonding.ac.at/api"
 
 Danach spricht die App direkt mit dem Backend in der LeoCloud.
 
-## Wichtiger Hinweis zum Service-Typ
+## Service-Typ
 
-Aktuell ist `indooro-backend` in `k8s/backend.yaml` als `NodePort` definiert.
-
-Das kann fuer den bestehenden Stand bleiben. Fuer einen sauberen `Ingress`-Betrieb ist aber langfristig `ClusterIP` meist die bessere Wahl, weil:
-
-- der externe Zugriff dann ueber das `Ingress` laeuft
-- der Service intern bleibt
-- die URL nicht von NodePorts abhaengt
-
-OpenSearch und Dashboards sind `ClusterIP`, Dashboards ist auf 0 Replikate skaliert. Zugriff nur per `kubectl port-forward`.
+`indooro-backend`, `indooro-keycloak`, `opensearch` und `dashboards` sind `ClusterIP`. Externer Zugriff laeuft ausschliesslich ueber das `Ingress` (`k8s/backend-ingress.yaml`). OpenSearch und Dashboards sind nur per `kubectl port-forward` erreichbar; Dashboards ist auf 0 Replikate skaliert.
 
 ## Praktische Reihenfolge fuer euch
 
 Wenn ihr das heute neu oder sauber aufsetzen wollt:
 
 1. Backend-Code auf `main` pushen
-2. Warten, bis GitHub Actions das Image mit dem Commit-SHA gebaut hat
-3. Secrets anlegen, bevor Manifeste angewendet werden (`indooro-postgres-secret`, `indooro-keycloak-secret`, `indooro-openai-secret`; siehe `docs/pilot-readiness/operations/SECRET_ROTATION.md`, Vorlage `k8s/secrets.example.yaml`)
+2. Warten, bis GitHub Actions das Image mit dem Commit-SHA gebaut hat; SHA-Tag in `k8s/backend.yaml` eintragen (siehe "Image-Tag")
+3. Secrets anlegen, bevor Manifeste angewendet werden (siehe "Secrets")
 4. `kubectl apply -n student-it220209 -f k8s/postgres.yaml`
 5. `kubectl apply -n student-it220209 -f k8s/opensearch.yaml`
-6. `kubectl apply -n student-it220209 -f k8s/keycloak.yaml`
-7. `kubectl apply -n student-it220209 -f k8s/backend.yaml` (vorher Image-Tag pruefen)
-8. `kubectl apply -n student-it220209 -f k8s/backend-ingress.yaml`
-9. Falls noetig: Image-Tag per `kubectl set image` setzen (siehe `RELEASE_RUNBOOK.md`)
-10. Testen: `https://it220209.cloud.htl-leonding.ac.at/api/mobile/stores`
+6. Datenbank `keycloak` anlegen (Job `k8s/keycloak-db-init-job.yaml` oder `psql`, siehe "Keycloak-Datenbank")
+7. Realm-ConfigMap `indooro-keycloak-realm` anlegen (siehe "LeoCloud Keycloak")
+8. `kubectl apply -n student-it220209 -f k8s/keycloak.yaml`
+9. Keycloak per port-forward oeffnen und die Benutzer anlegen (siehe "Keycloak-Administration")
+10. `kubectl apply -n student-it220209 -f k8s/backend.yaml` (vorher Image-Tag pruefen)
+11. Reale Admin-Zuweisung setzen, bevor sich ein Admin anmeldet (siehe WARNUNG unten)
+12. `kubectl apply -n student-it220209 -f k8s/backend-ingress.yaml`
+13. NetworkPolicy nur nach Task 1.3 anwenden (siehe "NetworkPolicy")
+14. Testen: `https://it220209.cloud.htl-leonding.ac.at/api/mobile/stores`
+
+## Secrets
+
+Alle Secrets per `kubectl create secret generic` anlegen, nie als Datei im Repo. Vorlage mit Platzhaltern: `k8s/secrets.example.yaml`. Details zur Rotation: `docs/pilot-readiness/operations/SECRET_ROTATION.md`.
+
+```bash
+kubectl -n student-it220209 create secret generic indooro-postgres-secret \
+  --from-literal=POSTGRES_PASSWORD='<REPLACE_ME>'
+
+kubectl -n student-it220209 create secret generic indooro-keycloak-secret \
+  --from-literal=bootstrap-admin-username='<REPLACE_ME>' \
+  --from-literal=bootstrap-admin-password='<REPLACE_ME>' \
+  --from-literal=admin-web-client-secret='<REPLACE_ME>' \
+  --from-literal=db-password='<REPLACE_ME>'
+
+kubectl -n student-it220209 create secret generic indooro-openai-secret \
+  --from-literal=OPENAI_API_KEY='<REPLACE_ME>'
+```
+
+- `indooro-postgres-secret`: `POSTGRES_PASSWORD` fuer den Superuser `indooro` der PostgreSQL-Instanz; wird von Postgres und Backend gelesen.
+- `indooro-keycloak-secret`: `bootstrap-admin-*` (Keycloak-Master-Admin, nur fuer port-forward-Administration), `admin-web-client-secret` (Client `indooro-admin-web`, Keycloak und Backend), `db-password` (DB-Benutzer `keycloak`).
+- Demo-Passwoerter gibt es im Produktionsmanifest nicht mehr; sie gehoeren nur ins lokale Dev-Realm.
 
 ## Keycloak Admin Login
 
@@ -342,13 +345,20 @@ Wenn Benutzer im Keycloak Admin UI neu angelegt werden, ist der stabile Wert fue
 
 ### LeoCloud Keycloak
 
-Das Manifest `k8s/keycloak.yaml` erstellt:
+Das Manifest `k8s/keycloak.yaml` startet Keycloak 26.0.8 im Produktionsmodus (`start`) mit PostgreSQL (`KC_DB=postgres`, Datenbank `keycloak`). Es enthaelt weder Secrets noch Realm-Daten und keinen Ingress. Erstellt werden nur Deployment und Service `indooro-keycloak` (ClusterIP).
 
-- `ConfigMap` `indooro-keycloak-realm` (ohne Klartext-Passwoerter; Werte werden beim Import aus den Umgebungsvariablen ersetzt)
-- Deployment/Service `indooro-keycloak`
-- Ingress `keycloak-it220209.cloud.htl-leonding.ac.at`
+Vor dem Apply muessen vorhanden sein:
 
-Das Secret `indooro-keycloak-secret` erstellt das Manifest **nicht** mehr. Es muss vorher per `kubectl create secret generic` angelegt werden (Anleitung: `docs/pilot-readiness/operations/SECRET_ROTATION.md`, Vorlage: `k8s/secrets.example.yaml`). Reihenfolge: erst Secrets, dann `kubectl apply`.
+1. Datenbank `keycloak` mit Benutzer (siehe "Keycloak-Datenbank")
+2. Secret `indooro-keycloak-secret` (siehe "Secrets")
+3. Realm-ConfigMap aus der Produktions-Realm-Datei. Die Datei bleibt die einzige Quelle; die ConfigMap wird nicht im Manifest gepflegt:
+
+```bash
+kubectl -n student-it220209 create configmap indooro-keycloak-realm \
+  --from-file=indooro-realm.json=k8s/keycloak-realm-prod.json
+```
+
+`k8s/keycloak-realm-prod.json` enthaelt keine Benutzer. Brute-Force-Schutz, Passwort-Policy (`length(12) and notUsername and passwordHistory(3)`), `sslRequired: external` und `directAccessGrantsEnabled: false` sind gesetzt; Redirect-URIs nur fuer `https://it220209.cloud.htl-leonding.ac.at`. Benutzer legt ein Admin nach dem Start in der Admin-Konsole an.
 
 Anwenden:
 
@@ -356,6 +366,50 @@ Anwenden:
 kubectl apply -n student-it220209 -f k8s/keycloak.yaml
 kubectl rollout status deployment/indooro-keycloak -n student-it220209
 ```
+
+Vor dem Apply die neueste 26.x-Patchversion pruefen und den Image-Tag in `k8s/keycloak.yaml` anpassen.
+
+Health-Probes laufen auf dem Management-Port 9000 (`/keycloak/health/live|ready`). Der Port ist nur als Container-Port deklariert, nicht im Service.
+
+### Keycloak-Datenbank
+
+Die Datenbank `keycloak` liegt in der bestehenden PostgreSQL-Instanz (Service `postgres`). Variante A ist der Job, Variante B die manuelle Ausfuehrung; beide sind idempotent bzw. bei Wiederholung unkritisch.
+
+Variante A, Job:
+
+```bash
+kubectl -n student-it220209 delete job indooro-keycloak-db-init --ignore-not-found
+kubectl -n student-it220209 apply -f k8s/keycloak-db-init-job.yaml
+kubectl -n student-it220209 logs job/indooro-keycloak-db-init
+```
+
+Variante B, manuell (psql im Postgres-Pod als Superuser `indooro`):
+
+```bash
+kubectl -n student-it220209 exec -it deploy/postgres -- psql -U indooro -d indooro
+```
+
+```sql
+CREATE ROLE keycloak LOGIN PASSWORD '<REPLACE_ME>';   -- Passwort = db-password aus indooro-keycloak-secret
+CREATE DATABASE keycloak OWNER keycloak;
+REVOKE ALL ON DATABASE keycloak FROM PUBLIC;
+```
+
+Existiert die Rolle oder Datenbank schon, meldet `psql` einen Fehler; dann nur das fehlende Statement weglassen. Passwort aendern: `ALTER ROLE keycloak WITH LOGIN PASSWORD '<REPLACE_ME>';`
+
+### Keycloak-Administration (port-forward)
+
+Die Admin-Konsole ist nicht oeffentlich erreichbar. Zugriff nur lokal ueber port-forward:
+
+```bash
+kubectl -n student-it220209 port-forward svc/indooro-keycloak 8081:8080
+```
+
+Dann im Browser `http://localhost:8081/keycloak/admin/` oeffnen und mit `bootstrap-admin-username` / `bootstrap-admin-password` anmelden. Realm `indooro` waehlen, Benutzer anlegen (temporaeres Passwort, Pflicht zum Aendern beim ersten Login).
+
+Das Manifest setzt `--hostname-admin=http://localhost:8081/keycloak`, damit die Konsole ueber den Port-Forward funktioniert. Dieser Wert ist auf LeoCloud noch nicht getestet. Schlaegt der Login fehl, zuerst diesen Wert und den Port-Forward-Port abgleichen.
+
+Die Keycloak-User-ID (`sub` im Token, in der Admin-Konsole unter den Benutzerdetails) ist der Wert fuer `keycloak_subject` in `user_access_assignments` (siehe WARNUNG unten).
 
 Der Backend-Container bekommt die OIDC-Konfiguration ueber `k8s/backend.yaml`:
 
@@ -383,6 +437,12 @@ curl -i https://it220209.cloud.htl-leonding.ac.at/api/regions
 
 Erwartung: Die mobile Route bleibt ohne Keycloak-Login erreichbar. Die Admin-Route liefert keinen Admin-Datenbestand ohne gueltige Anmeldung.
 
+Keycloak-Admin extern nicht erreichbar (muss 404 liefern, nicht die Konsole):
+
+```bash
+curl -i https://it220209.cloud.htl-leonding.ac.at/keycloak/admin/
+```
+
 Browser-Demo:
 
 1. `https://it220209.cloud.htl-leonding.ac.at/admin/` oeffnen
@@ -391,6 +451,46 @@ Browser-Demo:
 4. Regionen/Filialen/Beacons laden
 5. `Logout` klicken
 6. `/admin/` erneut oeffnen und den neuen Login-Flow pruefen
+
+## WARNUNG: Demo-Zugaenge und reale Admin-Zuweisung
+
+> **WARNUNG.** Die Flyway-Migration `V17__disable_demo_access_outside_dev.sql` setzt die drei Demo-Zuweisungen (Subjects `11111111-…`, `22222222-…`, `33333333-…`) auf `DISABLED`, sobald der Platzhalter `demoAccess` nicht `true` ist. Ausserhalb von `dev`/`test` ist das immer der Fall.
+>
+> Ohne eine **echte** aktive Admin-Zuweisung (Keycloak-User-ID des realen Admins) sperrt sich die Admin-UI nach dem Rollout aus. Die Zuweisung muss vor der ersten Anmeldung eines Admins existieren.
+>
+> Bei bestehender Datenbank: vor dem Backend-Rollout setzen. Bei frischer Datenbank legt Flyway die Tabelle erst beim ersten Backend-Start an; dann direkt danach und vor der ersten Admin-Anmeldung setzen.
+
+Vorlage (Platzhalter ersetzen, nur einmal ausfuehren):
+
+```sql
+INSERT INTO user_access_assignments (
+  id, keycloak_subject, username, email, role, region_id, store_id, status, created_at, updated_at
+)
+VALUES (gen_random_uuid(), '<REAL_SUBJECT>', '<USERNAME>', '<EMAIL>', 'admin', NULL, NULL, 'ACTIVE', NOW(), NOW())
+ON CONFLICT DO NOTHING;
+```
+
+`<REAL_SUBJECT>` ist die Keycloak-User-ID des Admins (siehe "Keycloak-Administration"), `<USERNAME>` und `<EMAIL>` sind die Keycloak-Werte dieses Benutzers.
+
+## NetworkPolicy
+
+`k8s/network-policy.yaml` setzt Default-Deny fuer eingehenden Verkehr im Namespace und gibt nur frei: Ingress-Controller zu Backend und Keycloak (Port 8080), Backend und Keycloak sowie der DB-Init-Job zu Postgres (5432), Backend zu OpenSearch (9200).
+
+**Vorbedingung:** Task 1.3 ist abgeschlossen. Das heisst: LeoCloud setzt NetworkPolicies durch, und das Namespace-Label des Ingress-Controllers ist geprueft.
+
+```bash
+kubectl get ns ingress-nginx --show-labels
+kubectl -n student-it220209 apply -f k8s/network-policy.yaml
+```
+
+Pruefen: aus einem Debug-Pod im Namespace muss `opensearch:9200` antworten, von ausserhalb des Namespace nicht (erwartet: Timeout). Falls der Ingress-Controller nicht mehr erreichbar ist, die Policy `allow-ingress-to-backend` bzw. `allow-ingress-to-keycloak` sofort loeschen (`kubectl delete networkpolicy <name>`).
+
+## Image-Tag
+
+- Die CI baut `ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:<Commit-SHA>`.
+- `k8s/backend.yaml` nennt einen festen SHA-Tag, nie `latest`. Vor jedem `apply` den Tag pruefen.
+- Der bisherige Tag `a47c5e6` ist ein Image mit altem Dockerfile (JDK 25, Benutzer root). Mit `runAsNonRoot` startet der Pod damit nicht. Vor dem Rollout des neuen Manifests muss ein CI-Image mit dem Nicht-root-Dockerfile gebaut und sein Tag eingetragen sein.
+- Rollout und Rollback: `docs/pilot-readiness/operations/RELEASE_RUNBOOK.md`.
 
 ## Build-Hinweis fuer Java 24
 
@@ -432,6 +532,12 @@ Bei Daten-Aenderungen:
 - Produktdaten werden nicht automatisch aus dem Repo in OpenSearch geladen
 - wenn ihr neue oder andere Produktdaten wollt, muesst ihr sie aktiv importieren
 - das betrifft die Datei `belegplan.json` oder andere Importquellen
+
+## API-Versionierung
+
+Die Backend-API wird unter `/api/v1/...` versioniert. Die unversionierten Pfade `/api/...` bleiben als Aliase fuer v1 erhalten, und jede Antwort traegt den Header `Indooro-Api-Version: 1`. Additive Aenderungen bleiben in v1. Breaking Changes kommen als `/api/v2/...` mit paralleler v1-Laufzeit von mindestens sechs Monaten. Als veraltet markierte Routen liefern `Deprecation`-, `Sunset`- und `Link`-Header.
+
+Status: Die Policy ist noch nicht aktiv. Alias-Filter und Deprecation-Filter sind in den Tasks 2.1 bis 2.3 von `establish-shared-api-contract` erfasst und noch nicht umgesetzt; bis dahin gilt nur `/api/...`. Die vollstaendige Policy steht in `docs/audit/MODERNIZATION_BLUEPRINT.md`, Abschnitt 3.4a.
 
 ## Offene Punkte
 

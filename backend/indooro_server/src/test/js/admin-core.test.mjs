@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   buildRecipeProductMappingPayload,
   buildProductPayload,
+  buildStorePayload,
   canAccessRoute,
   isActiveLayoutVersion,
   nullableNumber,
@@ -67,6 +68,23 @@ test("empty numeric form values remain null in product and beacon payloads", () 
   assert.equal(nullableNumber(null), null);
   assert.equal(nullableNumber("2"), 2);
   assert.equal(buildProductPayload({ id: "7", name: "Apfel", price: "", layoutCode: "310/1/1/1" }).price, null);
+});
+
+test("empty numeric store coordinates are sent as null while zero is kept", () => {
+  const payload = buildStorePayload({ regionId: "r-1", storeCode: " LNZ ", name: "Linz", latitude: "", longitude: null });
+  assert.equal(payload.latitude, null);
+  assert.equal(payload.longitude, null);
+  assert.equal(payload.storeCode, "LNZ");
+  assert.equal(buildStorePayload({ latitude: "0", longitude: "0" }).latitude, 0);
+  assert.equal(nullableNumber("0"), 0);
+});
+
+test("store-scoped product readiness labels the layout code state", () => {
+  assert.equal(readinessForProduct({ id: 3, layoutCode: "310/1/1/1", storeCode: "LNZ" }).label, "Routbar");
+  const unclear = readinessForProduct({ id: 4, layoutCode: "A-01", storeCode: "LNZ" });
+  assert.equal(unclear.status, "warning");
+  assert.equal(unclear.label, "Layout pruefen");
+  assert.deepEqual(unclear.problems, ["Layout-Code ist unklar"]);
 });
 
 test("layout and recipe readiness use backend summary fields", () => {

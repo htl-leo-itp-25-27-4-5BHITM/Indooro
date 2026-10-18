@@ -6,6 +6,9 @@ on:
     paths:
       - 'swift/indooro-EinkaeuferFinal/**'
       - 'scripts/dev/mock_mobile_api.py'
+      - 'api/openapi/**'
+      - 'scripts/export-mobile-openapi.mjs'
+      - 'openspec/specs/shared-api/**'
       - '.github/workflows/ios.yaml'
 
 concurrency:
@@ -13,6 +16,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Die Swift-Typen in IndooroNetworking werden aus api/openapi/indooro-mobile.yaml generiert (Symlink).
+  # Der Job stellt sicher, dass diese Datei zum geprueften Vertrag passt (modernize-ios-client-architecture 7.4).
+  # ci.yaml prueft dasselbe nur fuer PRs nach main/master, nicht fuer PRs nach pilot/first-store.
+  mobile-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (version from admin-ui/.nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'admin-ui/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install root dependencies (contract tooling)
+        run: npm ci --no-audit --no-fund
+
+      - name: Mobile OpenAPI export is up to date
+        run: npm run contract:mobile:check
+
   swift-tests:
     runs-on: macos-latest
     timeout-minutes: 45
@@ -31,6 +60,10 @@ jobs:
 
       - name: Navigation package and contract tests (swift test)
         working-directory: swift/indooro-EinkaeuferFinal
+        run: swift test
+
+      - name: IndooroKit package tests (swift test)
+        working-directory: swift/indooro-EinkaeuferFinal/Packages/IndooroKit
         run: swift test
 
       - name: Resolve an available iPhone simulator
@@ -52,6 +85,16 @@ jobs:
             -scheme MCindooroApp \
             -configuration Debug \
             -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Release build for iOS devices (MCindooroApp Release, unsigned)
+        run: |
+          xcodebuild build \
+            -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj \
+            -scheme "MCindooroApp (Release)" \
+            -destination "generic/platform=iOS" \
+            -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Start mobile API mock (ui-test-store)
@@ -82,6 +125,7 @@ jobs:
               -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj \
               -scheme MCindooroApp \
               -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
+              -skipPackagePluginValidation \
               CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$1"
             return "${PIPESTATUS[0]}"
           }

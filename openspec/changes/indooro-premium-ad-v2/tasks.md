@@ -20,7 +20,7 @@ Sections 1–2 record completed planning. The user's subsequent “okay setzte e
 ## 3. Approval and preflight for prototype production
 
 - [x] 3.1 User explicitly approves **only** four prototype sequences; result: authorization recorded by the user's “okay setzte es um jetzt” after the four-prototype plan.
-- [ ] 3.2 Set approved mark, illustrative `Milch` UI/copy/disclosure, voice authorization, channel and optional spend; result: prototype brief.
+- [ ] 3.2 Set approved mark, illustrative `Milch` UI/copy/disclosure, voice authorization, channel and optional spend; result: prototype brief. (Mensch: Freigabe/Sichtprüfung/Rechte; Video-Change, nicht gerendert)
 - [x] 3.3 Preflight Blender CLI/Remotion and confirm fallback, then create isolated `indooro-ad-v2/` and shared layout; result: reproducible prototype toolchain without touching V1.
 
 ## 4. Four prototype sequences — authorized draft scope
@@ -36,13 +36,13 @@ Sections 1–2 record completed planning. The user's subsequent “okay setzte e
 
 - [x] 5.1 Build navigation shots 05–07 (frames 300–539): scripted low route chase, lateral shopper reveal and overhead-to-turn with restrained step poses; result: 75 + 75 + 90 draft Blender frames and Remotion scenes, with cut continuity still under review.
 - [x] 5.2 Assemble nine-shot 720p rough cut with original temporary music/SFX and no VO pending voice authorization; result: 780-frame / 26-second preview and [review/cue notes](../../../indooro-ad-v2/previews/roughcut-review.md).
-- [ ] 5.3 Run first-viewer, muted, sound-on, claim/rights and 720p legibility review; result: time-coded revisions. **Visual review on 2026-09-30 failed:** the user rejected empty-looking store geometry, artificial shopper movement and weak surface quality. A separate [look-development reset](../../../indooro-ad-v2/previews/lookdev-review.md) has stills and a 1.03-second silent 360p motion diagnostic, not a revised film; character/grasp quality and sound/claims/rights review remain open.
-- [ ] 5.4 Revise, then obtain explicit picture lock; result: approved 780-frame or coherently retimed timeline. **Blocked by the failed visual review:** first prove store, shopper movement and hand/product action in a moving test, then assemble a revised cut.
+- [ ] 5.3 Run first-viewer, muted, sound-on, claim/rights and 720p legibility review; result: time-coded revisions. **Visual review on 2026-09-30 failed:** the user rejected empty-looking store geometry, artificial shopper movement and weak surface quality. A separate [look-development reset](../../../indooro-ad-v2/previews/lookdev-review.md) has stills and a 1.03-second silent 360p motion diagnostic, not a revised film; character/grasp quality and sound/claims/rights review remain open. (Mensch: Freigabe/Sichtprüfung/Rechte; Video-Change, nicht gerendert)
+- [ ] 5.4 Revise, then obtain explicit picture lock; result: approved 780-frame or coherently retimed timeline. **Blocked by the failed visual review:** first prove store, shopper movement and hand/product action in a moving test, then assemble a revised cut. (Mensch: Freigabe/Sichtprüfung/Rechte; Video-Change, nicht gerendert)
 
 ## 6. Final picture, audio and delivery — later gates
 
-- [ ] 6.1 Finish chosen 3D/2.5D passes, UI, route and approved brand; result: final-quality picture with consistent geometry.
-- [ ] 6.2 Produce authorized German voice, cleared/original score and designed effects; listen on headphones/laptop/phone and check signal; result: approved final mix and documented rights.
-- [ ] 6.3 Obtain explicit final-render approval; result: authorization for 1080p master.
-- [ ] 6.4 Render and verify H.264/yuv420p/AAC master, frames, streams, hashes, audio, claims and source manifest; result: accepted deliverables.
-- [ ] 6.5 Archive OpenSpec only after verified delivery acceptance; result: accurate final change status.
+- [ ] 6.1 Finish chosen 3D/2.5D passes, UI, route and approved brand; result: final-quality picture with consistent geometry. (Mensch: Freigabe/Sichtprüfung/Rechte; Video-Change, nicht gerendert)
+- [ ] 6.2 Produce authorized German voice, cleared/original score and designed effects; listen on headphones/laptop/phone and check signal; result: approved final mix and documented rights. (Mensch: Freigabe/Sichtprüfung/Rechte; Video-Change, nicht gerendert)
+- [ ] 6.3 Obtain explicit final-render approval; result: authorization for 1080p master. (Mensch: Freigabe/Sichtprüfung/Rechte; Video-Change, nicht gerendert)
+- [ ] 6.4 Render and verify H.264/yuv420p/AAC master, frames, streams, hashes, audio, claims and source manifest; result: accepted deliverables. (Mensch: Freigabe/Sichtprüfung/Rechte; Video-Change, nicht gerendert)
+- [ ] 6.5 Archive OpenSpec only after verified delivery acceptance; result: accurate final change status. (Mensch: Freigabe/Sichtprüfung/Rechte; Video-Change, nicht gerendert)

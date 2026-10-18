@@ -11,17 +11,14 @@ import at.htl.admin.repository.BeaconRepository;
 import at.htl.admin.repository.LayoutVersionRepository;
 import at.htl.admin.repository.StoreRepository;
 import at.htl.admin.util.BeaconIdentityUtil;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import at.htl.service.DefaultLayoutProvider;
+import at.htl.service.LayoutEtag;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,7 +40,7 @@ public class MobileStoreService {
     LayoutVersionRepository layoutVersionRepository;
 
     @Inject
-    ObjectMapper objectMapper;
+    DefaultLayoutProvider defaultLayoutProvider;
 
     public List<MobileDtos.MobileStoreSummary> listStores() {
         return storeRepository.find("status = ?1 order by name", RecordStatus.ACTIVE)
@@ -80,6 +77,11 @@ public class MobileStoreService {
     }
 
     public MobileDtos.MobileLayoutResponse getCurrentLayout(UUID storeId) {
+        return getCurrentLayoutWithEtag(storeId).layout();
+    }
+
+    /** Aktuelles Layout samt ETag; die Filiale wird vor dem ETag geprueft, unbekannte oder inaktive Filialen werfen 404. */
+    public LayoutWithEtag getCurrentLayoutWithEtag(UUID storeId) {
         StoreEntity store = storeRepository.findByIdOptional(storeId)
                 .orElseThrow(() -> new NotFoundException("Filiale nicht gefunden."));
         if (store.status != RecordStatus.ACTIVE) {
@@ -88,22 +90,31 @@ public class MobileStoreService {
 
         LayoutVersionEntity activeLayout = layoutVersionRepository.findActiveByStoreId(storeId).orElse(null);
         if (activeLayout != null) {
-            return new MobileDtos.MobileLayoutResponse(
+            MobileDtos.MobileLayoutResponse response = new MobileDtos.MobileLayoutResponse(
                     store.id,
                     activeLayout.id,
                     "ACTIVE",
                     false,
                     activeLayout.layoutJson
             );
+            return new LayoutWithEtag(response, LayoutEtag.ofActiveLayout(activeLayout.id, activeLayout.activatedAt));
         }
 
-        return new MobileDtos.MobileLayoutResponse(
+        MobileDtos.MobileLayoutResponse response = new MobileDtos.MobileLayoutResponse(
                 store.id,
                 null,
                 "DEFAULT",
                 true,
-                loadDefaultLayout(store.name)
+                defaultLayoutProvider.forStore(store.name)
         );
+        return new LayoutWithEtag(
+                response,
+                LayoutEtag.ofDefaultLayout(store.id, store.name, defaultLayoutProvider.contentHash())
+        );
+    }
+
+    /** Layout mit ETag-Wert (SHA-256 hex, ohne Anfuehrungszeichen). */
+    public record LayoutWithEtag(MobileDtos.MobileLayoutResponse layout, String etag) {
     }
 
     private BeaconEntity resolveBeacon(String uuid, Integer major, Integer minor) {
@@ -120,6 +131,10 @@ public class MobileStoreService {
             if (exactMatch != null && exactMatch.status == RecordStatus.ACTIVE) {
                 return exactMatch;
             }
+            // Without an exact match only a UUID-only registration may answer. A beacon with another major or
+            // minor must not be picked for a different identity.
+            return beaconRepository.findActiveUuidOnly(normalizedUuid)
+                    .orElseThrow(() -> new NotFoundException("Kein passender Beacon gefunden."));
         }
 
         List<BeaconEntity> uuidMatches = beaconRepository.listActiveByUuid(normalizedUuid);
@@ -171,18 +186,4 @@ public class MobileStoreService {
         return String.format("%s, %s %s", store.street, store.zipCode, store.city);
     }
 
-    private JsonNode loadDefaultLayout(String storeName) {
-        try (InputStream input = Thread.currentThread().getContextClassLoader().getResourceAsStream("default-layout.json")) {
-            if (input == null) {
-                ObjectNode fallback = objectMapper.createObjectNode();
-                fallback.put("shopName", storeName);
-                return fallback;
-            }
-            ObjectNode layout = (ObjectNode) objectMapper.readTree(input);
-            layout.put("shopName", storeName);
-            return layout;
-        } catch (IOException e) {
-            throw new IllegalStateException("Standard-Layout konnte nicht geladen werden.", e);
-        }
-    }
 }

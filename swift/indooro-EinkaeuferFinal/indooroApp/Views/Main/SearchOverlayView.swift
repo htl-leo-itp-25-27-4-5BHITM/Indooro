@@ -1,7 +1,9 @@
+import IndooroModels
 import SwiftUI
 
 struct SearchOverlayView: View {
     @ObservedObject var beaconManager: BeaconManager
+    @StateObject private var productSearch = ProductSearchStore()
     @ObservedObject var shoppingListManager: ShoppingListManager
     @Binding var searchText: String
     let onNavigateToProduct: (Product) -> Void
@@ -21,16 +23,16 @@ struct SearchOverlayView: View {
                     .autocorrectionDisabled(true)
                     .onChange(of: searchText, initial: false) { _, newValue in
                         if newValue.count > 2 {
-                            beaconManager.searchProducts(query: newValue)
+                            productSearch.searchProducts(query: newValue)
                         } else {
-                            beaconManager.clearSearch()
+                            productSearch.clearSearch()
                         }
                     }
                 
                 if !searchText.isEmpty {
                     Button(action: {
                         searchText = ""
-                        beaconManager.clearSearch()
+                        productSearch.clearSearch()
                         // Tastatur schließen
                         UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
                     }) {
@@ -61,21 +63,23 @@ struct SearchOverlayView: View {
                 .padding(.bottom, 10)
             }
             
+            ProductSearchFeedback(store: productSearch)
+
             // 2. TRENNLINIE (Nur wenn Ergebnisse da sind)
-            if !beaconManager.searchResults.isEmpty {
+            if !productSearch.searchResults.isEmpty {
                 Divider()
             }
             
             // 3. ERGEBNIS-LISTE
-            if !beaconManager.searchResults.isEmpty {
-                List(beaconManager.searchResults, id: \.self) { product in
+            if !productSearch.searchResults.isEmpty {
+                List(productSearch.searchResults, id: \.self) { product in
                     ProductSearchRow(
                         product: product,
                         isInShoppingList: shoppingListManager.containsProduct(product),
                         onNavigate: {
                             withAnimation {
                                 searchText = ""
-                                beaconManager.clearSearch()
+                                productSearch.clearSearch()
                             }
                             onNavigateToProduct(product)
                             UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
@@ -91,6 +95,9 @@ struct SearchOverlayView: View {
                 .listStyle(.plain) // WICHTIG: Plain style verhindert graue Hintergründe
                 .frame(maxHeight: 400) // Maximale Höhe, damit es nicht den ganzen Screen verdeckt
             }
+        }
+        .onAppear {
+            productSearch.storeProvider = { [weak beaconManager] in beaconManager?.activeLayoutStore ?? beaconManager?.detectedStore }
         }
         .background(Color(.systemBackground))
         .cornerRadius(15) // Das ganze Ding (Suche + Liste) abrunden

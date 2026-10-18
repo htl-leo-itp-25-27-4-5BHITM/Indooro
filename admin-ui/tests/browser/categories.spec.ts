@@ -130,3 +130,21 @@ test("category load error offers a working retry and makes no unrelated API call
   expect(categoryCalls).toBe(2);
   expect(unexpectedApiCalls).toBe(0);
 });
+
+test("category limit notice appears when the API returns the full 500 categories", async ({ page }) => {
+  const categories = Array.from({ length: 500 }, (_, index) => ({ categoryCode: index + 1, categoryName: `Kategorie ${index + 1}` }));
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/categories?size=500", (route) => route.fulfill({ json: categories }));
+  await page.goto("/admin/next/categories/");
+  await expect(page.getByRole("region", { name: "Kategorie-Ergebnisse" })).toContainText("500 Kategorien");
+  await expect(page.getByText("Die API liefert höchstens 500 Kategorien.")).toBeVisible();
+});
+
+test("category limit notice stays hidden for a short category list", async ({ page }) => {
+  const categories = [{ categoryCode: 310, categoryName: "Obst" }, { categoryCode: 420, categoryName: "Milch" }, { categoryCode: 530, categoryName: "Brot" }];
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/categories?size=500", (route) => route.fulfill({ json: categories }));
+  await page.goto("/admin/next/categories/");
+  await expect(page.getByRole("region", { name: "Kategorie-Ergebnisse" })).toContainText("3 Kategorien");
+  await expect(page.getByText("Die API liefert höchstens 500 Kategorien.")).toHaveCount(0);
+});

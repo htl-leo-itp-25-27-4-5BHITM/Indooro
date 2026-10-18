@@ -2,6 +2,28 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>IndooroStudyMode</key>
+	<false/>
+	<key>IndooroAPIBaseURL</key>
+	<string>$(INDOORO_API_BASE_URL)</string>
+	<key>IndooroFeatureProfile</key>
+	<string>pilot</string>
+#if INDOORO_LOCAL_HTTP
+	<!-- Nur Debug-Local (Config/Debug-Local.xcconfig): Klartext-HTTP zu localhost. Alle anderen Konfigurationen haben keine ATS-Ausnahme. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<false/>
+			</dict>
+		</dict>
+	</dict>
+#endif
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>
@@ -17,11 +39,6 @@
 			</array>
 		</dict>
 	</array>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
 	<key>UTExportedTypeDeclarations</key>
 	<array>
 		<dict>

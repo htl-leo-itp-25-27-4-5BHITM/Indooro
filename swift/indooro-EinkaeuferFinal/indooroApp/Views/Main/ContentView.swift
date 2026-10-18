@@ -1,3 +1,4 @@
+import IndooroModels
 import SwiftUI
 
 private enum AppSection: Hashable {
@@ -16,8 +17,13 @@ struct ContentView: View {
     @StateObject private var mapProductSearch = ProductSearchStore()
     @StateObject private var productsSearch = ProductSearchStore()
     @StateObject private var recipeStore = RecipeStore()
-    @StateObject private var upsellStore = UpsellSuggestionStore()
+    @StateObject private var studyStore = StudySessionStore(enabled: AppEnvironment.isStudyModeEnabled)
+    @State private var showsStudySession = false
+    @State private var upsellStore = UpsellModel()
 
+    @AppStorage(AppEnvironment.profileOverrideKey) private var profileOverride = ""
+    @AppStorage("IndooroIntroductionCompleted") private var introductionCompleted = false
+    @State private var showsIntroduction = false
     @State private var selectedSection: AppSection = .start
     @State private var targetProduct: Product?
     @State private var pendingShoppingImportPackage: ShoppingTransferPackage?
@@ -26,85 +32,137 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedSection) {
-            HomeDashboardView(
-                selectedList: shoppingListManager.selectedList,
-                activeBanner: shoppingSessionManager.banner(),
-                onOpenPlanning: { selectedSection = .planning },
-                onOpenRecipes: { selectedSection = .recipes },
-                onOpenShopping: { selectedSection = .shopping },
-                onOpenMap: { selectedSection = .map }
-            )
-            .tabItem {
-                Label("Start", systemImage: "house.fill")
+            Tab("Start", systemImage: "house.fill", value: AppSection.start) {
+                HomeDashboardView(
+                    selectedList: shoppingListManager.selectedList,
+                    activeBanner: shoppingSessionManager.banner(),
+                    onOpenPlanning: { selectedSection = .planning },
+                    onOpenRecipes: { selectedSection = .recipes },
+                    onOpenShopping: { selectedSection = .shopping },
+                    onOpenMap: { selectedSection = .map }
+                )
             }
-            .tag(AppSection.start)
 
-            ProductsPage(
-                listManager: shoppingListManager,
-                sessionManager: shoppingSessionManager,
-                beaconManager: beaconManager,
-                productSearch: productsSearch,
-                onNavigateToProduct: focusProductOnMap,
-                onAddToList: addProductToShoppingList,
-                onOpenShopping: { selectedSection = .shopping }
-            )
-            .tabItem {
-                Label("Planung", systemImage: "plus.circle.fill")
+            Tab("Planung", systemImage: "plus.circle.fill", value: AppSection.planning) {
+                ProductsPage(
+                    listManager: shoppingListManager,
+                    sessionManager: shoppingSessionManager,
+                    beaconManager: beaconManager,
+                    productSearch: productsSearch,
+                    onNavigateToProduct: focusProductOnMap,
+                    onAddToList: addProductToShoppingList,
+                    onOpenShopping: { selectedSection = .shopping }
+                )
             }
-            .tag(AppSection.planning)
 
-            RecipesPage(
-                recipeStore: recipeStore,
-                listManager: shoppingListManager,
-                sessionManager: shoppingSessionManager,
-                beaconManager: beaconManager,
-                onOpenShopping: { selectedSection = .shopping },
-                onRecipeItemsAdded: { syncShoppingSession() }
-            )
-            .tabItem {
-                Label("Rezepte", systemImage: "fork.knife")
+            if AppEnvironment.allowsExtendedFeatures {
+                Tab("Rezepte", systemImage: "fork.knife", value: AppSection.recipes) {
+                    RecipesPage(
+                        recipeStore: recipeStore,
+                        listManager: shoppingListManager,
+                        sessionManager: shoppingSessionManager,
+                        beaconManager: beaconManager,
+                        onOpenShopping: { selectedSection = .shopping },
+                        onRecipeItemsAdded: { syncShoppingSession() }
+                    )
+                }
             }
-            .tag(AppSection.recipes)
 
-            ShoppingListsPage(
-                listManager: shoppingListManager,
-                sessionManager: shoppingSessionManager,
-                beaconManager: beaconManager,
-                upsellStore: upsellStore,
-                pendingImportPackage: $pendingShoppingImportPackage,
-                importErrorMessage: $shoppingImportErrorMessage,
-                onStartSession: startShoppingSession,
-                onStopSession: stopShoppingSession
-            )
-            .tabItem {
-                Label("Einkaufen", systemImage: "checklist.checked")
+            Tab("Einkaufen", systemImage: "checklist.checked", value: AppSection.shopping) {
+                ShoppingListsPage(
+                    listManager: shoppingListManager,
+                    sessionManager: shoppingSessionManager,
+                    beaconManager: beaconManager,
+                    upsellStore: upsellStore,
+                    pendingImportPackage: $pendingShoppingImportPackage,
+                    importErrorMessage: $shoppingImportErrorMessage,
+                    onStartSession: startShoppingSession,
+                    onStopSession: stopShoppingSession
+                )
             }
-            .tag(AppSection.shopping)
 
-            StoreMapPage(
-                beaconManager: beaconManager,
-                navigationSession: navigationSession,
-                shoppingListManager: shoppingListManager,
-                shoppingSessionManager: shoppingSessionManager,
-                productSearch: mapProductSearch,
-                upsellStore: upsellStore,
-                targetProduct: $targetProduct,
-                pendingLastStoreLayoutOpenRequest: $pendingLastStoreLayoutOpenRequest,
-                onNavigateToProduct: focusProductOnMap,
-                onOpenLists: { selectedSection = .shopping },
-                onAddToList: addProductToShoppingList
-            )
-            .tabItem {
-                Label("Karte", systemImage: "map.fill")
+            Tab("Karte", systemImage: "map.fill", value: AppSection.map) {
+                StoreMapPage(
+                    beaconManager: beaconManager,
+                    navigationSession: navigationSession,
+                    shoppingListManager: shoppingListManager,
+                    shoppingSessionManager: shoppingSessionManager,
+                    productSearch: mapProductSearch,
+                    upsellStore: upsellStore,
+                    targetProduct: $targetProduct,
+                    pendingLastStoreLayoutOpenRequest: $pendingLastStoreLayoutOpenRequest,
+                    onNavigateToProduct: focusProductOnMap,
+                    onOpenLists: { selectedSection = .shopping },
+                    onAddToList: addProductToShoppingList
+                )
+                .safeAreaInset(edge: .top) {
+                    VStack(spacing: 0) {
+                        PermissionBanner(manager: beaconManager)
+                        ProductSearchFeedback(store: mapProductSearch)
+                    }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    if AppEnvironment.isStudyModeEnabled && studyStore.session != nil {
+                        VStack {
+                            if studyStore.running?.task.condition == .app { StudyRunningControls(store: studyStore) }
+                            Button("Testleitung") { showsStudySession = true }
+                        }
+                        .padding(.horizontal)
+                        .background(.regularMaterial)
+                    }
+                }
             }
-            .tag(AppSection.map)
         }
+        // Untere Tab-Leiste auch auf dem iPad (die Tab-API zeigt dort sonst eine obere Leiste).
+        .tabViewStyle(.tabBarOnly)
         .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
         .preferredColorScheme(.light)
+        .alert("Filiale erkannt: \(beaconManager.suggestedPilotStore?.name ?? "") – öffnen?", isPresented: Binding(
+            get: { beaconManager.suggestedPilotStore != nil },
+            set: { if !$0 { beaconManager.suggestedPilotStore = nil } }
+        ), presenting: beaconManager.suggestedPilotStore) { store in
+            Button("Öffnen") { beaconManager.openSuggestedPilotStore(store) }
+            Button("Abbrechen", role: .cancel) { beaconManager.suggestedPilotStore = nil }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: StudySessionStore.openRequested)) { _ in
+            guard AppEnvironment.isStudyModeEnabled else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) { showsStudySession = true }
+        }
+        .sheet(isPresented: $showsStudySession) { StudySessionView(store: studyStore, beaconManager: beaconManager) }
+        .onChange(of: mapProductSearch.errorMessage) { _, message in if let message { studyStore.recordError(message) } }
+        .onChange(of: productsSearch.errorMessage) { _, message in if let message { studyStore.recordError(message) } }
+        .sheet(isPresented: $showsIntroduction) {
+            PilotIntroduction { introductionCompleted = true; showsIntroduction = false }
+        }
         .onAppear {
+            studyStore.onStartAppTask = { task in
+                showsStudySession = false
+                pendingLastStoreLayoutOpenRequest = UUID()
+                focusProductOnMap(Product(id: task.productId, name: task.productName, price: 0, layoutCode: task.layoutCode ?? ""))
+            }
+            studyStore.counterSnapshot = { [weak navigationSession] in
+                guard let navigationSession else { return StudyCounters() }
+                return StudyCounters(routeBuildCount: navigationSession.routeBuildCount,
+                                     rerouteCount: navigationSession.rerouteCount,
+                                     stopChangeWithoutEventCount: navigationSession.stopChangeWithoutEventCount,
+                                     manualPositionCount: navigationSession.manualPositionCount,
+                                     arrivalSuggestionShownCount: navigationSession.arrivalSuggestionShownCount,
+                                     arrivalSuggestionAcceptedCount: navigationSession.arrivalSuggestionAcceptedCount,
+                                     arrivalSuggestionRejectedCount: navigationSession.arrivalSuggestionRejectedCount)
+            }
+            showsIntroduction = !introductionCompleted
+            let provider: () -> MobileStoreSummary? = { [weak beaconManager] in
+                beaconManager?.activeLayoutStore ?? beaconManager?.detectedStore
+            }
+            mapProductSearch.storeProvider = provider
+            productsSearch.storeProvider = provider
             navigationSession.attach(to: beaconManager)
             shoppingSessionManager.bind(navigationSession: navigationSession)
             syncShoppingSession()
+        }
+        .onChange(of: beaconManager.effectiveStoreCode, initial: true) { _, newStoreCode in
+            mapProductSearch.setActiveStore(code: newStoreCode)
+            productsSearch.setActiveStore(code: newStoreCode)
         }
         .onChange(of: targetProduct, initial: false) { _, newProduct in
             guard !shoppingSessionManager.isActive else { return }
@@ -120,6 +178,10 @@ struct ContentView: View {
         .onChange(of: shoppingListManager.revision) { _, _ in
             guard shoppingSessionManager.isActive else { return }
             syncShoppingSession()
+        }
+        .onChange(of: profileOverride) { _, _ in
+            upsellStore.resetSession()
+            if !AppEnvironment.allowsExtendedFeatures && selectedSection == .recipes { selectedSection = .start }
         }
         .onOpenURL { url in
             handleIncomingShoppingTransfer(url)
@@ -144,7 +206,7 @@ struct ContentView: View {
 
     private var upsellPromptBinding: Binding<UpsellPrompt?> {
         Binding(
-            get: { upsellStore.activePrompt },
+            get: { AppEnvironment.allowsExtendedFeatures ? upsellStore.activePrompt : nil },
             set: { newValue in
                 if newValue == nil {
                     upsellStore.clearPrompt(reason: "sheet_binding_nil")

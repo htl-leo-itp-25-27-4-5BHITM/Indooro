@@ -1,0 +1,6 @@
+{"sessionId":"F9FBDD35-3D0C-4187-BB68-B529BD48BDBF","t":"2026-10-16T16:58:23.732Z","taskNo":1,"testId":"T01","type":"taskStart"}
+{"counters":{},"outcome":"gefunden","sessionId":"F9FBDD35-3D0C-4187-BB68-B529BD48BDBF","t":"2026-10-16T16:58:26.895Z","taskNo":1,"testId":"T01","type":"taskEnd"}
+{"sessionId":"F9FBDD35-3D0C-4187-BB68-B529BD48BDBF","t":"2026-10-16T16:58:29.246Z","taskNo":2,"testId":"T01","type":"taskStart"}
+{"counters":{},"outcome":"hilfe","sessionId":"F9FBDD35-3D0C-4187-BB68-B529BD48BDBF","t":"2026-10-16T16:58:32.129Z","taskNo":2,"testId":"T01","type":"taskEnd"}
+{"sessionId":"F9FBDD35-3D0C-4187-BB68-B529BD48BDBF","t":"2026-10-16T16:58:34.529Z","taskNo":3,"testId":"T01","type":"taskStart"}
+{"counters":{},"outcome":"gefunden","sessionId":"F9FBDD35-3D0C-4187-BB68-B529BD48BDBF","t":"2026-10-16T16:58:36.046Z","taskNo":3,"testId":"T01","type":"taskEnd"}

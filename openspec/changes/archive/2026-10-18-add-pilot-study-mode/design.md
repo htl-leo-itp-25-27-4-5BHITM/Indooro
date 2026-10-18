@@ -1,0 +1,48 @@
+## Context
+
+- `NavigationSession` (`Utilities/NavigationSession.swift`, `NavigationSessionCore.swift`) owns route, active stop and progress; replay metrics already count reroutes and stop changes (`NavigationReplay.swift`, `ReplayMetrics`).
+- `AppEnvironment` and the feature profile come from `prepare-pilot-ios-build`.
+- Manual position setting („Ich bin hier“) comes from `add-pilot-guided-tour-fallbacks`.
+
+## Goals / Non-Goals
+
+Goals: reliable per-task data for phase 3 with minimal effort for the test lead; a fixed export format for the evaluation tooling.
+
+Non-goals: server upload, analytics SDK, questionnaires in the app (paper/separate form), identification of persons.
+
+## Decisions
+
+1. **Activation.** `IndooroStudyMode` Info.plist boolean (default false). When true, the settings sheet shows „Testleitung“. No PIN; loan devices stay with the team.
+2. **Counters.** `NavigationSession` exposes (or gets, via Erik) monotonically increasing counters: `routeBuildCount`, `rerouteCount`, `stopChangeWithoutEventCount`, `manualPositionCount`. The study store snapshots them at task start and end and records the differences.
+3. **Task list.** `study-tasks.json` in the bundle (`[{ "no": 1, "productId": 123, "condition": "app" }]`) or manual entry by product search. Condition can be switched per task.
+4. **Export format (contract for prepare-pilot-evaluation).**
+   CSV `study-<testId>-<yyyyMMdd-HHmmss>.csv`, UTF-8, comma-separated, header:
+   `test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count`
+   - `condition` ∈ `app`, `ohne_app`; `positioning_mode` ∈ `mit_ortung`, `ohne_ortung`, `-` (ohne App); `outcome` ∈ `gefunden`, `hilfe`, `abgebrochen`; timestamps ISO 8601 UTC; `duration_s` with one decimal.
+   JSONL `study-<testId>-<…>.jsonl`: one event per line `{ "t": <ISO>, "type": "taskStart|taskEnd|manualPosition|reroute|stopChange|error|note", … }`.
+   A sample of both files is committed under `docs/pilot-readiness/kit/study-export-sample/`.
+5. **Storage.** `Documents/StudySessions/`; share via `ShareLink`; „Alle Sitzungen löschen“ with confirmation.
+
+## Risks / Trade-offs
+
+- Counters depend on Erik's session code; if not available in time, record only times and outcomes and mark counters `-`.
+- Test lead workload: two taps per task.
+
+## Migration / Rollback
+
+Flag off = feature invisible.
+
+## Baseline
+
+2026-10-16: `pilot/ios-study-mode`, `git fetch origin`; `origin/pilot/first-store` aktuell, danach gemäß Davids ausdrücklichem Fallback `git merge origin/pilot/ios-pilot-build` (Fast-forward auf `a20d385`). A ist noch nicht im Integrationsbranch; dieser Fallback ersetzt nur für B das ursprüngliche Start-Gate. Vor Source-Änderungen: swift test 77 + 9 Tests, 0 Fehler, Exit 0; Simulator-Build Exit 0, BUILD SUCCEEDED. DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer.
+
+## Implementation notes
+
+- NavigationSession ist vorhanden, veröffentlicht aber keinen der vier geforderten Zähler. routeBuildCount existiert nur intern in NavigationSessionCore. Keine Reflection/Änderung an Eriks Session; fehlende Werte bleiben „-“ statt als null Messwert ausgegeben zu werden.
+- Task 4.1 nennt einen Export unter kit/study-export-sample. Der Kit-Pfad gehört Person C; ein tatsächlich erzeugtes synthetisches Beispiel wird zunächst unter evidence/add-pilot-study-mode abgelegt. Übernahme durch C ist ein Eigentums-Gate.
+- Automatische und UI-Tests verwenden nur synthetische Test-IDs/Produktdaten, keine echten Personen.
+
+- Lesender Gegencheck, Korrekturrunde 1: ältere Sitzungen waren gespeichert, aber nicht mehr auswählbar. Gespeicherte Sitzungen werden jetzt angeboten und können vor dem Export ausgewählt werden; zusätzlicher Persistenztest mit zwei Sitzungen innerhalb derselben Sekunde. Persistierte und exportierte Zeitstempel behalten Millisekunden.
+- Export-Diagnose: DEBUG protokolliert nur Methode/Pfad der gemeinsamen Backend-Session (keine Querywerte/Bodys) und markiert Beginn/Ende des lokalen Exports. Der Beobachter übernimmt keinen Transport.
+
+- Studienstart nutzt in ContentView den bestehenden pendingLastStoreLayoutOpenRequest-Einstieg: aktive Filiale öffnen, sonst Übersicht beibehalten. Lesender Gegencheck ohne Befund; StoreMapPage bleibt unverändert.

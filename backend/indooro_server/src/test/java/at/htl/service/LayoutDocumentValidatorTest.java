@@ -129,6 +129,54 @@ class LayoutDocumentValidatorTest {
     }
 
     @Test
+    void acceptsIntegerNullOrAbsentMeter() {
+        ObjectNode layout = layout();
+        ObjectNode shelf = elementWithoutId(1, 1);
+        ((ArrayNode) layout.get("elements")).add(shelf);
+
+        shelf.put("meter", 3);
+        assertDoesNotThrow(() -> validator.validate(layout));
+
+        shelf.putNull("meter");
+        assertDoesNotThrow(() -> validator.validate(layout));
+
+        shelf.remove("meter");
+        assertDoesNotThrow(() -> validator.validate(layout));
+    }
+
+    @Test
+    void rejectsMeterThatIsNotANonNegativeInteger() {
+        ObjectNode layout = layout();
+        ObjectNode shelf = elementWithoutId(1, 1);
+        ((ArrayNode) layout.get("elements")).add(shelf);
+
+        shelf.put("meter", "3");
+        WebApplicationException text = assertThrows(WebApplicationException.class,
+                () -> validator.validate(layout));
+        assertEquals(400, text.getResponse().getStatus());
+        assertTrue(text.getMessage().contains("elements[0].meter muss eine ganze Zahl oder null sein."));
+
+        shelf.put("meter", 1.5);
+        assertBadRequest(layout);
+
+        shelf.put("meter", -1);
+        assertBadRequest(layout);
+
+        shelf.put("meter", true);
+        assertBadRequest(layout);
+    }
+
+    @Test
+    void acceptsIntegerMeterOnNonShelfElements() {
+        ObjectNode layout = layout();
+        ObjectNode poi = elementWithoutId(2, 2);
+        poi.put("type", "poi");
+        poi.put("meter", 7);
+        ((ArrayNode) layout.get("elements")).add(poi);
+        assertDoesNotThrow(() -> validator.validate(layout));
+    }
+
+    @Test
     void rejectsOneMiBAndFiveThousandElementLimits() {
         ObjectNode tooLarge = layout();
         tooLarge.put("notes", "x".repeat(LayoutDocumentValidator.MAX_DOCUMENT_BYTES));

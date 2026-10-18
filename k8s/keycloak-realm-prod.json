@@ -1,0 +1,54 @@
+{
+  "realm": "indooro",
+  "enabled": true,
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "bruteForceProtected": true,
+  "passwordPolicy": "length(12) and notUsername and passwordHistory(3)",
+  "sslRequired": "external",
+  "roles": {
+    "realm": [
+      { "name": "admin" },
+      { "name": "region-manager" },
+      { "name": "store-manager" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "indooro-admin-web",
+      "name": "Indooro Admin Web",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${KC_ADMIN_WEB_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "https://it220209.cloud.htl-leonding.ac.at/*"
+      ],
+      "webOrigins": [
+        "https://it220209.cloud.htl-leonding.ac.at"
+      ],
+      "attributes": {
+        "post.logout.redirect.uris": "https://it220209.cloud.htl-leonding.ac.at/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm roles in id token",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ]
+}

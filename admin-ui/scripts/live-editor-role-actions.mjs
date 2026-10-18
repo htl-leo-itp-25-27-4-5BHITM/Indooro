@@ -140,6 +140,13 @@ try {
   assert.equal(initialMobile.layoutId, null, "fixture starts without an active version");
   for (const [role, page] of [["region-manager", regionManager], ["store-manager", storeManager]]) {
     const name = `${role} disposable draft ${stamp}`;
+    await page.goto(`${base}/admin/editor/?storeId=${store.id}&probe=role#canvas`, { waitUntil: "domcontentloaded" });
+    await page.waitForURL((url) => url.pathname === "/admin/next/editor/" && url.searchParams.get("storeId") === store.id && url.searchParams.get("probe") === "role" && url.hash === "#canvas");
+    await page.getByRole("heading", { name: "Layout Editor" }).waitFor();
+    await page.screenshot({ path: `../docs/admin-rebuild/evidence/editor-cutover/${role}-own-store.png`, fullPage: true });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.getByRole("heading", { name: "Layout Editor" }).waitFor();
+    check(`${role} old Store entry redirects with query/fragment and survives refresh`);
     await page.goto(`${base}/admin/next/editor/?storeId=${store.id}`, { waitUntil: "domcontentloaded" });
     await page.getByRole("heading", { name: "Layout Editor" }).waitFor();
     await page.getByRole("textbox", { name: "Filialname" }).fill(name);
@@ -161,17 +168,30 @@ try {
     assert.equal(denied.status, 403, `${role} out-of-scope Store mutation is forbidden`);
     await page.goto(`${base}/admin/next/editor/?storeId=${foreignStore.id}`, { waitUntil: "domcontentloaded" });
     await page.getByRole("heading", { name: "Zugriff verweigert" }).waitFor();
+    await page.goto(`${base}/admin/editor/?storeId=${foreignStore.id}`, { waitUntil: "domcontentloaded" });
+    await page.waitForURL((url) => url.pathname === "/admin/next/editor/" && url.searchParams.get("storeId") === foreignStore.id);
+    await page.getByRole("heading", { name: "Zugriff verweigert" }).waitFor();
     check(`${role} out-of-scope API mutation and editor direct link denied`);
 
     const globalWrite = await api(page, "POST", "/api/layout/current", {});
     assert.equal(globalWrite.status, 403, `${role} global-layout API mutation is forbidden (empty payload prevents writes if guard regresses)`);
     await page.goto(`${base}/admin/next/editor/`, { waitUntil: "domcontentloaded" });
     await page.getByRole("heading", { name: "Zugriff verweigert" }).waitFor();
+    await page.goto(`${base}/admin/editor/`, { waitUntil: "domcontentloaded" });
+    await page.waitForURL((url) => url.pathname === "/admin/next/editor/");
+    await page.getByRole("heading", { name: "Zugriff verweigert" }).waitFor();
     check(`${role} candidate global editor direct link denied`);
   }
 
   await admin.goto(`${base}/admin/next/editor/`, { waitUntil: "domcontentloaded" });
   await admin.getByRole("heading", { name: "Globales Layout", exact: true }).waitFor();
+  await admin.goto(`${base}/admin/editor/?probe=admin#canvas`, { waitUntil: "domcontentloaded" });
+  await admin.waitForURL((url) => url.pathname === "/admin/next/editor/" && url.searchParams.get("probe") === "admin" && url.hash === "#canvas");
+  await admin.getByRole("heading", { name: "Globales Layout", exact: true }).waitFor();
+  await admin.screenshot({ path: "../docs/admin-rebuild/evidence/editor-cutover/admin-global.png", fullPage: true });
+  await admin.reload({ waitUntil: "domcontentloaded" });
+  await admin.getByRole("heading", { name: "Globales Layout", exact: true }).waitFor();
+  check("admin old global entry redirects with query/fragment and survives refresh");
   check("admin can open the candidate global editor");
 } catch (error) {
   evidence.result = "FAIL";

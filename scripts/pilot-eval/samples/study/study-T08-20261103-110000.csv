@@ -1,0 +1,5 @@
+test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count
+T08,ff50bde4-3825-47b8-9cab-cc97663f1c97,SYNTH,1,9102,SYNTH Miso-Paste weiß 300 g,ohne_app,-,2026-11-03T11:00:00.000Z,2026-11-03T11:01:51.800Z,111.8,gefunden,-,-,-,0
+T08,ff50bde4-3825-47b8-9cab-cc97663f1c97,SYNTH,2,9102,SYNTH Miso-Paste weiß 300 g,app,mit_ortung,2026-11-03T11:01:59.800Z,2026-11-03T11:03:28.100Z,88.3,gefunden,3,1,0,0
+T08,ff50bde4-3825-47b8-9cab-cc97663f1c97,SYNTH,3,9108,SYNTH Reiswaffeln Bio 100 g,ohne_app,-,2026-11-03T11:03:54.100Z,2026-11-03T11:05:06.700Z,72.6,gefunden,-,-,-,0
+T08,ff50bde4-3825-47b8-9cab-cc97663f1c97,SYNTH,4,9108,SYNTH Reiswaffeln Bio 100 g,app,ohne_ortung,2026-11-03T11:05:24.700Z,2026-11-03T11:06:02.600Z,37.9,gefunden,0,1,0,0

@@ -1,106 +1,17 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: indooro-keycloak-realm
-data:
-  indooro-realm.json: |-
-    {
-      "realm": "indooro",
-      "enabled": true,
-      "registrationAllowed": false,
-      "loginWithEmailAllowed": true,
-      "roles": {
-        "realm": [
-          { "name": "admin" },
-          { "name": "region-manager" },
-          { "name": "store-manager" }
-        ]
-      },
-      "clients": [
-        {
-          "clientId": "indooro-admin-web",
-          "name": "Indooro Admin Web",
-          "enabled": true,
-          "protocol": "openid-connect",
-          "publicClient": false,
-          "secret": "${KC_ADMIN_WEB_CLIENT_SECRET}",
-          "standardFlowEnabled": true,
-          "directAccessGrantsEnabled": true,
-          "serviceAccountsEnabled": false,
-          "redirectUris": [
-            "http://localhost:8080/*",
-            "https://it220209.cloud.htl-leonding.ac.at/*"
-          ],
-          "webOrigins": [
-            "http://localhost:8080",
-            "https://it220209.cloud.htl-leonding.ac.at"
-          ],
-          "attributes": {
-            "post.logout.redirect.uris": "http://localhost:8080/*##https://it220209.cloud.htl-leonding.ac.at/*"
-          },
-          "protocolMappers": [
-            {
-              "name": "realm roles in id token",
-              "protocol": "openid-connect",
-              "protocolMapper": "oidc-usermodel-realm-role-mapper",
-              "consentRequired": false,
-              "config": {
-                "multivalued": "true",
-                "userinfo.token.claim": "true",
-                "id.token.claim": "true",
-                "access.token.claim": "true",
-                "claim.name": "realm_access.roles",
-                "jsonType.label": "String"
-              }
-            }
-          ]
-        }
-      ],
-      "users": [
-        {
-          "id": "11111111-1111-1111-1111-111111111111",
-          "username": "indooro-admin",
-          "firstName": "Indooro",
-          "lastName": "Admin",
-          "email": "admin@indooro.local",
-          "enabled": true,
-          "emailVerified": true,
-          "requiredActions": [],
-          "credentials": [
-            { "type": "password", "value": "${KC_DEMO_ADMIN_PASSWORD}", "temporary": false }
-          ],
-          "realmRoles": ["admin"]
-        },
-        {
-          "id": "22222222-2222-2222-2222-222222222222",
-          "username": "indooro-region",
-          "firstName": "Indooro",
-          "lastName": "Region",
-          "email": "region@indooro.local",
-          "enabled": true,
-          "emailVerified": true,
-          "requiredActions": [],
-          "credentials": [
-            { "type": "password", "value": "${KC_DEMO_REGION_PASSWORD}", "temporary": false }
-          ],
-          "realmRoles": ["region-manager"]
-        },
-        {
-          "id": "33333333-3333-3333-3333-333333333333",
-          "username": "indooro-store",
-          "firstName": "Indooro",
-          "lastName": "Store",
-          "email": "store@indooro.local",
-          "enabled": true,
-          "emailVerified": true,
-          "requiredActions": [],
-          "credentials": [
-            { "type": "password", "value": "${KC_DEMO_STORE_PASSWORD}", "temporary": false }
-          ],
-          "realmRoles": ["store-manager"]
-        }
-      ]
-    }
+# Keycloak im Produktionsmodus (start, PostgreSQL). Kein Secret und keine Klartext-Werte in dieser Datei.
+#
+# Voraussetzungen (vor dem Apply, im Namespace student-it220209):
+# 1. Datenbank `keycloak` und Benutzer anlegen: siehe DEPLOYMENT.md (Abschnitt "Keycloak-Datenbank").
+#    Oder Job: k8s/keycloak-db-init-job.yaml.
+# 2. Secret `indooro-keycloak-secret` per `kubectl create secret generic` anlegen
+#    (Keys: bootstrap-admin-username, bootstrap-admin-password, admin-web-client-secret, db-password).
+#    Vorlage: k8s/secrets.example.yaml.
+# 3. Realm-ConfigMap aus der Produktions-Realm-Datei erzeugen (Realm-Datei bleibt single-source):
+#    kubectl -n student-it220209 create configmap indooro-keycloak-realm \
+#      --from-file=indooro-realm.json=k8s/keycloak-realm-prod.json
+#    Die ConfigMap ist bewusst NICHT in diesem Manifest enthalten.
+#
+# Image-Tag: vor dem Apply die neueste 26.x-Patchversion pruefen und den Tag anpassen.
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -110,6 +21,9 @@ metadata:
     app: indooro-keycloak
 spec:
   replicas: 1
+  # Ein Datenverzeichnis / eine Datenbank: nie zwei Keycloak-Pods gleichzeitig.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: indooro-keycloak
@@ -118,30 +32,41 @@ spec:
       labels:
         app: indooro-keycloak
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: keycloak
-          image: quay.io/keycloak/keycloak:24.0.5
+          # Keycloak 26.0.8. Vor dem Apply neueste 26.x-Patchversion pruefen (Release-Notes auf quay.io/keycloak/keycloak).
+          image: quay.io/keycloak/keycloak:26.0.8
+          imagePullPolicy: IfNotPresent
           args:
-            - "start-dev"
+            - "start"
             - "--import-realm"
             - "--http-enabled=true"
             - "--http-port=8080"
             - "--http-relative-path=/keycloak"
-            - "--hostname=it220209.cloud.htl-leonding.ac.at"
-            - "--hostname-strict=false"
-            - "--hostname-strict-https=true"
+            - "--hostname=https://it220209.cloud.htl-leonding.ac.at/keycloak"
+            # Admin-Konsole nur per `kubectl port-forward svc/indooro-keycloak 8081:8080` (siehe DEPLOYMENT.md).
+            - "--hostname-admin=http://localhost:8081/keycloak"
             - "--proxy-headers=xforwarded"
+            - "--health-enabled=true"
           env:
-            - name: KEYCLOAK_ADMIN
+            - name: KC_DB
+              value: "postgres"
+            - name: KC_DB_URL_HOST
+              value: "postgres"
+            - name: KC_DB_URL_DATABASE
+              value: "keycloak"
+            - name: KC_DB_USERNAME
+              value: "keycloak"
+            - name: KC_DB_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: indooro-keycloak-secret
-                  key: bootstrap-admin-username
-            - name: KEYCLOAK_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: indooro-keycloak-secret
-                  key: bootstrap-admin-password
+                  key: db-password
             - name: KC_BOOTSTRAP_ADMIN_USERNAME
               valueFrom:
                 secretKeyRef:
@@ -157,25 +82,39 @@ spec:
                 secretKeyRef:
                   name: indooro-keycloak-secret
                   key: admin-web-client-secret
-            - name: KC_DEMO_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: indooro-keycloak-secret
-                  key: demo-admin-password
-            - name: KC_DEMO_REGION_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: indooro-keycloak-secret
-                  key: demo-region-password
-            - name: KC_DEMO_STORE_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: indooro-keycloak-secret
-                  key: demo-store-password
-            - name: KC_DB
-              value: "dev-file"
           ports:
-            - containerPort: 8080
+            - name: http
+              containerPort: 8080
+            # Health-Endpunkte (Management-Interface). Nur Container-Port, KEIN Service-Port.
+            - name: management
+              containerPort: 9000
+          # Health liegt im Management-Interface auf Port 9000. Falls der Pfad im Cluster
+          # nicht antwortet (ohne /keycloak), den Probe-Pfad auf /health/... anpassen.
+          startupProbe:
+            httpGet:
+              path: /keycloak/health/live
+              port: 9000
+            periodSeconds: 10
+            failureThreshold: 60
+          livenessProbe:
+            httpGet:
+              path: /keycloak/health/live
+              port: 9000
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /keycloak/health/ready
+              port: 9000
+            periodSeconds: 10
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
           volumeMounts:
             - name: realm-import
               mountPath: /opt/keycloak/data/import
@@ -206,21 +145,4 @@ spec:
       port: 8080
       targetPort: 8080
   type: ClusterIP
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: indooro-keycloak-ingress
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: it220209.cloud.htl-leonding.ac.at
-      http:
-        paths:
-          - path: /keycloak
-            pathType: Prefix
-            backend:
-              service:
-                name: indooro-keycloak
-                port:
-                  number: 8080
+# Kein eigener Ingress: Routing (nur /keycloak/realms/ und /keycloak/resources/) liegt in k8s/backend-ingress.yaml.

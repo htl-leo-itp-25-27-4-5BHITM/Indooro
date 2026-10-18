@@ -1,0 +1,28 @@
+# Lint rules for the reviewed shared API contract (npm run contract:lint).
+apis:
+  shared:
+    root: openspec/specs/shared-api/openapi.yaml
+
+extends:
+  - minimal
+  - recommended
+
+rules:
+  operation-operationId: error
+  operation-tag-defined: error
+  # Every operation must declare its access class, tags and operationId (task 1.2).
+  rule/indooro-operation-metadata:
+    subject:
+      type: Operation
+    assertions:
+      required:
+        - x-indooro-access
+        - tags
+        - operationId
+    message: Every operation needs x-indooro-access, tags and operationId.
+    severity: error
+  # Noise for this internal contract: LeoCloud and localhost servers are intentional, no license is declared.
+  info-license: off
+  no-server-example.com: off
+  # Sparse 4XX coverage is tracked by the parity check; keep visible as a warning only.
+  operation-4xx-response: warn

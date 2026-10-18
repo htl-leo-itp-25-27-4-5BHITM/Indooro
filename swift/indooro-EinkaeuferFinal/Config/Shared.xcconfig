@@ -1,0 +1,11 @@
+// Gemeinsame Build-Einstellungen der App MCindooroApp. Wird von Debug, Debug-Local,
+// Debug-LeoCloud und Release eingebunden. Standard-Backend ist LeoCloud.
+//
+// In xcconfig beginnt ein "//" einen Kommentar; deshalb steht hier "https:/$()/..."
+// (leerer Build-Setting-Ausdruck zwischen den Schraegstrichen). Der Wert landet ueber
+// Info.plist (IndooroAPIBaseURL = $(INDOORO_API_BASE_URL)) in der App.
+INDOORO_API_BASE_URL = https:/$()/it220209.cloud.htl-leonding.ac.at/api
+
+// Info.plist wird vorverarbeitet, damit der Debug-Local-spezifische ATS-Eintrag per Define
+// (INDOORO_LOCAL_HTTP) nur in dieser Konfiguration landet.
+INFOPLIST_PREPROCESS = YES

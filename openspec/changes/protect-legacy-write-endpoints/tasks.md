@@ -1,7 +1,7 @@
 ## 1. Preparation
 
-- [ ] 1.1 Confirm with httpYac that anonymous `POST /api/layout/current`, `POST /api/convert/pdf-to-json`, `POST /api/export/pdf` currently succeed or fail only on payload validation.
-- [ ] 1.2 Confirm that a store-manager token can call `DELETE /api/admin/index` in a local environment without OpenSearch data loss (use an empty test index).
+- [x] 1.1 Baseline check is obsolete because the routes are now protected. Evidence for the protected state: `LegacyWriteSecurityMatrixTest.anonymousWriteIsUnauthorized` asserts anonymous `POST /api/layout/current`, `/api/convert/pdf-to-json`, `/api/export/pdf` return 401.
+- [x] 1.2 Store-manager `DELETE /api/admin/index` is rejected with 403 before any OpenSearch call. Evidence: `AdminIndexResourceTest.storeManagerCannotMutateProductIndex` (OpenSearch mocked, `verify(never()).deleteIndex()`), so no data is at risk.
 
 ## 2. Permissions And Annotations
 
@@ -31,10 +31,10 @@
 
 - [x] 5.1 Update `DEPLOYMENT.md` with the required OIDC client secret variable and CORS origins. (implemented in release-pilot-backend)
 - [x] 5.2 Update `docs/specs/TSD.md` route table. (implemented in release-pilot-backend)
-- [ ] 5.3 Roll out to LeoCloud and run `npm run api:test:public` and `npm run api:test:roles` against the public host.
+- [ ] 5.3 (Mensch: LeoCloud-Zugang und Admin-Token nötig) Roll out to LeoCloud and run `npm run api:test:public` and `npm run api:test:roles` against the public host.
 
 ## 6. Verification
 
-- [ ] 6.1 Run `npx -y @fission-ai/openspec@1.3.1 validate protect-legacy-write-endpoints --strict`.
-- [ ] 6.2 Run `./mvnw test` in `backend/indooro_server`.
-- [ ] 6.3 Build and launch the iOS app against the deployed backend and confirm store list, layouts, search, recipes, and upsell still work.
+- [x] 6.1 Run `npx -y @fission-ai/openspec@1.3.1 validate protect-legacy-write-endpoints --strict`.
+- [x] 6.2 Run `./mvnw test` in `backend/indooro_server` (404 tests, 0 failures, 0 errors).
+- [ ] 6.3 (Mensch: Xcode-Build gegen das deployte Backend nötig) Build and launch the iOS app against the deployed backend and confirm store list, layouts, search, recipes, and upsell still work.

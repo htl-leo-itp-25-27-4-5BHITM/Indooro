@@ -1,3 +1,4 @@
+import IndooroModels
 import SwiftUI
 import MapKit
 
@@ -7,7 +8,7 @@ struct StoreMapPage: View {
     @ObservedObject var shoppingListManager: ShoppingListManager
     @ObservedObject var shoppingSessionManager: ShoppingSessionManager
     @ObservedObject var productSearch: ProductSearchStore
-    @ObservedObject var upsellStore: UpsellSuggestionStore
+    var upsellStore: UpsellModel
 
     @Binding var targetProduct: Product?
     @Binding var pendingLastStoreLayoutOpenRequest: UUID?
@@ -38,6 +39,7 @@ struct StoreMapPage: View {
 
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
     private let routeAccent = Color(red: 0.15, green: 0.57, blue: 0.88)
+    @ScaledMetric(relativeTo: .title) private var targetIconSize: CGFloat = 38
 
     private var activeShoppingSnapshot: ShoppingRouteSnapshot? {
         shoppingSessionManager.snapshot
@@ -67,6 +69,23 @@ struct StoreMapPage: View {
             return "Noch unter 1 m"
         }
         return "Noch ca. \(Int(meters.rounded())) m"
+    }
+
+    /// VoiceOver-Zusammenfassung der Karte: Ziel bzw. aktueller Stopp, Entfernung, Route, Positionsqualität.
+    private var mapAccessibilitySummary: String {
+        var targetText: String?
+        if let target = targetProduct {
+            let shelfText = ShelfLocationDescriptor.make(layoutCode: target.layoutCode, shelves: beaconManager.shelves)?.primary
+            targetText = AccessibilityText.productRowLabel(name: target.name, shelfText: shelfText)
+        } else if let stop = activeShoppingSnapshot?.currentStop {
+            targetText = stop.title
+        }
+        return AccessibilityText.mapSummary(
+            targetText: targetText,
+            distanceMeters: targetText == nil ? nil : activeRouteDistanceMeters,
+            routeOrigin: routeOriginName,
+            positionTrusted: beaconManager.isPositionTrusted
+        )
     }
 
     var body: some View {
@@ -342,7 +361,8 @@ struct StoreMapPage: View {
                         showsShoppingSession: activeShoppingSnapshot != nil,
                         topInset: 0,
                         bottomInset: 0,
-                        showsDebugMapElements: showsDebugMapElements
+                        showsDebugMapElements: showsDebugMapElements,
+                        accessibilitySummary: mapAccessibilitySummary
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .clipped()
@@ -411,13 +431,14 @@ struct StoreMapPage: View {
     private var storeOverviewHeader: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("SPAR-Filialen")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                Text("Filialen")
+                    .font(.system(.title2, design: .rounded, weight: .bold))
                     .foregroundStyle(.primary)
+                    .accessibilityAddTraits(.isHeader)
 
                 Text(storeOverviewSubtitle)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
                     .lineLimit(1)
             }
 
@@ -429,12 +450,13 @@ struct StoreMapPage: View {
                 Image(systemName: "location.viewfinder")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 44, height: 44)
                     .background(Color(uiColor: .systemBackground), in: Circle())
                     .overlay(Circle().stroke(Color.primary.opacity(0.06), lineWidth: 1))
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Filialen einpassen")
 
             Button {
                 beaconManager.refreshMobileStores()
@@ -442,50 +464,60 @@ struct StoreMapPage: View {
                 Image(systemName: "arrow.clockwise")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 44, height: 44)
                     .background(Color(uiColor: .systemBackground), in: Circle())
                     .overlay(Circle().stroke(Color.primary.opacity(0.06), lineWidth: 1))
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
             .disabled(beaconManager.isLoadingMobileStores)
+            .accessibilityLabel("Filialen neu laden")
 
             Button { showSettings = true } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 44, height: 44)
                     .background(Color(uiColor: .systemBackground), in: Circle())
                     .overlay(Circle().stroke(Color.primary.opacity(0.06), lineWidth: 1))
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Einstellungen")
         }
     }
 
     @ViewBuilder
     private var storeOverviewBottomPanel: some View {
-        if !storePins.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(storePins) { pin in
-                        StoreOverviewCard(
-                            store: pin.store,
-                            isLoading: pendingStoreSelectionID == pin.store.id,
-                            accent: accent,
-                            action: { selectStore(pin.store) }
-                        )
+        if !storePins.isEmpty || !storesWithoutCoordinates.isEmpty {
+            VStack(spacing: 0) {
+                if !storePins.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            ForEach(storePins) { pin in
+                                StoreOverviewCard(
+                                    store: pin.store,
+                                    isLoading: pendingStoreSelectionID == pin.store.id,
+                                    accent: accent,
+                                    action: { selectStore(pin.store) }
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+
+                if !storesWithoutCoordinates.isEmpty {
+                    storesWithoutCoordinatesChipRow
+                }
             }
             .background(.ultraThinMaterial)
         } else if let message = beaconManager.mobileStoresErrorMessage {
             HStack(spacing: 10) {
                 Image(systemName: "wifi.exclamationmark")
                     .font(.headline)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.a11yWarningText)
 
                 Text(message)
                     .font(.subheadline.weight(.medium))
@@ -500,15 +532,63 @@ struct StoreMapPage: View {
                     Image(systemName: "arrow.clockwise")
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 36, height: 36)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(accent)
+                .accessibilityLabel("Erneut laden")
             }
             .padding(14)
             .background(MapFloatingSurface(cornerRadius: 18))
             .padding(.horizontal, 16)
             .padding(.bottom, 12)
         }
+    }
+
+    /// Aktive Filialen ohne Kartenposition. Auswahl läuft über dieselbe `selectStore`-Aktion wie bei den Pins.
+    private var storesWithoutCoordinatesChipRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Ohne Kartenposition")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 16)
+                .accessibilityAddTraits(.isHeader)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(storesWithoutCoordinates) { store in
+                        Button {
+                            selectStore(store)
+                        } label: {
+                            HStack(spacing: 6) {
+                                if pendingStoreSelectionID == store.id {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Image(systemName: "storefront.fill")
+                                        .font(.caption.weight(.bold))
+                                }
+                                Text(store.name)
+                                    .font(.caption.weight(.semibold))
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(accent)
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 44)
+                            .background(accent.opacity(0.11), in: Capsule())
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(pendingStoreSelectionID != nil)
+                        .accessibilityLabel("\(store.name), \(store.displaySubtitle)")
+                        .accessibilityIdentifier("storeChip-\(store.storeCode)")
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .padding(.vertical, 10)
     }
 
     @ViewBuilder
@@ -561,33 +641,47 @@ struct StoreMapPage: View {
                 Image(systemName: "chevron.left")
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(.primary)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 44, height: 44)
                     .background(Color(uiColor: .systemBackground), in: Circle())
                     .overlay(Circle().stroke(Color.primary.opacity(0.06), lineWidth: 1))
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Zur Filialübersicht")
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(beaconManager.activeLayoutStoreName ?? "Marktkarte")
-                    .font(.system(size: 26, weight: .bold, design: .rounded))
+                    .font(.system(.title2, design: .rounded, weight: .bold))
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.72)
+                    .accessibilityAddTraits(.isHeader)
 
                 Text(beaconManager.activeLayoutDescription)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
                     .lineLimit(1)
             }
 
             Spacer(minLength: 0)
 
+            if beaconManager.appliedLayoutIsFallback {
+                Label("Ersatzplan", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.a11yWarningText)
+                    .lineLimit(1)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.a11yWarningText.opacity(0.12), in: Capsule())
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Warnung: Ersatzplan, kein aktueller Marktplan")
+            }
+
             Button { showSettings = true } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .frame(width: 42, height: 42)
+                    .frame(width: 44, height: 44)
                     .background(Color(uiColor: .systemBackground), in: Circle())
                     .overlay(
                         Circle()
@@ -596,6 +690,7 @@ struct StoreMapPage: View {
                     .shadow(color: .black.opacity(0.06), radius: 12, y: 6)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Einstellungen")
         }
         .padding(.horizontal, 2)
     }
@@ -615,6 +710,8 @@ struct StoreMapPage: View {
                             nextTapSetsPosition ? accent : accent.opacity(0.11),
                             in: Capsule()
                         )
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Ich bin hier")
@@ -628,6 +725,8 @@ struct StoreMapPage: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 9)
                         .background(accent.opacity(0.11), in: Capsule())
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("QR-Code scannen")
@@ -646,7 +745,7 @@ struct StoreMapPage: View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.a11yWarningText)
 
             Text(navigationSession.navigationStatusMessage ?? "Position ungenau")
                 .font(.caption.weight(.medium))
@@ -661,6 +760,8 @@ struct StoreMapPage: View {
             .font(.caption.weight(.semibold))
             .buttonStyle(.plain)
             .foregroundStyle(accent)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
 
             Button("Position setzen") {
                 nextTapSetsPosition = true
@@ -668,6 +769,8 @@ struct StoreMapPage: View {
             .font(.caption.weight(.semibold))
             .buttonStyle(.plain)
             .foregroundStyle(accent)
+            .frame(minHeight: 44)
+            .contentShape(Rectangle())
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -692,9 +795,12 @@ struct StoreMapPage: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.body)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Suche löschen")
             }
 
             Image(systemName: "viewfinder")
@@ -728,43 +834,102 @@ struct StoreMapPage: View {
         .background(MapFloatingSurface())
     }
 
+    /// Erledigt-Pfad (auch fuer „Ja, erledigt“ des Ankunftsvorschlags): bestehende Route ueber den Session-Manager.
+    private func completeCurrentStop() {
+        let completedStop = activeShoppingSnapshot?.currentStop
+        shoppingSessionManager.markCurrentStopDone(
+            listManager: shoppingListManager,
+            beaconManager: beaconManager
+        )
+        requestUpsellForCompletedStop(completedStop)
+    }
+
+    /// Nicht blockierender Vorschlag oberhalb des Tour-Panels; die Erledigt-Schaltfläche bleibt frei.
+    private func arrivalSuggestionBanner(_ suggestion: ArrivalSuggestion) -> some View {
+        let question = "Bist du bei \(suggestion.title)?"
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(question)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+
+            HStack(spacing: 8) {
+                Button {
+                    // Bestaetigt: der Detektor zaehlt, danach der bestehende Erledigt-Pfad.
+                    if navigationSession.acceptArrivalSuggestion() != nil {
+                        completeCurrentStop()
+                    }
+                } label: {
+                    Text("Ja, erledigt")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .background(accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityIdentifier("arrivalSuggestionYes")
+
+                Button {
+                    navigationSession.rejectArrivalSuggestion()
+                } label: {
+                    Text("Noch nicht")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(accent)
+                .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityIdentifier("arrivalSuggestionNo")
+            }
+        }
+        .padding(12)
+        .background(MapFloatingSurface())
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(question)
+        .accessibilityIdentifier("arrivalSuggestion")
+        .onAppear {
+            AccessibilityNotification.Announcement(question).post()
+        }
+    }
+
     @ViewBuilder
     private var bottomCard: some View {
         if let snapshot = activeShoppingSnapshot {
-            ShoppingSessionPanel(
-                snapshot: snapshot,
-                routeOriginText: routeOriginText,
-                locationText: { stop in stopLocationText(for: stop) },
-                onOpenList: onOpenLists,
-                onMarkCurrentStopDone: {
-                    let completedStop = activeShoppingSnapshot?.currentStop
-                    shoppingSessionManager.markCurrentStopDone(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
-                    requestUpsellForCompletedStop(completedStop)
-                },
-                onSkipCurrentStop: {
-                    let skippedStop = activeShoppingSnapshot?.currentStop
-                    shoppingSessionManager.skipCurrentStop(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
-                    requestUpsellForCompletedStop(skippedStop)
-                },
-                onToggleMode: {
-                    shoppingSessionManager.toggleRouteMode(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
-                },
-                onReplan: {
-                    shoppingSessionManager.replan(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
+            VStack(spacing: 8) {
+                if let suggestion = navigationSession.arrivalSuggestion {
+                    arrivalSuggestionBanner(suggestion)
                 }
-            )
+                ShoppingSessionPanel(
+                    snapshot: snapshot,
+                    routeOriginText: routeOriginText,
+                    locationText: { stop in stopLocationText(for: stop) },
+                    onOpenList: onOpenLists,
+                    onMarkCurrentStopDone: {
+                        completeCurrentStop()
+                    },
+                    onSkipCurrentStop: {
+                        let skippedStop = activeShoppingSnapshot?.currentStop
+                        shoppingSessionManager.skipCurrentStop(
+                            listManager: shoppingListManager,
+                            beaconManager: beaconManager
+                        )
+                        requestUpsellForCompletedStop(skippedStop)
+                    },
+                    onToggleMode: {
+                        shoppingSessionManager.toggleRouteMode(
+                            listManager: shoppingListManager,
+                            beaconManager: beaconManager
+                        )
+                    },
+                    onReplan: {
+                        shoppingSessionManager.replan(
+                            listManager: shoppingListManager,
+                            beaconManager: beaconManager
+                        )
+                    }
+                )
+            }
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, 10)
@@ -788,7 +953,7 @@ struct StoreMapPage: View {
         return VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: "cart.circle.fill")
-                    .font(.system(size: 38))
+                    .font(.system(size: targetIconSize))
                     .foregroundStyle(.white, routeAccent)
                     .shadow(color: routeAccent.opacity(0.22), radius: 8, y: 4)
 
@@ -802,13 +967,11 @@ struct StoreMapPage: View {
                         Text(shelfDescriptor.primary)
                             .font(.subheadline.weight(.bold))
                             .foregroundStyle(.primary)
-                            .lineLimit(1)
 
                         if let detail = shelfDescriptor.detail {
                             Text(detail)
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
+                                .foregroundStyle(Color.a11ySecondaryText)
                         }
 
                         #if DEBUG
@@ -820,8 +983,7 @@ struct StoreMapPage: View {
                     } else {
                         Label(ShelfLocationDescriptor.notInTestAreaText, systemImage: "exclamationmark.triangle")
                             .font(.caption.weight(.semibold))
-                            .foregroundStyle(.orange)
-                            .lineLimit(2)
+                            .foregroundStyle(Color.a11yWarningText)
                     }
 
                     Text(String(format: "%.2f EUR", target.price))
@@ -841,14 +1003,17 @@ struct StoreMapPage: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 32, height: 32)
                         .background(Color.primary.opacity(0.05), in: Circle())
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Ziel entfernen")
             }
 
             if let routeOriginText {
                 Text(routeOriginText)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
             }
 
             HStack(spacing: 10) {
@@ -875,7 +1040,7 @@ struct StoreMapPage: View {
                         Label("Einplanen", systemImage: "plus")
                             .font(.subheadline.weight(.semibold))
                             .padding(.horizontal, 14)
-                            .frame(height: 42)
+                            .frame(height: 44)
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(accent)
@@ -903,14 +1068,17 @@ struct StoreMapPage: View {
         }
     }
 
+    /// Aktive Filialen ohne gültige Koordinate; sie erscheinen nur in der Chip-Zeile „Ohne Kartenposition“.
+    private var storesWithoutCoordinates: [MobileStoreSummary] {
+        beaconManager.mobileStores.filter { coordinate(for: $0) == nil }
+    }
+
     private var storeOverviewSubtitle: String {
         if beaconManager.isLoadingMobileStores && beaconManager.mobileStores.isEmpty {
             return "Filialen werden geladen"
         }
-        if storePins.count == 1 {
-            return "1 Filiale"
-        }
-        return "\(storePins.count) Filialen"
+        let count = beaconManager.mobileStores.count
+        return count == 1 ? "1 Filiale" : "\(count) Filialen"
     }
 
     private var activeRouteDistanceMeters: Double? {
@@ -953,7 +1121,7 @@ struct StoreMapPage: View {
         }
 
         upsellStore.showOpportunity(
-            opportunityId: UpsellSuggestionStore.stationOpportunityId(for: stop),
+            opportunityId: UpsellModel.stationOpportunityId(for: stop),
             checkedItems: stop.items,
             list: list,
             store: activeStore,
@@ -1019,57 +1187,28 @@ struct StoreMapPage: View {
         return MKCoordinateRegion(center: center, span: span)
     }
 
+    /// Kartenposition einer Filiale; `nil` ohne gültige Koordinate (keine Pins, kein Kamera-Fit).
     private func coordinate(for store: MobileStoreSummary) -> CLLocationCoordinate2D? {
-        if let latitude = store.latitude,
-           let longitude = store.longitude,
-           (-90...90).contains(latitude),
-           (-180...180).contains(longitude) {
-            return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-        }
-
-        return fallbackCoordinate(for: store)
+        guard let valid = store.validCoordinate else { return nil }
+        return CLLocationCoordinate2D(latitude: valid.latitude, longitude: valid.longitude)
     }
 
-    private func fallbackCoordinate(for store: MobileStoreSummary) -> CLLocationCoordinate2D {
-        let normalizedCity = store.city
-            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "de_AT"))
-            .lowercased()
-
-        let base: CLLocationCoordinate2D
-        if normalizedCity.contains("leonding") {
-            base = CLLocationCoordinate2D(latitude: 48.2794, longitude: 14.2528)
-        } else if normalizedCity.contains("hagenberg") {
-            base = CLLocationCoordinate2D(latitude: 48.3676, longitude: 14.5168)
-        } else if normalizedCity.contains("horsching") {
-            base = CLLocationCoordinate2D(latitude: 48.2267, longitude: 14.1779)
-        } else if normalizedCity.contains("linz") {
-            base = CLLocationCoordinate2D(latitude: 48.3069, longitude: 14.2858)
-        } else {
-            base = CLLocationCoordinate2D(latitude: 48.3069, longitude: 14.2858)
-        }
-
-        let seed = store.storeCode.unicodeScalars.reduce(17) { partialResult, scalar in
-            (partialResult &* 31) &+ Int(scalar.value)
-        }
-        let latitudeOffset = Double((abs(seed) % 7) - 3) * 0.0016
-        let longitudeOffset = Double((abs(seed / 7) % 7) - 3) * 0.0022
-        return CLLocationCoordinate2D(
-            latitude: base.latitude + latitudeOffset,
-            longitude: base.longitude + longitudeOffset
-        )
-    }
-
-    /// Herkunft der aktiven Route in Kundensprache; nil bei vertrauenswuerdiger Position oder ohne Route.
-    private var routeOriginText: String? {
+    /// Name des Routen-Ursprungs; nil bei vertrauenswuerdiger Position oder ohne Route.
+    private var routeOriginName: String? {
         guard navigationSession.navigationRoute.pointCount >= 2 else { return nil }
         switch navigationSession.routeOriginKind {
         case .position:
             return nil
         case .entrance:
-            return "Route ab Eingang"
+            return "Eingang"
         case .lastStop(let title):
-            return "Route ab \(title)"
+            return title
         }
+    }
+
+    /// Herkunft der aktiven Route in Kundensprache; nil bei vertrauenswuerdiger Position oder ohne Route.
+    private var routeOriginText: String? {
+        routeOriginName.map { "Route ab \($0)" }
     }
 
     /// Standorttext eines Stopps: Regal des ersten Artikels mit layoutCode.
@@ -1086,9 +1225,9 @@ struct StoreMapPage: View {
     private var targetStatusPill: some View {
         Group {
             if let targetRouteDistanceText {
-                MapInfoPill(title: targetRouteDistanceText, systemImage: "figure.walk", tint: routeAccent)
+                MapInfoPill(title: targetRouteDistanceText, systemImage: "figure.walk", tint: .a11yRouteBlueText)
             } else {
-                MapInfoPill(title: "Ziel ist auf der Karte markiert", systemImage: "location", tint: routeAccent)
+                MapInfoPill(title: "Ziel ist auf der Karte markiert", systemImage: "location", tint: .a11yRouteBlueText)
             }
         }
     }
@@ -1106,6 +1245,7 @@ private struct StoreMapPin: Identifiable {
 
 private struct StorePinMarker: View {
     let isLoading: Bool
+    @ScaledMetric(relativeTo: .body) private var storeIconSize: CGFloat = 18
 
     var body: some View {
         ZStack {
@@ -1125,7 +1265,7 @@ private struct StorePinMarker: View {
                         .frame(width: 36, height: 36)
 
                     Image(systemName: "storefront.fill")
-                        .font(.system(size: 18, weight: .semibold))
+                        .font(.system(size: storeIconSize, weight: .semibold))
                         .foregroundStyle(.white)
                 }
                 .shadow(color: .black.opacity(0.18), radius: 8, y: 4)
@@ -1166,10 +1306,11 @@ private struct StoreOverviewCard: View {
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
 
-                        Text(store.city)
+                        Text(store.displaySubtitle)
                             .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
                     }
 
                     Spacer(minLength: 0)
@@ -1185,7 +1326,7 @@ private struct StoreOverviewCard: View {
 
                     Image(systemName: "chevron.right")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                 }
             }
             .frame(width: 220, alignment: .leading)

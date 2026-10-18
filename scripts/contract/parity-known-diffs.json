@@ -1,0 +1,106 @@
+[
+  {
+    "difference": "schema Product required only in reviewed: id",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema Product required only in reviewed: name",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema Category required only in reviewed: categoryCode",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema Category required only in reviewed: categoryName",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema MobileStoreSummary required only in reviewed: id",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema MobileStoreSummary required only in reviewed: storeCode",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema MobileStoreSummary required only in reviewed: name",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema BeaconIdentitiesResponse required only in reviewed: uuids",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema StoreByBeaconResponse required only in reviewed: store",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema StoreByBeaconResponse required only in reviewed: matchedBeacon",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema MobileLayoutResponse required only in reviewed: storeId",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema MobileLayoutResponse required only in reviewed: source",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema MobileLayoutResponse required only in reviewed: fallback",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema MobileLayoutResponse required only in reviewed: layout",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema UpsellPlanRequest required only in reviewed: opportunities",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema ReadinessReport required only in reviewed: storeId",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema ReadinessReport required only in reviewed: radius",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema ReadinessReport required only in reviewed: status",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema ReadinessReport required only in reviewed: blockingCount",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema ReadinessReport required only in reviewed: warningCount",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema ReadinessReport required only in reviewed: counts",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema ReadinessReport required only in reviewed: findings",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema ReadinessFinding required only in reviewed: severity",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema ReadinessFinding required only in reviewed: code",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema ReadinessFinding required only in reviewed: message",
+    "reason": "No @Schema(required=true) on the Java component, so the generator emits no required list; the reviewed contract declares it (representation, not a field drift)."
+  },
+  {
+    "difference": "schema BeaconAssignmentResponse property only in generated: active",
+    "reason": "smallrye adds an \"active\" property from the Boolean isActive record accessor; the runtime JSON key is isActive (representation)."
+  }
+]

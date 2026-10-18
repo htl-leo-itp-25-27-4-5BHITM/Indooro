@@ -31,15 +31,25 @@ enum UITestSupport {
     ]
 
     /// Startet die App mit dem Test-Launch-Zustand. `apiBase` ueberschreibt die API-Basis.
-    static func launchApp(apiBase: String = mockAPIBase) -> XCUIApplication {
+    /// `studyMode` schaltet im DEBUG-Build die Testleitung (INDOORO_STUDY_MODE=1) ein.
+    /// `contentSize` setzt die Dynamic-Type-Stufe nur für diesen Start, z. B. „UICTContentSizeCategoryAccessibilityXXL“.
+    static func launchApp(apiBase: String = mockAPIBase, studyMode: Bool = false, contentSize: String? = nil) -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = [
             "-uiTesting",
             // Argument-Domain ueberdeckt den gespeicherten Zustand: leere Liste, keine aktive Tour.
             "-shoppingListStore.v1", "",
             "-shoppingSession.activeListID", "",
+            // Die Einführung beim ersten Start (prepare-pilot-ios-build 5.5) würde die Tab-Leiste verdecken.
+            "-IndooroIntroductionCompleted", "YES",
         ]
+        if let contentSize {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", contentSize]
+        }
         app.launchEnvironment["INDOORO_API_BASE_URL"] = apiBase
+        if studyMode {
+            app.launchEnvironment["INDOORO_STUDY_MODE"] = "1"
+        }
         app.launch()
         return app
     }
@@ -99,10 +109,21 @@ enum UITestSupport {
             XCTFail("Filialkarte \(storeCode) erscheint nicht (Mock läuft?)")
             return
         }
-        card.tap()
-        XCTAssertTrue(storeMap(in: app).waitForExistence(timeout: timeout), "Karte mit Layout erscheint nicht")
+        XCTAssertTrue(tapStoreCardUntilMapShown(card, in: app), "Karte mit Layout erscheint nicht")
         XCTAssertTrue(app.staticTexts[headerName].waitForExistence(timeout: timeout), "Kopfzeile \(headerName) fehlt")
         XCTAssertTrue(card.waitForNonExistence(timeout: timeout), "Filialübersicht bleibt sichtbar")
+    }
+
+    /// Tippt die Filialkarte und wartet auf die Karte; ein verschluckter Tap (Karte noch im Aufbau)
+    /// wird bis zu dreimal wiederholt, solange die Filialkarte sichtbar bleibt.
+    @discardableResult
+    static func tapStoreCardUntilMapShown(_ card: XCUIElement, in app: XCUIApplication, attempts: Int = 3) -> Bool {
+        let map = storeMap(in: app)
+        for _ in 0..<attempts {
+            if card.exists && card.isHittable { card.tap() }
+            if map.waitForExistence(timeout: timeout) { return true }
+        }
+        return map.exists
     }
 
     /// Zeigt die Karte schon das Layout, passiert nichts; zeigt sie die Filialuebersicht, wird die Filialkarte getippt.
@@ -113,8 +134,7 @@ enum UITestSupport {
         while Date() < deadline {
             if map.exists { return }
             if card.exists {
-                card.tap()
-                XCTAssertTrue(map.waitForExistence(timeout: timeout), "Karte mit Layout erscheint nicht")
+                XCTAssertTrue(tapStoreCardUntilMapShown(card, in: app), "Karte mit Layout erscheint nicht")
                 return
             }
             _ = map.waitForExistence(timeout: 0.5)
