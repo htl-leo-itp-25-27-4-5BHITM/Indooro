@@ -15,10 +15,10 @@
 
 ## 3. Package Skeleton And Tests
 
-- [ ] 3.1 Create `swift/indooro-EinkaeuferFinal/Packages/IndooroKit/Package.swift` (tools 6.0, platform iOS 18) with the targets from design Decision 1. (Phase 1: nur IndooroNetworking; Package.swift nutzt iOS 18.5 wie das App-Target.)
-- [ ] 3.2 Add test targets for Models, Navigation, Networking, Persistence, and Upsell plus `IndooroTestSupport`.
-- [ ] 3.3 Add the local package to `MCindooroApp.xcodeproj` and link the feature targets.
-- [ ] 3.4 Copy the JSON fixtures from `fix-ios-contract-and-spec-drift` into `IndooroTestSupport/Resources`.
+- [ ] 3.1 Create `swift/indooro-EinkaeuferFinal/Packages/IndooroKit/Package.swift` (tools 6.0, platform iOS 18) with the targets from design Decision 1. (Phase 1: nur IndooroNetworking; Package.swift nutzt iOS 18.5 wie das App-Target. Stand: IndooroModels, IndooroNetworking und IndooroTestSupport existieren; die übrigen Targets entstehen mit 5.1 (Navigation), 8.x (Persistence) und 9.x (Positioning), danach ist 3.1 erfüllt.)
+- [ ] 3.2 Add test targets for Models, Navigation, Networking, Persistence, and Upsell plus `IndooroTestSupport`. (Teilstand: `IndooroModelsTests`, `IndooroNetworkingTests` und `IndooroTestSupport` stehen; Navigation-Tests liegen weiter im Root-Paket (bis 5.3), Persistence- und Upsell-Test-Targets folgen nach 8.x und der Verlagerung des Upsell-Plan-Codes, weil es dafür noch keine Quellen im Paket gibt.)
+- [ ] 3.3 Add the local package to `MCindooroApp.xcodeproj` and link the feature targets. (Teilstand: Paket ist eingebunden und am App-Target gelinkt (`IndooroModels`, `IndooroNetworking`); Feature-Targets entstehen mit 10.2.)
+- [x] 3.4 Copy the JSON fixtures from `fix-ios-contract-and-spec-drift` into `IndooroTestSupport/Resources`. (`Packages/IndooroKit/Sources/IndooroTestSupport/Resources/` mit den 10 Contract-Fixtures und `Layouts/layout-demosupermarkt.json`; `TestFixtures.data(_:)` liest sie aus dem Bundle, die Tests in `IndooroModelsTests` und `IndooroNetworkingTests` nutzen es statt `#filePath`-Pfaden. `FixtureSyncTests` vergleicht die Kopie byteweise mit `SP/Fixtures`, das für SP-Tests und den UI-Test-Mock bleibt. `ui-test-store` wurde nicht kopiert (nur Mock).)
 
 ## 4. Models Extraction
 

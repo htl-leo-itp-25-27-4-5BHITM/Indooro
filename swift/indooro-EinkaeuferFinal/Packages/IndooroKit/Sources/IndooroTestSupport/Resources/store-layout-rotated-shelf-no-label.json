@@ -1,0 +1,17 @@
+{
+  "storeId": "ad61389a-7486-48fa-afa2-9b5e4132f6a8",
+  "layoutId": "5b0c7e2a-3f1d-4c8e-9a61-2d7f4e9b0c13",
+  "source": "ACTIVE",
+  "fallback": false,
+  "layout": {
+    "shopName": "Eurospar Testlayout (synthetisch)",
+    "exportDate": "2026-05-05T08:28:02.706Z",
+    "gridSize": {"width": 40, "height": 60},
+    "elements": [
+      {"id":1770806096185,"type":"entrance","color":"#E5E7EB","label":"Eingang","width":3,"height":2,"x":2,"y":58,"locked":true,"category":null,"rotation":0,"accessAngle":90},
+      {"id":1770804649417,"type":"shelf","color":"#2196F3","label":"Alkoholfreie Getraenke","meter":3,"width":3,"height":5,"x":17,"y":38,"locked":false,"category":"510/3","rotation":0,"accessAngle":90},
+      {"id":1770804675428,"type":"shelf","color":"#90A4AE","meter":2,"width":2,"height":4,"x":10,"y":20,"locked":false,"category":"520/2","rotation":45,"accessAngle":90},
+      {"id":1770804675429,"type":"beacon","color":"#9C27B0","width":1,"height":1,"x":8,"y":12,"locked":true,"category":null,"rotation":0,"beaconId":"demo-b1","beaconUUID":"E2C56DB5-DFFB-48D2-B060-D0F5A71096E0","beaconMajor":1,"beaconMinor":1}
+    ]
+  }
+}
