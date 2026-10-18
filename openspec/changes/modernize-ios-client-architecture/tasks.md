@@ -36,10 +36,10 @@
 
 ## 6. Networking
 
-- [ ] 6.1 Implement `APIEnvironment`, `Endpoint`, `APIClient`, `APIError`, `RetryPolicy`, and `JSONCoding` in `IndooroNetworking`.
-- [ ] 6.2 Define endpoints for every route in the `ios-backend-integration` route list.
-- [ ] 6.3 Add `APIClientRetryTests` with `StubURLProtocol` for 503-then-200, timeout, offline, 429, 404, and cancellation.
-- [ ] 6.4 Replace every `URLSession.shared.dataTask` call in the app with `APIClient`.
+- [x] 6.1 Implement `APIEnvironment`, `Endpoint`, `APIClient`, `APIError`, `RetryPolicy`, and `JSONCoding` in `IndooroNetworking`. (Phase 2b: `swift/indooro-EinkaeuferFinal/Packages/IndooroKit/Sources/IndooroNetworking/` mit `APIEnvironment.swift`, `Endpoint.swift`, `APIClient.swift`, `APIError.swift`, `RetryPolicy.swift` (inkl. `RetrySleeper`/`SystemSleeper`), `JSONCoding.swift`; Session mit `waitsForConnectivity = false`, `.useProtocolCachePolicy`, `Accept`/`Accept-Language: de-AT`; `AuthorizationProvider` ist im Client nil. Verifiziert: `swift test` in `Packages/IndooroKit` grün, 91 Tests.)
+- [x] 6.2 Define endpoints for every route in the `ios-backend-integration` route list. (Phase 2b: 16 Endpoint-Typen fuer alle Routen der Liste in `MobileStoreEndpoints.swift`, `LayoutEndpoints.swift`, `ProductEndpoints.swift`, `RecipeEndpoints.swift`, `UpsellEndpoints.swift`; Antworten: generierte `Components.Schemas.*` fuer Stores, Produkte, Rezepte, Upsell, Layouts als `RawJSON` (unveraendert). Timeouts 15/20/25/3 s. Tests: `EndpointRequestTests` (24), `EndpointFixtureDecodingTests` (9).)
+- [x] 6.3 Add `APIClientRetryTests` with `StubURLProtocol` for 503-then-200, timeout, offline, 429, 404, and cancellation. (Phase 2b: `Tests/IndooroNetworkingTests/APIClientRetryTests.swift` (16 Tests, u. a. 503-then-200, Timeout mit drei Versuchen, Offline ohne Wiederholung, 429/404 ohne Wiederholung, Abbruch, POST nie wiederholt), `StubURLProtocol.swift` (im Testtarget), `APIErrorTests` (9), `JSONCodingTests` (7, Paritaet zu `JSONDecoder.indooro`).)
+- [ ] 6.4 Replace every `URLSession.shared.dataTask` call in the app with `APIClient`. (Phase 2c+: stores migrieren einzeln; in Phase 2b unveraendert, App nutzt weiter `AppEnvironment.session`.)
 
 ## 7. Type-Safe Contract
 
