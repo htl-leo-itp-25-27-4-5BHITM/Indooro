@@ -51,6 +51,12 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Aufnahmen (≥ 3 Testraum, ≥ 2 großer Raum) nach `NavigationFixtures/incoming/` legen; sie lösen 3.3, 5.2, 5.4, 6.3 aus | Person C | 2026-10-16 |
 | Entscheidung Abdeckungsregel (`add-store-pilot-readiness-check`) (Radius 8 m / 5 % / ≥ 3 Beacons ist auf einem leeren 20×20-m-Raum selbst mit 9 Beacons gelb) | Erik | 2026-10-16 |
 | Pilot-iPhones: Modell + iOS-Version nennen, anschließend Installation und Bluetooth-Aus prüfen (A 1.3/6.4/7.3); David kennt Geräte derzeit nicht | Person A / Team | 2026-10-16 |
+| **Nächster Rollout** nach `docs/pilot-readiness/releases/RELEASE_PLAN_NEXT.md`: Backup, V18-Prüf-SQL, **echten Admin in `user_access_assignments` anlegen (sonst sperrt V17 aus)**, neues non-root-Image, Katalog-Migration (`CATALOG_MIGRATION.md`), Reindex/Activate (`SEARCH_REINDEX.md`), Smoke-Check (`scripts/ops/smoke_check.sh`). Vorher `pilot/first-store` → `main` mergen | Erik (Cluster-Zugang) | 2026-10-18 |
+| Keycloak-Prod-Realm, Ingress und NetworkPolicy (#141) in eigenen Wartungsfenstern nach dem Rollout anwenden; Demo-Passwörter rotieren (`release-pilot-backend` 6.x) | Erik (Cluster-Zugang) | 2026-10-18 |
+| Neuer Editor ist auf `pilot/first-store` Standard (`editor: true`, #153); live erst mit dem Rollout. Danach Login-Abnahme mit admin, region-manager, store-manager | Erik | 2026-10-18 |
+| Xcode: beim ersten Build einmal „Trust & Enable“ für das Plugin `OpenAPIGenerator` bestätigen (seit #147). Skripte und CI nutzen `-skipPackagePluginValidation` | Erik, Person A | 2026-10-18 |
+| Freigabe: vier tote iOS-Dateien löschen (`HeaderView`, `SearchOverlayView`, `MapHeaderView`, `LayoutSelectionSheet`; `fix-ios-contract-and-spec-drift` 6.5), projektweit unreferenziert | Erik | 2026-10-18 |
+| VoiceOver und Accessibility Inspector am Gerät (`improve-ios-accessibility` 1.1) | Person A / Erik | 2026-10-18 |
 
 ## Hinweise an Personen
 
