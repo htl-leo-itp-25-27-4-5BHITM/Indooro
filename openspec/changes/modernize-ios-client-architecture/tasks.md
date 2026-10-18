@@ -74,7 +74,7 @@
 
 ## 11. Swift 6 And Logging
 
-- [ ] 11.1 Set `SWIFT_VERSION = 6.0`, `SWIFT_STRICT_CONCURRENCY = complete`, and `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` for the app target and fix all diagnostics.
+- [x] 11.1 Set `SWIFT_VERSION = 6.0`, `SWIFT_STRICT_CONCURRENCY = complete`, and `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` for the app target and fix all diagnostics. (Nur das App-Target `MCindooroApp` in allen vier Konfigurationen; Test-Targets und Pakete bleiben unverändert (Swift 5 bzw. eigene Modi). Anpassungen: `AppEnvironment` und `PilotRequestObserver` `nonisolated` (rein statisch, auch vom SwiftPM-Paket `IndooroPilotSupport` genutzt); die geteilten reinen Dateien `LayoutCacheStore`, `AppLog`, `AnchorPayload`, `Accessibility*`, `ArrivalSuggestionDetector` und `UpsellPlanLogic` markieren ihre Typen `nonisolated`, damit sie in App und Paket gleich isoliert sind; `BeaconManager.deinit` ist `isolated deinit`. Weitere Diagnosen traten nicht auf.)
 - [ ] 11.2 Replace `print` calls with `os.Logger` per design Decision 10. (Teilstand, bleibt offen: `AppLog` mit den Kategorien network, positioning, upsell, persistence und ar; `UpsellSuggestionStore`, `LayoutCacheStore` und `ARNavViewController` nutzen `os.Logger`, Kennungen mit `.private(mask: .hash)`, der Upsell-Debuglog nur in DEBUG. Zurückgestellt: die 17 `print`-Aufrufe in `BeaconManager` (Ortung, nicht anfassen).)
 - [ ] 11.3 Gate the in-app debug log behind `#if DEBUG` and expose it in the settings section „Diagnose“. (zurückgestellt: der In-App-Debuglog (`debugLogLines`, 80 Zeilen) liegt im `BeaconManager`; ihn hinter `#if DEBUG` zu stellen und in „Diagnose“ anzuzeigen verlangt Änderungen an der Ortungsklasse.)
 

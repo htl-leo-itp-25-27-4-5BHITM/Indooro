@@ -2,7 +2,7 @@ import os
 
 /// Gemeinsame `Logger`-Instanzen (modernize-ios-client-architecture, Entscheidung 10).
 /// Kennungen werden mit `privacy: .private(mask: .hash)` protokolliert, Antwortinhalte nie.
-enum AppLog {
+nonisolated enum AppLog {
     static let subsystem = "at.ac.htl.leonding.indooro"
 
     static let network = Logger(subsystem: subsystem, category: "network")

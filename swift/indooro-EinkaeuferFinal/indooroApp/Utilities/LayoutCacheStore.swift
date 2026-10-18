@@ -7,7 +7,7 @@ import os
 /// (Default-Layout ohne Store). Gespeichert werden exakt die Server-Antwortdaten, die
 /// `decodeMobileLayout` / `decodeLayout` verarbeiten. Das Aenderungsdatum der Datei gilt als
 /// Zeitpunkt der Speicherung. Fehler werden protokolliert, nie geworfen.
-struct LayoutCacheStore {
+nonisolated struct LayoutCacheStore {
     static let defaultFileName = "default"
 
     /// Verzeichnis, in dem die Cache-Dateien liegen. `nil` nur, wenn kein Application-Support-Verzeichnis
