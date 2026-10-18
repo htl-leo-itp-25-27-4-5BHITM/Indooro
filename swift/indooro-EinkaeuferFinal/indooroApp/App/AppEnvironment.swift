@@ -5,7 +5,7 @@ enum FeatureProfile: String {
 }
 
 /// Konfiguration für App und reine Tests. Kein Schlüssel oder Gerätebezug.
-enum AppEnvironment {
+nonisolated enum AppEnvironment {
     static let profileOverrideKey = "IndooroFeatureProfileOverride"
     static let requestTimeout: TimeInterval = 15
     /// Fallback, falls Info.plist `IndooroAPIBaseURL` leer oder ungueltig ist (Build ohne Config/*.xcconfig).
@@ -114,7 +114,7 @@ enum AppEnvironment {
 
 #if DEBUG
 /// Observe request creation without intercepting transport. Never log query values or bodies.
-private final class PilotRequestObserver: URLProtocol {
+private nonisolated final class PilotRequestObserver: URLProtocol {
     override class func canInit(with request: URLRequest) -> Bool {
         NSLog("[PilotNetwork] %@ %@", request.httpMethod ?? "GET", request.url?.path ?? "")
         return false
