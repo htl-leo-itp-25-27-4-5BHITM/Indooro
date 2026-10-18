@@ -1,0 +1,2416 @@
+{
+  "sourceLanguage": "de",
+  "strings": {
+    "%@ (%lld)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (%lld)"
+          }
+        }
+      }
+    },
+    "%@ EUR": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ EUR"
+          }
+        }
+      }
+    },
+    "%@ auf der Karte anzeigen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ auf der Karte anzeigen"
+          }
+        }
+      }
+    },
+    "%@ hinzufügen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ hinzufügen"
+          }
+        }
+      }
+    },
+    "%@ zur Einkaufsliste hinzufügen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ zur Einkaufsliste hinzufügen"
+          }
+        }
+      }
+    },
+    "%@ · %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · %@"
+          }
+        }
+      }
+    },
+    "%@%@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@%@"
+          }
+        }
+      }
+    },
+    "%@, %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, %@"
+          }
+        }
+      }
+    },
+    "%@m / %@m": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@m / %@m"
+          }
+        }
+      }
+    },
+    "%lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
+          }
+        }
+      }
+    },
+    "%lld Artikel konnten keinem Regal zugeordnet werden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Artikel konnten keinem Regal zugeordnet werden"
+          }
+        }
+      }
+    },
+    "%lld Artikel offen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Artikel offen"
+          }
+        }
+      }
+    },
+    "%lld Artikel ohne Regalposition": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Artikel ohne Regalposition"
+          }
+        }
+      }
+    },
+    "%lld Artikel sind im Layout noch offen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Artikel sind im Layout noch offen."
+          }
+        }
+      }
+    },
+    "%lld Portionen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Portionen"
+          }
+        }
+      }
+    },
+    "%lld Stopps und %lld Artikel sind noch offen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Stopps und %lld Artikel sind noch offen."
+          }
+        }
+      }
+    },
+    "%lld Stopps · %lld offen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Stopps · %lld offen"
+          }
+        }
+      }
+    },
+    "%lld Stopps, %lld Artikel offen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Stopps, %lld Artikel offen"
+          }
+        }
+      }
+    },
+    "%lld Zutaten ohne Produkt bleiben sichtbar": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Zutaten ohne Produkt bleiben sichtbar"
+          }
+        }
+      }
+    },
+    "%lld Zutaten werden als Marktprodukte hinzugefügt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Zutaten werden als Marktprodukte hinzugefügt"
+          }
+        }
+      }
+    },
+    "%lld min": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "%lld offen, %lld erledigt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld offen, %lld erledigt"
+          }
+        }
+      }
+    },
+    "%lld von %lld Positionen, %lld Artikel ausgewählt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld von %lld Positionen, %lld Artikel ausgewählt"
+          }
+        }
+      }
+    },
+    "%lld%%": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld%%"
+          }
+        }
+      }
+    },
+    "%lld. %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld. %@"
+          }
+        }
+      }
+    },
+    "AR": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AR"
+          }
+        }
+      }
+    },
+    "AR Route starten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AR Route starten"
+          }
+        }
+      }
+    },
+    "AR neu ausrichten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AR neu ausrichten"
+          }
+        }
+      }
+    },
+    "Abbrechen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abbrechen"
+          }
+        }
+      }
+    },
+    "Abgeschlossen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abgeschlossen"
+          }
+        }
+      }
+    },
+    "Aktion fehlgeschlagen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktion fehlgeschlagen"
+          }
+        }
+      }
+    },
+    "Aktive Einkaufstour": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktive Einkaufstour"
+          }
+        }
+      }
+    },
+    "Aktive Sitzung: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktive Sitzung: %@"
+          }
+        }
+      }
+    },
+    "Aktuelles Server-Layout": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuelles Server-Layout"
+          }
+        }
+      }
+    },
+    "Alle": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle"
+          }
+        }
+      }
+    },
+    "Alle %lld Artikel anzeigen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle %lld Artikel anzeigen"
+          }
+        }
+      }
+    },
+    "Alle Sitzungen löschen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Sitzungen löschen"
+          }
+        }
+      }
+    },
+    "Alle Sitzungen löschen?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Sitzungen löschen?"
+          }
+        }
+      }
+    },
+    "Alle Stopps erledigt!": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Stopps erledigt!"
+          }
+        }
+      }
+    },
+    "Alle lokalen Studien-Sitzungen werden entfernt. Bereits geteilte Dateien bleiben bestehen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle lokalen Studien-Sitzungen werden entfernt. Bereits geteilte Dateien bleiben bestehen."
+          }
+        }
+      }
+    },
+    "Artikel teilen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Artikel teilen"
+          }
+        }
+      }
+    },
+    "Auf deiner Liste": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf deiner Liste"
+          }
+        }
+      }
+    },
+    "Auf der Einkaufsliste": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf der Einkaufsliste"
+          }
+        }
+      }
+    },
+    "Aufgaben": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufgaben"
+          }
+        }
+      }
+    },
+    "Aufzeichnung teilen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aufzeichnung teilen"
+          }
+        }
+      }
+    },
+    "Aus Build": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus Build"
+          }
+        }
+      }
+    },
+    "Aus Liste senden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus Liste senden"
+          }
+        }
+      }
+    },
+    "Aus Planung entfernen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus Planung entfernen"
+          }
+        }
+      }
+    },
+    "Bedingung": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bedingung"
+          }
+        }
+      }
+    },
+    "Beenden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beenden"
+          }
+        }
+      }
+    },
+    "Bild zu %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bild zu %@"
+          }
+        }
+      }
+    },
+    "Bitte wechsle zuerst in die passende Filiale.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bitte wechsle zuerst in die passende Filiale."
+          }
+        }
+      }
+    },
+    "Bluetooth ist aus – Ortung nicht möglich": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bluetooth ist aus – Ortung nicht möglich"
+          }
+        }
+      }
+    },
+    "CSV und Ereignisse teilen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "CSV und Ereignisse teilen"
+          }
+        }
+      }
+    },
+    "Datei": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datei"
+          }
+        }
+      }
+    },
+    "Debug": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Debug"
+          }
+        }
+      }
+    },
+    "Dein Einkauf": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Einkauf"
+          }
+        }
+      }
+    },
+    "Die Markierung und die Ortsangabe zeigen dir das gesuchte Regal.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Markierung und die Ortsangabe zeigen dir das gesuchte Regal."
+          }
+        }
+      }
+    },
+    "Die beste Reihenfolge ist: Einkauf planen, kurz prüfen und dann mit der Karte durch den Markt gehen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die beste Reihenfolge ist: Einkauf planen, kurz prüfen und dann mit der Karte durch den Markt gehen."
+          }
+        }
+      }
+    },
+    "Direkt zur Karte": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Direkt zur Karte"
+          }
+        }
+      }
+    },
+    "Einführung anzeigen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einführung anzeigen"
+          }
+        }
+      }
+    },
+    "Einkauf aktiv: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einkauf aktiv: %@"
+          }
+        }
+      }
+    },
+    "Einkaufen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einkaufen"
+          }
+        }
+      }
+    },
+    "Einkaufen öffnen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einkaufen öffnen"
+          }
+        }
+      }
+    },
+    "Einkaufsliste öffnen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einkaufsliste öffnen"
+          }
+        }
+      }
+    },
+    "Einplanen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einplanen"
+          }
+        }
+      }
+    },
+    "Einstellungen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen"
+          }
+        }
+      }
+    },
+    "Einstellungen öffnen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen öffnen"
+          }
+        }
+      }
+    },
+    "Erledigt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erledigt"
+          }
+        }
+      }
+    },
+    "Erledigte Artikel (%lld)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erledigte Artikel (%lld)"
+          }
+        }
+      }
+    },
+    "Erledigte Artikel entfernen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erledigte Artikel entfernen"
+          }
+        }
+      }
+    },
+    "Erledigtes entfernen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erledigtes entfernen"
+          }
+        }
+      }
+    },
+    "Erneut laden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut laden"
+          }
+        }
+      }
+    },
+    "Erneut versuchen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erneut versuchen"
+          }
+        }
+      }
+    },
+    "Ersatzplan": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ersatzplan"
+          }
+        }
+      }
+    },
+    "Erstellen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erstellen"
+          }
+        }
+      }
+    },
+    "Export": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export"
+          }
+        }
+      }
+    },
+    "Export vorbereiten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export vorbereiten"
+          }
+        }
+      }
+    },
+    "Fertig": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fertig"
+          }
+        }
+      }
+    },
+    "Filiale erkannt: %@ – öffnen?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filiale erkannt: %@ – öffnen?"
+          }
+        }
+      }
+    },
+    "Filialen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filialen"
+          }
+        }
+      }
+    },
+    "Filialen einpassen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filialen einpassen"
+          }
+        }
+      }
+    },
+    "Filialen neu laden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filialen neu laden"
+          }
+        }
+      }
+    },
+    "Finde alles.\nSchnell und einfach.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finde alles.\nSchnell und einfach."
+          }
+        }
+      }
+    },
+    "Freier Eintrag": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Freier Eintrag"
+          }
+        }
+      }
+    },
+    "Funktionsprofil": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Funktionsprofil"
+          }
+        }
+      }
+    },
+    "Füge Produkte in der Planung hinzu.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Füge Produkte in der Planung hinzu."
+          }
+        }
+      }
+    },
+    "Fügt den Vorschlag der Einkaufsliste hinzu": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fügt den Vorschlag der Einkaufsliste hinzu"
+          }
+        }
+      }
+    },
+    "Gespeicherte Sitzung": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gespeicherte Sitzung"
+          }
+        }
+      }
+    },
+    "Hilfe": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hilfe"
+          }
+        }
+      }
+    },
+    "Hinzufügen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hinzufügen"
+          }
+        }
+      }
+    },
+    "Ich bin hier": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ich bin hier"
+          }
+        }
+      }
+    },
+    "Ich stehe hier": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ich stehe hier"
+          }
+        }
+      }
+    },
+    "Importieren": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Importieren"
+          }
+        }
+      }
+    },
+    "In Liste zusammenführen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In Liste zusammenführen"
+          }
+        }
+      }
+    },
+    "In gewählte Liste zusammenführen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "In gewählte Liste zusammenführen"
+          }
+        }
+      }
+    },
+    "Indooro": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indooro"
+          }
+        }
+      }
+    },
+    "Indooro Map": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Indooro Map"
+          }
+        }
+      }
+    },
+    "Ja, erledigt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ja, erledigt"
+          }
+        }
+      }
+    },
+    "Karte": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karte"
+          }
+        }
+      }
+    },
+    "Karte öffnen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Karte öffnen"
+          }
+        }
+      }
+    },
+    "Kartengröße": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kartengröße"
+          }
+        }
+      }
+    },
+    "Kategorien": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kategorien"
+          }
+        }
+      }
+    },
+    "Keine": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine"
+          }
+        }
+      }
+    },
+    "Keine Namen oder Kontaktdaten eingeben. Notizen bleiben lokal und erscheinen nur in den Ereignissen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Namen oder Kontaktdaten eingeben. Notizen bleiben lokal und erscheinen nur in den Ereignissen."
+          }
+        }
+      }
+    },
+    "Keine Produkte gefunden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Produkte gefunden"
+          }
+        }
+      }
+    },
+    "Keine Regalposition": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Regalposition"
+          }
+        }
+      }
+    },
+    "Keine Treffer für „%@“": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Treffer für „%@“"
+          }
+        }
+      }
+    },
+    "Keine gespeicherten Versionen gefunden.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine gespeicherten Versionen gefunden."
+          }
+        }
+      }
+    },
+    "Keine passenden Produkte": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine passenden Produkte"
+          }
+        }
+      }
+    },
+    "Kennzeichnung": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kennzeichnung"
+          }
+        }
+      }
+    },
+    "Kopie teilen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopie teilen"
+          }
+        }
+      }
+    },
+    "Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu aendern.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu aendern."
+          }
+        }
+      }
+    },
+    "Layout": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout"
+          }
+        }
+      }
+    },
+    "Layout %@. %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout %@. %@"
+          }
+        }
+      }
+    },
+    "Layout wählen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout wählen"
+          }
+        }
+      }
+    },
+    "Lege eine weitere Einkaufsliste an.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lege eine weitere Einkaufsliste an."
+          }
+        }
+      }
+    },
+    "Letzte Layout-Versionen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Letzte Layout-Versionen"
+          }
+        }
+      }
+    },
+    "Liste": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liste"
+          }
+        }
+      }
+    },
+    "Liste exportieren": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liste exportieren"
+          }
+        }
+      }
+    },
+    "Liste importieren": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liste importieren"
+          }
+        }
+      }
+    },
+    "Liste löschen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liste löschen"
+          }
+        }
+      }
+    },
+    "Liste nicht gefunden": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liste nicht gefunden"
+          }
+        }
+      }
+    },
+    "Liste umbenennen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liste umbenennen"
+          }
+        }
+      }
+    },
+    "Liste wechseln": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liste wechseln"
+          }
+        }
+      }
+    },
+    "Liste: %@ (%lld offen)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Liste: %@ (%lld offen)"
+          }
+        }
+      }
+    },
+    "Listenaktionen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listenaktionen"
+          }
+        }
+      }
+    },
+    "Los geht's": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los geht's"
+          }
+        }
+      }
+    },
+    "Lädt immer den Live-Stand aus der LeoCloud.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lädt immer den Live-Stand aus der LeoCloud."
+          }
+        }
+      }
+    },
+    "Löschen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Löschen"
+          }
+        }
+      }
+    },
+    "Marktkarte": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marktkarte"
+          }
+        }
+      }
+    },
+    "Messungen aufzeichnen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Messungen aufzeichnen"
+          }
+        }
+      }
+    },
+    "Mit Ortung": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit Ortung"
+          }
+        }
+      }
+    },
+    "Modus": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modus"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name"
+          }
+        }
+      }
+    },
+    "Name der neuen Liste": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Name der neuen Liste"
+          }
+        }
+      }
+    },
+    "Navigationsmesswerte sind noch nicht verfügbar. Zeit und Ergebnis werden erfasst.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Navigationsmesswerte sind noch nicht verfügbar. Zeit und Ergebnis werden erfasst."
+          }
+        }
+      }
+    },
+    "Nein danke": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nein danke"
+          }
+        }
+      }
+    },
+    "Neu planen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neu planen"
+          }
+        }
+      }
+    },
+    "Neue Einkaufsliste": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Einkaufsliste"
+          }
+        }
+      }
+    },
+    "Neue Liste": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Liste"
+          }
+        }
+      }
+    },
+    "Neue Liste erstellen und importieren": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neue Liste erstellen und importieren"
+          }
+        }
+      }
+    },
+    "Nicht mehr für dieses Produkt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht mehr für dieses Produkt"
+          }
+        }
+      }
+    },
+    "Noch eins": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch eins"
+          }
+        }
+      }
+    },
+    "Noch keine Artikel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Artikel"
+          }
+        }
+      }
+    },
+    "Noch keine Produkte": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Produkte"
+          }
+        }
+      }
+    },
+    "Noch nicht": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch nicht"
+          }
+        }
+      }
+    },
+    "Notiz": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notiz"
+          }
+        }
+      }
+    },
+    "Notiz speichern": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notiz speichern"
+          }
+        }
+      }
+    },
+    "Notiz zur Aufgabe": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notiz zur Aufgabe"
+          }
+        }
+      }
+    },
+    "Notizen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notizen"
+          }
+        }
+      }
+    },
+    "Nächster Stopp": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nächster Stopp"
+          }
+        }
+      }
+    },
+    "Nächster Stopp: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nächster Stopp: %@"
+          }
+        }
+      }
+    },
+    "OK": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
+          }
+        }
+      }
+    },
+    "Offene Artikel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Offene Artikel"
+          }
+        }
+      }
+    },
+    "Ohne Kartenposition": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Kartenposition"
+          }
+        }
+      }
+    },
+    "Ohne Ortung": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohne Ortung"
+          }
+        }
+      }
+    },
+    "Ortung": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ortung"
+          }
+        }
+      }
+    },
+    "Ortung ist freiwillig. Du kannst auch ohne Standort- oder Bluetooth-Zugriff einkaufen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ortung ist freiwillig. Du kannst auch ohne Standort- oder Bluetooth-Zugriff einkaufen."
+          }
+        }
+      }
+    },
+    "Passe den Namen der Liste an.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passe den Namen der Liste an."
+          }
+        }
+      }
+    },
+    "Passt gut dazu": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Passt gut dazu"
+          }
+        }
+      }
+    },
+    "Payload einfügen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Payload einfügen"
+          }
+        }
+      }
+    },
+    "Pilot": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pilot"
+          }
+        }
+      }
+    },
+    "Plane deinen Einkauf und finde im Markt schnell den richtigen Weg.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plane deinen Einkauf und finde im Markt schnell den richtigen Weg."
+          }
+        }
+      }
+    },
+    "Planung": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planung"
+          }
+        }
+      }
+    },
+    "Planung öffnen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Planung öffnen"
+          }
+        }
+      }
+    },
+    "Position": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Position"
+          }
+        }
+      }
+    },
+    "Position setzen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Position setzen"
+          }
+        }
+      }
+    },
+    "Probiere einen anderen Suchbegriff oder suche in der Planung über Kategorien.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probiere einen anderen Suchbegriff oder suche in der Planung über Kategorien."
+          }
+        }
+      }
+    },
+    "Produkt als Aufgabe hinzufügen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Produkt als Aufgabe hinzufügen"
+          }
+        }
+      }
+    },
+    "Produkt hinzufügen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Produkt hinzufügen"
+          }
+        }
+      }
+    },
+    "Produkt suchen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Produkt suchen"
+          }
+        }
+      }
+    },
+    "Produkt suchen...": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Produkt suchen..."
+          }
+        }
+      }
+    },
+    "Produkte oder Kategorien suchen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Produkte oder Kategorien suchen"
+          }
+        }
+      }
+    },
+    "Produkte werden gesucht...": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Produkte werden gesucht..."
+          }
+        }
+      }
+    },
+    "Produktzuordnung wird geprüft": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Produktzuordnung wird geprüft"
+          }
+        }
+      }
+    },
+    "QR-Code scannen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "QR-Code scannen"
+          }
+        }
+      }
+    },
+    "Regal auf der Karte": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regal auf der Karte"
+          }
+        }
+      }
+    },
+    "Regal-Code: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regal-Code: %@"
+          }
+        }
+      }
+    },
+    "Regal: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regal: %@"
+          }
+        }
+      }
+    },
+    "Rezept hinzufügen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezept hinzufügen"
+          }
+        }
+      }
+    },
+    "Rezept wird geladen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezept wird geladen"
+          }
+        }
+      }
+    },
+    "Rezept zur Einkaufsliste hinzufügen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezept zur Einkaufsliste hinzufügen"
+          }
+        }
+      }
+    },
+    "Rezepte": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezepte"
+          }
+        }
+      }
+    },
+    "Rezepte suchen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezepte suchen"
+          }
+        }
+      }
+    },
+    "Rezepte werden geladen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezepte werden geladen"
+          }
+        }
+      }
+    },
+    "Rezepte öffnen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rezepte öffnen"
+          }
+        }
+      }
+    },
+    "Route fortsetzen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route fortsetzen"
+          }
+        }
+      }
+    },
+    "Route starten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route starten"
+          }
+        }
+      }
+    },
+    "Route, Produktziel und Standort auf einen Blick.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route, Produktziel und Standort auf einen Blick."
+          }
+        }
+      }
+    },
+    "Schließen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schließen"
+          }
+        }
+      }
+    },
+    "Schon geplant": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schon geplant"
+          }
+        }
+      }
+    },
+    "Server": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Server"
+          }
+        }
+      }
+    },
+    "Sitzung": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sitzung"
+          }
+        }
+      }
+    },
+    "Sitzung starten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sitzung starten"
+          }
+        }
+      }
+    },
+    "So nutzt du Indooro am einfachsten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "So nutzt du Indooro am einfachsten"
+          }
+        }
+      }
+    },
+    "Speichern": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speichern"
+          }
+        }
+      }
+    },
+    "Standortzugriff fehlt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standortzugriff fehlt"
+          }
+        }
+      }
+    },
+    "Start": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        }
+      }
+    },
+    "Suche fehlgeschlagen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche fehlgeschlagen"
+          }
+        }
+      }
+    },
+    "Suche löschen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche löschen"
+          }
+        }
+      }
+    },
+    "Suche oben oder tippe auf eine Kategorie.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche oben oder tippe auf eine Kategorie."
+          }
+        }
+      }
+    },
+    "Suche unter „Planung“ nach einem Produkt und öffne die Karte.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suche unter „Planung“ nach einem Produkt und öffne die Karte."
+          }
+        }
+      }
+    },
+    "Teilen: %lld von %lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teilen: %lld von %lld"
+          }
+        }
+      }
+    },
+    "Test-ID": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test-ID"
+          }
+        }
+      }
+    },
+    "Test-ID im Format T07. Keine Namen oder Kontaktdaten eingeben.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test-ID im Format T07. Keine Namen oder Kontaktdaten eingeben."
+          }
+        }
+      }
+    },
+    "Testleitung": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testleitung"
+          }
+        }
+      }
+    },
+    "Tippen setzt Ziel": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tippen setzt Ziel"
+          }
+        }
+      }
+    },
+    "Tour fortsetzen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tour fortsetzen"
+          }
+        }
+      }
+    },
+    "Tour starten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tour starten"
+          }
+        }
+      }
+    },
+    "Umbenennen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Umbenennen"
+          }
+        }
+      }
+    },
+    "Versionen werden geladen...": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versionen werden geladen..."
+          }
+        }
+      }
+    },
+    "Vollständig": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vollständig"
+          }
+        }
+      }
+    },
+    "Vorschau": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vorschau"
+          }
+        }
+      }
+    },
+    "Warnung: Ersatzplan, kein aktueller Marktplan": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Warnung: Ersatzplan, kein aktueller Marktplan"
+          }
+        }
+      }
+    },
+    "Was möchtest du kaufen?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was möchtest du kaufen?"
+          }
+        }
+      }
+    },
+    "Wechseln": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wechseln"
+          }
+        }
+      }
+    },
+    "Weitere Kategorie": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weitere Kategorie"
+          }
+        }
+      }
+    },
+    "Willkommen bei Indooro": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Willkommen bei Indooro"
+          }
+        }
+      }
+    },
+    "Wird hinzugefügt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird hinzugefügt"
+          }
+        }
+      }
+    },
+    "Wird nicht hinzugefügt": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wird nicht hinzugefügt"
+          }
+        }
+      }
+    },
+    "Wähle mindestens eine Zutat aus": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle mindestens eine Zutat aus"
+          }
+        }
+      }
+    },
+    "Wähle zuerst ein Ziel, damit eine Route berechnet werden kann.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle zuerst ein Ziel, damit eine Route berechnet werden kann."
+          }
+        }
+      }
+    },
+    "Ziel entfernen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ziel entfernen"
+          }
+        }
+      }
+    },
+    "Ziel: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ziel: %@"
+          }
+        }
+      }
+    },
+    "Zu %@ passt vielleicht noch:": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zu %@ passt vielleicht noch:"
+          }
+        }
+      }
+    },
+    "Zubereitung": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zubereitung"
+          }
+        }
+      }
+    },
+    "Zuordnung: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zuordnung: %@"
+          }
+        }
+      }
+    },
+    "Zur Einkaufsliste": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zur Einkaufsliste"
+          }
+        }
+      }
+    },
+    "Zur Filialübersicht": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zur Filialübersicht"
+          }
+        }
+      }
+    },
+    "Zurücksetzen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurücksetzen"
+          }
+        }
+      }
+    },
+    "Zutaten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutaten"
+          }
+        }
+      }
+    },
+    "Zutaten auswählen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutaten auswählen"
+          }
+        }
+      }
+    },
+    "Zutaten ohne Marktprodukt als freie Einträge behalten": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutaten ohne Marktprodukt als freie Einträge behalten"
+          }
+        }
+      }
+    },
+    "Zutaten übernehmen und direkt durch den Markt routen.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zutaten übernehmen und direkt durch den Markt routen."
+          }
+        }
+      }
+    },
+    "x%lld": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "x%lld"
+          }
+        }
+      }
+    },
+    "Öffnen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Öffnen"
+          }
+        }
+      }
+    },
+    "Übernehmen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übernehmen"
+          }
+        }
+      }
+    },
+    "Überspringen": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Überspringen"
+          }
+        }
+      }
+    },
+    "📍 Position: %@m / %@m": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "📍 Position: %@m / %@m"
+          }
+        }
+      }
+    },
+    "📡 Suche Position... (Brauche 3 Signale)": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "📡 Suche Position... (Brauche 3 Signale)"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}
