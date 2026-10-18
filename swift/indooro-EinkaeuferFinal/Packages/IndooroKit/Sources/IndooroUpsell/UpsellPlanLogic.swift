@@ -55,6 +55,8 @@ public struct HandledOpportunityIdentity: Hashable, Sendable {
 public struct HandledOpportunitySet: Equatable, Sendable {
     public private(set) var identities: Set<HandledOpportunityIdentity> = []
 
+    public init() {}
+
     public var count: Int {
         identities.count
     }
