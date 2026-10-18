@@ -51,9 +51,27 @@ public class UpsellSuggestionService {
     private static final Logger LOG = Logger.getLogger(UpsellSuggestionService.class);
     private static final String GENERIC_REASON = "Ergaenzt den gerade erledigten Artikel.";
     private static final String CACHE_CONTEXT_VERSION = "upsell-v4";
-    private static final String PLAN_CACHE_CONTEXT_VERSION = "upsell-plan-v5";
+    private static final String PLAN_CACHE_CONTEXT_VERSION = "upsell-plan-v6";
     private static final String NO_ALTERNATIVE_PRODUCTS_RULE =
             "Do not suggest the same product type in another brand, package size, flavor, or variant; suggest complements, not alternatives.";
+    private static final String SINGLE_SYSTEM_PROMPT =
+            "Rank supermarket add-on products. Select only productIds from the provided candidates. Do not invent products. "
+                    + NO_ALTERNATIVE_PRODUCTS_RULE
+                    + " A complement is a distinct product that supports or improves a concrete use case of the checked product; never suggest another variant of the same product."
+                    + " Reasons must be concise German customer-facing text.";
+    private static final String PLAN_SYSTEM_PROMPT =
+            "You are ranking supermarket add-on products for each shopping station. The server provides a shared candidateProducts catalog for this store. "
+                    + "For each opportunity, decide from scratch which candidate productIds are genuinely useful complements for the trigger products. "
+                    + "A complement is a distinct product that supports or improves a concrete use case of the trigger product, such as a recipe, a meal or a routine. "
+                    + NO_ALTERNATIVE_PRODUCTS_RULE + " "
+                    + "Never suggest: another apple or apple variant for apples; kitchen paper or another kitchen roll package for kitchen roll; "
+                    + "another toothpaste for toothpaste; any repeated package size or brand variant of a trigger product. "
+                    + "Good examples: risotto suggests butter; eggs suggest flour or milk. "
+                    + "Prefer one strong suggestion or an empty suggestions array over filling every slot with weak same-category products. "
+                    + "Do not suggest two products of the same product class within one opportunity. "
+                    + "Return an empty suggestions array when nothing clearly fits. "
+                    + "Select only productIds from candidateProducts and only opportunityIds from opportunities. "
+                    + "Do not invent products or opportunityIds. Reasons must be concise German customer-facing text.";
     private static final int FALLBACK_MIN_SCORE = 90;
 
     @Inject
@@ -150,7 +168,16 @@ public class UpsellSuggestionService {
                 .map(suggestions -> new RankingResult(suggestions, "openai"))
                 .orElseGet(() -> new RankingResult(fallbackRank(rankedCandidates), "fallback"));
 
-        List<UpsellDtos.UpsellSuggestion> suggestions = validatedSuggestions(ranking.suggestions(), candidateMap);
+        List<ProductEquivalence.ProductIdentity> triggerIdentities = List.of(
+                ProductEquivalence.ProductIdentity.of(checkedProduct.getName(), classifyProduct(checkedProduct).classKey())
+        );
+        List<UpsellDtos.UpsellSuggestion> suggestions = validatedSuggestions(
+                ranking.suggestions(),
+                candidateMap,
+                triggerIdentities,
+                UUID.randomUUID().toString(),
+                "checked:" + request.checkedProductId()
+        );
         String source = ranking.source();
         if (suggestions.isEmpty() && !ranking.suggestions().isEmpty()) {
             source = "filtered";
@@ -196,7 +223,24 @@ public class UpsellSuggestionService {
             return response;
         }
 
-        List<Product> candidates = loadPlanCandidates(request, opportunities);
+        CandidateLookup lookup = loadPlanCandidates(request, opportunities);
+        if (lookup.failed()) {
+            // Transient catalog failure: not cached, so the client can retry the same request.
+            LOG.warnf(
+                    "Upsell plan candidate lookup failed requestId=%s opportunities=%d reason=%s retryable=true",
+                    requestId,
+                    opportunities.size(),
+                    lookup.failureReason()
+            );
+            UpsellDtos.UpsellPlanDebug debug = planDebug(
+                    requestId, "none", planStartedNanos, null, null, "candidate_lookup_failed", opportunities.size(), 0, true
+            );
+            UpsellDtos.UpsellPlanResponse response = emptyPlanResponse(opportunities, "none", debug);
+            logPlanResult(response);
+            return response;
+        }
+
+        List<Product> candidates = lookup.candidates();
         if (candidates.isEmpty()) {
             UpsellDtos.UpsellPlanDebug debug = planDebug(
                     requestId, "none", planStartedNanos, null, null, "no_candidates", opportunities.size(), 0
@@ -265,6 +309,14 @@ public class UpsellSuggestionService {
                         LinkedHashMap::new
                 ));
 
+        Map<String, List<ProductEquivalence.ProductIdentity>> triggerIdentitiesByOpportunity = rankedOpportunities.stream()
+                .collect(Collectors.toMap(
+                        ranked -> ranked.opportunity().opportunityId(),
+                        ranked -> triggerIdentities(ranked.input()),
+                        (first, ignored) -> first,
+                        LinkedHashMap::new
+                ));
+
         List<UpsellDtos.UpsellOpportunityResponse> responses = new ArrayList<>();
         boolean hadRankedSuggestions = false;
         for (UpsellDtos.UpsellOpportunityRequest opportunity : opportunities) {
@@ -275,7 +327,10 @@ public class UpsellSuggestionService {
                     normalizedProductIds(opportunity.triggerProductIds(), null, false),
                     validatedSuggestions(
                             ranked,
-                            candidateMapsByOpportunity.getOrDefault(opportunity.opportunityId(), Map.of())
+                            candidateMapsByOpportunity.getOrDefault(opportunity.opportunityId(), Map.of()),
+                            triggerIdentitiesByOpportunity.getOrDefault(opportunity.opportunityId(), List.of()),
+                            requestId,
+                            opportunity.opportunityId()
                     )
             ));
         }
@@ -347,7 +402,8 @@ public class UpsellSuggestionService {
                                         cachedDebug.reasoningTokens(),
                                         cachedDebug.fallbackReason(),
                                         cachedDebug.opportunityCount(),
-                                        cachedDebug.candidateCount()
+                                        cachedDebug.candidateCount(),
+                                        cachedDebug.retryable()
                                 )
                         ));
                     } catch (Exception exception) {
@@ -438,6 +494,24 @@ public class UpsellSuggestionService {
             List<UpsellDtos.AiOpportunitySuggestion> opportunities,
             UpsellDtos.UpsellPlanDebug debug
     ) {
+    }
+
+    /**
+     * Outcome of a candidate catalog lookup. A failed lookup is transient and must not be cached;
+     * a successful lookup may still return an empty list.
+     */
+    record CandidateLookup(List<Product> candidates, boolean failed, String failureReason) {
+
+        static CandidateLookup success(List<Product> candidates) {
+            return new CandidateLookup(candidates == null ? List.of() : List.copyOf(candidates), false, null);
+        }
+
+        static CandidateLookup failure(String reason) {
+            return new CandidateLookup(List.of(), true, reason);
+        }
+    }
+
+    private record KeptSuggestion(Integer productId, ProductEquivalence.ProductIdentity identity) {
     }
 
     private record OpenAiUsage(
@@ -598,7 +672,7 @@ public class UpsellSuggestionService {
                 .toList();
     }
 
-    List<Product> loadPlanCandidates(
+    CandidateLookup loadPlanCandidates(
             UpsellDtos.UpsellPlanRequest request,
             List<UpsellDtos.UpsellOpportunityRequest> opportunities
     ) {
@@ -617,16 +691,16 @@ public class UpsellSuggestionService {
 
             String storeId = request.storeId() == null ? null : request.storeId().toString();
             String storeCode = normalizeOptional(request.storeCode());
-            return candidates.stream()
+            return CandidateLookup.success(candidates.stream()
                     .sorted(Comparator
                             .comparingInt((Product product) -> storeScore(product, storeId, storeCode)).reversed()
                             .thenComparingInt(product -> hasLayoutPosition(product) ? 1 : 0).reversed()
                             .thenComparing(product -> product.getName() == null ? "" : product.getName(), String.CASE_INSENSITIVE_ORDER))
                     .limit(Math.max(1, maxCandidates))
-                    .toList();
+                    .toList());
         } catch (IOException exception) {
-            LOG.warn("Upsell plan candidate lookup failed", exception);
-            return List.of();
+            LOG.warn("Upsell plan candidate catalog query failed (IOException)", exception);
+            return CandidateLookup.failure("candidate_lookup_failed");
         }
     }
 
@@ -799,6 +873,18 @@ public class UpsellSuggestionService {
                         .filter(Objects::nonNull)
                         .collect(Collectors.toCollection(LinkedHashSet::new))
         );
+    }
+
+    /** Comparison identities of an opportunity's trigger products, used to suppress equivalent suggestions. */
+    List<ProductEquivalence.ProductIdentity> triggerIdentities(OpportunityRankingInput input) {
+        List<ProductEquivalence.ProductIdentity> identities = new ArrayList<>();
+        for (Product product : input.triggerProducts()) {
+            identities.add(ProductEquivalence.ProductIdentity.of(product.getName(), classifyProduct(product).classKey()));
+        }
+        for (String name : input.triggerNames()) {
+            identities.add(ProductEquivalence.ProductIdentity.of(name, classifyProduct(new Product(null, name, null, null)).classKey()));
+        }
+        return identities;
     }
 
     private Optional<Product> resolveTriggerProduct(Integer productId) {
@@ -1602,26 +1688,30 @@ public class UpsellSuggestionService {
                     candidateCount,
                     truncateForLog(outputJson, 1200)
             );
-            return Optional.ofNullable(parsed.opportunities())
-                    .filter(list -> !list.isEmpty())
-                    .map(list -> new OpenAiPlanResult(
-                            list,
-                            new UpsellDtos.UpsellPlanDebug(
-                                    requestId,
-                                    openAiModel,
-                                    "openai",
-                                    null,
-                                    openAiElapsedMs,
-                                    usage.inputTokens(),
-                                    usage.outputTokens(),
-                                    usage.totalTokens(),
-                                    usage.cachedInputTokens(),
-                                    usage.reasoningTokens(),
-                                    null,
-                                    rankedOpportunities.size(),
-                                    candidateCount
-                            )
-                    ));
+            // A parsed answer is a successful OpenAI result even when it selects nothing: the empty result is cached
+            // as source=openai and never backfilled with deterministic guesses.
+            List<UpsellDtos.AiOpportunitySuggestion> opportunities = parsed.opportunities() == null
+                    ? List.of()
+                    : parsed.opportunities();
+            return Optional.of(new OpenAiPlanResult(
+                    opportunities,
+                    new UpsellDtos.UpsellPlanDebug(
+                            requestId,
+                            openAiModel,
+                            "openai",
+                            null,
+                            openAiElapsedMs,
+                            usage.inputTokens(),
+                            usage.outputTokens(),
+                            usage.totalTokens(),
+                            usage.cachedInputTokens(),
+                            usage.reasoningTokens(),
+                            null,
+                            rankedOpportunities.size(),
+                            candidateCount,
+                            false
+                    )
+            ));
         } catch (Exception exception) {
             LOG.warnf(
                     exception,
@@ -1639,8 +1729,25 @@ public class UpsellSuggestionService {
             List<UpsellDtos.AiSuggestion> ranked,
             Map<Integer, Product> candidateMap
     ) {
+        return validatedSuggestions(ranked, candidateMap, List.of(), null, null);
+    }
+
+    /**
+     * Validates AI suggestions in AI order. Rejects unknown, duplicate and low-confidence ids, suggestions equivalent
+     * to a trigger product, and suggestions equivalent to an already kept suggestion of the same opportunity.
+     * Never backfills with deterministic guesses.
+     */
+    List<UpsellDtos.UpsellSuggestion> validatedSuggestions(
+            List<UpsellDtos.AiSuggestion> ranked,
+            Map<Integer, Product> candidateMap,
+            List<ProductEquivalence.ProductIdentity> triggerIdentities,
+            String requestId,
+            String opportunityId
+    ) {
         List<UpsellDtos.UpsellSuggestion> result = new ArrayList<>();
         Set<Integer> used = new HashSet<>();
+        List<KeptSuggestion> kept = new ArrayList<>();
+        List<ProductEquivalence.ProductIdentity> triggers = triggerIdentities == null ? List.of() : triggerIdentities;
         for (UpsellDtos.AiSuggestion suggestion : ranked == null ? List.<UpsellDtos.AiSuggestion>of() : ranked) {
             if (suggestion == null || suggestion.productId() == null || used.contains(suggestion.productId())) {
                 continue;
@@ -1653,11 +1760,43 @@ public class UpsellSuggestionService {
             if (confidence < minConfidence) {
                 continue;
             }
+
+            ProductEquivalence.ProductIdentity identity = ProductEquivalence.ProductIdentity.of(
+                    product.getName(),
+                    classifyProduct(product).classKey()
+            );
+            String diversityKey = ProductEquivalence.diversityKey(identity);
+            if (triggers.stream().anyMatch(trigger -> ProductEquivalence.equivalent(trigger, identity))) {
+                LOG.debugf(
+                        "Upsell candidate suppressed requestId=%s opportunity=%s productId=%s class=%s reason=trigger_equivalent",
+                        requestId,
+                        opportunityId,
+                        suggestion.productId(),
+                        diversityKey
+                );
+                continue;
+            }
+            Optional<KeptSuggestion> retained = kept.stream()
+                    .filter(keptSuggestion -> ProductEquivalence.equivalent(keptSuggestion.identity(), identity))
+                    .findFirst();
+            if (retained.isPresent()) {
+                LOG.debugf(
+                        "Upsell candidate suppressed requestId=%s opportunity=%s productId=%s class=%s reason=duplicate_class retainedProductId=%s",
+                        requestId,
+                        opportunityId,
+                        suggestion.productId(),
+                        diversityKey,
+                        retained.get().productId()
+                );
+                continue;
+            }
+
             result.add(new UpsellDtos.UpsellSuggestion(
                     toSummary(product),
                     boundedReason(suggestion.reason()),
                     confidence
             ));
+            kept.add(new KeptSuggestion(suggestion.productId(), identity));
             used.add(suggestion.productId());
             if (result.size() >= Math.max(1, maxSuggestions)) {
                 break;
@@ -1714,9 +1853,7 @@ public class UpsellSuggestionService {
         requestBody.put("input", List.of(
                 Map.of(
                         "role", "system",
-                        "content", "Rank supermarket add-on products. Select only productIds from the provided candidates. Do not invent products. "
-                                + NO_ALTERNATIVE_PRODUCTS_RULE
-                                + " Reasons must be concise German customer-facing text."
+                        "content", SINGLE_SYSTEM_PROMPT
                 ),
                 Map.of(
                         "role", "user",
@@ -1788,9 +1925,7 @@ public class UpsellSuggestionService {
         requestBody.put("input", List.of(
                 Map.of(
                         "role", "system",
-                        "content", "You are ranking supermarket add-on products for each shopping station. The server provides a shared candidateProducts catalog for this store. For each opportunity, decide from scratch which candidate productIds are genuinely useful complements for the trigger products. "
-                                + NO_ALTERNATIVE_PRODUCTS_RULE
-                                + " Return an empty suggestions array when nothing clearly fits. Select only productIds from candidateProducts and only opportunityIds from opportunities. Do not invent products or opportunityIds. Reasons must be concise German customer-facing text."
+                        "content", PLAN_SYSTEM_PROMPT
                 ),
                 Map.of(
                         "role", "user",
@@ -2058,6 +2193,21 @@ public class UpsellSuggestionService {
             int opportunityCount,
             int candidateCount
     ) {
+        return planDebug(requestId, source, planStartedNanos, openAiElapsedMs, usage, fallbackReason,
+                opportunityCount, candidateCount, false);
+    }
+
+    private UpsellDtos.UpsellPlanDebug planDebug(
+            String requestId,
+            String source,
+            long planStartedNanos,
+            Long openAiElapsedMs,
+            OpenAiUsage usage,
+            String fallbackReason,
+            int opportunityCount,
+            int candidateCount,
+            boolean retryable
+    ) {
         return new UpsellDtos.UpsellPlanDebug(
                 requestId,
                 openAiModel,
@@ -2071,7 +2221,8 @@ public class UpsellSuggestionService {
                 usage == null ? null : usage.reasoningTokens(),
                 fallbackReason,
                 opportunityCount,
-                candidateCount
+                candidateCount,
+                retryable
         );
     }
 
@@ -2096,7 +2247,8 @@ public class UpsellSuggestionService {
                 debug.reasoningTokens(),
                 debug.fallbackReason(),
                 debug.opportunityCount(),
-                debug.candidateCount()
+                debug.candidateCount(),
+                debug.retryable()
         );
     }
 
@@ -2107,8 +2259,9 @@ public class UpsellSuggestionService {
                 ? 0
                 : response.opportunities().stream().mapToInt(opportunity -> opportunity.suggestions().size()).sum();
         LOG.infof(
-                "Upsell plan response requestId=%s source=%s elapsedMs=%s openAiElapsedMs=%s inputTokens=%s outputTokens=%s totalTokens=%s fallbackReason=%s opportunities=%d suggestions=%d",
+                "Upsell plan response requestId=%s outcome=%s source=%s elapsedMs=%s openAiElapsedMs=%s inputTokens=%s outputTokens=%s totalTokens=%s fallbackReason=%s retryable=%s opportunities=%d suggestions=%d",
                 requestId,
+                planOutcome(response, suggestionCount),
                 response.source(),
                 debug == null ? null : debug.elapsedMs(),
                 debug == null ? null : debug.openAiElapsedMs(),
@@ -2116,9 +2269,29 @@ public class UpsellSuggestionService {
                 debug == null ? null : debug.outputTokens(),
                 debug == null ? null : debug.totalTokens(),
                 debug == null ? null : debug.fallbackReason(),
+                debug == null ? null : debug.retryable(),
                 response.opportunities() == null ? 0 : response.opportunities().size(),
                 suggestionCount
         );
+    }
+
+    /** Distinguishes the plan outcomes in logs: cache hit, lookup failure, empty catalog, AI empty, filtered, timeout/invalid. */
+    private String planOutcome(UpsellDtos.UpsellPlanResponse response, int suggestionCount) {
+        String source = response.source();
+        String fallbackReason = response.debug() == null ? null : response.debug().fallbackReason();
+        if ("cache".equals(source)) {
+            return "cache_hit";
+        }
+        if (fallbackReason != null) {
+            return fallbackReason;
+        }
+        if ("filtered".equals(source)) {
+            return "filtered_empty";
+        }
+        if (suggestionCount == 0 && "openai".equals(source)) {
+            return "openai_empty";
+        }
+        return suggestionCount == 0 ? "none" : "suggested";
     }
 
     private List<UpsellDtos.UpsellOpportunityRequest> normalizedOpportunities(
