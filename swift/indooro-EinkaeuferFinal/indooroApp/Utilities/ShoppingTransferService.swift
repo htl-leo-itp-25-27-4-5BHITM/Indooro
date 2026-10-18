@@ -16,11 +16,11 @@ enum ShoppingTransferError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptySelection:
-            return "Es wurden keine Artikel fuer den Transfer ausgewaehlt."
+            return "Es wurden keine Artikel für den Transfer ausgewählt."
         case .invalidFile:
-            return "Die ausgewaehlte Datei ist keine gueltige Indooro-Einkaufsliste."
+            return "Die ausgewählte Datei ist keine gültige Indooro-Einkaufsliste."
         case .unsupportedVersion(let version):
-            return "Diese Listen-Datei verwendet eine nicht unterstuetzte Version (\(version))."
+            return "Diese Listen-Datei verwendet eine nicht unterstützte Version (\(version))."
         case .noReadableData:
             return "Die Datei konnte nicht gelesen werden."
         case .failedToCreateExport:
