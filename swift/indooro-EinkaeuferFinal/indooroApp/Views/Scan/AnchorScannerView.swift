@@ -129,6 +129,8 @@ private struct QRScannerRepresentable: UIViewControllerRepresentable {
     }
 
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
+        nonisolated deinit {}
+
         private let onPayload: (String) -> Void
 
         init(onPayload: @escaping (String) -> Void) {
