@@ -21,10 +21,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -89,6 +85,9 @@ public class UpsellSuggestionService {
     @Inject
     UpsellSuggestionCacheRepository cacheRepository;
 
+    @Inject
+    OpenAiRankingClient openAiRankingClient;
+
     @ConfigProperty(name = "upsell.enabled", defaultValue = "true")
     boolean upsellEnabled;
 
@@ -125,7 +124,10 @@ public class UpsellSuggestionService {
     @ConfigProperty(name = "openai.upsell.timeout-ms", defaultValue = "4500")
     long openAiTimeoutMs;
 
-    @Transactional
+    /**
+     * No transaction spans this method: the DB work happens in the short @Transactional helpers, so no connection is
+     * held across OpenSearch or OpenAI calls.
+     */
     public UpsellDtos.UpsellSuggestionResponse suggestions(UpsellDtos.UpsellSuggestionRequest request) {
         if (!upsellEnabled) {
             return emptyResponse(request == null ? null : request.checkedProductId(), "disabled");
@@ -196,7 +198,7 @@ public class UpsellSuggestionService {
         return response;
     }
 
-    @Transactional
+    /** No transaction spans this method; see {@link #suggestions(UpsellDtos.UpsellSuggestionRequest)}. */
     public UpsellDtos.UpsellPlanResponse plan(UpsellDtos.UpsellPlanRequest request) {
         String requestId = UUID.randomUUID().toString();
         long planStartedNanos = System.nanoTime();
@@ -354,7 +356,8 @@ public class UpsellSuggestionService {
         return response;
     }
 
-    private Optional<UpsellDtos.UpsellSuggestionResponse> findCachedResponse(String contextHash) {
+    @Transactional
+    Optional<UpsellDtos.UpsellSuggestionResponse> findCachedResponse(String contextHash) {
         return cacheRepository.findFreshByContextHash(contextHash, Instant.now())
                 .flatMap(entity -> {
                     try {
@@ -375,7 +378,8 @@ public class UpsellSuggestionService {
                 });
     }
 
-    private Optional<UpsellDtos.UpsellPlanResponse> findCachedPlanResponse(String contextHash) {
+    @Transactional
+    Optional<UpsellDtos.UpsellPlanResponse> findCachedPlanResponse(String contextHash) {
         return cacheRepository.findFreshByContextHash(contextHash, Instant.now())
                 .flatMap(entity -> {
                     try {
@@ -414,7 +418,9 @@ public class UpsellSuggestionService {
                 });
     }
 
-    private void storeCachedResponse(
+    /** Own transaction, so the write never joins a caller's transaction; failures are logged, not thrown. */
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    void storeCachedResponse(
             UpsellDtos.UpsellSuggestionRequest request,
             String contextHash,
             UpsellDtos.UpsellSuggestionResponse response
@@ -434,7 +440,9 @@ public class UpsellSuggestionService {
         }
     }
 
-    private void storeCachedPlanResponse(
+    /** Own transaction, so the write never joins a caller's transaction; failures are logged, not thrown. */
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    void storeCachedPlanResponse(
             UpsellDtos.UpsellPlanRequest request,
             String contextHash,
             UpsellDtos.UpsellPlanResponse response
@@ -607,7 +615,8 @@ public class UpsellSuggestionService {
     }
 
     /** Dismissals in force for this checked product and store. Suggestion requests carry no session id (see D2). */
-    private List<UpsellDismissalEntity> activeDismissals(UpsellDtos.UpsellSuggestionRequest request) {
+    @Transactional
+    List<UpsellDismissalEntity> activeDismissals(UpsellDtos.UpsellSuggestionRequest request) {
         return dismissalRepository.findActiveForCheckedProduct(
                 request.checkedProductId(),
                 request.storeId(),
@@ -1634,24 +1643,15 @@ public class UpsellSuggestionService {
         }
 
         try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofMillis(Math.max(500, openAiTimeoutMs)))
-                    .build();
             String body = objectMapper.writeValueAsString(openAiRequestBody(checkedProduct, candidates));
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.openai.com/v1/responses"))
-                    .timeout(Duration.ofMillis(Math.max(500, openAiTimeoutMs)))
-                    .header("Authorization", "Bearer " + apiKey.get())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                    .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                LOG.warn("OpenAI upsell ranking failed with status " + response.statusCode());
+            Optional<String> responseBody = openAiRankingClient.post(apiKey.get(), body);
+            if (responseBody.isEmpty()) {
+                // The client has already logged the status or the transport error.
+                LOG.warn("OpenAI upsell ranking unavailable; falling back");
                 return Optional.empty();
             }
 
-            String outputJson = extractResponsesText(response.body());
+            String outputJson = extractResponsesText(responseBody.get());
             if (outputJson == null || outputJson.isBlank()) {
                 return Optional.empty();
             }
@@ -1681,31 +1681,20 @@ public class UpsellSuggestionService {
 
         long openAiStartedNanos = System.nanoTime();
         try {
-            HttpClient client = HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofMillis(Math.max(500, openAiTimeoutMs)))
-                    .build();
             String body = objectMapper.writeValueAsString(openAiPlanRequestBody(rankedOpportunities));
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.openai.com/v1/responses"))
-                    .timeout(Duration.ofMillis(Math.max(500, openAiTimeoutMs)))
-                    .header("Authorization", "Bearer " + apiKey.get())
-                    .header("Content-Type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
-                    .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            Optional<String> responseBody = openAiRankingClient.post(apiKey.get(), body);
             long openAiElapsedMs = elapsedMs(openAiStartedNanos);
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            if (responseBody.isEmpty()) {
+                // The client has already logged the status or the transport error.
                 LOG.warnf(
-                        "OpenAI upsell plan ranking failed requestId=%s status=%d elapsedMs=%d response=%s",
+                        "OpenAI upsell plan ranking unavailable requestId=%s elapsedMs=%d",
                         requestId,
-                        response.statusCode(),
-                        openAiElapsedMs,
-                        truncateForLog(response.body(), 500)
+                        openAiElapsedMs
                 );
                 return Optional.empty();
             }
 
-            String outputJson = extractResponsesText(response.body());
+            String outputJson = extractResponsesText(responseBody.get());
             if (outputJson == null || outputJson.isBlank()) {
                 LOG.warnf(
                         "OpenAI upsell plan ranking returned empty output requestId=%s elapsedMs=%d",
@@ -1716,7 +1705,7 @@ public class UpsellSuggestionService {
             }
 
             UpsellDtos.AiPlanResponse parsed = objectMapper.readValue(outputJson, UpsellDtos.AiPlanResponse.class);
-            OpenAiUsage usage = extractOpenAiUsage(response.body());
+            OpenAiUsage usage = extractOpenAiUsage(responseBody.get());
             LOG.infof(
                     "OpenAI upsell plan ranking succeeded requestId=%s model=%s elapsedMs=%d inputTokens=%s outputTokens=%s totalTokens=%s cachedInputTokens=%s reasoningTokens=%s opportunities=%d candidates=%d output=%s",
                     requestId,
