@@ -1,16 +1,16 @@
 ## 1. Preparation
 
-- [ ] 1.1 Confirm `fix-ios-contract-and-spec-drift` is implemented or explicitly sequenced before this change.
-- [ ] 1.2 Record baseline metrics in DEBUG: snapshot rebuild time, main-thread time per positioning tick, app launch time, app bundle size.
-- [ ] 1.3 Record the manual smoke flow (debug mode tour, recipe add, list import, store selection, AR start) as a checklist in `swift/indooro-EinkaeuferFinal/TESTING.md`.
+- [x] 1.1 Confirm `fix-ios-contract-and-spec-drift` is implemented or explicitly sequenced before this change. (Implementiert in 84d0722, gemergt über PR #143 (28b22d2); seine 6 offenen Punkte sind manuelle Gerätetests und bleiben dort offen.)
+- [ ] 1.2 Record baseline metrics in DEBUG: snapshot rebuild time, main-thread time per positioning tick, app launch time, app bundle size. (Mensch/Gerät: Messung auf einem Gerät mit Beacons; Simulator-Werte nicht als Baseline verwenden.)
+- [x] 1.3 Record the manual smoke flow (debug mode tour, recipe add, list import, store selection, AR start) as a checklist in `swift/indooro-EinkaeuferFinal/TESTING.md`. (Abschnitt „Manuelle Smoke-Checkliste“ mit Upsell-Prompt und Low-Confidence-Banner; Durchlauf auf Gerät ist Mensch-Aufgabe, siehe 15.4.)
 
 ## 2. Tooling And Configuration
 
-- [ ] 2.1 Add `Config/Shared.xcconfig`, `Config/Debug-Local.xcconfig`, `Config/Debug-LeoCloud.xcconfig`, and `Config/Release.xcconfig` with `INDOORO_API_BASE_URL`.
-- [ ] 2.2 Add build configurations and schemes `MCindooroApp (Local)`, `MCindooroApp (LeoCloud)`, `MCindooroApp (Release)`.
-- [ ] 2.3 Add `IndooroAPIBaseURL` to `Info.plist` and remove `NSAllowsArbitraryLoads`; add the localhost ATS exception only for `Debug-Local`.
-- [ ] 2.4 Add `Assets.xcassets` with AppIcon and AccentColor.
-- [ ] 2.5 Move unused layout JSONs to `swift/indooro-EinkaeuferFinal/Fixtures/Layouts/`, move `presentation-airdrop-swift/` to `presentations/swift-airdrop/`, and exclude `README.md` from the app target.
+- [x] 2.1 Add `Config/Shared.xcconfig`, `Config/Debug-Local.xcconfig`, `Config/Debug-LeoCloud.xcconfig`, and `Config/Release.xcconfig` with `INDOORO_API_BASE_URL`. (`swift/indooro-EinkaeuferFinal/Config/`, Werte wie design Decision 5.)
+- [x] 2.2 Add build configurations and schemes `MCindooroApp (Local)`, `MCindooroApp (LeoCloud)`, `MCindooroApp (Release)`. (Konfigurationen Debug-Local/Debug-LeoCloud und xcconfig-Basen per `scripts/ios/add_build_configurations.rb`; Schemes geteilt; Scheme `MCindooroApp` unverändert. Verifiziert: Builds der drei neuen Schemes auf iPhone-Simulator grün.)
+- [x] 2.3 Add `IndooroAPIBaseURL` to `Info.plist` and remove `NSAllowsArbitraryLoads`; add the localhost ATS exception only for `Debug-Local`. (`NSAllowsArbitraryLoads` war nie gesetzt, es gibt keinen ATS-Eintrag außer dem neuen Debug-Local-Eintrag über Define `INDOORO_LOCAL_HTTP`; `AppEnvironment.resolveAPIBaseURL` liest den Wert, Tests in `AppEnvironmentTests`. Verifiziert: Info.plist der Local-Builds enthält die Ausnahme, Release und LeoCloud nicht.)
+- [x] 2.4 Add `Assets.xcassets` with AppIcon and AccentColor. (Bereits vorhanden: `indooroApp/Assets.xcassets` mit AppIcon 1024 px und AccentColor; nicht dupliziert. AccentColor-Wert weicht vom Design ab (0.000/0.430/0.360 statt 0.12/0.46/0.39), bewusst unverändert.)
+- [x] 2.5 Move unused layout JSONs to `swift/indooro-EinkaeuferFinal/Fixtures/Layouts/`, move `presentation-airdrop-swift/` to `presentations/swift-airdrop/`, and exclude `README.md` from the app target. (`layout-demosupermarkt.json` nach Fixtures/Layouts; `layout.json` bleibt, von BeaconManager geladen; `docs/presentation-airdrop-swift` nach `presentations/swift-airdrop`; `README.md` ist kein Mitglied des App-Targets.)
 - [x] 2.6 Add `xcuserdata/` and `*.xcuserstate` to `.gitignore` and remove tracked user state files. (Done 2026-09-21.)
 
 ## 3. Package Skeleton And Tests
@@ -102,7 +102,7 @@
 ## 15. Verification
 
 - [ ] 15.1 Run `npx -y @fission-ai/openspec@1.3.1 validate modernize-ios-client-architecture --strict`.
-- [ ] 15.2 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme 'MCindooroApp (LeoCloud)' -destination 'platform=iOS Simulator,name=iPhone 16' -skipPackagePluginValidation test`.
+- [ ] 15.2 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme 'MCindooroApp (LeoCloud)' -destination 'platform=iOS Simulator,name=iPhone 16' -skipPackagePluginValidation test`. (Konkretes Simulator-Ziel verwenden: `generic/platform=iOS Simulator` mit `-sdk iphonesimulator` bricht im Build-Tool-Plugin swift-openapi-generator ab, siehe SP/TESTING.md.)
 - [ ] 15.3 Run `./mvnw verify` in `backend/indooro_server`.
 - [ ] 15.4 Repeat the manual smoke checklist from task 1.3 against LeoCloud and on a device with beacons.
 - [ ] 15.5 Compare metrics with the baseline from task 1.2 and record them in `docs/specs/TSD.md`.
