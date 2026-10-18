@@ -201,7 +201,9 @@ struct StoreMapPage: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                         showARRoute = true
                     }
-                }
+                },
+                debugLogText: beaconManager.debugLogText,
+                onClearDebugLog: { beaconManager.clearDebugLog() }
             )
             .presentationDetents([.medium])
         }
