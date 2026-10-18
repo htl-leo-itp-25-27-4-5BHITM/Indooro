@@ -1,3 +1,4 @@
+import IndooroModels
 import SwiftUI
 
 private enum AppSection: Hashable {

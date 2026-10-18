@@ -22,8 +22,8 @@
 
 ## 4. Models Extraction
 
-- [ ] 4.1 Move all model files to `IndooroModels`, mark them `public` and `Sendable`.
-- [ ] 4.2 Add `LayoutDecodingTests`, `StoreDecodingTests`, `BeaconUUIDNormalizerTests`, `RecipeDecodingTests`, `UpsellDecodingTests`, and `TransferPackageTests`.
+- [x] 4.1 Move all model files to `IndooroModels`, mark them `public` and `Sendable`. (IndooroModels: 9 Dateien verschoben, public + Sendable; BeaconUUIDNormalizer ausgelagert; Codable unverändert)
+- [x] 4.2 Add `LayoutDecodingTests`, `StoreDecodingTests`, `BeaconUUIDNormalizerTests`, `RecipeDecodingTests`, `UpsellDecodingTests`, and `TransferPackageTests`. (IndooroModelsTests: 41 Tests; IndooroKit 132, SP 281, App-Unit 45)
 
 ## 5. Navigation Extraction
 

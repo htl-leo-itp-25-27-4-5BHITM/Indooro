@@ -1,3 +1,4 @@
+import IndooroModels
 import Foundation
 import simd
 @testable import IndooroNavigationCore

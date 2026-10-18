@@ -1,5 +1,5 @@
 import XCTest
-@testable import IndooroNavigationCore
+@testable import IndooroModels
 
 final class ShelfLocationDescriptorTests: XCTestCase {
     private func shelf(id: Int64 = 1, category: String, label: String? = nil) throws -> LayoutElement {

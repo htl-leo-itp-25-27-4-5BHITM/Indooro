@@ -1,16 +1,16 @@
 import Foundation
 
-struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
-    let id: UUID
-    let storeCode: String
-    let name: String
-    let city: String
-    let address: String?
-    let street: String?
-    let zipCode: String?
-    let country: String?
-    let latitude: Double?
-    let longitude: Double?
+public struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
+    public let id: UUID
+    public let storeCode: String
+    public let name: String
+    public let city: String
+    public let address: String?
+    public let street: String?
+    public let zipCode: String?
+    public let country: String?
+    public let latitude: Double?
+    public let longitude: Double?
 
     private enum CodingKeys: String, CodingKey {
         case id
@@ -38,7 +38,7 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
         case lon
     }
 
-    init(
+    public init(
         id: UUID,
         storeCode: String,
         name: String,
@@ -62,7 +62,7 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
         self.longitude = longitude
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         storeCode = try container.decode(String.self, forKey: .storeCode)
@@ -85,11 +85,11 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
 
     /// Plausible Kartenposition. `nil` bei fehlendem, nicht endlichem oder außerhalb −90…90 / −180…180
     /// liegendem Wert sowie bei (0, 0), dem typischen Platzhalter ohne echte Koordinate.
-    var validCoordinate: MobileStoreCoordinate? {
+    public var validCoordinate: MobileStoreCoordinate? {
         Self.validCoordinate(latitude: latitude, longitude: longitude)
     }
 
-    static func validCoordinate(latitude: Double?, longitude: Double?) -> MobileStoreCoordinate? {
+    public static func validCoordinate(latitude: Double?, longitude: Double?) -> MobileStoreCoordinate? {
         guard let latitude, let longitude,
               latitude.isFinite, longitude.isFinite,
               (-90...90).contains(latitude),
@@ -100,7 +100,7 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
         return MobileStoreCoordinate(latitude: latitude, longitude: longitude)
     }
 
-    var displaySubtitle: String {
+    public var displaySubtitle: String {
         if let address = address?.trimmingCharacters(in: .whitespacesAndNewlines), !address.isEmpty { return address }
         return [street, city]
             .compactMap { value in
@@ -142,47 +142,77 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
 }
 
 /// Validierte Koordinate einer Filiale (ohne CoreLocation, damit die Prüfung paketweit testbar bleibt).
-struct MobileStoreCoordinate: Equatable, Sendable {
-    let latitude: Double
-    let longitude: Double
+public struct MobileStoreCoordinate: Equatable, Sendable {
+    public let latitude: Double
+    public let longitude: Double
+
+    public init(latitude: Double, longitude: Double) {
+        self.latitude = latitude
+        self.longitude = longitude
+    }
 }
 
 /// Beschreibung des angewendeten Filial-Layouts für die Indoor-Kopfzeile.
-enum StoreLayoutDescription {
+public enum StoreLayoutDescription {
     /// `fallback == true` heißt: der Server hat nicht das aktive Filial-Layout, sondern ein Standard-Layout geliefert.
-    static func storeLayout(storeName: String, fallback: Bool?, regularDescription: String) -> String {
+    public static func storeLayout(storeName: String, fallback: Bool?, regularDescription: String) -> String {
         guard fallback == true else { return regularDescription }
         return "\(storeName) • Ersatzplan (kein aktueller Marktplan)"
     }
 }
 
-struct MatchedBeaconSummary: Decodable, Hashable, Sendable {
-    let beaconId: UUID
-    let beaconCode: String
-    let identityKey: String
+public struct MatchedBeaconSummary: Decodable, Hashable, Sendable {
+    public let beaconId: UUID
+    public let beaconCode: String
+    public let identityKey: String
+
+    public init(beaconId: UUID, beaconCode: String, identityKey: String) {
+        self.beaconId = beaconId
+        self.beaconCode = beaconCode
+        self.identityKey = identityKey
+    }
 }
 
-struct StoreByBeaconResponse: Decodable, Sendable {
-    let store: MobileStoreSummary
-    let matchedBeacon: MatchedBeaconSummary
+public struct StoreByBeaconResponse: Decodable, Sendable {
+    public let store: MobileStoreSummary
+    public let matchedBeacon: MatchedBeaconSummary
+
+    public init(store: MobileStoreSummary, matchedBeacon: MatchedBeaconSummary) {
+        self.store = store
+        self.matchedBeacon = matchedBeacon
+    }
 }
 
-struct MobileLayoutResponse: Decodable, Sendable {
-    let storeId: UUID?
-    let layoutId: UUID?
-    let source: String?
-    let fallback: Bool?
-    let layout: LayoutData
+public struct MobileLayoutResponse: Decodable, Sendable {
+    public let storeId: UUID?
+    public let layoutId: UUID?
+    public let source: String?
+    public let fallback: Bool?
+    public let layout: LayoutData
+
+    public init(storeId: UUID?, layoutId: UUID?, source: String?, fallback: Bool?, layout: LayoutData) {
+        self.storeId = storeId
+        self.layoutId = layoutId
+        self.source = source
+        self.fallback = fallback
+        self.layout = layout
+    }
 }
 
-struct MobileStoresEnvelope: Decodable, Sendable {
-    let stores: [MobileStoreSummary]?
-    let items: [MobileStoreSummary]?
-    let data: [MobileStoreSummary]?
+public struct MobileStoresEnvelope: Decodable, Sendable {
+    public let stores: [MobileStoreSummary]?
+    public let items: [MobileStoreSummary]?
+    public let data: [MobileStoreSummary]?
+
+    public init(stores: [MobileStoreSummary]?, items: [MobileStoreSummary]?, data: [MobileStoreSummary]?) {
+        self.stores = stores
+        self.items = items
+        self.data = data
+    }
 }
 
-struct StoreDetectionBeaconCatalog: Decodable, Sendable {
-    let uuidStrings: [String]
+public struct StoreDetectionBeaconCatalog: Decodable, Sendable {
+    public let uuidStrings: [String]
 
     private enum CodingKeys: String, CodingKey {
         case uuids
@@ -190,7 +220,7 @@ struct StoreDetectionBeaconCatalog: Decodable, Sendable {
         case identities
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         if let strings = try? [String](from: decoder) {
             uuidStrings = strings
             return

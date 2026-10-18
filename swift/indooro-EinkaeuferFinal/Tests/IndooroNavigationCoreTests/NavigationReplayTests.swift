@@ -1,3 +1,4 @@
+import IndooroModels
 import XCTest
 import simd
 @testable import IndooroNavigationCore
