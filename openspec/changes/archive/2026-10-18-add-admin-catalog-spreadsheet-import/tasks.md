@@ -1,6 +1,6 @@
 ## 1. Setup
 
-- [ ] 1.1 Branch `pilot/catalog-import` from `origin/main` after `add-store-scoped-catalog` is merged; copy this change; baseline admin and backend checks.
+- [x] 1.1 Branch `pilot/catalog-import` from `origin/main` after `add-store-scoped-catalog` is merged; copy this change; baseline admin and backend checks. (Beleg: PR #131, Branch `pilot/catalog-import`, in `pilot/first-store` gemergt)
 
 ## 2. Parsing and Validation (admin-ui)
 
@@ -16,4 +16,4 @@
 
 ## 4. Handover
 
-- [ ] 4.1 Checks green; PR → `main`; `STATUS.md`.
+- [x] 4.1 Checks green; PR → `main`; `STATUS.md`. (Beleg: PR #131 gemergt in `pilot/first-store` statt `main`; Python- und Admin-Checks in der PR grün)

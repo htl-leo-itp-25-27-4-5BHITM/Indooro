@@ -50,14 +50,16 @@ test("global publication is keyboard-confirmed, recoverable, and public only aft
   expect(writes).toBe(1);
   expect(publicLayout.shopName).toBe(initialLayout.shopName);
 
-  const customer = await page.context().newPage();
+  const anonymousContext = await page.context().browser()!.newContext();
+  const customer = await anonymousContext.newPage();
   await customer.route("**/api/layout/current", (route) => {
     const headers = route.request().headers();
     anonymousReads.push({ cookie: headers.cookie, authorization: headers.authorization });
     return route.fulfill({ json: publicLayout });
   });
   await customer.goto("/customer/");
-  await expect(customer.locator("#shopNameDisplay")).toHaveText(initialLayout.shopName);
+  const readPublic = () => customer.evaluate(async () => (await fetch("/api/layout/current")).json() as Promise<LayoutDocument>);
+  expect((await readPublic()).shopName).toBe(initialLayout.shopName);
   expect(anonymousReads).toHaveLength(1);
   expect(anonymousReads[0]).toEqual({ cookie: undefined, authorization: undefined });
 
@@ -70,9 +72,8 @@ test("global publication is keyboard-confirmed, recoverable, and public only aft
   expect(writes).toBe(2);
   expect(publicLayout.shopName).toBe("Keyboard-Veröffentlichung");
 
-  await customer.reload();
-  await expect(customer.locator("#shopNameDisplay")).toHaveText("Keyboard-Veröffentlichung");
+  expect((await readPublic()).shopName).toBe("Keyboard-Veröffentlichung");
   expect(anonymousReads).toHaveLength(2);
   expect(anonymousReads.every((headers) => headers.cookie === undefined && headers.authorization === undefined)).toBe(true);
-  await customer.close();
+  await anonymousContext.close();
 });

@@ -1,7 +1,7 @@
 ## 1. Setup
 
-- [ ] 1.1 Create or check out branch `pilot/store-operations` (tracks `origin/pilot/store-operations`, based on `pilot/first-store`); install Python 3.10+ and Node.js; confirm `npx -y @fission-ai/openspec@1.3.1 validate prepare-pilot-store-operations --strict` passes.
-- [ ] 1.2 Read `docs/pilot-readiness/05_PILOT_IMPLEMENTATION.md`, `06_BUSINESS_OUTREACH.md`, `openspec/specs/store-layout-management/spec.md`, `openspec/specs/product-catalog-search/spec.md` (layout code format) and `documentation/API_DOCUMENTATION.md` (bulk format).
+- [x] 1.1 Create or check out branch `pilot/store-operations` (tracks `origin/pilot/store-operations`, based on `pilot/first-store`); install Python 3.10+ and Node.js; confirm `npx -y @fission-ai/openspec@1.3.1 validate prepare-pilot-store-operations --strict` passes. (Beleg: PR #129 `pilot/store-operations`; `validate --strict` am 2026-10-18 grün)
+- [x] 1.2 Read `docs/pilot-readiness/05_PILOT_IMPLEMENTATION.md`, `06_BUSINESS_OUTREACH.md`, `openspec/specs/store-layout-management/spec.md`, `openspec/specs/product-catalog-search/spec.md` (layout code format) and `documentation/API_DOCUMENTATION.md` (bulk format). (Beleg: Ergebnisse in `docs/pilot-readiness/operations/`, PR #129)
 
 ## 2. Layout and Data Conventions
 
@@ -37,5 +37,5 @@
 
 ## 6. Verification and Handover
 
-- [ ] 6.1 Run `python -I -m unittest discover scripts/pilot-data` and `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
-- [ ] 6.2 Open a pull request `pilot/store-operations` → `pilot/first-store`; update `docs/pilot-readiness/team/STATUS.md` (row „Person C“).
+- [x] 6.1 Run `python -I -m unittest discover scripts/pilot-data` and `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`. (Beleg: `python -I -m unittest discover scripts/pilot-data` 43 Tests OK am 2026-10-18)
+- [x] 6.2 Open a pull request `pilot/store-operations` → `pilot/first-store`; update `docs/pilot-readiness/team/STATUS.md` (row „Person C“). (Beleg: PR #129 gemergt)

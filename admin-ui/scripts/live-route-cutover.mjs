@@ -27,6 +27,7 @@ try {
     ["categories", "/admin/categories/", "/admin/next/categories/"],
     ["recipes", "/admin/recipes/", "/admin/next/recipes/"],
     ["editor", "/admin/editor/?storeId=00000000-0000-0000-0000-000000000000", "/admin/next/editor/"],
+    ["editor", "/admin/editor/", "/admin/next/editor/"],
     ["diagnostics", "/admin/server-logs/", "/admin/next/server-logs/"],
   ];
   let override = null;
@@ -53,13 +54,25 @@ try {
   }
 
   override = null;
-  for (const [legacy, candidate] of [["/admin/", "/admin/next/"], ["/admin/regions/", "/admin/next/regions/"], ["/admin/stores/", "/admin/next/stores/"], ["/admin/stores/detail/?storeId=00000000-0000-0000-0000-000000000000", "/admin/next/stores/detail/"], ["/admin/beacons/", "/admin/next/beacons/"], ["/admin/products/", "/admin/next/products/"], ["/admin/categories/", "/admin/next/categories/"], ["/admin/recipes/", "/admin/next/recipes/"], ["/admin/server-logs/", "/admin/next/server-logs/"]]) {
+  for (const [legacy, candidate] of [["/admin/", "/admin/next/"], ["/admin/regions/", "/admin/next/regions/"], ["/admin/stores/", "/admin/next/stores/"], ["/admin/stores/detail/?storeId=00000000-0000-0000-0000-000000000000", "/admin/next/stores/detail/"], ["/admin/beacons/", "/admin/next/beacons/"], ["/admin/products/", "/admin/next/products/"], ["/admin/categories/", "/admin/next/categories/"], ["/admin/recipes/", "/admin/next/recipes/"], ["/admin/editor/?storeId=00000000-0000-0000-0000-000000000000", "/admin/next/editor/"], ["/admin/editor/", "/admin/next/editor/"], ["/admin/server-logs/", "/admin/next/server-logs/"]]) {
     const probe = legacy.includes("?") ? "&probe=committed#proof" : "?probe=committed#proof";
     await page.goto(`${base}${legacy}${probe}`, { waitUntil: "domcontentloaded" });
     await page.waitForURL((url) => url.pathname === candidate && url.searchParams.get("probe") === "committed" && url.hash === "#proof" && (!legacy.includes("storeId=") || url.searchParams.get("storeId") === "00000000-0000-0000-0000-000000000000"));
     await page.locator("#root").waitFor();
+    if (legacy.startsWith("/admin/editor/")) {
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await page.locator("#root").waitFor();
+      assert.equal(new URL(page.url()).pathname, candidate, "editor refresh stays on candidate");
+      const fallback = legacy.includes("?") ? `${legacy}&legacy=1#proof` : `${legacy}?legacy=1#proof`;
+      await page.goto(`${base}${fallback}`, { waitUntil: "domcontentloaded" });
+      await page.locator("#toolSelect").waitFor();
+      assert.equal(new URL(page.url()).pathname, "/admin/editor/", "legacy=1 uses old editor");
+      if (legacy === "/admin/editor/") {
+        await page.screenshot({ path: "../docs/admin-rebuild/evidence/editor-cutover/admin-global-legacy-fallback.png", fullPage: true });
+      }
+    }
   }
-  console.log(JSON.stringify({ result: "PASS", switchedAndRolledBack: entries.length, committedDashboardRedirect: true, committedRegionsRedirect: true, committedStoresRedirect: true, committedStoreDetailRedirect: true, committedBeaconsRedirect: true, committedProductsRedirect: true, committedCategoriesRedirect: true, committedRecipesRedirect: true, committedDiagnosticsRedirect: true, committedFlagsChanged: false }));
+  console.log(JSON.stringify({ result: "PASS", switchedAndRolledBack: entries.length, committedDashboardRedirect: true, committedRegionsRedirect: true, committedStoresRedirect: true, committedStoreDetailRedirect: true, committedBeaconsRedirect: true, committedProductsRedirect: true, committedCategoriesRedirect: true, committedRecipesRedirect: true, committedEditorStoreRedirect: true, committedEditorGlobalRedirect: true, committedDiagnosticsRedirect: true, committedFlagsChanged: false }));
 } finally {
   await browser.close();
 }

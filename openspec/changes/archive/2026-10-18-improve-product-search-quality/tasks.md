@@ -18,4 +18,4 @@
 ## 4. Operations
 
 - [x] 4.1 Document the LeoCloud reindex and alias switch (commands only, executed by Erik) in `docs/pilot-readiness/operations/SEARCH_REINDEX.md`.
-- [ ] 4.2 All checks green; PR → `main`; `STATUS.md`.
+- [x] 4.2 All checks green; PR → `main`; `STATUS.md`. (Beleg: PR #128 `pilot/search-quality` → `pilot/first-store` gemergt)

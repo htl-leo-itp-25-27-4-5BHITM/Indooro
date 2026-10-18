@@ -1,8 +1,8 @@
 ## 1. Preparation
 
-- [ ] 1.1 Re-read `docs/specs/AUDIT.md` sections 2 and 3.2 and confirm each defect still reproduces on `main`.
-- [ ] 1.2 Capture a live `POST /api/mobile/upsell/plan` response from LeoCloud and record whether `expiresAt` contains fractional seconds.
-- [ ] 1.3 Capture live responses of `GET /api/mobile/stores` and `GET /api/mobile/stores/{storeId}/layout/current` as JSON fixtures under `swift/indooro-EinkaeuferFinal/Fixtures/`.
+- [x] 1.1 Re-read `docs/specs/AUDIT.md` sections 2 and 3.2 and confirm each defect still reproduces on `main`. (Beleg: am 2026-10-18 gegen den Code geprüft; behoben: C1–C4, C6, C7, C9, C10; Rest siehe `prepare-pilot-ios-build` 6.5 (toter `LayoutSelectionSheet`), Produkte ohne Preis/layoutCode fallen weiter einzeln weg, `accessAngle` wird vom Routing nicht genutzt)
+- [ ] 1.2 Capture a live `POST /api/mobile/upsell/plan` response from LeoCloud and record whether `expiresAt` contains fractional seconds. (Mensch: Live-System LeoCloud)
+- [ ] 1.3 Capture live responses of `GET /api/mobile/stores` and `GET /api/mobile/stores/{storeId}/layout/current` as JSON fixtures under `swift/indooro-EinkaeuferFinal/Fixtures/`. (Mensch: Live-System LeoCloud)
 
 ## 2. Backend Dismissal Bound
 
@@ -69,7 +69,7 @@
 ## 11. Verification
 
 - [x] 11.1 Run `npx -y @fission-ai/openspec@1.3.1 validate fix-ios-contract-and-spec-drift --strict`.
-- [ ] 11.2 Run `./mvnw test` in `backend/indooro_server`.
+- [x] 11.2 Run `./mvnw test` in `backend/indooro_server`. (Beleg: `sh mvnw -q test` in `backend/indooro_server` grün am 2026-10-18)
 - [x] 11.3 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme MCindooroApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build`.
-- [ ] 11.4 Manually verify in the simulator: dismissal returns 2xx in the debug log; store without coordinates appears only in „Ohne Kartenposition“; address is shown; search in a selected store sends `storeId`; airplane mode shows „Suche fehlgeschlagen“; debug layout with rotated shelf routes around it.
-- [ ] 11.5 Manually verify on a device with fewer than three beacons that the Blue Dot is degraded and the banner is shown.
+- [ ] 11.4 Manually verify in the simulator: dismissal returns 2xx in the debug log; store without coordinates appears only in „Ohne Kartenposition“; address is shown; search in a selected store sends `storeId`; airplane mode shows „Suche fehlgeschlagen“; debug layout with rotated shelf routes around it. (Mensch: manuelle Simulator-Prüfung)
+- [ ] 11.5 Manually verify on a device with fewer than three beacons that the Blue Dot is degraded and the banner is shown. (Mensch: Gerät mit weniger als drei Beacons)

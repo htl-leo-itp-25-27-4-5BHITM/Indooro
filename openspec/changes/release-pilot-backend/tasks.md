@@ -19,14 +19,14 @@
 - [x] 3.2 Implement `scripts/ops/pilot_smoke.py <base-url> <storeId> <query>` per requirement „Mobile pilot endpoints have a smoke check“.
 - [x] 3.3 Add unit tests for argument parsing and response evaluation with recorded sample responses (no network) under `scripts/ops/tests/`; run `python -I -m unittest discover scripts/ops`.
 - [x] 3.4 Rehearse a local restore end to end (local dump from a dev database, restore, backend in dev mode against it); document commands and result in `docs/pilot-readiness/operations/BACKUP_RESTORE.md`.
-- [ ] 3.5 Human step (person with LeoCloud access): take the first real LeoCloud backup with the script and confirm the restore works locally; record date in `STATUS.md`.
+- [ ] 3.5 Human step (person with LeoCloud access): take the first real LeoCloud backup with the script and confirm the restore works locally; record date in `STATUS.md`. (Mensch: braucht LeoCloud-Zugang)
 
 ## 4. CI and Release Flow (phase A)
 
 - [x] 4.1 Change `.github/workflows/ci.yaml` to run the backend tests (`mvn -B verify`) and to tag images with the commit SHA and `latest`.
 - [x] 4.2 Write `docs/pilot-readiness/operations/RELEASE_RUNBOOK.md` per design decision 5 with exact `kubectl -n student-it220209 …` commands (no secret values) and `RELEASES.md` (empty log table).
 - [x] 4.3 Write `docs/pilot-readiness/operations/SECRET_ROTATION.md`: order (backup first), commands without values, verification, what to do if login fails.
-- [ ] 4.4 Open a pull request `pilot/release-backend` → `main` for phase A; update `STATUS.md` (row „Person B“).
+- [x] 4.4 Open a pull request `pilot/release-backend` → `main` for phase A; update `STATUS.md` (row „Person B“). (Beleg: PR #123 und PR #134 → `main` gemergt)
 
 ## 5. Backend Hardening (phase B, only after codex/admin-platform-rebuild is merged into main)
 
@@ -39,7 +39,7 @@
 
 ## 6. First Pilot Release (phase B, human execution)
 
-- [ ] 6.1 Human step (person with cluster access): backup, rotate Keycloak admin/demo passwords and client and database secrets per `SECRET_ROTATION.md` (`harden-platform-security-baseline` 1.1, 1.2).
-- [ ] 6.2 Human step: roll out `main` at the merged SHA per `RELEASE_RUNBOOK.md`; run the smoke check; log in `RELEASES.md`.
-- [ ] 6.3 Verify from outside the cluster that OpenSearch is not reachable and the new admin `/admin/next/` works with a store-manager account; mark `harden-platform-security-baseline` 8.2.
-- [ ] 6.4 Update `STATUS.md`; notify Erik to merge `main` into `pilot/first-store`.
+- [ ] 6.1 Human step (person with cluster access): backup, rotate Keycloak admin/demo passwords and client and database secrets per `SECRET_ROTATION.md` (`harden-platform-security-baseline` 1.1, 1.2). (Mensch: Cluster-Zugang, Secrets)
+- [ ] 6.2 Human step: roll out `main` at the merged SHA per `RELEASE_RUNBOOK.md`; run the smoke check; log in `RELEASES.md`. (Mensch: Roll-out auf LeoCloud)
+- [ ] 6.3 Verify from outside the cluster that OpenSearch is not reachable and the new admin `/admin/next/` works with a store-manager account; mark `harden-platform-security-baseline` 8.2. (Mensch: Prüfung von außerhalb des Clusters, Store-Manager-Login)
+- [ ] 6.4 Update `STATUS.md`; notify Erik to merge `main` into `pilot/first-store`. (Mensch: hängt an 6.1–6.3)

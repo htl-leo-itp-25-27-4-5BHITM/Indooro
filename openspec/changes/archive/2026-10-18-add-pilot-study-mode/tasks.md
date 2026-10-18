@@ -22,7 +22,7 @@
 
 ## 4. Verification
 
-- [ ] 4.1 Simulator run: session T01 with 3 tasks (2 app, 1 ohne_app) in „Ohne Ortung“ mode; export; compare files against the format; commit the anonymized result as `docs/pilot-readiness/kit/study-export-sample/` (CSV + JSONL).
+- [x] 4.1 Simulator run: session T01 with 3 tasks (2 app, 1 ohne_app) in „Ohne Ortung“ mode; export; compare files against the format; commit the anonymized result as `docs/pilot-readiness/kit/study-export-sample/` (CSV + JSONL). (Beleg: synthetischer Export unter `docs/pilot-readiness/kit/study-export-sample/`, Quelle `evidence/add-pilot-study-mode/`)
 - [x] 4.2 Verify no network request is made during export (DEBUG network log).
 - [x] 4.3 Run `swift test`, the simulator build, `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
 - [x] 4.4 Open a pull request `pilot/ios-study-mode` → `pilot/first-store`; notify Person C that the sample export exists; update `STATUS.md`.
