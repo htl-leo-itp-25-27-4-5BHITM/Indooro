@@ -12,8 +12,10 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Refresh;
+import org.opensearch.client.opensearch._types.mapping.FieldType;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 
@@ -30,6 +32,8 @@ public class LayoutService {
     private static final Logger LOG = Logger.getLogger(LayoutService.class);
     private static final String CURRENT_LAYOUT_ID = "current";
     private static final int DEFAULT_HISTORY_LIMIT = 10;
+    static final int MIN_HISTORY_LIMIT = 1;
+    static final int MAX_HISTORY_LIMIT = 50;
 
     @Inject
     OpenSearchClient client;
@@ -83,15 +87,18 @@ public class LayoutService {
     public List<LayoutHistoryEntry> getRecentLayouts(Integer limit) throws IOException {
         ensureLayoutIndex();
 
-        int finalLimit = limit == null || limit <= 0 ? DEFAULT_HISTORY_LIMIT : limit;
+        int finalLimit = historyLimit(limit);
 
-        SearchResponse<JsonNode> response = client.search(s -> s
+        // Legacy versions only (recordType = version), newest first. unmappedType keeps the sort from failing
+        // on an index where savedAt has no date mapping yet.
+        SearchRequest request = SearchRequest.of(s -> s
                 .index(layoutIndexName)
                 .size(finalLimit)
                 .query(q -> q.term(t -> t.field("recordType.keyword").value(v -> v.stringValue("version"))))
-                .sort(sort -> sort.field(field -> field.field("savedAt").order(SortOrder.Desc))),
-                JsonNode.class
-        );
+                .sort(sort -> sort.field(field -> field.field("savedAt")
+                        .order(SortOrder.Desc)
+                        .unmappedType(FieldType.Date))));
+        SearchResponse<JsonNode> response = client.search(request, JsonNode.class);
 
         List<LayoutHistoryEntry> layouts = new ArrayList<>();
         for (Hit<JsonNode> hit : response.hits().hits()) {
@@ -103,6 +110,14 @@ public class LayoutService {
         }
 
         return layouts;
+    }
+
+    /** Missing limit gives the default; any other value is clamped to 1..50 instead of rejected. */
+    static int historyLimit(Integer limit) {
+        if (limit == null) {
+            return DEFAULT_HISTORY_LIMIT;
+        }
+        return Math.min(Math.max(limit, MIN_HISTORY_LIMIT), MAX_HISTORY_LIMIT);
     }
 
     public LayoutHistoryEntry saveCurrentLayout(JsonNode layout) throws IOException {

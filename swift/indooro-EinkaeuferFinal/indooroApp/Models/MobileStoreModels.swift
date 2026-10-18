@@ -83,6 +83,23 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
             ?? coordinate.longitude
     }
 
+    /// Plausible Kartenposition. `nil` bei fehlendem, nicht endlichem oder außerhalb −90…90 / −180…180
+    /// liegendem Wert sowie bei (0, 0), dem typischen Platzhalter ohne echte Koordinate.
+    var validCoordinate: MobileStoreCoordinate? {
+        Self.validCoordinate(latitude: latitude, longitude: longitude)
+    }
+
+    static func validCoordinate(latitude: Double?, longitude: Double?) -> MobileStoreCoordinate? {
+        guard let latitude, let longitude,
+              latitude.isFinite, longitude.isFinite,
+              (-90...90).contains(latitude),
+              (-180...180).contains(longitude),
+              !(latitude == 0 && longitude == 0) else {
+            return nil
+        }
+        return MobileStoreCoordinate(latitude: latitude, longitude: longitude)
+    }
+
     var displaySubtitle: String {
         if let address = address?.trimmingCharacters(in: .whitespacesAndNewlines), !address.isEmpty { return address }
         return [street, city]
@@ -121,6 +138,21 @@ struct MobileStoreSummary: Decodable, Hashable, Identifiable, Sendable {
         }
 
         return (nil, nil)
+    }
+}
+
+/// Validierte Koordinate einer Filiale (ohne CoreLocation, damit die Prüfung paketweit testbar bleibt).
+struct MobileStoreCoordinate: Equatable, Sendable {
+    let latitude: Double
+    let longitude: Double
+}
+
+/// Beschreibung des angewendeten Filial-Layouts für die Indoor-Kopfzeile.
+enum StoreLayoutDescription {
+    /// `fallback == true` heißt: der Server hat nicht das aktive Filial-Layout, sondern ein Standard-Layout geliefert.
+    static func storeLayout(storeName: String, fallback: Bool?, regularDescription: String) -> String {
+        guard fallback == true else { return regularDescription }
+        return "\(storeName) • Standard-Layout (kein aktives Filial-Layout)"
     }
 }
 

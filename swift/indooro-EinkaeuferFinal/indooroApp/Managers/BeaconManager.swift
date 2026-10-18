@@ -200,6 +200,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     @Published private(set) var selectedLayoutId: String?
     @Published private(set) var selectedLayoutName = "Aktuelles Server-Layout"
     @Published private(set) var activeLayoutDescription = "Bundle-Layout aktiv"
+    /// true, wenn das angewendete Layout ein Server-Fallback oder eine Offline-Kopie ist (Warnhinweis im Header).
+    @Published private(set) var appliedLayoutIsFallback = false
     @Published private(set) var layoutRevision = 0
     @Published private(set) var detectedStore: MobileStoreSummary?
     @Published private(set) var activeLayoutStore: MobileStoreSummary?
@@ -1143,7 +1145,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             }
 
             do {
-                let detection = try JSONDecoder().decode(StoreByBeaconResponse.self, from: data)
+                let detection = try JSONDecoder.indooro.decode(StoreByBeaconResponse.self, from: data)
                 self.appendDebugLog(
                     "Store-Lookup decodiert store=\(detection.store.name) id=\(detection.store.id.uuidString)"
                 )
@@ -1314,7 +1316,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 switch result {
                 case .success(let data):
                     do {
-                        let layout = try self.decodeMobileLayout(from: data)
+                        let (layout, isFallback) = try self.decodeMobileLayout(from: data)
                         self.applyLayout(layout)
                         self.activeLayoutStore = store
                         self.activeLayoutStoreSource = source
@@ -1322,9 +1324,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                         self.selectedLayoutMode = .currentServer
                         self.selectedLayoutId = nil
                         self.selectedLayoutName = store.name
-                        self.activeLayoutDescription = self.currentStoreLayoutDescription(
-                            for: layout,
-                            store: store
+                        self.appliedLayoutIsFallback = isFallback
+                        self.activeLayoutDescription = StoreLayoutDescription.storeLayout(
+                            storeName: store.name,
+                            fallback: isFallback,
+                            regularDescription: self.currentStoreLayoutDescription(for: layout, store: store)
                         )
                         self.isLoadingLayout = false
                         self.persistLayoutSelection()
@@ -1383,18 +1387,19 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         store: MobileStoreSummary,
         source: StoreLayoutActivationSource
     ) -> Bool {
-        guard let layout = try? decodeMobileLayout(from: data) else {
+        guard let decoded = try? decodeMobileLayout(from: data) else {
             appendDebugLog("Store-Offline-Kopie nicht lesbar store=\(store.name)")
             return false
         }
 
-        applyLayout(layout)
+        applyLayout(decoded.layout)
         activeLayoutStore = store
         activeLayoutStoreSource = source
         clearStoreLayoutFailureMessageIfNeeded()
         selectedLayoutMode = .currentServer
         selectedLayoutId = nil
         selectedLayoutName = store.name
+        appliedLayoutIsFallback = true
         activeLayoutDescription = "\(store.name) • Offline-Kopie vom \(offlineCopyDate(savedAt))"
         isLoadingLayout = false
         persistLayoutSelection()
@@ -1431,6 +1436,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         selectedLayoutMode = .currentServer
         selectedLayoutId = nil
         selectedLayoutName = "Aktuelles Server-Layout"
+        appliedLayoutIsFallback = true
         activeLayoutDescription = "\(layout.shopName) • Offline-Kopie vom \(offlineCopyDate(savedAt))"
         isLoadingLayout = false
         persistLayoutSelection()
@@ -1578,6 +1584,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func applyLayout(_ layout: LayoutData) {
+        appliedLayoutIsFallback = false
         gridWidth = layout.gridSize.width
         gridHeight = layout.gridSize.height
         shelves = layout.elements.filter { $0.type != "beacon" }
@@ -1729,7 +1736,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             }
 
             do {
-                let catalog = try JSONDecoder().decode(StoreDetectionBeaconCatalog.self, from: data)
+                let catalog = try JSONDecoder.indooro.decode(StoreDetectionBeaconCatalog.self, from: data)
                 let uuids = Set(catalog.uuidStrings.compactMap { BeaconUUIDNormalizer.uuid(from: $0) })
                 DispatchQueue.main.async {
                     self.isLoadingStoreDetectionBeacons = false
@@ -1817,7 +1824,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func decodeLayout(from data: Data) throws -> LayoutData {
-        let decoder = JSONDecoder()
+        let decoder = JSONDecoder.indooro
 
         if let layout = try? decoder.decode(LayoutData.self, from: data) {
             return layout
@@ -1831,18 +1838,19 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         throw LayoutLoadingError.decodingFailed
     }
 
-    private func decodeMobileLayout(from data: Data) throws -> LayoutData {
-        let decoder = JSONDecoder()
+    /// Layout samt `fallback`-Flag aus `GET /mobile/stores/{id}/layout/current`; Roh-Layouts ohne Flag gelten als nicht fallback.
+    private func decodeMobileLayout(from data: Data) throws -> (layout: LayoutData, isFallback: Bool) {
+        let decoder = JSONDecoder.indooro
 
         if let response = try? decoder.decode(MobileLayoutResponse.self, from: data) {
-            return response.layout
+            return (response.layout, response.fallback == true)
         }
 
-        return try decodeLayout(from: data)
+        return (try decodeLayout(from: data), false)
     }
 
     private func decodeMobileStores(from data: Data) throws -> [MobileStoreSummary] {
-        let decoder = JSONDecoder()
+        let decoder = JSONDecoder.indooro
 
         if let stores = try? decoder.decode([MobileStoreSummary].self, from: data) {
             return stores
@@ -1856,7 +1864,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func decodeLayoutHistory(from data: Data) throws -> [LayoutVersionSummary] {
-        let decoder = JSONDecoder()
+        let decoder = JSONDecoder.indooro
 
         if let history = try? decoder.decode([LayoutVersionSummary].self, from: data) {
             return history

@@ -14,7 +14,7 @@
 ## 3. Shared Decoding
 
 - [x] 3.1 Add `JSONDecoder.indooro` with ISO-8601 decoding that accepts fractional and non-fractional seconds. (implemented in prepare-pilot-ios-build)
-- [ ] 3.2 Use `JSONDecoder.indooro` in `UpsellSuggestionStore`, `RecipeStore`, `ProductSearchStore`, `BeaconManager`, and `ShoppingTransferService`.
+- [x] 3.2 Use `JSONDecoder.indooro` in `UpsellSuggestionStore`, `RecipeStore`, `ProductSearchStore`, `BeaconManager`, and `ShoppingTransferService`. (BeaconManager server decodes switched; others already did)
 - [x] 3.3 Add `LossyDecodableArray<Element: Decodable>` and decode product lists element-wise in `ProductSearchStore`. (implemented in prepare-pilot-ios-build)
 - [x] 3.4 Extend `MobileStoreSummary` with optional `address` and use it as first choice in `displaySubtitle`. (implemented in prepare-pilot-ios-build)
 - [x] 3.5 Extend `MobileLayoutResponse` with optional `source: String?` and `fallback: Bool?`. (implemented in prepare-pilot-ios-build)
@@ -33,10 +33,10 @@
 
 ## 6. Store Overview
 
-- [ ] 6.1 Delete `StoreMapPage.fallbackCoordinate(for:)` and return `nil` from `coordinate(for:)` for missing or out-of-range values.
-- [ ] 6.2 Add the chip row „Ohne Kartenposition“ for active stores without coordinates, selectable with the same `selectStore` action.
-- [ ] 6.3 Show `displaySubtitle` (address) on `StoreOverviewCard`.
-- [ ] 6.4 Rename the overview title from „SPAR-Filialen“ to „Filialen“.
+- [x] 6.1 Delete `StoreMapPage.fallbackCoordinate(for:)` and return `nil` from `coordinate(for:)` for missing or out-of-range values.
+- [x] 6.2 Add the chip row „Ohne Kartenposition“ for active stores without coordinates, selectable with the same `selectStore` action.
+- [x] 6.3 Show `displaySubtitle` (address) on `StoreOverviewCard`.
+- [x] 6.4 Rename the overview title from „SPAR-Filialen“ to „Filialen“.
 
 ## 7. Layout Fallback And Cache
 
@@ -44,7 +44,7 @@
 - [x] 7.2 Save the decoded layout response after every successful store or default layout application. (implemented in add-pilot-guided-tour-fallbacks)
 - [x] 7.3 On store layout failure, apply the cached layout for that store if present and set the description to „<store> • Offline-Kopie vom <Datum>“; otherwise keep the current failure behavior. (implemented in add-pilot-guided-tour-fallbacks)
 - [x] 7.4 On default layout failure, try `default.json` before the history fallback. (implemented in add-pilot-guided-tour-fallbacks)
-- [ ] 7.5 When `fallback == true`, set the description to „<store> • Standard-Layout (kein aktives Filial-Layout)“ and show a warning badge in the indoor header.
+- [x] 7.5 When `fallback == true`, set the description to „<store> • Standard-Layout (kein aktives Filial-Layout)“ and show a warning badge in the indoor header.
 
 ## 8. Low-Confidence Rendering
 
@@ -52,7 +52,7 @@
 - [x] 8.2 Add `isTrusted` to `UserLocationMarker`; draw 45 % opacity plus a dashed 3 m uncertainty ring when not trusted. (implemented in add-pilot-guided-tour-fallbacks)
 - [x] 8.3 Show the status banner with `navigationStatusMessage ?? "Position ungenau"` and „Position setzen“ in the indoor header while not trusted. (implemented in add-pilot-guided-tour-fallbacks)
 - [x] 8.4 Implement „Position setzen“ by setting `tapSetsTarget = false` and showing the „Tippen setzt Position“ badge. (implemented in add-pilot-guided-tour-fallbacks)
-- [ ] 8.5 Change the AR low-confidence text to „Signal schwach. Kalibrierung empfohlen (Position setzen).“
+- [x] 8.5 Change the AR low-confidence text to „Signal schwach. Kalibrierung empfohlen (Position setzen).“
 
 ## 9. Walkable Graph
 
@@ -68,8 +68,8 @@
 
 ## 11. Verification
 
-- [ ] 11.1 Run `npx -y @fission-ai/openspec@1.3.1 validate fix-ios-contract-and-spec-drift --strict`.
+- [x] 11.1 Run `npx -y @fission-ai/openspec@1.3.1 validate fix-ios-contract-and-spec-drift --strict`.
 - [ ] 11.2 Run `./mvnw test` in `backend/indooro_server`.
-- [ ] 11.3 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme MCindooroApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build`.
+- [x] 11.3 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme MCindooroApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build`.
 - [ ] 11.4 Manually verify in the simulator: dismissal returns 2xx in the debug log; store without coordinates appears only in „Ohne Kartenposition“; address is shown; search in a selected store sends `storeId`; airplane mode shows „Suche fehlgeschlagen“; debug layout with rotated shelf routes around it.
 - [ ] 11.5 Manually verify on a device with fewer than three beacons that the Blue Dot is degraded and the banner is shown.

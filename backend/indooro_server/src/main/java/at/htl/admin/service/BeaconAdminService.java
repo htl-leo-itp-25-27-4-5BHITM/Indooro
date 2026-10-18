@@ -23,8 +23,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class BeaconAdminService {
@@ -46,17 +44,54 @@ public class BeaconAdminService {
 
     public List<BeaconDtos.BeaconResponse> listBeacons(RecordStatus status, Boolean assigned, UUID storeId, String query) {
         UUID effectiveStoreId = adminAccessService.effectiveStoreFilter(storeId);
-        List<BeaconEntity> candidates = listBeaconCandidates(status, query);
-        Map<UUID, BeaconAssignmentEntity> activeAssignments = beaconAssignmentRepository.listActiveAssignments()
-                .stream()
-                .collect(Collectors.toMap(assignment -> assignment.beacon.id, Function.identity(), (left, right) -> left, HashMap::new));
+        CurrentAdminUser user = adminAccessService.currentUser();
+        UUID scopeRegionId = null;
+        UUID scopeStoreId = null;
+        if (user.role() == AdminRole.REGION_MANAGER) {
+            if (user.assignment().region == null) {
+                return List.of();
+            }
+            scopeRegionId = user.assignment().region.id;
+        } else if (user.role() == AdminRole.STORE_MANAGER) {
+            scopeStoreId = user.assignment().store.id;
+        }
 
-        return candidates.stream()
-                .map(beacon -> toResponse(beacon, activeAssignments.get(beacon.id)))
-                .filter(response -> filterAssigned(response, assigned, effectiveStoreId))
-                .filter(this::filterVisible)
-                .sorted(Comparator.comparing(BeaconDtos.BeaconResponse::beaconCode, String.CASE_INSENSITIVE_ORDER))
-                .toList();
+        RecordStatus effectiveStatus = status == null ? RecordStatus.ACTIVE : status;
+        String likePattern = query == null || query.isBlank() ? null : "%" + query.trim().toLowerCase() + "%";
+        List<BeaconEntity> beacons = beaconRepository.listByStatusAndQuery(effectiveStatus, likePattern);
+        Map<UUID, BeaconAssignmentEntity> assignmentByBeacon = new HashMap<>();
+        for (BeaconAssignmentEntity assignment : beaconRepository.listActiveAssignmentsForBeacons(
+                beacons.stream().map(beacon -> beacon.id).toList())) {
+            assignmentByBeacon.putIfAbsent(assignment.beacon.id, assignment);
+        }
+
+        List<BeaconDtos.BeaconResponse> responses = new ArrayList<>();
+        for (BeaconEntity beacon : beacons) {
+            BeaconAssignmentEntity assignment = assignmentByBeacon.get(beacon.id);
+            if (!isVisibleInScope(assignment, scopeRegionId, scopeStoreId)) {
+                continue;
+            }
+            BeaconDtos.BeaconResponse response = toResponse(beacon, assignment);
+            if (filterAssigned(response, assigned, effectiveStoreId)) {
+                responses.add(response);
+            }
+        }
+        responses.sort(Comparator.comparing(BeaconDtos.BeaconResponse::beaconCode, String.CASE_INSENSITIVE_ORDER));
+        return responses;
+    }
+
+    /**
+     * Scope applied in memory over the joined assignments. Unassigned beacons are visible to the region manager
+     * and to admins, never to a store manager. {@code scopeRegionId} and {@code scopeStoreId} are null for admins.
+     */
+    private boolean isVisibleInScope(BeaconAssignmentEntity assignment, UUID scopeRegionId, UUID scopeStoreId) {
+        if (scopeStoreId != null) {
+            return assignment != null && scopeStoreId.equals(assignment.store.id);
+        }
+        if (scopeRegionId != null) {
+            return assignment == null || scopeRegionId.equals(assignment.store.region.id);
+        }
+        return true;
     }
 
     public List<BeaconDtos.BeaconResponse> listFreeBeacons() {
@@ -202,22 +237,6 @@ public class BeaconAdminService {
         return Map.of("beaconId", beacon.id, "released", true);
     }
 
-    private List<BeaconEntity> listBeaconCandidates(RecordStatus status, String query) {
-        StringBuilder hql = new StringBuilder("1 = 1");
-        Map<String, Object> params = new HashMap<>();
-
-        RecordStatus effectiveStatus = status == null ? RecordStatus.ACTIVE : status;
-        hql.append(" and status = :status");
-        params.put("status", effectiveStatus);
-
-        if (query != null && !query.isBlank()) {
-            hql.append(" and (lower(beaconCode) like :query or lower(identityKey) like :query)");
-            params.put("query", "%" + query.trim().toLowerCase() + "%");
-        }
-
-        return beaconRepository.find(hql.toString(), params).list();
-    }
-
     private boolean filterAssigned(BeaconDtos.BeaconResponse response, Boolean assigned, UUID storeId) {
         if (assigned != null) {
             boolean hasStore = response.currentStore() != null;
@@ -231,14 +250,6 @@ public class BeaconAdminService {
         }
 
         return true;
-    }
-
-    private boolean filterVisible(BeaconDtos.BeaconResponse response) {
-        if (response.currentStore() == null) {
-            return adminAccessService.canSeeBeaconStore(null);
-        }
-        StoreEntity store = storeRepository.findByIdOptional(response.currentStore().id()).orElse(null);
-        return adminAccessService.canSeeBeaconStore(store);
     }
 
     private void requireBeaconAccess(BeaconAssignmentEntity assignment) {
