@@ -8,6 +8,8 @@ enum FeatureProfile: String {
 enum AppEnvironment {
     static let profileOverrideKey = "IndooroFeatureProfileOverride"
     static let requestTimeout: TimeInterval = 15
+    /// Fallback, falls Info.plist `IndooroAPIBaseURL` leer oder ungueltig ist (Build ohne Config/*.xcconfig).
+    /// Die eigentliche Standard-URL kommt aus Info.plist (`$(INDOORO_API_BASE_URL)`, siehe Config/).
     static let defaultAPI = URL(string: "https://it220209.cloud.htl-leonding.ac.at/api")!
 
     static func parseProfile(_ value: String?, override: String? = nil) -> FeatureProfile {
@@ -76,11 +78,27 @@ enum AppEnvironment {
         return parts.url
     }
 
+    /// Reine Aufloesung der API-Basis-URL. Eingaben werden übergeben (statt Bundle/Umgebung zu lesen),
+    /// damit Standardwert, Info.plist-Wert und DEBUG-Override einzeln testbar sind.
+    /// Reihenfolge: DEBUG-Umgebungsvariable `INDOORO_API_BASE_URL` (nur Debug-Builds), dann Info.plist, dann `defaultAPI`.
+    static func resolveAPIBaseURL(infoPlistValue: String?, environmentValue: String?, isDebugBuild: Bool) -> URL {
+        if isDebugBuild, let url = parseAPIURL(environmentValue) { return url }
+        return parseAPIURL(infoPlistValue) ?? defaultAPI
+    }
+
     static var apiBaseURL: URL {
         #if DEBUG
-        if let url = parseAPIURL(ProcessInfo.processInfo.environment["INDOORO_API_BASE_URL"]) { return url }
+        let environmentValue = ProcessInfo.processInfo.environment["INDOORO_API_BASE_URL"]
+        let isDebugBuild = true
+        #else
+        let environmentValue: String? = nil
+        let isDebugBuild = false
         #endif
-        return parseAPIURL(Bundle.main.object(forInfoDictionaryKey: "IndooroAPIBaseURL") as? String) ?? defaultAPI
+        return resolveAPIBaseURL(
+            infoPlistValue: Bundle.main.object(forInfoDictionaryKey: "IndooroAPIBaseURL") as? String,
+            environmentValue: environmentValue,
+            isDebugBuild: isDebugBuild
+        )
     }
 
     static let session: URLSession = {

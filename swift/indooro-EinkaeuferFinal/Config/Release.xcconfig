@@ -1,0 +1,4 @@
+// Release-Build (TestFlight/Store). Schema: "MCindooroApp (Release)". Backend: LeoCloud (HTTPS).
+#include "Shared.xcconfig"
+
+INDOORO_API_BASE_URL = https:/$()/it220209.cloud.htl-leonding.ac.at/api
