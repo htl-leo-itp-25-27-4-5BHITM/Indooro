@@ -156,7 +156,10 @@ final class PilotCompatibilityTests: XCTestCase {
         let request = try UpsellPlanEndpoint(body: body).urlRequest(environment: env)
 
         XCTAssertEqual(request.httpMethod, "POST")
-        XCTAssertEqual(request.httpBody, try JSONEncoder().encode(body))
+        // JSONEncoder does not guarantee key order, so compare the decoded JSON objects.
+        let sent = try JSONSerialization.jsonObject(with: XCTUnwrap(request.httpBody)) as? NSDictionary
+        let expected = try JSONSerialization.jsonObject(with: JSONEncoder().encode(body)) as? NSDictionary
+        XCTAssertEqual(sent, expected)
         XCTAssertEqual(request.timeoutInterval, 25)
         XCTAssertEqual(request.value(forHTTPHeaderField: "Content-Type"), "application/json")
         XCTAssertEqual(UpsellPlanEndpoint(body: body).retry, .none)

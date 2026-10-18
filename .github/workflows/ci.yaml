@@ -74,11 +74,19 @@ jobs:
 
       # Not run locally: the action tag v0.0.21 was confirmed to exist in oasdiff/oasdiff-action
       # via the GitHub API, but the step itself was not executed before this change was committed.
+      # The oasdiff action runs in a Docker container that cannot read git revisions of the
+      # workspace ("detected dubious ownership"), so the base spec is exported to a file first.
+      - name: Export base contract from the target branch
+        if: github.event_name == 'pull_request'
+        run: |
+          mkdir -p .oasdiff
+          git show "origin/${{ github.base_ref }}:openspec/specs/shared-api/openapi.yaml" > .oasdiff/base-openapi.yaml
+
       - name: Breaking-change check against the target branch
         if: github.event_name == 'pull_request'
         uses: oasdiff/oasdiff-action/breaking@v0.0.21
         with:
-          base: 'origin/${{ github.base_ref }}:openspec/specs/shared-api/openapi.yaml'
+          base: '.oasdiff/base-openapi.yaml'
           revision: 'openspec/specs/shared-api/openapi.yaml'
           fail-on: ERR
 
