@@ -358,7 +358,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     static let isUITesting = ProcessInfo.processInfo.arguments.contains("-uiTesting")
     #endif
 
-    override init() {
+    init(dependencies: AppDependencies = .live) {
         super.init()
         appendDebugLog("BeaconManager init")
         #if DEBUG
@@ -369,7 +369,7 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         NavigationRecorder.shared.layoutProvider = { [weak self] in self?.currentLayoutRecord }
         #endif
         if AppEnvironment.isShadowPositioningEnabled {
-            shadowPositioning = ShadowPositioning(legacyPosition: { [weak self] in self?.userPosition })
+            shadowPositioning = ShadowPositioning(dependencies: dependencies, legacyPosition: { [weak self] in self?.userPosition })
         }
         loadBundleLayoutFallback()
         startMotionUpdates()

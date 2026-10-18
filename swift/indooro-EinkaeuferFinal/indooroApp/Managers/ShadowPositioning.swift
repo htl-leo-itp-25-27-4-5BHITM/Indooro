@@ -19,12 +19,13 @@ final class ShadowPositioning {
 
     private static let logInterval: TimeInterval = 5
 
-    init(legacyPosition: @escaping () -> CGPoint?) {
+    init(dependencies: AppDependencies, legacyPosition: @escaping () -> CGPoint?) {
         self.legacyPosition = legacyPosition
         engine = PositioningEngine(
-            radio: CoreLocationBeaconRadio(),
-            headingProvider: CoreLocationHeadingProvider(),
-            motionProvider: CoreMotionStepProvider()
+            radio: dependencies.makeBeaconRadio(),
+            headingProvider: dependencies.makeHeadingProvider(),
+            motionProvider: dependencies.makeMotionProvider(),
+            clock: dependencies.clock
         )
     }
 

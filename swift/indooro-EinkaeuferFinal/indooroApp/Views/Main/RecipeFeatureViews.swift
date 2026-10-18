@@ -6,7 +6,6 @@ struct RecipesPage: View {
     @ObservedObject var listManager: ShoppingListManager
     @ObservedObject var sessionManager: ShoppingSessionManager
     @ObservedObject var beaconManager: BeaconManager
-    let onOpenShopping: () -> Void
     let onRecipeItemsAdded: () -> Void
 
     @State private var searchText = ""
@@ -25,7 +24,6 @@ struct RecipesPage: View {
                         listManager: listManager,
                         sessionManager: sessionManager,
                         beaconManager: beaconManager,
-                        onOpenShopping: onOpenShopping,
                         onRecipeItemsAdded: onRecipeItemsAdded
                     )
                 }
@@ -116,9 +114,9 @@ struct RecipeDetailView: View {
     @ObservedObject var listManager: ShoppingListManager
     @ObservedObject var sessionManager: ShoppingSessionManager
     @ObservedObject var beaconManager: BeaconManager
-    let onOpenShopping: () -> Void
     let onRecipeItemsAdded: () -> Void
 
+    @Environment(AppRouter.self) private var router
     @State private var showsAddSheet = false
 
     private var activeStore: MobileStoreSummary? {
@@ -179,7 +177,7 @@ struct RecipeDetailView: View {
                                 if sessionManager.activeListID == targetListID {
                                     onRecipeItemsAdded()
                                 }
-                                onOpenShopping()
+                                router.open(.shopping)
                             }
                         )
                     }
