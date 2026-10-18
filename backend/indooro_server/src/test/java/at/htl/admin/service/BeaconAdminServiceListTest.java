@@ -9,7 +9,6 @@ import at.htl.admin.entity.StoreEntity;
 import at.htl.admin.entity.UserAccessAssignmentEntity;
 import at.htl.admin.repository.BeaconAssignmentRepository;
 import at.htl.admin.repository.BeaconRepository;
-import at.htl.admin.repository.BeaconRepository.BeaconWithAssignment;
 import at.htl.admin.repository.StoreRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,17 +18,18 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-/** listBeacons issues one scoped repository query and performs no per-beacon lookups. */
+/** listBeacons issues exactly two repository queries (beacons, then their active assignments) and no per-row lookups. */
 class BeaconAdminServiceListTest {
 
     private BeaconAdminService service;
@@ -38,8 +38,10 @@ class BeaconAdminServiceListTest {
     private BeaconAssignmentRepository beaconAssignmentRepository;
     private AdminAccessService adminAccessService;
     private RegionEntity region;
+    private RegionEntity otherRegion;
     private StoreEntity storeInRegion;
     private StoreEntity otherStore;
+    private StoreEntity storeInOtherRegion;
 
     @BeforeEach
     void setUp() {
@@ -54,20 +56,24 @@ class BeaconAdminServiceListTest {
         service.auditLogService = mock(AuditLogService.class);
         service.adminAccessService = adminAccessService;
 
-        region = region();
+        region = region("AT-OO", "Oberoesterreich");
+        otherRegion = region("AT-NO", "Niederoesterreich");
         storeInRegion = store("LEO-1", region);
         otherStore = store("LEO-2", region);
+        storeInOtherRegion = store("NOE-1", otherRegion);
         when(adminAccessService.currentUser()).thenReturn(new CurrentAdminUser("admin", "admin", null, AdminRole.ADMIN, null));
         when(adminAccessService.effectiveStoreFilter(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
-    void listIssuesExactlyOneRepositoryQueryForAllBeacons() {
-        when(beaconRepository.listWithActiveAssignments(eq(RecordStatus.ACTIVE), isNull(), isNull(), isNull()))
-                .thenReturn(List.of(
-                        row(beacon("b-2"), storeInRegion),
-                        row(beacon("A-1"), null),
-                        row(beacon("c-3"), otherStore)));
+    void listIssuesExactlyTwoRepositoryQueriesForAllBeacons() {
+        BeaconEntity b2 = beacon("b-2");
+        BeaconEntity a1 = beacon("A-1");
+        BeaconEntity c3 = beacon("c-3");
+        when(beaconRepository.listByStatusAndQuery(RecordStatus.ACTIVE, null)).thenReturn(List.of(b2, a1, c3));
+        when(beaconRepository.listActiveAssignmentsForBeacons(anyCollection())).thenReturn(List.of(
+                assignment(b2, storeInRegion),
+                assignment(c3, otherStore)));
 
         List<BeaconDtos.BeaconResponse> result = service.listBeacons(null, null, null, null);
 
@@ -78,74 +84,96 @@ class BeaconAdminServiceListTest {
         assertEquals(region.id, result.get(1).currentStore().regionId());
         assertEquals("ACTIVE", result.get(0).status());
 
-        verify(beaconRepository, times(1)).listWithActiveAssignments(eq(RecordStatus.ACTIVE), isNull(), isNull(), isNull());
+        verify(beaconRepository, times(1)).listByStatusAndQuery(RecordStatus.ACTIVE, null);
+        verify(beaconRepository, times(1)).listActiveAssignmentsForBeacons(List.of(b2.id, a1.id, c3.id));
         verifyNoInteractions(storeRepository);
         verifyNoInteractions(beaconAssignmentRepository);
-        verify(adminAccessService, never()).canSeeBeaconStore(any());
     }
 
     @Test
-    void regionManagerQueryIsScopedToOwnRegion() {
+    void regionManagerSeesUnassignedBeaconsAndBeaconsOfOwnRegionOnly() {
         UserAccessAssignmentEntity assignment = new UserAccessAssignmentEntity();
         assignment.region = region;
         when(adminAccessService.currentUser()).thenReturn(new CurrentAdminUser("rm", "rm", null, AdminRole.REGION_MANAGER, assignment));
-        when(beaconRepository.listWithActiveAssignments(any(), isNull(), eq(region.id), isNull()))
-                .thenReturn(List.of(row(beacon("B-1"), storeInRegion)));
+        BeaconEntity own = beacon("OWN-1");
+        BeaconEntity unassigned = beacon("FREE-1");
+        BeaconEntity foreign = beacon("FOREIGN-1");
+        when(beaconRepository.listByStatusAndQuery(RecordStatus.ACTIVE, null)).thenReturn(List.of(own, unassigned, foreign));
+        when(beaconRepository.listActiveAssignmentsForBeacons(anyCollection())).thenReturn(List.of(
+                assignment(own, storeInRegion),
+                assignment(foreign, storeInOtherRegion)));
 
         List<BeaconDtos.BeaconResponse> result = service.listBeacons(null, null, null, null);
 
-        assertEquals(1, result.size());
-        verify(beaconRepository, times(1)).listWithActiveAssignments(RecordStatus.ACTIVE, null, region.id, null);
+        assertEquals(List.of("FREE-1", "OWN-1"), result.stream().map(BeaconDtos.BeaconResponse::beaconCode).toList());
+        verify(beaconRepository, times(1)).listByStatusAndQuery(RecordStatus.ACTIVE, null);
+        verify(beaconRepository, times(1)).listActiveAssignmentsForBeacons(anyCollection());
         verifyNoInteractions(storeRepository);
     }
 
     @Test
-    void storeManagerQueryIsScopedToOwnStore() {
+    void storeManagerSeesOnlyBeaconsOfOwnStore() {
         UserAccessAssignmentEntity assignment = new UserAccessAssignmentEntity();
         assignment.store = storeInRegion;
         assignment.region = region;
         when(adminAccessService.currentUser()).thenReturn(new CurrentAdminUser("sm", "sm", null, AdminRole.STORE_MANAGER, assignment));
         when(adminAccessService.effectiveStoreFilter(null)).thenReturn(storeInRegion.id);
-        when(beaconRepository.listWithActiveAssignments(any(), isNull(), isNull(), eq(storeInRegion.id)))
-                .thenReturn(List.of(row(beacon("S-1"), storeInRegion)));
+        BeaconEntity own = beacon("S-1");
+        BeaconEntity sibling = beacon("S-2");
+        BeaconEntity unassigned = beacon("S-3");
+        when(beaconRepository.listByStatusAndQuery(RecordStatus.ACTIVE, null)).thenReturn(List.of(own, sibling, unassigned));
+        when(beaconRepository.listActiveAssignmentsForBeacons(anyCollection())).thenReturn(List.of(
+                assignment(own, storeInRegion),
+                assignment(sibling, otherStore)));
 
         List<BeaconDtos.BeaconResponse> result = service.listBeacons(null, null, null, null);
 
         assertEquals(List.of("S-1"), result.stream().map(BeaconDtos.BeaconResponse::beaconCode).toList());
-        verify(beaconRepository, times(1)).listWithActiveAssignments(RecordStatus.ACTIVE, null, null, storeInRegion.id);
+        verify(beaconRepository, times(1)).listByStatusAndQuery(RecordStatus.ACTIVE, null);
+        verify(beaconRepository, times(1)).listActiveAssignmentsForBeacons(anyCollection());
         verifyNoInteractions(storeRepository);
     }
 
     @Test
-    void assignedFilterIsAppliedToTheSingleQueryResult() {
-        when(beaconRepository.listWithActiveAssignments(eq(RecordStatus.ACTIVE), isNull(), isNull(), isNull()))
-                .thenReturn(List.of(row(beacon("x-1"), storeInRegion), row(beacon("x-2"), null)));
+    void assignedFilterIsAppliedToTheTwoQueryResult() {
+        BeaconEntity assigned = beacon("x-1");
+        BeaconEntity free = beacon("x-2");
+        when(beaconRepository.listByStatusAndQuery(RecordStatus.ACTIVE, null)).thenReturn(List.of(assigned, free));
+        when(beaconRepository.listActiveAssignmentsForBeacons(anyCollection())).thenReturn(List.of(assignment(assigned, storeInRegion)));
 
         List<BeaconDtos.BeaconResponse> unassigned = service.listBeacons(null, false, null, null);
 
         assertEquals(List.of("x-2"), unassigned.stream().map(BeaconDtos.BeaconResponse::beaconCode).toList());
-        verify(beaconRepository, times(1)).listWithActiveAssignments(eq(RecordStatus.ACTIVE), isNull(), isNull(), isNull());
+        verify(beaconRepository, times(1)).listByStatusAndQuery(RecordStatus.ACTIVE, null);
+        verify(beaconRepository, times(1)).listActiveAssignmentsForBeacons(anyCollection());
+    }
+
+    @Test
+    void emptyBeaconListStillIssuesBoundedQueries() {
+        when(beaconRepository.listByStatusAndQuery(RecordStatus.ACTIVE, null)).thenReturn(List.of());
+
+        assertTrue(service.listBeacons(null, null, null, null).isEmpty());
+
+        verify(beaconRepository, times(1)).listByStatusAndQuery(RecordStatus.ACTIVE, null);
+        verify(beaconRepository, times(1)).listActiveAssignmentsForBeacons(List.of());
     }
 
     @Test
     void textSearchIsPassedLowerCasedAndWrappedInWildcards() {
-        when(beaconRepository.listWithActiveAssignments(any(), any(), any(), any())).thenReturn(List.of());
+        when(beaconRepository.listByStatusAndQuery(any(), any())).thenReturn(List.of());
 
         service.listBeacons(RecordStatus.ARCHIVED, null, null, "  AB-1 ");
 
-        verify(beaconRepository, times(1)).listWithActiveAssignments(RecordStatus.ARCHIVED, "%ab-1%", null, null);
+        verify(beaconRepository, times(1)).listByStatusAndQuery(RecordStatus.ARCHIVED, "%ab-1%");
     }
 
-    private BeaconWithAssignment row(BeaconEntity beacon, StoreEntity store) {
-        if (store == null) {
-            return new BeaconWithAssignment(beacon, null);
-        }
+    private BeaconAssignmentEntity assignment(BeaconEntity beacon, StoreEntity store) {
         BeaconAssignmentEntity assignment = new BeaconAssignmentEntity();
         assignment.id = UUID.randomUUID();
         assignment.beacon = beacon;
         assignment.store = store;
         assignment.isActive = true;
-        return new BeaconWithAssignment(beacon, assignment);
+        return assignment;
     }
 
     private BeaconEntity beacon(String code) {
@@ -158,11 +186,11 @@ class BeaconAdminServiceListTest {
         return beacon;
     }
 
-    private RegionEntity region() {
+    private RegionEntity region(String code, String name) {
         RegionEntity region = new RegionEntity();
         region.id = UUID.randomUUID();
-        region.code = "AT-OO";
-        region.name = "Oberoesterreich";
+        region.code = code;
+        region.name = name;
         return region;
     }
 

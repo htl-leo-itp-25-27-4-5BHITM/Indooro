@@ -116,7 +116,8 @@ public class UpsellSuggestionService {
             throw new WebApplicationException("checkedProductId ist erforderlich.", Response.Status.BAD_REQUEST);
         }
 
-        String contextHash = contextHash(request);
+        List<UpsellDismissalEntity> dismissals = activeDismissals(request);
+        String contextHash = dismissalAwareHash(contextHash(request), dismissals);
         Optional<UpsellDtos.UpsellSuggestionResponse> cached = findCachedResponse(contextHash);
         if (cached.isPresent()) {
             return cached.get();
@@ -124,7 +125,7 @@ public class UpsellSuggestionService {
 
         Product checkedProduct = resolveProduct(request.checkedProductId(),
                 request.storeId() == null ? null : request.storeId().toString(), request.storeCode());
-        List<Product> candidates = loadCandidates(request, checkedProduct);
+        List<Product> candidates = withoutDismissed(loadCandidates(request, checkedProduct), dismissals);
         if (candidates.isEmpty()) {
             UpsellDtos.UpsellSuggestionResponse response = emptyResponse(request.checkedProductId(), "none");
             storeCachedResponse(request, contextHash, response);
@@ -529,6 +530,48 @@ public class UpsellSuggestionService {
         entity.source = normalizeOptional(request.source());
         entity.metadataJson = normalizeOptional(request.metadataJson());
         eventRepository.persist(entity);
+    }
+
+    /** Dismissals in force for this checked product and store. Suggestion requests carry no session id (see D2). */
+    private List<UpsellDismissalEntity> activeDismissals(UpsellDtos.UpsellSuggestionRequest request) {
+        return dismissalRepository.findActiveForCheckedProduct(
+                request.checkedProductId(),
+                request.storeId(),
+                null,
+                Instant.now()
+        );
+    }
+
+    /** A dismissal without a suggested product suppresses every candidate. */
+    List<Product> withoutDismissed(List<Product> candidates, List<UpsellDismissalEntity> dismissals) {
+        if (dismissals.isEmpty()) {
+            return candidates;
+        }
+        if (dismissals.stream().anyMatch(dismissal -> dismissal.suggestedProductId == null)) {
+            return List.of();
+        }
+        Set<Integer> suppressed = dismissals.stream()
+                .map(dismissal -> dismissal.suggestedProductId)
+                .collect(Collectors.toSet());
+        return candidates.stream()
+                .filter(candidate -> !suppressed.contains(candidate.getId()))
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    /**
+     * Cache key that also covers the active dismissal set, so a new or expired dismissal never serves a stale
+     * cached ranking. Without dismissals the key is the plain context hash.
+     */
+    String dismissalAwareHash(String contextHash, List<UpsellDismissalEntity> dismissals) {
+        if (dismissals.isEmpty()) {
+            return contextHash;
+        }
+        String suppressedKeys = dismissals.stream()
+                .map(dismissal -> dismissal.suggestedProductId == null ? "*" : String.valueOf(dismissal.suggestedProductId))
+                .distinct()
+                .sorted()
+                .collect(Collectors.joining(","));
+        return sha256(contextHash + "|dismissed:" + suppressedKeys);
     }
 
     @Transactional

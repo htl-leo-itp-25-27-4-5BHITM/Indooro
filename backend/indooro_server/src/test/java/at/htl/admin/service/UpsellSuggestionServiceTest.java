@@ -1,7 +1,9 @@
 package at.htl.admin.service;
 
 import at.htl.admin.dto.UpsellDtos;
+import at.htl.admin.entity.UpsellDismissalEntity;
 import at.htl.admin.entity.UpsellSuggestionCacheEntity;
+import at.htl.admin.repository.UpsellDismissalRepository;
 import at.htl.admin.repository.UpsellSuggestionCacheRepository;
 import at.htl.model.Product;
 import at.htl.service.OpenSearchService;
@@ -10,12 +12,16 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -26,11 +32,13 @@ class UpsellSuggestionServiceTest {
 
     UpsellSuggestionService service;
     FakeOpenSearchService openSearchService;
+    FakeDismissalRepository dismissals;
 
     @BeforeEach
     void setUp() {
         service = new UpsellSuggestionService();
         openSearchService = new FakeOpenSearchService();
+        dismissals = new FakeDismissalRepository();
         configureService(service);
     }
 
@@ -38,6 +46,7 @@ class UpsellSuggestionServiceTest {
         target.openSearchService = openSearchService;
         target.objectMapper = new ObjectMapper().findAndRegisterModules();
         target.cacheRepository = new FakeCacheRepository();
+        target.dismissalRepository = dismissals;
         target.upsellEnabled = true;
         target.openAiEnabled = false;
         target.maxCandidates = 50;
@@ -891,6 +900,131 @@ class UpsellSuggestionServiceTest {
             }
             return products.values().stream()
                     .limit(size == null ? products.size() : size)
+                    .toList();
+        }
+    }
+
+    @Test
+    void dismissedSuggestionIsNotReturnedAfterDismissal() {
+        UpsellDtos.UpsellSuggestionRequest request = suggestionRequest(1, null);
+        UpsellDtos.UpsellSuggestionResponse first = service.suggestions(request);
+        int dismissedId = first.suggestions().get(0).product().id();
+
+        dismissals.add(1, dismissedId, null, null, Instant.now().plus(Duration.ofHours(1)));
+        UpsellDtos.UpsellSuggestionResponse second = service.suggestions(request);
+
+        assertEquals("fallback", second.source(), "a changed dismissal set must not be served from the old cache entry");
+        assertFalse(second.suggestions().stream().anyMatch(suggestion -> suggestion.product().id() == dismissedId));
+    }
+
+    @Test
+    void dismissalWithoutSuggestedProductSuppressesAllSuggestionsForCheckedProduct() {
+        dismissals.add(1, null, null, null, Instant.now().plus(Duration.ofHours(1)));
+
+        UpsellDtos.UpsellSuggestionResponse response = service.suggestions(suggestionRequest(1, null));
+
+        assertTrue(response.suggestions().isEmpty());
+        assertEquals("none", response.source());
+    }
+
+    @Test
+    void wholeProductDismissalDoesNotAffectOtherCheckedProducts() {
+        UpsellDtos.UpsellSuggestionRequest otherProduct = suggestionRequest(2, null);
+        List<Integer> before = service.suggestions(otherProduct).suggestions().stream()
+                .map(suggestion -> suggestion.product().id())
+                .toList();
+
+        dismissals.add(1, null, null, null, Instant.now().plus(Duration.ofHours(1)));
+        List<Integer> after = service.suggestions(otherProduct).suggestions().stream()
+                .map(suggestion -> suggestion.product().id())
+                .toList();
+
+        assertEquals(before, after);
+    }
+
+    @Test
+    void expiredDismissalIsNotApplied() {
+        UpsellDtos.UpsellSuggestionRequest request = suggestionRequest(1, null);
+        int candidateId = service.suggestions(request).suggestions().get(0).product().id();
+
+        dismissals.add(1, candidateId, null, null, Instant.now().minus(Duration.ofMinutes(1)));
+        UpsellDtos.UpsellSuggestionResponse response = service.suggestions(request);
+
+        assertTrue(response.suggestions().stream().anyMatch(suggestion -> suggestion.product().id() == candidateId));
+    }
+
+    @Test
+    void dismissalForAnotherStoreIsNotApplied() {
+        UUID storeA = UUID.randomUUID();
+        UUID storeB = UUID.randomUUID();
+        UpsellDtos.UpsellSuggestionRequest request = suggestionRequest(1, storeB);
+        int candidateId = service.suggestions(request).suggestions().get(0).product().id();
+
+        dismissals.add(1, candidateId, storeA, null, Instant.now().plus(Duration.ofHours(1)));
+        UpsellDtos.UpsellSuggestionResponse response = service.suggestions(request);
+
+        assertTrue(response.suggestions().stream().anyMatch(suggestion -> suggestion.product().id() == candidateId));
+    }
+
+    @Test
+    void withoutDismissedKeepsCandidatesWhenNothingIsSuppressed() {
+        List<Product> candidates = List.of(new Product(2, "A", 1.0, "450/1/1/1"), new Product(3, "B", 1.0, "450/1/1/1"));
+
+        assertEquals(candidates, service.withoutDismissed(candidates, List.of()));
+        assertEquals(List.of(3), service.withoutDismissed(candidates, List.of(dismissal(1, 2, null))).stream()
+                .map(Product::getId).toList());
+        assertTrue(service.withoutDismissed(candidates, List.of(dismissal(1, null, null))).isEmpty());
+    }
+
+    @Test
+    void dismissalAwareHashIsStableAndChangesWithTheDismissalSet() {
+        assertEquals("ctx", service.dismissalAwareHash("ctx", List.of()));
+        String withOne = service.dismissalAwareHash("ctx", List.of(dismissal(1, 2, null)));
+        assertEquals(withOne, service.dismissalAwareHash("ctx", List.of(dismissal(1, 2, null))));
+        assertFalse(withOne.equals("ctx"));
+        assertFalse(withOne.equals(service.dismissalAwareHash("ctx", List.of(dismissal(1, 3, null)))));
+    }
+
+    private UpsellDtos.UpsellSuggestionRequest suggestionRequest(Integer checkedProductId, UUID storeId) {
+        return new UpsellDtos.UpsellSuggestionRequest(
+                storeId,
+                null,
+                checkedProductId,
+                "local-list",
+                List.of(),
+                List.of(),
+                "shopping_session",
+                null
+        );
+    }
+
+    private static UpsellDismissalEntity dismissal(Integer checkedProductId, Integer suggestedProductId, UUID storeId) {
+        UpsellDismissalEntity entity = new UpsellDismissalEntity();
+        entity.checkedProductId = checkedProductId;
+        entity.suggestedProductId = suggestedProductId;
+        entity.storeId = storeId;
+        entity.suppressedUntil = Instant.now().plus(Duration.ofHours(1));
+        return entity;
+    }
+
+    private static final class FakeDismissalRepository extends UpsellDismissalRepository {
+        private final List<UpsellDismissalEntity> rows = new ArrayList<>();
+
+        void add(Integer checkedProductId, Integer suggestedProductId, UUID storeId, String sessionHash, Instant suppressedUntil) {
+            UpsellDismissalEntity entity = dismissal(checkedProductId, suggestedProductId, storeId);
+            entity.sessionHash = sessionHash;
+            entity.suppressedUntil = suppressedUntil;
+            rows.add(entity);
+        }
+
+        @Override
+        public List<UpsellDismissalEntity> findActiveForCheckedProduct(Integer checkedProductId, UUID storeId,
+                                                                      String sessionHash, Instant now) {
+            return rows.stream()
+                    .filter(row -> Objects.equals(row.checkedProductId, checkedProductId))
+                    .filter(row -> Objects.equals(row.storeId, storeId))
+                    .filter(row -> Objects.equals(row.sessionHash, sessionHash))
+                    .filter(row -> row.suppressedUntil != null && row.suppressedUntil.isAfter(now))
                     .toList();
         }
     }

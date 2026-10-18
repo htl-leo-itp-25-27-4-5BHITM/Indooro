@@ -19,6 +19,7 @@ import jakarta.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -57,12 +58,40 @@ public class BeaconAdminService {
 
         RecordStatus effectiveStatus = status == null ? RecordStatus.ACTIVE : status;
         String likePattern = query == null || query.isBlank() ? null : "%" + query.trim().toLowerCase() + "%";
-        return beaconRepository.listWithActiveAssignments(effectiveStatus, likePattern, scopeRegionId, scopeStoreId)
-                .stream()
-                .map(row -> toResponse(row.beacon(), row.assignment()))
-                .filter(response -> filterAssigned(response, assigned, effectiveStoreId))
-                .sorted(Comparator.comparing(BeaconDtos.BeaconResponse::beaconCode, String.CASE_INSENSITIVE_ORDER))
-                .toList();
+        List<BeaconEntity> beacons = beaconRepository.listByStatusAndQuery(effectiveStatus, likePattern);
+        Map<UUID, BeaconAssignmentEntity> assignmentByBeacon = new HashMap<>();
+        for (BeaconAssignmentEntity assignment : beaconRepository.listActiveAssignmentsForBeacons(
+                beacons.stream().map(beacon -> beacon.id).toList())) {
+            assignmentByBeacon.putIfAbsent(assignment.beacon.id, assignment);
+        }
+
+        List<BeaconDtos.BeaconResponse> responses = new ArrayList<>();
+        for (BeaconEntity beacon : beacons) {
+            BeaconAssignmentEntity assignment = assignmentByBeacon.get(beacon.id);
+            if (!isVisibleInScope(assignment, scopeRegionId, scopeStoreId)) {
+                continue;
+            }
+            BeaconDtos.BeaconResponse response = toResponse(beacon, assignment);
+            if (filterAssigned(response, assigned, effectiveStoreId)) {
+                responses.add(response);
+            }
+        }
+        responses.sort(Comparator.comparing(BeaconDtos.BeaconResponse::beaconCode, String.CASE_INSENSITIVE_ORDER));
+        return responses;
+    }
+
+    /**
+     * Scope applied in memory over the joined assignments. Unassigned beacons are visible to the region manager
+     * and to admins, never to a store manager. {@code scopeRegionId} and {@code scopeStoreId} are null for admins.
+     */
+    private boolean isVisibleInScope(BeaconAssignmentEntity assignment, UUID scopeRegionId, UUID scopeStoreId) {
+        if (scopeStoreId != null) {
+            return assignment != null && scopeStoreId.equals(assignment.store.id);
+        }
+        if (scopeRegionId != null) {
+            return assignment == null || scopeRegionId.equals(assignment.store.region.id);
+        }
+        return true;
     }
 
     public List<BeaconDtos.BeaconResponse> listFreeBeacons() {

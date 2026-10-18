@@ -1,6 +1,8 @@
 package at.htl.admin.dto;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -18,21 +20,21 @@ public final class BeaconDtos {
     public record BeaconCreateRequest(
             @NotBlank @Size(max = 60) String beaconCode,
             @NotBlank @Size(max = 40) String uuid,
-            Integer major,
-            Integer minor,
+            @Min(0) @Max(65535) Integer major,
+            @Min(0) @Max(65535) Integer minor,
             @Size(max = 2_000) String notes
     ) {
     }
 
     public record BeaconBulkItemRequest(
             @NotBlank @Size(max = 60) String beaconCode,
-            Integer minor
+            @Min(0) @Max(65535) Integer minor
     ) {
     }
 
     public record BeaconBulkCreateRequest(
             @NotBlank @Size(max = 40) String uuid,
-            Integer major,
+            @Min(0) @Max(65535) Integer major,
             @Size(max = 2_000) String notes,
             @NotEmpty List<@Valid BeaconBulkItemRequest> items
     ) {
