@@ -81,55 +81,55 @@
 
 ## 8. Canonical iOS Shopping State
 
-- [ ] 8.1 Add one helper that derives canonical current/open and completed product ID sets from the authoritative list snapshot. (später/Mensch)
-- [ ] 8.2 Deduplicate and sort both arrays before signature construction and request encoding. (später/Mensch)
-- [ ] 8.3 Remove every current/open ID from the completed set so request collections are disjoint. (später/Mensch)
-- [ ] 8.4 Use the same canonical arrays in `PlanRequestSignature` and `UpsellPlanRequest` to prevent signature/payload drift. (später/Mensch)
-- [ ] 8.5 Normalize opportunity trigger IDs by removing duplicates and sorting before identity/signature construction. (später/Mensch)
-- [ ] 8.6 Preserve exclusion of items marked `addedFromUpsell` from trigger opportunities. (später/Mensch)
-- [ ] 8.7 Add debug output that reports canonical current/completed counts and overlap removals without logging personal data. (später/Mensch)
-- [ ] 8.8 Add pure logic tests where duplicate rows create open/done conflicts and assert deterministic open-state precedence. (später/Mensch)
+- [x] 8.1 Add one helper that derives canonical current/open and completed product ID sets from the authoritative list snapshot. _(`UpsellPlanLogic.canonicalShoppingState`, aufgerufen aus Store)_
+- [x] 8.2 Deduplicate and sort both arrays before signature construction and request encoding. _(sortiert + dedupliziert in `CanonicalShoppingState`; `UpsellPlanLogicTests`)_
+- [x] 8.3 Remove every current/open ID from the completed set so request collections are disjoint. _(Open gewinnt; `testDuplicateOpenAndCompletedRowsKeepOpenPrecedence`)_
+- [x] 8.4 Use the same canonical arrays in `PlanRequestSignature` and `UpsellPlanRequest` to prevent signature/payload drift. _(`PlanRequestSignature` und `UpsellPlanRequest` nutzen `signature.currentProductIds/completedProductIds`; Store-Payloadtest)_
+- [x] 8.5 Normalize opportunity trigger IDs by removing duplicates and sorting before identity/signature construction. _(`HandledOpportunityIdentity` und `PlanOpportunitySignature` normalisieren Trigger-IDs)_
+- [x] 8.6 Preserve exclusion of items marked `addedFromUpsell` from trigger opportunities. _(`eligibleTriggerItems` schließt `addedFromUpsell` aus; `testPayloadUsesCanonicalStateAndExcludesUpsellItemsFromTriggers`)_
+- [x] 8.7 Add debug output that reports canonical current/completed counts and overlap removals without logging personal data. _(Debugzeile `preloadPlan canonical current=… completed=… overlapRemoved=…`)_
+- [x] 8.8 Add pure logic tests where duplicate rows create open/done conflicts and assert deterministic open-state precedence. _(`UpsellPlanLogicTests`, 26 Tests grün in SwiftPM)_
 
 ## 9. iOS Opportunity Lifecycle
 
-- [ ] 9.1 Add a session-scoped handled opportunity identity containing list ID, store ID, normalized source, opportunity ID, and sorted eligible trigger IDs. (später/Mensch)
-- [ ] 9.2 Keep handled state independent from `cachedOpportunities`, pending opportunities, and completed plan signatures. (später/Mensch)
-- [ ] 9.3 Exclude handled identities before computing plan opportunities and request signatures. (später/Mensch)
-- [ ] 9.4 Mark an opportunity handled after its prompt is shown and dismissed. (später/Mensch)
-- [ ] 9.5 Mark an opportunity handled after a suggestion is accepted. (später/Mensch)
-- [ ] 9.6 Mark a successfully evaluated loaded-empty AI/filtered opportunity handled when the customer completes it. (später/Mensch)
-- [ ] 9.7 Do not mark retryable pre-AI candidate failures handled. (später/Mensch)
-- [ ] 9.8 Keep handled state when a consumed cache entry is removed. (später/Mensch)
-- [ ] 9.9 Treat materially changed sorted trigger IDs at the same station as a new opportunity identity. (später/Mensch)
-- [ ] 9.10 Clear handled identities, retry attempts, pending opportunities, and plan cache together in `resetSession()`. (später/Mensch)
-- [ ] 9.11 Clear the previous store's handled state when a different store is explicitly authorized. (später/Mensch)
-- [ ] 9.12 Log `preloadPlan skipped reason=handled_opportunity` with safe opportunity identity details. (später/Mensch)
-- [ ] 9.13 Add lifecycle tests proving reopen/recomplete does not replan the same identity before reset. (später/Mensch)
-- [ ] 9.14 Add lifecycle tests proving reset and station composition change allow the intended new opportunity. (später/Mensch)
+- [x] 9.1 Add a session-scoped handled opportunity identity containing list ID, store ID, normalized source, opportunity ID, and sorted eligible trigger IDs. _(`HandledOpportunityIdentity` mit listID, storeID, source, opportunityID, Trigger-IDs)_
+- [x] 9.2 Keep handled state independent from `cachedOpportunities`, pending opportunities, and completed plan signatures. _(`HandledOpportunitySet` getrennt von `cachedOpportunities`/`pendingOpportunities`/Signaturen)_
+- [x] 9.3 Exclude handled identities before computing plan opportunities and request signatures. _(`makeOpportunities` filtert vor Signatur; Logtext `reason=handled_opportunity`)_
+- [x] 9.4 Mark an opportunity handled after its prompt is shown and dismissed. _(`dismissCurrentPrompt` markiert den Prompt-Identity)_
+- [x] 9.5 Mark an opportunity handled after a suggestion is accepted. _(`accept` markiert den Prompt-Identity)_
+- [x] 9.6 Mark a successfully evaluated loaded-empty AI/filtered opportunity handled when the customer completes it. _(Loaded-empty und Filtered-empty in `showOpportunity` markieren handled; Store-Test AI-empty)_
+- [x] 9.7 Do not mark retryable pre-AI candidate failures handled. _(Retryable Pre-AI-Failure kehrt vor `markHandled` zurück; kein Store-Test)_
+- [x] 9.8 Keep handled state when a consumed cache entry is removed. _(Cache-Verbrauch berührt `handledOpportunities` nicht; Store-Test AI-empty)_
+- [x] 9.9 Treat materially changed sorted trigger IDs at the same station as a new opportunity identity. _(Identity enthält sortierte Trigger-IDs; `testChangedTriggerCompositionIsNewIdentity`)_
+- [x] 9.10 Clear handled identities, retry attempts, pending opportunities, and plan cache together in `resetSession()`. _(`resetSession` leert Handled, Retry-State, Pending und Cache; `testResetAllowsIntendedOpportunityToPlanAgain`)_
+- [x] 9.11 Clear the previous store's handled state when a different store is explicitly authorized. _(`removeIdentities(notForStore:)` in `authorizePlanPreloading`; `testStoreChangeRemovesPreviousStoreIdentitiesOnly`)_
+- [x] 9.12 Log `preloadPlan skipped reason=handled_opportunity` with safe opportunity identity details. _(Debugzeile `preloadPlan skipped reason=handled_opportunity` mit Identity-Summary)_
+- [x] 9.13 Add lifecycle tests proving reopen/recomplete does not replan the same identity before reset. _(`testReopenAndRecompleteWithSameTriggersStaysSuppressed`; Store-Test AI-empty ohne zweite Anfrage)_
+- [x] 9.14 Add lifecycle tests proving reset and station composition change allow the intended new opportunity. _(`testResetClearsHandledStateSoIntendedOpportunityCanPlanAgain`, `testChangedTriggerCompositionIsNewIdentity`)_
 
 ## 10. Bounded iOS Candidate-Failure Retry
 
-- [ ] 10.1 Add retry-attempt state keyed by canonical `PlanRequestSignature`. (später/Mensch)
-- [ ] 10.2 Recognize retry eligibility only from the explicit backend candidate-lookup failure signal with no OpenAI usage. (später/Mensch)
-- [ ] 10.3 Schedule exactly one retry after a short configurable delay, initially one second. (später/Mensch)
-- [ ] 10.4 Before retrying, confirm that session, store, list, source, signature, and eligible unhandled opportunities are unchanged. (später/Mensch)
-- [ ] 10.5 Reuse existing `planTask`, `activePlanSignature`, and in-flight guards so retry cannot overlap another request. (später/Mensch)
-- [ ] 10.6 Stop after the second candidate lookup failure and keep shopping completion non-blocking. (später/Mensch)
-- [ ] 10.7 Never auto-retry AI-empty, filtered-empty, OpenAI timeout, invalid AI output, cache-hit, or token-consuming responses. (später/Mensch)
-- [ ] 10.8 Clear retry state on success, session reset, store change, and signature obsolescence. (später/Mensch)
-- [ ] 10.9 Log retry scheduling, cancellation, attempt count, delay, original signature, and resulting mobile request ID. (später/Mensch)
-- [ ] 10.10 Add retry logic tests proving one failure produces at most one retry and no eligible non-failure outcome retries. (später/Mensch)
+- [x] 10.1 Add retry-attempt state keyed by canonical `PlanRequestSignature`. _(`PlanRetryState` keyed by `PlanRequestSignature`)_
+- [x] 10.2 Recognize retry eligibility only from the explicit backend candidate-lookup failure signal with no OpenAI usage. _(`PlanResponseEvidence.isRetryableCandidateLookupFailure`; `testNoEligibleNonFailureOutcomeRetries`)_
+- [x] 10.3 Schedule exactly one retry after a short configurable delay, initially one second. _(Default 1 s, konfigurierbar; `testRetryDelayIsConfigurable`)_
+- [x] 10.4 Before retrying, confirm that session, store, list, source, signature, and eligible unhandled opportunities are unchanged. _(`runPendingRetry` prüft Session, Store, Liste, Signatur, unhandled Opportunities via `retryBlockReason`)_
+- [x] 10.5 Reuse existing `planTask`, `activePlanSignature`, and in-flight guards so retry cannot overlap another request. _(Retry läuft über `startPlanRequest`; `planTask`/`activePlanSignature`-Guards)_
+- [x] 10.6 Stop after the second candidate lookup failure and keep shopping completion non-blocking. _(`isExhausted` nach zweiter Anfrage; `testCandidateLookupFailureRetriesExactlyOnce`)_
+- [x] 10.7 Never auto-retry AI-empty, filtered-empty, OpenAI timeout, invalid AI output, cache-hit, or token-consuming responses. _(Nicht-Fehler-Outcomes stoppen; `testNoEligibleNonFailureOutcomeRetries`)_
+- [x] 10.8 Clear retry state on success, session reset, store change, and signature obsolescence. _(Clear bei Erfolg, Reset, Store-Wechsel, Obsoleszenz; `testResetCancelsScheduledRetry`)_
+- [x] 10.9 Log retry scheduling, cancellation, attempt count, delay, original signature, and resulting mobile request ID. _(Logs `retry scheduled`/`retry started`/`retry cancelled`/`retry stop` mit Signatur, Attempt, Delay, requestId)_
+- [x] 10.10 Add retry logic tests proving one failure produces at most one retry and no eligible non-failure outcome retries. _(`UpsellPlanLogicTests` Retry-Abschnitt; Store-Retry-Tests)_
 
 ## 11. iOS Prompt And Regression Verification
 
-- [ ] 11.1 Preserve the 10 actually-shown prompts per session limit and three products per popup. (später/Mensch)
-- [ ] 11.2 Preserve `duplicate_in_flight`, `in_flight_waiting`, `all_opportunities_cached`, pending-opportunity retry, and stale-response guards. (später/Mensch)
-- [ ] 11.3 Preserve station grouping, unresolved item opportunities, route advancement, direct completion, and skipped/missing completion behavior. (später/Mensch)
-- [ ] 11.4 Preserve the rule that accepted upsell products use `addedFromUpsell=true` and never trigger another upsell. (später/Mensch)
-- [ ] 11.5 Verify active prompt clearing cannot mark a different opportunity handled. (später/Mensch)
-- [ ] 11.6 Verify a normal loaded-empty cache hit does not become a cache miss or create another request. (später/Mensch)
-- [ ] 11.7 Verify a handled opportunity remains suppressed after list progress callbacks and item status toggles. (später/Mensch)
-- [ ] 11.8 Run the final iOS simulator build for `MCindooroApp`. (später/Mensch)
+- [x] 11.1 Preserve the 10 actually-shown prompts per session limit and three products per popup. _(Code unverändert: 10 Prompts, 3 Produkte; per Review, kein eigener Test)_
+- [x] 11.2 Preserve `duplicate_in_flight`, `in_flight_waiting`, `all_opportunities_cached`, pending-opportunity retry, and stale-response guards. _(Code unverändert: `duplicate_in_flight`, `in_flight_waiting`, `all_opportunities_cached`, stale-Guards; per Review)_
+- [x] 11.3 Preserve station grouping, unresolved item opportunities, route advancement, direct completion, and skipped/missing completion behavior. _(Code unverändert: Stationsgruppierung und Completion; per Review)_
+- [x] 11.4 Preserve the rule that accepted upsell products use `addedFromUpsell=true` and never trigger another upsell. _(`addedFromUpsell`-Payloadtest im Store)_
+- [x] 11.5 Verify active prompt clearing cannot mark a different opportunity handled. _(`testActivePromptClosingCannotMarkDifferentOpportunity`)_
+- [x] 11.6 Verify a normal loaded-empty cache hit does not become a cache miss or create another request. _(Store-Test AI-empty: Cache-Hit bleibt Cache-Hit, keine zweite Anfrage)_
+- [x] 11.7 Verify a handled opportunity remains suppressed after list progress callbacks and item status toggles. _(`testStatusToggleAndProgressCallbacksKeepHandledIdentitySuppressed`; Store-Test)_
+- [ ] 11.8 Run the final iOS simulator build for `MCindooroApp`. (Mensch: generischer Build `generic/platform=iOS Simulator` scheitert identisch auf Basis 5ac9564 am openapi-Plugin; Simulator-Testbuild grün)
 
 ## 12. Documentation And OpenSpec Alignment
 
@@ -144,8 +144,8 @@
 ## 13. Automated Verification
 
 - [x] 13.1 Run `sh ./mvnw test -Dtest=UpsellSuggestionServiceTest,MobileUpsellResourceTest` from `backend/indooro_server`. _(UpsellSuggestionServiceTest 52, MobileUpsellResourceTest 16, ProductEquivalenceTest 14 green; full suite 498 tests 0 failures)_
-- [ ] 13.2 Run any new focused iOS logic tests available in the final Xcode project. (später/Mensch)
-- [ ] 13.3 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme MCindooroApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build`. (später/Mensch)
+- [x] 13.2 Run any new focused iOS logic tests available in the final Xcode project. _(SwiftPM 304 Tests grün inkl. 26 UpsellPlanLogicTests; Xcode-Unit 40 grün)_
+- [ ] 13.3 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme MCindooroApp -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' build`. (Mensch: gleicher generischer Build scheitert auf Basis 5ac9564 vor dieser Änderung am openapi-Plugin)
 - [x] 13.4 Run `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`. _(validate --all --strict: 60 passed)_
 - [x] 13.5 Run `git diff --check`. _(git diff --check clean)_
 - [x] 13.6 Confirm no OpenAI API key, Kubernetes secret value, token, or sensitive response detail was added to tracked files or logs. _(grep for sk-/OPENAI_API_KEY in changed files empty)_

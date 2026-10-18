@@ -32,19 +32,17 @@ final class UpsellSuggestionStore: ObservableObject {
         let requestedAt: Date
     }
 
-    private struct OpportunitySignature: Hashable {
-        let opportunityId: String
-        let triggerProductIds: [Int]
-    }
-
-    private struct PlanRequestSignature: Hashable {
-        let listID: UUID
-        let storeId: UUID
-        let storeCode: String?
+    /// One scheduled retry for a retryable candidate-lookup failure. Holds the snapshot needed to re-validate it.
+    private struct PendingPlanRetry {
+        let id: UUID
+        let signature: PlanRequestSignature
+        let list: ShoppingList
+        let opportunities: [UpsellOpportunityRequest]
+        let store: MobileStoreSummary
         let source: String
-        let currentProductIds: [Int]
-        let completedProductIds: [Int]
-        let opportunities: [OpportunitySignature]
+        let epoch: UUID
+        let retryNumber: Int
+        let originalRequestID: UUID
     }
 
     private var apiBase: String { AppEnvironment.apiBaseURL.absoluteString }
@@ -56,6 +54,7 @@ final class UpsellSuggestionStore: ObservableObject {
     private let debugEnabled = true
     private let decoder = JSONDecoder.indooro
     private let encoder = JSONEncoder()
+    private let session: URLSession
 
     private var lastPromptShownAt: Date?
     private var shownCountForSession = 0
@@ -67,16 +66,34 @@ final class UpsellSuggestionStore: ObservableObject {
     private var authorizedStoreId: UUID?
     private var activePlanSignature: PlanRequestSignature?
     private var lastCompletedPlanSignature: PlanRequestSignature?
+    private var handledOpportunities = HandledOpportunitySet()
+    private var retryState: PlanRetryState
+    private var pendingRetry: PendingPlanRetry?
+    private var retryTask: Task<Void, Never>?
+    /// Changes on every reset or explicit store change so that delayed work from an older session is ignored.
+    private var sessionEpoch = UUID()
+
+    init(
+        session: URLSession = AppEnvironment.session,
+        retryDelay: TimeInterval = UpsellPlanLogic.defaultRetryDelay
+    ) {
+        self.session = session
+        self.retryState = PlanRetryState(retryDelay: retryDelay)
+    }
 
     func resetSession() {
-        debugLog("resetSession cachedOpportunities=\(cachedOpportunities.count) activePrompt=\(activePrompt?.opportunityId ?? "nil")")
+        debugLog("resetSession cachedOpportunities=\(cachedOpportunities.count) handled=\(handledOpportunities.count) activePrompt=\(activePrompt?.opportunityId ?? "nil")")
         planTask?.cancel()
         planTask = nil
+        cancelPendingRetry(reason: "session_reset")
         cachedOpportunities.removeAll()
         pendingOpportunities.removeAll()
+        handledOpportunities.removeAll()
+        retryState.removeAll()
         activePrompt = nil
         isLoading = false
         latestPlanRequestID = UUID()
+        sessionEpoch = UUID()
         lastPromptShownAt = nil
         shownCountForSession = 0
         dismissedProductIDs.removeAll()
@@ -87,6 +104,10 @@ final class UpsellSuggestionStore: ObservableObject {
 
     func clearPrompt(reason: String = "manual") {
         debugLog("clearPrompt reason=\(reason) activePrompt=\(activePrompt?.opportunityId ?? "nil")")
+        // A closed prompt was shown, so its own opportunity counts as handled. No other opportunity is touched.
+        if let prompt = activePrompt {
+            markHandled(promptIdentity(prompt), reason: "prompt_closed_\(reason)")
+        }
         activePrompt = nil
     }
 
@@ -101,9 +122,13 @@ final class UpsellSuggestionStore: ObservableObject {
     func authorizePlanPreloading(for store: MobileStoreSummary, reason: String) {
         guard AppEnvironment.allowsExtendedFeatures else { return }
         if authorizedStoreId != store.id {
-            debugLog("authorizePlanPreloading store=\(storeDebug(store)) reason=\(reason) previous=\(authorizedStoreId?.uuidString ?? "nil") clearsCache=true")
+            let removedHandled = handledOpportunities.removeIdentities(notForStore: store.id)
+            debugLog("authorizePlanPreloading store=\(storeDebug(store)) reason=\(reason) previous=\(authorizedStoreId?.uuidString ?? "nil") clearsCache=true clearsHandled=\(removedHandled)")
             planTask?.cancel()
             planTask = nil
+            cancelPendingRetry(reason: "store_changed")
+            retryState.removeAll()
+            sessionEpoch = UUID()
             latestPlanRequestID = UUID()
             isLoading = false
             cachedOpportunities.removeAll()
@@ -140,7 +165,9 @@ final class UpsellSuggestionStore: ObservableObject {
         let opportunities = makeOpportunities(
             list: list,
             stops: stops,
-            unresolvedItems: unresolvedItems
+            unresolvedItems: unresolvedItems,
+            store: store,
+            source: source
         )
         guard !opportunities.isEmpty else {
             debugLog("preloadPlan skipped reason=no_opportunities")
@@ -159,12 +186,24 @@ final class UpsellSuggestionStore: ObservableObject {
             return
         }
 
+        let shoppingState = canonicalShoppingState(for: list)
+        debugLog(
+            "preloadPlan canonical current=\(shoppingState.currentProductIds.count) completed=\(shoppingState.completedProductIds.count) overlapRemoved=\(shoppingState.overlapRemovedCount) rawOpen=\(shoppingState.rawOpenCount) rawCompleted=\(shoppingState.rawCompletedCount)"
+        )
         let signature = makePlanSignature(
             list: list,
+            shoppingState: shoppingState,
             opportunities: uncachedOpportunities,
             store: store,
             source: source
         )
+        if let pending = pendingRetry {
+            if pending.signature == signature {
+                debugLog("preloadPlan skipped reason=retry_pending signature=\(signatureDebug(signature))")
+                return
+            }
+            cancelPendingRetry(reason: "signature_obsolete")
+        }
         if activePlanSignature == signature {
             debugLog("preloadPlan skipped reason=duplicate_in_flight signature=\(signatureDebug(signature))")
             return
@@ -177,100 +216,26 @@ final class UpsellSuggestionStore: ObservableObject {
             debugLog("preloadPlan skipped reason=in_flight_waiting signature=\(signatureDebug(signature)) activeSignature=\(activePlanSignature.map(signatureDebug) ?? "nil")")
             return
         }
+        if retryState.isExhausted(signature) {
+            debugLog("preloadPlan skipped reason=candidate_lookup_retry_exhausted signature=\(signatureDebug(signature))")
+            return
+        }
+        let discarded = retryState.discardObsolete(except: signature)
+        if discarded > 0 {
+            debugLog("retry state discarded reason=signature_obsolete count=\(discarded)")
+        }
+
         debugLog(
             "preloadPlan begin list=\(list.id.uuidString) source=\(source) store=\(storeDebug(store)) stops=\(stops.count) unresolved=\(unresolvedItems.count) opportunities=\(uncachedOpportunities.map(\.opportunityId)) cachedSkipped=\(opportunities.count - uncachedOpportunities.count)"
         )
-        guard let urlRequest = makePlanRequest(
+        startPlanRequest(
             list: list,
             opportunities: uncachedOpportunities,
             store: store,
-            source: source
-        ) else {
-            debugLog("preloadPlan skipped reason=request_build_failed")
-            return
-        }
-
-        let requestID = UUID()
-        latestPlanRequestID = requestID
-        activePlanSignature = signature
-        isLoading = true
-        debugLog("preloadPlan requestId=\(requestID.uuidString) timeout=\(urlRequest.timeoutInterval)s")
-
-        let task = AppEnvironment.session.dataTask(with: urlRequest) { [weak self] data, response, error in
-            Task { @MainActor in
-                guard let self else { return }
-                guard self.latestPlanRequestID == requestID else {
-                    self.debugLog("preloadPlan staleResponse ignored requestId=\(requestID.uuidString)")
-                    return
-                }
-                self.planTask = nil
-                self.activePlanSignature = nil
-                self.isLoading = false
-
-                let statusCode = (response as? HTTPURLResponse)?.statusCode
-                if let data, let raw = String(data: data, encoding: .utf8) {
-                    self.debugLog("preloadPlan rawResponse requestId=\(requestID.uuidString) status=\(statusCode.map(String.init) ?? "nil") body=\(raw)")
-                } else {
-                    self.debugLog("preloadPlan rawResponse requestId=\(requestID.uuidString) status=\(statusCode.map(String.init) ?? "nil") body=nil")
-                }
-
-                guard error == nil,
-                      let httpResponse = response as? HTTPURLResponse,
-                      (200..<300).contains(httpResponse.statusCode),
-                      let data,
-                      let decoded = try? self.decoder.decode(UpsellPlanResponse.self, from: data) else {
-                    self.reportEvent(
-                        eventType: "failed",
-                        checkedProductId: nil,
-                        suggestedProductId: nil,
-                        store: store,
-                        source: source,
-                        metadataJson: self.metadataJson([
-                            "stage": "plan",
-                            "reason": error == nil ? "http_or_decode" : "network"
-                        ])
-                    )
-                    self.debugLog("preloadPlan failed requestId=\(requestID.uuidString) error=\(error?.localizedDescription ?? "http_or_decode")")
-                    return
-                }
-
-                self.lastCompletedPlanSignature = signature
-                let expiresAt = decoded.expiresAt ?? Date().addingTimeInterval(60)
-                let responseSource = decoded.source ?? "unknown"
-                self.debugLog(
-                    "preloadPlan decoded requestId=\(requestID.uuidString) source=\(responseSource) debug=\(self.debugSummary(decoded.debug)) opportunities=\(decoded.opportunities.map { "\($0.opportunityId):\($0.suggestions.map { $0.product.id })" })"
-                )
-                var decodedKeys: Set<PlanKey> = []
-                for opportunity in decoded.opportunities {
-                    let key = self.makePlanKey(
-                        opportunityId: opportunity.opportunityId,
-                        listID: list.id,
-                        store: store,
-                        source: source
-                    )
-                    decodedKeys.insert(key)
-                    self.cachedOpportunities[key] = CachedOpportunity(
-                        response: opportunity,
-                        responseSource: responseSource,
-                        expiresAt: expiresAt
-                    )
-                    if opportunity.suggestions.isEmpty {
-                        self.debugLog("preloadPlan cached loaded_empty key=\(self.keyDebug(key)) expiresAt=\(expiresAt)")
-                    } else {
-                        self.debugLog("preloadPlan cached loaded_with_suggestions key=\(self.keyDebug(key)) suggestions=\(opportunity.suggestions.map { "\($0.product.id):\($0.product.name)" }) expiresAt=\(expiresAt)")
-                    }
-                    self.showPendingOpportunityIfPossible(for: key)
-                }
-                self.dropPendingOpportunitiesResolvedByPlan(
-                    decodedKeys: decodedKeys,
-                    listID: list.id,
-                    store: store,
-                    source: source
-                )
-            }
-        }
-        planTask = task
-        task.resume()
+            source: source,
+            signature: signature,
+            retryNumber: nil
+        )
     }
 
     func showOpportunity(
@@ -301,6 +266,13 @@ final class UpsellSuggestionStore: ObservableObject {
             store: store,
             source: source
         )
+        let identity = opportunityIdentity(
+            opportunityId: opportunityId,
+            checkedItems: checkedItems,
+            list: list,
+            store: store,
+            source: source
+        )
         guard let cached = cachedOpportunity(for: key) else {
             rememberPendingOpportunity(
                 key: key,
@@ -314,14 +286,16 @@ final class UpsellSuggestionStore: ObservableObject {
             return
         }
         guard !cached.isLoadedEmpty else {
+            // Successfully evaluated by OpenAI with no suggestion: completing it ends the opportunity for this session.
             cachedOpportunities[key] = nil
             pendingOpportunities[key] = nil
+            markHandled(identity, reason: "loaded_empty_completed")
             debugLog("showOpportunity skipped opportunity=\(opportunityId) reason=no_suggestions key=\(keyDebug(key))")
             return
         }
 
         let currentListProductIds = Set(list.items.compactMap(\.productID))
-        let triggerProductIds = triggerItems.compactMap(\.productID)
+        let eligibleTriggerProductIds = eligibleTriggerItems(triggerItems).compactMap(\.productID)
         let suggestions = cached.response.suggestions
             .filter { suggestion in
                 suggestion.confidence >= minConfidence &&
@@ -331,6 +305,8 @@ final class UpsellSuggestionStore: ObservableObject {
             .prefix(maxSuggestionsShown)
 
         guard !suggestions.isEmpty else {
+            // Successful AI result that the local filters emptied: handled like a loaded-empty result.
+            markHandled(identity, reason: "filtered_empty_completed")
             debugLog("showOpportunity skipped opportunity=\(opportunityId) reason=no_suggestions_after_filter currentListProductIds=\(Array(currentListProductIds).sorted()) cachedSuggestions=\(cached.response.suggestions.map { $0.product.id })")
             return
         }
@@ -340,7 +316,7 @@ final class UpsellSuggestionStore: ObservableObject {
             opportunityId: opportunityId,
             checkedProductId: checkedProductId,
             checkedProductName: displayName(for: triggerItems),
-            triggerProductIds: triggerProductIds,
+            triggerProductIds: eligibleTriggerProductIds,
             listID: list.id,
             store: store,
             source: source,
@@ -357,7 +333,7 @@ final class UpsellSuggestionStore: ObservableObject {
             source: source,
             metadataJson: metadataJson([
                 "opportunityId": opportunityId,
-                "triggerProductIds": triggerProductIds.map(String.init).joined(separator: ","),
+                "triggerProductIds": eligibleTriggerProductIds.map(String.init).joined(separator: ","),
                 "responseSource": cached.responseSource,
                 "preloaded": "true"
             ])
@@ -392,6 +368,16 @@ final class UpsellSuggestionStore: ObservableObject {
         }
         if let cached = cachedOpportunity(for: key), cached.isLoadedEmpty {
             cachedOpportunities[key] = nil
+            markHandled(
+                opportunityIdentity(
+                    opportunityId: pending.opportunityId,
+                    checkedItems: pending.checkedItems,
+                    list: pending.list,
+                    store: pending.store,
+                    source: pending.source
+                ),
+                reason: "pending_loaded_empty_completed"
+            )
             debugLog("pendingOpportunity dropped reason=loaded_empty key=\(keyDebug(key))")
             return
         }
@@ -430,6 +416,9 @@ final class UpsellSuggestionStore: ObservableObject {
             source: prompt?.source,
             metadataJson: metadata
         )
+        if let prompt {
+            markHandled(promptIdentity(prompt), reason: "accepted")
+        }
         activePrompt = nil
     }
 
@@ -441,6 +430,7 @@ final class UpsellSuggestionStore: ObservableObject {
         }
 
         debugLog("dismissCurrentPrompt opportunity=\(prompt.opportunityId) suppress=\(suppressProduct)")
+        markHandled(promptIdentity(prompt), reason: suppressProduct ? "suppressed" : "dismissed")
         if suppressProduct {
             dismissedProductIDs.formUnion(prompt.triggerProductIds)
             reportDismissal(prompt: prompt)
@@ -463,7 +453,9 @@ final class UpsellSuggestionStore: ObservableObject {
     private func makeOpportunities(
         list: ShoppingList,
         stops: [ShoppingStop],
-        unresolvedItems: [ShoppingListItem]
+        unresolvedItems: [ShoppingListItem],
+        store: MobileStoreSummary,
+        source: String
     ) -> [UpsellOpportunityRequest] {
         var opportunities: [UpsellOpportunityRequest] = []
 
@@ -490,7 +482,21 @@ final class UpsellSuggestionStore: ObservableObject {
             ))
         }
 
-        return opportunities
+        // Handled opportunities are excluded before the request signature is computed.
+        return opportunities.filter { opportunity in
+            let identity = makeIdentity(
+                listID: list.id,
+                store: store,
+                source: source,
+                opportunityId: opportunity.opportunityId,
+                triggerProductIds: opportunity.triggerProductIds
+            )
+            guard let reason = suppressionReason(for: identity) else {
+                return true
+            }
+            debugLog("preloadPlan skipped reason=\(reason) \(identity.debugSummary)")
+            return false
+        }
     }
 
     private func eligibleTriggerItems(_ items: [ShoppingListItem]) -> [ShoppingListItem] {
@@ -500,26 +506,259 @@ final class UpsellSuggestionStore: ObservableObject {
         }
     }
 
+    /// Starts one plan request. The payload uses the signature's canonical arrays.
+    private func startPlanRequest(
+        list: ShoppingList,
+        opportunities: [UpsellOpportunityRequest],
+        store: MobileStoreSummary,
+        source: String,
+        signature: PlanRequestSignature,
+        retryNumber: Int?
+    ) {
+        guard let urlRequest = makePlanRequest(
+            list: list,
+            opportunities: opportunities,
+            store: store,
+            source: source,
+            signature: signature
+        ) else {
+            debugLog("preloadPlan skipped reason=request_build_failed")
+            return
+        }
+
+        let requestID = UUID()
+        latestPlanRequestID = requestID
+        activePlanSignature = signature
+        isLoading = true
+        debugLog("preloadPlan requestId=\(requestID.uuidString) timeout=\(urlRequest.timeoutInterval)s retryAttempt=\(retryNumber.map(String.init) ?? "none")")
+
+        let task = session.dataTask(with: urlRequest) { [weak self] data, response, error in
+            Task { @MainActor in
+                guard let self else { return }
+                guard self.latestPlanRequestID == requestID else {
+                    self.debugLog("preloadPlan staleResponse ignored requestId=\(requestID.uuidString)")
+                    return
+                }
+                self.planTask = nil
+                self.activePlanSignature = nil
+                self.isLoading = false
+
+                let statusCode = (response as? HTTPURLResponse)?.statusCode
+                if let data, let raw = String(data: data, encoding: .utf8) {
+                    self.debugLog("preloadPlan rawResponse requestId=\(requestID.uuidString) status=\(statusCode.map(String.init) ?? "nil") body=\(raw)")
+                } else {
+                    self.debugLog("preloadPlan rawResponse requestId=\(requestID.uuidString) status=\(statusCode.map(String.init) ?? "nil") body=nil")
+                }
+
+                guard error == nil,
+                      let httpResponse = response as? HTTPURLResponse,
+                      (200..<300).contains(httpResponse.statusCode),
+                      let data,
+                      let decoded = try? self.decoder.decode(UpsellPlanResponse.self, from: data) else {
+                    self.reportEvent(
+                        eventType: "failed",
+                        checkedProductId: nil,
+                        suggestedProductId: nil,
+                        store: store,
+                        source: source,
+                        metadataJson: self.metadataJson([
+                            "stage": "plan",
+                            "reason": error == nil ? "http_or_decode" : "network"
+                        ])
+                    )
+                    self.debugLog("preloadPlan failed requestId=\(requestID.uuidString) error=\(error?.localizedDescription ?? "http_or_decode")")
+                    return
+                }
+
+                let debug = decoded.debug
+                let evidence = PlanResponseEvidence(
+                    responseSource: debug?.responseSource ?? decoded.source,
+                    fallbackReason: debug?.fallbackReason,
+                    retryable: debug?.retryable,
+                    openAiElapsedMs: debug?.openAiElapsedMs,
+                    totalTokens: debug?.totalTokens,
+                    inputTokens: debug?.inputTokens,
+                    outputTokens: debug?.outputTokens
+                )
+                if evidence.isRetryableCandidateLookupFailure {
+                    // Transient pre-AI failure: not cached, not marked handled, not recorded as completed.
+                    self.handleRetryableCandidateLookupFailure(
+                        requestID: requestID,
+                        retryNumber: retryNumber,
+                        signature: signature,
+                        list: list,
+                        opportunities: opportunities,
+                        store: store,
+                        source: source,
+                        evidence: evidence
+                    )
+                    return
+                }
+
+                self.lastCompletedPlanSignature = signature
+                self.retryState.clear(signature)
+                let expiresAt = decoded.expiresAt ?? Date().addingTimeInterval(60)
+                let responseSource = decoded.source ?? "unknown"
+                self.debugLog(
+                    "preloadPlan decoded requestId=\(requestID.uuidString) source=\(responseSource) debug=\(self.debugSummary(decoded.debug)) opportunities=\(decoded.opportunities.map { "\($0.opportunityId):\($0.suggestions.map { $0.product.id })" })"
+                )
+                var decodedKeys: Set<PlanKey> = []
+                for opportunity in decoded.opportunities {
+                    let key = self.makePlanKey(
+                        opportunityId: opportunity.opportunityId,
+                        listID: list.id,
+                        store: store,
+                        source: source
+                    )
+                    decodedKeys.insert(key)
+                    self.cachedOpportunities[key] = CachedOpportunity(
+                        response: opportunity,
+                        responseSource: responseSource,
+                        expiresAt: expiresAt
+                    )
+                    if opportunity.suggestions.isEmpty {
+                        self.debugLog("preloadPlan cached loaded_empty key=\(self.keyDebug(key)) expiresAt=\(expiresAt)")
+                    } else {
+                        self.debugLog("preloadPlan cached loaded_with_suggestions key=\(self.keyDebug(key)) suggestions=\(opportunity.suggestions.map { "\($0.product.id):\($0.product.name)" }) expiresAt=\(expiresAt)")
+                    }
+                    self.showPendingOpportunityIfPossible(for: key)
+                }
+                self.dropPendingOpportunitiesResolvedByPlan(
+                    decodedKeys: decodedKeys,
+                    listID: list.id,
+                    store: store,
+                    source: source
+                )
+            }
+        }
+        planTask = task
+        task.resume()
+    }
+
+    private func handleRetryableCandidateLookupFailure(
+        requestID: UUID,
+        retryNumber: Int?,
+        signature: PlanRequestSignature,
+        list: ShoppingList,
+        opportunities: [UpsellOpportunityRequest],
+        store: MobileStoreSummary,
+        source: String,
+        evidence: PlanResponseEvidence
+    ) {
+        debugLog("preloadPlan candidateLookupFailed requestId=\(requestID.uuidString) retryAttempt=\(retryNumber.map(String.init) ?? "none") signature=\(signatureDebug(signature)) openAiCalled=false")
+        switch retryState.decision(for: evidence, signature: signature) {
+        case .stop(let reason):
+            debugLog("retry stop reason=\(reason) requestId=\(requestID.uuidString) signature=\(signatureDebug(signature))")
+        case .scheduleRetry(let delay, let nextRetryNumber):
+            cancelPendingRetry(reason: "replaced")
+            let retry = PendingPlanRetry(
+                id: UUID(),
+                signature: signature,
+                list: list,
+                opportunities: opportunities,
+                store: store,
+                source: source,
+                epoch: sessionEpoch,
+                retryNumber: nextRetryNumber,
+                originalRequestID: requestID
+            )
+            let retryID = retry.id
+            pendingRetry = retry
+            debugLog("retry scheduled originalRequestId=\(requestID.uuidString) originalSignature=\(signatureDebug(signature)) attempt=\(nextRetryNumber) delay=\(delay)s")
+            let nanoseconds = UInt64(delay * 1_000_000_000)
+            retryTask = Task { [weak self] in
+                do {
+                    try await Task.sleep(nanoseconds: nanoseconds)
+                } catch {
+                    return
+                }
+                self?.runPendingRetry(id: retryID)
+            }
+        }
+    }
+
+    /// Runs the scheduled retry only if the session, store, list snapshot, and unhandled opportunities are unchanged.
+    private func runPendingRetry(id: UUID) {
+        guard let retry = pendingRetry, retry.id == id else {
+            return
+        }
+        pendingRetry = nil
+        retryTask = nil
+
+        let retryOpportunities = retry.opportunities.filter { opportunity in
+            let identity = makeIdentity(
+                listID: retry.list.id,
+                store: retry.store,
+                source: retry.source,
+                opportunityId: opportunity.opportunityId,
+                triggerProductIds: opportunity.triggerProductIds
+            )
+            return suppressionReason(for: identity) == nil && !hasFreshCachedOpportunity(
+                opportunityId: opportunity.opportunityId,
+                listID: retry.list.id,
+                store: retry.store,
+                source: retry.source
+            )
+        }
+        let recomputedSignature: PlanRequestSignature? = retryOpportunities.isEmpty
+            ? nil
+            : makePlanSignature(
+                list: retry.list,
+                shoppingState: canonicalShoppingState(for: retry.list),
+                opportunities: retryOpportunities,
+                store: retry.store,
+                source: retry.source
+            )
+        if let reason = UpsellPlanLogic.retryBlockReason(
+            scheduled: retry.signature,
+            recomputed: recomputedSignature,
+            hasActiveRequest: planTask != nil || activePlanSignature != nil,
+            sessionMatches: retry.epoch == sessionEpoch,
+            storeStillAuthorized: authorizedStoreId == retry.store.id && AppEnvironment.allowsExtendedFeatures
+        ) {
+            debugLog("retry cancelled reason=\(reason) originalRequestId=\(retry.originalRequestID.uuidString) attempt=\(retry.retryNumber) originalSignature=\(signatureDebug(retry.signature))")
+            return
+        }
+
+        let attempt = retryState.recordRetryStarted(for: retry.signature)
+        debugLog("retry started attempt=\(attempt) delay=\(retryState.retryDelay)s originalRequestId=\(retry.originalRequestID.uuidString) originalSignature=\(signatureDebug(retry.signature))")
+        startPlanRequest(
+            list: retry.list,
+            opportunities: retryOpportunities,
+            store: retry.store,
+            source: retry.source,
+            signature: retry.signature,
+            retryNumber: attempt
+        )
+    }
+
+    private func cancelPendingRetry(reason: String) {
+        guard let retry = pendingRetry else {
+            return
+        }
+        retryTask?.cancel()
+        retryTask = nil
+        pendingRetry = nil
+        debugLog("retry cancelled reason=\(reason) originalRequestId=\(retry.originalRequestID.uuidString) attempt=\(retry.retryNumber) originalSignature=\(signatureDebug(retry.signature))")
+    }
+
     private func makePlanRequest(
         list: ShoppingList,
         opportunities: [UpsellOpportunityRequest],
-        store: MobileStoreSummary?,
-        source: String
+        store: MobileStoreSummary,
+        source: String,
+        signature: PlanRequestSignature
     ) -> URLRequest? {
         guard let url = URL(string: "\(apiBase)/mobile/upsell/plan") else {
             return nil
         }
 
         let request = UpsellPlanRequest(
-            storeId: store?.id,
-            storeCode: store?.storeCode,
+            storeId: store.id,
+            storeCode: store.storeCode,
             shoppingListId: list.id.uuidString,
-            currentListProductIds: list.items.compactMap { item in
-                item.status == .open ? item.productID : nil
-            },
-            completedProductIds: list.items.compactMap { item in
-                item.status.isCompleted ? item.productID : nil
-            },
+            currentListProductIds: signature.currentProductIds,
+            completedProductIds: signature.completedProductIds,
             source: source,
             opportunities: opportunities
         )
@@ -542,8 +781,20 @@ final class UpsellSuggestionStore: ObservableObject {
         }
     }
 
+    private func canonicalShoppingState(for list: ShoppingList) -> CanonicalShoppingState {
+        UpsellPlanLogic.canonicalShoppingState(
+            openProductIds: list.items.compactMap { item in
+                item.status == .open ? item.productID : nil
+            },
+            completedProductIds: list.items.compactMap { item in
+                item.status.isCompleted ? item.productID : nil
+            }
+        )
+    }
+
     private func makePlanSignature(
         list: ShoppingList,
+        shoppingState: CanonicalShoppingState,
         opportunities: [UpsellOpportunityRequest],
         store: MobileStoreSummary,
         source: String
@@ -553,25 +804,13 @@ final class UpsellSuggestionStore: ObservableObject {
             storeId: store.id,
             storeCode: store.storeCode.lowercased(),
             source: source,
-            currentProductIds: normalizedIds(list.items.compactMap { item in
-                item.status == .open ? item.productID : nil
-            }),
-            completedProductIds: normalizedIds(list.items.compactMap { item in
-                item.status.isCompleted ? item.productID : nil
-            }),
-            opportunities: opportunities
-                .map { opportunity in
-                    OpportunitySignature(
-                        opportunityId: opportunity.opportunityId,
-                        triggerProductIds: normalizedIds(opportunity.triggerProductIds)
-                    )
-                }
-                .sorted { lhs, rhs in
-                    if lhs.opportunityId == rhs.opportunityId {
-                        return lhs.triggerProductIds.lexicographicallyPrecedes(rhs.triggerProductIds)
-                    }
-                    return lhs.opportunityId < rhs.opportunityId
-                }
+            shoppingState: shoppingState,
+            opportunities: opportunities.map { opportunity in
+                PlanOpportunitySignature(
+                    opportunityId: opportunity.opportunityId,
+                    triggerProductIds: opportunity.triggerProductIds
+                )
+            }
         )
     }
 
@@ -675,6 +914,18 @@ final class UpsellSuggestionStore: ObservableObject {
         for key in pendingKeys {
             if decodedKeys.contains(key) || equivalentSourceKeys(for: key).contains(where: { decodedKeys.contains($0) }) {
                 if let cached = cachedOpportunity(for: key), cached.isLoadedEmpty {
+                    if let pending = pendingOpportunities[key] {
+                        markHandled(
+                            opportunityIdentity(
+                                opportunityId: pending.opportunityId,
+                                checkedItems: pending.checkedItems,
+                                list: pending.list,
+                                store: pending.store,
+                                source: pending.source
+                            ),
+                            reason: "pending_loaded_empty_completed"
+                        )
+                    }
                     pendingOpportunities[key] = nil
                     cachedOpportunities[key] = nil
                     debugLog("pendingOpportunity dropped reason=loaded_empty key=\(keyDebug(key))")
@@ -719,6 +970,63 @@ final class UpsellSuggestionStore: ObservableObject {
             storeCode: store?.storeCode.lowercased(),
             source: source
         )
+    }
+
+    // MARK: - Handled opportunity lifecycle
+
+    private func makeIdentity(
+        listID: UUID,
+        store: MobileStoreSummary?,
+        source: String,
+        opportunityId: String,
+        triggerProductIds: [Int]
+    ) -> HandledOpportunityIdentity {
+        HandledOpportunityIdentity(
+            listID: listID,
+            storeID: store?.id,
+            source: source,
+            opportunityID: opportunityId,
+            triggerProductIds: triggerProductIds
+        )
+    }
+
+    private func opportunityIdentity(
+        opportunityId: String,
+        checkedItems: [ShoppingListItem],
+        list: ShoppingList,
+        store: MobileStoreSummary?,
+        source: String
+    ) -> HandledOpportunityIdentity {
+        makeIdentity(
+            listID: list.id,
+            store: store,
+            source: source,
+            opportunityId: opportunityId,
+            triggerProductIds: eligibleTriggerItems(checkedItems).compactMap(\.productID)
+        )
+    }
+
+    private func promptIdentity(_ prompt: UpsellPrompt) -> HandledOpportunityIdentity {
+        makeIdentity(
+            listID: prompt.listID,
+            store: prompt.store,
+            source: prompt.source,
+            opportunityId: prompt.opportunityId,
+            triggerProductIds: prompt.triggerProductIds
+        )
+    }
+
+    private func suppressionReason(for identity: HandledOpportunityIdentity) -> String? {
+        UpsellPlanLogic.suppressionReason(
+            for: identity,
+            handled: handledOpportunities,
+            activeIdentity: activePrompt.map { promptIdentity($0) }
+        )
+    }
+
+    private func markHandled(_ identity: HandledOpportunityIdentity, reason: String) {
+        let inserted = handledOpportunities.insert(identity)
+        debugLog("handled reason=\(reason) inserted=\(inserted) \(identity.debugSummary) count=\(handledOpportunities.count)")
     }
 
     private func displayName(for items: [ShoppingListItem]) -> String {
@@ -783,7 +1091,7 @@ final class UpsellSuggestionStore: ObservableObject {
             return
         }
 
-        AppEnvironment.session.dataTask(with: urlRequest).resume()
+        session.dataTask(with: urlRequest).resume()
     }
 
     private func metadataJson(_ values: [String: String]) -> String? {
@@ -818,14 +1126,10 @@ final class UpsellSuggestionStore: ObservableObject {
         return "\(store.name)#\(store.id.uuidString)#\(store.storeCode)"
     }
 
-    private func normalizedIds(_ ids: [Int]) -> [Int] {
-        Array(Set(ids)).sorted()
-    }
-
     private func debugSummary(_ debug: UpsellPlanDebug?) -> String {
         guard let debug else {
             return "nil"
         }
-        return "requestId=\(debug.requestId ?? "nil") model=\(debug.model ?? "nil") source=\(debug.responseSource ?? "nil") elapsedMs=\(debug.elapsedMs.map(String.init) ?? "nil") openAiElapsedMs=\(debug.openAiElapsedMs.map(String.init) ?? "nil") inputTokens=\(debug.inputTokens.map(String.init) ?? "nil") outputTokens=\(debug.outputTokens.map(String.init) ?? "nil") totalTokens=\(debug.totalTokens.map(String.init) ?? "nil") cachedInputTokens=\(debug.cachedInputTokens.map(String.init) ?? "nil") reasoningTokens=\(debug.reasoningTokens.map(String.init) ?? "nil") fallbackReason=\(debug.fallbackReason ?? "nil") opportunities=\(debug.opportunityCount.map(String.init) ?? "nil") candidates=\(debug.candidateCount.map(String.init) ?? "nil")"
+        return "requestId=\(debug.requestId ?? "nil") model=\(debug.model ?? "nil") source=\(debug.responseSource ?? "nil") elapsedMs=\(debug.elapsedMs.map(String.init) ?? "nil") openAiElapsedMs=\(debug.openAiElapsedMs.map(String.init) ?? "nil") inputTokens=\(debug.inputTokens.map(String.init) ?? "nil") outputTokens=\(debug.outputTokens.map(String.init) ?? "nil") totalTokens=\(debug.totalTokens.map(String.init) ?? "nil") cachedInputTokens=\(debug.cachedInputTokens.map(String.init) ?? "nil") reasoningTokens=\(debug.reasoningTokens.map(String.init) ?? "nil") fallbackReason=\(debug.fallbackReason ?? "nil") retryable=\(debug.retryable.map(String.init) ?? "nil") opportunities=\(debug.opportunityCount.map(String.init) ?? "nil") candidates=\(debug.candidateCount.map(String.init) ?? "nil")"
     }
 }
