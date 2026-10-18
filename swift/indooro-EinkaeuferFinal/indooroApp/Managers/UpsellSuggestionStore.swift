@@ -1,6 +1,7 @@
 import IndooroModels
 import Foundation
 import IndooroNetworking
+import os
 
 @MainActor
 final class UpsellSuggestionStore: ObservableObject {
@@ -1115,10 +1116,12 @@ final class UpsellSuggestionStore: ObservableObject {
     }
 
     private func debugLog(_ message: String) {
+        #if DEBUG
         guard debugEnabled else {
             return
         }
-        print("[UpsellDebug] \(message)")
+        AppLog.upsell.debug("\(message, privacy: .private(mask: .hash))")
+        #endif
     }
 
     private func keyDebug(_ key: PlanKey) -> String {

@@ -27,6 +27,7 @@ let package = Package(
                 "Utilities/IndoorGraph.swift",
                 "Utilities/KalmanFilter.swift",
                 "Utilities/LayoutCacheStore.swift",
+                "Utilities/AppLog.swift",
                 "Utilities/BeaconPositionSolver.swift",
                 "Utilities/PoseFusionService.swift",
                 "Utilities/WalkableProjector.swift",
