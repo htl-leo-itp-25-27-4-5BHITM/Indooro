@@ -14,9 +14,6 @@ import at.htl.admin.repository.BeaconAssignmentRepository;
 import at.htl.admin.repository.LayoutVersionRepository;
 import at.htl.admin.repository.RegionRepository;
 import at.htl.admin.repository.StoreRepository;
-import io.quarkus.hibernate.orm.panache.PanacheQuery;
-import io.quarkus.panache.common.Page;
-import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -28,9 +25,11 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 @ApplicationScoped
@@ -70,7 +69,7 @@ public class StoreAdminService {
             case "city" -> "city";
             default -> throw new WebApplicationException("Ungültige Store-Sortierung.", Response.Status.BAD_REQUEST);
         };
-        StringBuilder hql = new StringBuilder("from StoreEntity s where 1 = 1");
+        StringBuilder hql = new StringBuilder("1 = 1");
         Map<String, Object> params = new HashMap<>();
 
         RecordStatus effectiveStatus = status == null ? RecordStatus.ACTIVE : status;
@@ -102,17 +101,33 @@ public class StoreAdminService {
             params.put("layoutStatus", LayoutVersionStatus.ACTIVE);
         }
 
-        Sort ordering = Sort.by(sortField);
-        if (!"storeCode".equals(sortField)) ordering.and("storeCode");
-        PanacheQuery<StoreEntity> panacheQuery = storeRepository.find(hql.toString(), ordering, params);
-        panacheQuery.page(Page.of(Math.max(page, 0), Math.max(size, 1)));
+        String orderBy = "s." + sortField + " asc"
+                + ("storeCode".equals(sortField) ? "" : ", s.storeCode asc")
+                + ", s.id asc";
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = Math.max(size, 1);
+        List<UUID> pageIds = storeRepository.listPageIds(hql.toString(), params, orderBy, normalizedPage, normalizedSize);
+        long total = storeRepository.countWhere(hql.toString(), params);
 
-        return new CommonDtos.PageResponse<>(
-                panacheQuery.list().stream().map(this::toSummaryResponse).toList(),
-                Math.max(page, 0),
-                Math.max(size, 1),
-                panacheQuery.count()
-        );
+        // Fixed query count per page: stores with regions, one grouped beacon count, one layout id set.
+        Map<UUID, StoreEntity> storesById = new HashMap<>();
+        Map<UUID, Long> beaconCounts = Map.of();
+        Set<UUID> storesWithActiveLayout = Set.of();
+        if (!pageIds.isEmpty()) {
+            for (StoreEntity store : storeRepository.listWithRegionByIds(pageIds)) {
+                storesById.put(store.id, store);
+            }
+            beaconCounts = beaconAssignmentRepository.countActiveByStoreIds(pageIds);
+            storesWithActiveLayout = layoutVersionRepository.listStoreIdsWithActiveLayout(pageIds);
+        }
+        List<StoreDtos.StoreSummaryResponse> content = new ArrayList<>();
+        for (UUID pageId : pageIds) {
+            StoreEntity store = storesById.get(pageId);
+            if (store != null) {
+                content.add(toSummaryResponse(store, beaconCounts.getOrDefault(store.id, 0L), storesWithActiveLayout.contains(store.id)));
+            }
+        }
+        return new CommonDtos.PageResponse<>(content, normalizedPage, normalizedSize, total);
     }
 
     public StoreDtos.StoreDetailResponse getStore(UUID storeId) {
@@ -241,10 +256,7 @@ public class StoreAdminService {
         store.notes = trimToNull(request.notes());
     }
 
-    private StoreDtos.StoreSummaryResponse toSummaryResponse(StoreEntity entity) {
-        long activeBeaconCount = beaconAssignmentRepository.countActiveByStore(entity);
-        boolean hasActiveLayout = layoutVersionRepository.findActiveByStoreId(entity.id).isPresent();
-
+    private StoreDtos.StoreSummaryResponse toSummaryResponse(StoreEntity entity, long activeBeaconCount, boolean hasActiveLayout) {
         return new StoreDtos.StoreSummaryResponse(
                 entity.id,
                 entity.storeCode,
