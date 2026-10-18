@@ -56,7 +56,7 @@
 
 ## 9. Positioning Split
 
-- [ ] 9.1 Implement `BeaconRadio` protocol and `CoreLocationBeaconRadio` (ranging, BLE scan, authorization) emitting `AsyncStream<BeaconSample>`.
+- [ ] 9.1 Implement `BeaconRadio` protocol and `CoreLocationBeaconRadio` (ranging, BLE scan, authorization) emitting `AsyncStream<BeaconSample>`. (Offen, bewusst nicht in dieser Welle: 9.1 bis 9.7 ersetzen `BeaconManager` (2400 Zeilen Ortung, BLE/CoreLocation, Store-Erkennung) und brauchen vor dem Umbau Messfahrten mit Beacons auf einem Gerät und die Engine-Tests aus 9.6 mit den Replay-Fixtures; der Simulator belegt das Verhalten nicht.)
 - [ ] 9.2 Implement `HeadingProvider` and `MotionProvider` with background delivery.
 - [ ] 9.3 Implement `PositioningEngine` actor with tick loop and `AsyncStream<PositionSnapshot>`; the tick calls the existing `PositioningPipeline.tick` (measurement store, solver, estimator, projector) from `IndooroNavigation` and does not re-implement it.
 - [ ] 9.4 Implement `StoreDetectionService` actor with identity refresh, lookup de-duplication, and cooldown.
@@ -66,11 +66,11 @@
 
 ## 10. Observable Models And Views
 
-- [ ] 10.1 Implement `AppEnvironment`, `AppRouter`, and the `@Observable @MainActor` models from design Decision 2.
-- [ ] 10.2 Move views into the feature targets and switch them to `@Environment` models.
+- [ ] 10.1 Implement `AppEnvironment`, `AppRouter`, and the `@Observable @MainActor` models from design Decision 2. (Offen: hängt von 9.x ab, weil `PositioningModel`, `StoreContextModel` und `LayoutModel` den Zustand des `BeaconManager` übernehmen.)
+- [ ] 10.2 Move views into the feature targets and switch them to `@Environment` models. (Offen: folgt 10.1; die Feature-Targets entstehen erst, wenn die Modelle aus 10.1 stehen.)
 - [x] 10.3 Switch the root `TabView` to the `Tab` API. (`ContentView`: `Tab(title, systemImage:, value:)` in unveränderter Reihenfolge; Rezepte weiter nur bei `allowsExtendedFeatures`; Titel und Symbole unverändert, die UI-Tests finden die Tabs über diese Labels. Zusätzlich `.tabViewStyle(.tabBarOnly)`, damit das iPad die untere Tab-Leiste behält.)
 - [x] 10.4 Move upsell state from `UpsellSuggestionStore` into `UpsellModel` without behavior change and add `UpsellModelTests` for cache, pending opportunity, throttling, and session reset. (`UpsellSuggestionStore` ist zu `@Observable @MainActor UpsellModel` umbenannt und umgestellt (Logik unverändert, nur `activePrompt`/`isLoading` beobachtbar); Views nutzen `var`/`@State` statt `@ObservedObject`/`@StateObject`. `UpsellModelTests` (12): Cache einmalig, Pending-Opportunity, 8-s-Cooldown, Session-Reset sowie die bisherigen Retry-/Handled-/Payload-Tests.)
-- [ ] 10.5 Delete `HeaderView`, `MapHeaderView`, `SearchOverlayView`, and `LayoutSelectionSheet` unless the layout version picker is intentionally reintroduced in the settings sheet.
+- [x] 10.5 Delete `HeaderView`, `MapHeaderView`, `SearchOverlayView`, and `LayoutSelectionSheet` unless the layout version picker is intentionally reintroduced in the settings sheet. (Alle vier Dateien gelöscht; per grep in `indooroApp`, `MCindooroAppTests` und `MCindooroAppUITests` waren weder die Views noch Typen aus diesen Dateien referenziert. Das Layout-Versions-Auswahlblatt wird nicht wieder eingeführt.)
 
 ## 11. Swift 6 And Logging
 
@@ -95,7 +95,7 @@
 
 ## 14. Legacy Retirement
 
-- [ ] 14.1 Delete `swift/indooro-` and `swift/indooroApp` after confirming no unique behavior remains (compare against `docs/specs/AUDIT.md` §1.3).
+- [ ] 14.1 Delete `swift/indooro-` and `swift/indooroApp` after confirming no unique behavior remains (compare against `docs/specs/AUDIT.md` §1.3). (Nicht umgesetzt: `swift/indooro-` und `swift/indooroApp` werden von keinem Skript, Workflow, k8s-Manifest oder Backend-Code referenziert, aber noch von Dokumenten (`docs/specs/AUDIT.md`, `FSD.md`, `ROADMAP.md`, `docs/audit/CODE_AUDIT.md`, `docs/pilot-readiness/*`, `DEPLOYMENT.md`, `docs/RUNBOOK.md`) als Legacy-Referenz genannt. Der Vergleich gegen `docs/specs/AUDIT.md` §1.3 auf einzigartiges Verhalten ist eine Prüfaufgabe für Menschen; erst danach löschen und die Dokumentverweise nachziehen.)
 - [x] 14.2 Delete the untracked `swift/indooro-EinkaeuferFinal.zip`. (Done 2026-09-21, moved to the macOS Trash.)
 - [x] 14.3 Update `openspec/config.yaml`, `README.md`, and `docs/specs/TSD.md` to the new structure. (Stand der Struktur mit IndooroKit (IndooroModels, IndooroNetworking), IndooroNavigationCore, Config und Test-Einstiegen eingetragen; Ziel-Targets, die noch fehlen, sind als offen markiert und werden mit 5.x/8.x/9.x nachgezogen.)
 
