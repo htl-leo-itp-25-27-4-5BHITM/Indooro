@@ -12,6 +12,7 @@ import at.htl.admin.repository.LayoutVersionRepository;
 import at.htl.admin.repository.StoreRepository;
 import at.htl.admin.util.BeaconIdentityUtil;
 import at.htl.service.DefaultLayoutProvider;
+import at.htl.service.LayoutEtag;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
@@ -76,6 +77,11 @@ public class MobileStoreService {
     }
 
     public MobileDtos.MobileLayoutResponse getCurrentLayout(UUID storeId) {
+        return getCurrentLayoutWithEtag(storeId).layout();
+    }
+
+    /** Aktuelles Layout samt ETag; die Filiale wird vor dem ETag geprueft, unbekannte oder inaktive Filialen werfen 404. */
+    public LayoutWithEtag getCurrentLayoutWithEtag(UUID storeId) {
         StoreEntity store = storeRepository.findByIdOptional(storeId)
                 .orElseThrow(() -> new NotFoundException("Filiale nicht gefunden."));
         if (store.status != RecordStatus.ACTIVE) {
@@ -84,22 +90,31 @@ public class MobileStoreService {
 
         LayoutVersionEntity activeLayout = layoutVersionRepository.findActiveByStoreId(storeId).orElse(null);
         if (activeLayout != null) {
-            return new MobileDtos.MobileLayoutResponse(
+            MobileDtos.MobileLayoutResponse response = new MobileDtos.MobileLayoutResponse(
                     store.id,
                     activeLayout.id,
                     "ACTIVE",
                     false,
                     activeLayout.layoutJson
             );
+            return new LayoutWithEtag(response, LayoutEtag.ofActiveLayout(activeLayout.id, activeLayout.activatedAt));
         }
 
-        return new MobileDtos.MobileLayoutResponse(
+        MobileDtos.MobileLayoutResponse response = new MobileDtos.MobileLayoutResponse(
                 store.id,
                 null,
                 "DEFAULT",
                 true,
                 defaultLayoutProvider.forStore(store.name)
         );
+        return new LayoutWithEtag(
+                response,
+                LayoutEtag.ofDefaultLayout(store.id, store.name, defaultLayoutProvider.contentHash())
+        );
+    }
+
+    /** Layout mit ETag-Wert (SHA-256 hex, ohne Anfuehrungszeichen). */
+    public record LayoutWithEtag(MobileDtos.MobileLayoutResponse layout, String etag) {
     }
 
     private BeaconEntity resolveBeacon(String uuid, Integer major, Integer minor) {

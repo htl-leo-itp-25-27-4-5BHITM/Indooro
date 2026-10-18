@@ -1,5 +1,6 @@
 package at.htl.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -23,6 +24,9 @@ public class DefaultLayoutProvider {
     /** Leer, wenn die Ressource fehlt. Erst beim ersten Zugriff gesetzt. */
     private volatile Optional<ObjectNode> template;
 
+    /** Hash des gebuendelten Layouts, erst beim ersten Zugriff gesetzt. */
+    private volatile String contentHash;
+
     @Inject
     public DefaultLayoutProvider(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
@@ -44,6 +48,33 @@ public class DefaultLayoutProvider {
             layout.put("recordType", "bundled");
         }
         return layout;
+    }
+
+    /**
+     * SHA-256 (hex) des gebuendelten Standard-Layout-JSON. Einmal berechnet; Grundlage des ETag fuer das
+     * Standard-Layout einer Filiale. Ohne Ressource der Hash des leeren Strings.
+     */
+    public String contentHash() {
+        String cached = contentHash;
+        if (cached != null) {
+            return cached;
+        }
+        synchronized (this) {
+            if (contentHash == null) {
+                contentHash = LayoutEtag.sha256Hex(serializeTemplate());
+            }
+            return contentHash;
+        }
+    }
+
+    private String serializeTemplate() {
+        return template().map(layout -> {
+            try {
+                return objectMapper.writeValueAsString(layout);
+            } catch (JsonProcessingException e) {
+                throw new IllegalStateException("Standard-Layout konnte nicht serialisiert werden.", e);
+            }
+        }).orElse("");
     }
 
     private Optional<ObjectNode> template() {
