@@ -1,7 +1,7 @@
 import Foundation
 
 /// Farbe in sRGB-Komponenten 0...1, unabhängig von SwiftUI für Kontrastprüfungen.
-struct RGB: Equatable {
+nonisolated struct RGB: Equatable {
     let r: Double
     let g: Double
     let b: Double
@@ -15,7 +15,7 @@ struct RGB: Equatable {
 
 /// Textfarben mit nachgewiesenem Kontrast (WCAG 2.x) gegen Weiß.
 /// Die Werte sind per Skript geprüft; die Tests in AccessibilityPaletteTests halten die Schwelle fest.
-enum AccessibilityPalette {
+nonisolated enum AccessibilityPalette {
 
     /// Mindestkontrast für Text nach WCAG 2.x (AA, normaler Text).
     static let minimumTextContrast = 4.5
