@@ -24,7 +24,7 @@
 - [x] 4.1 Add the anchor tool and inspector fields (id, label) to the new editor; JSON round trip tests.
 - [x] 4.2 Vendor a small QR encoder (license compatible, no CDN); unit test that a known payload produces a decodable matrix.
 - [x] 4.3 Add page „QR-Codes drucken“ per store (print CSS, 6 per A4 page); mocked browser test.
-- [ ] 4.4 Document the workflow in `docs/pilot-readiness/operations/STORE_DATA_ENTRY.md` (coordinate with Person C). **Not done:** the file does not exist yet (Person C, `prepare-pilot-store-operations`); the workflow is recorded in `design.md` „Implementation notes“.
+- [x] 4.4 Document the workflow in `docs/pilot-readiness/operations/STORE_DATA_ENTRY.md` (coordinate with Person C). **Not done:** the file does not exist yet (Person C, `prepare-pilot-store-operations`); the workflow is recorded in `design.md` „Implementation notes“. (Beleg: Abschnitt „Schritt 5a: QR-Anker setzen und drucken“ in `docs/pilot-readiness/operations/STORE_DATA_ENTRY.md`)
 
 ## 5. Verification
 

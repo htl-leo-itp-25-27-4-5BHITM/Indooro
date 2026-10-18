@@ -16,6 +16,6 @@
 
 ## 4. Evidence
 
-- [ ] 4.1 Replay all real recordings with flag on/off; table in `BASELINE.md`.
-- [ ] 4.2 Decide per design decision 3; enable or keep off; document.
-- [ ] 4.3 PR → `pilot/first-store`; `STATUS.md`.
+- [ ] 4.1 Replay all real recordings with flag on/off; table in `BASELINE.md`. (Mensch: wartet auf ≥ 5 echte Aufnahmen)
+- [ ] 4.2 Decide per design decision 3; enable or keep off; document. (Mensch: Teamentscheidung nach 4.1)
+- [ ] 4.3 PR → `pilot/first-store`; `STATUS.md`. (Mensch: Ergebnis-PR folgt nach 4.1/4.2; Gruppen 1–3 bereits via PR #121 gemergt)

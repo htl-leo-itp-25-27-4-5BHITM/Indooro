@@ -1,7 +1,7 @@
 # pilot-evaluation Specification
 
 ## Purpose
-TBD - created by archiving change prepare-pilot-evaluation. Update Purpose after archive.
+Defines how pilot study metrics are computed against versioned acceptance criteria and reported.
 ## Requirements
 ### Requirement: Pilot metrics are computed against versioned acceptance criteria
 The evaluation tool SHALL read study exports in the format defined by `add-pilot-study-mode`, questionnaire results and field measurement summaries, SHALL compute task success without help, paired search time comparison with and without the app, manual position corrections per tour, unjustified stop changes, false reroutes per tour, abort rate, reuse intention share, and technical incident rate, and SHALL report each metric with its criterion from a versioned criteria file and a verdict „erfüllt“, „nicht erfüllt“ or „zu wenig Daten“.

@@ -70,7 +70,7 @@ final class StoreMapHelpersTests: XCTestCase {
                 fallback: true,
                 regularDescription: "EUROSPAR Leonding/Hart • Aktive Filiale"
             ),
-            "EUROSPAR Leonding/Hart • Standard-Layout (kein aktives Filial-Layout)"
+            "EUROSPAR Leonding/Hart • Ersatzplan (kein aktueller Marktplan)"
         )
     }
 

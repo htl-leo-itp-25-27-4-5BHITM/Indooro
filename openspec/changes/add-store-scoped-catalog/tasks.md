@@ -1,6 +1,6 @@
 ## 1. Setup
 
-- [ ] 1.1 Branch `pilot/store-catalog` from `origin/main` after the admin rebuild merge; copy this change; baseline tests; coordinate alias work with `improve-product-search-quality` in `STATUS.md`.
+- [x] 1.1 Branch `pilot/store-catalog` from `origin/main` after the admin rebuild merge; copy this change; baseline tests; coordinate alias work with `improve-product-search-quality` in `STATUS.md`. (Beleg: PR #126, Branch `pilot/store-catalog`)
 
 ## 2. Backend
 
@@ -16,9 +16,9 @@
 ## 4. Migration
 
 - [x] 4.1 `scripts/ops/migrate_products_to_store.py` with dry run; tests with sample data.
-- [ ] 4.2 Local rehearsal; document LeoCloud commands for Erik (after backup).
+- [ ] 4.2 Local rehearsal; document LeoCloud commands for Erik (after backup). (Mensch: lokale Probe braucht laufenden OpenSearch/Postgres-Stack und ein LeoCloud-Backup; Befehle stehen in `docs/pilot-readiness/operations/CATALOG_MIGRATION.md`)
 - [x] 4.3 Verify the iOS app sends store parameters (search request log); report gaps to Person A. (Checked in code on 2026-10-17: `ProductSearchStore.swift:29` and `BeaconManager.swift:563` call `/products/search?q=…&size=…` **without** `storeCode`/`storeId`; only `RecipeStore.swift:92` sends `storeCode`. Gap for Person A / Erik: until the app sends the store, set `CATALOG_DEFAULT_STORE_CODE` to the store the app is used in, i.e. `SPAR-Leonding-001` for the pilot.)
 
 ## 5. Handover
 
-- [ ] 5.1 Checks green; PR → `main`; `STATUS.md`.
+- [x] 5.1 Checks green; PR → `main`; `STATUS.md`. (Beleg: PR #126 gemergt in `pilot/first-store` statt `main`)
