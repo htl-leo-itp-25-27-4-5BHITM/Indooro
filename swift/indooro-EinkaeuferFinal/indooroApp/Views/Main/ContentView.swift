@@ -1,16 +1,8 @@
 import IndooroModels
 import SwiftUI
 
-private enum AppSection: Hashable {
-    case start
-    case planning
-    case recipes
-    case shopping
-    case map
-}
-
 struct ContentView: View {
-    @StateObject var beaconManager = BeaconManager()
+    @StateObject var beaconManager: BeaconManager
     @StateObject private var navigationSession = NavigationSession()
     @StateObject private var shoppingListManager = ShoppingListManager()
     @StateObject private var shoppingSessionManager = ShoppingSessionManager()
@@ -25,22 +17,19 @@ struct ContentView: View {
     @AppStorage(AppEnvironment.profileOverrideKey) private var profileOverride = ""
     @AppStorage("IndooroIntroductionCompleted") private var introductionCompleted = false
     @State private var showsIntroduction = false
-    @State private var selectedSection: AppSection = .start
-    @State private var targetProduct: Product?
-    @State private var pendingShoppingImportPackage: ShoppingTransferPackage?
-    @State private var shoppingImportErrorMessage: String?
-    @State private var pendingLastStoreLayoutOpenRequest: UUID?
+    @State private var router = AppRouter()
+
+    init(dependencies: AppDependencies = .live) {
+        _beaconManager = StateObject(wrappedValue: BeaconManager(dependencies: dependencies))
+    }
 
     var body: some View {
-        TabView(selection: $selectedSection) {
+        @Bindable var router = router
+        TabView(selection: $router.selectedSection) {
             Tab("Start", systemImage: "house.fill", value: AppSection.start) {
                 HomeDashboardView(
                     selectedList: shoppingListManager.selectedList,
-                    activeBanner: shoppingSessionManager.banner(),
-                    onOpenPlanning: { selectedSection = .planning },
-                    onOpenRecipes: { selectedSection = .recipes },
-                    onOpenShopping: { selectedSection = .shopping },
-                    onOpenMap: { selectedSection = .map }
+                    activeBanner: shoppingSessionManager.banner()
                 )
             }
 
@@ -51,8 +40,7 @@ struct ContentView: View {
                     beaconManager: beaconManager,
                     productSearch: productsSearch,
                     onNavigateToProduct: focusProductOnMap,
-                    onAddToList: addProductToShoppingList,
-                    onOpenShopping: { selectedSection = .shopping }
+                    onAddToList: addProductToShoppingList
                 )
             }
 
@@ -63,7 +51,6 @@ struct ContentView: View {
                         listManager: shoppingListManager,
                         sessionManager: shoppingSessionManager,
                         beaconManager: beaconManager,
-                        onOpenShopping: { selectedSection = .shopping },
                         onRecipeItemsAdded: { syncShoppingSession() }
                     )
                 }
@@ -75,8 +62,8 @@ struct ContentView: View {
                     sessionManager: shoppingSessionManager,
                     beaconManager: beaconManager,
                     upsellStore: upsellStore,
-                    pendingImportPackage: $pendingShoppingImportPackage,
-                    importErrorMessage: $shoppingImportErrorMessage,
+                    pendingImportPackage: $router.pendingShoppingImportPackage,
+                    importErrorMessage: $router.shoppingImportErrorMessage,
                     onStartSession: startShoppingSession,
                     onStopSession: stopShoppingSession
                 )
@@ -90,10 +77,9 @@ struct ContentView: View {
                     shoppingSessionManager: shoppingSessionManager,
                     productSearch: mapProductSearch,
                     upsellStore: upsellStore,
-                    targetProduct: $targetProduct,
-                    pendingLastStoreLayoutOpenRequest: $pendingLastStoreLayoutOpenRequest,
+                    targetProduct: $router.targetProduct,
+                    pendingLastStoreLayoutOpenRequest: $router.pendingLastStoreLayoutOpenRequest,
                     onNavigateToProduct: focusProductOnMap,
-                    onOpenLists: { selectedSection = .shopping },
                     onAddToList: addProductToShoppingList
                 )
                 .safeAreaInset(edge: .top) {
@@ -116,6 +102,7 @@ struct ContentView: View {
         }
         // Untere Tab-Leiste auch auf dem iPad (die Tab-API zeigt dort sonst eine obere Leiste).
         .tabViewStyle(.tabBarOnly)
+        .environment(router)
         .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
         .preferredColorScheme(.light)
         .alert("Filiale erkannt: \(beaconManager.suggestedPilotStore?.name ?? "") – öffnen?", isPresented: Binding(
@@ -138,7 +125,7 @@ struct ContentView: View {
         .onAppear {
             studyStore.onStartAppTask = { task in
                 showsStudySession = false
-                pendingLastStoreLayoutOpenRequest = UUID()
+                router.pendingLastStoreLayoutOpenRequest = UUID()
                 focusProductOnMap(Product(id: task.productId, name: task.productName, price: 0, layoutCode: task.layoutCode ?? ""))
             }
             studyStore.counterSnapshot = { [weak navigationSession] in
@@ -165,14 +152,14 @@ struct ContentView: View {
             mapProductSearch.setActiveStore(code: newStoreCode)
             productsSearch.setActiveStore(code: newStoreCode)
         }
-        .onChange(of: targetProduct, initial: false) { _, newProduct in
+        .onChange(of: router.targetProduct, initial: false) { _, newProduct in
             guard !shoppingSessionManager.isActive else { return }
             beaconManager.setTargetProduct(newProduct)
         }
         .onChange(of: beaconManager.layoutRevision) { _, _ in
             if shoppingSessionManager.isActive {
                 syncShoppingSession(event: .layoutChanged)
-            } else if let targetProduct {
+            } else if let targetProduct = router.targetProduct {
                 beaconManager.setTargetProduct(targetProduct)
             }
         }
@@ -191,7 +178,7 @@ struct ContentView: View {
         }
         .onChange(of: profileOverride) { _, _ in
             upsellStore.resetSession()
-            if !AppEnvironment.allowsExtendedFeatures && selectedSection == .recipes { selectedSection = .start }
+            if !AppEnvironment.allowsExtendedFeatures && router.selectedSection == .recipes { router.open(.start) }
         }
         .onOpenURL { url in
             handleIncomingShoppingTransfer(url)
@@ -227,10 +214,7 @@ struct ContentView: View {
 
     private func focusProductOnMap(_ product: Product) {
         stopShoppingSession()
-        withAnimation {
-            targetProduct = product
-            selectedSection = .map
-        }
+        router.showOnMap(product)
         mapProductSearch.clearSearch()
     }
 
@@ -257,11 +241,7 @@ struct ContentView: View {
     private func startShoppingSession(for listID: UUID) {
         shoppingListManager.selectList(listID)
         upsellStore.resetSession()
-        withAnimation {
-            targetProduct = nil
-            pendingLastStoreLayoutOpenRequest = UUID()
-            selectedSection = .map
-        }
+        router.openMapForShoppingSession()
         mapProductSearch.clearSearch()
         productsSearch.clearSearch()
         shoppingSessionManager.startSession(
@@ -285,19 +265,12 @@ struct ContentView: View {
     }
 
     private func handleIncomingShoppingTransfer(_ url: URL) {
-        do {
-            pendingShoppingImportPackage = try ShoppingTransferService.loadPackage(from: url)
-            shoppingImportErrorMessage = nil
-        } catch {
-            pendingShoppingImportPackage = nil
-            shoppingImportErrorMessage = error.localizedDescription
-        }
-        selectedSection = .shopping
+        router.receiveShoppingTransfer(Result { try ShoppingTransferService.loadPackage(from: url) })
     }
 }
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        ContentView(dependencies: .preview)
     }
 }

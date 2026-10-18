@@ -14,9 +14,9 @@ struct StoreMapPage: View {
     @Binding var pendingLastStoreLayoutOpenRequest: UUID?
 
     let onNavigateToProduct: (Product) -> Void
-    let onOpenLists: () -> Void
     let onAddToList: (Product) -> Void
 
+    @Environment(AppRouter.self) private var router
     @State private var searchText = ""
     @State private var showARRoute = false
     @State private var mapScale: Double = 1.0
@@ -906,7 +906,7 @@ struct StoreMapPage: View {
                     snapshot: snapshot,
                     routeOriginText: routeOriginText,
                     locationText: { stop in stopLocationText(for: stop) },
-                    onOpenList: onOpenLists,
+                    onOpenList: { router.open(.shopping) },
                     onMarkCurrentStopDone: {
                         completeCurrentStop()
                     },
