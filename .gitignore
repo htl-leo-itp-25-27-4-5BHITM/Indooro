@@ -95,3 +95,6 @@ backend/indooro_server/src/main/resources/META-INF/resources/admin/next/
 test-results/
 
 backups/
+
+# oasdiff base contract exported in CI
+.oasdiff/
