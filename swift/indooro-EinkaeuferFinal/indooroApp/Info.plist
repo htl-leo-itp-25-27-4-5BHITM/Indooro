@@ -5,9 +5,25 @@
 	<key>IndooroStudyMode</key>
 	<false/>
 	<key>IndooroAPIBaseURL</key>
-	<string></string>
+	<string>$(INDOORO_API_BASE_URL)</string>
 	<key>IndooroFeatureProfile</key>
 	<string>pilot</string>
+#if INDOORO_LOCAL_HTTP
+	<!-- Nur Debug-Local (Config/Debug-Local.xcconfig): Klartext-HTTP zu localhost. Alle anderen Konfigurationen haben keine ATS-Ausnahme. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>localhost</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<false/>
+			</dict>
+		</dict>
+	</dict>
+#endif
 	<key>CFBundleDocumentTypes</key>
 	<array>
 		<dict>

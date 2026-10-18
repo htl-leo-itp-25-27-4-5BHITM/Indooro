@@ -10,25 +10,24 @@ let package = Package(
     products: [
         .library(name: "IndooroNavigationCore", targets: ["IndooroNavigationCore"])
     ],
+    dependencies: [
+        // Lokales Paket mit den Datenmodellen (Phase 4 von modernize-ios-client-architecture).
+        .package(path: "Packages/IndooroKit")
+    ],
     targets: [
         .target(name: "IndooroPilotSupport", path: "indooroApp", sources: ["App/AppEnvironment.swift", "Utilities/PilotNetworking.swift", "Models/StudyModels.swift", "Managers/StudySessionStore.swift"]),
         .testTarget(name: "IndooroPilotSupportTests", dependencies: ["IndooroPilotSupport"], path: "Tests/IndooroPilotSupportTests"),
         .target(
             name: "IndooroNavigationCore",
+            dependencies: [
+                .product(name: "IndooroModels", package: "IndooroKit")
+            ],
             path: "indooroApp",
             sources: [
-                "Models/LayoutData.swift",
-                "Models/ShelfLocationDescriptor.swift",
-                "Models/MobileStoreModels.swift",
-                "Models/Product.swift",
-                "Models/RecipeModels.swift",
-                "Models/UpsellModels.swift",
-                "Models/ShoppingModels.swift",
-                "Models/ShoppingTransferModels.swift",
-                "Models/IndooroBeacon.swift",
                 "Utilities/IndoorGraph.swift",
                 "Utilities/KalmanFilter.swift",
                 "Utilities/LayoutCacheStore.swift",
+                "Utilities/AppLog.swift",
                 "Utilities/BeaconPositionSolver.swift",
                 "Utilities/PoseFusionService.swift",
                 "Utilities/WalkableProjector.swift",
@@ -48,7 +47,11 @@ let package = Package(
         ),
         .testTarget(
             name: "IndooroNavigationCoreTests",
-            dependencies: ["IndooroNavigationCore", "IndooroPilotSupport"],
+            dependencies: [
+                "IndooroNavigationCore",
+                "IndooroPilotSupport",
+                .product(name: "IndooroModels", package: "IndooroKit")
+            ],
             path: "Tests/IndooroNavigationCoreTests",
             resources: [.copy("Resources")]
         )

@@ -14,6 +14,7 @@ let package = Package(
     ],
     products: [
         // Statisch: die App und ihr Test-Bundle binden das Paket ein, ohne eigene dynamische Frameworks.
+        .library(name: "IndooroModels", type: .static, targets: ["IndooroModels"]),
         .library(name: "IndooroNetworking", type: .static, targets: ["IndooroNetworking"]),
     ],
     dependencies: [
@@ -21,6 +22,19 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-openapi-runtime", from: "1.7.0"),
     ],
     targets: [
+        // Reine Datenmodelle (Phase 4): keine Abhaengigkeiten, keine UI- oder Apple-Radio-Frameworks.
+        .target(
+            name: "IndooroModels"
+        ),
+        // Nur für Tests: JSON-Fixtures als Paketressource (Task 3.4). Kein Produkt, wird nie in die App gelinkt.
+        .target(
+            name: "IndooroTestSupport",
+            resources: [.copy("Resources")]
+        ),
+        .testTarget(
+            name: "IndooroModelsTests",
+            dependencies: ["IndooroModels", "IndooroTestSupport"]
+        ),
         .target(
             name: "IndooroNetworking",
             dependencies: [
@@ -32,7 +46,7 @@ let package = Package(
         ),
         .testTarget(
             name: "IndooroNetworkingTests",
-            dependencies: ["IndooroNetworking"]
+            dependencies: ["IndooroNetworking", "IndooroTestSupport"]
         ),
     ]
 )

@@ -1,7 +1,7 @@
 import Foundation
 
 // Pure, deterministic upsell plan logic (Foundation only).
-// Kept out of UpsellSuggestionStore so canonical shopping state, opportunity
+// Kept out of UpsellModel so canonical shopping state, opportunity
 // identity, handled-opportunity state and the one-retry rule are unit-testable.
 
 // MARK: - Canonical shopping state

@@ -1,3 +1,4 @@
+import IndooroModels
 import Foundation
 import IndooroNetworking
 
@@ -11,8 +12,13 @@ final class ProductSearchStore: ObservableObject {
     // Installed by ContentView, so map callers keep their existing interface.
     var storeProvider: (() -> MobileStoreSummary?)?
     private var latestSearchRequestID = UUID()
-    private var task: URLSessionDataTask?
+    private var task: Task<Void, Never>?
     private var retryAction: (() -> Void)?
+    private let client: any APIClientProtocol
+
+    init(client: any APIClientProtocol = AppEnvironment.apiClient) {
+        self.client = client
+    }
 
     /// Filialcode der aktiven Filiale (`nil` = keine Filiale bekannt). Gilt, wenn die Anfrage keine
     /// eigene Filiale mitbringt (weder `store` noch `storeProvider`).
@@ -73,29 +79,33 @@ final class ProductSearchStore: ObservableObject {
         errorMessage = nil
         hasCompletedSearch = false
         searchResults = []
-        guard let url = PilotSearchURL.make(base: AppEnvironment.apiBaseURL, query: query, size: size, storeID: store?.id, storeCode: ProductEndpoint.normalizedStoreCode(store?.storeCode) ?? activeStoreCode) else {
-            isSearching = false
-            errorMessage = "Die Suchanfrage konnte nicht erstellt werden."
-            return
-        }
-        task = AppEnvironment.session.dataTask(with: url) { [weak self] data, response, error in
+        let endpoint = ProductCollectionEndpoint(
+            searchText: query,
+            size: size,
+            storeID: store?.id,
+            storeCode: ProductEndpoint.normalizedStoreCode(store?.storeCode) ?? activeStoreCode
+        )
+        let client = client
+        task = Task { [weak self] in
+            let result = await client.sendResult(endpoint)
             DispatchQueue.main.async {
                 guard let self, self.latestSearchRequestID == requestID else { return }
                 self.isSearching = false
-                if let message = PilotHTTP.errorMessage(response: response, error: error) {
-                    self.errorMessage = message
-                    return
-                }
-                guard let data else { self.errorMessage = "Keine Produktdaten erhalten."; return }
-                do {
-                    self.searchResults = try Self.decodeProducts(from: data).filter(filter)
-                    self.hasCompletedSearch = true
-                } catch {
-                    self.errorMessage = "Die Produktdaten konnten nicht gelesen werden."
+                switch result {
+                case .failure(.transport(.badURL)):
+                    self.errorMessage = "Die Suchanfrage konnte nicht erstellt werden."
+                case .failure(let error):
+                    self.errorMessage = PilotHTTP.message(for: error)
+                case .success(let raw):
+                    do {
+                        self.searchResults = try Self.decodeProducts(from: raw.data).filter(filter)
+                        self.hasCompletedSearch = true
+                    } catch {
+                        self.errorMessage = "Die Produktdaten konnten nicht gelesen werden."
+                    }
                 }
             }
         }
-        task?.resume()
     }
 
     static func decodeProducts(from data: Data) throws -> [Product] {

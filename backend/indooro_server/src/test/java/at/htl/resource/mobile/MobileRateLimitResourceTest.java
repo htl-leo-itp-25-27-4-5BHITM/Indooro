@@ -14,9 +14,13 @@ import java.util.Map;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 @QuarkusTest
 @TestProfile(MobileRateLimitResourceTest.TightLimits.class)
@@ -44,6 +48,33 @@ class MobileRateLimitResourceTest {
                 .body("status", equalTo(429))
                 .body("error", containsString("Zu viele Anfragen"))
                 .body("path", containsString("/api/mobile/upsell/events"));
+    }
+
+    @Test
+    void planRequestOverTheLimitIsRejectedWithoutCallingTheService() {
+        // The mock returns no plan; only the limiter outcome matters here.
+        postPlan("198.51.100.30").statusCode(not(equalTo(429)));
+        postPlan("198.51.100.30")
+                .statusCode(429)
+                .header("Retry-After", notNullValue())
+                .body("path", containsString("/api/mobile/upsell/plan"));
+
+        // Only the first request reaches the service (and therefore OpenAI).
+        verify(upsellSuggestionService, times(1)).plan(any());
+    }
+
+    @Test
+    void suggestionsShareThePlanBudgetPerClient() {
+        postPlan("198.51.100.31").statusCode(not(equalTo(429)));
+        given()
+                .contentType("application/json")
+                .header("X-Forwarded-For", "198.51.100.31")
+                .body("{}")
+                .post("/api/mobile/upsell/suggestions")
+                .then()
+                .statusCode(429);
+
+        verify(upsellSuggestionService, never()).suggestions(any());
     }
 
     @Test
@@ -101,12 +132,23 @@ class MobileRateLimitResourceTest {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
+                    "indooro.ratelimit.upsell.max-requests", "1",
+                    "indooro.ratelimit.upsell.window-seconds", "600",
                     "indooro.ratelimit.upsell-event.max-requests", "2",
                     "indooro.ratelimit.upsell-event.window-seconds", "600",
                     "indooro.ratelimit.heavy.max-requests", "1",
                     "indooro.ratelimit.heavy.window-seconds", "60"
             );
         }
+    }
+
+    private io.restassured.response.ValidatableResponse postPlan(String forwardedFor) {
+        return given()
+                .contentType("application/json")
+                .header("X-Forwarded-For", forwardedFor)
+                .body("{\"storeCode\":\"test\",\"currentListProductIds\":[1]}")
+                .post("/api/mobile/upsell/plan")
+                .then();
     }
 
     private io.restassured.response.ValidatableResponse postEvent(String forwardedFor) {

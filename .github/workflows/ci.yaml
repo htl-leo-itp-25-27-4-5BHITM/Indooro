@@ -72,15 +72,20 @@ jobs:
       - name: Generated Quarkus OpenAPI matches the reviewed contract
         run: npm run contract:parity
 
-      # Not run locally: the action tag v0.0.21 was confirmed to exist in oasdiff/oasdiff-action
-      # via the GitHub API, but the step itself was not executed before this change was committed.
+      # oasdiff runs as a pinned container (v1.33.0). The base spec is exported to a file first,
+      # because the container cannot read git revisions of the workspace ("dubious ownership").
+      # Reviewed, intentional breaking findings are listed in api/openapi/oasdiff-accepted-breaking.txt.
       - name: Breaking-change check against the target branch
         if: github.event_name == 'pull_request'
-        uses: oasdiff/oasdiff-action/breaking@v0.0.21
-        with:
-          base: 'origin/${{ github.base_ref }}:openspec/specs/shared-api/openapi.yaml'
-          revision: 'openspec/specs/shared-api/openapi.yaml'
-          fail-on: ERR
+        run: |
+          mkdir -p .oasdiff
+          git show "origin/${{ github.base_ref }}:openspec/specs/shared-api/openapi.yaml" > .oasdiff/base-openapi.yaml
+          docker run --rm -v "$PWD":/w -w /w \
+            tufin/oasdiff@sha256:6263a96dd2ef0726c54e21fea9b8e1607eac4841add0079324b424c1f52b819c \
+            breaking .oasdiff/base-openapi.yaml openspec/specs/shared-api/openapi.yaml \
+            --fail-on ERR \
+            --err-ignore api/openapi/oasdiff-accepted-breaking.txt \
+            --format githubactions
 
       - name: Validate OpenSpec change and specs (strict)
         run: npx -y @fission-ai/openspec@1.3.1 validate --all --strict

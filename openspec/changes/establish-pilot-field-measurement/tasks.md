@@ -55,5 +55,5 @@ Owners: **[C]** = Person C (Windows: documentation, hardware, physical measureme
 
 ## 8. Verification and Handover
 
-- [ ] 8.1 [E] `swift test` green incl. new field tests; [C] `python -I -m unittest discover scripts/field` green; both run `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
+- [x] 8.1 [E] `swift test` green incl. new field tests; [C] `python -I -m unittest discover scripts/field` green; both run `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`. Evidence (2026-10-18, `pilot/first-store`): `swift test` 281 (1 skipped, incl. `FieldExportTests`), `scripts/field` 108 OK, OpenSpec 55/55.
 - [ ] 8.2 [C] Pull request `pilot/field-measurement` → `pilot/first-store` after section 4 and again after 6.5; [E] pull request `pilot/field-replay` after 5.2 and 6.3; both update `STATUS.md`. PR `pilot/field-measurement` → `pilot/first-store` für Abschnitt 4 offen; zweiter PR nach 6.5 (Mensch).

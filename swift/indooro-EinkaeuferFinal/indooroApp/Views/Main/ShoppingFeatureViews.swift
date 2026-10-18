@@ -1,3 +1,4 @@
+import IndooroModels
 import SwiftUI
 
 struct ShoppingStopMarker: View {
@@ -211,6 +212,7 @@ struct UpsellPromptSheet: View {
                         Text("Zu \(prompt.checkedProductName) passt vielleicht noch:")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                            .accessibilityAddTraits(.isHeader)
 
                         ForEach(prompt.suggestions) { suggestion in
                             VStack(alignment: .leading, spacing: 8) {
@@ -239,12 +241,15 @@ struct UpsellPromptSheet: View {
                                     .frame(minWidth: 44, minHeight: 44)
                                     .contentShape(Rectangle())
                                     .accessibilityLabel("\(suggestion.product.name) hinzufügen")
+                                    .accessibilityValue(suggestion.reason)
+                                    .accessibilityHint("Fügt den Vorschlag der Einkaufsliste hinzu")
                                 }
 
                                 Text(suggestion.reason)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(3)
+                                    .accessibilityHidden(true)
                             }
                             .padding(.vertical, 5)
                         }
@@ -1201,7 +1206,7 @@ struct ShoppingListsPage: View {
     @ObservedObject var listManager: ShoppingListManager
     @ObservedObject var sessionManager: ShoppingSessionManager
     @ObservedObject var beaconManager: BeaconManager
-    @ObservedObject var upsellStore: UpsellSuggestionStore
+    var upsellStore: UpsellModel
     @Binding var pendingImportPackage: ShoppingTransferPackage?
     @Binding var importErrorMessage: String?
 
@@ -1705,7 +1710,7 @@ struct ShoppingListsPage: View {
         }
 
         upsellStore.showOpportunity(
-            opportunityId: UpsellSuggestionStore.itemOpportunityId(for: item),
+            opportunityId: UpsellModel.itemOpportunityId(for: item),
             checkedItems: [item],
             list: updatedList,
             store: activeStore,
