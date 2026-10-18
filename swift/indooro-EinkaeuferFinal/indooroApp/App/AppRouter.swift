@@ -18,6 +18,8 @@ enum AppSection: Hashable {
 @Observable
 @MainActor
 final class AppRouter {
+    nonisolated deinit {}
+
     var selectedSection: AppSection = .start
     /// Produkt, das die Karte hervorhebt.
     var targetProduct: Product?
