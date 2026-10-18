@@ -46,6 +46,10 @@ struct StudyCounters: Codable, Equatable {
     var rerouteCount: Int?
     var stopChangeWithoutEventCount: Int?
     var manualPositionCount: Int?
+    /// Ankunftsvorschläge („Bist du bei …?“): angezeigt, mit „Ja, erledigt“ und „Noch nicht“ beantwortet.
+    var arrivalSuggestionShownCount: Int?
+    var arrivalSuggestionAcceptedCount: Int?
+    var arrivalSuggestionRejectedCount: Int?
 
     func difference(from start: StudyCounters) -> StudyCounters {
         func delta(_ end: Int?, _ begin: Int?) -> Int? {
@@ -55,7 +59,10 @@ struct StudyCounters: Codable, Equatable {
         return StudyCounters(routeBuildCount: delta(routeBuildCount, start.routeBuildCount),
                              rerouteCount: delta(rerouteCount, start.rerouteCount),
                              stopChangeWithoutEventCount: delta(stopChangeWithoutEventCount, start.stopChangeWithoutEventCount),
-                             manualPositionCount: delta(manualPositionCount, start.manualPositionCount))
+                             manualPositionCount: delta(manualPositionCount, start.manualPositionCount),
+                             arrivalSuggestionShownCount: delta(arrivalSuggestionShownCount, start.arrivalSuggestionShownCount),
+                             arrivalSuggestionAcceptedCount: delta(arrivalSuggestionAcceptedCount, start.arrivalSuggestionAcceptedCount),
+                             arrivalSuggestionRejectedCount: delta(arrivalSuggestionRejectedCount, start.arrivalSuggestionRejectedCount))
     }
 }
 
@@ -101,7 +108,7 @@ struct StudyRunningTask {
 }
 
 enum StudyFormat {
-    static let header = "test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count"
+    static let header = "test_id,session_id,store_code,task_no,product_id,product_name,condition,positioning_mode,started_at,ended_at,duration_s,outcome,manual_position_count,reroute_count,stop_change_without_event_count,app_error_count,arrival_suggestion_shown_count,arrival_suggestion_accepted_count,arrival_suggestion_rejected_count"
     static func isValidID(_ value: String) -> Bool {
         value.range(of: "^T[0-9]{1,3}$", options: .regularExpression) == (value.startIndex..<value.endIndex)
     }
@@ -126,7 +133,9 @@ enum StudyFormat {
              row.task.productName, row.task.condition.rawValue, row.positioningMode,
              iso(row.startedAt), iso(row.endedAt), String(format: "%.1f", locale: Locale(identifier: "en_US_POSIX"), row.duration),
              row.outcome.rawValue, count(row.counters.manualPositionCount), count(row.counters.rerouteCount),
-             count(row.counters.stopChangeWithoutEventCount), String(row.appErrorCount)].map(csvField).joined(separator: ",")
+             count(row.counters.stopChangeWithoutEventCount), String(row.appErrorCount),
+             count(row.counters.arrivalSuggestionShownCount), count(row.counters.arrivalSuggestionAcceptedCount),
+             count(row.counters.arrivalSuggestionRejectedCount)].map(csvField).joined(separator: ",")
         }
         return ([header] + rows).joined(separator: "\n") + "\n"
     }

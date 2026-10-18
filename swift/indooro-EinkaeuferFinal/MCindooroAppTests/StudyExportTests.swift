@@ -24,7 +24,8 @@ final class StudyExportTests: XCTestCase {
             endedAt: start.addingTimeInterval(82.5),
             duration: 22.0,
             outcome: .help,
-            counters: StudyCounters(routeBuildCount: 4, rerouteCount: 1, stopChangeWithoutEventCount: 0, manualPositionCount: 2),
+            counters: StudyCounters(routeBuildCount: 4, rerouteCount: 1, stopChangeWithoutEventCount: 0, manualPositionCount: 2,
+                                    arrivalSuggestionShownCount: 3, arrivalSuggestionAcceptedCount: 2, arrivalSuggestionRejectedCount: 1),
             appErrorCount: 0
         )
         let events = [
@@ -73,17 +74,17 @@ final class StudyExportTests: XCTestCase {
 
     // MARK: - CSV
 
-    func testCSVHasHeaderAndSixteenColumnsPerLine() {
+    func testCSVHasHeaderAndNineteenColumnsPerLine() {
         let csv = StudyFormat.csv(makeSession())
 
         XCTAssertTrue(csv.hasPrefix(StudyFormat.header + "\n"))
         XCTAssertTrue(csv.hasSuffix("\n"))
-        XCTAssertEqual(fields(of: StudyFormat.header).count, 16)
+        XCTAssertEqual(fields(of: StudyFormat.header).count, 19)
 
         let lines = csv.split(separator: "\n").map(String.init)
         XCTAssertEqual(lines.count, 3)
         for line in lines {
-            XCTAssertEqual(fields(of: line).count, 16, line)
+            XCTAssertEqual(fields(of: line).count, 19, line)
         }
     }
 
@@ -118,6 +119,8 @@ final class StudyExportTests: XCTestCase {
         XCTAssertEqual(second[10], "22.0")
         XCTAssertEqual(second[11], "hilfe")
         XCTAssertEqual(Array(second[12...15]), ["2", "1", "0", "0"])
+        XCTAssertEqual(Array(second[16...18]), ["3", "2", "1"])
+        XCTAssertEqual(Array(first[16...18]), ["-", "-", "-"])
     }
 
     // MARK: - JSON Lines
