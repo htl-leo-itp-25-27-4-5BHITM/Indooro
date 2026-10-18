@@ -86,6 +86,8 @@ struct UpsellPlanDebug: Decodable, Hashable {
     let fallbackReason: String?
     let opportunityCount: Int?
     let candidateCount: Int?
+    /// Optional since backend version with retry metadata; missing means not retryable.
+    let retryable: Bool?
 }
 
 struct UpsellEventRequest: Encodable {
