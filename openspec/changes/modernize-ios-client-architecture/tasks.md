@@ -68,7 +68,7 @@
 
 - [ ] 10.1 Implement `AppEnvironment`, `AppRouter`, and the `@Observable @MainActor` models from design Decision 2.
 - [ ] 10.2 Move views into the feature targets and switch them to `@Environment` models.
-- [ ] 10.3 Switch the root `TabView` to the `Tab` API.
+- [x] 10.3 Switch the root `TabView` to the `Tab` API. (`ContentView`: `Tab(title, systemImage:, value:)` in unveränderter Reihenfolge; Rezepte weiter nur bei `allowsExtendedFeatures`; Titel und Symbole unverändert, die UI-Tests finden die Tabs über diese Labels. Zusätzlich `.tabViewStyle(.tabBarOnly)`, damit das iPad die untere Tab-Leiste behält.)
 - [x] 10.4 Move upsell state from `UpsellSuggestionStore` into `UpsellModel` without behavior change and add `UpsellModelTests` for cache, pending opportunity, throttling, and session reset. (`UpsellSuggestionStore` ist zu `@Observable @MainActor UpsellModel` umbenannt und umgestellt (Logik unverändert, nur `activePrompt`/`isLoading` beobachtbar); Views nutzen `var`/`@State` statt `@ObservedObject`/`@StateObject`. `UpsellModelTests` (12): Cache einmalig, Pending-Opportunity, 8-s-Cooldown, Session-Reset sowie die bisherigen Retry-/Handled-/Payload-Tests.)
 - [ ] 10.5 Delete `HeaderView`, `MapHeaderView`, `SearchOverlayView`, and `LayoutSelectionSheet` unless the layout version picker is intentionally reintroduced in the settings sheet.
 
