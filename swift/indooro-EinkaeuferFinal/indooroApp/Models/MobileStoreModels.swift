@@ -152,7 +152,7 @@ enum StoreLayoutDescription {
     /// `fallback == true` heißt: der Server hat nicht das aktive Filial-Layout, sondern ein Standard-Layout geliefert.
     static func storeLayout(storeName: String, fallback: Bool?, regularDescription: String) -> String {
         guard fallback == true else { return regularDescription }
-        return "\(storeName) • Standard-Layout (kein aktives Filial-Layout)"
+        return "\(storeName) • Ersatzplan (kein aktueller Marktplan)"
     }
 }
 

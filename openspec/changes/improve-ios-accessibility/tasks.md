@@ -1,6 +1,6 @@
 ## 1. Setup
 
-- [ ] 1.1 Branch `pilot/ios-accessibility` after `prepare-pilot-ios-build` is merged; baseline Accessibility Inspector audit saved to `AUDIT.md`. Notiz: offen, Inspector-Baseline nicht gelaufen (Vorher-Zahlen stammen aus Git und Quelltext, siehe `docs/pilot-readiness/evidence/accessibility/AUDIT.md` Abschnitt 6).
+- [ ] 1.1 Branch `pilot/ios-accessibility` after `prepare-pilot-ios-build` is merged; baseline Accessibility Inspector audit saved to `AUDIT.md`. Notiz: offen, Inspector-Baseline nicht gelaufen (Vorher-Zahlen stammen aus Git und Quelltext, siehe `docs/pilot-readiness/evidence/accessibility/AUDIT.md` Abschnitt 6). (Mensch: Accessibility Inspector läuft nur interaktiv am Simulator/Gerät)
 
 ## 2. Implementation
 

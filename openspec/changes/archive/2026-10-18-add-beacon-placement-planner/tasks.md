@@ -27,4 +27,4 @@
 ## 5. Handover
 
 - [x] 5.1 Run `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
-- [ ] 5.2 Open a pull request `pilot/beacon-planner` → `pilot/first-store`; update `STATUS.md` (row „Person C“).
+- [x] 5.2 Open a pull request `pilot/beacon-planner` → `pilot/first-store`; update `STATUS.md` (row „Person C“). (Beleg: PR #124 `pilot/beacon-planner` → `pilot/first-store` gemergt)

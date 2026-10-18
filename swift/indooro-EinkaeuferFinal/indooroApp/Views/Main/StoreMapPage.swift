@@ -665,7 +665,7 @@ struct StoreMapPage: View {
             Spacer(minLength: 0)
 
             if beaconManager.appliedLayoutIsFallback {
-                Label("Standard", systemImage: "exclamationmark.triangle.fill")
+                Label("Ersatzplan", systemImage: "exclamationmark.triangle.fill")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Color.a11yWarningText)
                     .lineLimit(1)
@@ -673,7 +673,7 @@ struct StoreMapPage: View {
                     .padding(.vertical, 6)
                     .background(Color.a11yWarningText.opacity(0.12), in: Capsule())
                     .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Warnung: Standard-Layout, kein aktives Filial-Layout")
+                    .accessibilityLabel("Warnung: Ersatzplan, kein aktueller Marktplan")
             }
 
             Button { showSettings = true } label: {

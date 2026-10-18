@@ -19,4 +19,4 @@
 ## 4. Verification
 
 - [x] 4.1 `node --test` green (41), Playwright mobile viewports green (19). Manual check on an Android phone and an iPhone browser stays a human step before the pilot.
-- [ ] 4.2 PR → `pilot/first-store` (review by Person B for the backend resource folder); `STATUS.md`.
+- [x] 4.2 PR → `pilot/first-store` (review by Person B for the backend resource folder); `STATUS.md`. (Beleg: PR #132 `pilot/web-finder` → `pilot/first-store` gemergt)

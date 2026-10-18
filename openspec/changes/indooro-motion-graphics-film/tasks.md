@@ -37,10 +37,10 @@ Each checked item requires its stated result and verification. Checkboxes are up
 - [x] 6.2 Build identity and phone reveal; inspect wordmark hold and screen transition.
 - [x] 6.3 Build search interaction; inspect search/result/map states and concept label.
 - [x] 6.4 Build positioning scene; inspect corridor-snapped position and beacon restraint.
-- [ ] 6.5 Build A* explanation; inspect explored paths and true final route. The final route is calculated by A*, but the displayed node wave is based on Manhattan distance from the entrance rather than A*'s actual explored set.
+- [ ] 6.5 Build A* explanation; inspect explored paths and true final route. The final route is calculated by A*, but the displayed node wave is based on Manhattan distance from the entrance rather than A*'s actual explored set. (Mensch: Szene nur per Render und Sichtprüfung prüfbar; Befund siehe Text)
 - [x] 6.6 Build local list/tour scene; inspect item order, route comparison, and label.
 - [x] 6.7 Build admin editor concept; inspect legibility and product assignment.
-- [ ] 6.8 Build closing hero; inspect final 90-frame hold and poster frame. The hero and poster exist, but the footer resolves at local frame 95, leaving 85 fully settled frames rather than the planned 90.
+- [ ] 6.8 Build closing hero; inspect final 90-frame hold and poster frame. The hero and poster exist, but the footer resolves at local frame 95, leaving 85 fully settled frames rather than the planned 90. (Mensch: Render und Sichtprüfung nötig)
 
 ## 7. Timeline and transitions
 
@@ -50,11 +50,11 @@ Each checked item requires its stated result and verification. Checkboxes are up
 ## 8. Audio production
 
 - [x] 8.1 Generate original music/SFX, record synthesis method, and add frame-aligned audio. Verify legal origin and timing.
-- [ ] 8.2 Listen to beginning, middle, ending; check peak level and fade. Correct any audible abruptness.
+- [ ] 8.2 Listen to beginning, middle, ending; check peak level and fade. Correct any audible abruptness. (Mensch: Hörprüfung)
 
 ## 9. Rendering
 
-- [ ] 9.1 Render targeted scene stills and preview MP4. Inspect contact sheet, muted story, and pacing.
+- [ ] 9.1 Render targeted scene stills and preview MP4. Inspect contact sheet, muted story, and pacing. (Mensch: Render und Sichtprüfung)
 - [x] 9.2 Render Full HD H.264/yuv420p/AAC final MP4 and poster PNG. Verify files exist and open.
 
 ## 10. Quality assurance and correction

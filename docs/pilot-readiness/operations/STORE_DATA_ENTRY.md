@@ -96,6 +96,22 @@ Dieser Schritt betrifft nur den Pilot mit Ortung (Variante C in `03_PILOT_READIN
 
 [Screenshot: Editor mit platzierten Beacon-Elementen] (Mensch: einfügen)
 
+## Schritt 5a: QR-Anker setzen und drucken
+
+Grundlage: OpenSpec `add-qr-anchor-positioning`. QR-Anker setzen die Position in der App, wenn Beacons fehlen oder die Position nicht verlässlich ist.
+
+1. **Anker platzieren.** Im Editor das Werkzeug „QR-Anker“ wählen und an jedem Gangende einen Anker setzen. Der Editor schreibt immer 1 × 1.
+2. **Bezeichnen.** Jeder Anker hat eine `anchorId` im Format `[A-Z0-9-]{1,12}` (zum Beispiel `A12`), eindeutig pro Layout, und ein Label wie „Gang 4 – Anfang“.
+3. **Veröffentlichen.** Die Anker-IDs werden erst beim Veröffentlichen geprüft, nicht im Entwurf (Schritt 6).
+4. **Drucken.** Im Editor „QR-Codes drucken“ wählen: 6 Codes pro A4-Seite, Codegröße mindestens 4 cm. Der Code enthält `https://<host>/customer/?store=<storeCode>&a=<anchorId>`.
+5. **Aufkleben.** Codes am Gangende in Augenhöhe anbringen. Nur mit Erlaubnis des Marktes.
+6. **Nach Layout-Änderungen neu drucken.** Alte Codes mit geänderter oder entfernter `anchorId` wegwerfen.
+7. **Prüfen.** Mit der iPhone-Kamera jeden Code scannen: Die App zeigt die Position am Anker. Gehört der Code zu einem anderen Markt, fragt die App „Dieser Code gehört zu <Filiale>. Wechseln?“.
+
+Hinweis: Die Kunden-Webansicht liest den Parameter `a` noch nicht.
+
+---
+
 ## Schritt 6: Layout-Version speichern und aktivieren
 
 1. **Entwurf speichern.** Der Entwurf ersetzt noch nicht das Layout, das die App verwendet (Spec `store-layout-management`, „User saves a draft“).
