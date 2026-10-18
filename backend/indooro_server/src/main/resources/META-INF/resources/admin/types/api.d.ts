@@ -1705,6 +1705,8 @@ export interface components {
             source?: string | null;
             /** Format: uuid */
             recipeId?: string | null;
+            /** @description Session-scoped dismissals apply only when this matches. */
+            sessionId?: string | null;
         };
         UpsellSuggestionResponse: {
             checkedProductId?: number;
@@ -1727,6 +1729,8 @@ export interface components {
             currentListProductIds?: number[] | null;
             completedProductIds?: number[] | null;
             source?: string | null;
+            /** @description Session-scoped dismissals apply only when this matches. */
+            sessionId?: string | null;
             opportunities: components["schemas"]["UpsellOpportunityRequest"][];
         };
         UpsellOpportunityResponse: {
@@ -2336,7 +2340,10 @@ export interface operations {
     getMobileStoreLayout: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description ETag from an earlier response. Quoted, weak (W/) or a comma-separated list; `*` matches any current layout. A match answers 304 without body. */
+                "If-None-Match"?: string;
+            };
             path: {
                 storeId: components["parameters"]["StoreIdPath"];
             };
@@ -2347,11 +2354,26 @@ export interface operations {
             /** @description Layout with source information. */
             200: {
                 headers: {
+                    /** @description Strong entity tag (quoted SHA-256 hex) of layoutId and activatedAt, or of the bundled default layout for a store without an active version. */
+                    ETag?: string;
+                    /** @description Always `no-cache`; clients revalidate with If-None-Match. */
+                    "Cache-Control"?: "no-cache";
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["MobileLayoutResponse"];
                 };
+            };
+            /** @description Not modified. The layout named in If-None-Match is still current; no body. */
+            304: {
+                headers: {
+                    /** @description Current entity tag. */
+                    ETag?: string;
+                    /** @description Always `no-cache`. */
+                    "Cache-Control"?: "no-cache";
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             404: components["responses"]["NotFound"];
         };
@@ -3060,6 +3082,7 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
             500: components["responses"]["ServerError"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     deleteProductIndex: {
@@ -3082,7 +3105,9 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             500: components["responses"]["ServerError"];
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     reindexProducts: {

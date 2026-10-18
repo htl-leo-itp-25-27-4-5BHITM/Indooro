@@ -1,16 +1,16 @@
 ## 1. Baseline and Pre-checks
 
-- [ ] 1.1 (Zurückgestellt: Hibernate-Statistik braucht eine echte Datenbank; Docker und PostgreSQL sind hier nicht verfügbar. Stattdessen zählen die Tests Repository-Aufrufe) Add a test helper that counts SQL statements (Hibernate statistics) and OpenSearch requests (client interceptor) and record current counts for recipe, store, and beacon lists.
+- [ ] 1.1 (Mensch: Hibernate-Statistik braucht eine echte PostgreSQL-Datenbank, Docker und PostgreSQL sind hier nicht verfügbar; bis dahin zählen die Tests Repository-Aufrufe) Add a test helper that counts SQL statements (Hibernate statistics) and OpenSearch requests (client interceptor) and record current counts for recipe, store, and beacon lists.
 - [ ] 1.2 (Mensch: Kopie der LeoCloud-Datenbank nötig; `V18` bricht bei Duplikaten oder Bereichsverletzungen mit klarer Meldung ab) Run case-duplicate and major/minor range queries against a copy of the LeoCloud database and clean up conflicts before V14.
-- [ ] 1.3 (Zurückgestellt: Abstimmung mit den beiden Upsell-Changes steht aus) Coordinate candidate-selection changes with `stabilize-upsell-quality-and-request-lifecycle` and `harden-upsell-prefilter-quality`.
+- [x] 1.3 Coordinate candidate-selection changes with `stabilize-upsell-quality-and-request-lifecycle` and `harden-upsell-prefilter-quality`. (Abgestimmt: #146 `pilot/upsell-quality-backend` ist gemergt; Kandidatenabfrage, OpenAI-Client und Transaktionen bauen darauf auf, Guard und Lifecycle bleiben unverändert)
 
 ## 2. Upsell
 
-- [ ] 2.1 (Zurückgestellt: `UpsellSuggestionService` wird parallel geändert) Extract `OpenAiRankingClient` (application-scoped `HttpClient`, `openai.base-url`, `@Bulkhead`, `@Timeout`, `@Fallback`) and add `quarkus-smallrye-fault-tolerance`.
-- [ ] 2.2 (Zurückgestellt: `UpsellSuggestionService` wird parallel geändert) Remove `@Transactional` from `plan()`/`suggestions()`; add short read and `REQUIRES_NEW` write methods for cache and dismissal access.
-- [x] 2.3 Add `OpenSearchService.getProductsByIds` (multi-get) and use it for trigger resolution. (`OpenSearchService.getProductsByIds`: eine `terms`-Suche mit `collapse` statt `mget`, weil die Dokument-IDs `<storeCode>:<id>` lauten; Nutzung in `RecipeService.mappingStatus`, Trigger-Auflösung im Upsell offen)
-- [ ] 2.4 (Zurückgestellt: Abstimmung mit `stabilize-upsell-quality-and-request-lifecycle` offen) Replace `findUpsellCandidates` with the relevance query and deterministic sort.
-- [x] 2.5 Apply active dismissals when ranking; make `UpsellDismissalRepository.findMatching` null-safe. (`UpsellDismissalRepository.findMatching` null-sicher, `suggestions()` wendet aktive Dismissals an; `plan()` und `sessionId` im Request fehlen noch)
+- [x] 2.1 Extract `OpenAiRankingClient` (application-scoped `HttpClient`, `openai.base-url`, `@Bulkhead`, `@Timeout`, `@Fallback`) and add `quarkus-smallrye-fault-tolerance`. (`OpenAiRankingClient` mit `@Bulkhead(4, 16)`, `@Timeout` über `openai.upsell.timeout-ms`, `@Fallback` auf leeres Ergebnis; `OpenAiRankingClientTest`, `OpenAiRankingClientTimeoutTest`, `OpenAiRankingBulkheadTest` gegen einen lokalen Stub, kein echter OpenAI-Aufruf)
+- [x] 2.2 Remove `@Transactional` from `plan()`/`suggestions()`; add short read and `REQUIRES_NEW` write methods for cache and dismissal access. (Lese-Methoden `@Transactional`, Cache-Schreiben `REQUIRES_NEW`; `UpsellSuggestionTransactionTest`, `TransactionSelfInterceptionTest` belegt, dass ArC package-private Selbstaufrufe abfängt)
+- [x] 2.3 Add `OpenSearchService.getProductsByIds` (multi-get) and use it for trigger resolution. (`getProductsByIds` für `<storeCode>:<id>` in `RecipeService.mappingStatus`, `getProductsByNumericIds` mit einer `terms`-Suche mit `collapse` für Trigger und Listen-IDs in `plan()`/`suggestions()`, weil die Dokument-IDs `<storeCode>:<id>` lauten; `OpenSearchProductsByNumericIdsTest`, `UpsellSuggestionServiceTest`. (Mensch: `collapse` mit Sortierung auf `storeCode` gegen ein echtes OpenSearch prüfen))
+- [x] 2.4 Replace `findUpsellCandidates` with the relevance query and deterministic sort. (Fünf-Argument-Überladung mit `prefix`/`term` auf `layoutCode` für Trigger- (Boost 3) und Ergänzungskategorien (Boost 2), `match_all` mit Boost 0,1, Sortierung `_score` dann `id`; `OpenSearchUpsellCandidateQueryTest`; Java-Nachsortierung und globaler Fallback bleiben)
+- [x] 2.5 Apply active dismissals when ranking; make `UpsellDismissalRepository.findMatching` null-safe. (`findMatching` null-sicher; `suggestions()` und `plan()` wenden aktive Dismissals vor dem Ranking an, `plan()` mit einer gebündelten Abfrage `findActiveForCheckedProducts`; optionales `sessionId` in `UpsellSuggestionRequest` und `UpsellPlanRequest`; der Cache-Schlüssel enthält die aktiven Dismissals)
 
 ## 3. Recipes
 
@@ -27,12 +27,12 @@
 ## 5. OpenSearch Lifecycle and Static Data
 
 - [x] 5.1 Make `OpenSearchClientConfig` application-scoped with a disposer. (`@Singleton` statt `@ApplicationScoped`, weil ArC den Client nicht proxien kann; `OpenSearchClientConfigTest`)
-- [ ] 5.2 (Zurückgestellt: größerer Umbau des Start-ups, braucht echtes OpenSearch zum Testen) Move index preparation and category seeding to a start-up observer with retry and a readiness check; add an explicit `layouts` mapping.
-- [ ] 5.3 (Zurückgestellt: hängt an 5.2) Remove request-path `ensureLayoutIndex` and `ensureSeeded` calls.
+- [x] 5.2 Move index preparation and category seeding to a start-up observer with retry and a readiness check; add an explicit `layouts` mapping. (`OpenSearchStartup` mit Wiederholung alle 30 s und `OpenSearchReadinessCheck` unter `/q/health/ready`; `layouts`-Mapping mit `elements` als `object` ohne Mapping; in `%test` abgeschaltet; `OpenSearchStartupTest`, `HealthEndpointTest`. (Mensch: Start gegen ein echtes OpenSearch prüfen, auch den Start mit später startendem OpenSearch))
+- [x] 5.3 Remove request-path `ensureLayoutIndex` and `ensureSeeded` calls. (`LayoutRequestPathTest`: keine `indices()`-Aufrufe beim Lesen)
 - [x] 5.4 Clamp `size`/`limit` parameters and move legacy history filtering and sorting into the OpenSearch query. (Grenzen in `ProductResource` und `LayoutService`; `ProductSizeClampTest`, `LayoutHistoryQueryTest`; `recordType`-Filter und Sortierung waren schon in der Abfrage, Java-Nachfilter bleibt)
-- [ ] 5.5 (Zurückgestellt: nicht angefasst, geringer Nutzen) Add `DefaultLayoutProvider` and use it in all three services.
-- [ ] 5.6 (Zurückgestellt: nicht angefasst; die Antwort ändert sich für iOS, das parallel bearbeitet wird) Add ETag/`If-None-Match` handling to the mobile layout route.
-- [ ] 5.7 (Zurückgestellt: `deleteIndex` liefert noch kein 404, 503 fehlt) Return 409/404/503 from index maintenance operations.
+- [x] 5.5 Add `DefaultLayoutProvider` and use it in all three services. (`DefaultLayoutProvider`, `DefaultLayoutProviderTest`)
+- [x] 5.6 Add ETag/`If-None-Match` handling to the mobile layout route. (`MobileStoreResource` antwortet mit `ETag` und `Cache-Control: no-cache`, 304 ohne Inhalt; `LayoutEtag`, `MobileLayoutEtagTest`; OpenAPI und Typen neu erzeugt. (Mensch: iOS-Client kann `If-None-Match` später nutzen))
+- [x] 5.7 Return 409/404/503 from index maintenance operations. (`AdminResource`, `OpenSearchService.deleteIndex`; `AdminIndexResourceTest`, `OpenSearchIndexCreationTest`)
 
 ## 6. Schema, Concurrency, Retention
 
@@ -40,7 +40,7 @@
 - [x] 6.2 Lock the store row in `saveLayoutVersion` and `activateLayoutVersion`.
 - [x] 6.3 Map unique-constraint violations to 409. (`ApiThrowableExceptionMapper`, `ApiThrowableUniqueViolationTest`)
 - [x] 6.4 Add `@Min(0) @Max(65535)` to beacon DTOs and restrict the UUID-only fallback. (`BeaconDtos`, `MobileStoreService.resolveBeacon`; `BeaconDtoBoundsTest`, `MobileStoreBeaconResolutionTest`)
-- [ ] 6.5 (Zurückgestellt: der Scheduler kommt mit `harden-platform-security-baseline`, sonst Merge-Konflikt in `pom.xml`) Add daily retention jobs for upsell cache, events, dismissals, and legacy layout versions.
+- [x] 6.5 Add daily retention jobs for upsell cache, events, dismissals, and legacy layout versions. (`DataRetentionJob`/`DataRetentionService`, `LayoutService.pruneLegacyVersions`; Schwellen über `indooro.retention.*`; `DataRetentionServiceTest`, `DataRetentionJobTest`, `LegacyLayoutPruneTest`)
 
 ## 7. Documentation
 
@@ -49,7 +49,7 @@
 
 ## 8. Verification
 
-- [ ] 8.1 (Zurückgestellt: keine Datenbank in Tests, siehe 1.1; Aufrufzähler stehen in `RecipeServiceTest`, `StoreAdminServiceTest`, `BeaconAdminServiceListTest`) Add Quarkus tests asserting the statement and request budgets from the spec.
-- [x] 8.2 Add tests for dismissal suppression, null-safe matching, concurrent version numbering, 409 translation, beacon ranges, fallback restriction, ETag handling, and bounded parameters. (Dismissals, Null-Sicherheit, 409, Beacon-Bereiche und Fallback, Grenzen getestet; Versionsnummern (6.2) vorher getestet; ETag entfällt mit 5.6)
-- [ ] 8.3 (Zurückgestellt: braucht Lasttest-Werkzeug und laufende Dienste) Run a local load test (k6 or `hey`) with 40 concurrent plan requests and a slow OpenAI stub; record p95 of `GET /api/stores`.
-- [ ] 8.4 Run `./mvnw test` and `npx -y @fission-ai/openspec@1.3.1 validate optimize-backend-data-access --strict`.
+- [ ] 8.1 (Mensch: Statement-Budgets brauchen eine echte Datenbank, siehe 1.1; Aufrufzähler stehen in `RecipeServiceTest`, `StoreAdminServiceTest`, `BeaconAdminServiceListTest`, `UpsellSuggestionServiceTest`) Add Quarkus tests asserting the statement and request budgets from the spec.
+- [x] 8.2 Add tests for dismissal suppression, null-safe matching, concurrent version numbering, 409 translation, beacon ranges, fallback restriction, ETag handling, and bounded parameters. (Dismissals in `suggestions()` und `plan()`, Null-Sicherheit, 409, Beacon-Bereiche und Fallback, Grenzen und ETag getestet; Versionsnummern (6.2) vorher getestet)
+- [ ] 8.3 (Mensch: braucht Lasttest-Werkzeug (k6 oder `hey`), laufende Dienste und einen langsamen OpenAI-Stub; Bulkhead und Timeout sind per `OpenAiRankingBulkheadTest` mit 20 gleichzeitigen Aufrufen belegt) Run a local load test (k6 or `hey`) with 40 concurrent plan requests and a slow OpenAI stub; record p95 of `GET /api/stores`.
+- [x] 8.4 Run `./mvnw test` and `npx -y @fission-ai/openspec@1.3.1 validate optimize-backend-data-access --strict`.
