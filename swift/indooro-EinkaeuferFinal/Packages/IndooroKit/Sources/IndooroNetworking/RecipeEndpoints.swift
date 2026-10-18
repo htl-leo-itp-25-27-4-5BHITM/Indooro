@@ -1,6 +1,6 @@
 import Foundation
 
-// Rezept-Routen der anonymen Mobile-API. Lesend, daher `idempotentRead` mit 15 s Timeout.
+// Rezept-Routen der anonymen Mobile-API. Lesend, daher `interactiveRead` mit 10 s Timeout.
 
 /// `GET /mobile/recipes?page&size[&tag]`: veroeffentlichte Rezepte, seitenweise.
 public struct RecipeListEndpoint: Endpoint {
@@ -17,8 +17,8 @@ public struct RecipeListEndpoint: Endpoint {
 
     public var method: HTTPMethod { .get }
     public var path: String { "/mobile/recipes" }
-    public var timeout: Duration { .seconds(15) }
-    public var retry: RetryPolicy { .idempotentRead }
+    public var timeout: Duration { .seconds(10) }
+    public var retry: RetryPolicy { .interactiveRead }
     /// Legacy: `+` wird unveraendert gesendet, wie in der Pilot-App bisher (URLComponents ohne Nachbearbeitung).
     public var encodesPlusInQuery: Bool { false }
 
@@ -49,8 +49,8 @@ public struct RecipeSearchEndpoint: Endpoint {
 
     public var method: HTTPMethod { .get }
     public var path: String { "/mobile/recipes/search" }
-    public var timeout: Duration { .seconds(15) }
-    public var retry: RetryPolicy { .idempotentRead }
+    public var timeout: Duration { .seconds(10) }
+    public var retry: RetryPolicy { .interactiveRead }
     /// Legacy: `+` wird unveraendert gesendet, wie in der Pilot-App bisher (URLComponents ohne Nachbearbeitung).
     public var encodesPlusInQuery: Bool { false }
 
@@ -74,8 +74,8 @@ public struct RecipeDetailEndpoint: Endpoint {
 
     public var method: HTTPMethod { .get }
     public var path: String { "/mobile/recipes/\(recipeID.uuidString)" }
-    public var timeout: Duration { .seconds(15) }
-    public var retry: RetryPolicy { .idempotentRead }
+    public var timeout: Duration { .seconds(10) }
+    public var retry: RetryPolicy { .interactiveRead }
 }
 
 /// `GET /mobile/recipes/{recipeId}/product-mapping[?storeId&storeCode]`: Zuordnung der Zutaten zu Produkten.
@@ -93,8 +93,8 @@ public struct RecipeProductMappingEndpoint: Endpoint {
 
     public var method: HTTPMethod { .get }
     public var path: String { "/mobile/recipes/\(recipeID.uuidString)/product-mapping" }
-    public var timeout: Duration { .seconds(15) }
-    public var retry: RetryPolicy { .idempotentRead }
+    public var timeout: Duration { .seconds(10) }
+    public var retry: RetryPolicy { .interactiveRead }
     /// Legacy: `+` wird unveraendert gesendet, wie in der Pilot-App bisher (URLComponents ohne Nachbearbeitung).
     public var encodesPlusInQuery: Bool { false }
 

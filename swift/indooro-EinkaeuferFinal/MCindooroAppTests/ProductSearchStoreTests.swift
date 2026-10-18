@@ -136,7 +136,7 @@ final class ProductSearchStoreTests: XCTestCase {
             "https://example.test/api/products/search?size=50&q=milch&storeId=\(storeID.uuidString)&storeCode=HA-01"
         )
         XCTAssertEqual(request.httpMethod, "GET")
-        XCTAssertEqual(request.timeoutInterval, 15)
+        XCTAssertEqual(request.timeoutInterval, 10)
         XCTAssertTrue(store.hasCompletedSearch)
         XCTAssertNil(store.errorMessage)
     }
@@ -198,8 +198,8 @@ final class ProductSearchStoreTests: XCTestCase {
         try await waitUntil { !store.isSearching }
 
         XCTAssertEqual(store.errorMessage, "Die Anfrage hat zu lange gedauert.")
-        // Bewusste Änderung: Lesende Anfragen nutzen idempotentRead (Erstversuch plus zwei Wiederholungen).
-        XCTAssertEqual(TransportStubURLProtocol.requests.count, 3)
+        // Bewusste Änderung: Lesende Anfragen nutzen interactiveRead (Erstversuch plus eine Wiederholung, 10 s Timeout je Versuch).
+        XCTAssertEqual(TransportStubURLProtocol.requests.count, 2)
     }
 
     @MainActor

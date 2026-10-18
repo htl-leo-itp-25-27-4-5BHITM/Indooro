@@ -27,7 +27,7 @@ final class RecipeStoreTests: XCTestCase {
         let request = try XCTUnwrap(TransportStubURLProtocol.requests.first)
         XCTAssertEqual(request.url?.absoluteString, "\(base)/mobile/recipes?page=2&size=20")
         XCTAssertEqual(request.httpMethod, "GET")
-        XCTAssertEqual(request.timeoutInterval, 15)
+        XCTAssertEqual(request.timeoutInterval, 10)
         XCTAssertNil(store.errorMessage)
         XCTAssertTrue(store.recipes.isEmpty)
     }
@@ -84,8 +84,8 @@ final class RecipeStoreTests: XCTestCase {
 
         XCTAssertEqual(store.errorMessage, "Die Anfrage hat zu lange gedauert.")
         XCTAssertTrue(store.recipes.isEmpty)
-        // Bewusste Änderung: lesende Anfragen nutzen idempotentRead (Erstversuch plus zwei Wiederholungen).
-        XCTAssertEqual(TransportStubURLProtocol.requests.count, 3)
+        // Bewusste Änderung: lesende Anfragen nutzen interactiveRead (Erstversuch plus eine Wiederholung, 10 s Timeout je Versuch).
+        XCTAssertEqual(TransportStubURLProtocol.requests.count, 2)
     }
 
     func testLatestSearchWinsOverSlowerEarlierResponse() async throws {
@@ -116,7 +116,7 @@ final class RecipeStoreTests: XCTestCase {
 
         let request = try XCTUnwrap(TransportStubURLProtocol.requests.first)
         XCTAssertEqual(request.url?.absoluteString, "\(base)/mobile/recipes/\(recipeID.uuidString)")
-        XCTAssertEqual(request.timeoutInterval, 15)
+        XCTAssertEqual(request.timeoutInterval, 10)
         XCTAssertEqual(store.errorMessage, "Der Server meldet einen Fehler (HTTP 404).")
         XCTAssertNil(store.selectedRecipe)
         XCTAssertEqual(TransportStubURLProtocol.requests.count, 1)
@@ -137,7 +137,7 @@ final class RecipeStoreTests: XCTestCase {
             request.url?.absoluteString,
             "\(base)/mobile/recipes/\(recipeID.uuidString)/product-mapping?storeId=\(storeID.uuidString)&storeCode=HA-01"
         )
-        XCTAssertEqual(request.timeoutInterval, 15)
+        XCTAssertEqual(request.timeoutInterval, 10)
         XCTAssertEqual(store.errorMessage, "Der Server meldet einen Fehler (HTTP 500).")
         XCTAssertEqual(TransportStubURLProtocol.requests.count, 1, "500 ist nicht wiederholbar")
     }

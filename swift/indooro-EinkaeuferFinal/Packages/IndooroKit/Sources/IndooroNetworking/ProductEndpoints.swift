@@ -20,8 +20,8 @@ public struct ProductSearchEndpoint: Endpoint {
 
     public var method: HTTPMethod { .get }
     public var path: String { "/products/search" }
-    public var timeout: Duration { .seconds(15) }
-    public var retry: RetryPolicy { .idempotentRead }
+    public var timeout: Duration { .seconds(10) }
+    public var retry: RetryPolicy { .interactiveRead }
 
     public var query: [URLQueryItem] {
         var items = [
@@ -48,8 +48,8 @@ public struct ProductListEndpoint: Endpoint {
 
     public var method: HTTPMethod { .get }
     public var path: String { "/products" }
-    public var timeout: Duration { .seconds(15) }
-    public var retry: RetryPolicy { .idempotentRead }
+    public var timeout: Duration { .seconds(10) }
+    public var retry: RetryPolicy { .interactiveRead }
 
     public var query: [URLQueryItem] {
         var items = [URLQueryItem(name: "size", value: String(max(1, size)))]
@@ -79,8 +79,8 @@ public struct ProductCollectionEndpoint: Endpoint {
 
     public var method: HTTPMethod { .get }
     public var path: String { searchText == nil ? "/products" : "/products/search" }
-    public var timeout: Duration { .seconds(15) }
-    public var retry: RetryPolicy { .idempotentRead }
+    public var timeout: Duration { .seconds(10) }
+    public var retry: RetryPolicy { .interactiveRead }
 
     public var query: [URLQueryItem] {
         var items = [URLQueryItem(name: "size", value: String(max(1, size)))]

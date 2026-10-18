@@ -94,8 +94,8 @@ final class EndpointRequestTests: XCTestCase {
     func testProductSearchQueryOrderAndSizeBound() throws {
         let r = try request(ProductSearchEndpoint(query: "milch", size: 0, storeCode: nil))
         XCTAssertEqual(r.url?.absoluteString, "https://example.test/api/products/search?q=milch&size=1")
-        XCTAssertEqual(r.timeoutInterval, 15)
-        XCTAssertEqual(ProductSearchEndpoint(query: "x").retry, .idempotentRead)
+        XCTAssertEqual(r.timeoutInterval, 10)
+        XCTAssertEqual(ProductSearchEndpoint(query: "x").retry, .interactiveRead)
     }
 
     func testProductSearchMatchesLegacyProductEndpointURL() throws {
@@ -124,7 +124,7 @@ final class EndpointRequestTests: XCTestCase {
         let legacy = ProductEndpoint.listURL(base: "https://example.test/api", size: 50, storeCode: "SPAR-001")
         let r = try request(ProductListEndpoint(size: 50, storeCode: "SPAR-001"))
         XCTAssertEqual(r.url, legacy)
-        XCTAssertEqual(r.timeoutInterval, 15)
+        XCTAssertEqual(r.timeoutInterval, 10)
 
         let plain = try request(ProductListEndpoint(size: 50, storeCode: nil))
         XCTAssertEqual(plain.url, ProductEndpoint.listURL(base: "https://example.test/api", size: 50, storeCode: nil))
@@ -140,7 +140,7 @@ final class EndpointRequestTests: XCTestCase {
             URLQueryItem(name: "size", value: "1"),
             URLQueryItem(name: "tag", value: "vegan"),
         ])
-        XCTAssertEqual(r.timeoutInterval, 15)
+        XCTAssertEqual(r.timeoutInterval, 10)
     }
 
     func testRecipeListWithoutTag() throws {
@@ -157,13 +157,13 @@ final class EndpointRequestTests: XCTestCase {
             URLQueryItem(name: "page", value: "1"),
             URLQueryItem(name: "size", value: "10"),
         ])
-        XCTAssertEqual(r.timeoutInterval, 15)
+        XCTAssertEqual(r.timeoutInterval, 10)
     }
 
     func testRecipeDetailPath() throws {
         let r = try request(RecipeDetailEndpoint(recipeID: recipeUUID))
         XCTAssertEqual(r.url?.absoluteString, "https://example.test/api/mobile/recipes/11111111-2222-4333-8444-555555555555")
-        XCTAssertEqual(r.timeoutInterval, 15)
+        XCTAssertEqual(r.timeoutInterval, 10)
     }
 
     func testRecipeProductMappingQuery() throws {
@@ -230,7 +230,7 @@ final class EndpointRequestTests: XCTestCase {
     func testEveryReadEndpointUsesIdempotentReadRetryAndNoBody() {
         // Reads sind GET: Wiederholung erlaubt, kein Body.
         XCTAssertEqual(ProductListEndpoint().method, .get)
-        XCTAssertEqual(RecipeDetailEndpoint(recipeID: recipeUUID).retry, .idempotentRead)
+        XCTAssertEqual(RecipeDetailEndpoint(recipeID: recipeUUID).retry, .interactiveRead)
         XCTAssertNil(LayoutHistoryEndpoint(limit: 1).body)
         XCTAssertNil(StoreByBeaconEndpoint(uuid: "x").body)
     }

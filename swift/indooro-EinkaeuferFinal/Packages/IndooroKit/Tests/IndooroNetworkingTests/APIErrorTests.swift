@@ -73,6 +73,16 @@ final class APIErrorTests: XCTestCase {
     func testRetryPolicyPresets() {
         XCTAssertEqual(RetryPolicy.none.maxRetries, 0)
         XCTAssertEqual(RetryPolicy.idempotentRead.maxRetries, 2)
+        XCTAssertEqual(RetryPolicy.interactiveRead.maxRetries, 1)
         XCTAssertEqual(RetryPolicy(maxRetries: -3).maxRetries, 0)
+    }
+
+    func testInteractiveReadStaysWithinTwentyOneSecondBudget() {
+        let policy = RetryPolicy.interactiveRead
+        let perAttempt = 10.0
+        let worstBackoff = policy.delay(forRetry: 0, jitter: { $0 })
+        XCTAssertEqual(worstBackoff, .milliseconds(750))
+        let total = perAttempt * Double(policy.maxRetries + 1) + 0.75
+        XCTAssertLessThanOrEqual(total, 21)
     }
 }

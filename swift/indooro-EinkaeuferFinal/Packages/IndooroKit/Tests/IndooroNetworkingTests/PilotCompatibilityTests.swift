@@ -49,13 +49,13 @@ final class PilotCompatibilityTests: XCTestCase {
         let searchRequest = try search.urlRequest(environment: env)
         XCTAssertEqual(searchRequest.url?.path, "/api/products/search")
         XCTAssertEqual(searchRequest.httpMethod, "GET")
-        XCTAssertEqual(searchRequest.timeoutInterval, 15)
-        XCTAssertEqual(search.retry, .idempotentRead)
+        XCTAssertEqual(searchRequest.timeoutInterval, 10)
+        XCTAssertEqual(search.retry, .interactiveRead)
 
         let listRequest = try list.urlRequest(environment: env)
         XCTAssertEqual(listRequest.url?.path, "/api/products")
         XCTAssertEqual(listRequest.url?.absoluteString, "https://example.test/api/products?size=500")
-        XCTAssertEqual(list.retry, .idempotentRead)
+        XCTAssertEqual(list.retry, .interactiveRead)
     }
 
     // MARK: - Rezept-Routen (URLComponents ohne `+`-Nachbearbeitung)
@@ -127,7 +127,7 @@ final class PilotCompatibilityTests: XCTestCase {
         XCTAssertEqual(actual.url, expected.url)
         XCTAssertEqual(actual.httpMethod, expected.httpMethod)
         XCTAssertEqual(actual.timeoutInterval, expected.timeoutInterval)
-        XCTAssertEqual(endpoint.asRaw.retry, .idempotentRead)
+        XCTAssertEqual(endpoint.asRaw.retry, .interactiveRead)
         XCTAssertEqual(script.recordedRequests.first?.url, expected.url)
     }
 
