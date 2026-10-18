@@ -1,5 +1,6 @@
 import IndooroModels
 import Foundation
+import IndooroNetworking
 
 @MainActor
 final class UpsellSuggestionStore: ObservableObject {
@@ -46,7 +47,6 @@ final class UpsellSuggestionStore: ObservableObject {
         let originalRequestID: UUID
     }
 
-    private var apiBase: String { AppEnvironment.apiBaseURL.absoluteString }
     private let minSecondsBetweenPrompts: TimeInterval = 8
     private let maxPromptsPerSession = 10
     private let maxSuggestionsShown = 3
@@ -55,12 +55,12 @@ final class UpsellSuggestionStore: ObservableObject {
     private let debugEnabled = true
     private let decoder = JSONDecoder.indooro
     private let encoder = JSONEncoder()
-    private let session: URLSession
+    private let client: any APIClientProtocol
 
     private var lastPromptShownAt: Date?
     private var shownCountForSession = 0
     private var dismissedProductIDs: Set<Int> = []
-    private var planTask: URLSessionDataTask?
+    private var planTask: Task<Void, Never>?
     private var latestPlanRequestID = UUID()
     private var cachedOpportunities: [PlanKey: CachedOpportunity] = [:]
     private var pendingOpportunities: [PlanKey: PendingOpportunity] = [:]
@@ -76,9 +76,10 @@ final class UpsellSuggestionStore: ObservableObject {
 
     init(
         session: URLSession = AppEnvironment.session,
-        retryDelay: TimeInterval = UpsellPlanLogic.defaultRetryDelay
+        retryDelay: TimeInterval = UpsellPlanLogic.defaultRetryDelay,
+        client: (any APIClientProtocol)? = nil
     ) {
-        self.session = session
+        self.client = client ?? AppEnvironment.makeAPIClient(session: session)
         self.retryState = PlanRetryState(retryDelay: retryDelay)
     }
 
@@ -516,7 +517,7 @@ final class UpsellSuggestionStore: ObservableObject {
         signature: PlanRequestSignature,
         retryNumber: Int?
     ) {
-        guard let urlRequest = makePlanRequest(
+        guard let endpoint = makePlanRequest(
             list: list,
             opportunities: opportunities,
             store: store,
@@ -531,109 +532,148 @@ final class UpsellSuggestionStore: ObservableObject {
         latestPlanRequestID = requestID
         activePlanSignature = signature
         isLoading = true
-        debugLog("preloadPlan requestId=\(requestID.uuidString) timeout=\(urlRequest.timeoutInterval)s retryAttempt=\(retryNumber.map(String.init) ?? "none")")
+        debugLog("preloadPlan requestId=\(requestID.uuidString) timeout=25s retryAttempt=\(retryNumber.map(String.init) ?? "none")")
 
-        let task = session.dataTask(with: urlRequest) { [weak self] data, response, error in
-            Task { @MainActor in
-                guard let self else { return }
-                guard self.latestPlanRequestID == requestID else {
-                    self.debugLog("preloadPlan staleResponse ignored requestId=\(requestID.uuidString)")
-                    return
-                }
-                self.planTask = nil
-                self.activePlanSignature = nil
-                self.isLoading = false
-
-                let statusCode = (response as? HTTPURLResponse)?.statusCode
-                if let data, let raw = String(data: data, encoding: .utf8) {
-                    self.debugLog("preloadPlan rawResponse requestId=\(requestID.uuidString) status=\(statusCode.map(String.init) ?? "nil") body=\(raw)")
-                } else {
-                    self.debugLog("preloadPlan rawResponse requestId=\(requestID.uuidString) status=\(statusCode.map(String.init) ?? "nil") body=nil")
-                }
-
-                guard error == nil,
-                      let httpResponse = response as? HTTPURLResponse,
-                      (200..<300).contains(httpResponse.statusCode),
-                      let data,
-                      let decoded = try? self.decoder.decode(UpsellPlanResponse.self, from: data) else {
-                    self.reportEvent(
-                        eventType: "failed",
-                        checkedProductId: nil,
-                        suggestedProductId: nil,
-                        store: store,
-                        source: source,
-                        metadataJson: self.metadataJson([
-                            "stage": "plan",
-                            "reason": error == nil ? "http_or_decode" : "network"
-                        ])
-                    )
-                    self.debugLog("preloadPlan failed requestId=\(requestID.uuidString) error=\(error?.localizedDescription ?? "http_or_decode")")
-                    return
-                }
-
-                let debug = decoded.debug
-                let evidence = PlanResponseEvidence(
-                    responseSource: debug?.responseSource ?? decoded.source,
-                    fallbackReason: debug?.fallbackReason,
-                    retryable: debug?.retryable,
-                    openAiElapsedMs: debug?.openAiElapsedMs,
-                    totalTokens: debug?.totalTokens,
-                    inputTokens: debug?.inputTokens,
-                    outputTokens: debug?.outputTokens
-                )
-                if evidence.isRetryableCandidateLookupFailure {
-                    // Transient pre-AI failure: not cached, not marked handled, not recorded as completed.
-                    self.handleRetryableCandidateLookupFailure(
-                        requestID: requestID,
-                        retryNumber: retryNumber,
-                        signature: signature,
-                        list: list,
-                        opportunities: opportunities,
-                        store: store,
-                        source: source,
-                        evidence: evidence
-                    )
-                    return
-                }
-
-                self.lastCompletedPlanSignature = signature
-                self.retryState.clear(signature)
-                let expiresAt = decoded.expiresAt ?? Date().addingTimeInterval(60)
-                let responseSource = decoded.source ?? "unknown"
-                self.debugLog(
-                    "preloadPlan decoded requestId=\(requestID.uuidString) source=\(responseSource) debug=\(self.debugSummary(decoded.debug)) opportunities=\(decoded.opportunities.map { "\($0.opportunityId):\($0.suggestions.map { $0.product.id })" })"
-                )
-                var decodedKeys: Set<PlanKey> = []
-                for opportunity in decoded.opportunities {
-                    let key = self.makePlanKey(
-                        opportunityId: opportunity.opportunityId,
-                        listID: list.id,
-                        store: store,
-                        source: source
-                    )
-                    decodedKeys.insert(key)
-                    self.cachedOpportunities[key] = CachedOpportunity(
-                        response: opportunity,
-                        responseSource: responseSource,
-                        expiresAt: expiresAt
-                    )
-                    if opportunity.suggestions.isEmpty {
-                        self.debugLog("preloadPlan cached loaded_empty key=\(self.keyDebug(key)) expiresAt=\(expiresAt)")
-                    } else {
-                        self.debugLog("preloadPlan cached loaded_with_suggestions key=\(self.keyDebug(key)) suggestions=\(opportunity.suggestions.map { "\($0.product.id):\($0.product.name)" }) expiresAt=\(expiresAt)")
-                    }
-                    self.showPendingOpportunityIfPossible(for: key)
-                }
-                self.dropPendingOpportunitiesResolvedByPlan(
-                    decodedKeys: decodedKeys,
-                    listID: list.id,
-                    store: store,
-                    source: source
-                )
+        let client = client
+        let task = Task { [weak self] in
+            let result = await client.sendResult(endpoint.asRaw)
+            guard let self else { return }
+            guard self.latestPlanRequestID == requestID else {
+                self.debugLog("preloadPlan staleResponse ignored requestId=\(requestID.uuidString)")
+                return
             }
+            self.planTask = nil
+            self.activePlanSignature = nil
+            self.isLoading = false
+            self.handlePlanResult(
+                result,
+                requestID: requestID,
+                list: list,
+                opportunities: opportunities,
+                store: store,
+                source: source,
+                signature: signature,
+                retryNumber: retryNumber
+            )
         }
         planTask = task
-        task.resume()
+    }
+
+    /// Verarbeitet die Antwort des aktuellen Plan-Aufrufs. Die Dekodierung bleibt hier (tolerant, wie vorher).
+    private func handlePlanResult(
+        _ result: Result<RawJSON, APIError>,
+        requestID: UUID,
+        list: ShoppingList,
+        opportunities: [UpsellOpportunityRequest],
+        store: MobileStoreSummary,
+        source: String,
+        signature: PlanRequestSignature,
+        retryNumber: Int?
+    ) {
+        let decoded: UpsellPlanResponse
+        switch result {
+        case .failure(let error):
+            var statusLabel = "nil"
+            if case .http(let status, _) = error {
+                statusLabel = String(status)
+            }
+            debugLog("preloadPlan rawResponse requestId=\(requestID.uuidString) status=\(statusLabel) body=nil")
+            reportEvent(
+                eventType: "failed",
+                checkedProductId: nil,
+                suggestedProductId: nil,
+                store: store,
+                source: source,
+                metadataJson: metadataJson([
+                    "stage": "plan",
+                    "reason": error.isNetworkFailure ? "network" : "http_or_decode"
+                ])
+            )
+            debugLog("preloadPlan failed requestId=\(requestID.uuidString) error=\(error)")
+            return
+        case .success(let raw):
+            if let body = String(data: raw.data, encoding: .utf8) {
+                debugLog("preloadPlan rawResponse requestId=\(requestID.uuidString) status=ok body=\(body)")
+            } else {
+                debugLog("preloadPlan rawResponse requestId=\(requestID.uuidString) status=ok body=nil")
+            }
+            guard let value = try? decoder.decode(UpsellPlanResponse.self, from: raw.data) else {
+                reportEvent(
+                    eventType: "failed",
+                    checkedProductId: nil,
+                    suggestedProductId: nil,
+                    store: store,
+                    source: source,
+                    metadataJson: metadataJson([
+                        "stage": "plan",
+                        "reason": "http_or_decode"
+                    ])
+                )
+                debugLog("preloadPlan failed requestId=\(requestID.uuidString) error=http_or_decode")
+                return
+            }
+            decoded = value
+        }
+
+        let debug = decoded.debug
+        let evidence = PlanResponseEvidence(
+            responseSource: debug?.responseSource ?? decoded.source,
+            fallbackReason: debug?.fallbackReason,
+            retryable: debug?.retryable,
+            openAiElapsedMs: debug?.openAiElapsedMs,
+            totalTokens: debug?.totalTokens,
+            inputTokens: debug?.inputTokens,
+            outputTokens: debug?.outputTokens
+        )
+        if evidence.isRetryableCandidateLookupFailure {
+            // Transient pre-AI failure: not cached, not marked handled, not recorded as completed.
+            self.handleRetryableCandidateLookupFailure(
+                requestID: requestID,
+                retryNumber: retryNumber,
+                signature: signature,
+                list: list,
+                opportunities: opportunities,
+                store: store,
+                source: source,
+                evidence: evidence
+            )
+            return
+        }
+
+        self.lastCompletedPlanSignature = signature
+        self.retryState.clear(signature)
+        let expiresAt = decoded.expiresAt ?? Date().addingTimeInterval(60)
+        let responseSource = decoded.source ?? "unknown"
+        self.debugLog(
+            "preloadPlan decoded requestId=\(requestID.uuidString) source=\(responseSource) debug=\(self.debugSummary(decoded.debug)) opportunities=\(decoded.opportunities.map { "\($0.opportunityId):\($0.suggestions.map { $0.product.id })" })"
+        )
+        var decodedKeys: Set<PlanKey> = []
+        for opportunity in decoded.opportunities {
+            let key = self.makePlanKey(
+                opportunityId: opportunity.opportunityId,
+                listID: list.id,
+                store: store,
+                source: source
+            )
+            decodedKeys.insert(key)
+            self.cachedOpportunities[key] = CachedOpportunity(
+                response: opportunity,
+                responseSource: responseSource,
+                expiresAt: expiresAt
+            )
+            if opportunity.suggestions.isEmpty {
+                self.debugLog("preloadPlan cached loaded_empty key=\(self.keyDebug(key)) expiresAt=\(expiresAt)")
+            } else {
+                self.debugLog("preloadPlan cached loaded_with_suggestions key=\(self.keyDebug(key)) suggestions=\(opportunity.suggestions.map { "\($0.product.id):\($0.product.name)" }) expiresAt=\(expiresAt)")
+            }
+            self.showPendingOpportunityIfPossible(for: key)
+        }
+        self.dropPendingOpportunitiesResolvedByPlan(
+            decodedKeys: decodedKeys,
+            listID: list.id,
+            store: store,
+            source: source
+        )
     }
 
     private func handleRetryableCandidateLookupFailure(
@@ -749,11 +789,7 @@ final class UpsellSuggestionStore: ObservableObject {
         store: MobileStoreSummary,
         source: String,
         signature: PlanRequestSignature
-    ) -> URLRequest? {
-        guard let url = URL(string: "\(apiBase)/mobile/upsell/plan") else {
-            return nil
-        }
-
+    ) -> UpsellPlanEndpoint? {
         let request = UpsellPlanRequest(
             storeId: store.id,
             storeCode: store.storeCode,
@@ -764,22 +800,16 @@ final class UpsellSuggestionStore: ObservableObject {
             opportunities: opportunities
         )
 
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.timeoutInterval = 25
-
         do {
-            urlRequest.httpBody = try encoder.encode(request)
-            if let body = urlRequest.httpBody,
-               let raw = String(data: body, encoding: .utf8) {
+            let body = try encoder.encode(request)
+            if let raw = String(data: body, encoding: .utf8) {
                 debugLog("preloadPlan requestBody=\(raw)")
             }
-            return urlRequest
         } catch {
             debugLog("preloadPlan encodeFailed error=\(error.localizedDescription)")
             return nil
         }
+        return UpsellPlanEndpoint(body: request)
     }
 
     private func canonicalShoppingState(for list: ShoppingList) -> CanonicalShoppingState {
@@ -1046,10 +1076,6 @@ final class UpsellSuggestionStore: ObservableObject {
         source: String?,
         metadataJson: String?
     ) {
-        guard let url = URL(string: "\(apiBase)/mobile/upsell/events") else {
-            return
-        }
-
         let request = UpsellEventRequest(
             eventType: eventType,
             checkedProductId: checkedProductId,
@@ -1060,14 +1086,10 @@ final class UpsellSuggestionStore: ObservableObject {
             source: source,
             metadataJson: metadataJson
         )
-        sendBestEffort(request, to: url)
+        sendBestEffort(UpsellEventEndpoint(body: request))
     }
 
     private func reportDismissal(prompt: UpsellPrompt) {
-        guard let url = URL(string: "\(apiBase)/mobile/upsell/dismiss") else {
-            return
-        }
-
         let request = UpsellDismissRequest(
             checkedProductId: prompt.checkedProductId,
             suggestedProductId: nil,
@@ -1076,23 +1098,13 @@ final class UpsellSuggestionStore: ObservableObject {
             sessionId: nil,
             suppressMinutes: 24 * 60
         )
-        sendBestEffort(request, to: url)
+        sendBestEffort(UpsellDismissEndpoint(body: request))
     }
 
-    private func sendBestEffort<T: Encodable>(_ request: T, to url: URL) {
+    private func sendBestEffort<E: Endpoint>(_ endpoint: E) {
         guard AppEnvironment.allowsExtendedFeatures else { return }
-        var urlRequest = URLRequest(url: url)
-        urlRequest.httpMethod = "POST"
-        urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.timeoutInterval = 3
-
-        do {
-            urlRequest.httpBody = try encoder.encode(request)
-        } catch {
-            return
-        }
-
-        session.dataTask(with: urlRequest).resume()
+        let client = client
+        Task { await client.fire(endpoint) }
     }
 
     private func metadataJson(_ values: [String: String]) -> String? {
@@ -1132,5 +1144,15 @@ final class UpsellSuggestionStore: ObservableObject {
             return "nil"
         }
         return "requestId=\(debug.requestId ?? "nil") model=\(debug.model ?? "nil") source=\(debug.responseSource ?? "nil") elapsedMs=\(debug.elapsedMs.map(String.init) ?? "nil") openAiElapsedMs=\(debug.openAiElapsedMs.map(String.init) ?? "nil") inputTokens=\(debug.inputTokens.map(String.init) ?? "nil") outputTokens=\(debug.outputTokens.map(String.init) ?? "nil") totalTokens=\(debug.totalTokens.map(String.init) ?? "nil") cachedInputTokens=\(debug.cachedInputTokens.map(String.init) ?? "nil") reasoningTokens=\(debug.reasoningTokens.map(String.init) ?? "nil") fallbackReason=\(debug.fallbackReason ?? "nil") retryable=\(debug.retryable.map(String.init) ?? "nil") opportunities=\(debug.opportunityCount.map(String.init) ?? "nil") candidates=\(debug.candidateCount.map(String.init) ?? "nil")"
+    }
+}
+
+private extension APIError {
+    /// Transportfehler ohne HTTP-Status und ohne Dekodierung (Telemetrie-Grund `network`).
+    var isNetworkFailure: Bool {
+        switch self {
+        case .offline, .transport, .cancelled: true
+        case .http, .decoding: false
+        }
     }
 }

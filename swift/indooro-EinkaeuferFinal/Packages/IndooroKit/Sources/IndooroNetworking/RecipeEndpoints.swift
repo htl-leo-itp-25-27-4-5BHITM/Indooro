@@ -19,6 +19,8 @@ public struct RecipeListEndpoint: Endpoint {
     public var path: String { "/mobile/recipes" }
     public var timeout: Duration { .seconds(15) }
     public var retry: RetryPolicy { .idempotentRead }
+    /// Legacy: `+` wird unveraendert gesendet, wie in der Pilot-App bisher (URLComponents ohne Nachbearbeitung).
+    public var encodesPlusInQuery: Bool { false }
 
     public var query: [URLQueryItem] {
         var items = [
@@ -49,6 +51,8 @@ public struct RecipeSearchEndpoint: Endpoint {
     public var path: String { "/mobile/recipes/search" }
     public var timeout: Duration { .seconds(15) }
     public var retry: RetryPolicy { .idempotentRead }
+    /// Legacy: `+` wird unveraendert gesendet, wie in der Pilot-App bisher (URLComponents ohne Nachbearbeitung).
+    public var encodesPlusInQuery: Bool { false }
 
     public var query: [URLQueryItem] {
         [
@@ -91,6 +95,8 @@ public struct RecipeProductMappingEndpoint: Endpoint {
     public var path: String { "/mobile/recipes/\(recipeID.uuidString)/product-mapping" }
     public var timeout: Duration { .seconds(15) }
     public var retry: RetryPolicy { .idempotentRead }
+    /// Legacy: `+` wird unveraendert gesendet, wie in der Pilot-App bisher (URLComponents ohne Nachbearbeitung).
+    public var encodesPlusInQuery: Bool { false }
 
     public var query: [URLQueryItem] {
         var items: [URLQueryItem] = []
