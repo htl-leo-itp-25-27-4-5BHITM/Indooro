@@ -339,3 +339,28 @@ Stand 2026-10-18, Repo-Stand, Migration `V18` noch nicht ausgerollt. „Offen“
 | PERF-01…09, PERF-25…33, BUG-01/02/03/08/09/11 | **neu:** `optimize-backend-data-access` | – |
 | API-20, API-21, API-27, Versionierung, Codegen | **neu:** `establish-shared-api-contract` | – |
 | DC-09…25, SMELL-01…04 | Blueprint Phase „Code Quality“ | kein eigener Change (Aufräumarbeiten) |
+
+---
+
+## 7. Umsetzungsstand der SEC-Befunde (Change `harden-platform-security-baseline`)
+
+Stand 2026-10-18, Repo-Stand. „Behoben im Repo, Rollout offen“: Manifest bzw. Code ist fertig, aber noch nicht auf LeoCloud ausgerollt. „Offen (Mensch)“: Schritte, die nur auf dem Cluster oder mit Personen ausgefuehrt werden koennen (Details: `DEPLOYMENT.md`, `tasks.md`). „Offen (Code)“: Umsetzung fehlt noch.
+
+| ID | Umsetzungsstand | Nachweis / offen |
+| --- | --- | --- |
+| SEC-01 | behoben im Repo, Rollout offen | Prod-Realm ohne Benutzer (`k8s/keycloak-realm-prod.json`); Demo-Zuweisungen per `V17` deaktiviert. Offen (Mensch): LeoCloud-Passwoerter pruefen und rotieren (Task 1.1), reale Admin-Zuweisung setzen. |
+| SEC-02 | behoben im Repo, Rollout offen | Escaping im Editor (Tasks 3.1, 3.5), CSP-Header (3.4). Offen (Mensch): Browser-Pruefung auf LeoCloud (8.3). |
+| SEC-03 | behoben im Repo, Rollout offen | Keycloak 26.0.8 mit `start` und PostgreSQL, Secrets ausgelagert, Admin nicht ueber Ingress. Offen (Mensch): DB, Secret und Realm-ConfigMap anlegen, Rollout, Pruefung (8.1). |
+| SEC-04 | behoben im Repo, Rollout offen | OpenSearch und Dashboards `ClusterIP`; `k8s/network-policy.yaml` vorhanden. Offen (Mensch): NetworkPolicy erst nach Task 1.3 anwenden, Pruefung (8.2). |
+| SEC-05 | behoben im Repo, Rollout offen | Schleifen- und Eingabegrenzen in `PdfExportService` (Task 4.2). Offen (Mensch): Pruefung (8.4). |
+| SEC-07 | behoben im Repo, Rollout offen | `ErrorLogService.record` (nur 5xx und authentifizierte Admin-4xx), `ErrorLogRetentionJob` (30 Tage, 50 000 Zeilen). |
+| SEC-10 | behoben im Repo, Rollout offen | `V16__audit_actor_subject.sql`, `AuditLogService.currentActor()`; Audit fuer Tags, Produkte, Kategorien. |
+| SEC-11 | behoben im Repo, Rollout offen | `PdfImportService`: 10 MB, 50 Seiten, zeilenweises Parsing (Task 4.3). |
+| SEC-12 | behoben im Repo, Rollout offen | `@Valid`/`@Size` in `UpsellDtos`, `MobileRateLimitFilter` (429 mit `Retry-After`). Der Limiter vertraut dem ersten `X-Forwarded-For`-Hop. |
+| SEC-13 | offen (Code) | Kein Task in `tasks.md`. Retention und Begrenzung von `POST /api/mobile/upsell/events` fehlen; Task 4.9 begrenzt nur die Rate. |
+| SEC-15 | behoben im Repo, Rollout offen | Kunden-Seite ohne `innerHTML` mit Nutzerdaten (Task 3.2). |
+| SEC-16 | behoben im Repo, Rollout offen | Tailwind Play CDN aus `customer/index.html` entfernt (Task 3.3). |
+| SEC-17 | behoben im Repo, Rollout offen | CSP, `X-Content-Type-Options`, `Referrer-Policy`, HSTS in `application.properties` (Task 3.4). Ingress-Header sind nicht gesetzt. |
+| SEC-20 | behoben im Repo, Rollout offen | 5xx-Antworten liefern generischen Text und `correlationId`. |
+| SEC-21 | behoben im Repo, Rollout offen | Anonyme Upsell-`debug`-Felder auf `requestId`, `responseSource`, `fallbackReason` reduziert (`MobileUpsellResource`). |
+| SEC-24 | behoben im Repo, Rollout offen | DB-Passwort aus Secret, Backend `ClusterIP`, Container als Nicht-root (UID 10001) mit Read-only-Dateisystem, fester SHA-Tag. Offen (Mensch): CI-Image mit neuem Dockerfile bauen (`a47c5e6` startet damit nicht), Passwoerter rotieren, NetworkPolicy. |

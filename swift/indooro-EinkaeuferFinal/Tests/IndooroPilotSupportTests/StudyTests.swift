@@ -6,7 +6,7 @@ final class StudyTests: XCTestCase {
         for value in ["T1", "T07", "T123"] { XCTAssertTrue(StudyFormat.isValidID(value)) }
         for value in ["Anna", "T", "T1234", "T1\n", "../T1", " T1", "T١"] { XCTAssertFalse(StudyFormat.isValidID(value)) }
         XCTAssertEqual(StudyFormat.csvField("Käse, \"mild\"\nneu"), "\"Käse, \"\"mild\"\"\nneu\"")
-        XCTAssertEqual(StudyFormat.header.split(separator: ",").count, 16)
+        XCTAssertEqual(StudyFormat.header.split(separator: ",").count, 19)
     }
     func testCounterDifferencesNeverInventMissingMeasurements() {
         let start = StudyCounters(routeBuildCount: 4, rerouteCount: 2, stopChangeWithoutEventCount: 1, manualPositionCount: 5)
@@ -16,6 +16,16 @@ final class StudyTests: XCTestCase {
         XCTAssertEqual(end.difference(from: start).stopChangeWithoutEventCount, 0)
         XCTAssertNil(start.difference(from: end).rerouteCount)
         XCTAssertNil(StudyCounters().difference(from: start).manualPositionCount)
+    }
+    func testArrivalSuggestionCounterDifferences() {
+        let start = StudyCounters(arrivalSuggestionShownCount: 1, arrivalSuggestionAcceptedCount: 0, arrivalSuggestionRejectedCount: 1)
+        let end = StudyCounters(arrivalSuggestionShownCount: 4, arrivalSuggestionAcceptedCount: 2, arrivalSuggestionRejectedCount: 1)
+        let delta = end.difference(from: start)
+        XCTAssertEqual(delta.arrivalSuggestionShownCount, 3)
+        XCTAssertEqual(delta.arrivalSuggestionAcceptedCount, 2)
+        XCTAssertEqual(delta.arrivalSuggestionRejectedCount, 0)
+        XCTAssertNil(start.difference(from: StudyCounters()).arrivalSuggestionShownCount)
+        XCTAssertNil(StudyCounters().difference(from: start).arrivalSuggestionShownCount)
     }
     @MainActor
     func testLocalSessionDurationOutcomesAndPersistence() async throws {

@@ -430,7 +430,7 @@ struct StoreMapPage: View {
     private var storeOverviewHeader: some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("SPAR-Filialen")
+                Text("Filialen")
                     .font(.system(.title2, design: .rounded, weight: .bold))
                     .foregroundStyle(.primary)
                     .accessibilityAddTraits(.isHeader)
@@ -488,20 +488,28 @@ struct StoreMapPage: View {
 
     @ViewBuilder
     private var storeOverviewBottomPanel: some View {
-        if !storePins.isEmpty {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(storePins) { pin in
-                        StoreOverviewCard(
-                            store: pin.store,
-                            isLoading: pendingStoreSelectionID == pin.store.id,
-                            accent: accent,
-                            action: { selectStore(pin.store) }
-                        )
+        if !storePins.isEmpty || !storesWithoutCoordinates.isEmpty {
+            VStack(spacing: 0) {
+                if !storePins.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            ForEach(storePins) { pin in
+                                StoreOverviewCard(
+                                    store: pin.store,
+                                    isLoading: pendingStoreSelectionID == pin.store.id,
+                                    accent: accent,
+                                    action: { selectStore(pin.store) }
+                                )
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                     }
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
+
+                if !storesWithoutCoordinates.isEmpty {
+                    storesWithoutCoordinatesChipRow
+                }
             }
             .background(.ultraThinMaterial)
         } else if let message = beaconManager.mobileStoresErrorMessage {
@@ -535,6 +543,51 @@ struct StoreMapPage: View {
             .padding(.horizontal, 16)
             .padding(.bottom, 12)
         }
+    }
+
+    /// Aktive Filialen ohne Kartenposition. Auswahl läuft über dieselbe `selectStore`-Aktion wie bei den Pins.
+    private var storesWithoutCoordinatesChipRow: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Ohne Kartenposition")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 16)
+                .accessibilityAddTraits(.isHeader)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(storesWithoutCoordinates) { store in
+                        Button {
+                            selectStore(store)
+                        } label: {
+                            HStack(spacing: 6) {
+                                if pendingStoreSelectionID == store.id {
+                                    ProgressView()
+                                        .controlSize(.small)
+                                } else {
+                                    Image(systemName: "storefront.fill")
+                                        .font(.caption.weight(.bold))
+                                }
+                                Text(store.name)
+                                    .font(.caption.weight(.semibold))
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(accent)
+                            .padding(.horizontal, 12)
+                            .frame(minHeight: 44)
+                            .background(accent.opacity(0.11), in: Capsule())
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(pendingStoreSelectionID != nil)
+                        .accessibilityLabel("\(store.name), \(store.displaySubtitle)")
+                        .accessibilityIdentifier("storeChip-\(store.storeCode)")
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .padding(.vertical, 10)
     }
 
     @ViewBuilder
@@ -610,6 +663,18 @@ struct StoreMapPage: View {
             }
 
             Spacer(minLength: 0)
+
+            if beaconManager.appliedLayoutIsFallback {
+                Label("Standard", systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(Color.a11yWarningText)
+                    .lineLimit(1)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.a11yWarningText.opacity(0.12), in: Capsule())
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Warnung: Standard-Layout, kein aktives Filial-Layout")
+            }
 
             Button { showSettings = true } label: {
                 Image(systemName: "slider.horizontal.3")
@@ -768,43 +833,102 @@ struct StoreMapPage: View {
         .background(MapFloatingSurface())
     }
 
+    /// Erledigt-Pfad (auch fuer „Ja, erledigt“ des Ankunftsvorschlags): bestehende Route ueber den Session-Manager.
+    private func completeCurrentStop() {
+        let completedStop = activeShoppingSnapshot?.currentStop
+        shoppingSessionManager.markCurrentStopDone(
+            listManager: shoppingListManager,
+            beaconManager: beaconManager
+        )
+        requestUpsellForCompletedStop(completedStop)
+    }
+
+    /// Nicht blockierender Vorschlag oberhalb des Tour-Panels; die Erledigt-Schaltfläche bleibt frei.
+    private func arrivalSuggestionBanner(_ suggestion: ArrivalSuggestion) -> some View {
+        let question = "Bist du bei \(suggestion.title)?"
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(question)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+
+            HStack(spacing: 8) {
+                Button {
+                    // Bestaetigt: der Detektor zaehlt, danach der bestehende Erledigt-Pfad.
+                    if navigationSession.acceptArrivalSuggestion() != nil {
+                        completeCurrentStop()
+                    }
+                } label: {
+                    Text("Ja, erledigt")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .background(accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityIdentifier("arrivalSuggestionYes")
+
+                Button {
+                    navigationSession.rejectArrivalSuggestion()
+                } label: {
+                    Text("Noch nicht")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(accent)
+                .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityIdentifier("arrivalSuggestionNo")
+            }
+        }
+        .padding(12)
+        .background(MapFloatingSurface())
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(question)
+        .accessibilityIdentifier("arrivalSuggestion")
+        .onAppear {
+            AccessibilityNotification.Announcement(question).post()
+        }
+    }
+
     @ViewBuilder
     private var bottomCard: some View {
         if let snapshot = activeShoppingSnapshot {
-            ShoppingSessionPanel(
-                snapshot: snapshot,
-                routeOriginText: routeOriginText,
-                locationText: { stop in stopLocationText(for: stop) },
-                onOpenList: onOpenLists,
-                onMarkCurrentStopDone: {
-                    let completedStop = activeShoppingSnapshot?.currentStop
-                    shoppingSessionManager.markCurrentStopDone(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
-                    requestUpsellForCompletedStop(completedStop)
-                },
-                onSkipCurrentStop: {
-                    let skippedStop = activeShoppingSnapshot?.currentStop
-                    shoppingSessionManager.skipCurrentStop(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
-                    requestUpsellForCompletedStop(skippedStop)
-                },
-                onToggleMode: {
-                    shoppingSessionManager.toggleRouteMode(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
-                },
-                onReplan: {
-                    shoppingSessionManager.replan(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
+            VStack(spacing: 8) {
+                if let suggestion = navigationSession.arrivalSuggestion {
+                    arrivalSuggestionBanner(suggestion)
                 }
-            )
+                ShoppingSessionPanel(
+                    snapshot: snapshot,
+                    routeOriginText: routeOriginText,
+                    locationText: { stop in stopLocationText(for: stop) },
+                    onOpenList: onOpenLists,
+                    onMarkCurrentStopDone: {
+                        completeCurrentStop()
+                    },
+                    onSkipCurrentStop: {
+                        let skippedStop = activeShoppingSnapshot?.currentStop
+                        shoppingSessionManager.skipCurrentStop(
+                            listManager: shoppingListManager,
+                            beaconManager: beaconManager
+                        )
+                        requestUpsellForCompletedStop(skippedStop)
+                    },
+                    onToggleMode: {
+                        shoppingSessionManager.toggleRouteMode(
+                            listManager: shoppingListManager,
+                            beaconManager: beaconManager
+                        )
+                    },
+                    onReplan: {
+                        shoppingSessionManager.replan(
+                            listManager: shoppingListManager,
+                            beaconManager: beaconManager
+                        )
+                    }
+                )
+            }
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, 10)
@@ -943,14 +1067,17 @@ struct StoreMapPage: View {
         }
     }
 
+    /// Aktive Filialen ohne gültige Koordinate; sie erscheinen nur in der Chip-Zeile „Ohne Kartenposition“.
+    private var storesWithoutCoordinates: [MobileStoreSummary] {
+        beaconManager.mobileStores.filter { coordinate(for: $0) == nil }
+    }
+
     private var storeOverviewSubtitle: String {
         if beaconManager.isLoadingMobileStores && beaconManager.mobileStores.isEmpty {
             return "Filialen werden geladen"
         }
-        if storePins.count == 1 {
-            return "1 Filiale"
-        }
-        return "\(storePins.count) Filialen"
+        let count = beaconManager.mobileStores.count
+        return count == 1 ? "1 Filiale" : "\(count) Filialen"
     }
 
     private var activeRouteDistanceMeters: Double? {
@@ -1059,44 +1186,10 @@ struct StoreMapPage: View {
         return MKCoordinateRegion(center: center, span: span)
     }
 
+    /// Kartenposition einer Filiale; `nil` ohne gültige Koordinate (keine Pins, kein Kamera-Fit).
     private func coordinate(for store: MobileStoreSummary) -> CLLocationCoordinate2D? {
-        if let latitude = store.latitude,
-           let longitude = store.longitude,
-           (-90...90).contains(latitude),
-           (-180...180).contains(longitude) {
-            return CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-        }
-
-        return fallbackCoordinate(for: store)
-    }
-
-    private func fallbackCoordinate(for store: MobileStoreSummary) -> CLLocationCoordinate2D {
-        let normalizedCity = store.city
-            .folding(options: [.diacriticInsensitive, .caseInsensitive], locale: Locale(identifier: "de_AT"))
-            .lowercased()
-
-        let base: CLLocationCoordinate2D
-        if normalizedCity.contains("leonding") {
-            base = CLLocationCoordinate2D(latitude: 48.2794, longitude: 14.2528)
-        } else if normalizedCity.contains("hagenberg") {
-            base = CLLocationCoordinate2D(latitude: 48.3676, longitude: 14.5168)
-        } else if normalizedCity.contains("horsching") {
-            base = CLLocationCoordinate2D(latitude: 48.2267, longitude: 14.1779)
-        } else if normalizedCity.contains("linz") {
-            base = CLLocationCoordinate2D(latitude: 48.3069, longitude: 14.2858)
-        } else {
-            base = CLLocationCoordinate2D(latitude: 48.3069, longitude: 14.2858)
-        }
-
-        let seed = store.storeCode.unicodeScalars.reduce(17) { partialResult, scalar in
-            (partialResult &* 31) &+ Int(scalar.value)
-        }
-        let latitudeOffset = Double((abs(seed) % 7) - 3) * 0.0016
-        let longitudeOffset = Double((abs(seed / 7) % 7) - 3) * 0.0022
-        return CLLocationCoordinate2D(
-            latitude: base.latitude + latitudeOffset,
-            longitude: base.longitude + longitudeOffset
-        )
+        guard let valid = store.validCoordinate else { return nil }
+        return CLLocationCoordinate2D(latitude: valid.latitude, longitude: valid.longitude)
     }
 
     /// Name des Routen-Ursprungs; nil bei vertrauenswuerdiger Position oder ohne Route.
@@ -1212,10 +1305,11 @@ private struct StoreOverviewCard: View {
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
 
-                        Text(store.city)
+                        Text(store.displaySubtitle)
                             .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
-                            .lineLimit(1)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
                     }
 
                     Spacer(minLength: 0)

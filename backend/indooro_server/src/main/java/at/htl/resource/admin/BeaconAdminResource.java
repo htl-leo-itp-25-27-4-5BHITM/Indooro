@@ -18,16 +18,20 @@ import jakarta.ws.rs.core.MediaType;
 
 import java.util.Map;
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/beacons")
 @RolesAllowed({"admin", "region-manager", "store-manager"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "beacons")
 public class BeaconAdminResource extends AdminApiSupport {
 
     @Inject
     BeaconAdminService beaconAdminService;
 
+    @Operation(operationId = "listBeacons")
     @GET
     public Object listBeacons(@QueryParam("status") String status,
                               @QueryParam("assigned") Boolean assigned,
@@ -36,29 +40,34 @@ public class BeaconAdminResource extends AdminApiSupport {
         return beaconAdminService.listBeacons(parseStatus(status), assigned, storeId, query);
     }
 
+    @Operation(operationId = "listFreeBeacons")
     @GET
     @Path("/free")
     public Object listFreeBeacons() {
         return beaconAdminService.listFreeBeacons();
     }
 
+    @Operation(operationId = "createBeacon")
     @POST
     public BeaconDtos.BeaconResponse createBeacon(@Valid BeaconDtos.BeaconCreateRequest request) {
         return beaconAdminService.createBeacon(request);
     }
 
+    @Operation(operationId = "bulkCreateBeacons")
     @POST
     @Path("/bulk")
     public BeaconDtos.BeaconBulkCreateResponse bulkCreate(@Valid BeaconDtos.BeaconBulkCreateRequest request) {
         return beaconAdminService.bulkCreate(request);
     }
 
+    @Operation(operationId = "getBeacon")
     @GET
     @Path("/{beaconId}")
     public BeaconDtos.BeaconResponse getBeacon(@PathParam("beaconId") UUID beaconId) {
         return beaconAdminService.getBeacon(beaconId);
     }
 
+    @Operation(operationId = "updateBeacon")
     @PUT
     @Path("/{beaconId}")
     public BeaconDtos.BeaconResponse updateBeacon(@PathParam("beaconId") UUID beaconId,
@@ -66,12 +75,14 @@ public class BeaconAdminResource extends AdminApiSupport {
         return beaconAdminService.updateBeacon(beaconId, request);
     }
 
+    @Operation(operationId = "archiveBeacon")
     @PATCH
     @Path("/{beaconId}/archive")
     public BeaconDtos.BeaconResponse archiveBeacon(@PathParam("beaconId") UUID beaconId) {
         return beaconAdminService.archiveBeacon(beaconId);
     }
 
+    @Operation(operationId = "assignBeacon")
     @POST
     @Path("/{beaconId}/assign")
     public BeaconDtos.BeaconAssignmentResponse assignBeacon(@PathParam("beaconId") UUID beaconId,
@@ -79,6 +90,7 @@ public class BeaconAdminResource extends AdminApiSupport {
         return beaconAdminService.assignBeacon(beaconId, request.storeId());
     }
 
+    @Operation(operationId = "releaseBeacon")
     @POST
     @Path("/{beaconId}/release")
     public Map<String, Object> releaseBeacon(@PathParam("beaconId") UUID beaconId) {

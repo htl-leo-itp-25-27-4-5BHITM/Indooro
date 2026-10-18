@@ -503,7 +503,7 @@ final class ARNavViewController: UIViewController, ARSessionDelegate {
     private func updateTrackingState(_ state: ARCamera.TrackingState, externalLowConfidence: Bool) {
         if externalLowConfidence {
             overlayOpacityFactor = 0.32
-            publishTrackingMessage("Signal schwach. Kalibrierung empfohlen (Ich stehe hier).", dim: true)
+            publishTrackingMessage("Signal schwach. Kalibrierung empfohlen (Position setzen).", dim: true)
             return
         }
 

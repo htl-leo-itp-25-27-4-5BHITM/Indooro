@@ -38,7 +38,7 @@ These gaps allow account takeover, stored XSS, data destruction, cost abuse, and
 
 ## Impact
 
-- Backend: `AuditLogService`, `AdminAccessService`, `ApiThrowableExceptionMapper`, `ApiWebApplicationExceptionMapper`, `ErrorLogService`, `PdfExportService`, `PdfImportService`, `StoreLayoutAdminService`, `LayoutService`, `RecipeService` (tags), `AdminProductResource`, `ProductResource`, `CategoryResource`, `UpsellDtos`, `UpsellSuggestionService`, `application.properties`, new Flyway migrations `V12__disable_demo_access_outside_dev.sql` and `V13__audit_actor_subject.sql`, new dependencies `quarkus-smallrye-health` and `quarkus-scheduler`.
+- Backend: `AuditLogService`, `AdminAccessService`, `ApiThrowableExceptionMapper`, `ApiWebApplicationExceptionMapper`, `ErrorLogService`, `PdfExportService`, `PdfImportService`, `StoreLayoutAdminService`, `LayoutService`, `RecipeService` (tags), `AdminProductResource`, `ProductResource`, `CategoryResource`, `UpsellDtos`, `UpsellSuggestionService`, `application.properties`, new Flyway migrations `V17__disable_demo_access_outside_dev.sql` and `V16__audit_actor_subject.sql`, new dependencies `quarkus-smallrye-health` and `quarkus-scheduler`.
 - Admin UI: `admin/editor.js`, `admin/editor/index.html`; customer UI: `customer/app.js`, `customer/index.html`, `customer/style.css`.
 - Infrastructure: `k8s/keycloak.yaml` (split into realm/secret handling), `k8s/opensearch.yaml`, `k8s/backend.yaml`, `k8s/postgres.yaml`, `k8s/backend-ingress.yaml`, new `k8s/network-policy.yaml`, `src/main/docker/Dockerfile`, `keycloak/realm/` (dev realm keeps demo users).
 - iOS: no code change; `NSAllowsArbitraryLoads` removal stays in `modernize-ios-client-architecture`.

@@ -152,7 +152,10 @@ struct ContentView: View {
                 return StudyCounters(routeBuildCount: navigationSession.routeBuildCount,
                                      rerouteCount: navigationSession.rerouteCount,
                                      stopChangeWithoutEventCount: navigationSession.stopChangeWithoutEventCount,
-                                     manualPositionCount: navigationSession.manualPositionCount)
+                                     manualPositionCount: navigationSession.manualPositionCount,
+                                     arrivalSuggestionShownCount: navigationSession.arrivalSuggestionShownCount,
+                                     arrivalSuggestionAcceptedCount: navigationSession.arrivalSuggestionAcceptedCount,
+                                     arrivalSuggestionRejectedCount: navigationSession.arrivalSuggestionRejectedCount)
             }
             showsIntroduction = !introductionCompleted
             let provider: () -> MobileStoreSummary? = { [weak beaconManager] in

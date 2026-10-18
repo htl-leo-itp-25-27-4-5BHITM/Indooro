@@ -28,6 +28,9 @@ public class AuditLogEntity extends AuditableEntity {
     @Column(name = "actor_label", length = 120)
     public String actorLabel;
 
+    @Column(name = "actor_subject", length = 120)
+    public String actorSubject;
+
     @Column(columnDefinition = "TEXT")
     public String summary;
 

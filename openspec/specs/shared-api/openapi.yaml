@@ -59,30 +59,10 @@ tags:
     description: Pilot readiness report per store (layout, products, beacons).
   - name: beacons
     description: Beacon inventory and assignments.
-  - name: example
-    description: Quarkus template resource (dead code, DC-16).
 
 security: []
 
 paths:
-  /hello:
-    get:
-      tags: [example]
-      operationId: hello
-      deprecated: true
-      summary: Quarkus template greeting.
-      x-indooro-access: public
-      x-indooro-consumers: [none]
-      x-indooro-findings: [DC-16]
-      responses:
-        "200":
-          description: Greeting text.
-          content:
-            text/plain:
-              schema:
-                type: string
-                example: Hello from Quarkus REST
-
   # ---------------------------------------------------------------- mobile
   /api/mobile/stores:
     get:
@@ -333,6 +313,8 @@ paths:
           in: query
           description: No upper bound is enforced on this legacy route.
           schema: { type: integer, default: 100, minimum: 1, maximum: 500 }
+        - $ref: "#/components/parameters/StoreIdTextQuery"
+        - $ref: "#/components/parameters/StoreCodeQuery"
       responses:
         "200":
           description: Products. The array may contain null entries (finding API-14).
@@ -408,6 +390,8 @@ paths:
       x-indooro-consumers: [api-tests]
       parameters:
         - $ref: "#/components/parameters/ProductIdPath"
+        - $ref: "#/components/parameters/StoreIdTextQuery"
+        - $ref: "#/components/parameters/StoreCodeQuery"
       responses:
         "200":
           description: Product.
@@ -425,6 +409,9 @@ paths:
       x-indooro-access: role:admin
       x-indooro-consumers: [admin-ui, api-tests]
       x-indooro-findings: [API-20]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdQuery"
+        - $ref: "#/components/parameters/StoreCodeQuery"
       requestBody:
         required: true
         content:
@@ -757,6 +744,55 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/ServerError" }
+  /api/admin/index/reindex:
+    post:
+      tags: [maintenance]
+      operationId: reindexProducts
+      summary: Copy products into the next version index (products_vN) and verify document counts.
+      description: Deletes nothing. The source index, existing versions and the alias stay unchanged; on a count mismatch the target is kept and the request fails with 500.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [none]
+      responses:
+        "200":
+          description: Copy finished and document counts match.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReindexResult" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/ServerError" }
+  /api/admin/index/activate:
+    post:
+      tags: [maintenance]
+      operationId: activateProductIndex
+      summary: Switch the product alias atomically to a version index.
+      description: Deletes no index. Document counts of the target and the source are compared first; a mismatch returns 409 unless force=true.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [none]
+      parameters:
+        - name: index
+          in: query
+          description: Version index name `<prefix><N>`, for example `products_v12`. Missing or malformed names return 400.
+          schema: { type: string }
+        - name: force
+          in: query
+          description: Switch even when document counts differ.
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          description: Alias switched.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ActivateResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/admin/health:
     get:
       tags: [maintenance]
@@ -847,6 +883,8 @@ paths:
       x-indooro-consumers: [admin-ui, api-tests]
       x-indooro-findings: [PERF-23]
       parameters:
+        - $ref: "#/components/parameters/StoreIdQuery"
+        - $ref: "#/components/parameters/StoreCodeQuery"
         - name: page
           in: query
           description: Zero-based result page. When supplied, the response is a PageResponse.
@@ -903,6 +941,50 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "500": { $ref: "#/components/responses/ServerError" }
+  /api/admin/products/bulk:
+    post:
+      tags: [admin-products]
+      operationId: bulkImportAdminProducts
+      summary: Bulk-import one store's products; ordered row outcomes, writes are not atomic.
+      description: "Store-scoped variant of `POST /api/products/bulk`. storeId or storeCode is required and the caller needs scope on that store. Items naming another store are reported as failed rows. An identical Idempotency-Key and body replays the stored answer (header `Idempotent-Replay: true`); a reused key with another body or store returns 409."
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdQuery"
+        - $ref: "#/components/parameters/StoreCodeQuery"
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: 1 to 100 characters from A-Z, a-z, 0-9, dot, underscore, or hyphen.
+          schema: { type: string, maxLength: 100, pattern: "^[A-Za-z0-9._-]{1,100}$" }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              minItems: 1
+              items: { $ref: "#/components/schemas/Product" }
+      responses:
+        "200":
+          description: "Ordered results for each submitted row. Replays carry the header `Idempotent-Replay: true`."
+          headers:
+            Idempotent-Replay:
+              description: Present with value `true` when the stored answer of an identical request is returned.
+              schema: { type: string, enum: ["true"] }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503":
+          description: Transport outcome is ambiguous; verify affected document IDs before retrying.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
   /api/admin/products/{id}:
     delete:
       tags: [admin-products]
@@ -913,6 +995,8 @@ paths:
       x-indooro-consumers: [admin-ui, api-tests]
       parameters:
         - $ref: "#/components/parameters/ProductIdPath"
+        - $ref: "#/components/parameters/StoreIdQuery"
+        - $ref: "#/components/parameters/StoreCodeQuery"
       responses:
         "204": { description: Deleted. }
         "400": { $ref: "#/components/responses/BadRequest" }
@@ -2207,6 +2291,22 @@ components:
               id: { type: string }
               status: { type: string, enum: [saved, failed, unknown] }
               reason: { type: [string, "null"] }
+    ReindexResult:
+      type: object
+      required: [source, target, sourceCount, targetCount, status]
+      properties:
+        source: { type: string }
+        target: { type: string, description: "Version index created by the copy, for example products_v12." }
+        sourceCount: { type: integer, minimum: 0 }
+        targetCount: { type: integer, minimum: 0 }
+        status: { type: string, enum: [OK] }
+    ActivateResult:
+      type: object
+      required: [alias, index, previous]
+      properties:
+        alias: { type: string }
+        index: { type: string, description: Version index the alias points to after the switch. }
+        previous: { type: array, items: { type: string }, description: Version indices that carried the alias before the switch. }
     RecordStatus:
       type: string
       enum: [ACTIVE, ARCHIVED]
@@ -2267,7 +2367,7 @@ components:
         label: { type: string, description: Untrusted text; clients must escape it (finding SEC-02). }
         category: { type: [string, integer] }
         meter: { type: [string, integer] }
-        layoutCode: { type: string, description: When published on a shelf, its category/section prefix must equal that shelf's category field. }
+        layoutCode: { type: string, description: "When published on a shelf, its category/section prefix must equal that shelf's category field." }
         color: { type: string }
         beaconId: { type: string, description: Untrusted text; clients must escape it. }
         beaconCode: { type: string }
@@ -2903,7 +3003,7 @@ components:
       required: [beaconCode, uuid]
       properties:
         beaconCode: { type: string, maxLength: 60 }
-        uuid: { type: string, maxLength: 40, description: 32 hex characters, hyphens allowed. }
+        uuid: { type: string, maxLength: 40, description: "32 hex characters, hyphens allowed." }
         major: { type: [integer, "null"], minimum: 0, maximum: 65535, description: Required together with minor. }
         minor: { type: [integer, "null"], minimum: 0, maximum: 65535, description: Required together with major. }
         notes: { type: [string, "null"], maxLength: 2000 }
@@ -2929,6 +3029,7 @@ components:
         id: { type: string, format: uuid }
         storeCode: { type: string }
         name: { type: string }
+        regionId: { type: [string, "null"], format: uuid }
     BeaconResponse:
       type: object
       properties:

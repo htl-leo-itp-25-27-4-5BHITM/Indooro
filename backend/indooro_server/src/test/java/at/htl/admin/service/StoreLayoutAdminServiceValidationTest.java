@@ -49,7 +49,7 @@ class StoreLayoutAdminServiceValidationTest {
         service.adminAccessService = mock(AdminAccessService.class);
         service.storeAdminService = mock(StoreAdminService.class);
         service.layoutVersionRepository = mock(LayoutVersionRepository.class);
-        service.auditLogService = mock(AuditLogService.class);
+        service.auditLogService = systemAuditLog();
         service.beaconAssignmentRepository = mock(BeaconAssignmentRepository.class);
         service.objectMapper = new ObjectMapper();
 
@@ -70,5 +70,11 @@ class StoreLayoutAdminServiceValidationTest {
         ArgumentCaptor<LayoutVersionEntity> persisted = ArgumentCaptor.forClass(LayoutVersionEntity.class);
         verify(service.layoutVersionRepository).persist(persisted.capture());
         assertEquals(layout, persisted.getValue().layoutJson);
+    }
+
+    private static AuditLogService systemAuditLog() {
+        AuditLogService audit = mock(AuditLogService.class);
+        when(audit.currentActor()).thenReturn(AuditLogService.Actor.SYSTEM);
+        return audit;
     }
 }

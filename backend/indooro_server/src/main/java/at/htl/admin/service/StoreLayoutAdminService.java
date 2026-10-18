@@ -115,8 +115,9 @@ public class StoreLayoutAdminService {
         entity.changeNote = trimToNull(request.changeNote());
         entity.layoutJson = normalizeLayout(request.layout(), store.name);
         entity.status = shouldActivate ? LayoutVersionStatus.ACTIVE : LayoutVersionStatus.DRAFT;
-        entity.createdByRole = "SYSTEM";
-        entity.createdByLabel = "system";
+        AuditLogService.Actor actor = auditLogService.currentActor();
+        entity.createdByRole = actor.role();
+        entity.createdByLabel = actor.label();
         entity.activatedAt = shouldActivate ? Instant.now() : null;
         layoutVersionRepository.persist(entity);
 

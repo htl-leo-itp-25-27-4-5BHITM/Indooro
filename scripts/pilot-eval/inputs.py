@@ -38,6 +38,10 @@ STUDY_COLUMNS = (
     "manual_position_count", "reroute_count", "stop_change_without_event_count",
     "app_error_count",
 )
+# Ab der Ankunftsvorschlag-Version; aeltere Exporte haben diese Spalten nicht und bleiben gueltig.
+STUDY_OPTIONAL_COLUMNS = (
+    "arrival_suggestion_shown_count", "arrival_suggestion_accepted_count", "arrival_suggestion_rejected_count",
+)
 SURVEY_COLUMNS = ("test_id", "q1", "q2", "q3", "q4", "q5", "freitext")
 SURVEY_QUESTIONS = (
     ("q1", "Würde die App wieder nutzen"),
@@ -146,17 +150,18 @@ def _csv_records(path: Path) -> tuple[list[str], list[tuple[int, list[str]]]]:
     return header, records[1:]
 
 
-def _columns(name: str, header: list[str], expected: tuple[str, ...]) -> dict[str, int]:
+def _columns(name: str, header: list[str], expected: tuple[str, ...], optional: tuple[str, ...] = ()) -> dict[str, int]:
     duplicate = next((c for c in header if header.count(c) > 1), None)
     if duplicate is not None:
         raise _err(name, 1, f"doppelte Spalte „{duplicate}“")
     missing = [c for c in expected if c not in header]
     if missing:
         raise _err(name, 1, "fehlende Spalte(n): " + ", ".join(f"„{c}“" for c in missing))
-    unknown = [c for c in header if c not in expected]
+    unknown = [c for c in header if c not in expected and c not in optional]
     if unknown:
         raise _err(name, 1, f"unbekannte Spalte „{unknown[0]}“")
-    return {c: header.index(c) for c in expected}
+    present = tuple(c for c in optional if c in header)
+    return {c: header.index(c) for c in expected + present}
 
 
 def _check_width(name: str, line: int, row: list[str], width: int) -> None:
@@ -289,7 +294,7 @@ def _study_task(name: str, line: int, cols: dict[str, int], row: list[str]) -> T
 def _study_csv(path: Path, seen: dict[tuple, tuple[str, int]]) -> list[Task]:
     name = path.name
     header, records = _csv_records(path)
-    cols = _columns(name, header, STUDY_COLUMNS)
+    cols = _columns(name, header, STUDY_COLUMNS, STUDY_OPTIONAL_COLUMNS)
     tasks: list[Task] = []
     for line, row in records:
         _check_width(name, line, row, len(header))

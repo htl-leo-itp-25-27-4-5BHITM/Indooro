@@ -42,7 +42,8 @@ let package = Package(
                 "Utilities/AnchorPayload.swift",
                 "Utilities/AccessibilityText.swift",
                 "Utilities/AccessibilityPalette.swift",
-                "Utilities/ProductEndpoint.swift"
+                "Utilities/ProductEndpoint.swift",
+                "Utilities/ArrivalSuggestionDetector.swift"
             ]
         ),
         .testTarget(

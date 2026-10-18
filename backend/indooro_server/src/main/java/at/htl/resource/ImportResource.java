@@ -17,8 +17,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/convert")
+@Tag(name = "utility")
 public class ImportResource {
 
     @Inject
@@ -33,6 +36,7 @@ public class ImportResource {
             String layoutCode
     ) {}
 
+    @Operation(operationId = "convertPdfToJson")
     @POST
     @Path("/pdf-to-json")
     @Consumes(MediaType.MULTIPART_FORM_DATA)

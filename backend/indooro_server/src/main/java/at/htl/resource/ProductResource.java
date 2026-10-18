@@ -2,7 +2,10 @@ package at.htl.resource;
 
 
 import at.htl.admin.service.AdminAccessService;
+import at.htl.admin.service.AuditLogService;
+import at.htl.admin.util.AuditEntityIds;
 import at.htl.model.Product;
+import at.htl.service.CatalogBulkResult;
 import at.htl.service.CatalogStoreResolver;
 import at.htl.service.CatalogStoreResolver.CatalogStoreException;
 import at.htl.service.CatalogStoreResolver.ResolvedStore;
@@ -19,13 +22,18 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/products")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "catalog")
 public class ProductResource {
 
     private static final Logger LOG = Logger.getLogger(ProductResource.class);
@@ -45,6 +53,9 @@ public class ProductResource {
     @Inject
     LegacyDocumentGuard legacyDocumentGuard;
 
+    @Inject
+    AuditLogService auditLogService;
+
     /** Store used for read requests that name no store. Empty = no default, old behavior (no store filter). */
     @ConfigProperty(name = "indooro.catalog.default-store-code")
     Optional<String> defaultStoreCode;
@@ -53,11 +64,12 @@ public class ProductResource {
      * Suche nach Produkten
      * GET /api/products/search?q=apfel&size=10&storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "searchProducts")
     @GET
     @Path("/search")
     @PermitAll
     public Response searchProducts(
-            @QueryParam("q") String query,
+            @Parameter(required = true) @QueryParam("q") String query,
             @QueryParam("size") @DefaultValue("10") Integer size,
             @QueryParam("storeId") String storeId,
             @QueryParam("storeCode") String storeCode) {
@@ -85,6 +97,7 @@ public class ProductResource {
      * Holt alle Produkte (eines Marktes)
      * GET /api/products?storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "listProducts")
     @GET
     @PermitAll
     public Response getAllProducts(@QueryParam("size") @DefaultValue("100") Integer size,
@@ -106,6 +119,7 @@ public class ProductResource {
      * Holt ein Produkt anhand der ID
      * GET /api/products/1?storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "getProduct")
     @GET
     @Path("/{id}")
     @PermitAll
@@ -133,6 +147,7 @@ public class ProductResource {
      * Indexiert ein einzelnes Produkt (Markt im Body: storeId oder storeCode)
      * POST /api/products
      */
+    @Operation(operationId = "indexProduct")
     @POST
     @RolesAllowed("admin")
     public Response indexProduct(Product product) {
@@ -150,6 +165,7 @@ public class ProductResource {
 
         try {
             String result = openSearchService.indexProduct(product);
+            auditProductWrite(product.getId(), store.storeCode(), "UPSERT", product);
             return Response.ok("{\"result\": \"" + result + "\"}").build();
         } catch (IOException e) {
             LOG.error("Error indexing product", e);
@@ -164,6 +180,7 @@ public class ProductResource {
      * ein Item, das dem Parameter widerspricht, wird als fehlerhafte Zeile gemeldet.
      * POST /api/products/bulk?storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "indexProductsBulk")
     @POST
     @Path("/bulk")
     @RolesAllowed("admin")
@@ -191,7 +208,36 @@ public class ProductResource {
         if (outcome.transportFailed()) {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(outcome.result()).build();
         }
+        auditProductBulk(parameterStore == null ? null : parameterStore.storeCode(), outcome.result());
         return Response.ok(outcome.result()).build();
+    }
+
+    /** Ein Eintrag pro Einzelschreibvorgang; ein Auditfehler veraendert die Antwort nicht. */
+    private void auditProductWrite(Integer productId, String storeCode, String action, Object after) {
+        try {
+            auditLogService.logByAdmin(adminAccessService.currentUser(), "PRODUCT", AuditEntityIds.product(productId),
+                    action, "Produkt " + productId + " gespeichert (Markt " + storeCode + ")", null, after);
+        } catch (RuntimeException exception) {
+            LOG.warn("Audit-Eintrag fuer Produkt konnte nicht geschrieben werden", exception);
+        }
+    }
+
+    /** Ein Eintrag pro beantwortetem Bulk-Aufruf mit Zaehlern; ohne Markt-Parameter als "*". */
+    private void auditProductBulk(String storeCode, CatalogBulkResult result) {
+        try {
+            String marketKey = storeCode == null ? "*" : storeCode;
+            Map<String, Object> after = new LinkedHashMap<>();
+            after.put("storeCode", storeCode);
+            after.put("count", result.count());
+            after.put("saved", result.saved());
+            after.put("failed", result.failed());
+            after.put("unknown", result.unknown());
+            auditLogService.logByAdmin(adminAccessService.currentUser(), "PRODUCT", AuditEntityIds.productBulk(marketKey),
+                    "BULK_UPSERT", "Bulk: " + result.saved() + " gespeichert, " + result.failed() + " fehlgeschlagen (Markt "
+                            + marketKey + ")", null, after);
+        } catch (RuntimeException exception) {
+            LOG.warn("Audit-Eintrag fuer Produkt-Bulk konnte nicht geschrieben werden", exception);
+        }
     }
 
     /** Explicit store parameter wins; without any store parameter the configured default store applies (if set). */

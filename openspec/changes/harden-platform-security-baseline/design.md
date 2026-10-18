@@ -30,7 +30,7 @@ Constraints: LeoCloud is a shared school cluster; the team controls only the nam
 - Alternative: keep `start-dev` and change passwords manually. Rejected because the dev-file database is lost on restart and the realm import restores the demo users.
 
 ### D2 Demo access assignments
-- Flyway placeholder `demoAccess` (`%dev`/`%test` = `true`, default = `false`). `V12__disable_demo_access_outside_dev.sql` sets `status = 'DISABLED'` for the three demo subjects when the placeholder is `false`. Existing migrations stay unchanged (checksums).
+- Flyway placeholder `demoAccess` (`%dev`/`%test` = `true`, default = `false`). `V17__disable_demo_access_outside_dev.sql` sets `status = 'DISABLED'` for the three demo subjects when the placeholder is `false`. Existing migrations stay unchanged (checksums).
 
 ### D3 Output encoding and CSP
 - The editor and customer page build dynamic nodes with `textContent`/`createElement`; where template strings remain, every interpolated value passes through `escapeHtml` (moved into `editor-core.js` and a new `customer/escape.js`). A Playwright test stores a malicious label and asserts that no `img` element is created.
@@ -46,7 +46,7 @@ Constraints: LeoCloud is a shared school cluster; the team controls only the nam
 - The throwable mapper wraps error persistence in `try/catch` like the web-application mapper.
 
 ### D6 Audit actor
-- `V13__audit_actor_subject.sql` adds `audit_logs.actor_subject VARCHAR(120)`. `AuditLogService.log` resolves the current user through `AdminAccessService` when the identity is not anonymous and stores role, username, and subject; otherwise it stores `SYSTEM`. `StoreLayoutAdminService` and `RecipeService` use the same resolution for `created_by_*`.
+- `V16__audit_actor_subject.sql` adds `audit_logs.actor_subject VARCHAR(120)`. `AuditLogService.log` resolves the current user through `AdminAccessService` when the identity is not anonymous and stores role, username, and subject; otherwise it stores `SYSTEM`. `StoreLayoutAdminService` and `RecipeService` use the same resolution for `created_by_*`.
 - Tag mutations write `RECIPE_TAG` entries; admin product and category writes write `PRODUCT`/`CATEGORY` entries with the numeric id in `summary` (the `entity_id` column is a UUID; a deterministic name-based UUID of the numeric id is used).
 
 ### D7 Anonymous throttling and upsell bounds
@@ -71,6 +71,6 @@ Constraints: LeoCloud is a shared school cluster; the team controls only the nam
 
 1. Create secrets out-of-band (`indooro-keycloak-secret`, `indooro-postgres-secret`).
 2. Deploy PostgreSQL database `keycloak`, then Keycloak 26.x in production mode with the production realm; recreate admin users with temporary passwords; update `user_access_assignments` for their subjects.
-3. Deploy backend with V12/V13, headers, validators, and error policy.
+3. Deploy backend with V16/V17, headers, validators, and error policy.
 4. Apply NetworkPolicy and service type changes; verify from a debug pod and from outside.
 5. Rollback: previous backend image tag; Keycloak rollback by redeploying the previous manifest (dev realm) is **not** allowed in production – instead restore the Keycloak database dump taken in step 2.

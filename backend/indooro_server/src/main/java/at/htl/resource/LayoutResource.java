@@ -19,10 +19,13 @@ import org.jboss.logging.Logger;
 
 import java.io.IOException;
 import java.util.Map;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/layout")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "legacy-layout")
 public class LayoutResource {
 
     private static final Logger LOG = Logger.getLogger(LayoutResource.class);
@@ -33,6 +36,7 @@ public class LayoutResource {
     @Inject
     AdminAccessService adminAccessService;
 
+    @Operation(operationId = "getLegacyCurrentLayout")
     @GET
     @Path("/current")
     @PermitAll
@@ -47,6 +51,7 @@ public class LayoutResource {
         }
     }
 
+    @Operation(operationId = "saveLegacyCurrentLayout")
     @POST
     @Path("/current")
     @RolesAllowed("admin")
@@ -73,6 +78,7 @@ public class LayoutResource {
         }
     }
 
+    @Operation(operationId = "listLegacyLayoutHistory")
     @GET
     @Path("/history")
     @PermitAll
@@ -87,6 +93,7 @@ public class LayoutResource {
         }
     }
 
+    @Operation(operationId = "getLegacyLayoutVersion")
     @GET
     @Path("/versions/{layoutId}")
     @PermitAll

@@ -3,6 +3,7 @@ package at.htl.resource.admin;
 import at.htl.admin.service.AdminAccessService;
 import at.htl.admin.service.AuditLogService;
 import at.htl.admin.service.CurrentAdminUser;
+import at.htl.admin.util.AuditEntityIds;
 import at.htl.model.Product;
 import at.htl.service.BulkIdempotencyCache;
 import at.htl.service.CatalogBulkResult;
@@ -41,11 +42,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.HexFormat;
 import java.util.regex.Pattern;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/admin/products")
 @RolesAllowed({"admin", "region-manager", "store-manager"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "admin-products")
 public class AdminProductResource extends AdminApiSupport {
 
     private static final Logger LOG = Logger.getLogger(AdminProductResource.class);
@@ -78,6 +82,7 @@ public class AdminProductResource extends AdminApiSupport {
     @Inject
     LegacyDocumentGuard legacyDocumentGuard;
 
+    @Operation(operationId = "listAdminProducts")
     @GET
     public Object listProducts(@QueryParam("page") Integer page,
                                @QueryParam("size") Integer size,
@@ -122,6 +127,7 @@ public class AdminProductResource extends AdminApiSupport {
         };
     }
 
+    @Operation(operationId = "upsertAdminProduct")
     @POST
     public Product upsertProduct(Product product) {
         validateProduct(product);
@@ -135,7 +141,6 @@ public class AdminProductResource extends AdminApiSupport {
 
         try {
             openSearchService.indexProduct(product);
-            return product;
         } catch (IOException exception) {
             LOG.error("Error indexing admin product", exception);
             throw new WebApplicationException(
@@ -143,8 +148,11 @@ public class AdminProductResource extends AdminApiSupport {
                     Response.Status.INTERNAL_SERVER_ERROR
             );
         }
+        auditProductWrite(product.getId(), store.storeCode(), "UPSERT", "Produkt " + product.getId() + " gespeichert", null, product);
+        return product;
     }
 
+    @Operation(operationId = "deleteAdminProduct")
     @DELETE
     @Path("/{id}")
     public Response deleteProduct(@PathParam("id") Integer id,
@@ -161,6 +169,7 @@ public class AdminProductResource extends AdminApiSupport {
             if (!deleted) {
                 throw new WebApplicationException("Produkt wurde nicht gefunden.", Response.Status.NOT_FOUND);
             }
+            auditProductWrite(id, store.storeCode(), "DELETE", "Produkt " + id + " geloescht", Map.of("id", id), null);
             return Response.noContent().build();
         } catch (IOException exception) {
             LOG.error("Error deleting admin product", exception);
@@ -180,6 +189,7 @@ public class AdminProductResource extends AdminApiSupport {
      * Ein Replikat im Cluster (replicas=1); siehe BulkIdempotencyCache.
      * POST /api/admin/products/bulk?storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "bulkImportAdminProducts")
     @POST
     @Path("/bulk")
     public Response bulkImport(@QueryParam("storeId") String storeId,
@@ -271,6 +281,19 @@ public class AdminProductResource extends AdminApiSupport {
                     result.saved() + " gespeichert, " + result.failed() + " fehlgeschlagen", null, after);
         } catch (RuntimeException exception) {
             LOG.error("Audit-Eintrag fuer Produkt-Bulk-Import konnte nicht geschrieben werden", exception);
+        }
+    }
+
+    /**
+     * Audit fuer Einzelschreibvorgaenge (Akteur = angemeldeter Admin-Benutzer). Ein Auditfehler wird
+     * geloggt und veraendert die bereits erfolgte Schreibung nicht.
+     */
+    private void auditProductWrite(int productId, String storeCode, String action, String summary, Object before, Object after) {
+        try {
+            auditLogService.logByAdmin(adminAccessService.currentUser(), "PRODUCT", AuditEntityIds.product(productId),
+                    action, summary + " (Markt " + storeCode + ")", before, after);
+        } catch (RuntimeException exception) {
+            LOG.error("Audit-Eintrag fuer Produkt konnte nicht geschrieben werden", exception);
         }
     }
 

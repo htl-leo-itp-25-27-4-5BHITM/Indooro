@@ -187,3 +187,65 @@ Bekannte Grenzen:
 
 CI: `.github/workflows/ios.yaml` startet den Mock vor dem Schritt „App unit and UI tests“ und
 wiederholt den `xcodebuild test`-Lauf einmal bei einem Simulator-Boot-Fehler.
+
+## Ankunftsvorschlag (add-arrival-suggestion)
+
+Während einer Tour im Modus „Mit Ortung“ erscheint „Bist du bei <Regal>?“, sobald die Position
+vertrauenswürdig ist und der Kunde am aktiven Stopp verweilt. Der Vorschlag erledigt nie selbst einen
+Stopp: „Ja, erledigt“ läuft über den bestehenden Erledigt-Pfad, „Noch nicht“ sperrt Vorschläge für
+diesen Stopp 30 s. Nach „Ja, erledigt“ kommt für denselben Stopp kein neuer Vorschlag, bis der aktive
+Stopp wechselt.
+
+Code: `indooroApp/Utilities/ArrivalSuggestionDetector.swift` (pur, Zeit wird injiziert),
+`indooroApp/Utilities/NavigationSession.swift` (Verdrahtung, Zähler), `indooroApp/Views/Main/StoreMapPage.swift` (Overlay).
+
+### Defaults
+
+| Parameter | Wert | Konstante | Status |
+|---|---|---|---|
+| Radius R | max(3 m, gemessener Median-Positionsfehler) | `ArrivalSuggestionConfig.defaultRadiusFloorMeters` (3 m) | Untergrenze vorläufig, kein Messwert vorhanden |
+| Verweildauer T | 5 s | `defaultDwellSeconds` | vorläufig |
+| Sperre nach „Noch nicht“ | 30 s pro Stopp | `defaultSuppressionSeconds` | Designwert |
+| Lückenregel | Lücke zwischen Samples > 3 s setzt die Verweildauer zurück | `ArrivalSuggestionDetector.maxSampleGapSeconds` | Designwert |
+
+Begründung: `docs/pilot-readiness/hardware/RESULT_SUMMARY.md` enthält noch keine Messdaten („Keine
+Messdaten – kein Parameter wird geändert“). Deshalb gilt R = 3 m als Untergrenze, bis der Median-Fehler
+aus den Reports feststeht. T = 5 s soll verhindern, dass ein bloßes Vorbeigehen am Regal als Ankunft
+gilt. Die 30 s Sperre verhindert, dass der Vorschlag nach „Noch nicht“ sofort wieder erscheint. Alle
+drei Werte sind vorläufig und nicht gemessen.
+
+### Anpassen, sobald gemessen wurde
+
+1. Median-Positionsfehler an Markern aus den Reports in `RESULT_SUMMARY.md` (Abschnitt 1) übernehmen.
+   Keine Änderung ohne Nachweis nach `PARAMETER_ANALYSIS.md`.
+2. R: Der Messwert gehört an `ArrivalSuggestionConfig.defaults(measuredMedianErrorMeters:)`. Achtung:
+   Der Aufruf in `NavigationSession.arrivalSuggestionConfig` übergibt heute keinen Messwert, es gilt
+   nur die 3-m-Untergrenze. Dort muss der gemessene Wert eingebaut werden.
+3. T: `ArrivalSuggestionConfig.defaultDwellSeconds` in `ArrivalSuggestionDetector.swift` ändern.
+4. Tests anpassen, die feste Radien oder Zeitwerte annehmen (`ArrivalSuggestionDetectorTests`,
+   `ArrivalSuggestionSessionTests`); danach `swift test` und `xcodebuild test` laufen lassen.
+5. Gemessene Werte und Begründung in `RESULT_SUMMARY.md` (Abschnitt 4) eintragen.
+
+### Feldtuning (nur DEBUG)
+
+`INDOORO_ARRIVAL_RADIUS_M` und `INDOORO_ARRIVAL_DWELL_S` überschreiben R und T in DEBUG-Builds
+(Umgebungsvariablen, z. B. im Xcode-Scheme). Ungültige Werte und Werte <= 0 werden ignoriert.
+Release-Builds lesen die Variablen nicht. Die Überschreibung dient Tests am Gerät, nicht dem Pilotbetrieb.
+
+### Studienzähler
+
+Die Zähler `arrivalSuggestionShownCount`, `arrivalSuggestionAcceptedCount` und
+`arrivalSuggestionRejectedCount` stehen als drei neue Spalten am Ende der Study-CSV (Header jetzt 19
+Spalten). Der Importer in `scripts/pilot-eval` liest sie als optional; Dateien mit den bisherigen
+16 Spalten bleiben lesbar.
+
+### Tests
+
+- Unit (SwiftPM): `Tests/IndooroNavigationCoreTests/ArrivalSuggestionDetectorTests.swift`, inklusive
+  Replay-Test (`swift test --filter ArrivalSuggestionDetectorTests`).
+- Unit (App): `MCindooroAppTests/ArrivalSuggestionSessionTests.swift` (Tour-Modus, Ja/Noch nicht,
+  Stopp-Wechsel, Erledigt).
+- UI: `MCindooroAppUITests/ArrivalSuggestionUITests.swift` prüft nur den negativen Fall: Im Modus
+  „Ohne Ortung“ erscheint kein Vorschlag, und „Erledigt“ schließt den Stopp weiterhin ab. Der positive
+  Pfad fehlt im UI-Test, weil Mock-Positionen nie als vertrauenswürdig gelten. Er ist durch die
+  Unit-Tests abgedeckt.
