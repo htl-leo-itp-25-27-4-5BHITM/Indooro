@@ -108,8 +108,13 @@ context: |
     bundle id at.ac.htl.leonding.indooroswift2, iOS 18.5, five tabs: Start,
     Planung, Rezepte, Einkaufen, Karte; BLE/iBeacon positioning, store
     detection, shopping lists and tours, recipes, upsell prompts, AR route
-    preview). swift/indooro-/indooroApp and swift/indooroApp/indooroApp are
-    legacy references and receive no new features. The iOS contract lives in
+    preview). Shared code lives in the local Swift package
+    swift/indooro-EinkaeuferFinal/Packages/IndooroKit (targets IndooroModels and
+    IndooroNetworking; further targets follow modernize-ios-client-architecture)
+    and in the package IndooroNavigationCore defined by
+    swift/indooro-EinkaeuferFinal/Package.swift; build settings come from
+    swift/indooro-EinkaeuferFinal/Config/*.xcconfig. swift/indooro-/indooroApp and
+    swift/indooroApp/indooroApp are legacy references and receive no new features. The iOS contract lives in
     the ios-* and mobile-* capabilities; docs/specs/ holds the FSD, TSD,
     architecture blueprint, audit, and roadmap.
   - Cross-cutting single-source-of-truth capabilities: `admin-dashboard`

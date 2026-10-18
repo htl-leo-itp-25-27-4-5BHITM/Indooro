@@ -86,6 +86,16 @@ Wir möchten anfänglich ca. 4 drahtlose Signalgeber (basierend auf Bluetooth-Te
 
 ---
 
+## **Projektstruktur (iOS-App)**
+
+* `swift/indooro-EinkaeuferFinal/` ist die aktuelle iOS-App (Xcode-Projekt `MCindooroApp.xcodeproj`, Scheme `MCindooroApp`, Quellen in `indooroApp/`).
+* `swift/indooro-EinkaeuferFinal/Packages/IndooroKit/` ist das lokale Swift Package mit `IndooroModels` (Datenmodelle) und `IndooroNetworking` (API-Client, Endpunkte, aus `api/openapi/indooro-mobile.yaml` generierte Typen).
+* `swift/indooro-EinkaeuferFinal/Package.swift` definiert das Paket `IndooroNavigationCore` (Routing und Ortung) mit eigenen Tests; `swift test` läuft in diesem Ordner und in `Packages/IndooroKit`.
+* UI-Tests: `sh scripts/ios/run-ui-tests.sh` (startet den Mobile-API-Mock und führt die Tests im Simulator aus). Mehr dazu in `swift/indooro-EinkaeuferFinal/TESTING.md`.
+* `swift/indooro-` und `swift/indooroApp` sind ältere Stände und werden nicht weiterentwickelt.
+
+---
+
 ## **Projektrisiken**
 
 ### **Technische Risiken**

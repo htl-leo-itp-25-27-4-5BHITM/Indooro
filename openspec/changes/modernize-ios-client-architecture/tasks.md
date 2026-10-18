@@ -97,7 +97,7 @@
 
 - [ ] 14.1 Delete `swift/indooro-` and `swift/indooroApp` after confirming no unique behavior remains (compare against `docs/specs/AUDIT.md` §1.3).
 - [x] 14.2 Delete the untracked `swift/indooro-EinkaeuferFinal.zip`. (Done 2026-09-21, moved to the macOS Trash.)
-- [ ] 14.3 Update `openspec/config.yaml`, `README.md`, and `docs/specs/TSD.md` to the new structure.
+- [x] 14.3 Update `openspec/config.yaml`, `README.md`, and `docs/specs/TSD.md` to the new structure. (Stand der Struktur mit IndooroKit (IndooroModels, IndooroNetworking), IndooroNavigationCore, Config und Test-Einstiegen eingetragen; Ziel-Targets, die noch fehlen, sind als offen markiert und werden mit 5.x/8.x/9.x nachgezogen.)
 
 ## 15. Verification
 
