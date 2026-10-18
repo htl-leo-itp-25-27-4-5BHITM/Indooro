@@ -1,11 +1,11 @@
 import XCTest
 @testable import IndooroModels
 
-/// Upsell-Plan gegen die Fixture upsell-plan.json, dekodiert wie UpsellSuggestionStore.
+/// Upsell-Plan gegen die Fixture upsell-plan.json, dekodiert wie UpsellModel.
 final class UpsellDecodingTests: XCTestCase {
 
     func testUpsellPlanDecodesWithISO8601ExpiresAt() throws {
-        // Dekodierung wie UpsellSuggestionStore (dateDecodingStrategy = .iso8601).
+        // Dekodierung wie UpsellModel (dateDecodingStrategy = .iso8601).
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let plan = try decoder.decode(UpsellPlanResponse.self, from: ModelFixtures.data("upsell-plan.json"))

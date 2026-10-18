@@ -19,7 +19,7 @@ struct ContentView: View {
     @StateObject private var recipeStore = RecipeStore()
     @StateObject private var studyStore = StudySessionStore(enabled: AppEnvironment.isStudyModeEnabled)
     @State private var showsStudySession = false
-    @StateObject private var upsellStore = UpsellSuggestionStore()
+    @State private var upsellStore = UpsellModel()
 
     @AppStorage(AppEnvironment.profileOverrideKey) private var profileOverride = ""
     @AppStorage("IndooroIntroductionCompleted") private var introductionCompleted = false
