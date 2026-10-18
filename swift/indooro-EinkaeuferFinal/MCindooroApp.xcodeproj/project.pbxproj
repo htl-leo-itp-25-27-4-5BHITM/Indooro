@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		091CC0BB80378EADBC3E8E46 /* IndooroNetworking in Frameworks */ = {isa = PBXBuildFile; productRef = 0E97E3EBAD2C9E8977EC41EF /* IndooroNetworking */; };
+		E7D7A4A8552AA29214A67EF6 /* IndooroModels in Frameworks */ = {isa = PBXBuildFile; productRef = 4701EBF738DFDA77BB781980 /* IndooroModels */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -85,6 +86,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				091CC0BB80378EADBC3E8E46 /* IndooroNetworking in Frameworks */,
+				E7D7A4A8552AA29214A67EF6 /* IndooroModels in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -152,6 +154,7 @@
 			name = MCindooroApp;
 			packageProductDependencies = (
 				0E97E3EBAD2C9E8977EC41EF /* IndooroNetworking */,
+				4701EBF738DFDA77BB781980 /* IndooroModels */,
 			);
 			productName = indooroApp;
 			productReference = 6776726B2F0E50DB00242147 /* MCindooroApp.app */;
@@ -918,6 +921,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D6C9233EA5082C979276FAF /* XCLocalSwiftPackageReference "IndooroKit" */;
 			productName = IndooroNetworking;
+		};
+		4701EBF738DFDA77BB781980 /* IndooroModels */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D6C9233EA5082C979276FAF /* XCLocalSwiftPackageReference "IndooroKit" */;
+			productName = IndooroModels;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

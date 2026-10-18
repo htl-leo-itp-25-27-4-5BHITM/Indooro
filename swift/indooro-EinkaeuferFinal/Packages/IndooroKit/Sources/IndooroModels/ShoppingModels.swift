@@ -40,21 +40,21 @@ private func cleanRecipeIngredientName(
     return trimmedName
 }
 
-enum ShoppingListItemStatus: String, Codable, CaseIterable, Hashable {
+public enum ShoppingListItemStatus: String, Codable, CaseIterable, Hashable, Sendable {
     case open
     case done
     case missing
     case skipped
 
-    var isRoutable: Bool {
+    public var isRoutable: Bool {
         self == .open
     }
 
-    var isCompleted: Bool {
+    public var isCompleted: Bool {
         self == .done || self == .missing || self == .skipped
     }
 
-    var badgeTitle: String {
+    public var badgeTitle: String {
         switch self {
         case .open:
             return "Offen"
@@ -68,11 +68,11 @@ enum ShoppingListItemStatus: String, Codable, CaseIterable, Hashable {
     }
 }
 
-enum ShoppingRouteMode: String, Codable, CaseIterable {
+public enum ShoppingRouteMode: String, Codable, CaseIterable, Sendable {
     case optimized
     case listOrder
 
-    var title: String {
+    public var title: String {
         switch self {
         case .optimized:
             return "Optimiert"
@@ -82,28 +82,28 @@ enum ShoppingRouteMode: String, Codable, CaseIterable {
     }
 }
 
-struct ShoppingListItem: Codable, Identifiable, Hashable {
-    let id: UUID
-    let productID: Int?
-    var name: String
-    var price: Double?
-    var layoutCode: String?
-    var quantity: Int
-    var note: String?
-    var sortOrder: Int?
-    var status: ShoppingListItemStatus
-    let addedAt: Date
-    var updatedAt: Date
-    var sourceRecipeId: UUID?
-    var sourceRecipeName: String?
-    var ingredientName: String?
-    var ingredientQuantity: String?
-    var ingredientUnit: String?
-    var mappingConfidence: Double?
-    var manuallyConfirmed: Bool?
-    var addedFromUpsell: Bool
+public struct ShoppingListItem: Codable, Identifiable, Hashable, Sendable {
+    public let id: UUID
+    public let productID: Int?
+    public var name: String
+    public var price: Double?
+    public var layoutCode: String?
+    public var quantity: Int
+    public var note: String?
+    public var sortOrder: Int?
+    public var status: ShoppingListItemStatus
+    public let addedAt: Date
+    public var updatedAt: Date
+    public var sourceRecipeId: UUID?
+    public var sourceRecipeName: String?
+    public var ingredientName: String?
+    public var ingredientQuantity: String?
+    public var ingredientUnit: String?
+    public var mappingConfidence: Double?
+    public var manuallyConfirmed: Bool?
+    public var addedFromUpsell: Bool
 
-    init(
+    public init(
         product: Product,
         quantity: Int = 1,
         note: String? = nil,
@@ -138,7 +138,7 @@ struct ShoppingListItem: Codable, Identifiable, Hashable {
         self.addedFromUpsell = addedFromUpsell
     }
 
-    init(
+    public init(
         freeIngredientName: String,
         quantity: Int = 1,
         note: String? = nil,
@@ -191,7 +191,7 @@ struct ShoppingListItem: Codable, Identifiable, Hashable {
         case addedFromUpsell
     }
 
-    init(from decoder: Decoder) throws {
+    public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         productID = try container.decodeIfPresent(Int.self, forKey: .productID)
@@ -214,11 +214,11 @@ struct ShoppingListItem: Codable, Identifiable, Hashable {
         addedFromUpsell = try container.decodeIfPresent(Bool.self, forKey: .addedFromUpsell) ?? false
     }
 
-    var effectiveSortOrder: Int {
+    public var effectiveSortOrder: Int {
         sortOrder ?? Int(addedAt.timeIntervalSince1970 * 1000)
     }
 
-    var trimmedNote: String? {
+    public var trimmedNote: String? {
         guard let note else {
             return nil
         }
@@ -227,7 +227,7 @@ struct ShoppingListItem: Codable, Identifiable, Hashable {
         return trimmed.isEmpty ? nil : trimmed
     }
 
-    var recipeSourceText: String? {
+    public var recipeSourceText: String? {
         guard let sourceRecipeName, !sourceRecipeName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
         }
@@ -251,7 +251,7 @@ struct ShoppingListItem: Codable, Identifiable, Hashable {
         return sourceRecipeName
     }
 
-    static func sortByListOrder(_ lhs: ShoppingListItem, _ rhs: ShoppingListItem) -> Bool {
+    public static func sortByListOrder(_ lhs: ShoppingListItem, _ rhs: ShoppingListItem) -> Bool {
         if lhs.effectiveSortOrder == rhs.effectiveSortOrder {
             if lhs.addedAt == rhs.addedAt {
                 return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
@@ -263,15 +263,15 @@ struct ShoppingListItem: Codable, Identifiable, Hashable {
     }
 }
 
-struct ShoppingList: Codable, Identifiable, Hashable {
-    let id: UUID
-    var name: String
-    var items: [ShoppingListItem]
-    let createdAt: Date
-    var updatedAt: Date
-    var isArchived: Bool
+public struct ShoppingList: Codable, Identifiable, Hashable, Sendable {
+    public let id: UUID
+    public var name: String
+    public var items: [ShoppingListItem]
+    public let createdAt: Date
+    public var updatedAt: Date
+    public var isArchived: Bool
 
-    init(id: UUID = UUID(), name: String) {
+    public init(id: UUID = UUID(), name: String) {
         self.id = id
         self.name = name
         self.items = []
@@ -280,37 +280,37 @@ struct ShoppingList: Codable, Identifiable, Hashable {
         self.isArchived = false
     }
 
-    var openItemCount: Int {
+    public var openItemCount: Int {
         items.filter { $0.status == .open }.reduce(0) { $0 + $1.quantity }
     }
 
-    var completedItemCount: Int {
+    public var completedItemCount: Int {
         items.filter { $0.status.isCompleted }.reduce(0) { $0 + $1.quantity }
     }
 }
 
-struct ShoppingStop: Identifiable, Hashable {
-    let id: String
-    let shelfID: Int64?
-    let title: String
-    let mapPoint: CGPoint
-    let items: [ShoppingListItem]
-    let orderSeed: Int
+public struct ShoppingStop: Identifiable, Hashable, Sendable {
+    public let id: String
+    public let shelfID: Int64?
+    public let title: String
+    public let mapPoint: CGPoint
+    public let items: [ShoppingListItem]
+    public let orderSeed: Int
 
-    var itemIDs: [UUID] {
+    public var itemIDs: [UUID] {
         items.map(\.id)
     }
 
-    var totalQuantity: Int {
+    public var totalQuantity: Int {
         items.reduce(0) { $0 + $1.quantity }
     }
 
-    var subtitle: String {
+    public var subtitle: String {
         let articleWord = totalQuantity == 1 ? "Artikel" : "Artikel"
         return "\(totalQuantity) \(articleWord)"
     }
 
-    var itemNamesPreview: String {
+    public var itemNamesPreview: String {
         let names = items
             .map(\.name)
             .prefix(2)
@@ -320,43 +320,52 @@ struct ShoppingStop: Identifiable, Hashable {
         }
         return names
     }
+
+    public init(id: String, shelfID: Int64?, title: String, mapPoint: CGPoint, items: [ShoppingListItem], orderSeed: Int) {
+        self.id = id
+        self.shelfID = shelfID
+        self.title = title
+        self.mapPoint = mapPoint
+        self.items = items
+        self.orderSeed = orderSeed
+    }
 }
 
-struct ShoppingRouteSnapshot {
-    let listID: UUID
-    let listName: String
-    let routeMode: ShoppingRouteMode
-    let orderedStops: [ShoppingStop]
-    let unresolvedItems: [ShoppingListItem]
-    let completedItems: [ShoppingListItem]
-    let totalStopCount: Int
-    let totalProductCount: Int
+public struct ShoppingRouteSnapshot: Sendable {
+    public let listID: UUID
+    public let listName: String
+    public let routeMode: ShoppingRouteMode
+    public let orderedStops: [ShoppingStop]
+    public let unresolvedItems: [ShoppingListItem]
+    public let completedItems: [ShoppingListItem]
+    public let totalStopCount: Int
+    public let totalProductCount: Int
 
-    var currentStop: ShoppingStop? {
+    public var currentStop: ShoppingStop? {
         orderedStops.first
     }
 
-    var remainingStopCount: Int {
+    public var remainingStopCount: Int {
         orderedStops.count
     }
 
-    var remainingProductCount: Int {
+    public var remainingProductCount: Int {
         orderedStops.reduce(0) { $0 + $1.totalQuantity } + unresolvedItems.reduce(0) { $0 + $1.quantity }
     }
 
-    var unresolvedProductCount: Int {
+    public var unresolvedProductCount: Int {
         unresolvedItems.reduce(0) { $0 + $1.quantity }
     }
 
-    var completedProductCount: Int {
+    public var completedProductCount: Int {
         completedItems.reduce(0) { $0 + $1.quantity }
     }
 
-    var completedStopCount: Int {
+    public var completedStopCount: Int {
         max(0, totalStopCount - remainingStopCount)
     }
 
-    var currentStopNumber: Int? {
+    public var currentStopNumber: Int? {
         guard currentStop != nil, totalStopCount > 0 else {
             return nil
         }
@@ -364,19 +373,38 @@ struct ShoppingRouteSnapshot {
         return min(totalStopCount, completedStopCount + 1)
     }
 
-    var progressFraction: Double {
+    public var progressFraction: Double {
         guard totalProductCount > 0 else {
             return remainingStopCount == 0 ? 1 : 0
         }
 
         return min(1, max(0, Double(completedProductCount) / Double(totalProductCount)))
     }
+
+    public init(listID: UUID, listName: String, routeMode: ShoppingRouteMode, orderedStops: [ShoppingStop], unresolvedItems: [ShoppingListItem], completedItems: [ShoppingListItem], totalStopCount: Int, totalProductCount: Int) {
+        self.listID = listID
+        self.listName = listName
+        self.routeMode = routeMode
+        self.orderedStops = orderedStops
+        self.unresolvedItems = unresolvedItems
+        self.completedItems = completedItems
+        self.totalStopCount = totalStopCount
+        self.totalProductCount = totalProductCount
+    }
 }
 
-struct ShoppingSessionBanner {
-    let listName: String
-    let currentStopTitle: String
-    let remainingStopCount: Int
-    let remainingProductCount: Int
-    let unresolvedProductCount: Int
+public struct ShoppingSessionBanner: Sendable {
+    public let listName: String
+    public let currentStopTitle: String
+    public let remainingStopCount: Int
+    public let remainingProductCount: Int
+    public let unresolvedProductCount: Int
+
+    public init(listName: String, currentStopTitle: String, remainingStopCount: Int, remainingProductCount: Int, unresolvedProductCount: Int) {
+        self.listName = listName
+        self.currentStopTitle = currentStopTitle
+        self.remainingStopCount = remainingStopCount
+        self.remainingProductCount = remainingProductCount
+        self.unresolvedProductCount = unresolvedProductCount
+    }
 }

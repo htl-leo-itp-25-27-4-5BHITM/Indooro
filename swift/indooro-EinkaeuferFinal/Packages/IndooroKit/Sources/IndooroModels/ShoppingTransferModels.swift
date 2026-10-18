@@ -1,10 +1,10 @@
 import Foundation
 
-enum ShoppingTransferKind: String, Codable, CaseIterable {
+public enum ShoppingTransferKind: String, Codable, CaseIterable, Sendable {
     case fullList
     case itemSelection
 
-    var title: String {
+    public var title: String {
         switch self {
         case .fullList:
             return "Komplette Liste"
@@ -14,16 +14,16 @@ enum ShoppingTransferKind: String, Codable, CaseIterable {
     }
 }
 
-struct ShoppingTransferItem: Codable, Hashable {
-    let productID: Int
-    let name: String
-    let price: Double
-    let layoutCode: String
-    let quantity: Int
-    let note: String?
-    let status: ShoppingListItemStatus
+public struct ShoppingTransferItem: Codable, Hashable, Sendable {
+    public let productID: Int
+    public let name: String
+    public let price: Double
+    public let layoutCode: String
+    public let quantity: Int
+    public let note: String?
+    public let status: ShoppingListItemStatus
 
-    init?(item: ShoppingListItem, quantity: Int? = nil) {
+    public init?(item: ShoppingListItem, quantity: Int? = nil) {
         guard let productID = item.productID,
               let price = item.price,
               let layoutCode = item.layoutCode else {
@@ -40,29 +40,34 @@ struct ShoppingTransferItem: Codable, Hashable {
     }
 }
 
-struct ShoppingShareSelection: Identifiable, Hashable {
-    let itemID: UUID
-    var quantity: Int
+public struct ShoppingShareSelection: Identifiable, Hashable, Sendable {
+    public let itemID: UUID
+    public var quantity: Int
 
-    var id: UUID {
+    public var id: UUID {
         itemID
+    }
+
+    public init(itemID: UUID, quantity: Int) {
+        self.itemID = itemID
+        self.quantity = quantity
     }
 }
 
-struct ShoppingTransferPackage: Codable, Identifiable {
-    static let currentVersion = 1
+public struct ShoppingTransferPackage: Codable, Identifiable, Sendable {
+    public static let currentVersion = 1
 
-    let id: UUID
-    let version: Int
-    let kind: ShoppingTransferKind
-    let sourceListID: UUID?
-    let sourceListName: String
-    let senderDisplayName: String?
-    let note: String?
-    let exportedAt: Date
-    let items: [ShoppingTransferItem]
+    public let id: UUID
+    public let version: Int
+    public let kind: ShoppingTransferKind
+    public let sourceListID: UUID?
+    public let sourceListName: String
+    public let senderDisplayName: String?
+    public let note: String?
+    public let exportedAt: Date
+    public let items: [ShoppingTransferItem]
 
-    init(
+    public init(
         id: UUID = UUID(),
         version: Int = ShoppingTransferPackage.currentVersion,
         kind: ShoppingTransferKind,
@@ -84,11 +89,11 @@ struct ShoppingTransferPackage: Codable, Identifiable {
         self.items = items
     }
 
-    var totalQuantity: Int {
+    public var totalQuantity: Int {
         items.reduce(0) { $0 + $1.quantity }
     }
 
-    var suggestedImportedListName: String {
+    public var suggestedImportedListName: String {
         sourceListName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             ? "Importierte Einkaufsliste"
             : sourceListName
@@ -96,7 +101,7 @@ struct ShoppingTransferPackage: Codable, Identifiable {
 }
 
 extension ShoppingListItem {
-    init(transferItem: ShoppingTransferItem, sortOrder: Int? = nil) {
+    public init(transferItem: ShoppingTransferItem, sortOrder: Int? = nil) {
         self.id = UUID()
         self.productID = transferItem.productID
         self.name = transferItem.name

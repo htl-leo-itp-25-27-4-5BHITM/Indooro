@@ -1,5 +1,5 @@
 import XCTest
-@testable import IndooroNavigationCore
+@testable import IndooroModels
 
 /// Gespeicherte Einkaufslisten (UserDefaults, ShoppingListManager.persist) werden mit
 /// JSONEncoder()/JSONDecoder() ohne Datumsstrategie geschrieben und gelesen. Die Fixture
@@ -9,7 +9,7 @@ final class ShoppingListDecodingTests: XCTestCase {
     func testV1ShoppingListDecodesWithDefaultsForRecipeAndUpsellFields() throws {
         let list = try JSONDecoder().decode(
             ShoppingList.self,
-            from: ContractFixtures.data("shopping-list-v1.json")
+            from: ModelFixtures.data("shopping-list-v1.json")
         )
 
         XCTAssertEqual(list.id, UUID(uuidString: "7f1c2a3b-1d2e-4f50-8a6b-9c0d1e2f3a4b"))
