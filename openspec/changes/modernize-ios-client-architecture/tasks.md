@@ -101,8 +101,8 @@
 
 ## 15. Verification
 
-- [ ] 15.1 Run `npx -y @fission-ai/openspec@1.3.1 validate modernize-ios-client-architecture --strict`.
+- [x] 15.1 Run `npx -y @fission-ai/openspec@1.3.1 validate modernize-ios-client-architecture --strict`. Evidence (2026-10-18, `pilot/first-store`): validate --all --strict 55/55 (this change passes; it stays open for the deferred tasks).
 - [ ] 15.2 Run `xcodebuild -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj -scheme 'MCindooroApp (LeoCloud)' -destination 'platform=iOS Simulator,name=iPhone 16' -skipPackagePluginValidation test`. (Konkretes Simulator-Ziel verwenden: `generic/platform=iOS Simulator` mit `-sdk iphonesimulator` bricht im Build-Tool-Plugin swift-openapi-generator ab, siehe SP/TESTING.md.)
-- [ ] 15.3 Run `./mvnw verify` in `backend/indooro_server`.
+- [x] 15.3 Run `./mvnw verify` in `backend/indooro_server`. Evidence (2026-10-18, `pilot/first-store` 5bfd7f0+): `sh mvnw -q verify` exit 0; `mvnw test` 671/0 (4 skipped).
 - [ ] 15.4 Repeat the manual smoke checklist from task 1.3 against LeoCloud and on a device with beacons.
 - [ ] 15.5 Compare metrics with the baseline from task 1.2 and record them in `docs/specs/TSD.md`.
