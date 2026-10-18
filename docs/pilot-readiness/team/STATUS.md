@@ -39,6 +39,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Was | Wer | Seit |
 |---|---|---|
 | `rebuild-admin-platform` 5.4: Nach Korrektur der Store-gebundenen Produkt-/Rezept-Proben und Merge die realen LeoCloud-Logins für Admin, Region-Manager und Store-Manager mit eigenen/fremden Scopes, Direktlinks und Mutationen prüfen. | Erik / Pilotteam | 2026-10-18 |
+| `rebuild-admin-platform` 5.7: Change erst nach vollständigen Restnachweisen und OpenSpec-Verifikation mit Eriks Freigabe archivieren; 1.1 bleibt als historisch verfehltes Timing-Gate offen. | Erik | 2026-10-18 |
 | Namenszuordnung Person A/B/C festlegen, Prompts verschicken | Erik | 2026-10-16 |
 | Admin-Login live prüfen (admin, region-manager, store-manager; Login/Logout) | Erik | 2026-10-16 |
 | Budget und Bestellung von 12 Beacons | Erik + Person C | 2026-10-16 |
