@@ -33,97 +33,89 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $selectedSection) {
-            HomeDashboardView(
-                selectedList: shoppingListManager.selectedList,
-                activeBanner: shoppingSessionManager.banner(),
-                onOpenPlanning: { selectedSection = .planning },
-                onOpenRecipes: { selectedSection = .recipes },
-                onOpenShopping: { selectedSection = .shopping },
-                onOpenMap: { selectedSection = .map }
-            )
-            .tabItem {
-                Label("Start", systemImage: "house.fill")
+            Tab("Start", systemImage: "house.fill", value: AppSection.start) {
+                HomeDashboardView(
+                    selectedList: shoppingListManager.selectedList,
+                    activeBanner: shoppingSessionManager.banner(),
+                    onOpenPlanning: { selectedSection = .planning },
+                    onOpenRecipes: { selectedSection = .recipes },
+                    onOpenShopping: { selectedSection = .shopping },
+                    onOpenMap: { selectedSection = .map }
+                )
             }
-            .tag(AppSection.start)
 
-            ProductsPage(
-                listManager: shoppingListManager,
-                sessionManager: shoppingSessionManager,
-                beaconManager: beaconManager,
-                productSearch: productsSearch,
-                onNavigateToProduct: focusProductOnMap,
-                onAddToList: addProductToShoppingList,
-                onOpenShopping: { selectedSection = .shopping }
-            )
-            .tabItem {
-                Label("Planung", systemImage: "plus.circle.fill")
+            Tab("Planung", systemImage: "plus.circle.fill", value: AppSection.planning) {
+                ProductsPage(
+                    listManager: shoppingListManager,
+                    sessionManager: shoppingSessionManager,
+                    beaconManager: beaconManager,
+                    productSearch: productsSearch,
+                    onNavigateToProduct: focusProductOnMap,
+                    onAddToList: addProductToShoppingList,
+                    onOpenShopping: { selectedSection = .shopping }
+                )
             }
-            .tag(AppSection.planning)
 
             if AppEnvironment.allowsExtendedFeatures {
-            RecipesPage(
-                recipeStore: recipeStore,
-                listManager: shoppingListManager,
-                sessionManager: shoppingSessionManager,
-                beaconManager: beaconManager,
-                onOpenShopping: { selectedSection = .shopping },
-                onRecipeItemsAdded: { syncShoppingSession() }
-            )
-            .tabItem {
-                Label("Rezepte", systemImage: "fork.knife")
-            }
-            .tag(AppSection.recipes)
-            }
-
-            ShoppingListsPage(
-                listManager: shoppingListManager,
-                sessionManager: shoppingSessionManager,
-                beaconManager: beaconManager,
-                upsellStore: upsellStore,
-                pendingImportPackage: $pendingShoppingImportPackage,
-                importErrorMessage: $shoppingImportErrorMessage,
-                onStartSession: startShoppingSession,
-                onStopSession: stopShoppingSession
-            )
-            .tabItem {
-                Label("Einkaufen", systemImage: "checklist.checked")
-            }
-            .tag(AppSection.shopping)
-
-            StoreMapPage(
-                beaconManager: beaconManager,
-                navigationSession: navigationSession,
-                shoppingListManager: shoppingListManager,
-                shoppingSessionManager: shoppingSessionManager,
-                productSearch: mapProductSearch,
-                upsellStore: upsellStore,
-                targetProduct: $targetProduct,
-                pendingLastStoreLayoutOpenRequest: $pendingLastStoreLayoutOpenRequest,
-                onNavigateToProduct: focusProductOnMap,
-                onOpenLists: { selectedSection = .shopping },
-                onAddToList: addProductToShoppingList
-            )
-            .tabItem {
-                Label("Karte", systemImage: "map.fill")
-            }
-            .safeAreaInset(edge: .top) {
-                VStack(spacing: 0) {
-                    PermissionBanner(manager: beaconManager)
-                    ProductSearchFeedback(store: mapProductSearch)
+                Tab("Rezepte", systemImage: "fork.knife", value: AppSection.recipes) {
+                    RecipesPage(
+                        recipeStore: recipeStore,
+                        listManager: shoppingListManager,
+                        sessionManager: shoppingSessionManager,
+                        beaconManager: beaconManager,
+                        onOpenShopping: { selectedSection = .shopping },
+                        onRecipeItemsAdded: { syncShoppingSession() }
+                    )
                 }
             }
-            .safeAreaInset(edge: .bottom) {
-                if AppEnvironment.isStudyModeEnabled && studyStore.session != nil {
-                    VStack {
-                        if studyStore.running?.task.condition == .app { StudyRunningControls(store: studyStore) }
-                        Button("Testleitung") { showsStudySession = true }
+
+            Tab("Einkaufen", systemImage: "checklist.checked", value: AppSection.shopping) {
+                ShoppingListsPage(
+                    listManager: shoppingListManager,
+                    sessionManager: shoppingSessionManager,
+                    beaconManager: beaconManager,
+                    upsellStore: upsellStore,
+                    pendingImportPackage: $pendingShoppingImportPackage,
+                    importErrorMessage: $shoppingImportErrorMessage,
+                    onStartSession: startShoppingSession,
+                    onStopSession: stopShoppingSession
+                )
+            }
+
+            Tab("Karte", systemImage: "map.fill", value: AppSection.map) {
+                StoreMapPage(
+                    beaconManager: beaconManager,
+                    navigationSession: navigationSession,
+                    shoppingListManager: shoppingListManager,
+                    shoppingSessionManager: shoppingSessionManager,
+                    productSearch: mapProductSearch,
+                    upsellStore: upsellStore,
+                    targetProduct: $targetProduct,
+                    pendingLastStoreLayoutOpenRequest: $pendingLastStoreLayoutOpenRequest,
+                    onNavigateToProduct: focusProductOnMap,
+                    onOpenLists: { selectedSection = .shopping },
+                    onAddToList: addProductToShoppingList
+                )
+                .safeAreaInset(edge: .top) {
+                    VStack(spacing: 0) {
+                        PermissionBanner(manager: beaconManager)
+                        ProductSearchFeedback(store: mapProductSearch)
                     }
-                    .padding(.horizontal)
-                    .background(.regularMaterial)
+                }
+                .safeAreaInset(edge: .bottom) {
+                    if AppEnvironment.isStudyModeEnabled && studyStore.session != nil {
+                        VStack {
+                            if studyStore.running?.task.condition == .app { StudyRunningControls(store: studyStore) }
+                            Button("Testleitung") { showsStudySession = true }
+                        }
+                        .padding(.horizontal)
+                        .background(.regularMaterial)
+                    }
                 }
             }
-            .tag(AppSection.map)
         }
+        // Untere Tab-Leiste auch auf dem iPad (die Tab-API zeigt dort sonst eine obere Leiste).
+        .tabViewStyle(.tabBarOnly)
         .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
         .preferredColorScheme(.light)
         .alert("Filiale erkannt: \(beaconManager.suggestedPilotStore?.name ?? "") – öffnen?", isPresented: Binding(

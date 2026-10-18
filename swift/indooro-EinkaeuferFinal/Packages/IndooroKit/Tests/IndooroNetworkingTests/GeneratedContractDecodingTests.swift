@@ -1,4 +1,5 @@
 import Foundation
+import IndooroTestSupport
 import XCTest
 import IndooroNetworking
 
@@ -22,16 +23,8 @@ final class GeneratedContractDecodingTests: XCTestCase {
         return decoder
     }
 
-    /// `SP/Fixtures` liegt drei Ebenen ueber `Packages/IndooroKit`.
     private func fixtureData(_ name: String) throws -> Data {
-        let fixtures = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent() // IndooroNetworkingTests
-            .deletingLastPathComponent() // Tests
-            .deletingLastPathComponent() // IndooroKit
-            .deletingLastPathComponent() // Packages
-            .deletingLastPathComponent() // indooro-EinkaeuferFinal
-            .appendingPathComponent("Fixtures")
-        return try Data(contentsOf: fixtures.appendingPathComponent(name))
+        try TestFixtures.data(name)
     }
 
     // MARK: - Stores

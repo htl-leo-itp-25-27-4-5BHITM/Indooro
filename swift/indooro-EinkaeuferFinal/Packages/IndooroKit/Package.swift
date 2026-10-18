@@ -28,9 +28,14 @@ let package = Package(
         .target(
             name: "IndooroModels"
         ),
+        // Nur für Tests: JSON-Fixtures als Paketressource (Task 3.4). Kein Produkt, wird nie in die App gelinkt.
+        .target(
+            name: "IndooroTestSupport",
+            resources: [.copy("Resources")]
+        ),
         .testTarget(
             name: "IndooroModelsTests",
-            dependencies: ["IndooroModels"]
+            dependencies: ["IndooroModels", "IndooroTestSupport"]
         ),
         // Navigationskern (Phase 5): Graph, Positionierung, Session, Tourplanung, Replay.
         // Die Quellen wurden fuer Swift 5 geschrieben; Umstellung auf Swift 6 folgt in Task 11.1.
@@ -65,7 +70,7 @@ let package = Package(
         ),
         .testTarget(
             name: "IndooroNetworkingTests",
-            dependencies: ["IndooroNetworking"]
+            dependencies: ["IndooroNetworking", "IndooroTestSupport"]
         ),
     ]
 )
