@@ -7,6 +7,9 @@ struct SettingsSheet: View {
     let canShowAR: Bool
     let userPosition: CGPoint?
     let onShowAR: () -> Void
+    /// In-App-Protokoll (nur DEBUG-Builds zeigen es, Abschnitt „Diagnose“).
+    var debugLogText: String = ""
+    var onClearDebugLog: () -> Void = {}
 
     @AppStorage(AppEnvironment.profileOverrideKey) private var profileOverride = ""
     @Environment(\.dismiss) private var dismiss
@@ -59,6 +62,21 @@ struct SettingsSheet: View {
                     Toggle("Tippen setzt Ziel", isOn: $tapSetsTarget)
                     #endif
                 }
+
+                #if DEBUG
+                Section("Diagnose") {
+                    ScrollView {
+                        Text(debugLogText.isEmpty ? "Noch keine Einträge." : debugLogText)
+                            .font(.system(.caption2, design: .monospaced))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .textSelection(.enabled)
+                    }
+                    .frame(maxHeight: 220)
+                    Button("Protokoll kopieren") { UIPasteboard.general.string = debugLogText }
+                        .disabled(debugLogText.isEmpty)
+                    Button("Protokoll leeren", role: .destructive, action: onClearDebugLog)
+                }
+                #endif
 
                 #if DEBUG
                 Section("Debug") {
