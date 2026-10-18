@@ -14,15 +14,19 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/stores/{storeId}/readiness")
 @RolesAllowed({"admin", "region-manager", "store-manager"})
 @Produces(MediaType.APPLICATION_JSON)
+@Tag(name = "store-readiness")
 public class StoreReadinessResource {
 
     @Inject
     StoreReadinessService storeReadinessService;
 
+    @Operation(operationId = "getStoreReadiness")
     @GET
     public ReadinessReport getReadiness(@PathParam("storeId") UUID storeId,
                                         @QueryParam("radius") Double radius) {

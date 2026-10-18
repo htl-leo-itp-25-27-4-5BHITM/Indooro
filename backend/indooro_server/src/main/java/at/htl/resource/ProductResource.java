@@ -26,10 +26,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/products")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "catalog")
 public class ProductResource {
 
     private static final Logger LOG = Logger.getLogger(ProductResource.class);
@@ -60,11 +64,12 @@ public class ProductResource {
      * Suche nach Produkten
      * GET /api/products/search?q=apfel&size=10&storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "searchProducts")
     @GET
     @Path("/search")
     @PermitAll
     public Response searchProducts(
-            @QueryParam("q") String query,
+            @Parameter(required = true) @QueryParam("q") String query,
             @QueryParam("size") @DefaultValue("10") Integer size,
             @QueryParam("storeId") String storeId,
             @QueryParam("storeCode") String storeCode) {
@@ -92,6 +97,7 @@ public class ProductResource {
      * Holt alle Produkte (eines Marktes)
      * GET /api/products?storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "listProducts")
     @GET
     @PermitAll
     public Response getAllProducts(@QueryParam("size") @DefaultValue("100") Integer size,
@@ -113,6 +119,7 @@ public class ProductResource {
      * Holt ein Produkt anhand der ID
      * GET /api/products/1?storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "getProduct")
     @GET
     @Path("/{id}")
     @PermitAll
@@ -140,6 +147,7 @@ public class ProductResource {
      * Indexiert ein einzelnes Produkt (Markt im Body: storeId oder storeCode)
      * POST /api/products
      */
+    @Operation(operationId = "indexProduct")
     @POST
     @RolesAllowed("admin")
     public Response indexProduct(Product product) {
@@ -172,6 +180,7 @@ public class ProductResource {
      * ein Item, das dem Parameter widerspricht, wird als fehlerhafte Zeile gemeldet.
      * POST /api/products/bulk?storeCode=SPAR-Leonding-001
      */
+    @Operation(operationId = "indexProductsBulk")
     @POST
     @Path("/bulk")
     @RolesAllowed("admin")

@@ -19,16 +19,20 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 
 import java.util.UUID;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Path("/api/stores")
 @RolesAllowed({"admin", "region-manager", "store-manager"})
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "stores")
 public class StoreAdminResource extends AdminApiSupport {
 
     @Inject
     StoreAdminService storeAdminService;
 
+    @Operation(operationId = "listStores")
     @GET
     public CommonDtos.PageResponse<StoreDtos.StoreSummaryResponse> listStores(@QueryParam("query") String query,
                                                                               @QueryParam("regionId") UUID regionId,
@@ -48,17 +52,20 @@ public class StoreAdminResource extends AdminApiSupport {
         );
     }
 
+    @Operation(operationId = "createStore")
     @POST
     public StoreDtos.StoreDetailResponse createStore(@Valid StoreDtos.StoreUpsertRequest request) {
         return storeAdminService.createStore(request);
     }
 
+    @Operation(operationId = "getStore")
     @GET
     @Path("/{storeId}")
     public StoreDtos.StoreDetailResponse getStore(@PathParam("storeId") UUID storeId) {
         return storeAdminService.getStore(storeId);
     }
 
+    @Operation(operationId = "updateStore")
     @PUT
     @Path("/{storeId}")
     public StoreDtos.StoreDetailResponse updateStore(@PathParam("storeId") UUID storeId,
@@ -66,18 +73,21 @@ public class StoreAdminResource extends AdminApiSupport {
         return storeAdminService.updateStore(storeId, request);
     }
 
+    @Operation(operationId = "archiveStore")
     @PATCH
     @Path("/{storeId}/archive")
     public StoreDtos.StoreDetailResponse archiveStore(@PathParam("storeId") UUID storeId) {
         return storeAdminService.archiveStore(storeId);
     }
 
+    @Operation(operationId = "getStoreAudit")
     @GET
     @Path("/{storeId}/audit")
     public StoreDtos.StoreAuditResponse getStoreAudit(@PathParam("storeId") UUID storeId) {
         return new StoreDtos.StoreAuditResponse(storeId, storeAdminService.getStoreAudit(storeId));
     }
 
+    @Operation(operationId = "getStoreBeacons")
     @GET
     @Path("/{storeId}/beacons")
     public Object getStoreBeacons(@PathParam("storeId") UUID storeId) {

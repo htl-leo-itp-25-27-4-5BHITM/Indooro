@@ -30,11 +30,14 @@ import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 @Blocking
 @Path("/api/categories")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@Tag(name = "catalog")
 public class CategoryResource {
 
     private static final Logger LOG = Logger.getLogger(CategoryResource.class);
@@ -48,6 +51,7 @@ public class CategoryResource {
     @Inject
     AuditLogService auditLogService;
 
+    @Operation(operationId = "listCategories")
     @GET
     @PermitAll
     public Response getAllCategories(@QueryParam("size") @DefaultValue("100") Integer size) {
@@ -58,6 +62,7 @@ public class CategoryResource {
         }
     }
 
+    @Operation(operationId = "getCategory")
     @GET
     @Path("/{categoryCode}")
     @PermitAll
@@ -75,6 +80,7 @@ public class CategoryResource {
         }
     }
 
+    @Operation(operationId = "upsertCategory")
     @POST
     @RolesAllowed("admin")
     public Response upsertCategory(@QueryParam("createOnly") @DefaultValue("false") boolean createOnly, Category category) {
@@ -108,6 +114,7 @@ public class CategoryResource {
         }
     }
 
+    @Operation(operationId = "replaceCategory")
     @PUT
     @Path("/{categoryCode}")
     @RolesAllowed("admin")
@@ -119,6 +126,7 @@ public class CategoryResource {
         return upsertCategory(false, category);
     }
 
+    @Operation(operationId = "indexCategoriesBulk")
     @POST
     @Path("/bulk")
     @RolesAllowed("admin")
