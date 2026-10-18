@@ -211,4 +211,23 @@ final class ContractDecodingTests: XCTestCase {
         XCTAssertEqual(plan.debug?.totalTokens, 406)
         XCTAssertEqual(plan.debug?.candidateCount, 2)
     }
+
+    /// `expiresAt` mit und ohne Bruchteile sowie mit Offset dekodiert `JSONDecoder.indooro` (Task 3.2).
+    func testUpsellPlanExpiresAtAcceptsFractionalAndPlainTimestamps() throws {
+        let text = String(decoding: try ContractFixtures.data("upsell-plan.json"), as: UTF8.self)
+        XCTAssertTrue(text.contains("\"expiresAt\": \"2026-10-16T12:30:00Z\""))
+
+        let cases: [(stamp: String, epochSeconds: Double)] = [
+            ("2026-10-16T12:30:00Z", 1_792_153_800),
+            ("2026-10-16T12:30:00+00:00", 1_792_153_800),
+            ("2026-10-16T12:30:00.123Z", 1_792_153_800.123),
+            ("2026-10-16T12:30:00.123456Z", 1_792_153_800.123456),
+            ("2026-10-16T14:30:00.5+02:00", 1_792_153_800.5)
+        ]
+        for (stamp, epoch) in cases {
+            let payload = text.replacingOccurrences(of: "2026-10-16T12:30:00Z", with: stamp)
+            let plan = try JSONDecoder.indooro.decode(UpsellPlanResponse.self, from: Data(payload.utf8))
+            XCTAssertEqual(try XCTUnwrap(plan.expiresAt).timeIntervalSince1970, epoch, accuracy: 0.001, stamp)
+        }
+    }
 }
