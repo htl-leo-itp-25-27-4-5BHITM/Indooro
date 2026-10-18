@@ -1,6 +1,6 @@
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Spec "Each beacon uses one measurement source at a time" und
 /// "Position is solved only on the update tick" (Task 5.6).

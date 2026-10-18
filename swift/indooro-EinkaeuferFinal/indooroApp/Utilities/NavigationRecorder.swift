@@ -2,6 +2,7 @@
 import Foundation
 import Combine
 import CoreMotion
+import IndooroNavigation
 
 /// Zeichnet Rohmessungen, Layout-Identitaet, Navigationsereignisse und Bodenwahrheit als JSON Lines nach
 /// `Documents/NavigationRecordings/<ISO-Zeitstempel>.jsonl` auf (design.md D11). Nur DEBUG-Builds:

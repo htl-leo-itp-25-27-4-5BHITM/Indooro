@@ -3,7 +3,7 @@ import CoreGraphics
 import simd
 
 /// Naehe-Klasse eines iBeacon-Rangings (Spiegel von `CLProximity`, damit Paket und Aufzeichnung ohne CoreLocation auskommen).
-enum BeaconProximityClass: String, Codable, Equatable {
+public enum BeaconProximityClass: String, Codable, Equatable {
     case immediate
     case near
     case far
@@ -11,14 +11,16 @@ enum BeaconProximityClass: String, Codable, Equatable {
 }
 
 /// Puffer der RSSI-Rohsamples eines Ticks (letzte 12 je Beacon) samt Sichtzeit und TX-Power.
-struct RSSISampleBuffer {
+public struct RSSISampleBuffer {
     static let maxSamplesPerBeacon = 12
+
+    public init() {}
 
     private(set) var samples: [String: [Int]] = [:]
     private(set) var lastSeenAt: [String: TimeInterval] = [:]
-    private(set) var txPower: [String: Float] = [:]
+    public private(set) var txPower: [String: Float] = [:]
 
-    mutating func record(name: String, rssi: Int, timestamp: TimeInterval, txPower power: Float?) {
+    public mutating func record(name: String, rssi: Int, timestamp: TimeInterval, txPower power: Float?) {
         lastSeenAt[name] = timestamp
         if let power {
             txPower[name] = power
@@ -32,11 +34,11 @@ struct RSSISampleBuffer {
     }
 
     /// Verwirft die Samples eines Ticks, behaelt Sichtzeit und TX-Power.
-    mutating func removeSamples() {
+    public mutating func removeSamples() {
         samples.removeAll()
     }
 
-    mutating func removeAll() {
+    public mutating func removeAll() {
         samples.removeAll()
         lastSeenAt.removeAll()
         txPower.removeAll()
@@ -44,20 +46,20 @@ struct RSSISampleBuffer {
 }
 
 /// Ergebnis eines Positionierungs-Ticks.
-struct PositioningTick {
-    let timestamp: TimeInterval
+public struct PositioningTick {
+    public let timestamp: TimeInterval
     /// Vom Solver geloester Rohpunkt; `nil`, wenn zu wenige Beacons vorlagen.
-    let solvedPoint: SIMD2<Float>?
-    let confidence: Float
+    public let solvedPoint: SIMD2<Float>?
+    public let confidence: Float
     /// `true`, wenn das Sprung-Gate den geloesten Punkt gehalten hat.
     let wasHeld: Bool
     /// Projizierte Position (Eingang der Navigations-Session); `nil` ohne Loesung.
-    let projectedPoint: SIMD2<Float>?
+    public let projectedPoint: SIMD2<Float>?
 }
 
 /// Pro-Tick-Kette der Ortung: RSSI-Fenster -> Messspeicher -> Solver -> Schaetzer -> Projektion.
 /// `BeaconManager` und `NavigationReplay` rufen genau diese Funktionen auf (design.md D11).
-final class PositioningPipeline {
+public final class PositioningPipeline {
     let store: BeaconMeasurementStore
     private let solver: BeaconPositionSolver
     private let estimator: PoseFusionService
@@ -69,7 +71,7 @@ final class PositioningPipeline {
     /// Letzte Solver-Loesung (Startwert der naechsten Loesung).
     private(set) var lastSolvedPoint: SIMD2<Float>?
 
-    init(
+    public init(
         store: BeaconMeasurementStore,
         graph: IndoorGraph,
         bounds: CGRect,
@@ -102,7 +104,7 @@ final class PositioningPipeline {
 
     /// Ein Tick: RSSI-Fenster der Beacons ohne frisches Ranging, Ablauf veralteter Messungen, genau eine
     /// Loesung, Schaetzer, Projektion. Der Aufrufer leert danach `samples.removeSamples()`.
-    func tick(
+    public func tick(
         beaconNames: [String],
         samples: RSSISampleBuffer,
         at timestamp: TimeInterval
@@ -212,7 +214,7 @@ final class PositioningPipeline {
 
     /// Manuelle Kalibrierung: projizieren, Schaetzer und Solver-Startwert auf den Punkt setzen.
     /// Liefert den effektiven (projizierten) Punkt.
-    func calibrate(to mapPoint: SIMD2<Float>, at timestamp: TimeInterval) -> SIMD2<Float> {
+    public func calibrate(to mapPoint: SIMD2<Float>, at timestamp: TimeInterval) -> SIMD2<Float> {
         let effectivePoint = projector.project(mapPoint)?.projectedPoint ?? mapPoint
         estimator.reset(to: effectivePoint, timestamp: timestamp)
         lastSolvedPoint = effectivePoint
@@ -221,7 +223,7 @@ final class PositioningPipeline {
         return effectivePoint
     }
 
-    func clearSolverSeed() {
+    public func clearSolverSeed() {
         lastSolvedPoint = nil
     }
 
@@ -274,7 +276,7 @@ final class PositioningPipeline {
     }
 
     /// Qualitaet einer Ranging-Messung: `0.42 * signal + 0.38 * distance + 0.20 * proximity`.
-    static func rangingQuality(
+    public static func rangingQuality(
         rssi: Int,
         accuracy: Double,
         proximity: BeaconProximityClass,

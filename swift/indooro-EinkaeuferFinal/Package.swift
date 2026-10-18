@@ -20,24 +20,13 @@ let package = Package(
         .target(
             name: "IndooroNavigationCore",
             dependencies: [
-                .product(name: "IndooroModels", package: "IndooroKit")
+                .product(name: "IndooroModels", package: "IndooroKit"),
+                .product(name: "IndooroNavigation", package: "IndooroKit")
             ],
             path: "indooroApp",
             sources: [
-                "Utilities/IndoorGraph.swift",
-                "Utilities/KalmanFilter.swift",
                 "Utilities/LayoutCacheStore.swift",
                 "Utilities/AppLog.swift",
-                "Utilities/BeaconPositionSolver.swift",
-                "Utilities/PoseFusionService.swift",
-                "Utilities/WalkableProjector.swift",
-                "Utilities/BeaconMeasurementStore.swift",
-                "Utilities/NavigationSessionCore.swift",
-                "Utilities/TourPlanner.swift",
-                "Utilities/PositioningPipeline.swift",
-                "Utilities/MotionTracker.swift",
-                "Utilities/NavigationReplay.swift",
-                "Utilities/StabilizedNavigationConfig.swift",
                 "Utilities/AnchorPayload.swift",
                 "Utilities/AccessibilityText.swift",
                 "Utilities/AccessibilityPalette.swift",
@@ -50,7 +39,8 @@ let package = Package(
             dependencies: [
                 "IndooroNavigationCore",
                 "IndooroPilotSupport",
-                .product(name: "IndooroModels", package: "IndooroKit")
+                .product(name: "IndooroModels", package: "IndooroKit"),
+                .product(name: "IndooroNavigation", package: "IndooroKit")
             ],
             path: "Tests/IndooroNavigationCoreTests",
             resources: [.copy("Resources")]

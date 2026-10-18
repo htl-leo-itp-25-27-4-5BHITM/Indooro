@@ -1,7 +1,7 @@
 import IndooroModels
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Task 9.10: Tourenplanung (Distanzmatrix, Nearest Neighbor, 2-opt auf dem offenen Pfad).
 final class TourPlannerTests: XCTestCase {

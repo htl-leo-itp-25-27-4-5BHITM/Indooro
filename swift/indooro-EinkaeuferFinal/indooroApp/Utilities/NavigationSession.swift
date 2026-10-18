@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import CoreGraphics
 import simd
+import IndooroNavigation
 
 /// Vorschlag „Bist du bei <title>?“ fuer den aktiven Stopp (Ankunftserkennung, siehe ArrivalSuggestionDetector).
 struct ArrivalSuggestion: Equatable {

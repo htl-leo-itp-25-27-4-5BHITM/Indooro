@@ -3,25 +3,25 @@ import simd
 
 /// Ein Stopp, wie ihn die Tourenplanung sieht (ohne Artikel). Die Einkaufs-Session bildet
 /// ihre `ShoppingStop`s darauf ab.
-struct TourPlanStop: Equatable, Identifiable {
-    let id: String
-    var title: String
-    var mapPoint: SIMD2<Float>
-    var orderSeed: Int
+public struct TourPlanStop: Equatable, Identifiable {
+    public let id: String
+    public var title: String
+    public var mapPoint: SIMD2<Float>
+    public var orderSeed: Int
 
-    init(id: String, title: String, mapPoint: SIMD2<Float>, orderSeed: Int) {
+    public init(id: String, title: String, mapPoint: SIMD2<Float>, orderSeed: Int) {
         self.id = id
         self.title = title
         self.mapPoint = mapPoint
         self.orderSeed = orderSeed
     }
 
-    var navigationStop: NavigationStop {
+    public var navigationStop: NavigationStop {
         NavigationStop(id: id, title: title, mapPoint: mapPoint)
     }
 }
 
-enum TourPlanningMode {
+public enum TourPlanningMode {
     case optimized
     case listOrder
 }
@@ -29,14 +29,14 @@ enum TourPlanningMode {
 /// Reine Tourenplanung (design.md D9): Distanzmatrix ueber den gemeinsamen Graphen, Nearest Neighbor
 /// mit Tie-Break (orderSeed, Titel) und 2-opt auf dem offenen Pfad (Start fest, Ende frei).
 /// Laeuft nur bei Planungsereignissen, nie bei Positionsupdates und nie im View-Body.
-enum TourPlanner {
+public enum TourPlanner {
     /// Listenreihenfolge: orderSeed, dann Titel.
-    static func listOrder(_ stops: [TourPlanStop]) -> [TourPlanStop] {
+    public static func listOrder(_ stops: [TourPlanStop]) -> [TourPlanStop] {
         stops.sorted(by: isListOrderedBefore)
     }
 
     /// Ordnet die Stopps. `.listOrder`, fehlender Startpunkt oder fehlender Graph liefern die Listenreihenfolge.
-    static func order(
+    public static func order(
         stops: [TourPlanStop],
         start: SIMD2<Float>?,
         graph: IndoorGraph?,
@@ -94,7 +94,7 @@ enum TourPlanner {
     /// (Mengen-/Artikelaenderungen ohne neuen oder entfernten Stopp planen nichts neu).
     /// Der aktive Stopp bleibt vorn, solange er noch offene Artikel hat; die uebrigen Stopps werden ab
     /// seinem Kartenpunkt neu geplant. Hat er keine mehr, wird ab `projectedStart` (sonst Eingang) geplant.
-    static func planAfterListChange(
+    public static func planAfterListChange(
         resolved: [TourPlanStop],
         storedPlanIDs: [String],
         activeStopID: String?,

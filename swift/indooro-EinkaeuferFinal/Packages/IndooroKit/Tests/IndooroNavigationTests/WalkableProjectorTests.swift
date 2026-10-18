@@ -1,6 +1,6 @@
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Spec "Projected position is history-free and unbiased" (Task 6.10).
 final class WalkableProjectorTests: XCTestCase {

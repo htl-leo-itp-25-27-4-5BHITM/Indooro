@@ -1,6 +1,6 @@
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Task 7.11: Session-Logik mit synthetischen Positionen und steuerbarer Uhr.
 final class NavigationSessionTests: XCTestCase {
