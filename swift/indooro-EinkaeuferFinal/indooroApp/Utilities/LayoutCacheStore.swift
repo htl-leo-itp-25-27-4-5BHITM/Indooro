@@ -1,4 +1,5 @@
 import Foundation
+import os
 
 /// Datei-Cache fuer die rohen Layout-Antworten des Servers (Offline-Start).
 ///
@@ -34,7 +35,7 @@ struct LayoutCacheStore {
             var excludedURL = url
             try excludedURL.setResourceValues(values)
         } catch {
-            print("LayoutCache: Speichern fehlgeschlagen (\(url.lastPathComponent)): \(error.localizedDescription)")
+            AppLog.persistence.error("LayoutCache: Speichern fehlgeschlagen (\(url.lastPathComponent, privacy: .private(mask: .hash))): \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -53,7 +54,7 @@ struct LayoutCacheStore {
             }
             return (data, savedAt)
         } catch {
-            print("LayoutCache: Laden fehlgeschlagen (\(url.lastPathComponent)): \(error.localizedDescription)")
+            AppLog.persistence.error("LayoutCache: Laden fehlgeschlagen (\(url.lastPathComponent, privacy: .private(mask: .hash))): \(error.localizedDescription, privacy: .public)")
             return nil
         }
     }
@@ -89,7 +90,7 @@ struct LayoutCacheStore {
         let name: String
         if let storeID {
             guard Self.isValidStoreID(storeID) else {
-                print("LayoutCache: Ungueltige Store-ID abgelehnt")
+                AppLog.persistence.error("LayoutCache: Ungültige Store-ID abgelehnt")
                 return nil
             }
             name = storeID
