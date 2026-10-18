@@ -1,0 +1,111 @@
+# NetworkPolicies fuer den Namespace (kein namespace-Feld: wird im Ziel-Namespace angewendet).
+#
+# ACHTUNG: NICHT anwenden, bevor Task 1.3 bestaetigt hat, dass LeoCloud NetworkPolicies
+# durchsetzt UND dass das Namespace-Label des Ingress-Controllers stimmt (siehe unten).
+# Ohne Durchsetzung hat die Datei keine Wirkung; ein falsches Label blockiert den gesamten
+# Ingress-Verkehr zu Backend und Keycloak.
+#
+# Pruefen:
+#   kubectl get ns ingress-nginx --show-labels          # Label kubernetes.io/metadata.name muss ingress-nginx sein
+#   kubectl get ns -l kubernetes.io/metadata.name=ingress-nginx
+# Falls der Controller in einem anderen Namespace laeuft, unten bei den Ingress-Regeln den Namespace anpassen.
+#
+# Wirkung: Default-Deny fuer eingehenden Verkehr im Namespace, danach gezielte Freigaben.
+# Pod-Labels stammen aus den Manifesten in k8s/ (Feld metadata.labels.app).
+---
+# 1. Default-Deny: kein eingehender Verkehr zu Pods im Namespace, solange nichts freigegeben ist.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+---
+# 2. Ingress-Controller -> Backend (8080)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-backend
+spec:
+  podSelector:
+    matchLabels:
+      app: indooro-backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              # Label muss auf LeoCloud verifiziert sein (siehe Kopfkommentar).
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# 3. Ingress-Controller -> Keycloak (8080, nur /keycloak/realms/ und /keycloak/resources/ sind ingress-seitig freigegeben)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-keycloak
+spec:
+  podSelector:
+    matchLabels:
+      app: indooro-keycloak
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080
+---
+# 4. PostgreSQL (5432) <- Backend, Keycloak und den einmaligen DB-Init-Job
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-to-postgres
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: indooro-backend
+        - podSelector:
+            matchLabels:
+              app: indooro-keycloak
+        - podSelector:
+            matchLabels:
+              app: indooro-keycloak-db-init
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+# 5. OpenSearch (9200) <- Backend. Metrik-Port 9600 bleibt gesperrt.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-backend-to-opensearch
+spec:
+  podSelector:
+    matchLabels:
+      app: opensearch
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: indooro-backend
+      ports:
+        - protocol: TCP
+          port: 9200

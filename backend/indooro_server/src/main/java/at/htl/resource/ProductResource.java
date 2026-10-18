@@ -2,7 +2,10 @@ package at.htl.resource;
 
 
 import at.htl.admin.service.AdminAccessService;
+import at.htl.admin.service.AuditLogService;
+import at.htl.admin.util.AuditEntityIds;
 import at.htl.model.Product;
+import at.htl.service.CatalogBulkResult;
 import at.htl.service.CatalogStoreResolver;
 import at.htl.service.CatalogStoreResolver.CatalogStoreException;
 import at.htl.service.CatalogStoreResolver.ResolvedStore;
@@ -19,6 +22,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -48,6 +52,9 @@ public class ProductResource {
 
     @Inject
     LegacyDocumentGuard legacyDocumentGuard;
+
+    @Inject
+    AuditLogService auditLogService;
 
     /** Store used for read requests that name no store. Empty = no default, old behavior (no store filter). */
     @ConfigProperty(name = "indooro.catalog.default-store-code")
@@ -158,6 +165,7 @@ public class ProductResource {
 
         try {
             String result = openSearchService.indexProduct(product);
+            auditProductWrite(product.getId(), store.storeCode(), "UPSERT", product);
             return Response.ok("{\"result\": \"" + result + "\"}").build();
         } catch (IOException e) {
             LOG.error("Error indexing product", e);
@@ -200,7 +208,36 @@ public class ProductResource {
         if (outcome.transportFailed()) {
             return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(outcome.result()).build();
         }
+        auditProductBulk(parameterStore == null ? null : parameterStore.storeCode(), outcome.result());
         return Response.ok(outcome.result()).build();
+    }
+
+    /** Ein Eintrag pro Einzelschreibvorgang; ein Auditfehler veraendert die Antwort nicht. */
+    private void auditProductWrite(Integer productId, String storeCode, String action, Object after) {
+        try {
+            auditLogService.logByAdmin(adminAccessService.currentUser(), "PRODUCT", AuditEntityIds.product(productId),
+                    action, "Produkt " + productId + " gespeichert (Markt " + storeCode + ")", null, after);
+        } catch (RuntimeException exception) {
+            LOG.warn("Audit-Eintrag fuer Produkt konnte nicht geschrieben werden", exception);
+        }
+    }
+
+    /** Ein Eintrag pro beantwortetem Bulk-Aufruf mit Zaehlern; ohne Markt-Parameter als "*". */
+    private void auditProductBulk(String storeCode, CatalogBulkResult result) {
+        try {
+            String marketKey = storeCode == null ? "*" : storeCode;
+            Map<String, Object> after = new LinkedHashMap<>();
+            after.put("storeCode", storeCode);
+            after.put("count", result.count());
+            after.put("saved", result.saved());
+            after.put("failed", result.failed());
+            after.put("unknown", result.unknown());
+            auditLogService.logByAdmin(adminAccessService.currentUser(), "PRODUCT", AuditEntityIds.productBulk(marketKey),
+                    "BULK_UPSERT", "Bulk: " + result.saved() + " gespeichert, " + result.failed() + " fehlgeschlagen (Markt "
+                            + marketKey + ")", null, after);
+        } catch (RuntimeException exception) {
+            LOG.warn("Audit-Eintrag fuer Produkt-Bulk konnte nicht geschrieben werden", exception);
+        }
     }
 
     /** Explicit store parameter wins; without any store parameter the configured default store applies (if set). */

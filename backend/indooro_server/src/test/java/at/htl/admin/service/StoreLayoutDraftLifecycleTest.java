@@ -87,7 +87,9 @@ class StoreLayoutDraftLifecycleTest {
         adminService.beaconAssignmentRepository = beaconAssignments;
         adminService.storeAdminService = storeAdminService;
         adminService.adminAccessService = mock(AdminAccessService.class);
-        adminService.auditLogService = mock(AuditLogService.class);
+        AuditLogService audit = mock(AuditLogService.class);
+        when(audit.currentActor()).thenReturn(AuditLogService.Actor.SYSTEM);
+        adminService.auditLogService = audit;
         adminService.objectMapper = mapper;
         adminService.layoutDocumentValidator = new LayoutDocumentValidator();
 

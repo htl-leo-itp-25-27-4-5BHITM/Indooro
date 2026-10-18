@@ -768,43 +768,102 @@ struct StoreMapPage: View {
         .background(MapFloatingSurface())
     }
 
+    /// Erledigt-Pfad (auch fuer „Ja, erledigt“ des Ankunftsvorschlags): bestehende Route ueber den Session-Manager.
+    private func completeCurrentStop() {
+        let completedStop = activeShoppingSnapshot?.currentStop
+        shoppingSessionManager.markCurrentStopDone(
+            listManager: shoppingListManager,
+            beaconManager: beaconManager
+        )
+        requestUpsellForCompletedStop(completedStop)
+    }
+
+    /// Nicht blockierender Vorschlag oberhalb des Tour-Panels; die Erledigt-Schaltfläche bleibt frei.
+    private func arrivalSuggestionBanner(_ suggestion: ArrivalSuggestion) -> some View {
+        let question = "Bist du bei \(suggestion.title)?"
+        return VStack(alignment: .leading, spacing: 8) {
+            Text(question)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+
+            HStack(spacing: 8) {
+                Button {
+                    // Bestaetigt: der Detektor zaehlt, danach der bestehende Erledigt-Pfad.
+                    if navigationSession.acceptArrivalSuggestion() != nil {
+                        completeCurrentStop()
+                    }
+                } label: {
+                    Text("Ja, erledigt")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.white)
+                .background(accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityIdentifier("arrivalSuggestionYes")
+
+                Button {
+                    navigationSession.rejectArrivalSuggestion()
+                } label: {
+                    Text("Noch nicht")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(accent)
+                .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .accessibilityIdentifier("arrivalSuggestionNo")
+            }
+        }
+        .padding(12)
+        .background(MapFloatingSurface())
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(question)
+        .accessibilityIdentifier("arrivalSuggestion")
+        .onAppear {
+            AccessibilityNotification.Announcement(question).post()
+        }
+    }
+
     @ViewBuilder
     private var bottomCard: some View {
         if let snapshot = activeShoppingSnapshot {
-            ShoppingSessionPanel(
-                snapshot: snapshot,
-                routeOriginText: routeOriginText,
-                locationText: { stop in stopLocationText(for: stop) },
-                onOpenList: onOpenLists,
-                onMarkCurrentStopDone: {
-                    let completedStop = activeShoppingSnapshot?.currentStop
-                    shoppingSessionManager.markCurrentStopDone(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
-                    requestUpsellForCompletedStop(completedStop)
-                },
-                onSkipCurrentStop: {
-                    let skippedStop = activeShoppingSnapshot?.currentStop
-                    shoppingSessionManager.skipCurrentStop(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
-                    requestUpsellForCompletedStop(skippedStop)
-                },
-                onToggleMode: {
-                    shoppingSessionManager.toggleRouteMode(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
-                },
-                onReplan: {
-                    shoppingSessionManager.replan(
-                        listManager: shoppingListManager,
-                        beaconManager: beaconManager
-                    )
+            VStack(spacing: 8) {
+                if let suggestion = navigationSession.arrivalSuggestion {
+                    arrivalSuggestionBanner(suggestion)
                 }
-            )
+                ShoppingSessionPanel(
+                    snapshot: snapshot,
+                    routeOriginText: routeOriginText,
+                    locationText: { stop in stopLocationText(for: stop) },
+                    onOpenList: onOpenLists,
+                    onMarkCurrentStopDone: {
+                        completeCurrentStop()
+                    },
+                    onSkipCurrentStop: {
+                        let skippedStop = activeShoppingSnapshot?.currentStop
+                        shoppingSessionManager.skipCurrentStop(
+                            listManager: shoppingListManager,
+                            beaconManager: beaconManager
+                        )
+                        requestUpsellForCompletedStop(skippedStop)
+                    },
+                    onToggleMode: {
+                        shoppingSessionManager.toggleRouteMode(
+                            listManager: shoppingListManager,
+                            beaconManager: beaconManager
+                        )
+                    },
+                    onReplan: {
+                        shoppingSessionManager.replan(
+                            listManager: shoppingListManager,
+                            beaconManager: beaconManager
+                        )
+                    }
+                )
+            }
             .padding(.horizontal, 16)
             .padding(.top, 10)
             .padding(.bottom, 10)

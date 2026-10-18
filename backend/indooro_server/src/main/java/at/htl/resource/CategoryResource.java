@@ -1,6 +1,8 @@
 package at.htl.resource;
 
 import at.htl.admin.service.AdminAccessService;
+import at.htl.admin.service.AuditLogService;
+import at.htl.admin.util.AuditEntityIds;
 import at.htl.model.Category;
 import at.htl.service.CategoryService;
 import at.htl.service.CatalogBulkResult;
@@ -22,7 +24,10 @@ import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.jboss.logging.Logger;
+
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -35,11 +40,16 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 @Tag(name = "catalog")
 public class CategoryResource {
 
+    private static final Logger LOG = Logger.getLogger(CategoryResource.class);
+
     @Inject
     CategoryService categoryService;
 
     @Inject
     AdminAccessService adminAccessService;
+
+    @Inject
+    AuditLogService auditLogService;
 
     @Operation(operationId = "listCategories")
     @GET
@@ -77,12 +87,15 @@ public class CategoryResource {
         adminAccessService.requireAdmin();
         try {
             if (createOnly) {
-                return Response.ok(categoryService.create(category)).build();
+                Category created = categoryService.create(category);
+                auditCategoryWrite(created.getCategoryCode(), "CREATE", created);
+                return Response.ok(created).build();
             }
             CatalogBulkResult result = categoryService.bulkInsert(List.of(category));
             if (result.failed() > 0 || result.unknown() > 0) {
                 return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(result).build();
             }
+            auditCategoryWrite(category.getCategoryCode(), "UPSERT", category);
             return Response.ok(category).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", e.getMessage())).build();
@@ -121,6 +134,7 @@ public class CategoryResource {
         adminAccessService.requireAdmin();
         try {
             CatalogBulkResult result = categoryService.bulkInsert(categories);
+            auditCategoryBulk(result);
             return Response.ok(result).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", e.getMessage())).build();
@@ -132,6 +146,32 @@ public class CategoryResource {
                     .entity(CatalogBulkResult.unknown(categories.stream().map(category -> String.valueOf(category.getCategoryCode())).toList(),
                             "Transport failed; some writes may have persisted. Verify before retrying."))
                     .build();
+        }
+    }
+
+    /** Ein Eintrag pro Einzelschreibvorgang; ein Auditfehler veraendert die bereits erfolgte Schreibung nicht. */
+    private void auditCategoryWrite(int categoryCode, String action, Category after) {
+        try {
+            auditLogService.logByAdmin(adminAccessService.currentUser(), "CATEGORY", AuditEntityIds.category(categoryCode),
+                    action, "Kategorie " + categoryCode + " gespeichert", null, after);
+        } catch (RuntimeException exception) {
+            LOG.warn("Audit-Eintrag fuer Kategorie konnte nicht geschrieben werden", exception);
+        }
+    }
+
+    /** Ein Eintrag pro beantwortetem Bulk-Aufruf mit Zaehlern. */
+    private void auditCategoryBulk(CatalogBulkResult result) {
+        try {
+            Map<String, Object> after = new LinkedHashMap<>();
+            after.put("count", result.count());
+            after.put("saved", result.saved());
+            after.put("failed", result.failed());
+            after.put("unknown", result.unknown());
+            auditLogService.logByAdmin(adminAccessService.currentUser(), "CATEGORY", AuditEntityIds.categoryBulk(),
+                    "BULK_UPSERT", "Bulk: " + result.saved() + " gespeichert, " + result.failed() + " fehlgeschlagen",
+                    null, after);
+        } catch (RuntimeException exception) {
+            LOG.warn("Audit-Eintrag fuer Kategorie-Bulk konnte nicht geschrieben werden", exception);
         }
     }
 }

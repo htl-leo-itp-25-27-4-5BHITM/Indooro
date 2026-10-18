@@ -1,5 +1,6 @@
 package at.htl.admin.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -22,8 +23,8 @@ public final class UpsellDtos {
             @Size(max = 50) String storeCode,
             @NotNull Integer checkedProductId,
             @Size(max = 80) String shoppingListId,
-            List<Integer> currentListProductIds,
-            List<Integer> completedProductIds,
+            @Size(max = 200) List<Integer> currentListProductIds,
+            @Size(max = 200) List<Integer> completedProductIds,
             @Size(max = 50) String source,
             UUID recipeId
     ) {
@@ -62,10 +63,10 @@ public final class UpsellDtos {
             UUID storeId,
             @Size(max = 50) String storeCode,
             @Size(max = 80) String shoppingListId,
-            List<Integer> currentListProductIds,
-            List<Integer> completedProductIds,
+            @Size(max = 200) List<Integer> currentListProductIds,
+            @Size(max = 200) List<Integer> completedProductIds,
             @Size(max = 50) String source,
-            @Size(max = 80) List<UpsellOpportunityRequest> opportunities
+            @Valid @Size(max = 30) List<UpsellOpportunityRequest> opportunities
     ) {
     }
 

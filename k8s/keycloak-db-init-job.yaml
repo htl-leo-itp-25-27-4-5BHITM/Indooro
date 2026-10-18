@@ -1,0 +1,84 @@
+# Einmaliger, idempotenter Job: legt Rolle und Datenbank `keycloak` in der bestehenden
+# PostgreSQL-Instanz an (Service `postgres`). Wiederholtes Ausfuehren ist unkritisch.
+#
+# Die Passwoerter kommen aus Secrets, nicht aus dieser Datei:
+#   - POSTGRES_PASSWORD aus indooro-postgres-secret (Superuser `indooro` der Postgres-Instanz)
+#   - db-password aus indooro-keycloak-secret (Passwort des Keycloak-DB-Benutzers `keycloak`)
+#
+# Ausfuehren (Job ist unveraenderlich: vorher alten Job loeschen):
+#   kubectl -n student-it220209 delete job indooro-keycloak-db-init --ignore-not-found
+#   kubectl -n student-it220209 apply -f k8s/keycloak-db-init-job.yaml
+#   kubectl -n student-it220209 logs job/indooro-keycloak-db-init
+#
+# Die gleichen Befehle manuell: siehe DEPLOYMENT.md, Abschnitt "Keycloak-Datenbank".
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: indooro-keycloak-db-init
+data:
+  init.sql: |
+    -- Rolle keycloak anlegen, falls nicht vorhanden.
+    SELECT format('CREATE ROLE keycloak LOGIN PASSWORD %L', :'kc_pw')
+    WHERE NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'keycloak') \gexec
+
+    -- Passwort bei jedem Lauf auf den Secret-Wert setzen (Rotation).
+    SELECT format('ALTER ROLE keycloak WITH LOGIN PASSWORD %L', :'kc_pw') \gexec
+
+    -- Datenbank keycloak anlegen, falls nicht vorhanden.
+    SELECT 'CREATE DATABASE keycloak OWNER keycloak'
+    WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'keycloak') \gexec
+
+    ALTER DATABASE keycloak OWNER TO keycloak;
+    REVOKE ALL ON DATABASE keycloak FROM PUBLIC;
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: indooro-keycloak-db-init
+  labels:
+    app: indooro-keycloak-db-init
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: indooro-keycloak-db-init
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          # Gleiche Major-Version wie k8s/postgres.yaml (postgres:16-alpine).
+          image: postgres:16-alpine
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - >-
+              psql -v ON_ERROR_STOP=1 -v kc_pw="$KC_DB_PASSWORD"
+              -h postgres -U indooro -d indooro -f /init/init.sql
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: indooro-postgres-secret
+                  key: POSTGRES_PASSWORD
+            - name: KC_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: indooro-keycloak-secret
+                  key: db-password
+          volumeMounts:
+            - name: init-sql
+              mountPath: /init
+              readOnly: true
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+      volumes:
+        - name: init-sql
+          configMap:
+            name: indooro-keycloak-db-init

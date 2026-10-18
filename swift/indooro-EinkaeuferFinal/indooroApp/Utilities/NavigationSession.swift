@@ -3,6 +3,12 @@ import Combine
 import CoreGraphics
 import simd
 
+/// Vorschlag „Bist du bei <title>?“ fuer den aktiven Stopp (Ankunftserkennung, siehe ArrivalSuggestionDetector).
+struct ArrivalSuggestion: Equatable {
+    let stopID: String
+    let title: String
+}
+
 /// Einziger Besitzer von Plan, aktivem Stopp, aktiver Route und Fortschritt (design.md D1).
 /// Die Logik liegt in `NavigationSessionCore` (testbar im Package); diese Huelle veroeffentlicht den
 /// Zustand fuer SwiftUI und abonniert `BeaconManager` (projizierte Position, Konfidenz, Kalibrierung,
@@ -28,6 +34,15 @@ final class NavigationSession: ObservableObject {
     @Published private(set) var rerouteCount = 0
     @Published private(set) var stopChangeWithoutEventCount = 0
     @Published private(set) var manualPositionCount = 0
+    /// Offener Ankunftsvorschlag (nur waehrend einer Tour am aktiven Stopp); nie automatisch erledigt.
+    @Published private(set) var arrivalSuggestion: ArrivalSuggestion?
+    /// Zaehler der Ankunftsvorschlaege fuer die Studie (Anzeige, „Ja, erledigt“, „Noch nicht“).
+    @Published private(set) var arrivalSuggestionShownCount = 0
+    @Published private(set) var arrivalSuggestionAcceptedCount = 0
+    @Published private(set) var arrivalSuggestionRejectedCount = 0
+
+    /// Ob „Mit Ortung“ aktiv ist. Wird in `attach(to:)` gesetzt; ohne Verbindung gilt „aus“.
+    var isArrivalPositioningEnabled: () -> Bool = { false }
 
     /// Name aus der alten Schnittstelle; Views binden weiter daran.
     var navigationStatusMessage: String? { statusMessage }
@@ -35,8 +50,25 @@ final class NavigationSession: ObservableObject {
     var remainingRoutePolyline: [SIMD2<Float>] { core.remainingRoutePolyline }
 
     private var core = NavigationSessionCore()
+    private var arrivalDetector: ArrivalSuggestionDetector
+    /// Zeitstempel des letzten Positionsticks (gleiche Uhr wie der Detektor), fuer „Noch nicht“.
+    private var lastTickTimestamp: TimeInterval = 0
     private weak var beaconManager: BeaconManager?
     private var cancellables = Set<AnyCancellable>()
+
+    init(arrivalConfig: ArrivalSuggestionConfig = NavigationSession.arrivalSuggestionConfig()) {
+        arrivalDetector = ArrivalSuggestionDetector(config: arrivalConfig)
+    }
+
+    /// Standardwerte der Ankunftserkennung, mit optionalem Feldtuning aus AppEnvironment (nur DEBUG).
+    nonisolated static func arrivalSuggestionConfig(tuning: AppEnvironment.ArrivalSuggestionTuning = AppEnvironment.arrivalSuggestionTuning) -> ArrivalSuggestionConfig {
+        let base = ArrivalSuggestionConfig.defaults()
+        return ArrivalSuggestionConfig(
+            radiusMeters: tuning.radiusMeters.map { Float($0) } ?? base.radiusMeters,
+            dwellSeconds: tuning.dwellSeconds ?? base.dwellSeconds,
+            suppressionSeconds: base.suppressionSeconds
+        )
+    }
 
     // MARK: - Verbindung zu BeaconManager (7.8)
 
@@ -44,6 +76,7 @@ final class NavigationSession: ObservableObject {
         guard self.beaconManager !== beaconManager else { return }
         self.beaconManager = beaconManager
         cancellables.removeAll()
+        isArrivalPositioningEnabled = { [weak beaconManager] in beaconManager?.trackingMode == .beacon }
 
         core.layoutChanged(graph: beaconManager.navigationGraph, entrance: entranceOfLayout())
         publish()
@@ -114,6 +147,7 @@ final class NavigationSession: ObservableObject {
         NavigationRecorder.shared.recordEvent(.stopDone)
         #endif
         seedPosition()
+        clearArrivalSuggestion()
         core.stopCompleted()
         publish()
     }
@@ -123,7 +157,28 @@ final class NavigationSession: ObservableObject {
         NavigationRecorder.shared.recordEvent(.stopSkipped)
         #endif
         seedPosition()
+        clearArrivalSuggestion()
         core.stopSkipped()
+        publish()
+    }
+
+    /// „Ja, erledigt“: zaehlt als akzeptiert und gibt den bestaetigten Vorschlag zurueck. Erledigt wird
+    /// der Stopp NICHT hier, sondern der Aufrufer fuehrt den bestehenden Pfad aus
+    /// (`ShoppingSessionManager.markCurrentStopDone` -> `stopCompleted`). Ohne Vorschlag: nil.
+    @discardableResult
+    func acceptArrivalSuggestion() -> ArrivalSuggestion? {
+        guard let suggestion = arrivalSuggestion else { return nil }
+        arrivalDetector.accept()
+        arrivalSuggestion = nil
+        publish()
+        return suggestion
+    }
+
+    /// „Noch nicht“: zaehlt als abgelehnt und unterdrueckt Vorschlaege fuer diesen Stopp (30 s).
+    func rejectArrivalSuggestion() {
+        guard arrivalSuggestion != nil else { return }
+        arrivalDetector.reject(at: lastTickTimestamp)
+        arrivalSuggestion = nil
         publish()
     }
 
@@ -169,6 +224,7 @@ final class NavigationSession: ObservableObject {
         #if DEBUG
         NavigationRecorder.shared.recordEvent(.stopTour)
         #endif
+        clearArrivalSuggestion()
         core.stopTour()
         publish()
     }
@@ -183,14 +239,44 @@ final class NavigationSession: ObservableObject {
 
     // MARK: - Intern
 
-    private func handle(_ sample: NavigationSample) {
+    /// Ein Positionstick. Intern (nicht privat), damit Tests Ticks einspielen koennen.
+    func handle(_ sample: NavigationSample) {
         core.tickUpdated(
             projected: sample.projectedPosition,
             confidence: sample.confidence,
             at: sample.timestamp,
             trusted: sample.isTrusted
         )
+        lastTickTimestamp = sample.timestamp
+        updateArrivalSuggestion(with: sample)
         publish()
+    }
+
+    /// Speist den Detektor mit dem aktiven Stopp der Tour (nach dem Tick, damit der Stopp aktuell ist).
+    private func updateArrivalSuggestion(with sample: NavigationSample) {
+        let tourStop = core.mode == .tour ? core.activeStop : nil
+        let event = arrivalDetector.update(
+            position: sample.projectedPosition,
+            trusted: sample.isTrusted,
+            positioningEnabled: isArrivalPositioningEnabled(),
+            activeStopID: tourStop?.id,
+            stopPoint: tourStop?.mapPoint,
+            at: sample.timestamp
+        )
+        switch event {
+        case .shown(let stopID)?:
+            arrivalSuggestion = ArrivalSuggestion(stopID: stopID, title: tourStop?.title ?? "")
+        case .withdrawn?:
+            arrivalSuggestion = nil
+        case nil:
+            break
+        }
+    }
+
+    /// Verwirft Vorschlag und Dwell-Lauf; Zaehler bleiben erhalten.
+    private func clearArrivalSuggestion() {
+        arrivalDetector.reset()
+        arrivalSuggestion = nil
     }
 
     private func seedPosition() {
@@ -227,6 +313,14 @@ final class NavigationSession: ObservableObject {
         assign(\.rerouteCount, core.rerouteCount)
         assign(\.stopChangeWithoutEventCount, core.stopChangeWithoutEventCount)
         assign(\.manualPositionCount, core.manualPositionCount)
+
+        // Ein Vorschlag gilt nur, solange genau dieser Stopp in einer Tour aktiv ist.
+        if let suggestion = arrivalSuggestion, core.mode != .tour || suggestion.stopID != core.activeStopID {
+            arrivalSuggestion = nil
+        }
+        assign(\.arrivalSuggestionShownCount, arrivalDetector.counters.shown)
+        assign(\.arrivalSuggestionAcceptedCount, arrivalDetector.counters.accepted)
+        assign(\.arrivalSuggestionRejectedCount, arrivalDetector.counters.rejected)
     }
 
     private func assign<Value: Equatable>(_ keyPath: ReferenceWritableKeyPath<NavigationSession, Value>, _ value: Value) {

@@ -3,6 +3,7 @@ package at.htl.resource.admin;
 import at.htl.admin.service.AdminAccessService;
 import at.htl.admin.service.AuditLogService;
 import at.htl.admin.service.CurrentAdminUser;
+import at.htl.admin.util.AuditEntityIds;
 import at.htl.model.Product;
 import at.htl.service.BulkIdempotencyCache;
 import at.htl.service.CatalogBulkResult;
@@ -140,7 +141,6 @@ public class AdminProductResource extends AdminApiSupport {
 
         try {
             openSearchService.indexProduct(product);
-            return product;
         } catch (IOException exception) {
             LOG.error("Error indexing admin product", exception);
             throw new WebApplicationException(
@@ -148,6 +148,8 @@ public class AdminProductResource extends AdminApiSupport {
                     Response.Status.INTERNAL_SERVER_ERROR
             );
         }
+        auditProductWrite(product.getId(), store.storeCode(), "UPSERT", "Produkt " + product.getId() + " gespeichert", null, product);
+        return product;
     }
 
     @Operation(operationId = "deleteAdminProduct")
@@ -167,6 +169,7 @@ public class AdminProductResource extends AdminApiSupport {
             if (!deleted) {
                 throw new WebApplicationException("Produkt wurde nicht gefunden.", Response.Status.NOT_FOUND);
             }
+            auditProductWrite(id, store.storeCode(), "DELETE", "Produkt " + id + " geloescht", Map.of("id", id), null);
             return Response.noContent().build();
         } catch (IOException exception) {
             LOG.error("Error deleting admin product", exception);
@@ -278,6 +281,19 @@ public class AdminProductResource extends AdminApiSupport {
                     result.saved() + " gespeichert, " + result.failed() + " fehlgeschlagen", null, after);
         } catch (RuntimeException exception) {
             LOG.error("Audit-Eintrag fuer Produkt-Bulk-Import konnte nicht geschrieben werden", exception);
+        }
+    }
+
+    /**
+     * Audit fuer Einzelschreibvorgaenge (Akteur = angemeldeter Admin-Benutzer). Ein Auditfehler wird
+     * geloggt und veraendert die bereits erfolgte Schreibung nicht.
+     */
+    private void auditProductWrite(int productId, String storeCode, String action, String summary, Object before, Object after) {
+        try {
+            auditLogService.logByAdmin(adminAccessService.currentUser(), "PRODUCT", AuditEntityIds.product(productId),
+                    action, summary + " (Markt " + storeCode + ")", before, after);
+        } catch (RuntimeException exception) {
+            LOG.error("Audit-Eintrag fuer Produkt konnte nicht geschrieben werden", exception);
         }
     }
 

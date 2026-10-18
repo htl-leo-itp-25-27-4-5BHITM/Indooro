@@ -13,6 +13,7 @@ sys.path.insert(0, str(HERE))
 from inputs import (  # noqa: E402
     FIELD_COLUMNS,
     STUDY_COLUMNS,
+    STUDY_OPTIONAL_COLUMNS,
     SURVEY_COLUMNS,
     InputError,
     load_criteria,
@@ -135,6 +136,14 @@ class ValidationTest(unittest.TestCase):
         self.assertEqual(len(tasks), 2)
         self.assertIsNone(tasks[1].reroute_count)
         self.assertEqual(tasks[0].reroute_count, 0)
+
+    def test_arrival_columns_are_optional_but_known(self):
+        self._study({"arrival_suggestion_shown_count": "2", "arrival_suggestion_accepted_count": "1",
+                     "arrival_suggestion_rejected_count": "1"},
+                    header=STUDY_COLUMNS + STUDY_OPTIONAL_COLUMNS)
+        self.assertEqual(len(load_study(self.dir)), 1)
+        self._study({"arrival_unknown_count": "1"}, header=STUDY_COLUMNS + ("arrival_unknown_count",))
+        self._expect([STUDY_NAME, "arrival_unknown_count"], lambda: load_study(self.dir))
 
     def test_dash_gives_none(self):
         self._study({"manual_position_count": "-"})
