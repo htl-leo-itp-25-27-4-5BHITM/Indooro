@@ -21,7 +21,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 | Person A (Mac) | A + B reviewbar; C/D Gates | `pilot/ios-study-mode` | A 24/35, B 16/17; PR-Texte + Evidence vorhanden | Erik-Integration/Freigaben, C Kit-Übernahme; C wartet auf A-Merge; D Messdaten | 91 Tests/0; Build grün; B UI 2/0; OpenSpec 64/0 | 2026-10-16 |
 | Person B (Windows), übernommen von Erik (Agenten) | `release-pilot-backend` Phase A (PR #123 → main), Phase B Code (PR #134 → main, nach #123); `add-store-scoped-catalog` (#126), `improve-product-search-quality` (#128), `add-admin-catalog-spreadsheet-import` (#131) | `pilot/release-backend`, `pilot/release-backend-b`, `pilot/store-catalog`, `pilot/search-quality`, `pilot/catalog-import` | Phase A 1.x–4.x, Phase B 5.2–5.6; US-24, US-25, US-35 gemergt in `pilot/first-store` | Merge #123/#134 nach `main` (Freigabe Erik); 3.5, 6.x (Mensch: Backup, Passwörter rotieren, Rollout); Katalog-Migration und Reindex laut `CATALOG_MIGRATION.md` / `SEARCH_REINDEX.md` | Backend 315/0 (2 übersprungen, brauchen Live-OpenSearch) auf `pilot/first-store` (2026-10-17) | 2026-10-17 |
 | Person C (Windows), übernommen von Erik (Agenten) | `prepare-pilot-store-operations` (#129), `establish-pilot-field-measurement` Werkzeuge (#127), `upgrade-customer-web-product-finder` (#132), `add-beacon-placement-planner` (#124), `add-editor-beacon-coverage-overlay` (#135), `prepare-pilot-evaluation` (#125) | jeweils `pilot/…`, alle gemergt | alle Tasks ohne Menschen; Menschen-Tasks in den `tasks.md` mit „(Mensch: …)“ markiert | Messung im großen Raum (≥ 2 Aufnahmen mit aktuellem DEBUG-Build), Web-Finder auf echten Android-/iOS-Geräten, Store-Daten vor Ort | Python 378 OK, admin-ui 174/174, Playwright Web-Finder 19 (2026-10-17) | 2026-10-17 |
-| Admin-Agent | Welle 2: `complete-admin-parity-evidence`, `add-editor-floorplan-underlay` | `pilot/admin-parity`, `pilot/editor-underlay` | Pilot-Cut erledigt, live | laut `PROMPT_ADMIN_AGENT_WAVE2.md` | Backend 142/0 (2026-10-16) | 2026-10-16 |
+| Admin-Agent | `complete-admin-parity-evidence` 2.3 Editor-Cutover | `pilot/editor-default` | Lokaler paketierter Cutover mit `editor:true`, drei Dev-Realm-Rollen, Direktlink/Refresh, Scope-Denials und beiden Rollbacks bestanden; PR nach `pilot/first-store` offen | 2.2 physisches Gerät/Beacon; 3.2 Archivierung durch Erik; LeoCloud-Umschaltung nach Merge | Backend 667/0 (2 übersprungen), Root Admin 121 Unit + 45 Browser, Contract 16, Candidate 217 Unit + 198 Browser, OpenSpec 60/0; vollständiger Live-Admin-Smoke stoppt bei Produkt-Sichtbarkeit | 2026-10-18 |
 
 ## Meilensteine
 
@@ -38,6 +38,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 
 | Was | Wer | Seit |
 |---|---|---|
+| `complete-admin-parity-evidence` 2.2: Nach Editor-Publikation mobile/customer-Vertrag und eine echte Beacon-/Geräteroute am physischen Gerät prüfen; API-/Simulatorbelege getrennt halten. Danach 3.2 nur mit Eriks Freigabe archivieren. | Erik / Geräteteam | 2026-10-18 |
 | Namenszuordnung Person A/B/C festlegen, Prompts verschicken | Erik | 2026-10-16 |
 | Admin-Login live prüfen (admin, region-manager, store-manager; Login/Logout) | Erik | 2026-10-16 |
 | Budget und Bestellung von 12 Beacons | Erik + Person C | 2026-10-16 |

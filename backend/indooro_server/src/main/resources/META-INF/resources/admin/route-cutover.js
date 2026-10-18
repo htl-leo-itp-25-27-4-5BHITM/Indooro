@@ -12,7 +12,7 @@ export const ROUTE_CUTOVER = Object.freeze({
   products: true,
   categories: true,
   recipes: true,
-  editor: false,
+  editor: true,
   diagnostics: true
 });
 
