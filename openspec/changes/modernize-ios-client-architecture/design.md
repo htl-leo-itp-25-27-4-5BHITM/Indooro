@@ -156,6 +156,11 @@ public enum APIError: Error, Sendable, Equatable {
 - Swift 6 migration may surface many diagnostics → migrate packages first, app target last; use `@preconcurrency import CoreBluetooth` where Apple SDKs lack annotations.
 - OpenAPI generator adds a build plugin dependency (`apple/swift-openapi-generator`, `apple/swift-openapi-runtime`) → pinned versions, types-only generation.
 - CoreLocation delegate behavior differs when not on main → radio adapter stays main-actor bound.
+- Downgrade after the persistence migration (shopping lists): a user who upgrades to a build with `ShoppingListRepository` and later installs an older build sees the older data, and an upgrade afterwards ignores edits made in the older build.
+  - Launches 1 and 2 of the new build keep the old `UserDefaults` keys (`shoppingListStore.v1`, `shoppingSession.*`). An older build started in that window reads them, so it shows the lists as they were at migration time; changes made in the new build since then exist only in `lists.json`.
+  - From the third launch on the keys are gone. An older build then starts with a default list. `lists.json` and `lists.json.bak` are never deleted by the app, so upgrading again shows all lists from the new build.
+  - The old build writes only to `UserDefaults`. When the user upgrades again, `lists.json` (schema 2) wins over any `UserDefaults` data (load order in Decision 7), so edits made in the older build are lost. No timestamp or revision comparison is implemented.
+  - Why this is acceptable for the post-pilot branch: pilot builds never contain the repository, so no pilot device can be in this state; the branch ships after the pilot, and iOS gives users no downgrade path outside TestFlight or developer builds. Nothing is lost silently on the new side (no file is deleted or overwritten, a file that cannot be read is quarantined). If a supported downgrade path appears, add a revision counter to both stores and let the higher one win, with a migration test for it.
 
 ## Migration Plan
 
