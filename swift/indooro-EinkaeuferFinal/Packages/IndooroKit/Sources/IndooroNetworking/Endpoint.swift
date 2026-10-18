@@ -17,11 +17,38 @@ public protocol Endpoint: Sendable {
     var body: (any Encodable & Sendable)? { get }
     var timeout: Duration { get }
     var retry: RetryPolicy { get }
+    /// `+` in Query-Werten als `%2B` kodieren (Standard). Rezept-Routen senden `+` unveraendert, wie die Pilot-App bisher.
+    var encodesPlusInQuery: Bool { get }
 }
 
 extension Endpoint {
     public var query: [URLQueryItem] { [] }
     public var body: (any Encodable & Sendable)? { nil }
+    public var encodesPlusInQuery: Bool { true }
+
+    /// Gleicher Endpoint, aber die Antwort wird als unveraenderte Bytes (`RawJSON`) geliefert.
+    /// Fuer Antworten, die die App selbst tolerant dekodiert (Produkt- und Rezeptlisten, Upsell-Plan).
+    public var asRaw: RawResponseEndpoint<Self> {
+        RawResponseEndpoint(self)
+    }
+}
+
+/// Huellt einen Endpoint und ersetzt nur die Antwort durch `RawJSON`. Alle Anfrageeigenschaften bleiben gleich.
+public struct RawResponseEndpoint<Base: Endpoint>: Endpoint {
+    public typealias Response = RawJSON
+    public let base: Base
+
+    public init(_ base: Base) {
+        self.base = base
+    }
+
+    public var method: HTTPMethod { base.method }
+    public var path: String { base.path }
+    public var query: [URLQueryItem] { base.query }
+    public var body: (any Encodable & Sendable)? { base.body }
+    public var timeout: Duration { base.timeout }
+    public var retry: RetryPolicy { base.retry }
+    public var encodesPlusInQuery: Bool { base.encodesPlusInQuery }
 }
 
 /// Antwort ohne ausgewerteten Inhalt (Fire-and-forget-Aufrufe). Der Body wird ignoriert.
@@ -100,8 +127,10 @@ extension Endpoint {
         }
         if !query.isEmpty {
             components.queryItems = query
-            components.percentEncodedQuery = components.percentEncodedQuery?
-                .replacingOccurrences(of: "+", with: "%2B")
+            if encodesPlusInQuery {
+                components.percentEncodedQuery = components.percentEncodedQuery?
+                    .replacingOccurrences(of: "+", with: "%2B")
+            }
         }
         guard let finalURL = components.url else {
             throw .transport(.badURL)

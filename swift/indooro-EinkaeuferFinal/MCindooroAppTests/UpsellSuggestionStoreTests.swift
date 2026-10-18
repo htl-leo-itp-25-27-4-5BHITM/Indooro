@@ -8,6 +8,7 @@ final class UpsellStubURLProtocol: URLProtocol {
     private static var planResponder: ((Int) -> (status: Int, body: Data))?
     private static var planBodies: [Data?] = []
     private static var eventCount = 0
+    private static var recorded: [URLRequest] = []
 
     static func reset(planResponder: @escaping (Int) -> (status: Int, body: Data)) {
         lock.lock()
@@ -15,6 +16,14 @@ final class UpsellStubURLProtocol: URLProtocol {
         self.planResponder = planResponder
         planBodies = []
         eventCount = 0
+        recorded = []
+    }
+
+    /// Alle Anfragen (Plan und Telemetrie) in Reihenfolge, mit Methode und Timeout.
+    static func recordedRequests() -> [URLRequest] {
+        lock.lock()
+        defer { lock.unlock() }
+        return recorded
     }
 
     static func clear() {
@@ -50,6 +59,7 @@ final class UpsellStubURLProtocol: URLProtocol {
         let isPlan = path.hasSuffix("/mobile/upsell/plan")
         let (status, body): (Int, Data)
         Self.lock.lock()
+        Self.recorded.append(request)
         if isPlan {
             let index = Self.planBodies.count
             Self.planBodies.append(Self.body(of: request))
@@ -233,6 +243,48 @@ final class UpsellSuggestionStoreTests: XCTestCase {
     // MARK: - Canonical payload and addedFromUpsell (8.4, 8.6, 11.4)
 
     @MainActor
+    func testPlanIsPostWithLegacyTimeoutAndIsNeverRetriedByTheClient() async throws {
+        let milk = makeItem(92, name: "Bio-Milch")
+        let list = makeList([milk])
+        let mobileStore = makeStore()
+        UpsellStubURLProtocol.reset { _ in (503, Data()) }
+        let store = UpsellSuggestionStore(session: session, retryDelay: 0.05)
+
+        store.authorizePlanPreloading(for: mobileStore, reason: "test")
+        store.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
+        try await waitUntil { UpsellStubURLProtocol.planRequestCount() == 1 && !store.isLoading }
+        try await sleep(milliseconds: 300)
+
+        XCTAssertEqual(UpsellStubURLProtocol.planRequestCount(), 1, "POST wird vom Client nie wiederholt")
+        let plan = try XCTUnwrap(UpsellStubURLProtocol.recordedRequests().first { $0.url?.path.hasSuffix("/mobile/upsell/plan") == true })
+        XCTAssertEqual(plan.httpMethod, "POST")
+        XCTAssertEqual(plan.timeoutInterval, 25)
+        XCTAssertEqual(plan.value(forHTTPHeaderField: "Content-Type"), "application/json")
+    }
+
+    @MainActor
+    func testFailedPlanReportsFailedEventWithShortTimeout() async throws {
+        let milk = makeItem(92, name: "Bio-Milch")
+        let list = makeList([milk])
+        let mobileStore = makeStore()
+        UpsellStubURLProtocol.reset { _ in (503, Data()) }
+        let store = UpsellSuggestionStore(session: session, retryDelay: 0.05)
+
+        store.authorizePlanPreloading(for: mobileStore, reason: "test")
+        store.preloadPlan(for: list, stops: [], store: mobileStore, source: "shopping_list")
+        try await waitUntil {
+            UpsellStubURLProtocol.recordedRequests().contains { $0.url?.path.hasSuffix("/mobile/upsell/events") == true }
+        }
+
+        let event = try XCTUnwrap(UpsellStubURLProtocol.recordedRequests().first { $0.url?.path.hasSuffix("/mobile/upsell/events") == true })
+        XCTAssertEqual(event.httpMethod, "POST")
+        XCTAssertEqual(event.timeoutInterval, 3)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: try XCTUnwrap(Self.body(of: event))) as? [String: Any])
+        XCTAssertEqual(json["eventType"] as? String, "failed")
+        XCTAssertEqual((json["metadataJson"] as? String)?.contains("http_or_decode"), true)
+    }
+
+    @MainActor
     func testPayloadUsesCanonicalStateAndExcludesUpsellItemsFromTriggers() async throws {
         let milk = makeItem(92, name: "Bio-Milch")
         let duplicateMilkDone = makeItem(92, name: "Bio-Milch", status: .done)
@@ -314,5 +366,26 @@ final class UpsellSuggestionStoreTests: XCTestCase {
 
     private func sleep(milliseconds: UInt64) async throws {
         try await Task.sleep(nanoseconds: milliseconds * 1_000_000)
+    }
+
+    private static func body(of request: URLRequest) -> Data? {
+        if let body = request.httpBody {
+            return body
+        }
+        guard let stream = request.httpBodyStream else {
+            return nil
+        }
+        stream.open()
+        defer { stream.close() }
+        var data = Data()
+        var buffer = [UInt8](repeating: 0, count: 4096)
+        while stream.hasBytesAvailable {
+            let read = stream.read(&buffer, maxLength: buffer.count)
+            if read <= 0 {
+                break
+            }
+            data.append(buffer, count: read)
+        }
+        return data
     }
 }

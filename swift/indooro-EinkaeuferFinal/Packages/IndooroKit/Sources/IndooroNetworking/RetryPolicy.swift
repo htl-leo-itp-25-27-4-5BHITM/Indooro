@@ -22,6 +22,10 @@ public struct RetryPolicy: Sendable, Equatable {
     /// Lesende Anfragen: hoechstens zwei Wiederholungen mit 0,5 s und 1,0 s plus bis zu 250 ms Jitter.
     public static let idempotentRead = RetryPolicy(maxRetries: 2)
 
+    /// Lesende Anfragen, auf die der Nutzer im Laden wartet (Produkte, Rezepte): eine Wiederholung nach
+    /// 0,5 s plus bis zu 250 ms Jitter. Mit 10 s Timeout je Versuch dauert der Fehlerfall hoechstens etwa 21 s.
+    public static let interactiveRead = RetryPolicy(maxRetries: 1)
+
     /// Verzoegerung vor der Wiederholung `retry` (0-basiert). `jitter` erhaelt die Obergrenze und liefert
     /// einen Wert in `0...upperBound`; in Tests wird ein fester Wert injiziert.
     public func delay(forRetry retry: Int, jitter: (TimeInterval) -> TimeInterval) -> Duration {

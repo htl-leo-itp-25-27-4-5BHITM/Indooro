@@ -1,3 +1,4 @@
+import IndooroModels
 import XCTest
 @testable import MCindooroApp
 
@@ -109,5 +110,174 @@ final class ProductSearchStoreTests: XCTestCase {
 
     func testUnknownObjectShapeThrows() {
         XCTAssertThrowsError(try ProductSearchStore.decodeProducts(from: Data("{\"foo\":1}".utf8)))
+    }
+
+    // MARK: - Transport über APIClient (Phase 5, task 6.4)
+
+    private let storeID = UUID(uuidString: "AD61389A-7486-48FA-AFA2-9B5E4132F6A8")!
+
+    override func tearDown() {
+        TransportStubURLProtocol.clear()
+        super.tearDown()
+    }
+
+    @MainActor
+    func testSearchWithStoreSendsSameURLAsBefore() async throws {
+        TransportStubURLProtocol.install { _ in .respond(status: 200, body: Data("[]".utf8)) }
+        let store = ProductSearchStore(client: StoreTestClient.make())
+        let mobileStore = MobileStoreSummary(id: storeID, storeCode: "HA-01", name: "Test Markt", city: "Linz")
+
+        store.searchProducts(query: "milch", size: 50, store: mobileStore)
+        try await waitUntil { !store.isSearching }
+
+        let request = try XCTUnwrap(TransportStubURLProtocol.requests.first)
+        XCTAssertEqual(
+            request.url?.absoluteString,
+            "https://example.test/api/products/search?size=50&q=milch&storeId=\(storeID.uuidString)&storeCode=HA-01"
+        )
+        XCTAssertEqual(request.httpMethod, "GET")
+        XCTAssertEqual(request.timeoutInterval, 10)
+        XCTAssertTrue(store.hasCompletedSearch)
+        XCTAssertNil(store.errorMessage)
+    }
+
+    @MainActor
+    func testSearchTextPlusIsEncodedAsBefore() async throws {
+        TransportStubURLProtocol.install { _ in .respond(status: 200, body: Data("[]".utf8)) }
+        let store = ProductSearchStore(client: StoreTestClient.make())
+
+        store.searchProducts(query: "a+b & c", size: 50)
+        try await waitUntil { !store.isSearching }
+
+        let absolute = try XCTUnwrap(TransportStubURLProtocol.requests.first?.url?.absoluteString)
+        XCTAssertEqual(absolute, "https://example.test/api/products/search?size=50&q=a%2Bb%20%26%20c")
+    }
+
+    @MainActor
+    func testLayoutPrefixListingUsesProductsPathActiveStoreCodeAndFilters() async throws {
+        let body = Data("""
+        [
+          {"id":92,"name":"Naturpur Bio-Milch 1L","price":1.79,"layoutCode":"520/2/1/1"},
+          {"id":40,"name":"Eier","price":2.49,"layoutCode":"530/1/1/1"}
+        ]
+        """.utf8)
+        TransportStubURLProtocol.install { _ in .respond(status: 200, body: body) }
+        let store = ProductSearchStore(client: StoreTestClient.make())
+        store.setActiveStore(code: "SPAR-001")
+
+        store.searchProducts(layoutCodePrefixes: ["520/2"], size: 500)
+        try await waitUntil { !store.isSearching }
+
+        XCTAssertEqual(
+            TransportStubURLProtocol.requests.first?.url?.absoluteString,
+            "https://example.test/api/products?size=500&storeCode=SPAR-001"
+        )
+        XCTAssertEqual(store.searchResults.map(\.id), [92])
+    }
+
+    @MainActor
+    func testHTTPErrorShowsStatusTextAndNeverTheServerMessageAndIsNotRetried() async throws {
+        TransportStubURLProtocol.install { _ in .respond(status: 404, body: Data("{\"error\":\"Interner Text\"}".utf8)) }
+        let store = ProductSearchStore(client: StoreTestClient.make())
+
+        store.searchProducts(query: "milch", size: 50)
+        try await waitUntil { !store.isSearching }
+
+        XCTAssertEqual(store.errorMessage, "Der Server meldet einen Fehler (HTTP 404).")
+        XCTAssertFalse(store.hasCompletedSearch)
+        XCTAssertTrue(store.searchResults.isEmpty)
+        XCTAssertEqual(TransportStubURLProtocol.requests.count, 1)
+    }
+
+    @MainActor
+    func testTimeoutShowsLegacyTextAfterReadRetries() async throws {
+        TransportStubURLProtocol.install { _ in .fail(.timedOut) }
+        let store = ProductSearchStore(client: StoreTestClient.make())
+
+        store.searchProducts(query: "milch", size: 50)
+        try await waitUntil { !store.isSearching }
+
+        XCTAssertEqual(store.errorMessage, "Die Anfrage hat zu lange gedauert.")
+        // Bewusste Änderung: Lesende Anfragen nutzen interactiveRead (Erstversuch plus eine Wiederholung, 10 s Timeout je Versuch).
+        XCTAssertEqual(TransportStubURLProtocol.requests.count, 2)
+    }
+
+    @MainActor
+    func testOfflineShowsConnectionTextWithoutRetry() async throws {
+        TransportStubURLProtocol.install { _ in .fail(.notConnectedToInternet) }
+        let store = ProductSearchStore(client: StoreTestClient.make())
+
+        store.searchProducts(query: "milch", size: 50)
+        try await waitUntil { !store.isSearching }
+
+        XCTAssertEqual(store.errorMessage, "Die Verbindung zum Server ist nicht verfügbar.")
+        XCTAssertEqual(TransportStubURLProtocol.requests.count, 1)
+    }
+
+    @MainActor
+    func testUndecodableBodyShowsLegacyDecodeText() async throws {
+        TransportStubURLProtocol.install { _ in .respond(status: 200, body: Data("{\"foo\":1}".utf8)) }
+        let store = ProductSearchStore(client: StoreTestClient.make())
+
+        store.searchProducts(query: "milch", size: 50)
+        try await waitUntil { !store.isSearching }
+
+        XCTAssertEqual(store.errorMessage, "Die Produktdaten konnten nicht gelesen werden.")
+        XCTAssertFalse(store.hasCompletedSearch)
+    }
+
+    @MainActor
+    func testNewSearchCancelsPreviousRequestAndKeepsOnlyLatestResults() async throws {
+        let body = Data("[{\"id\":40,\"name\":\"Eier\",\"price\":2.49,\"layoutCode\":\"530/1/1/1\"}]".utf8)
+        TransportStubURLProtocol.install { request in
+            request.url?.absoluteString.contains("q=erste") == true ? .hang : .respond(status: 200, body: body)
+        }
+        let store = ProductSearchStore(client: StoreTestClient.make())
+
+        store.searchProducts(query: "erste", size: 50)
+        try await waitUntil { TransportStubURLProtocol.requests.count == 1 }
+        store.searchProducts(query: "eier", size: 50)
+        try await waitUntil { !store.isSearching }
+        try await waitUntil { TransportStubURLProtocol.stopCount >= 1 }
+        try await sleep(milliseconds: 150)
+
+        XCTAssertEqual(store.searchResults.map(\.id), [40])
+        XCTAssertNil(store.errorMessage, "der abgebrochene Aufruf darf keinen Fehler setzen")
+        XCTAssertEqual(store.lastQuery, "eier")
+    }
+
+    @MainActor
+    func testClearSearchCancelsInFlightRequestWithoutLateError() async throws {
+        TransportStubURLProtocol.install { _ in .hang }
+        let store = ProductSearchStore(client: StoreTestClient.make())
+
+        store.searchProducts(query: "milch", size: 50)
+        try await waitUntil { TransportStubURLProtocol.requests.count == 1 }
+        store.clearSearch()
+        try await waitUntil { TransportStubURLProtocol.stopCount >= 1 }
+        try await sleep(milliseconds: 150)
+
+        XCTAssertFalse(store.isSearching)
+        XCTAssertTrue(store.searchResults.isEmpty)
+        XCTAssertNil(store.errorMessage)
+        XCTAssertNil(store.lastQuery)
+    }
+
+    // MARK: - Helfer
+
+    @MainActor
+    private func waitUntil(timeout: TimeInterval = 3, _ condition: () -> Bool) async throws {
+        let deadline = Date().addingTimeInterval(timeout)
+        while !condition() {
+            if Date() > deadline {
+                XCTFail("Condition not reached within \(timeout)s")
+                return
+            }
+            try await sleep(milliseconds: 10)
+        }
+    }
+
+    private func sleep(milliseconds: UInt64) async throws {
+        try await Task.sleep(nanoseconds: milliseconds * 1_000_000)
     }
 }

@@ -13,6 +13,17 @@ public protocol APIClientProtocol: Sendable {
     func fire<E: Endpoint>(_ endpoint: E) async
 }
 
+extension APIClientProtocol {
+    /// Wie `send`, liefert aber ein `Result`. Stores uebernehmen damit den Fehler ohne `do`/`catch` auf dem Hauptakteur.
+    public func sendResult<E: Endpoint>(_ endpoint: E) async -> Result<E.Response, APIError> {
+        do throws(APIError) {
+            return .success(try await send(endpoint))
+        } catch {
+            return .failure(error)
+        }
+    }
+}
+
 /// Einziger Weg zum Backend: typisierte Endpoints, einheitliche Fehlerabbildung, Wiederholung nur für GET.
 public actor APIClient: APIClientProtocol {
     public let environment: APIEnvironment
