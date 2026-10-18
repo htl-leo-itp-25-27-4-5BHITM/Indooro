@@ -309,6 +309,14 @@ Geprueft wird:
 - Station-based Upsell-Plans bleiben oeffentlich nutzbar.
 - Events und Dismissals liefern `202` und geben keine sensitiven Details aus.
 
+## Schema-Validierung gegen den Contract
+
+- Dokumentierte 2xx-JSON-Antworten werden in `01`, `05` und `06` per `{{ }}`-Block gegen `openspec/specs/shared-api/openapi.yaml` geprueft (`support/contract.mjs`).
+- Der Helper sucht die Operation ueber `operationId`, loest `$ref` im Dokument auf und wirft bei Abweichung einen Fehler mit den AJV-Meldungen.
+- Ein Status, den die Operation nicht dokumentiert, ist ebenfalls ein Fehler; Routen mit `200|404` validieren nur den `200`-Zweig.
+- Die Helper-Tests laufen offline mit `npm run contract:test` (`node --test`).
+- Der Helper wird ueber `require` relativ zur `.http`-Datei geladen; das braucht Node 22.12 oder neuer (require(esm)).
+
 ## Einzelne Testbereiche
 
 Public Routes, ohne Login:

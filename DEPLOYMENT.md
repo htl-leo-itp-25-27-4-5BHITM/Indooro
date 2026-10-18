@@ -433,6 +433,12 @@ Bei Daten-Aenderungen:
 - wenn ihr neue oder andere Produktdaten wollt, muesst ihr sie aktiv importieren
 - das betrifft die Datei `belegplan.json` oder andere Importquellen
 
+## API-Versionierung
+
+Die Backend-API wird unter `/api/v1/...` versioniert. Die unversionierten Pfade `/api/...` bleiben als Aliase fuer v1 erhalten, und jede Antwort traegt den Header `Indooro-Api-Version: 1`. Additive Aenderungen bleiben in v1. Breaking Changes kommen als `/api/v2/...` mit paralleler v1-Laufzeit von mindestens sechs Monaten. Als veraltet markierte Routen liefern `Deprecation`-, `Sunset`- und `Link`-Header.
+
+Status: Die Policy ist noch nicht aktiv. Alias-Filter und Deprecation-Filter sind in den Tasks 2.1 bis 2.3 von `establish-shared-api-contract` erfasst und noch nicht umgesetzt; bis dahin gilt nur `/api/...`. Die vollstaendige Policy steht in `docs/audit/MODERNIZATION_BLUEPRINT.md`, Abschnitt 3.4a.
+
 ## Offene Punkte
 
 - `postgres` sollte ins Repo uebernommen werden, wenn es wirklich zu Indooro gehoert

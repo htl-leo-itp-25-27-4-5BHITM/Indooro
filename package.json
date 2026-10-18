@@ -29,7 +29,7 @@
     "contract:types": "node scripts/contract/generate-types.mjs",
     "contract:types:check": "node scripts/contract/generate-types.mjs --check",
     "contract:check": "npm run contract:lint && npm run contract:types:check && npm run contract:mobile:check && npm run contract:parity",
-    "contract:test": "node --test scripts/contract/*.test.mjs"
+    "contract:test": "node --test scripts/contract/*.test.mjs api-tests/httpyac/support/*.test.mjs"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

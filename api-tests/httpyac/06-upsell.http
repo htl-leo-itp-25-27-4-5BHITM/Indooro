@@ -26,6 +26,11 @@ Accept: application/json
 ?? header content-type includes json
 ?? body suggestions exists
 
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("postUpsellSuggestions", response.statusCode, response.parsedBody);
+}}
+
 ###
 # Mobile upsell suggestions reject an unknown checked product
 POST {{baseUrl}}/api/mobile/upsell/suggestions
@@ -68,6 +73,11 @@ Accept: application/json
 ?? status == 200
 ?? header content-type includes json
 ?? body opportunities exists
+
+{{
+  const { validateResponse } = require(require("node:path").join(__dirname, "./support/contract.mjs"));
+  validateResponse("postUpsellPlan", response.statusCode, response.parsedBody);
+}}
 
 ###
 # Mobile upsell events are accepted without leaking details

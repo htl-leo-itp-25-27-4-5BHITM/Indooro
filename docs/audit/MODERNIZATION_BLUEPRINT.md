@@ -273,6 +273,24 @@ Architekturregel (ArchUnit-Test): `*.api` → `*.service` → `*.repository`; ke
 - Deprecation per `Deprecation`/`Sunset`/`Link`-Header; Kandidaten: `POST /api/mobile/upsell/suggestions`, `POST /api/products[/bulk]`, `POST /api/layout/current`.
 - Response-Header `Indooro-Api-Version`.
 
+### 3.4a API-Versionierung und Deprecation
+
+Diese Policy setzt die Entscheidungen 2 und 3 aus `openspec/changes/establish-shared-api-contract/design.md` um.
+
+**Status: Vorgabe, noch nicht aktiv.** Die Laufzeit-Implementierung (Alias-Filter und Deprecation-Filter) ist in den Tasks 2.1 bis 2.3 von `establish-shared-api-contract` erfasst und noch nicht umgesetzt. Bis dahin antwortet das Backend nur unter `/api/…`.
+
+- **Pfade:** Jede Route ist zusätzlich unter `/api/v1/…` erreichbar, mit identischem Verhalten und identischen Berechtigungen. Die unversionierten Pfade `/api/…` bleiben Aliase für v1, bis eine eigene Änderung sie entfernt.
+- **Header:** Jede API-Antwort trägt `Indooro-Api-Version: 1`.
+- **Additive Änderungen** (neue optionale Felder, neue Endpunkte) bleiben in v1. Clients müssen unbekannte Felder tolerieren.
+- **Breaking Changes** (entfernte oder umbenannte Felder, neue Pflichtfelder, geänderte Typen oder Semantik) entstehen nur als `/api/v2/…` mit paralleler v1-Laufzeit von mindestens sechs Monaten. `oasdiff breaking` gegen den Zielbranch blockiert Breaking Changes in v1.
+- **Deprecation:** Als veraltet markierte Operationen liefern `Deprecation: @<epoch>`, `Sunset: <HTTP-Datum>` (mindestens sechs Monate in der Zukunft) und `Link: <Nachfolger>; rel="successor-version"`. Sie bleiben mindestens sechs Monate verfügbar.
+- **Betroffene Operationen:** `POST /api/mobile/upsell/suggestions`, `POST /api/products`, `POST /api/products/bulk`, `POST /api/layout/current`. In der Spec ist bisher nur der Upsell-Endpunkt mit `deprecated: true` markiert; die drei anderen folgen mit Task 2.3.
+- **Ausrollreihenfolge:**
+  1. Annotationen, Error-Refactoring, `/api/v1`-Aliase und Deprecation-Filter ausliefern (abwärtskompatibel).
+  2. Contract-Job in CI zuerst im Warnmodus, danach blockierend.
+  3. Admin UI und iOS auf `/api/v1` umstellen.
+  4. Nach sechs Monaten und einer minimalen iOS-Version, die `/api/v1` nutzt, die deprecated Routen in einer eigenen Änderung entfernen.
+
 ### 3.5 Datenbank-Index- und Schema-Optimierung
 
 | Maßnahme | Befund | Change |
