@@ -150,6 +150,47 @@ test("admin validates and creates a product with the documented layout code", as
   expect(writes).toEqual([{ id: 7310, name: "Tomaten", price: 1.99, layoutCode: "310/5/7/3", storeId: "store-1", storeCode: "LINZ-01" }]);
 });
 
+test("admin with several stores must pick a store, then sees a new product in that store's list", async ({ page }) => {
+  const stores = [IMPORT_STORE, { id: "store-2", storeCode: "WELS-01", name: "Indooro Wels", region: null }];
+  const catalog: Array<Record<string, unknown>> = [];
+  const listQueries: URLSearchParams[] = [];
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: stores, page: 0, size: 100, totalElements: stores.length } }));
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/categories?*", (route) => route.fulfill({ json: [{ categoryCode: 310, categoryName: "Obst & Gemüse" }] }));
+  await page.route("**/api/admin/products?*", (route) => {
+    const params = new URL(route.request().url()).searchParams;
+    listQueries.push(params);
+    const content = catalog.filter((item) => item.storeCode === params.get("storeCode"));
+    return route.fulfill({ json: { content, page: 0, size: 20, totalElements: content.length } });
+  });
+  await page.route("**/api/admin/products", async (route) => {
+    if (route.request().method() !== "POST") return route.continue();
+    const payload = route.request().postDataJSON() as Record<string, unknown>;
+    catalog.push(payload);
+    return route.fulfill({ json: payload });
+  });
+
+  await page.goto("/admin/next/products/");
+  await expect(page.getByText("Bitte einen Markt wählen.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Produkt anlegen" })).toBeDisabled();
+  expect(listQueries).toHaveLength(0);
+
+  await page.getByRole("combobox", { name: "Markt" }).selectOption("store-2");
+  await expect(page.getByRole("button", { name: "Produkt anlegen" })).toBeEnabled();
+  await page.getByRole("button", { name: "Produkt anlegen" }).click();
+  await page.getByLabel("Produkt-ID").fill("7311");
+  await page.getByRole("textbox", { name: "Name", exact: true }).fill("Birnen");
+  await page.getByLabel("Preis (EUR)").fill("2,49");
+  await page.getByLabel("Kategorie").selectOption("310");
+  await page.getByRole("button", { name: "Speichern" }).click();
+
+  await expect(page.getByText("Produkt wurde angelegt.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "Birnen" })).toBeVisible();
+  expect(listQueries.at(-1)?.get("storeCode")).toBe("WELS-01");
+  expect(listQueries.at(-1)?.get("storeId")).toBe("store-2");
+  expect(catalog).toEqual([expect.objectContaining({ id: 7311, storeId: "store-2", storeCode: "WELS-01" })]);
+});
+
 test("admin can cancel product deletion or confirm it and sees the empty post-action state", async ({ page }) => {
   let product: Record<string, unknown> | null = { id: 42, name: "Tomaten", price: 1.99, layoutCode: "310/1/1/1", storeId: null, storeCode: null };
   let deleteCalls = 0;

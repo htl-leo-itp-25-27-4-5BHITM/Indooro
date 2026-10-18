@@ -190,6 +190,10 @@ try {
   assert.equal(publicProduct.price, 2.49);
   assert.equal(publicProduct.layoutCode, "310/1/1/1");
   await admin.goto(`${base}/admin/next/products/?q=${encodeURIComponent(productName)}`, { waitUntil: "domcontentloaded" });
+  // Der Admin hat mehrere Maerkte: ohne Marktwahl laedt die Produktliste nicht (add-store-scoped-catalog).
+  const marketSelect = admin.getByLabel("Markt", { exact: true }).first();
+  await marketSelect.locator(`option[value='${store.id}']`).waitFor({ state: "attached" });
+  await marketSelect.selectOption(store.id);
   await admin.getByRole("cell", { name: productName }).waitFor();
   await admin.getByRole("button", { name: "Bearbeiten" }).first().click();
   const updatedProductName = `${productName} geprüft`;

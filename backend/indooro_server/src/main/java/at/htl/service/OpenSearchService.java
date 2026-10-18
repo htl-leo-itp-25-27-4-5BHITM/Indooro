@@ -614,13 +614,15 @@ public class OpenSearchService {
     }
 
     /**
-     * Indexiert ein einzelnes Produkt
+     * Indexiert ein einzelnes Produkt. {@code refresh=wait_for}: Die Antwort kommt erst, wenn das Produkt suchbar ist,
+     * damit die Admin-Liste direkt nach dem Speichern neu geladen werden kann und das Produkt enthaelt.
      */
     public String indexProduct(Product product) throws IOException {
         IndexRequest<Product> request = IndexRequest.of(i -> i
                 .index(indexName)
                 .id(documentId(product))
                 .document(product)
+                .refresh(Refresh.WaitFor)
         );
 
         IndexResponse response = client.index(request);
@@ -630,12 +632,14 @@ public class OpenSearchService {
     }
 
     /**
-     * Loescht ein einzelnes Produkt eines Marktes (Dokument-ID `<storeCode>:<id>`).
+     * Loescht ein einzelnes Produkt eines Marktes (Dokument-ID `<storeCode>:<id>`). Wie {@link #indexProduct}
+     * mit {@code refresh=wait_for}, damit das Produkt nach dem Loeschen sofort aus der Liste verschwindet.
      */
     public boolean deleteProduct(Integer id, String storeCode) throws IOException {
         DeleteRequest request = DeleteRequest.of(d -> d
                 .index(indexName)
                 .id(documentId(storeCode, id))
+                .refresh(Refresh.WaitFor)
         );
 
         DeleteResponse response = client.delete(request);
