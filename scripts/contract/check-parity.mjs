@@ -80,7 +80,9 @@ export function diffDocuments(generatedDoc, reviewedDoc) {
   const rev = operationsOf(reviewedDoc);
 
   for (const key of rev.keys()) if (!gen.has(key)) diffs.push(`missing operation: ${key}`);
-  for (const key of gen.keys()) if (!rev.has(key)) diffs.push(`extra operation: ${key}`);
+  // Test-only probe resources (src/test) are part of the generated document during the export but not of the API.
+  const isTestProbe = key => /^[A-Z]+ \/api\/test-[a-z-]*probe\//.test(key);
+  for (const key of gen.keys()) if (!rev.has(key) && !isTestProbe(key)) diffs.push(`extra operation: ${key}`);
 
   for (const [key, r] of rev) {
     const g = gen.get(key);
