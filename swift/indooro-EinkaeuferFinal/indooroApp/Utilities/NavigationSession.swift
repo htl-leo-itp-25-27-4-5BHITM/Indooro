@@ -3,6 +3,7 @@ import Combine
 import CoreGraphics
 import simd
 import IndooroNavigation
+import IndooroPositioning
 
 /// Vorschlag „Bist du bei <title>?“ fuer den aktiven Stopp (Ankunftserkennung, siehe ArrivalSuggestionDetector).
 struct ArrivalSuggestion: Equatable {
@@ -58,6 +59,12 @@ final class NavigationSession: ObservableObject {
     private var lastTickTimestamp: TimeInterval = 0
     private weak var beaconManager: BeaconManager?
     private var cancellables = Set<AnyCancellable>()
+    /// Snapshot-Modus (Schalter `AppEnvironment.isShadowPositioningEnabled`): Positionsticks kommen aus dem
+    /// `PositionSnapshot`-Strom der Engine statt aus `BeaconManager.navigationSamples`.
+    private var snapshotTask: Task<Void, Never>?
+    private var usesSnapshotStream = false
+    private var snapshotPosition: SIMD2<Float>?
+    private var snapshotTrusted = false
 
     init(arrivalConfig: ArrivalSuggestionConfig = NavigationSession.arrivalSuggestionConfig()) {
         arrivalDetector = ArrivalSuggestionDetector(config: arrivalConfig)
@@ -79,17 +86,30 @@ final class NavigationSession: ObservableObject {
         guard self.beaconManager !== beaconManager else { return }
         self.beaconManager = beaconManager
         cancellables.removeAll()
+        snapshotTask?.cancel()
+        snapshotTask = nil
+        usesSnapshotStream = false
         isArrivalPositioningEnabled = { [weak beaconManager] in beaconManager?.trackingMode == .beacon }
 
         core.layoutChanged(graph: beaconManager.navigationGraph, entrance: entranceOfLayout())
         publish()
 
-        beaconManager.navigationSamples
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] sample in
-                MainActor.assumeIsolated { self?.handle(sample) }
+        if let snapshots = beaconManager.positionSnapshots() {
+            usesSnapshotStream = true
+            snapshotTask = Task { [weak self] in
+                var adapter = SnapshotTickAdapter()
+                for await snapshot in snapshots {
+                    self?.handle(snapshot: snapshot, adapter: &adapter)
+                }
             }
-            .store(in: &cancellables)
+        } else {
+            beaconManager.navigationSamples
+                .receive(on: DispatchQueue.main)
+                .sink { [weak self] sample in
+                    MainActor.assumeIsolated { self?.handle(sample) }
+                }
+                .store(in: &cancellables)
+        }
 
         beaconManager.manualCalibrations
             .receive(on: DispatchQueue.main)
@@ -255,6 +275,26 @@ final class NavigationSession: ObservableObject {
         publish()
     }
 
+    /// Ein Snapshot der Engine: Ticks wie bisher, Kalibrierung nur als Merker (das Ereignis kommt von `BeaconManager`).
+    private func handle(snapshot: PositionSnapshot, adapter: inout SnapshotTickAdapter) {
+        switch adapter.consume(snapshot) {
+        case .tick(let tick)?:
+            if let point = tick.projectedPosition { snapshotPosition = point }
+            snapshotTrusted = snapshot.isTrusted
+            handle(NavigationSample(
+                projectedPosition: tick.projectedPosition,
+                confidence: tick.confidence,
+                timestamp: tick.timestamp,
+                isTrusted: tick.isTrusted
+            ))
+        case .calibrated(let point)?:
+            snapshotPosition = point
+            snapshotTrusted = true
+        case nil:
+            break
+        }
+    }
+
     /// Speist den Detektor mit dem aktiven Stopp der Tour (nach dem Tick, damit der Stopp aktuell ist).
     private func updateArrivalSuggestion(with sample: NavigationSample) {
         let tourStop = core.mode == .tour ? core.activeStop : nil
@@ -283,6 +323,10 @@ final class NavigationSession: ObservableObject {
     }
 
     private func seedPosition() {
+        if usesSnapshotStream {
+            if let snapshotPosition { core.seedPosition(snapshotPosition, trusted: snapshotTrusted) }
+            return
+        }
         guard let position = beaconManager?.userPosition else { return }
         core.seedPosition(
             SIMD2<Float>(Float(position.x), Float(position.y)),
