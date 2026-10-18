@@ -69,7 +69,7 @@
 - [ ] 10.1 Implement `AppEnvironment`, `AppRouter`, and the `@Observable @MainActor` models from design Decision 2.
 - [ ] 10.2 Move views into the feature targets and switch them to `@Environment` models.
 - [ ] 10.3 Switch the root `TabView` to the `Tab` API.
-- [ ] 10.4 Move upsell state from `UpsellSuggestionStore` into `UpsellModel` without behavior change and add `UpsellModelTests` for cache, pending opportunity, throttling, and session reset.
+- [x] 10.4 Move upsell state from `UpsellSuggestionStore` into `UpsellModel` without behavior change and add `UpsellModelTests` for cache, pending opportunity, throttling, and session reset. (`UpsellSuggestionStore` ist zu `@Observable @MainActor UpsellModel` umbenannt und umgestellt (Logik unverändert, nur `activePrompt`/`isLoading` beobachtbar); Views nutzen `var`/`@State` statt `@ObservedObject`/`@StateObject`. `UpsellModelTests` (12): Cache einmalig, Pending-Opportunity, 8-s-Cooldown, Session-Reset sowie die bisherigen Retry-/Handled-/Payload-Tests.)
 - [ ] 10.5 Delete `HeaderView`, `MapHeaderView`, `SearchOverlayView`, and `LayoutSelectionSheet` unless the layout version picker is intentionally reintroduced in the settings sheet.
 
 ## 11. Swift 6 And Logging
@@ -89,7 +89,7 @@
 
 - [ ] 13.1 Verify that `MobileRateLimitFilter` from `harden-platform-security-baseline` task 4.9 is deployed with the limits of this change's `ios-backend-integration` delta (implementation is owned by that change).
 - [x] 13.2 Verify the backend rate-limit tests of `harden-platform-security-baseline` cover the plan and events limits of this change. Evidence (2026-10-18): limits 20/600 s (`plan`, `suggestions`) and 120/600 s (`events`, `dismiss`) in `application.properties` and `MobileRateLimitFilter` defaults; route mapping in `MobileRateLimitFilterTest`; `MobileRateLimitResourceTest` now also covers plan over the limit (429, `Retry-After`, service and therefore OpenAI called once) and suggestions sharing the plan budget, besides the existing events tests.
-- [ ] 13.3 Handle HTTP 429 in `UpsellModel` as empty suggestions without retry.
+- [x] 13.3 Handle HTTP 429 in `UpsellModel` as empty suggestions without retry. (Verhalten war schon so: Plan-Fehler werden nicht gecacht und nicht wiederholt; `testRateLimitedPlanYieldsNoSuggestionsAndIsNeverRetried` belegt es.)
 - [x] 13.4 Add `.github/workflows/ios.yaml` running build and tests. Evidence: `.github/workflows/ios.yaml` runs `swift test` (SP and IndooroKit), a Simulator build, an unsigned Release build for `generic/platform=iOS` with `-skipPackagePluginValidation`, and the app unit and UI tests against the mock. Not executed on GitHub yet.
 - [ ] 13.5 Set `maven.compiler.release=21` in `backend/indooro_server/pom.xml` and change `.github/workflows/ci.yaml` to JDK 21 (one Java version for compile, CI, and runtime per `docs/audit/MODERNIZATION_BLUEPRINT.md` BP-ADR-02) and `mvn -B verify` with tests. (zurückgestellt: betrifft das Deploy-Image und damit den Deploy; nicht ohne Freigabe von Hand.)
 
