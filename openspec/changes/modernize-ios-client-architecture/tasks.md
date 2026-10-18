@@ -81,8 +81,8 @@
 ## 12. Localization And Accessibility
 
 - [ ] 12.1 Add `Localizable.xcstrings` with development language `de` and extract all UI strings.
-- [ ] 12.2 Replace ASCII transliterations in user-facing error messages with umlauts.
-- [ ] 12.3 Add accessibility labels and values for the indoor map, stop markers, tour panel, and upsell sheet.
+- [ ] 12.2 Replace ASCII transliterations in user-facing error messages with umlauts. (Teilstand, bleibt offen: `ShoppingTransferError` nutzt Umlaute, Test `ShoppingTransferErrorTests`. Zurückgestellt: die ASCII-Texte in `BeaconManager` (Layout-Antwort, Store-URL; Ortungs-Datei, nicht anfassen) und der Suchbegriff „Gemuese“ in `ShoppingFeatureViews` (Anfrage an das Backend, kein Anzeigetext).)
+- [ ] 12.3 Add accessibility labels and values for the indoor map, stop markers, tour panel, and upsell sheet. (Teilstand, bleibt offen: Upsell-Sheet hat Überschrift-Trait, Hinweis und Begründung als Wert der Hinzufügen-Schaltfläche. Zurückgestellt: Karte, Stopp-Marker und Tourpanel; `StoreMapPage` und Tour sind pilotkritisch und die UI-Tests suchen dort nach Labels und Identifiern.)
 - [ ] 12.4 Verify Dynamic Type up to Accessibility XL on all tabs.
 
 ## 13. Backend Rate Limiting And CI

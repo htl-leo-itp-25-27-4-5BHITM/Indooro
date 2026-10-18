@@ -212,6 +212,7 @@ struct UpsellPromptSheet: View {
                         Text("Zu \(prompt.checkedProductName) passt vielleicht noch:")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                            .accessibilityAddTraits(.isHeader)
 
                         ForEach(prompt.suggestions) { suggestion in
                             VStack(alignment: .leading, spacing: 8) {
@@ -240,12 +241,15 @@ struct UpsellPromptSheet: View {
                                     .frame(minWidth: 44, minHeight: 44)
                                     .contentShape(Rectangle())
                                     .accessibilityLabel("\(suggestion.product.name) hinzufügen")
+                                    .accessibilityValue(suggestion.reason)
+                                    .accessibilityHint("Fügt den Vorschlag der Einkaufsliste hinzu")
                                 }
 
                                 Text(suggestion.reason)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                                     .lineLimit(3)
+                                    .accessibilityHidden(true)
                             }
                             .padding(.vertical, 5)
                         }
