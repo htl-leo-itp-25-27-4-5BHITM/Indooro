@@ -75,8 +75,8 @@
 ## 11. Swift 6 And Logging
 
 - [ ] 11.1 Set `SWIFT_VERSION = 6.0`, `SWIFT_STRICT_CONCURRENCY = complete`, and `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` for the app target and fix all diagnostics.
-- [ ] 11.2 Replace `print` calls with `os.Logger` per design Decision 10. (Teilstand, bleibt offen: `AppLog` mit den Kategorien network, positioning, upsell, persistence und ar; `UpsellSuggestionStore`, `LayoutCacheStore` und `ARNavViewController` nutzen `os.Logger`, Kennungen mit `.private(mask: .hash)`, der Upsell-Debuglog nur in DEBUG. Zurückgestellt: die 17 `print`-Aufrufe in `BeaconManager` (Ortung, nicht anfassen).)
-- [ ] 11.3 Gate the in-app debug log behind `#if DEBUG` and expose it in the settings section „Diagnose“. (zurückgestellt: der In-App-Debuglog (`debugLogLines`, 80 Zeilen) liegt im `BeaconManager`; ihn hinter `#if DEBUG` zu stellen und in „Diagnose“ anzuzeigen verlangt Änderungen an der Ortungsklasse.)
+- [x] 11.2 Replace `print` calls with `os.Logger` per design Decision 10. (`AppLog` mit den Kategorien network, positioning, upsell, persistence und ar; `UpsellSuggestionStore`, `LayoutCacheStore` und `ARNavViewController` nutzen `os.Logger`, Kennungen mit `.private(mask: .hash)`, der Upsell-Debuglog nur in DEBUG. Die 17 `print`-Aufrufe in `BeaconManager` sind durch `AppLog.network`/`AppLog.positioning` ersetzt (Interpolationen `privacy: .private`); `print` kommt in `indooroApp` nicht mehr vor.)
+- [x] 11.3 Gate the in-app debug log behind `#if DEBUG` and expose it in the settings section „Diagnose“. (`BeaconManager`: `debugLogLines`, `lastDebugLogAtByKey` und der Formatter nur in DEBUG; `appendDebugLog` nimmt die Nachricht als `@autoclosure` und ist in Release leer, in DEBUG geht die Zeile zusätzlich als `.private` an `AppLog.positioning`. `SettingsSheet` zeigt in DEBUG den Abschnitt „Diagnose“ mit Log, „Protokoll kopieren“ und „Protokoll leeren“.)
 
 ## 12. Localization And Accessibility
 
