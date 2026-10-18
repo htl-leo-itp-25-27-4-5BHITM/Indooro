@@ -1,7 +1,7 @@
 import IndooroModels
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 final class AnchorLayoutTests: XCTestCase {
     private struct LayoutEnvelope: Decodable {

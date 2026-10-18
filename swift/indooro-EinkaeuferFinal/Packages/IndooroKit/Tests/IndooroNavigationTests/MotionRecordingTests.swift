@@ -1,7 +1,7 @@
 import IndooroModels
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Schritt- und Kompass-Zeilen im Aufzeichnungsformat: Roundtrip, Abwaertskompatibilitaet und
 /// Gleichheit des Replays: Flag aus ignoriert Bewegungszeilen, Flag an ohne Zeilen ist gleich Flag aus.

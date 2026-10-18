@@ -3,6 +3,7 @@ import Foundation
 import Combine
 import CoreGraphics
 import simd
+import IndooroNavigation
 
 private struct ShoppingListStore: Codable {
     var lists: [ShoppingList]

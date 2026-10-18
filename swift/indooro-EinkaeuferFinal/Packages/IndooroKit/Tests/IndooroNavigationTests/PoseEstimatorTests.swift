@@ -1,6 +1,6 @@
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Spec "Displayed position suppresses implausible jumps" und
 /// "Position estimate is smoothed without speed caps" (Task 6.10).

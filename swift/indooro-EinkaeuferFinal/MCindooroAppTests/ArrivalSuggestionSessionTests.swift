@@ -1,4 +1,5 @@
 import XCTest
+import IndooroNavigation
 @testable import MCindooroApp
 
 /// Ankunftsvorschlag auf Session-Ebene: Ticks rein, Vorschlag/Zaehler raus. Erledigt wird nie hier.

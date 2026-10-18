@@ -4,27 +4,27 @@ import simd
 
 /// Ein Ziel der Navigation (Einkaufsstopp oder einzelnes Ziel). Die Planung (Reihenfolge)
 /// liegt ausserhalb der Session; sie bekommt nur fertig geordnete Stopps.
-struct NavigationStop: Equatable, Identifiable {
-    let id: String
-    var title: String
-    var mapPoint: SIMD2<Float>
+public struct NavigationStop: Equatable, Identifiable {
+    public let id: String
+    public var title: String
+    public var mapPoint: SIMD2<Float>
 
-    init(id: String, title: String, mapPoint: SIMD2<Float>) {
+    public init(id: String, title: String, mapPoint: SIMD2<Float>) {
         self.id = id
         self.title = title
         self.mapPoint = mapPoint
     }
 }
 
-enum NavigationSessionMode: Equatable {
+public enum NavigationSessionMode: Equatable {
     case idle
     case singleTarget
     case tour
 }
 
 /// Routen-Polylinie mit Bogenlaengen. Alle Fortschritts- und Abstandsrechnungen der Session laufen hier.
-struct NavigationRoutePath: Equatable {
-    let points: [SIMD2<Float>]
+public struct NavigationRoutePath: Equatable {
+    public let points: [SIMD2<Float>]
     private let cumulative: [Float]
 
     var totalLength: Float { cumulative.last ?? 0 }
@@ -101,7 +101,7 @@ struct NavigationRoutePath: Equatable {
 }
 
 /// Herkunft des Routenursprungs: vertrauenswuerdige Position, Eingang oder zuletzt erledigter Stopp.
-enum NavigationRouteOriginKind: Equatable {
+public enum NavigationRouteOriginKind: Equatable {
     case position
     case entrance
     case lastStop(String)
@@ -109,7 +109,7 @@ enum NavigationRouteOriginKind: Equatable {
 
 extension IndoorGraph {
     /// Mittelpunkt des ersten Layout-Elements vom Typ `entrance`; nil, wenn es keinen Eingang gibt.
-    static func entrancePoint(in elements: [LayoutElement]) -> SIMD2<Float>? {
+    public static func entrancePoint(in elements: [LayoutElement]) -> SIMD2<Float>? {
         guard let entrance = elements.first(where: { $0.type == "entrance" }) else { return nil }
         return SIMD2(
             Float(entrance.x + (entrance.width ?? 1) / 2),
@@ -121,33 +121,33 @@ extension IndoorGraph {
 /// Reine Logik der Navigations-Session (Ereignisse rein, Zustand raus; Zeit wird injiziert).
 /// Besitzt Plan, aktiven Stopp, aktive Route, Fortschritt und Off-Route-Evidenz.
 /// Positions-Updates aendern nur Fortschritt und Off-Route-Evidenz, nie den Plan.
-struct NavigationSessionCore {
+public struct NavigationSessionCore {
     static let lowConfidenceMessage = "Signal schwach - Kalibrierung empfohlen"
     static let singleTargetStopID = "single-target"
 
-    private(set) var mode: NavigationSessionMode = .idle
-    private(set) var plan: [NavigationStop] = []
-    private(set) var activeStopID: String?
-    private(set) var activeRoute: NavigationRoutePath?
-    private(set) var routeProgress: Float = 0
+    public private(set) var mode: NavigationSessionMode = .idle
+    public private(set) var plan: [NavigationStop] = []
+    public private(set) var activeStopID: String?
+    public private(set) var activeRoute: NavigationRoutePath?
+    public private(set) var routeProgress: Float = 0
     private(set) var maxRouteProgress: Float = 0
     private(set) var offRouteSince: TimeInterval?
-    private(set) var isLowConfidence = false
-    private(set) var statusMessage: String?
+    public private(set) var isLowConfidence = false
+    public private(set) var statusMessage: String?
     private(set) var lastPosition: SIMD2<Float>?
     /// Anzahl gebauter Routen seit Start (fuer Tests und Replay-Metriken).
-    private(set) var routeBuildCount = 0
+    public private(set) var routeBuildCount = 0
     /// Routen-Neubauten durch die Off-Route-Regel (nur bei erfolgreich gebauter Route).
-    private(set) var rerouteCount = 0
+    public private(set) var rerouteCount = 0
     /// Wechsel des aktiven Stopps bei Positionsereignissen ohne Stopp-Ereignis (Invariante: stets 0).
-    private(set) var stopChangeWithoutEventCount = 0
+    public private(set) var stopChangeWithoutEventCount = 0
     /// Manuelle Kalibrierungen seit Start.
-    private(set) var manualPositionCount = 0
+    public private(set) var manualPositionCount = 0
     /// Eine vertrauenswuerdige Position liegt vor (Seed oder Tick mit `trusted`).
     private(set) var hasTrustedPosition = false
     /// Ersatz-Startpunkt ohne vertraute Position: Eingang oder zuletzt erledigter Stopp.
     private(set) var fallbackOrigin: SIMD2<Float>?
-    private(set) var routeOriginKind: NavigationRouteOriginKind = .position
+    public private(set) var routeOriginKind: NavigationRouteOriginKind = .position
 
     private var fallbackOriginKind: NavigationRouteOriginKind?
     /// Manuell gesetzte Position gilt, bis ein vertrauter Tick eintrifft oder Tour/Layout endet.
@@ -158,7 +158,7 @@ struct NavigationSessionCore {
     private let routeConfig: RouteStabilityConfig
     private let confidenceConfig: ConfidenceConfig
 
-    init(
+    public init(
         graph: IndoorGraph? = nil,
         entrancePoint: SIMD2<Float>? = nil,
         routeConfig: RouteStabilityConfig = StabilizedNavigationConfig.default.route,
@@ -172,16 +172,16 @@ struct NavigationSessionCore {
 
     // MARK: - Abgeleitete Werte
 
-    var activeStop: NavigationStop? {
+    public var activeStop: NavigationStop? {
         guard let activeStopID else { return nil }
         return plan.first { $0.id == activeStopID }
     }
 
-    var remainingRoutePolyline: [SIMD2<Float>] {
+    public var remainingRoutePolyline: [SIMD2<Float>] {
         activeRoute?.remainingPolyline(from: routeProgress) ?? []
     }
 
-    var remainingRouteLength: Float {
+    public var remainingRouteLength: Float {
         guard let activeRoute else { return 0 }
         return max(0, activeRoute.totalLength - routeProgress)
     }
@@ -191,14 +191,14 @@ struct NavigationSessionCore {
     /// Merkt eine bekannte Position, ohne Fortschritt oder Off-Route zu bewerten
     /// (Startpunkt fuer Routen, bevor der erste Tick eintrifft). Nur vertrauenswuerdige Positionen
     /// setzen den Startpunkt; unsichere lassen die Route auf dem Fallback-Ursprung.
-    mutating func seedPosition(_ position: SIMD2<Float>?, trusted: Bool = true) {
+    public mutating func seedPosition(_ position: SIMD2<Float>?, trusted: Bool = true) {
         if trusted, lastPosition == nil, let position {
             lastPosition = position
             hasTrustedPosition = true
         }
     }
 
-    mutating func startTour(plan newPlan: [NavigationStop]) {
+    public mutating func startTour(plan newPlan: [NavigationStop]) {
         guard let first = newPlan.first else {
             stopTour()
             return
@@ -211,7 +211,7 @@ struct NavigationSessionCore {
     }
 
     /// Setzt ein einzelnes Ziel. Dasselbe Ziel erneut zu setzen aendert nichts (kein Route-Flattern).
-    mutating func setSingleTarget(_ point: SIMD2<Float>, title: String = "Ziel") {
+    public mutating func setSingleTarget(_ point: SIMD2<Float>, title: String = "Ziel") {
         if mode == .singleTarget, let activeStop, activeStop.mapPoint == point {
             return
         }
@@ -225,7 +225,7 @@ struct NavigationSessionCore {
 
     /// Ein Positionierungs-Tick: mit Position wie `positionUpdated`, ohne Loesung nur die Konfidenz
     /// (ohne Position bleibt nur eine noch gueltige manuelle Kalibrierung vertraut).
-    mutating func tickUpdated(projected: SIMD2<Float>?, confidence: Float, at now: TimeInterval, trusted: Bool = true) {
+    public mutating func tickUpdated(projected: SIMD2<Float>?, confidence: Float, at now: TimeInterval, trusted: Bool = true) {
         let stopBefore = activeStopID
         if let projected {
             applyPosition(projected, confidence: confidence, at: now, trusted: trusted)
@@ -250,18 +250,18 @@ struct NavigationSessionCore {
     }
 
     /// Stopp erledigt: der naechste Stopp des gespeicherten Plans wird aktiv.
-    mutating func stopCompleted() {
+    public mutating func stopCompleted() {
         advanceToNextStop()
     }
 
     /// Stopp uebersprungen: gleiche Wirkung auf den Plan wie `stopCompleted`.
-    mutating func stopSkipped() {
+    public mutating func stopSkipped() {
         advanceToNextStop()
     }
 
     /// Liste geaendert: Der aktive Stopp bleibt, solange er im neuen Plan vorkommt. Die Route wird
     /// nur neu gebaut, wenn sich der aktive Stopp geaendert hat oder verschoben wurde.
-    mutating func listChanged(plan newPlan: [NavigationStop]) {
+    public mutating func listChanged(plan newPlan: [NavigationStop]) {
         guard mode == .tour else { return }
         guard !newPlan.isEmpty else {
             stopTour()
@@ -286,19 +286,19 @@ struct NavigationSessionCore {
     }
 
     /// Fahrmodus umgeschaltet: neu planen, der aktive Stopp darf wechseln. Route nur bei Wechsel.
-    mutating func routeModeToggled(plan newPlan: [NavigationStop]) {
+    public mutating func routeModeToggled(plan newPlan: [NavigationStop]) {
         replace(plan: newPlan, forceRoute: false)
     }
 
     /// „Neu planen“: neue Reihenfolge ab der aktuellen Position, Route wird immer neu gebaut.
-    mutating func replanRequested(plan newPlan: [NavigationStop]) {
+    public mutating func replanRequested(plan newPlan: [NavigationStop]) {
         replace(plan: newPlan, forceRoute: true)
     }
 
     /// Neues Layout: Graph und Eingang ersetzen, Route und Fortschritt zuruecksetzen. Ohne neuen Plan wird
     /// ein einzelnes Ziel verworfen (Store/Layout gewechselt), eine Tour behaelt ihren Plan.
     /// Ein erledigter Stopp bleibt als Fallback-Ursprung erhalten, sonst gilt der neue Eingang.
-    mutating func layoutChanged(graph newGraph: IndoorGraph?, entrance: SIMD2<Float>? = nil, plan newPlan: [NavigationStop]? = nil) {
+    public mutating func layoutChanged(graph newGraph: IndoorGraph?, entrance: SIMD2<Float>? = nil, plan newPlan: [NavigationStop]? = nil) {
         manualPositionHolds = false
         graph = newGraph
         entrancePoint = entrance
@@ -332,7 +332,7 @@ struct NavigationSessionCore {
 
     /// Manuelle Kalibrierung: nur die Route zum aktiven Stopp wird von der kalibrierten Position neu
     /// gebaut. Plan und aktiver Stopp bleiben unveraendert. Die Kalibrierung gilt als vertraut.
-    mutating func manualCalibration(at projected: SIMD2<Float>) {
+    public mutating func manualCalibration(at projected: SIMD2<Float>) {
         manualPositionCount += 1
         lastPosition = projected
         hasTrustedPosition = true
@@ -344,7 +344,7 @@ struct NavigationSessionCore {
         buildRoute(from: projected, origin: .position)
     }
 
-    mutating func stopTour() {
+    public mutating func stopTour() {
         manualPositionHolds = false
         mode = .idle
         plan = []
@@ -355,7 +355,7 @@ struct NavigationSessionCore {
     }
 
     /// Ziel entfernt (Produktwechsel, Storewechsel, Layoutfehler): alles verwerfen.
-    mutating func clearTarget() {
+    public mutating func clearTarget() {
         stopTour()
     }
 

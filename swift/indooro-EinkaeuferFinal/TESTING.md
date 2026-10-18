@@ -68,21 +68,31 @@ calls.
 
 ## Navigation test package (`swift test`)
 
-`swift/indooro-EinkaeuferFinal/Package.swift` defines the SwiftPM package
-`IndooroNavigationCore`. It compiles only the platform-independent navigation
-sources from `indooroApp/` (layout model, graph, Kalman filter, beacon solver,
-measurement store, estimator, walkable projector, positioning pipeline, navigation
-session core, tour planner, navigation config, record/replay types) and adds the
-test target `IndooroNavigationCoreTests`. The Xcode app target is not affected;
-the package exists so navigation logic can be tested on macOS without a simulator.
+The platform-independent navigation core lives in the local package
+`Packages/IndooroKit` as target `IndooroNavigation` (graph, Kalman filter, beacon
+solver, measurement store, estimator, walkable projector, positioning pipeline,
+motion tracker, navigation session core, tour planner, navigation config,
+record/replay types). Its characterization tests are in
+`Packages/IndooroKit/Tests/IndooroNavigationTests` (target `IndooroNavigationTests`,
+Swift 5 language mode until task 11.1). The Xcode app target links the product
+`IndooroNavigation` (not the unit-test bundle).
 
-Run from `swift/indooro-EinkaeuferFinal`:
+`swift/indooro-EinkaeuferFinal/Package.swift` defines the SwiftPM package
+`IndooroNavigationCore`. It still compiles the remaining platform-independent
+sources from `indooroApp/` (layout cache, anchor payload, accessibility text/palette,
+arrival suggestion detector, upsell plan logic, `AppLog`) and adds the test target
+`IndooroNavigationCoreTests`. The Xcode app target is not affected; the package
+exists so this logic can be tested on macOS without a simulator.
+
+Run from `swift/indooro-EinkaeuferFinal` (and again in `Packages/IndooroKit`):
 
 ```bash
 swift test
 ```
 
-Test support lives in `Tests/IndooroNavigationCoreTests/`:
+Test support lives in `Packages/IndooroKit/Tests/IndooroNavigationTests/`
+(`Tests/IndooroNavigationCoreTests/` keeps a copy of the four helper files for the
+remaining tests until `IndooroTestSupport` exists, task 3.2):
 
 - `TestLayouts`: loads `Resources/layout-demosupermarkt.json` and injects a
   beacon grid (default one beacon per 8 m x 8 m cell).
@@ -112,11 +122,11 @@ Release builds contain no recorder.
    `NavigationFixtures/recordings/<name>.jsonl` (real walks) and add a test that
    loads it with `NavigationRecordLine.parse(jsonl:)` and calls
    `NavigationReplay.run(recording:layout:config:)` with the matching layout
-   (bundle the layout JSON under `Tests/IndooroNavigationCoreTests/Resources/`).
+   (bundle the layout JSON under `Packages/IndooroKit/Tests/IndooroNavigationTests/Resources/`).
    Replays run against one layout; the `layout` line only documents which one was
    active. Small synthetic fixtures are generated in tests instead (see
    `NavigationReplayTests`).
-4. **Run**: `swift test --filter NavigationReplayTests`. `ReplayMetrics` reports
+4. **Run**: `swift test --filter NavigationReplayTests` (in `Packages/IndooroKit`). `ReplayMetrics` reports
    reroutes per minute, active-stop changes without an event, projected jumps,
    mean and 95th-percentile lag to truth (meters), off-route detection delay,
    low-confidence toggles and planning time per event. Two replays of the same

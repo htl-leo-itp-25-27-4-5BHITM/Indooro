@@ -1,7 +1,7 @@
 import IndooroModels
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// improve-positioning-with-motion (Gruppe 2-3): Tracker, Schaetzer-Bewegungsdaten und das Replay mit
 /// `motionAided`. Synthetische Laeufe mit Schritt- und Kompasszeilen; Erwartungen siehe Kommentare.

@@ -40,7 +40,7 @@ struct IndoorRoute {
     let totalCost: Float
 }
 
-final class IndoorGraph {
+public final class IndoorGraph {
     private let nodesByID: [Int: IndoorGraphNode]
     private let edgesByID: [Int: IndoorGraphEdge]
     private let adjacencyByNode: [Int: [(neighborNodeID: Int, edgeID: Int, cost: Float)]]
@@ -444,8 +444,8 @@ final class IndoorGraph {
     }
 }
 
-enum IndoorGraphBuilder {
-    static func fromLayout(gridWidth: Int, gridHeight: Int, elements: [LayoutElement]) -> IndoorGraph {
+public enum IndoorGraphBuilder {
+    public static func fromLayout(gridWidth: Int, gridHeight: Int, elements: [LayoutElement]) -> IndoorGraph {
         var blockedCells: Set<GridPoint> = []
 
         for element in elements {
@@ -691,7 +691,7 @@ enum RotatedRectGeometry {
 }
 
 extension CGPoint {
-    init(_ vector: SIMD2<Float>) {
+    public init(_ vector: SIMD2<Float>) {
         self.init(x: CGFloat(vector.x), y: CGFloat(vector.y))
     }
 }
@@ -753,7 +753,7 @@ extension IndoorGraph {
     /// Elemente (ohne Beacon und Eingang), deren Mittelpunkt auf einen Knoten projiziert wird, der vom Eingang
     /// aus nicht erreichbar ist. `shortestRoute` projiziert Start und Ziel selbst auf den naechsten freien Knoten;
     /// nil bedeutet: keine Route. Reine Funktion fuer die DEBUG-Diagnose.
-    func unreachableShelves(in elements: [LayoutElement], from entrance: SIMD2<Float>) -> [LayoutElement] {
+    public func unreachableShelves(in elements: [LayoutElement], from entrance: SIMD2<Float>) -> [LayoutElement] {
         elements.filter { element in
             guard element.type != "beacon", element.type != "entrance", !element.isAnchor else { return false }
             let center = SIMD2<Float>(

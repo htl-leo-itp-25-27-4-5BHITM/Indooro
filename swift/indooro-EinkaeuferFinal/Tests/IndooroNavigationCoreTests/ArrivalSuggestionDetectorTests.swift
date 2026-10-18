@@ -2,6 +2,7 @@ import IndooroModels
 import XCTest
 import simd
 @testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Ankunftsvorschlag (add-arrival-suggestion): Unit-Tests der Detektor-Regeln und Replay gegen die Pipeline.
 final class ArrivalSuggestionDetectorTests: XCTestCase {

@@ -1,6 +1,6 @@
 import XCTest
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Task 8.6: deterministische, abbiegeaverse Routensuche.
 final class RoutingTests: XCTestCase {

@@ -1,7 +1,7 @@
 import Foundation
 import simd
 
-enum BeaconMeasurementSource: String, Hashable, CaseIterable {
+public enum BeaconMeasurementSource: String, Hashable, CaseIterable {
     case ranging
     case rssi
 }
@@ -13,23 +13,23 @@ struct BeaconSourceKey: Hashable {
     let source: BeaconMeasurementSource
 }
 
-struct BeaconSourceMeasurement {
-    var distanceMeters: Double
-    var quality: Float
-    var rssi: Int
-    var lastSeenAt: TimeInterval
+public struct BeaconSourceMeasurement {
+    public var distanceMeters: Double
+    public var quality: Float
+    public var rssi: Int
+    public var lastSeenAt: TimeInterval
 }
 
-struct BeaconMeasurementSelection {
+public struct BeaconMeasurementSelection {
     let beaconName: String
-    let source: BeaconMeasurementSource
-    let measurement: BeaconSourceMeasurement
+    public let source: BeaconMeasurementSource
+    public let measurement: BeaconSourceMeasurement
 }
 
 /// Haelt pro (Beacon, Quelle) Kalman-Filter und letzte Messung und entscheidet je Tick,
 /// welche Quelle ein Beacon liefert: Ranging solange es juenger als das Stale-Alter ist,
 /// sonst RSSI. Callbacks speichern nur; geloest wird ausschliesslich ueber `solveTick`.
-final class BeaconMeasurementStore {
+public final class BeaconMeasurementStore {
     private let config: BeaconPositioningConfig
 
     private var anchors: [String: SIMD2<Float>] = [:]
@@ -41,14 +41,14 @@ final class BeaconMeasurementStore {
     /// Anzahl der Loesungen; wird nur von `solveTick` erhoeht.
     private(set) var solveCount = 0
 
-    init(config: BeaconPositioningConfig) {
+    public init(config: BeaconPositioningConfig) {
         self.config = config
     }
 
     // MARK: - Layout
 
     /// Legt fuer jeden Beacon beide Filter lazy an und verwirft Filter/Messungen entfernter Beacons.
-    func syncBeacons(_ beacons: [(name: String, point: SIMD2<Float>)]) {
+    public func syncBeacons(_ beacons: [(name: String, point: SIMD2<Float>)]) {
         var updatedAnchors: [String: SIMD2<Float>] = [:]
         var updatedFilters: [BeaconSourceKey: KalmanFilter] = [:]
         var updatedMeasurements: [BeaconSourceKey: BeaconSourceMeasurement] = [:]
@@ -67,7 +67,7 @@ final class BeaconMeasurementStore {
         measurements = updatedMeasurements
     }
 
-    func clearMeasurements() {
+    public func clearMeasurements() {
         measurements.removeAll()
         for filter in filters.values {
             filter.reset()
@@ -81,7 +81,7 @@ final class BeaconMeasurementStore {
     /// positiver Accuracy; ungueltige Callbacks gelten nicht als frisch.
     /// Liefert die gefilterte Distanz oder `nil` bei ungueltigem Callback.
     @discardableResult
-    func recordRanging(
+    public func recordRanging(
         beaconName: String,
         accuracy: Double,
         rssi: Int,
@@ -156,7 +156,7 @@ final class BeaconMeasurementStore {
     }
 
     /// Ranging, solange frisch; sonst RSSI, solange frisch; sonst keine Messung.
-    func selection(for beaconName: String, at timestamp: TimeInterval) -> BeaconMeasurementSelection? {
+    public func selection(for beaconName: String, at timestamp: TimeInterval) -> BeaconMeasurementSelection? {
         for source in [BeaconMeasurementSource.ranging, .rssi] {
             if hasFreshMeasurement(beaconName: beaconName, source: source, at: timestamp),
                let measurement = measurement(beaconName: beaconName, source: source) {
