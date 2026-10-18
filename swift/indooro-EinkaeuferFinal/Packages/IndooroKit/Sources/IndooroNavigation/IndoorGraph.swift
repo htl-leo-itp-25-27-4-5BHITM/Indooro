@@ -40,7 +40,8 @@ struct IndoorRoute {
     let totalCost: Float
 }
 
-public final class IndoorGraph {
+/// Nach dem Bau unveraenderlich (nur `let`-Felder aus Werttypen), daher `Sendable`.
+public final class IndoorGraph: Sendable {
     private let nodesByID: [Int: IndoorGraphNode]
     private let edgesByID: [Int: IndoorGraphEdge]
     private let adjacencyByNode: [Int: [(neighborNodeID: Int, edgeID: Int, cost: Float)]]
