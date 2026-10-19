@@ -23,7 +23,8 @@ import java.util.regex.Pattern;
  * Pure evaluation of a store's readiness for a pilot session. No CDI, no I/O.
  *
  * <p>Blocking: no active layout, entrance count not exactly one, product without a matching shelf,
- * target shelf without label. Warnings: shelf without products, duplicate product ids, assigned beacon
+ * target shelf without label, and beacon registry inconsistencies (all-zero UUID, missing major/minor,
+ * duplicate uuid/major/minor, layout beacon not registered or registered with another identity). Warnings: shelf without products, duplicate product ids, assigned beacon
  * not placed, placed beacon without identity, grid size outside 5 to 200, more than 5 % of walkable
  * cells with fewer than three placed beacons within the radius, product list truncated by the
  * loader.
@@ -47,6 +48,7 @@ public final class StoreReadinessEvaluator {
     /** Upper bound for coverage grids; the layout validator allows at most 1000 x 1000. */
     static final long MAX_COVERAGE_CELLS = 1_000_000L;
     private static final double EPS = 1e-9;
+    private static final Pattern ALL_ZERO_UUID = Pattern.compile("0{32}");
     private static final Pattern INTEGER = Pattern.compile("[+-]?[0-9]+");
 
     public ReadinessReport evaluate(ReadinessInput input) {
@@ -146,6 +148,7 @@ public final class StoreReadinessEvaluator {
                         beacon.id(), null, null, beacon.beaconCode()));
             }
         }
+        checkBeaconConsistency(beacons, assigned, findings);
         for (AssignedBeacon assignedBeacon : assigned) {
             boolean placed = beacons.stream().anyMatch(beacon -> matchesAssigned(beacon, assignedBeacon));
             if (!placed) {
@@ -201,6 +204,101 @@ public final class StoreReadinessEvaluator {
                 walkable,
                 lowCoverage);
         return report(input, findings, counts, profile, rule, coverageComputed);
+    }
+
+    /**
+     * Compares the registered beacons (table beacons, source of {@code /api/mobile/stores/beacon-identities})
+     * with the beacon elements of the active layout by uuid, major and minor.
+     */
+    private static void checkBeaconConsistency(List<Element> layoutBeacons, List<AssignedBeacon> registered,
+                                               List<ReadinessFinding> findings) {
+        Set<String> registeredKeys = new HashSet<>();
+        Set<String> seenRegistered = new HashSet<>();
+        for (AssignedBeacon beacon : registered) {
+            String code = beacon.beaconCode();
+            String uuid = normalizedUuid(beacon.uuid());
+            if (uuid != null && ALL_ZERO_UUID.matcher(uuid).matches()) {
+                findings.add(finding(Severity.BLOCKING, "BEACON_UUID_ALL_ZERO",
+                        "Registriertes Beacon " + code + " hat die UUID 00000000000000000000000000000000; "
+                                + "die App kann es nie erkennen.",
+                        null, null, null, code));
+            }
+            if (beacon.major() == null || beacon.minor() == null) {
+                findings.add(finding(Severity.BLOCKING, "BEACON_MAJOR_MINOR_MISSING",
+                        "Registriertes Beacon " + code + " hat kein Major/Minor ("
+                                + (beacon.major() == null ? "Major" : "")
+                                + (beacon.major() == null && beacon.minor() == null ? " und " : "")
+                                + (beacon.minor() == null ? "Minor" : "") + " fehlt).",
+                        null, null, null, code));
+                continue;
+            }
+            if (uuid == null) {
+                continue;
+            }
+            String key = uuid + ":" + beacon.major() + ":" + beacon.minor();
+            registeredKeys.add(key);
+            if (!seenRegistered.add(key)) {
+                findings.add(finding(Severity.BLOCKING, "BEACON_IDENTITY_DUPLICATE",
+                        "Registriertes Beacon " + code + " hat dieselbe UUID/Major/Minor wie ein anderes Beacon der Filiale.",
+                        null, null, null, code));
+            }
+        }
+
+        Set<String> seenLayout = new HashSet<>();
+        for (Element beacon : layoutBeacons) {
+            if (beacon.identityKey() == null) {
+                continue;
+            }
+            String uuid = beacon.identityKey().split(":", -1)[0];
+            if (ALL_ZERO_UUID.matcher(uuid).matches()) {
+                findings.add(finding(Severity.BLOCKING, "BEACON_UUID_ALL_ZERO",
+                        "Beacon im Layout hat die UUID 00000000000000000000000000000000.",
+                        beacon.id(), null, null, beacon.beaconCode()));
+                continue;
+            }
+            if (!seenLayout.add(beacon.identityKey())) {
+                findings.add(finding(Severity.BLOCKING, "BEACON_IDENTITY_DUPLICATE",
+                        "Mehrere Beacons im Layout haben dieselbe UUID/Major/Minor.",
+                        beacon.id(), null, null, beacon.beaconCode()));
+            }
+            if (registeredKeys.contains(beacon.identityKey())) {
+                continue;
+            }
+            AssignedBeacon sameReference = registered.stream()
+                    .filter(candidate -> matchesAssigned(beacon, candidate))
+                    .findFirst().orElse(null);
+            if (sameReference != null) {
+                findings.add(finding(Severity.BLOCKING, "BEACON_IDENTITY_MISMATCH",
+                        "Beacon im Layout (" + shortIdentity(beacon.identityKey()) + ") ist mit "
+                                + sameReference.beaconCode() + " verknuepft, dessen Registrierung ("
+                                + shortIdentity(sameReference.identityKey()) + ") eine andere Identity hat.",
+                        beacon.id(), null, null, sameReference.beaconCode()));
+            } else {
+                findings.add(finding(Severity.BLOCKING, "LAYOUT_BEACON_NOT_REGISTERED",
+                        "Beacon im Layout (" + shortIdentity(beacon.identityKey())
+                                + ") ist der Filiale nicht registriert; die App erhaelt es nicht.",
+                        beacon.id(), null, null, beacon.beaconCode()));
+            }
+        }
+    }
+
+    private static String normalizedUuid(String uuid) {
+        try {
+            return uuid == null ? null : BeaconIdentityUtil.normalizeUuid(uuid);
+        } catch (IllegalArgumentException invalidUuid) {
+            return null;
+        }
+    }
+
+    /** Last 4 hex digits of the UUID plus major and minor, enough to recognise a beacon in a message. */
+    private static String shortIdentity(String identityKey) {
+        if (identityKey == null) {
+            return "?";
+        }
+        String[] parts = identityKey.split(":", -1);
+        String uuid = parts[0];
+        String tail = uuid.length() > 4 ? "\u2026" + uuid.substring(uuid.length() - 4) : uuid;
+        return parts.length >= 3 ? tail + " " + parts[1] + "/" + parts[2] : tail;
     }
 
     private static ReadinessReport report(ReadinessInput input, List<ReadinessFinding> findings, ReadinessCounts counts,

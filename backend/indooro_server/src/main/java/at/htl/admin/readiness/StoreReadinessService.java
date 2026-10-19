@@ -93,6 +93,9 @@ public class StoreReadinessService {
         return new AssignedBeacon(
                 assignment.beacon.id,
                 assignment.beacon.beaconCode,
-                assignment.beacon.identityKey);
+                assignment.beacon.identityKey,
+                assignment.beacon.uuid,
+                assignment.beacon.major,
+                assignment.beacon.minor);
     }
 }

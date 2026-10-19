@@ -3,6 +3,8 @@ import type { ApiClient } from "./api/client";
 import { DEFAULT_READINESS_RADIUS, fetchStoreReadiness, type ReadinessFinding, type ReadinessReport } from "./api/readiness";
 import type { CurrentUser } from "./routes";
 import {
+  BEACON_CONSISTENCY_CODES,
+  beaconConsistencyText,
   coverageSummary,
   describeReadinessError,
   formatRadius,
@@ -44,6 +46,8 @@ function FindingItem({ finding, storeId, isAdmin }: { finding: ReadinessFinding;
     : null;
   // The product page searches by ID as well, which narrows the list to the affected product.
   const productHref = finding.productId != null ? `/admin/next/products/?q=${encodeURIComponent(String(finding.productId))}` : null;
+  // Registry problems are fixed on the beacon page (identity) or in the editor (layout element).
+  const beaconHref = BEACON_CONSISTENCY_CODES.includes(finding.code) && finding.beaconCode ? "/admin/next/beacons/" : null;
   return <li>
     <span>
       <strong>{finding.message}</strong>
@@ -51,6 +55,7 @@ function FindingItem({ finding, storeId, isAdmin }: { finding: ReadinessFinding;
     </span>
     <span className="readiness-links">
       {editorHref && <a href={editorHref}>Im Editor öffnen</a>}
+      {beaconHref && <a href={beaconHref}>Beacons verwalten</a>}
       {productHref && isAdmin && <a href={productHref}>Produkt suchen</a>}
     </span>
   </li>;
@@ -151,6 +156,7 @@ export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser
           <div><dt>Beacons platziert</dt><dd>{report.counts.placedBeacons}</dd></div>
           <div><dt>Beacons zugewiesen</dt><dd>{report.counts.assignedBeacons}</dd></div>
           {ruleText(report) && <div className="wide"><dt>Abdeckungsregel</dt><dd>{ruleText(report)}</dd></div>}
+          <div className="wide"><dt>Beacon-Registrierung</dt><dd>{beaconConsistencyText(report)}</dd></div>
           <div className="wide"><dt>Abdeckung</dt><dd>{coverageSummary(report)}</dd></div>
         </dl>
         <div className="form-actions"><button className="button primary" type="button" onClick={() => void copyMarkdown()}>Als Markdown kopieren</button></div>

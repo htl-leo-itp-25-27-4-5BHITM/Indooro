@@ -137,3 +137,32 @@ test("readiness page says so when the coverage was not computed", async ({ page 
   await expect(page.getByText("Keine begehbaren Zellen")).toHaveCount(0);
   await expect(page.getByText("Die Abdeckung wurde nicht berechnet: Das Gitter fehlt.")).toBeVisible();
 });
+
+test("readiness page shows beacon registry findings with a link to the beacon admin", async ({ page }) => {
+  const report = {
+    ...greenReport, status: "RED", blockingCount: 2,
+    findings: [
+      { severity: "BLOCKING", code: "BEACON_UUID_ALL_ZERO", message: "Registriertes Beacon Indooro5 hat die UUID 00000000000000000000000000000000; die App kann es nie erkennen.", elementId: null, productId: null, layoutCode: null, beaconCode: "Indooro5" },
+      { severity: "BLOCKING", code: "LAYOUT_BEACON_NOT_REGISTERED", message: "Beacon im Layout (…1c17 1/17) ist der Filiale nicht registriert; die App erhält es nicht.", elementId: "b1", productId: null, layoutCode: null, beaconCode: null }
+    ]
+  };
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
+  await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
+  await page.route("**/api/stores/store-1/readiness?*", (route) => route.fulfill({ json: report }));
+
+  await page.goto("/admin/next/stores/readiness/?storeId=store-1");
+  await expect(page.getByText("2 Abweichungen zwischen Registrierung und Layout")).toBeVisible();
+  const zeroItem = page.getByRole("listitem").filter({ hasText: "00000000000000000000000000000000" });
+  await expect(zeroItem.getByRole("link", { name: "Beacons verwalten" })).toHaveAttribute("href", "/admin/next/beacons/");
+  const layoutItem = page.getByRole("listitem").filter({ hasText: "nicht registriert" });
+  await expect(layoutItem.getByRole("link", { name: "Im Editor öffnen" })).toBeVisible();
+  await expect(layoutItem.getByRole("link", { name: "Beacons verwalten" })).toHaveCount(0);
+});
+
+test("readiness page says consistent only when there are beacons to compare", async ({ page }) => {
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
+  await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
+  await page.route("**/api/stores/store-1/readiness?*", (route) => route.fulfill({ json: greenReport }));
+  await page.goto("/admin/next/stores/readiness/?storeId=store-1");
+  await expect(page.getByText("Registrierung und Layout stimmen überein")).toBeVisible();
+});
