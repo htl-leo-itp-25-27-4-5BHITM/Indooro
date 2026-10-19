@@ -63,8 +63,34 @@ public final class ReadinessDtos {
     public record ProductPage(List<ProductRef> products, boolean truncated) {
     }
 
-    /** A beacon assigned to the store (active assignment). */
-    public record AssignedBeacon(UUID beaconId, String beaconCode, String identityKey) {
+    /**
+     * A beacon registered for the store (active assignment). uuid, major and minor come from the beacons
+     * table; major and minor are null when the registry entry is incomplete.
+     */
+    public record AssignedBeacon(UUID beaconId, String beaconCode, String identityKey,
+                                 String uuid, Integer major, Integer minor) {
+
+        /** Derives uuid, major and minor from an identity key {@code uuid[:major:minor]}. */
+        public AssignedBeacon(UUID beaconId, String beaconCode, String identityKey) {
+            this(beaconId, beaconCode, identityKey, part(identityKey, 0), intPart(identityKey, 1), intPart(identityKey, 2));
+        }
+
+        private static String part(String identityKey, int index) {
+            if (identityKey == null) {
+                return null;
+            }
+            String[] parts = identityKey.split(":", -1);
+            return index < parts.length && !parts[index].isBlank() ? parts[index] : null;
+        }
+
+        private static Integer intPart(String identityKey, int index) {
+            String value = part(identityKey, index);
+            try {
+                return value == null ? null : Integer.valueOf(value);
+            } catch (NumberFormatException notANumber) {
+                return null;
+            }
+        }
     }
 
     /** Pure evaluator input. layout is the stored layout document; null means no active layout. */

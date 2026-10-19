@@ -3,6 +3,8 @@ import test from "node:test";
 import { ApiClientError } from "./api/client";
 import { parseReadinessReport, readinessPath, type ReadinessReport } from "./api/readiness";
 import {
+  beaconConsistencyFindings,
+  beaconConsistencyText,
   coverageText,
   describeReadinessError,
   groupFindings,
@@ -117,4 +119,25 @@ test("server payloads must match the report shape", () => {
   assert.throws(() => parseReadinessReport({ ...redReport, status: "PINK" }), ApiClientError);
   assert.throws(() => parseReadinessReport({ ...redReport, findings: [{ severity: "INFO" }] }), ApiClientError);
   assert.throws(() => parseReadinessReport({ ...redReport, counts: { shelves: 1 } }), ApiClientError);
+});
+
+const zeroUuidFinding = { severity: "BLOCKING", code: "BEACON_UUID_ALL_ZERO", message: "Registriertes Beacon Indooro5 hat die UUID 0.", elementId: null, productId: null, layoutCode: null, beaconCode: "Indooro5" } as const;
+const mismatchFinding = { severity: "BLOCKING", code: "BEACON_IDENTITY_MISMATCH", message: "Layout und Registrierung weichen ab.", elementId: "b1", productId: null, layoutCode: null, beaconCode: "Indooro5" } as const;
+
+test("beacon consistency findings are picked out by their codes", () => {
+  const all = [...redReport.findings, zeroUuidFinding, mismatchFinding];
+  assert.deepEqual(beaconConsistencyFindings(all).map((finding) => finding.code), ["BEACON_UUID_ALL_ZERO", "BEACON_IDENTITY_MISMATCH"]);
+  assert.deepEqual(beaconConsistencyFindings(redReport.findings), []);
+});
+
+test("beacon consistency text names deviations and does not claim consistency without beacons", () => {
+  assert.equal(beaconConsistencyText({ counts, findings: [zeroUuidFinding] }), "1 Abweichung zwischen Registrierung und Layout");
+  assert.equal(beaconConsistencyText({ counts, findings: [zeroUuidFinding, mismatchFinding] }), "2 Abweichungen zwischen Registrierung und Layout");
+  assert.equal(beaconConsistencyText({ counts, findings: [] }), "Registrierung und Layout stimmen überein");
+  assert.equal(beaconConsistencyText({ counts: { ...counts, placedBeacons: 0, assignedBeacons: 0 }, findings: [] }), "Keine Beacons zum Vergleichen");
+});
+
+test("markdown export lists the beacon registry state", () => {
+  assert.match(readinessToMarkdown({ ...redReport, findings: [zeroUuidFinding] }, { storeName: "A", checkedOn: "" }), /- Beacon-Registrierung: 1 Abweichung zwischen/);
+  assert.match(readinessToMarkdown(greenReport, { storeName: "A", checkedOn: "" }), /- Beacon-Registrierung: Registrierung und Layout stimmen überein/);
 });
