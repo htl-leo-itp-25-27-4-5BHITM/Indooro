@@ -17,7 +17,8 @@ def make_handler(routes, seen):
         def _respond(self):
             seen.append((self.command, self.path, self.headers.get("Authorization")))
             path = self.path.split("?", 1)[0]
-            status, body = routes.get(path, (404, b""))
+            # exact path+query wins (lets a test make one store empty), else path only
+            status, body = routes.get(self.path) or routes.get(path, (404, b""))
             self.send_response(status)
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
@@ -37,8 +38,8 @@ def healthy_routes():
     return {
         "/api/mobile/stores": (200, stores),
         "/api/categories": (200, b"[]"),
-        "/api/products": (200, b"[]"),
-        "/api/products/search": (200, b"[]"),
+        "/api/products": (200, json.dumps([{"id": 1, "name": "Milch"}]).encode()),
+        "/api/products/search": (200, json.dumps([{"id": 1, "name": "Milch"}]).encode()),
         "/customer/": (200, b"<html></html>"),
         "/admin/": (302, b""),
         "/admin/next/": (302, b""),
@@ -77,6 +78,44 @@ class SmokeCheckTest(unittest.TestCase):
         result, seen = self.run_script(healthy_routes())
         self.assertEqual(result.returncode, 0, result.stdout)
         self.assertTrue(any("storeCode=LEO-1" in path for _, path, _ in seen), seen)
+
+    def test_empty_store_product_list_fails_despite_200(self):
+        routes = healthy_routes()
+        routes["/api/products?size=5&storeCode=LEO-1"] = (200, b"[]")
+        result, _ = self.run_script(routes)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertRegex(result.stdout, r"FAIL\s+200\s+Produkte je Markt.*0 Eintraege")
+        self.assertRegex(result.stdout, r"OK\s+200\s+Suche je Markt")
+
+    def test_empty_store_search_fails_despite_200(self):
+        routes = healthy_routes()
+        routes["/api/products/search?q=milch&storeCode=LEO-1"] = (200, b"[]")
+        result, _ = self.run_script(routes)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertRegex(result.stdout, r"FAIL\s+200\s+Suche je Markt.*0 Eintraege")
+
+    def test_explicit_store_code_and_query_are_used_and_must_have_items(self):
+        routes = healthy_routes()
+        routes["/api/products/search?q=brot&storeCode=SPAR-X"] = (200, b"[]")
+        result, seen = self.run_script(routes, "SPAR-X", "brot")
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertTrue(any("q=brot&storeCode=SPAR-X" in path for _, path, _ in seen), seen)
+        self.assertRegex(result.stdout, r"FAIL\s+200\s+Suche je Markt")
+        self.assertRegex(result.stdout, r"OK\s+200\s+Produkte je Markt\s+.*1 Eintraege")
+
+    def test_non_list_store_response_fails(self):
+        routes = healthy_routes()
+        routes["/api/products?size=5&storeCode=LEO-1"] = (200, b"<html></html>")
+        result, _ = self.run_script(routes)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertRegex(result.stdout, r"FAIL\s+200\s+Produkte je Markt.*keine JSON-Liste")
+
+    def test_store_list_server_error_fails(self):
+        routes = healthy_routes()
+        routes["/api/products?size=5&storeCode=LEO-1"] = (500, b"")
+        result, _ = self.run_script(routes)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertRegex(result.stdout, r"FAIL\s+500\s+Produkte je Markt")
 
     def test_only_get_and_no_credentials(self):
         _, seen = self.run_script(healthy_routes())

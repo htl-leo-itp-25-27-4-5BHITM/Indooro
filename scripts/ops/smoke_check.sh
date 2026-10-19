@@ -5,7 +5,8 @@
 # Beispiel: scripts/ops/smoke_check.sh https://it220209.cloud.htl-leonding.ac.at
 #
 # Pflichtpruefungen (FAIL -> Exit 1): oeffentliche Endpunkte liefern 200, geschuetzte Endpunkte
-# liefern ohne Anmeldung 401/403/302 und nie 200 oder 5xx.
+# liefern ohne Anmeldung 401/403/302 und nie 200 oder 5xx. Mit storeCode muessen Produktliste und
+# Suche des Markts mindestens 1 Treffer liefern (ein leerer Markt ist ein FAIL, auch bei 200).
 # Hinweise (INFO): Health-Pfade, die der Ingress evtl. nicht freigibt.
 # Nicht geprueft: Seiten nach dem Login. Das macht ein Mensch (siehe RELEASE_PLAN_NEXT.md).
 set -u
@@ -35,6 +36,45 @@ status_of() {
 # body_of <path>: Antwortkoerper (nur fuer 200er).
 body_of() {
   curl -sS --max-time "$TIMEOUT" -X GET "${BASE_URL}$1" 2>/dev/null || true
+}
+
+# count_of <path>: Anzahl der Eintraege einer JSON-Liste (oder eines Objekts mit content/items/products).
+# Gibt -1 aus, wenn die Antwort kein JSON mit Liste ist.
+count_of() {
+  body_of "$1" | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    if isinstance(data, dict):
+        data = next((data[k] for k in ("content", "items", "products") if isinstance(data.get(k), list)), None)
+    print(len(data) if isinstance(data, list) else -1)
+except Exception:
+    print(-1)
+' 2>/dev/null || echo -1
+}
+
+# check_items <label> <path>: Status 200 und mindestens 1 Eintrag (Pflicht).
+check_items() {
+  local label="$1" path="$2" code count
+  code="$(status_of "$path")"
+  [[ -z "$code" ]] && code="000"
+  if [[ "$code" != "200" ]]; then
+    echo "FAIL  $code  $label  ($path)  erwartet: 200"
+    FAILS=$((FAILS + 1))
+    return
+  fi
+  count="$(count_of "$path")"
+  [[ -z "$count" ]] && count="-1"
+  if [[ "$count" -ge 1 ]]; then
+    echo "OK    $code  $label  ($path)  ${count} Eintraege"
+    PASSES=$((PASSES + 1))
+  elif [[ "$count" -eq 0 ]]; then
+    echo "FAIL  $code  $label  ($path)  0 Eintraege, erwartet: mindestens 1 (Index leer oder falsch gemappt?)"
+    FAILS=$((FAILS + 1))
+  else
+    echo "FAIL  $code  $label  ($path)  Antwort ist keine JSON-Liste"
+    FAILS=$((FAILS + 1))
+  fi
 }
 
 # check <label> <path> <erlaubte-codes, getrennt durch |> [required|info]
@@ -101,8 +141,8 @@ fi
 if [[ -n "$STORE_CODE" ]]; then
   echo
   echo "## Store-bezogen (storeCode=${STORE_CODE})"
-  check "Produkte je Markt"     "/api/products?size=5&storeCode=${STORE_CODE}"                 "200"
-  check "Suche je Markt"        "/api/products/search?q=${QUERY}&storeCode=${STORE_CODE}"      "200"
+  check_items "Produkte je Markt" "/api/products?size=5&storeCode=${STORE_CODE}"
+  check_items "Suche je Markt"    "/api/products/search?q=${QUERY}&storeCode=${STORE_CODE}"
 else
   echo
   echo "INFO  storeCode nicht ermittelbar, store-bezogene Pruefungen uebersprungen"
