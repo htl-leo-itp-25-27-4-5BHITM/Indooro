@@ -5,7 +5,9 @@
 # Beispiel: scripts/ops/smoke_check.sh https://it220209.cloud.htl-leonding.ac.at
 #
 # Pflichtpruefungen (FAIL -> Exit 1): oeffentliche Endpunkte liefern 200, geschuetzte Endpunkte
-# liefern ohne Anmeldung 401/403/302 und nie 200 oder 5xx.
+# liefern ohne Anmeldung 401/403/302 und nie 200 oder 5xx. Mit storeCode muessen Produktliste und
+# Suche des Markts mindestens 1 Treffer liefern (ein leerer Markt ist ein FAIL, auch bei 200).
+# Ohne storeCode wird jeder Markt aus /api/mobile/stores geprueft; FAIL nur, wenn keiner Produkte hat.
 # Hinweise (INFO): Health-Pfade, die der Ingress evtl. nicht freigibt.
 # Nicht geprueft: Seiten nach dem Login. Das macht ein Mensch (siehe RELEASE_PLAN_NEXT.md).
 set -u
@@ -27,6 +29,12 @@ fi
 FAILS=0
 PASSES=0
 
+# urlenc <text>: Prozent-Kodierung fuer Query-Werte (UTF-8), z. B. "Hörsching" -> "H%C3%B6rsching".
+urlenc() {
+  python3 -c 'import os, sys, urllib.parse; print(urllib.parse.quote_from_bytes(os.fsencode(sys.argv[1]), safe=""))' "$1"
+}
+QUERY_ENC="$(urlenc "$QUERY")"
+
 # status_of <path>: gibt den HTTP-Status aus ("000" bei Netzwerkfehler). Folgt keinen Redirects.
 status_of() {
   curl -sS -o /dev/null -w '%{http_code}' --max-time "$TIMEOUT" -X GET "${BASE_URL}$1" 2>/dev/null || true
@@ -35,6 +43,45 @@ status_of() {
 # body_of <path>: Antwortkoerper (nur fuer 200er).
 body_of() {
   curl -sS --max-time "$TIMEOUT" -X GET "${BASE_URL}$1" 2>/dev/null || true
+}
+
+# count_of <path>: Anzahl der Eintraege einer JSON-Liste (oder eines Objekts mit content/items/products).
+# Gibt -1 aus, wenn die Antwort kein JSON mit Liste ist.
+count_of() {
+  body_of "$1" | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    if isinstance(data, dict):
+        data = next((data[k] for k in ("content", "items", "products") if isinstance(data.get(k), list)), None)
+    print(len(data) if isinstance(data, list) else -1)
+except Exception:
+    print(-1)
+' 2>/dev/null || echo -1
+}
+
+# check_items <label> <path>: Status 200 und mindestens 1 Eintrag (Pflicht).
+check_items() {
+  local label="$1" path="$2" code count
+  code="$(status_of "$path")"
+  [[ -z "$code" ]] && code="000"
+  if [[ "$code" != "200" ]]; then
+    echo "FAIL  $code  $label  ($path)  erwartet: 200"
+    FAILS=$((FAILS + 1))
+    return
+  fi
+  count="$(count_of "$path")"
+  [[ -z "$count" ]] && count="-1"
+  if [[ "$count" -ge 1 ]]; then
+    echo "OK    $code  $label  ($path)  ${count} Eintraege"
+    PASSES=$((PASSES + 1))
+  elif [[ "$count" -eq 0 ]]; then
+    echo "FAIL  $code  $label  ($path)  0 Eintraege, erwartet: mindestens 1 (Index leer oder falsch gemappt?)"
+    FAILS=$((FAILS + 1))
+  else
+    echo "FAIL  $code  $label  ($path)  Antwort ist keine JSON-Liste"
+    FAILS=$((FAILS + 1))
+  fi
 }
 
 # check <label> <path> <erlaubte-codes, getrennt durch |> [required|info]
@@ -60,7 +107,7 @@ echo "## Oeffentliche Endpunkte"
 check "Mobile Stores"           "/api/mobile/stores"               "200"
 check "Kategorien"              "/api/categories"                  "200"
 check "Produkte (Seite)"        "/api/products?size=5"             "200"
-check "Produktsuche"            "/api/products/search?q=${QUERY}"  "200"
+check "Produktsuche"            "/api/products/search?q=${QUERY_ENC}"  "200"
 check "Customer Finder"         "/customer/"                       "200|301|302"
 
 echo
@@ -85,27 +132,59 @@ echo
 echo "## Keycloak (Prod-Realm)"
 check "Realm-Metadaten"         "/keycloak/realms/indooro/.well-known/openid-configuration" "200" info
 
-# Stores aus der Liste lesen, wenn kein storeCode uebergeben wurde.
-if [[ -z "$STORE_CODE" ]]; then
-  STORE_CODE="$(body_of '/api/mobile/stores' | python3 -c '
+# Ohne storeCode: alle Maerkte aus /api/mobile/stores pruefen. Pflicht ist, dass mindestens ein Markt
+# Produkte hat (ein leerer erster Markt allein ist kein Fehler). Mit storeCode gilt die strenge Regel.
+if [[ -n "$STORE_CODE" ]]; then
+  STORE_ENC="$(urlenc "$STORE_CODE")"
+  echo
+  echo "## Store-bezogen (storeCode=${STORE_CODE})"
+  check_items "Produkte je Markt" "/api/products?size=5&storeCode=${STORE_ENC}"
+  check_items "Suche je Markt"    "/api/products/search?q=${QUERY_ENC}&storeCode=${STORE_ENC}"
+else
+  STORE_CODES="$(body_of '/api/mobile/stores' | python3 -c '
 import json, sys
 try:
     data = json.load(sys.stdin)
     items = data if isinstance(data, list) else data.get("stores", [])
-    print((items[0].get("storeCode") or "") if items else "")
+    for item in items:
+        code = (item.get("storeCode") or "").strip()
+        if code and all(c.isalnum() or c in "-_." for c in code):
+            print(code)
 except Exception:
-    print("")
+    pass
 ' 2>/dev/null || true)"
-fi
-
-if [[ -n "$STORE_CODE" ]]; then
-  echo
-  echo "## Store-bezogen (storeCode=${STORE_CODE})"
-  check "Produkte je Markt"     "/api/products?size=5&storeCode=${STORE_CODE}"                 "200"
-  check "Suche je Markt"        "/api/products/search?q=${QUERY}&storeCode=${STORE_CODE}"      "200"
-else
-  echo
-  echo "INFO  storeCode nicht ermittelbar, store-bezogene Pruefungen uebersprungen"
+  if [[ -z "$STORE_CODES" ]]; then
+    echo
+    echo "INFO  storeCode nicht ermittelbar, store-bezogene Pruefungen uebersprungen"
+  else
+    echo
+    echo "## Store-bezogen (alle Maerkte, mindestens einer mit Produkten)"
+    FULL_STORE=""
+    while IFS= read -r code; do
+      [[ -z "$code" ]] && continue
+      n="$(count_of "/api/products?size=5&storeCode=$(urlenc "$code")")"
+      [[ -z "$n" ]] && n="-1"
+      if [[ "$n" -ge 1 ]]; then
+        echo "INFO  Produkte je Markt  storeCode=${code}: ${n} Eintraege"
+        [[ -z "$FULL_STORE" ]] && FULL_STORE="$code"
+      elif [[ "$n" -eq 0 ]]; then
+        echo "INFO  Produkte je Markt  storeCode=${code}: 0 Eintraege"
+      else
+        echo "INFO  Produkte je Markt  storeCode=${code}: keine JSON-Liste"
+      fi
+    done <<< "$STORE_CODES"
+    if [[ -n "$FULL_STORE" ]]; then
+      echo "OK    200  Produkte je Markt  (storeCode=${FULL_STORE} hat Produkte)"
+      PASSES=$((PASSES + 1))
+      # Suche im Markt mit Produkten: Status 200 ist Pflicht, die Trefferzahl hier nur Information.
+      FULL_ENC="$(urlenc "$FULL_STORE")"
+      check "Suche je Markt" "/api/products/search?q=${QUERY_ENC}&storeCode=${FULL_ENC}" "200"
+      echo "INFO  Suche storeCode=${FULL_STORE}: $(count_of "/api/products/search?q=${QUERY_ENC}&storeCode=${FULL_ENC}") Eintraege fuer \"${QUERY}\""
+    else
+      echo "FAIL  ---  Produkte je Markt  kein Markt hat Produkte (Index leer oder falsch gemappt?)"
+      FAILS=$((FAILS + 1))
+    fi
+  fi
 fi
 
 echo
