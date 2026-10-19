@@ -6,7 +6,9 @@ Stand 2026-10-17 liegen alle 153 Live-Produkte ohne Markt (`storeId` und `storeC
 
 Die Produkte liegen nur im OpenSearch-Index, nicht in Postgres. Ein Postgres-Dump (`backup_postgres.py`) sichert sie deshalb nicht. Das Backup ist der Produkt-Export mit `export_products.py`.
 
-Werkzeug: `scripts/ops/migrate_products_to_store.py` (Standard: Dry-Run; Schreiben nur mit `--apply`, Löschen nur mit `--delete-legacy --yes`).
+Einfacher Weg ohne Admin-Token (seit 2026-10-19): `scripts/ops/load_store_catalog.py`. Es erzeugt eine CSV nur mit Produkten, deren Regal im Ziel-Markt existiert, der Import läuft eingeloggt im Admin, danach prüft das Skript live. Reindex und Löschen der Altdokumente sind dafür nicht nötig.
+
+Werkzeug für den vollständigen Weg: `scripts/ops/migrate_products_to_store.py` (Standard: Dry-Run; Schreiben nur mit `--apply`, Löschen nur mit `--delete-legacy --yes`).
 
 Platzhalter: `<DEMO_STORE_CODE>` ist der Markt-Code des Demo-Markts. Diese Entscheidung ist offen. Markt-Codes stehen in der Datenbank-Tabelle `stores`. Pilotmarkt ist `SPAR-Leonding-001`.
 
