@@ -42,6 +42,12 @@ public final class ReadinessDtos {
     ) {
     }
 
+    /**
+     * profile is the coverage profile the store was checked with; radius, minBeaconsPerCell and
+     * maxLowCoverageShare are the rule values used. coverageComputed is false when no coverage was
+     * calculated (no active layout, or a grid that is missing or too large); the cell counts are then
+     * not a result and must not be shown as one.
+     */
     public record ReadinessReport(
             UUID storeId,
             UUID layoutId,
@@ -51,7 +57,11 @@ public final class ReadinessDtos {
             int blockingCount,
             int warningCount,
             ReadinessCounts counts,
-            List<ReadinessFinding> findings
+            List<ReadinessFinding> findings,
+            String profile,
+            boolean coverageComputed,
+            int minBeaconsPerCell,
+            double maxLowCoverageShare
     ) {
     }
 
@@ -67,7 +77,10 @@ public final class ReadinessDtos {
     public record AssignedBeacon(UUID beaconId, String beaconCode, String identityKey) {
     }
 
-    /** Pure evaluator input. layout is the stored layout document; null means no active layout. */
+    /**
+     * Pure evaluator input. layout is the stored layout document; null means no active layout.
+     * profile is the coverage profile id; null or an unknown id is evaluated with the default "market".
+     */
     public record ReadinessInput(
             UUID storeId,
             UUID layoutId,
@@ -76,7 +89,16 @@ public final class ReadinessDtos {
             List<ProductRef> products,
             boolean productListTruncated,
             List<AssignedBeacon> assignedBeacons,
-            double radius
+            double radius,
+            String profile
     ) {
+
+        /** Input for the default profile "market". */
+        public ReadinessInput(UUID storeId, UUID layoutId, Integer layoutVersionNo, JsonNode layout,
+                              List<ProductRef> products, boolean productListTruncated,
+                              List<AssignedBeacon> assignedBeacons, double radius) {
+            this(storeId, layoutId, layoutVersionNo, layout, products, productListTruncated, assignedBeacons,
+                    radius, null);
+        }
     }
 }

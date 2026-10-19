@@ -3,11 +3,14 @@ import test from "node:test";
 import { ApiClientError } from "./api/client";
 import { parseReadinessReport, readinessPath, type ReadinessReport } from "./api/readiness";
 import {
+  coverageSummary,
   coverageText,
   describeReadinessError,
   groupFindings,
   parseRadiusInput,
+  profileLabel,
   readinessToMarkdown,
+  ruleText,
   statusLabel
 } from "./readiness";
 
@@ -22,6 +25,10 @@ const redReport: ReadinessReport = {
   blockingCount: 2,
   warningCount: 1,
   counts,
+  profile: "market",
+  coverageComputed: true,
+  minBeaconsPerCell: 3,
+  maxLowCoverageShare: 0.05,
   findings: [
     { severity: "BLOCKING", code: "PRODUCT_WITHOUT_SHELF", message: "Produkt hat keinen passenden Regalplatz.", elementId: null, productId: 42, layoutCode: "31/1/1/1", beaconCode: null },
     { severity: "WARNING", code: "BEACON_NOT_PLACED", message: "Beacon zugewiesen, aber nicht platziert.", elementId: null, productId: null, layoutCode: null, beaconCode: "B-002" },
@@ -117,4 +124,49 @@ test("server payloads must match the report shape", () => {
   assert.throws(() => parseReadinessReport({ ...redReport, status: "PINK" }), ApiClientError);
   assert.throws(() => parseReadinessReport({ ...redReport, findings: [{ severity: "INFO" }] }), ApiClientError);
   assert.throws(() => parseReadinessReport({ ...redReport, counts: { shelves: 1 } }), ApiClientError);
+});
+
+test("profile labels name the known profiles and show unknown ids as they are", () => {
+  assert.equal(profileLabel("market"), "Markt");
+  assert.equal(profileLabel("testroom"), "Testraum");
+  assert.equal(profileLabel("kiosk"), "kiosk");
+});
+
+test("rule text states beacons, radius and the allowed share, or nothing when the values are unknown", () => {
+  assert.equal(ruleText(redReport), "mindestens 3 Beacons im Radius 8 m, höchstens 5 % der begehbaren Zellen darunter");
+  assert.equal(ruleText({ ...redReport, radius: 10, maxLowCoverageShare: 0.075 }), "mindestens 3 Beacons im Radius 10 m, höchstens 7,5 % der begehbaren Zellen darunter");
+  assert.equal(ruleText({ ...redReport, minBeaconsPerCell: null }), null);
+  assert.equal(ruleText({ ...redReport, maxLowCoverageShare: null }), null);
+});
+
+test("coverage is never shown as a result when it was not computed", () => {
+  const notComputed = { ...redReport, coverageComputed: false, counts: { ...counts, walkableCells: 0, lowCoverageCells: 0 } };
+  assert.equal(coverageSummary(notComputed), "Abdeckung nicht berechnet");
+  assert.equal(coverageSummary(redReport), coverageText(counts));
+  const markdown = readinessToMarkdown(notComputed, { storeName: "A", checkedOn: "" });
+  assert.match(markdown, /- Abdeckung: Abdeckung nicht berechnet/);
+  assert.doesNotMatch(markdown, /Keine begehbaren Zellen/);
+});
+
+test("markdown export names the coverage profile and its rule", () => {
+  const testroom = { ...redReport, profile: "testroom", radius: 10 };
+  const markdown = readinessToMarkdown(testroom, { storeName: "Testraum", checkedOn: "" });
+  assert.match(markdown, /Abdeckungsprofil: Testraum/);
+  assert.match(markdown, /Abdeckungsregel: mindestens 3 Beacons im Radius 10 m, höchstens 5 %/);
+  assert.doesNotMatch(readinessToMarkdown({ ...redReport, minBeaconsPerCell: null }, { storeName: "A", checkedOn: "" }), /Abdeckungsregel/);
+});
+
+test("report parsing reads profile and rule values and stays honest for older servers", () => {
+  const withProfile = parseReadinessReport({ ...redReport, profile: "testroom", coverageComputed: false });
+  assert.equal(withProfile.profile, "testroom");
+  assert.equal(withProfile.coverageComputed, false);
+  assert.equal(withProfile.minBeaconsPerCell, 3);
+  const legacy = Object.fromEntries(Object.entries(redReport).filter(([key]) => !["profile", "coverageComputed", "minBeaconsPerCell", "maxLowCoverageShare"].includes(key)));
+  const parsed = parseReadinessReport(legacy);
+  assert.equal(parsed.profile, "market");
+  assert.equal(parsed.coverageComputed, true);
+  assert.equal(parsed.minBeaconsPerCell, null);
+  assert.equal(parsed.maxLowCoverageShare, null);
+  const legacyEmpty = parseReadinessReport({ ...legacy, counts: { ...counts, walkableCells: 0, lowCoverageCells: 0 } });
+  assert.equal(legacyEmpty.coverageComputed, false);
 });

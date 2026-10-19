@@ -3,12 +3,14 @@ import type { ApiClient } from "./api/client";
 import { DEFAULT_READINESS_RADIUS, fetchStoreReadiness, type ReadinessFinding, type ReadinessReport } from "./api/readiness";
 import type { CurrentUser } from "./routes";
 import {
-  coverageText,
+  coverageSummary,
   describeReadinessError,
   formatRadius,
   groupFindings,
   parseRadiusInput,
+  profileLabel,
   readinessToMarkdown,
+  ruleText,
   statusLabel
 } from "./readiness";
 
@@ -142,12 +144,14 @@ export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser
         <p className="readiness-light"><span className="readiness-dot" aria-hidden="true" /><strong id="readiness-status-title">{statusLabel(report.status)}</strong></p>
         <p className="readiness-meta">Blockierend: {blocking.length} · Warnungen: {warnings.length} · Radius {formatRadius(report.radius)} m · Layout {report.layoutVersionNo != null ? `Version ${report.layoutVersionNo}` : "kein aktives Layout"}</p>
         <dl className="readiness-counts">
+          <div><dt>Abdeckungsprofil</dt><dd>{profileLabel(report.profile)}</dd></div>
           <div><dt>Regale</dt><dd>{report.counts.shelves}</dd></div>
           <div><dt>Eingänge</dt><dd>{report.counts.entrances}</dd></div>
           <div><dt>Produkte</dt><dd>{report.counts.products}</dd></div>
           <div><dt>Beacons platziert</dt><dd>{report.counts.placedBeacons}</dd></div>
           <div><dt>Beacons zugewiesen</dt><dd>{report.counts.assignedBeacons}</dd></div>
-          <div className="wide"><dt>Abdeckung</dt><dd>{coverageText(report.counts)}</dd></div>
+          {ruleText(report) && <div className="wide"><dt>Abdeckungsregel</dt><dd>{ruleText(report)}</dd></div>}
+          <div className="wide"><dt>Abdeckung</dt><dd>{coverageSummary(report)}</dd></div>
         </dl>
         <div className="form-actions"><button className="button primary" type="button" onClick={() => void copyMarkdown()}>Als Markdown kopieren</button></div>
         {copyNotice && <p role="status" className="notice">{copyNotice}</p>}

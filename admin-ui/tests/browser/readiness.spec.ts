@@ -101,3 +101,39 @@ test("readiness page explains a forbidden market and offers no retry", async ({ 
   await expect(page.getByRole("button", { name: "Als Markdown kopieren" })).toHaveCount(0);
   expect(readinessCalls).toBe(1);
 });
+
+test("readiness page names the coverage profile, its rule and the computed share", async ({ page }) => {
+  const testroomReport = {
+    ...greenReport, profile: "testroom", radius: 10, coverageComputed: true, minBeaconsPerCell: 3, maxLowCoverageShare: 0.05,
+    counts: { ...greenReport.counts, walkableCells: 400, lowCoverageCells: 8 }
+  };
+  const radii: Array<string | null> = [];
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
+  await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
+  await page.route("**/api/stores/store-1/readiness?*", (route) => {
+    radii.push(new URL(route.request().url()).searchParams.get("radius"));
+    return route.fulfill({ json: testroomReport });
+  });
+
+  await page.goto("/admin/next/stores/readiness/?storeId=store-1");
+  await expect(page.getByText("Abdeckungsprofil", { exact: true })).toBeVisible();
+  await expect(page.getByText("Testraum", { exact: true })).toBeVisible();
+  await expect(page.getByText("mindestens 3 Beacons im Radius 10 m, höchstens 5 % der begehbaren Zellen darunter")).toBeVisible();
+  await expect(page.getByText("8 von 400 begehbaren Zellen unter 3 Beacons (2 %)")).toBeVisible();
+});
+
+test("readiness page says so when the coverage was not computed", async ({ page }) => {
+  const notComputed = {
+    ...greenReport, status: "YELLOW", warningCount: 1, coverageComputed: false, profile: "market",
+    counts: { ...greenReport.counts, walkableCells: 0, lowCoverageCells: 0 },
+    findings: [{ severity: "WARNING", code: "COVERAGE_NOT_COMPUTED", message: "Die Abdeckung wurde nicht berechnet: Das Gitter fehlt.", elementId: null, productId: null, layoutCode: null, beaconCode: null }]
+  };
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
+  await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
+  await page.route("**/api/stores/store-1/readiness?*", (route) => route.fulfill({ json: notComputed }));
+
+  await page.goto("/admin/next/stores/readiness/?storeId=store-1");
+  await expect(page.getByText("Abdeckung nicht berechnet", { exact: true })).toBeVisible();
+  await expect(page.getByText("Keine begehbaren Zellen")).toHaveCount(0);
+  await expect(page.getByText("Die Abdeckung wurde nicht berechnet: Das Gitter fehlt.")).toBeVisible();
+});

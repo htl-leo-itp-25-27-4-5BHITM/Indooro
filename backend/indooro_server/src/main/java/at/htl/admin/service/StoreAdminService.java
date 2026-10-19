@@ -20,6 +20,7 @@ import jakarta.transaction.Transactional;
 import jakarta.persistence.LockModeType;
 import jakarta.persistence.LockTimeoutException;
 import jakarta.persistence.PessimisticLockException;
+import jakarta.ws.rs.BadRequestException;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -254,6 +255,22 @@ public class StoreAdminService {
         store.latitude = request.latitude();
         store.longitude = request.longitude();
         store.notes = trimToNull(request.notes());
+        applyReadinessProfile(store, request.readinessProfile());
+    }
+
+    /**
+     * The profile changes which coverage rule the readiness verdict uses, so only an admin may change it.
+     * Null keeps the current value (a new store starts with the default "market").
+     */
+    private void applyReadinessProfile(StoreEntity store, String requested) {
+        if (requested == null || requested.equals(store.readinessProfile)) {
+            return;
+        }
+        if (!at.htl.admin.readiness.StoreReadinessProfiles.isKnown(requested)) {
+            throw new BadRequestException("Unbekanntes Abdeckungsprofil: " + requested);
+        }
+        adminAccessService.requireAdmin();
+        store.readinessProfile = requested;
     }
 
     private StoreDtos.StoreSummaryResponse toSummaryResponse(StoreEntity entity, long activeBeaconCount, boolean hasActiveLayout) {
@@ -289,7 +306,8 @@ public class StoreAdminService {
                 toRegionSummary(entity.region),
                 activeLayout == null ? null : new StoreDtos.ActiveLayoutSummary(activeLayout.id, activeLayout.versionNo, activeLayout.createdAt),
                 entity.createdAt,
-                entity.updatedAt
+                entity.updatedAt,
+                entity.readinessProfile
         );
     }
 

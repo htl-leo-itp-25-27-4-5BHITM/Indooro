@@ -1,12 +1,13 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
+import { READINESS_PROFILE_OPTIONS, profileLabel } from "./readiness";
 
 interface Region { id: string; code: string; name: string }
 interface StoreDetail {
   id: string; storeCode: string; name: string; street: string; zipCode: string; city: string; country: string;
   latitude: number | null; longitude: number | null; notes: string | null; status: string;
-  region: Region; activeLayout: { id: string; versionNo: number } | null;
+  region: Region; activeLayout: { id: string; versionNo: number } | null; readinessProfile?: string;
 }
 interface BeaconAssignment { beaconId: string; beaconCode: string; identityKey: string; assignedAt: string; isActive?: boolean }
 interface FreeBeacon { id: string; beaconCode: string; identityKey: string }
@@ -91,7 +92,9 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
     void mutate(() => api.put(path, {
       regionId: String(form.get("regionId")), storeCode: String(form.get("storeCode")).trim(), name: String(form.get("name")).trim(),
       street: String(form.get("street")).trim(), zipCode: String(form.get("zipCode")).trim(), city: String(form.get("city")).trim(), country: String(form.get("country")).trim(),
-      latitude: latitude ? Number(latitude) : null, longitude: longitude ? Number(longitude) : null, notes: String(form.get("notes") ?? "").trim() || null
+      latitude: latitude ? Number(latitude) : null, longitude: longitude ? Number(longitude) : null, notes: String(form.get("notes") ?? "").trim() || null,
+      // Only admins may change the coverage profile; for everyone else the field stays out and the server keeps the value.
+      ...(user.role === "admin" && form.get("readinessProfile") ? { readinessProfile: String(form.get("readinessProfile")) } : {})
     }), "Store gespeichert.");
   };
   const canAssign = user.role !== "store-manager" && store.status === "ACTIVE";
@@ -106,9 +109,10 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
         <label>Region<select name="regionId" defaultValue={store.region.id} required disabled={user.role !== "admin"}>{regions.map((region) => <option key={region.id} value={region.id}>{region.code} · {region.name}</option>)}</select>{user.role !== "admin" && <input type="hidden" name="regionId" value={store.region.id} />}{fieldErrors.regionId && <small role="alert">{fieldErrors.regionId.join(" ")}</small>}</label>
         {([ ["storeCode", "Store-Code", store.storeCode, 50], ["name", "Name", store.name, 150], ["street", "Straße", store.street, 150], ["zipCode", "PLZ", store.zipCode, 20], ["city", "Ort", store.city, 100], ["country", "Land", store.country, 100] ] as const).map(([name, label, value, max]) => <label key={name}>{label}<input name={name} defaultValue={value} maxLength={max} required />{fieldErrors[name] && <small role="alert">{fieldErrors[name].join(" ")}</small>}</label>)}
         <label>Breitengrad<input name="latitude" type="number" step="any" min="-90" max="90" defaultValue={store.latitude ?? ""} /></label><label>Längengrad<input name="longitude" type="number" step="any" min="-180" max="180" defaultValue={store.longitude ?? ""} /></label>
+        {user.role === "admin" && <label>Abdeckungsprofil<select name="readinessProfile" defaultValue={store.readinessProfile ?? "market"}>{READINESS_PROFILE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><small>Bestimmt die Abdeckungsregel der Pilot-Bereitschaft.</small></label>}
         <label className="full">Notizen<textarea name="notes" rows={3} maxLength={2000} defaultValue={store.notes ?? ""} /></label>
         <div className="form-actions"><button className="button primary" type="submit" disabled={busy}>{busy ? "Speichert …" : "Speichern"}</button><button className="button" type="button" onClick={() => { leaveEditing(); setMutationError(null); }}>Abbrechen</button></div>
-      </form> : <dl className="detail-facts"><div><dt>Region</dt><dd>{store.region.name}</dd></div><div><dt>Land</dt><dd>{store.country}</dd></div><div><dt>Koordinaten</dt><dd>{store.latitude == null || store.longitude == null ? "Nicht gesetzt" : `${store.latitude}, ${store.longitude}`}</dd></div><div><dt>Notizen</dt><dd>{store.notes || "–"}</dd></div></dl>}
+      </form> : <dl className="detail-facts"><div><dt>Region</dt><dd>{store.region.name}</dd></div><div><dt>Land</dt><dd>{store.country}</dd></div><div><dt>Koordinaten</dt><dd>{store.latitude == null || store.longitude == null ? "Nicht gesetzt" : `${store.latitude}, ${store.longitude}`}</dd></div><div><dt>Abdeckungsprofil</dt><dd>{profileLabel(store.readinessProfile ?? "market")}</dd></div><div><dt>Notizen</dt><dd>{store.notes || "–"}</dd></div></dl>}
     </section>
     <section className="notice detail-section" aria-labelledby="beacons-title"><div className="section-heading"><h3 id="beacons-title">Beacons ({beacons.length})</h3></div>
       {beacons.length ? <ul className="detail-list">{beacons.map((beacon) => <li key={beacon.beaconId}><span><strong>{beacon.beaconCode}</strong><small>{beacon.identityKey} · Zugeordnet am {formattedDate(beacon.assignedAt)}</small></span><button className="button" disabled={busy} onClick={() => { if (window.confirm(`Beacon ${beacon.beaconCode} freigeben?`)) void mutate(() => api.post(`/api/beacons/${encodeURIComponent(beacon.beaconId)}/release`, {}), "Beacon freigegeben."); }}>Freigeben</button></li>)}</ul> : <p>Keine Beacons zugeordnet.</p>}

@@ -304,6 +304,104 @@ class StoreReadinessEvaluatorTest {
         assertEquals(Status.RED, red.status());
     }
 
+    // ----------------------------------------------------------------- coverage profiles
+
+    private static List<AssignedBeacon> registeredRaster() {
+        List<AssignedBeacon> registered = new ArrayList<>();
+        for (int index = 0; index < 9; index++) {
+            registered.add(assignedBeacon("R-" + index, UUID_HEX, 2, index + 1));
+        }
+        return registered;
+    }
+
+    private static ReadinessReport evaluateProfile(JsonNode layout, String profile, double radius) {
+        return EVALUATOR.evaluate(new ReadinessInput(UUID.randomUUID(), UUID.randomUUID(), 1, layout, List.of(),
+                false, registeredRaster(), radius, profile));
+    }
+
+    @Test
+    void emptyTestRoomWithNineBeaconsIsGreenInTheTestroomProfile() {
+        ReadinessReport report = evaluateProfile(layout(20, 20, entrance("e1", 0, 0), raster3x3()), "testroom", 10.0);
+
+        assertEquals("testroom", report.profile());
+        assertTrue(report.coverageComputed());
+        assertFalse(hasCode(report, "LOW_BEACON_COVERAGE"));
+        assertEquals(Status.GREEN, report.status());
+        assertEquals(400, report.counts().walkableCells());
+        // The share is computed, not assumed: 8 of 400 cells (2 %) have fewer than three beacons.
+        assertEquals(8, report.counts().lowCoverageCells());
+    }
+
+    @Test
+    void sameRoomIsStillYellowInTheMarketProfileAtEightMetres() {
+        ReadinessReport report = evaluateProfile(layout(20, 20, entrance("e1", 0, 0), raster3x3()), "market", 8.0);
+
+        assertEquals("market", report.profile());
+        assertEquals(Status.YELLOW, report.status());
+        ReadinessFinding finding = findFinding(report, "LOW_BEACON_COVERAGE");
+        assertTrue(finding.message().contains("Profil market"), finding.message());
+        assertTrue(finding.message().contains("erlaubt: 5.0 %"), finding.message());
+        assertEquals(136, report.counts().lowCoverageCells());
+    }
+
+    @Test
+    void testroomProfileDoesNotHideRealGaps() {
+        // Four corner beacons leave most of the room under-covered, also at the testroom radius of 10 m.
+        ReadinessReport report = evaluateProfile(
+                layout(20, 20, entrance("e1", 0, 0),
+                        beaconAt("c1", 0, 0), beaconAt("c2", 20, 0), beaconAt("c3", 0, 20), beaconAt("c4", 20, 20)),
+                "testroom", 10.0);
+
+        assertTrue(hasFinding(report, Severity.WARNING, "LOW_BEACON_COVERAGE"));
+        assertTrue(report.counts().lowCoverageCells() > 0);
+    }
+
+    @Test
+    void reportNamesTheRuleValuesUsed() {
+        ReadinessReport report = evaluateProfile(layout(20, 20, entrance("e1", 0, 0)), "testroom", 10.0);
+
+        assertEquals(10.0, report.radius());
+        assertEquals(3, report.minBeaconsPerCell());
+        assertEquals(0.05, report.maxLowCoverageShare());
+    }
+
+    @Test
+    void missingOrUnknownProfileFallsBackToMarket() {
+        assertEquals("market", evaluateProfile(layout(20, 20, entrance("e1", 0, 0)), null, 8.0).profile());
+        assertEquals("market", evaluateProfile(layout(20, 20, entrance("e1", 0, 0)), "gaming", 8.0).profile());
+        assertEquals("market", evaluate(layout(20, 20, entrance("e1", 0, 0)), List.of(), List.of(), 8.0).profile());
+    }
+
+    @Test
+    void coverageIsNotReportedAsComputedWithoutAnActiveLayout() {
+        ReadinessReport report = evaluate(null, List.of(), List.of(), 8.0);
+
+        assertFalse(report.coverageComputed());
+        assertEquals(0, report.counts().walkableCells());
+    }
+
+    @Test
+    void gridThatCannotBeComputedIsAWarningAndNotACoverageResult() {
+        ObjectNode noGrid = JSON.createObjectNode();
+        noGrid.putArray("elements").add(entrance("e1", 0, 0));
+        ReadinessReport missing = evaluate(noGrid, List.of(), List.of(), 8.0);
+        ReadinessReport tooLarge = evaluate(layout(1001, 1001, entrance("e1", 0, 0)), List.of(), List.of(), 8.0);
+
+        for (ReadinessReport report : List.of(missing, tooLarge)) {
+            assertFalse(report.coverageComputed(), report.findings().toString());
+            assertTrue(hasFinding(report, Severity.WARNING, "COVERAGE_NOT_COMPUTED"));
+            assertEquals(Status.YELLOW, report.status());
+        }
+    }
+
+    @Test
+    void computedGridHasNoNotComputedFinding() {
+        ReadinessReport report = evaluate(layout(20, 20, entrance("e1", 0, 0)), List.of(), List.of(), 8.0);
+
+        assertTrue(report.coverageComputed());
+        assertFalse(hasCode(report, "COVERAGE_NOT_COMPUTED"));
+    }
+
     // ----------------------------------------------------------------- helpers
 
     private static ReadinessReport evaluate(JsonNode layout, List<ProductRef> products,

@@ -28,10 +28,9 @@ test("shared test vectors: counts, walkable cells and shares match the Python pl
   }
 });
 
-test("coverage rule is the shared JSON file, without its comment field", () => {
+test("coverage rule is the top level of the shared JSON file (profile market), without comment and profiles", () => {
   const shared = readJson(sharedRuleUrl) as Record<string, unknown>;
-  const { _comment: _ignored, ...values } = shared;
-  void _ignored;
+  const values = Object.fromEntries(Object.entries(shared).filter(([key]) => key !== "_comment" && key !== "profiles"));
   assert.deepEqual({ ...coverageRule }, values);
   assert.equal(coverageRule.radiusMeters, 8);
   assert.equal(coverageRule.minBeaconsPerCell, 3);

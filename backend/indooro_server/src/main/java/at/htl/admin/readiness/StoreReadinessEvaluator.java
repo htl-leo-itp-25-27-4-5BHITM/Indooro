@@ -53,6 +53,8 @@ public final class StoreReadinessEvaluator {
         if (!(input.radius() > 0)) {
             throw new IllegalArgumentException("radius muss groesser als 0 sein.");
         }
+        String profile = CoverageRule.forProfile(input.profile()) == null ? CoverageRule.PROFILE_MARKET : input.profile();
+        CoverageRule rule = CoverageRule.forProfile(profile);
         List<AssignedBeacon> assigned = input.assignedBeacons() == null ? List.of() : input.assignedBeacons();
         List<ProductRef> products = input.products() == null ? List.of() : input.products();
         List<ReadinessFinding> findings = new ArrayList<>();
@@ -61,7 +63,8 @@ public final class StoreReadinessEvaluator {
             findings.add(finding(Severity.BLOCKING, "NO_ACTIVE_LAYOUT",
                     "Keine aktive Layout-Version: Die Filiale kann nicht getestet werden.",
                     null, null, null, null));
-            return report(input, findings, new ReadinessCounts(0, 0, products.size(), 0, assigned.size(), 0, 0));
+            return report(input, findings, new ReadinessCounts(0, 0, products.size(), 0, assigned.size(), 0, 0),
+                    profile, rule, false);
         }
 
         JsonNode layout = input.layout();
@@ -155,7 +158,13 @@ public final class StoreReadinessEvaluator {
         // Walkable cells and beacon coverage
         int walkable = 0;
         int lowCoverage = 0;
-        if (gridWidth >= 1 && gridHeight >= 1 && gridWidth * gridHeight <= MAX_COVERAGE_CELLS) {
+        boolean coverageComputed = gridWidth >= 1 && gridHeight >= 1 && gridWidth * gridHeight <= MAX_COVERAGE_CELLS;
+        if (!coverageComputed) {
+            findings.add(finding(Severity.WARNING, "COVERAGE_NOT_COMPUTED",
+                    "Die Abdeckung wurde nicht berechnet: Das Gitter fehlt, ist kleiner als 1 m oder hat mehr als "
+                            + MAX_COVERAGE_CELLS + " Zellen.",
+                    null, null, null, null));
+        } else {
             int width = (int) gridWidth;
             int height = (int) gridHeight;
             boolean[] blocked = blockedCells(elements, width, height);
@@ -168,16 +177,17 @@ public final class StoreReadinessEvaluator {
                     continue;
                 }
                 walkable++;
-                if (coverage[index] < MIN_BEACONS_PER_CELL) {
+                if (coverage[index] < rule.minBeaconsPerCell()) {
                     lowCoverage++;
                 }
             }
-            if (walkable > 0 && lowCoverage > MAX_LOW_COVERAGE_SHARE * walkable) {
+            if (walkable > 0 && lowCoverage > rule.maxLowCoverageShare() * walkable) {
                 findings.add(finding(Severity.WARNING, "LOW_BEACON_COVERAGE",
                         String.format(Locale.ROOT,
-                                "%d von %d begehbaren Zellen (%.1f %%) haben weniger als %d Beacons im Radius %s m.",
-                                lowCoverage, walkable, 100.0 * lowCoverage / walkable, MIN_BEACONS_PER_CELL,
-                                fmt(input.radius())),
+                                "%d von %d begehbaren Zellen (%.1f %%) haben weniger als %d Beacons im Radius %s m "
+                                        + "(erlaubt: %s %%, Profil %s).",
+                                lowCoverage, walkable, 100.0 * lowCoverage / walkable, rule.minBeaconsPerCell(),
+                                fmt(input.radius()), fmt(100.0 * rule.maxLowCoverageShare()), profile),
                         null, null, null, null));
             }
         }
@@ -190,10 +200,11 @@ public final class StoreReadinessEvaluator {
                 assigned.size(),
                 walkable,
                 lowCoverage);
-        return report(input, findings, counts);
+        return report(input, findings, counts, profile, rule, coverageComputed);
     }
 
-    private static ReadinessReport report(ReadinessInput input, List<ReadinessFinding> findings, ReadinessCounts counts) {
+    private static ReadinessReport report(ReadinessInput input, List<ReadinessFinding> findings, ReadinessCounts counts,
+                                          String profile, CoverageRule rule, boolean coverageComputed) {
         // Stable sort: blocking findings first, otherwise in check order.
         findings.sort(Comparator.comparingInt(f -> f.severity().ordinal()));
         int blocking = (int) findings.stream().filter(f -> f.severity() == Severity.BLOCKING).count();
@@ -208,7 +219,11 @@ public final class StoreReadinessEvaluator {
                 blocking,
                 warnings,
                 counts,
-                List.copyOf(findings));
+                List.copyOf(findings),
+                profile,
+                coverageComputed,
+                rule.minBeaconsPerCell(),
+                rule.maxLowCoverageShare());
     }
 
     private static ReadinessFinding finding(Severity severity, String code, String message, String elementId,

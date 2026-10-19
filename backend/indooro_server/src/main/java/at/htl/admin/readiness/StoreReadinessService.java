@@ -45,10 +45,14 @@ public class StoreReadinessService {
 
     private final StoreReadinessEvaluator evaluator = new StoreReadinessEvaluator();
 
-    public ReadinessReport evaluate(UUID storeId, double radius) {
+    /** radius null: the default radius of the store's coverage profile. */
+    public ReadinessReport evaluate(UUID storeId, Double requestedRadius) {
         adminAccessService.requireStoreAccess(storeId);
         StoreEntity store = storeRepository.findByIdOptional(storeId)
                 .orElseThrow(() -> new NotFoundException("Filiale nicht gefunden."));
+        String profile = CoverageRule.forProfile(store.readinessProfile) == null
+                ? CoverageRule.PROFILE_MARKET : store.readinessProfile;
+        double radius = requestedRadius != null ? requestedRadius : CoverageRule.forProfile(profile).radiusMeters();
         List<AssignedBeacon> assigned = beaconAssignmentRepository.listActiveByStoreId(storeId).stream()
                 .map(this::toAssignedBeacon)
                 .toList();
@@ -57,7 +61,7 @@ public class StoreReadinessService {
         LayoutVersionEntity active = layoutVersionRepository.findActiveByStoreId(storeId).orElse(null);
         if (active == null) {
             return evaluator.evaluate(new ReadinessInput(
-                    storeId, null, null, null, List.of(), false, assigned, radius));
+                    storeId, null, null, null, List.of(), false, assigned, radius, profile));
         }
 
         ProductPage page = loadProducts(store);
@@ -69,7 +73,8 @@ public class StoreReadinessService {
                 page.products(),
                 page.truncated(),
                 assigned,
-                radius));
+                radius,
+                profile));
     }
 
     private ProductPage loadProducts(StoreEntity store) {

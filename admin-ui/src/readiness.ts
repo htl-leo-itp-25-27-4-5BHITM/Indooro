@@ -52,6 +52,33 @@ export function coverageText(counts: Pick<ReadinessCounts, "walkableCells" | "lo
   return `${counts.lowCoverageCells} von ${counts.walkableCells} begehbaren Zellen unter 3 Beacons (${share} %)`;
 }
 
+/** Display name of a coverage profile id. Unknown ids are shown as they are. */
+export function profileLabel(profile: string): string {
+  if (profile === "market") return "Markt";
+  if (profile === "testroom") return "Testraum";
+  return profile;
+}
+
+export const READINESS_PROFILE_OPTIONS: readonly { value: string; label: string }[] = [
+  { value: "market", label: "Markt (Standard)" },
+  { value: "testroom", label: "Testraum" }
+];
+
+function percentText(share: number): string {
+  return `${(Math.round(share * 1000) / 10).toLocaleString("de-AT", { maximumFractionDigits: 1 })} %`;
+}
+
+/** The rule the coverage was measured against, or null when the server did not send its values. */
+export function ruleText(report: Pick<ReadinessReport, "radius" | "minBeaconsPerCell" | "maxLowCoverageShare">): string | null {
+  if (report.minBeaconsPerCell === null || report.maxLowCoverageShare === null) return null;
+  return `mindestens ${report.minBeaconsPerCell} Beacons im Radius ${formatRadius(report.radius)} m, höchstens ${percentText(report.maxLowCoverageShare)} der begehbaren Zellen darunter`;
+}
+
+/** Coverage line of a report. States "nicht berechnet" instead of a share when nothing was calculated. */
+export function coverageSummary(report: Pick<ReadinessReport, "counts" | "coverageComputed">): string {
+  return report.coverageComputed ? coverageText(report.counts) : "Abdeckung nicht berechnet";
+}
+
 export function describeReadinessError(error: unknown): { kind: "forbidden" | "unauthorized" | "retryable"; title: string; message: string } {
   if (error instanceof ApiClientError && error.kind === "forbidden") {
     return { kind: "forbidden", title: "Zugriff verweigert", message: "Kein Zugriff auf diesen Markt." };
@@ -87,6 +114,8 @@ export function readinessToMarkdown(report: ReadinessReport, options: { storeNam
     `Stand: ${options.checkedOn}`,
     `Ampel: ${statusLabel(report.status)} (${statusColorName(report.status)})`,
     `Layout: ${layout}`,
+    `Abdeckungsprofil: ${profileLabel(report.profile)}`,
+    ...(ruleText(report) ? [`Abdeckungsregel: ${ruleText(report)}`] : []),
     `Beacon-Radius: ${formatRadius(report.radius)} m`,
     `Blockierend: ${blocking.length}`,
     `Warnungen: ${warnings.length}`,
@@ -97,7 +126,7 @@ export function readinessToMarkdown(report: ReadinessReport, options: { storeNam
     `- Produkte: ${counts.products}`,
     `- Beacons platziert: ${counts.placedBeacons}`,
     `- Beacons zugewiesen: ${counts.assignedBeacons}`,
-    `- Abdeckung: ${coverageText(counts)}`,
+    `- Abdeckung: ${coverageSummary(report)}`,
     "",
     `## Blockierend (${blocking.length})`,
     ...(blocking.length ? blocking.map(findingLine) : ["Keine blockierenden Punkte."]),

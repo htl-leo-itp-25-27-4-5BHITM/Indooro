@@ -1915,6 +1915,8 @@ export interface components {
             latitude?: number | null;
             longitude?: number | null;
             notes?: string | null;
+            /** @description Coverage profile of the readiness check (`market` or a profile of coverage-rule.json, for example `testroom`). Null keeps the current value; a new store starts with `market`. Only role admin may change it (403 otherwise); an unknown id is 400. */
+            readinessProfile?: string | null;
         };
         StoreRegionSummary: {
             /** Format: uuid */
@@ -1968,6 +1970,8 @@ export interface components {
             createdAt?: string;
             /** Format: date-time */
             updatedAt?: string;
+            /** @description Coverage profile of the readiness check. */
+            readinessProfile?: string;
         };
         StoreAuditResponse: {
             /** Format: uuid */
@@ -2127,6 +2131,14 @@ export interface components {
                 lowCoverageCells?: number;
             };
             findings: components["schemas"]["ReadinessFinding"][];
+            /** @description Coverage profile the store was checked with (`market` by default). */
+            profile?: string;
+            /** @description False when no coverage was calculated (no active layout, or a grid that is missing or too large); the cell counts are then not a result. */
+            coverageComputed?: boolean;
+            /** @description Rule value of the profile. */
+            minBeaconsPerCell?: number;
+            /** @description Rule value of the profile, share 0..1 of walkable cells that may have fewer beacons than minBeaconsPerCell. */
+            maxLowCoverageShare?: number;
         };
         ReadinessFinding: {
             /** @enum {string} */
@@ -4409,7 +4421,7 @@ export interface operations {
     getStoreReadiness: {
         parameters: {
             query?: {
-                /** @description Beacon coverage radius in metres. Default 8.0. */
+                /** @description Beacon coverage radius in metres. Without it the radius of the store's coverage profile applies (market 8.0, testroom 10.0). */
                 radius?: number;
             };
             header?: never;

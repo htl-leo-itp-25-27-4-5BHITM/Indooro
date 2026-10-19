@@ -81,6 +81,65 @@ class CoverageRuleTest {
         assertThrows(IllegalStateException.class, () -> parse("{ kaputt"));
     }
 
+    // ----------------------------------------------------------------- profiles
+
+    @Test
+    void marketProfileIsTheUnchangedDefault() {
+        assertEquals(CoverageRule.DEFAULT, CoverageRule.forProfile("market"));
+        assertEquals(8.0, CoverageRule.forProfile("market").radiusMeters());
+        assertEquals(3, CoverageRule.forProfile("market").minBeaconsPerCell());
+        assertEquals(0.05, CoverageRule.forProfile("market").maxLowCoverageShare());
+    }
+
+    @Test
+    void shippedFileDefinesTestroomThatOverridesOnlyTheRadius() {
+        CoverageRule testroom = CoverageRule.forProfile("testroom");
+
+        assertEquals(10.0, testroom.radiusMeters());
+        assertEquals(CoverageRule.DEFAULT.minBeaconsPerCell(), testroom.minBeaconsPerCell());
+        assertEquals(CoverageRule.DEFAULT.maxLowCoverageShare(), testroom.maxLowCoverageShare());
+        assertEquals(CoverageRule.DEFAULT.minRadiusMeters(), testroom.minRadiusMeters());
+        assertEquals(CoverageRule.DEFAULT.maxRadiusMeters(), testroom.maxRadiusMeters());
+        assertEquals(java.util.List.of("market", "testroom"), java.util.List.copyOf(CoverageRule.profileIds()));
+    }
+
+    @Test
+    void unknownProfileHasNoRule() {
+        assertEquals(null, CoverageRule.forProfile("gaming"));
+        assertEquals(null, CoverageRule.forProfile(null));
+    }
+
+    @Test
+    void profileInheritsMissingFieldsAndMayOverrideAny() {
+        var profiles = parseProfiles(VALID.replace("\"maxLowCoverageShare\": 0.05",
+                "\"maxLowCoverageShare\": 0.05, \"profiles\": {\"small\": {\"minBeaconsPerCell\": 2, \"maxLowCoverageShare\": 0.2}}"));
+
+        assertEquals(8.0, profiles.get("small").radiusMeters());
+        assertEquals(2, profiles.get("small").minBeaconsPerCell());
+        assertEquals(0.2, profiles.get("small").maxLowCoverageShare());
+        assertEquals(CoverageRule.DEFAULT, profiles.get("market"));
+    }
+
+    @Test
+    void fileWithoutProfilesHasOnlyMarket() {
+        assertEquals(java.util.List.of("market"), java.util.List.copyOf(parseProfiles(VALID).keySet()));
+    }
+
+    @Test
+    void invalidProfilesAreRejected() {
+        String head = VALID.replace("\"maxLowCoverageShare\": 0.05", "\"maxLowCoverageShare\": 0.05, \"profiles\": ");
+        assertThrows(IllegalStateException.class, () -> parseProfiles(head + "{\"x\": {\"radiusMeters\": 99.0}}}"));
+        assertThrows(IllegalStateException.class, () -> parseProfiles(head + "{\"x\": {\"minBeaconsPerCell\": 0}}}"));
+        assertThrows(IllegalStateException.class, () -> parseProfiles(head + "{\"market\": {}}}"));
+        assertThrows(IllegalStateException.class, () -> parseProfiles(head + "{\"Bad Id\": {}}}"));
+        assertThrows(IllegalStateException.class, () -> parseProfiles(head + "{\"x\": 3}}"));
+        assertThrows(IllegalStateException.class, () -> parseProfiles(head + "[]}"));
+    }
+
+    private static java.util.Map<String, CoverageRule> parseProfiles(String json) {
+        return CoverageRule.parseProfiles(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
+    }
+
     private static CoverageRule parse(String json) {
         return CoverageRule.parse(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)));
     }
