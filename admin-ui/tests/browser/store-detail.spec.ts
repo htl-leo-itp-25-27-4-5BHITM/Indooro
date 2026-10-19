@@ -86,3 +86,55 @@ test("store detail can be edited and saved with keyboard only", async ({ page })
   await expect(page.getByRole("status")).toContainText("Store gespeichert.");
   await expect(page).toHaveURL("/admin/next/stores/detail/?storeId=store-keyboard");
 });
+
+function profileStore(readinessProfile: string) {
+  return { id: "store-1", storeCode: "TEST-1", name: "Pilotraum Leonding", street: "Schulstraße 1", zipCode: "4060", city: "Leonding", country: "AT", latitude: null, longitude: null, notes: null, status: "ACTIVE", readinessProfile, region: { id: "region-1", code: "AT-OOE", name: "Oberösterreich" }, activeLayout: null };
+}
+
+async function mockStoreDetail(page: import("@playwright/test").Page, role: string, store: ReturnType<typeof profileStore>, bodies: Array<Record<string, unknown>>) {
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "u-1", username: "user", role, scope: role === "admin" ? null : { regionId: "region-1", storeId: "store-1" } } }));
+  await page.route("**/api/regions", (route) => route.fulfill({ json: [store.region] }));
+  await page.route("**/api/stores/store-1", (route) => {
+    if (route.request().method() === "PUT") {
+      bodies.push(route.request().postDataJSON() as Record<string, unknown>);
+      Object.assign(store, route.request().postDataJSON());
+    }
+    return route.fulfill({ json: store });
+  });
+  await page.route("**/api/stores/store-1/beacons", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/stores/store-1/layout/versions", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/stores/store-1/audit", (route) => route.fulfill({ json: { entries: [] } }));
+  await page.route("**/api/beacons/free", (route) => route.fulfill({ json: [] }));
+}
+
+test("admin sees the coverage profile and can switch the store to the test room profile", async ({ page }) => {
+  const bodies: Array<Record<string, unknown>> = [];
+  await mockStoreDetail(page, "admin", profileStore("market"), bodies);
+
+  await page.goto("/admin/next/stores/detail/?storeId=store-1");
+  await expect(page.getByText("Abdeckungsprofil", { exact: true })).toBeVisible();
+  await expect(page.getByText("Markt", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Bearbeiten" }).click();
+  await page.getByRole("combobox", { name: "Abdeckungsprofil" }).selectOption("testroom");
+  await page.getByRole("button", { name: "Speichern" }).click();
+
+  await expect(page.getByText("Store gespeichert.")).toBeVisible();
+  expect(bodies).toHaveLength(1);
+  expect(bodies[0].readinessProfile).toBe("testroom");
+  await expect(page.getByText("Testraum", { exact: true })).toBeVisible();
+});
+
+test("a store manager cannot pick the coverage profile and does not send it", async ({ page }) => {
+  const bodies: Array<Record<string, unknown>> = [];
+  await mockStoreDetail(page, "store-manager", profileStore("testroom"), bodies);
+
+  await page.goto("/admin/next/stores/detail/?storeId=store-1");
+  await expect(page.getByText("Testraum", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Bearbeiten" }).click();
+  await expect(page.getByRole("combobox", { name: "Abdeckungsprofil" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Speichern" }).click();
+
+  await expect(page.getByText("Store gespeichert.")).toBeVisible();
+  expect(bodies).toHaveLength(1);
+  expect("readinessProfile" in bodies[0]).toBe(false);
+});

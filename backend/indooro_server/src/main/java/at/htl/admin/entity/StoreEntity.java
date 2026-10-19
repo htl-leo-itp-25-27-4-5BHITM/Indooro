@@ -46,6 +46,10 @@ public class StoreEntity extends AuditableEntity {
     @Column(columnDefinition = "TEXT")
     public String notes;
 
+    /** Coverage profile of the readiness check: "market" (default) or a profile of coverage-rule.json. */
+    @Column(name = "readiness_profile", nullable = false, length = 20)
+    public String readinessProfile = "market";
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     public RecordStatus status = RecordStatus.ACTIVE;

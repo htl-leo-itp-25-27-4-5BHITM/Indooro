@@ -34,6 +34,8 @@ Gleiche Eingabe und gleiche Parameter geben byte-identische Dateien.
 
 Radius, Mindestanzahl und erlaubter Anteil unterversorgter Zellen stehen **nur** in `backend/indooro_server/src/main/resources/readiness/coverage-rule.json`. Die Store-Readiness-Prüfung (`CoverageRule` → `StoreReadinessEvaluator`) und der Planer lesen dieselbe Datei:
 
+Die Werte oben in der Datei sind das Profil `market` (Standard jeder Filiale). Unter `profiles` können benannte Profile einzelne Werte überschreiben, z. B. `testroom` mit Radius 10 m für einen leeren Testraum. Die Store-Readiness nutzt das Profil der Filiale (Admin: Store bearbeiten, „Abdeckungsprofil“) und zeigt Profil, Regel und den berechneten Anteil an. Der Planer und das Editor-Overlay nutzen weiter nur `market`.
+
 | Wert | Default | Bedeutung |
 |---|---|---|
 | `radiusMeters` | 8.0 | Beacon deckt eine Zelle (Mittelpunkt), wenn sie höchstens so weit entfernt ist |

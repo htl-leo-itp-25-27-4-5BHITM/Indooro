@@ -30,13 +30,13 @@ public class StoreReadinessResource {
     @GET
     public ReadinessReport getReadiness(@PathParam("storeId") UUID storeId,
                                         @QueryParam("radius") Double radius) {
-        double effectiveRadius = radius == null ? StoreReadinessEvaluator.DEFAULT_RADIUS : radius;
-        if (!(effectiveRadius >= StoreReadinessEvaluator.MIN_RADIUS
-                && effectiveRadius <= StoreReadinessEvaluator.MAX_RADIUS)) {
+        // Without a radius the store's coverage profile decides (market: 8 m).
+        if (radius != null && !(radius >= StoreReadinessEvaluator.MIN_RADIUS
+                && radius <= StoreReadinessEvaluator.MAX_RADIUS)) {
             throw new BadRequestException("radius muss zwischen " + meters(StoreReadinessEvaluator.MIN_RADIUS)
                     + " und " + meters(StoreReadinessEvaluator.MAX_RADIUS) + " liegen.");
         }
-        return storeReadinessService.evaluate(storeId, effectiveRadius);
+        return storeReadinessService.evaluate(storeId, radius);
     }
 
     /** Renders whole numbers without a decimal point, so 30.0 reads as "30" (unchanged message text). */

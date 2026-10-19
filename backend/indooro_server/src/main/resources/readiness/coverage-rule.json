@@ -1,8 +1,14 @@
 {
-  "_comment": "Gemeinsame Abdeckungsregel von Store-Readiness (Java) und Beacon-Planer (scripts/beacon-planner). Endgueltige Werte entscheidet das Team (US-31); hier nur die Defaults. Aenderungen wirken in beiden Werkzeugen.",
+  "_comment": "Gemeinsame Abdeckungsregel von Store-Readiness (Java) und Beacon-Planer (scripts/beacon-planner). Endgueltige Werte entscheidet das Team (US-31); hier nur die Defaults. Aenderungen wirken in beiden Werkzeugen. Die Werte auf oberster Ebene sind das Profil 'market' (Default jeder Filiale); der Planer und das Editor-Overlay nutzen nur dieses Profil.",
   "radiusMeters": 8.0,
   "minRadiusMeters": 0.5,
   "maxRadiusMeters": 30.0,
   "minBeaconsPerCell": 3,
-  "maxLowCoverageShare": 0.05
+  "maxLowCoverageShare": 0.05,
+  "profiles": {
+    "testroom": {
+      "_comment": "Vorschlag fuer einen leeren Testraum ohne Regale (Sichtverbindung): groesserer Radius, gleiche Mindestanzahl und gleicher Anteil wie 'market'. Der Wert wird in der Readiness immer neben dem berechneten Anteil angezeigt. Die Entscheidung trifft das Team.",
+      "radiusMeters": 10.0
+    }
+  }
 }

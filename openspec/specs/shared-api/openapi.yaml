@@ -1862,8 +1862,8 @@ paths:
         - name: radius
           in: query
           required: false
-          description: Beacon coverage radius in metres. Default 8.0.
-          schema: { type: number, format: double, minimum: 0.5, maximum: 30, default: 8.0 }
+          description: Beacon coverage radius in metres. Without it the radius of the store's coverage profile applies (market 8.0, testroom 10.0).
+          schema: { type: number, format: double, minimum: 0.5, maximum: 30 }
       responses:
         "200":
           description: Readiness report.
@@ -2957,6 +2957,10 @@ components:
         latitude: { type: [number, "null"], minimum: -90, maximum: 90 }
         longitude: { type: [number, "null"], minimum: -180, maximum: 180 }
         notes: { type: [string, "null"], maxLength: 2000 }
+        readinessProfile:
+          type: [string, "null"]
+          pattern: "^[a-z][a-z0-9-]{0,19}$"
+          description: Coverage profile of the readiness check (`market` or a profile of coverage-rule.json, for example `testroom`). Null keeps the current value; a new store starts with `market`. Only role admin may change it (403 otherwise); an unknown id is 400.
     StoreRegionSummary:
       type: object
       properties:
@@ -3012,6 +3016,7 @@ components:
                 createdAt: { type: string, format: date-time }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
+        readinessProfile: { type: string, description: Coverage profile of the readiness check. }
     StoreAuditResponse:
       type: object
       properties:
@@ -3185,6 +3190,10 @@ components:
         findings:
           type: array
           items: { $ref: "#/components/schemas/ReadinessFinding" }
+        profile: { type: string, description: Coverage profile the store was checked with (`market` by default). }
+        coverageComputed: { type: boolean, description: "False when no coverage was calculated (no active layout, or a grid that is missing or too large); the cell counts are then not a result." }
+        minBeaconsPerCell: { type: integer, description: Rule value of the profile. }
+        maxLowCoverageShare: { type: number, description: "Rule value of the profile, share 0..1 of walkable cells that may have fewer beacons than minBeaconsPerCell." }
     ReadinessFinding:
       type: object
       required: [severity, code, message]

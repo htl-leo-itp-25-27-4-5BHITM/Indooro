@@ -34,6 +34,13 @@ export interface ReadinessReport {
   warningCount: number;
   counts: ReadinessCounts;
   findings: ReadinessFinding[];
+  /** Coverage profile id the store was checked with ("market" by default). */
+  profile: string;
+  /** False when no coverage was calculated; the cell counts are then not a result. */
+  coverageComputed: boolean;
+  /** Rule values of the profile; null when the server did not send them. */
+  minBeaconsPerCell: number | null;
+  maxLowCoverageShare: number | null;
 }
 
 export const DEFAULT_READINESS_RADIUS = 8.0;
@@ -88,7 +95,12 @@ export function parseReadinessReport(value: unknown): ReadinessReport {
     blockingCount: value.blockingCount,
     warningCount: value.warningCount,
     counts: value.counts as unknown as ReadinessCounts,
-    findings
+    findings,
+    profile: typeof value.profile === "string" && value.profile ? value.profile : "market",
+    // A server that does not send the flag gets "computed" only when it reported walkable cells.
+    coverageComputed: typeof value.coverageComputed === "boolean" ? value.coverageComputed : (value.counts as unknown as ReadinessCounts).walkableCells > 0,
+    minBeaconsPerCell: typeof value.minBeaconsPerCell === "number" ? value.minBeaconsPerCell : null,
+    maxLowCoverageShare: typeof value.maxLowCoverageShare === "number" ? value.maxLowCoverageShare : null
   };
 }
 
