@@ -29,6 +29,12 @@ fi
 FAILS=0
 PASSES=0
 
+# urlenc <text>: Prozent-Kodierung fuer Query-Werte (UTF-8), z. B. "Hörsching" -> "H%C3%B6rsching".
+urlenc() {
+  python3 -c 'import os, sys, urllib.parse; print(urllib.parse.quote_from_bytes(os.fsencode(sys.argv[1]), safe=""))' "$1"
+}
+QUERY_ENC="$(urlenc "$QUERY")"
+
 # status_of <path>: gibt den HTTP-Status aus ("000" bei Netzwerkfehler). Folgt keinen Redirects.
 status_of() {
   curl -sS -o /dev/null -w '%{http_code}' --max-time "$TIMEOUT" -X GET "${BASE_URL}$1" 2>/dev/null || true
@@ -101,7 +107,7 @@ echo "## Oeffentliche Endpunkte"
 check "Mobile Stores"           "/api/mobile/stores"               "200"
 check "Kategorien"              "/api/categories"                  "200"
 check "Produkte (Seite)"        "/api/products?size=5"             "200"
-check "Produktsuche"            "/api/products/search?q=${QUERY}"  "200"
+check "Produktsuche"            "/api/products/search?q=${QUERY_ENC}"  "200"
 check "Customer Finder"         "/customer/"                       "200|301|302"
 
 echo
@@ -129,10 +135,11 @@ check "Realm-Metadaten"         "/keycloak/realms/indooro/.well-known/openid-con
 # Ohne storeCode: alle Maerkte aus /api/mobile/stores pruefen. Pflicht ist, dass mindestens ein Markt
 # Produkte hat (ein leerer erster Markt allein ist kein Fehler). Mit storeCode gilt die strenge Regel.
 if [[ -n "$STORE_CODE" ]]; then
+  STORE_ENC="$(urlenc "$STORE_CODE")"
   echo
   echo "## Store-bezogen (storeCode=${STORE_CODE})"
-  check_items "Produkte je Markt" "/api/products?size=5&storeCode=${STORE_CODE}"
-  check_items "Suche je Markt"    "/api/products/search?q=${QUERY}&storeCode=${STORE_CODE}"
+  check_items "Produkte je Markt" "/api/products?size=5&storeCode=${STORE_ENC}"
+  check_items "Suche je Markt"    "/api/products/search?q=${QUERY_ENC}&storeCode=${STORE_ENC}"
 else
   STORE_CODES="$(body_of '/api/mobile/stores' | python3 -c '
 import json, sys
@@ -155,7 +162,7 @@ except Exception:
     FULL_STORE=""
     while IFS= read -r code; do
       [[ -z "$code" ]] && continue
-      n="$(count_of "/api/products?size=5&storeCode=${code}")"
+      n="$(count_of "/api/products?size=5&storeCode=$(urlenc "$code")")"
       [[ -z "$n" ]] && n="-1"
       if [[ "$n" -ge 1 ]]; then
         echo "INFO  Produkte je Markt  storeCode=${code}: ${n} Eintraege"
@@ -170,8 +177,9 @@ except Exception:
       echo "OK    200  Produkte je Markt  (storeCode=${FULL_STORE} hat Produkte)"
       PASSES=$((PASSES + 1))
       # Suche im Markt mit Produkten: Status 200 ist Pflicht, die Trefferzahl hier nur Information.
-      check "Suche je Markt" "/api/products/search?q=${QUERY}&storeCode=${FULL_STORE}" "200"
-      echo "INFO  Suche storeCode=${FULL_STORE}: $(count_of "/api/products/search?q=${QUERY}&storeCode=${FULL_STORE}") Eintraege fuer \"${QUERY}\""
+      FULL_ENC="$(urlenc "$FULL_STORE")"
+      check "Suche je Markt" "/api/products/search?q=${QUERY_ENC}&storeCode=${FULL_ENC}" "200"
+      echo "INFO  Suche storeCode=${FULL_STORE}: $(count_of "/api/products/search?q=${QUERY_ENC}&storeCode=${FULL_ENC}") Eintraege fuer \"${QUERY}\""
     else
       echo "FAIL  ---  Produkte je Markt  kein Markt hat Produkte (Index leer oder falsch gemappt?)"
       FAILS=$((FAILS + 1))

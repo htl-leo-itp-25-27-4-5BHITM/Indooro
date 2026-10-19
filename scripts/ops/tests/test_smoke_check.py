@@ -135,6 +135,23 @@ class SmokeCheckTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stdout)
         self.assertRegex(result.stdout, r"FAIL\s+200\s+Produkte je Markt.*0 Eintraege")
 
+    def test_non_ascii_store_code_and_query_are_percent_encoded(self):
+        routes = healthy_routes()
+        routes["/api/mobile/stores"] = (200, json.dumps([{"storeCode": "Spar-Hörsching-001"}]).encode("utf-8"))
+        item = json.dumps([{"id": 1}]).encode()
+        routes["/api/products?size=5&storeCode=Spar-H%C3%B6rsching-001"] = (200, item)
+        routes["/api/products/search?q=k%C3%A4se%20%26%20brot&storeCode=Spar-H%C3%B6rsching-001"] = (200, item)
+        # auto mode
+        result, seen = self.run_script(routes, "", "käse & brot")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertRegex(result.stdout, r"INFO\s+Produkte je Markt\s+storeCode=Spar-Hörsching-001: 1 Eintraege")
+        self.assertTrue(all(path.isascii() for _, path, _ in seen), seen)
+        # explicit mode
+        result, seen = self.run_script(routes, "Spar-Hörsching-001", "käse & brot")
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertRegex(result.stdout, r"OK\s+200\s+Suche je Markt")
+        self.assertTrue(any("storeCode=Spar-H%C3%B6rsching-001" in path for _, path, _ in seen), seen)
+
     def test_non_list_store_response_fails(self):
         routes = healthy_routes()
         routes["/api/products?size=5&storeCode=LEO-1"] = (200, b"<html></html>")
