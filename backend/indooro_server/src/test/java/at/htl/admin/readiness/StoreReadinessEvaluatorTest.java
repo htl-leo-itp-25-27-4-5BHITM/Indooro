@@ -293,15 +293,160 @@ class StoreReadinessEvaluatorTest {
 
     @Test
     void onlyWarningsGiveYellowAndBlockingGivesRed() {
+        List<AssignedBeacon> registered = new ArrayList<>(registeredRaster3x3());
+        registered.add(assignedBeacon("B-77", UUID_HEX, 1, 77));
         ReadinessReport yellow = evaluate(
                 layout(20, 20, entrance("e1", 0, 0), shelf("s1", 5, 5, 4, 1, "520/1", "Milch"), raster3x3()),
-                List.of(product(1, "520/1/1/1")), List.of(assignedBeacon("B-77", UUID_HEX, 1, 77)), 10.0);
+                List.of(product(1, "520/1/1/1")), registered, 10.0);
         assertEquals(Status.YELLOW, yellow.status());
 
         ReadinessReport red = evaluate(
                 layout(20, 20, entrance("e1", 0, 0), shelf("s1", 5, 5, 4, 1, "520/1", "Milch")),
                 List.of(product(1, "520/1/1/1"), product(2, "999/1/1/1")), List.of(), 8.0);
         assertEquals(Status.RED, red.status());
+    }
+
+    // ----------------------------------------------------------------- beacon consistency
+
+    private static final String ZERO_UUID = "00000000000000000000000000000000";
+
+    /** Layout with an entrance and the given beacon elements. */
+    private static JsonNode beaconLayout(ObjectNode... beacons) {
+        return layout(20, 20, entrance("e1", 0, 0), beacons);
+    }
+
+    private static ReadinessReport evaluateBeacons(JsonNode layout, List<AssignedBeacon> registered) {
+        return evaluate(layout, List.of(), registered, 8.0);
+    }
+
+    @Test
+    void registeredBeaconWithAllZeroUuidIsBlocking() {
+        ReadinessReport report = evaluateBeacons(beaconLayout(),
+                List.of(new AssignedBeacon(UUID.randomUUID(), "Indooro5", ZERO_UUID + ":1:5",
+                        ZERO_UUID, 1, 5)));
+
+        ReadinessFinding finding = findFinding(report, "BEACON_UUID_ALL_ZERO");
+        assertEquals(Severity.BLOCKING, finding.severity());
+        assertEquals("Indooro5", finding.beaconCode());
+        assertEquals(Status.RED, report.status());
+    }
+
+    @Test
+    void allZeroUuidWithDashesIsRecognised() {
+        ReadinessReport report = evaluateBeacons(beaconLayout(),
+                List.of(new AssignedBeacon(UUID.randomUUID(), "Dashed", "x",
+                        "00000000-0000-0000-0000-000000000000", 1, 5)));
+
+        assertTrue(hasFinding(report, Severity.BLOCKING, "BEACON_UUID_ALL_ZERO"));
+    }
+
+    @Test
+    void layoutBeaconWithAllZeroUuidIsBlockingAndNotAlsoReportedUnregistered() {
+        ReadinessReport report = evaluateBeacons(
+                beaconLayout(beacon("b1", 5, 5, "Indooro5", ZERO_UUID, 1, 5)), List.of());
+
+        ReadinessFinding finding = findFinding(report, "BEACON_UUID_ALL_ZERO");
+        assertEquals("b1", finding.elementId());
+        assertFalse(hasCode(report, "LAYOUT_BEACON_NOT_REGISTERED"));
+    }
+
+    @Test
+    void registeredBeaconWithoutMajorOrMinorIsBlocking() {
+        ReadinessReport report = evaluateBeacons(beaconLayout(), List.of(
+                new AssignedBeacon(UUID.randomUUID(), "NoMajor", UUID_HEX, UUID_HEX, null, null),
+                new AssignedBeacon(UUID.randomUUID(), "NoMinor", UUID_HEX + ":3", UUID_HEX, 3, null)));
+
+        List<ReadinessFinding> missing = report.findings().stream()
+                .filter(f -> "BEACON_MAJOR_MINOR_MISSING".equals(f.code())).toList();
+        assertEquals(2, missing.size());
+        assertTrue(missing.stream().allMatch(f -> f.severity() == Severity.BLOCKING));
+        assertEquals(List.of("NoMajor", "NoMinor"), missing.stream().map(ReadinessFinding::beaconCode).toList());
+    }
+
+    @Test
+    void registeredBeaconBuiltFromBareIdentityKeyHasMissingMajorMinor() {
+        ReadinessReport report = evaluateBeacons(beaconLayout(),
+                List.of(new AssignedBeacon(UUID.randomUUID(), "Indooro3", UUID_HEX)));
+
+        assertTrue(hasFinding(report, Severity.BLOCKING, "BEACON_MAJOR_MINOR_MISSING"));
+    }
+
+    @Test
+    void layoutBeaconWithoutRegisteredCounterpartIsBlocking() {
+        ReadinessReport report = evaluateBeacons(
+                beaconLayout(beacon("b1", 5, 5, null, UUID_HEX, 1, 17)),
+                List.of(assignedBeacon("Other", UUID_HEX, 1, 99)));
+
+        ReadinessFinding finding = findFinding(report, "LAYOUT_BEACON_NOT_REGISTERED");
+        assertEquals(Severity.BLOCKING, finding.severity());
+        assertEquals("b1", finding.elementId());
+        assertTrue(finding.message().contains("1/17"), finding.message());
+        assertTrue(hasCode(report, "BEACON_ASSIGNED_NOT_PLACED"));
+    }
+
+    @Test
+    void layoutBeaconLinkedToRegisteredBeaconWithOtherIdentityIsMismatch() {
+        // Live case 2026-10-19: admin beacon Indooro5 registered with zero UUID, layout has another beacon there.
+        ReadinessReport report = evaluateBeacons(
+                beaconLayout(beacon("b1", 5, 5, "Indooro5", UUID_HEX, 1, 17)),
+                List.of(assignedBeacon("Indooro5", UUID_HEX, 1, 15)));
+
+        ReadinessFinding finding = findFinding(report, "BEACON_IDENTITY_MISMATCH");
+        assertEquals(Severity.BLOCKING, finding.severity());
+        assertEquals("b1", finding.elementId());
+        assertEquals("Indooro5", finding.beaconCode());
+        assertFalse(hasCode(report, "LAYOUT_BEACON_NOT_REGISTERED"));
+    }
+
+    @Test
+    void matchingLayoutAndRegistryProduceNoBeaconConsistencyFinding() {
+        ReadinessReport report = evaluateBeacons(
+                beaconLayout(beacon("b1", 5, 5, "Indooro5", UUID_HEX, 1, 5),
+                        beacon("b2", 9, 9, null, UUID_HEX.toUpperCase(), 1, 6)),
+                List.of(assignedBeacon("Indooro5", UUID_HEX, 1, 5), assignedBeacon("Indooro6", UUID_HEX, 1, 6)));
+
+        for (String code : List.of("BEACON_UUID_ALL_ZERO", "BEACON_MAJOR_MINOR_MISSING", "BEACON_IDENTITY_DUPLICATE",
+                "BEACON_IDENTITY_MISMATCH", "LAYOUT_BEACON_NOT_REGISTERED", "BEACON_ASSIGNED_NOT_PLACED")) {
+            assertFalse(hasCode(report, code), code + " in " + report.findings());
+        }
+    }
+
+    @Test
+    void duplicateIdentityInRegistryIsBlocking() {
+        ReadinessReport report = evaluateBeacons(beaconLayout(), List.of(
+                assignedBeacon("A", UUID_HEX, 1, 5),
+                new AssignedBeacon(UUID.randomUUID(), "B", "other-key", UUID_HEX.toUpperCase(), 1, 5)));
+
+        ReadinessFinding finding = findFinding(report, "BEACON_IDENTITY_DUPLICATE");
+        assertEquals(Severity.BLOCKING, finding.severity());
+        assertEquals("B", finding.beaconCode());
+    }
+
+    @Test
+    void duplicateIdentityInLayoutIsBlocking() {
+        ReadinessReport report = evaluateBeacons(
+                beaconLayout(beacon("b1", 5, 5, "A", UUID_HEX, 1, 5), beacon("b2", 9, 9, "B", UUID_HEX, 1, 5)),
+                List.of(assignedBeacon("A", UUID_HEX, 1, 5)));
+
+        ReadinessFinding finding = findFinding(report, "BEACON_IDENTITY_DUPLICATE");
+        assertEquals("b2", finding.elementId());
+    }
+
+    @Test
+    void sameUuidWithDifferentMajorMinorIsNotADuplicate() {
+        ReadinessReport report = evaluateBeacons(beaconLayout(), List.of(
+                assignedBeacon("A", UUID_HEX, 1, 5), assignedBeacon("B", UUID_HEX, 1, 6),
+                assignedBeacon("C", UUID_HEX, 2, 5)));
+
+        assertFalse(hasCode(report, "BEACON_IDENTITY_DUPLICATE"));
+    }
+
+    @Test
+    void noBeaconsAnywhereGivesNoConsistencyFinding() {
+        ReadinessReport report = evaluateBeacons(beaconLayout(), List.of());
+
+        assertFalse(hasCode(report, "LAYOUT_BEACON_NOT_REGISTERED"));
+        assertFalse(hasCode(report, "BEACON_IDENTITY_DUPLICATE"));
     }
 
     // ----------------------------------------------------------------- helpers
@@ -408,6 +553,15 @@ class StoreReadinessEvaluatorTest {
             node.put("minor", minor);
         }
         return node;
+    }
+
+    /** Registry entries that match {@link #raster3x3()} (major 2, minor index + 1). */
+    private static List<AssignedBeacon> registeredRaster3x3() {
+        List<AssignedBeacon> registered = new ArrayList<>();
+        for (int index = 0; index < 9; index++) {
+            registered.add(assignedBeacon("R-" + index, UUID_HEX, 2, index + 1));
+        }
+        return registered;
     }
 
     /** Nine beacons at 10/3, 10 and 50/3 on both axes (3.33, 10, 16.67). */

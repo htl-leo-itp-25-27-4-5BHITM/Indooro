@@ -29,6 +29,30 @@ export function groupFindings(findings: readonly ReadinessFinding[]): { blocking
   };
 }
 
+/** Codes of the beacon registry checks (uuid, major/minor, duplicates, layout against registry). */
+export const BEACON_CONSISTENCY_CODES: readonly string[] = [
+  "BEACON_UUID_ALL_ZERO",
+  "BEACON_MAJOR_MINOR_MISSING",
+  "BEACON_IDENTITY_DUPLICATE",
+  "BEACON_IDENTITY_MISMATCH",
+  "LAYOUT_BEACON_NOT_REGISTERED"
+];
+
+export function beaconConsistencyFindings(findings: readonly ReadinessFinding[]): ReadinessFinding[] {
+  return findings.filter((finding) => BEACON_CONSISTENCY_CODES.includes(finding.code));
+}
+
+/**
+ * One line on whether registered beacons and layout beacons agree. It says "nothing to compare" instead of
+ * "consistent" when the store has no beacons at all.
+ */
+export function beaconConsistencyText(report: Pick<ReadinessReport, "counts" | "findings">): string {
+  const issues = beaconConsistencyFindings(report.findings).length;
+  if (issues > 0) return `${issues} Abweichung${issues === 1 ? "" : "en"} zwischen Registrierung und Layout`;
+  if (report.counts.placedBeacons === 0 && report.counts.assignedBeacons === 0) return "Keine Beacons zum Vergleichen";
+  return "Registrierung und Layout stimmen überein";
+}
+
 export function formatRadius(radius: number): string {
   return String(radius).replace(".", ",");
 }
@@ -97,6 +121,7 @@ export function readinessToMarkdown(report: ReadinessReport, options: { storeNam
     `- Produkte: ${counts.products}`,
     `- Beacons platziert: ${counts.placedBeacons}`,
     `- Beacons zugewiesen: ${counts.assignedBeacons}`,
+    `- Beacon-Registrierung: ${beaconConsistencyText(report)}`,
     `- Abdeckung: ${coverageText(counts)}`,
     "",
     `## Blockierend (${blocking.length})`,
