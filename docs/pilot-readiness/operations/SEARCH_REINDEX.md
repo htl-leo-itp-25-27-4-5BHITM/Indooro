@@ -28,6 +28,10 @@ Synonyme sind im Index-Setting eingebrannt (`synonyms_de.txt` wird beim Anlegen 
 
 - Das Release-Vorgehen (Image-Tag, Manifeste, Smoke-Check) steht im `RELEASE_RUNBOOK.md` (Branch `pilot/release-backend`, PR #123).
 
+## Admin-Seite statt curl
+
+Reindex und Umschaltung gehen auch ohne Token über die Seite **Suchindex** (`/admin/next/search-index/`, nur Rolle `admin`). Sie zeigt, auf welche Version der Alias zeigt, alle Versionen mit Dokumentzahl und den Vergleich mit dem Quellindex. „Reindex starten“ entspricht Schritt 1 und zeigt Quell- und Zielzahl. „Aktivieren“ entspricht Schritt 4 und fragt vorher nach. Die Seite sendet nie `force=true`; bei einer Abweichung (`409`) zeigt sie die Servermeldung und lässt den Alias unverändert. Die Übersicht liefert `GET /api/admin/index` (nur lesend). Eine Zahl, die nicht gelesen werden kann, steht als „nicht lesbar“ da und nie als 0.
+
 ## Schritte
 
 ### 1) Reindex starten

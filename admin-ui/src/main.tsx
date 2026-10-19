@@ -15,6 +15,7 @@ import { DiagnosticsPage } from "./DiagnosticsPage";
 import { LegacyEditorRoute } from "./LegacyEditorRoute";
 import { ProductsPage } from "./ProductsPage";
 import { CategoriesPage } from "./CategoriesPage";
+import { SearchIndexPage } from "./SearchIndexPage";
 import { candidateAccess, candidateNavigationPath, visibleRoutes, type CurrentUser } from "./routes";
 import "./style.css";
 
@@ -82,6 +83,7 @@ function AdminCandidate() {
             : window.location.pathname.includes("/recipes") ? <RecipesPage api={api} user={user} />
             : window.location.pathname.includes("/products") ? <ProductsPage api={api} user={user} />
             : window.location.pathname.includes("/categories") ? <CategoriesPage api={api} />
+            : window.location.pathname.includes("/search-index") ? <SearchIndexPage api={api} user={user} />
             : window.location.pathname.includes("/server-logs") ? <DiagnosticsPage api={api} user={user} />
             : <Dashboard api={api} user={user} />)}
         </main>

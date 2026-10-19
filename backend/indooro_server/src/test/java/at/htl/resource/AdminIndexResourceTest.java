@@ -194,4 +194,46 @@ class AdminIndexResourceTest {
 
         verify(openSearchService).activateIndex("products_v2", true);
     }
+
+    @Test
+    void anonymousCannotReadIndexOverview() throws IOException {
+        given().get("/api/admin/index").then().statusCode(401);
+        verify(openSearchService, never()).describeIndices();
+    }
+
+    @Test
+    @TestSecurity(user = "store", roles = "store-manager")
+    void storeManagerCannotReadIndexOverview() throws IOException {
+        given().get("/api/admin/index").then().statusCode(403);
+        verify(openSearchService, never()).describeIndices();
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void adminReadsIndexOverviewWithUnreadableCountAsNull() throws IOException {
+        when(openSearchService.describeIndices()).thenReturn(new OpenSearchService.IndexOverview(
+                "products_live", "products_live", 153L, List.of("products_v1"), List.of(
+                new OpenSearchService.IndexVersion("products_v1", 153L, true),
+                new OpenSearchService.IndexVersion("products_v2", null, false))));
+
+        given().get("/api/admin/index").then()
+                .statusCode(200)
+                .body("alias", org.hamcrest.Matchers.equalTo("products_live"))
+                .body("activeIndices", org.hamcrest.Matchers.contains("products_v1"))
+                .body("versions[0].docCount", org.hamcrest.Matchers.equalTo(153))
+                .body("versions[0].active", org.hamcrest.Matchers.equalTo(true))
+                .body("versions[1].docCount", org.hamcrest.Matchers.nullValue());
+        verify(adminAccessService, atLeastOnce()).requireAdmin();
+    }
+
+    @Test
+    @TestSecurity(user = "admin", roles = "admin")
+    void unreachableOpenSearchOnOverviewReportsServiceUnavailableWithoutInternals() throws IOException {
+        doThrow(new TransportException("connect to opensearch:9200 timed out"))
+                .when(openSearchService).describeIndices();
+
+        given().get("/api/admin/index").then()
+                .statusCode(503)
+                .body(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("timed out")));
+    }
 }

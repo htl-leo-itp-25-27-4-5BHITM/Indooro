@@ -750,6 +750,23 @@ paths:
         "500": { $ref: "#/components/responses/ServerError" }
         "503": { $ref: "#/components/responses/ServiceUnavailable" }
   /api/admin/index:
+    get:
+      tags: [maintenance]
+      operationId: getProductIndexOverview
+      summary: Read the search index state (alias target and version indices with document counts).
+      description: Read-only. A count that cannot be read is null, never estimated.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      responses:
+        "200":
+          description: Alias, source index and version indices.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IndexOverview" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/ServiceUnavailable" }
     delete:
       tags: [maintenance]
       operationId: deleteProductIndex
@@ -2324,6 +2341,22 @@ components:
         sourceCount: { type: integer, minimum: 0 }
         targetCount: { type: integer, minimum: 0 }
         status: { type: string, enum: [OK] }
+    IndexVersion:
+      type: object
+      required: [name, active]
+      properties:
+        name: { type: string, description: "Version index, for example products_v1." }
+        docCount: { type: [integer, "null"], minimum: 0, description: Document count; null when it could not be read. }
+        active: { type: boolean, description: True when the alias points to this version. }
+    IndexOverview:
+      type: object
+      required: [alias, sourceIndex, activeIndices, versions]
+      properties:
+        alias: { type: string }
+        sourceIndex: { type: string, description: Index or alias the backend reads and writes. }
+        sourceCount: { type: [integer, "null"], minimum: 0 }
+        activeIndices: { type: array, items: { type: string }, description: Version indices that carry the alias. }
+        versions: { type: array, items: { $ref: "#/components/schemas/IndexVersion" }, description: Version indices ascending by number. }
     ActivateResult:
       type: object
       required: [alias, index, previous]
