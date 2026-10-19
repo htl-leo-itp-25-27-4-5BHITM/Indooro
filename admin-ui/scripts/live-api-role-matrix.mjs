@@ -66,7 +66,11 @@ try {
     if (!isAdmin) assert.ok(!stores.content.some((item) => item.id === foreignStore.id), `${role} list leaks foreign store`);
     await expect(`${role} beacons`, page, "/api/beacons", 200);
     await expect(`${role} free beacons`, page, "/api/beacons/free", 200);
-    await expect(`${role} products`, page, "/api/admin/products?page=0&size=1", isAdmin ? 200 : 403);
+    // The admin product API is store-scoped: every call names a store, and the caller needs scope on it.
+    const ownScope = `storeCode=${encodeURIComponent(ownStore.storeCode)}`;
+    await expect(`${role} products without store context`, page, "/api/admin/products?page=0&size=1", 400);
+    await expect(`${role} products in assigned store`, page, `/api/admin/products?page=0&size=1&${ownScope}`, 200);
+    await expect(`${role} products in foreign store`, page, `/api/admin/products?page=0&size=1&storeCode=${encodeURIComponent(foreignStore.storeCode)}`, isAdmin ? 200 : 403);
     await expect(`${role} recipes`, page, "/api/admin/recipes?page=0&size=1", isAdmin ? 200 : 403);
   }
 

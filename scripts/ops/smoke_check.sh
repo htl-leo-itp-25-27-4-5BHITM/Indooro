@@ -69,10 +69,12 @@ check "Admin-Shell"             "/admin/"                          "301|302|401|
 check "Admin Next"              "/admin/next/"                     "301|302|401|403"
 check "Admin Bereitschaft"      "/admin/next/stores/readiness/"    "301|302|401|403"
 check "Admin QR-Anker"          "/admin/next/stores/anchors/"      "301|302|401|403"
-check "API admin/me"            "/api/admin/me"                    "401|403"
-check "API admin/products"      "/api/admin/products"              "401|403"
-check "API admin/logs"          "/api/admin/logs"                  "401|403"
-check "API Search-Index"        "/api/admin/index"                 "401|403"
+# quarkus.oidc.application-type=hybrid: a request without an access token gets the code flow,
+# so /api/admin/* answers 302 to the Keycloak login (seen live 2026-10-18). Never 200 or 5xx.
+check "API admin/me"            "/api/admin/me"                    "302|401|403"
+check "API admin/products"      "/api/admin/products"              "302|401|403"
+check "API admin/logs"          "/api/admin/logs"                  "302|401|403"
+check "API Search-Index"        "/api/admin/index"                 "302|401|403"
 
 echo
 echo "## Health (Hinweis, Ingress kann sie sperren)"

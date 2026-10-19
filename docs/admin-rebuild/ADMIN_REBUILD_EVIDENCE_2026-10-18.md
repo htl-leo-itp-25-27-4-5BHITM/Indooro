@@ -24,6 +24,14 @@ Die vollständige Quellinventur der URLs, Aktionen, API-Aufrufe, Rollen, Scopes 
 
 `test:live:cutover` bestand auf der Basis 10/10 simulierte Switch-/Rollback-Paare mit Query/Fragment und neun committed Redirects. `test:live:roles` stoppte nach 11 Checks beim Produkt-Read ohne Store-Kontext. Der vollständige `test:live`-Workflow stoppte ebenfalls bei der Produktsuche: Ein neu angelegtes Produkt erschien binnen 30 Sekunden nicht in der Tabelle. Diesen Fehler und die storegebundene API müssen die Produkt-/Katalog-Eigentümer mit den betroffenen Proben klären. Ein erfolgreiches Teilstück des Rezeptlaufs ersetzt die abgebrochene Gesamtkette nicht.
 
+## Nachtrag: Produkt-/Rezept-Rot war überwiegend veraltete Probe, kein UI-Fehler (2026-10-18)
+
+Quellprüfung auf `origin/pilot/first-store` (`eae7653`): Die neuen Seiten `ProductsPage.tsx` und `RecipesPage.tsx` senden Store-Kontext bereits (`storeScopeParams`/`productStoreBody` in `productStore.ts`; Liste, Anlegen, Löschen, Bulk-Import und Rezept-Produktsuche). Lokal grün: Backend `mvnw test`, Admin-UI 217 Unit- und 199 Playwright-Tests, darunter die Store-Auswahl-Fälle in `products.spec.ts`. Der Smoke-Fehler „Produkt erscheint nicht in der Tabelle“ ist mit `32c0483` (`refresh=wait_for` beim Einzel-Index/Löschen, Store-Auswahl im Smoke) behoben, nach dem Basisstand des Laufs.
+
+Veraltet waren die Proben: `live-api-role-matrix.mjs` rief `GET /api/admin/products` ohne Store auf und erwartete 403/200; sie prüft nun 400 ohne Store, 200 im zugewiesenen Store und 200/403 im fremden Store (Admin/Manager). `live-recipes-parity.mjs` legt Produkt-Fixtures nun im ersten aktiven Store an und sucht/löscht store-gebunden. **Diese Änderungen wurden nur syntaktisch geprüft**: Auf dem Rechner dieser Sitzung gab es kein Docker, also keinen Live-Stack-Lauf.
+
+Offen, weil nur mit Live-Stack prüfbar: (1) `live-products-parity.mjs` vergleicht die Legacy-Seite mit dem Kandidaten anhand globaler Fixtures (`storeCode: null`), der gesperrten Import-Bestätigung und Legacy-Drawern; diese Annahmen gelten nicht mehr und die Probe braucht eine Neufassung. (2) Die UI-Schritte von `live-recipes-parity.mjs` (Legacy-Produktsuche, Kandidaten-Mapping ohne Markt-Auswahl) sind nicht angepasst. (3) Die Legacy-Seiten `/admin/products/` und `/admin/recipes/` (`admin/core.js`: `/api/admin/products?size=1000`) senden keinen Store und liefern 400. Sie sind nur über die Route-Flags `products`/`recipes: false` als Rollback erreichbar; ein Rollback dieser beiden Routen zeigt daher einen Fehler, bis die Legacy-Seiten Store-Kontext senden oder der Rollback-Weg entfällt. 3.10 und 5.4 bleiben offen.
+
 ## Offene Gates und Menschen-Schritte
 
 - **1.1:** Der verlangte Review *vor* Implementierungsbeginn ist historisch nicht nachholbar. Der obige Review ist ausdrücklich retrospektiv.
