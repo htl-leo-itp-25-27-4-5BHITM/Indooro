@@ -91,6 +91,15 @@ class SmokeCheckTest(unittest.TestCase):
         self.assertEqual(result.returncode, 1, result.stdout)
         self.assertRegex(result.stdout, r"FAIL\s+200\s+API admin/me")
 
+    def test_admin_api_login_redirect_passes(self):
+        # quarkus.oidc.application-type=hybrid redirects /api/admin/* without a token to the login.
+        routes = healthy_routes()
+        for path in ("/api/admin/me", "/api/admin/products", "/api/admin/logs", "/api/admin/index"):
+            routes[path] = (302, b"")
+        result, _ = self.run_script(routes)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertRegex(result.stdout, r"OK\s+302\s+API admin/me")
+
     def test_server_error_on_public_endpoint_fails(self):
         routes = healthy_routes()
         routes["/api/products/search"] = (500, b"")
