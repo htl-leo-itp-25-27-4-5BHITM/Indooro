@@ -24,14 +24,10 @@ spec:
         runAsGroup: 10001
       containers:
         - name: indooro-backend
-          # Fester Tag = Git-Commit-SHA der CI. Der Tag a47c5e6 ist ein Image mit altem Dockerfile
-          # (root, JDK 25). Mit runAsNonRoot startet der Pod damit NICHT: vor dem Apply einen neuen
-          # SHA-Tag aus der CI (Dockerfile mit Nicht-root-Benutzer) eintragen.
+          # Fester Tag = Git-Commit-SHA der CI, gleich dem Live-Stand (Release 2026-10-18, UID 10001).
           # Rollout/Rollback siehe docs/pilot-readiness/operations/RELEASE_RUNBOOK.md.
-          # Vor `kubectl apply` den Tag pruefen.
-          # ACHTUNG: Tag a47c5e6 ist ein Root-Image (JDK 25) und startet mit runAsNonRoot nicht.
-          # Vor `kubectl apply` den Tag auf das neue CI-Image (Dockerfile mit UID 10001) setzen.
-          image: ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:a47c5e6
+          # Nicht auf a47c5e6 zuruecksetzen: Root-Image (JDK 25), startet mit runAsNonRoot nicht.
+          image: ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:ed845e3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
@@ -72,6 +68,11 @@ spec:
 
             - name: OPENSEARCH_PORT
               value: "9200"
+            # Alias products_live -> products_v1 seit 2026-10-19 (Reindex mit keyword-Mapping fuer
+            # storeCode/storeId). Ohne diesen Wert liest das Backend den alten Index products, dessen
+            # storeCode als text gemappt ist; der Marktfilter findet dann nichts.
+            - name: OPENSEARCH_INDEX
+              value: "products_live"
 
             - name: OPENAI_API_KEY
               valueFrom:

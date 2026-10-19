@@ -31,7 +31,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 |---|---|
 | Admin-Neubau in `main` gemergt | **erledigt 2026-10-16** (PR #105, `39b5f9a`; Fix PR #107) |
 | `main` in `pilot/first-store` gemergt | **erledigt 2026-10-16** (`f6cdf17`; swift test 77/77, xcodebuild ok, mvnw test 142/0) |
-| Erster Pilot-Release auf LeoCloud (neuer Admin, gehärtet) | neuer Admin live seit 2026-10-16; **seit 2026-10-17 live: Image `:a47c5e6`** mit Pilot-Bereitschaft, QR-Druck und Anker-Validierung (PR #120, `docs/pilot-readiness/releases/RELEASE_2026-10-17.md`); Härtung (Person B, Phase B) offen |
+| Erster Pilot-Release auf LeoCloud (neuer Admin, gehärtet) | neuer Admin live seit 2026-10-16; **seit 2026-10-18 live: Image `:ed845e3`** (Release #162, Flyway 18, `docs/pilot-readiness/releases/RELEASE_2026-10-18.md`); seit 2026-10-19 Suchindex `products_live → products_v1` und 74 Produkte im Testraum `SPAR-Leonding-002`. Offen: echter Admin, Keycloak-Prod-Realm, Beacon-Daten Testraum |
 | Erste echte Messung (Testraum) | offen |
 | Gate „bereit für den Markt“ | offen |
 | Pilotmarkt zugesagt | offen |
