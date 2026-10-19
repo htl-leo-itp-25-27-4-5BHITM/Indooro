@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { candidateAccess, candidateNavigationPath, visibleRoutes } from "./routes.ts";
 
 test("navigation follows current staff roles", () => {
-  assert.equal(visibleRoutes("admin").length, 9);
+  assert.equal(visibleRoutes("admin").length, 10);
   assert.deepEqual(visibleRoutes("region-manager").map((route) => route.label), ["Dashboard", "Regionen", "Stores", "Beacons", "Layout Editor"]);
   assert.deepEqual(visibleRoutes("store-manager").map((route) => route.label), ["Dashboard", "Stores", "Beacons", "Layout Editor"]);
   assert.deepEqual(visibleRoutes("unknown"), []);
@@ -24,6 +24,11 @@ test("candidate direct links deny unknown roles and unknown paths", () => {
   assert.equal(candidateAccess("/admin/next/beacons/", "store-manager"), "allowed");
   assert.equal(candidateAccess("/admin/next/recipes/", "region-manager"), "forbidden");
   assert.equal(candidateAccess("/admin/next/server-logs/", "store-manager"), "forbidden");
+  assert.equal(candidateAccess("/admin/next/search-index/", "admin"), "allowed");
+  assert.equal(candidateAccess("/admin/next/search-index", "admin"), "allowed");
+  assert.equal(candidateAccess("/admin/next/search-index/", "region-manager"), "forbidden");
+  assert.equal(candidateAccess("/admin/next/search-index/", "store-manager"), "forbidden");
+  assert.equal(candidateAccess("/admin/next/search-index/", "viewer"), "forbidden");
   assert.equal(candidateAccess("/admin/next/products/", "admin"), "allowed");
   assert.equal(candidateAccess("/admin/next/products/", "region-manager"), "forbidden");
   assert.equal(candidateAccess("/admin/next/categories/", "admin"), "allowed");
@@ -38,6 +43,14 @@ test("candidate navigation keeps staff inside the new shell and scopes editor li
   assert.equal(candidateNavigationPath(editor, { subject: "store-1", username: "manager", email: null, role: "store-manager", scope: { regionId: null, regionName: null, storeId: "store-1", storeName: "Linz" } }), "/admin/next/editor/?storeId=store-1");
   const products = visibleRoutes("admin").find((route) => route.label === "Produkte")!;
   assert.equal(candidateNavigationPath(products, { subject: "admin-1", username: "admin", email: null, role: "admin", scope: null }), "/admin/next/products/");
+});
+
+test("search index is an admin-only entry inside the new shell", () => {
+  assert.ok(visibleRoutes("admin").some((route) => route.label === "Suchindex"));
+  assert.ok(!visibleRoutes("region-manager").some((route) => route.label === "Suchindex"));
+  assert.ok(!visibleRoutes("store-manager").some((route) => route.label === "Suchindex"));
+  const route = visibleRoutes("admin").find((entry) => entry.label === "Suchindex")!;
+  assert.equal(candidateNavigationPath(route, { subject: "a", username: "admin", email: null, role: "admin", scope: null }), "/admin/next/search-index/");
 });
 
 test("QR anchor print page follows the store detail access rules", () => {

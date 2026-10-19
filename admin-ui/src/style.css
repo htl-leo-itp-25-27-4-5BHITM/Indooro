@@ -292,3 +292,6 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
   :where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible { outline: 3px solid Highlight; }
   .sidebar a[aria-current="page"] { outline: 2px solid LinkText; }
 }
+.search-index-page { display: grid; gap: 1rem; }
+.search-index-page table { width: 100%; border-collapse: collapse; text-align: left; }
+.search-index-page th, .search-index-page td { border-bottom: 1px solid var(--border-subtle); padding: .7rem .5rem; }
