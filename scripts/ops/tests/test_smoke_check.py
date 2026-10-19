@@ -82,7 +82,7 @@ class SmokeCheckTest(unittest.TestCase):
     def test_empty_store_product_list_fails_despite_200(self):
         routes = healthy_routes()
         routes["/api/products?size=5&storeCode=LEO-1"] = (200, b"[]")
-        result, _ = self.run_script(routes)
+        result, _ = self.run_script(routes, "LEO-1")
         self.assertEqual(result.returncode, 1, result.stdout)
         self.assertRegex(result.stdout, r"FAIL\s+200\s+Produkte je Markt.*0 Eintraege")
         self.assertRegex(result.stdout, r"OK\s+200\s+Suche je Markt")
@@ -90,7 +90,7 @@ class SmokeCheckTest(unittest.TestCase):
     def test_empty_store_search_fails_despite_200(self):
         routes = healthy_routes()
         routes["/api/products/search?q=milch&storeCode=LEO-1"] = (200, b"[]")
-        result, _ = self.run_script(routes)
+        result, _ = self.run_script(routes, "LEO-1")
         self.assertEqual(result.returncode, 1, result.stdout)
         self.assertRegex(result.stdout, r"FAIL\s+200\s+Suche je Markt.*0 Eintraege")
 
@@ -103,17 +103,49 @@ class SmokeCheckTest(unittest.TestCase):
         self.assertRegex(result.stdout, r"FAIL\s+200\s+Suche je Markt")
         self.assertRegex(result.stdout, r"OK\s+200\s+Produkte je Markt\s+.*1 Eintraege")
 
+    def auto_routes(self, stores, filled):
+        routes = healthy_routes()
+        routes["/api/mobile/stores"] = (200, json.dumps([{"storeCode": code} for code in stores]).encode())
+        item = json.dumps([{"id": 1, "name": "Milch"}]).encode()
+        for code in stores:
+            body = item if code in filled else b"[]"
+            routes[f"/api/products?size=5&storeCode={code}"] = (200, body)
+            routes[f"/api/products/search?q=milch&storeCode={code}"] = (200, body)
+        return routes
+
+    def test_auto_mode_passes_when_first_store_is_empty_and_another_has_items(self):
+        routes = self.auto_routes(["SPAR-1", "SPAR-2", "HA-01"], filled={"SPAR-2"})
+        result, seen = self.run_script(routes)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertRegex(result.stdout, r"INFO\s+Produkte je Markt\s+storeCode=SPAR-1: 0 Eintraege")
+        self.assertRegex(result.stdout, r"INFO\s+Produkte je Markt\s+storeCode=SPAR-2: 1 Eintraege")
+        self.assertRegex(result.stdout, r"OK\s+200\s+Produkte je Markt\s+\(storeCode=SPAR-2 hat Produkte\)")
+        self.assertTrue(any("q=milch&storeCode=SPAR-2" in path for _, path, _ in seen), seen)
+        self.assertFalse(any("q=milch&storeCode=SPAR-1" in path for _, path, _ in seen), seen)
+
+    def test_auto_mode_fails_when_all_stores_are_empty(self):
+        routes = self.auto_routes(["SPAR-1", "SPAR-2"], filled=set())
+        result, _ = self.run_script(routes)
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertRegex(result.stdout, r"FAIL\s+---\s+Produkte je Markt\s+kein Markt hat Produkte")
+
+    def test_explicit_empty_store_stays_strict_even_if_others_have_items(self):
+        routes = self.auto_routes(["SPAR-1", "SPAR-2"], filled={"SPAR-2"})
+        result, _ = self.run_script(routes, "SPAR-1")
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertRegex(result.stdout, r"FAIL\s+200\s+Produkte je Markt.*0 Eintraege")
+
     def test_non_list_store_response_fails(self):
         routes = healthy_routes()
         routes["/api/products?size=5&storeCode=LEO-1"] = (200, b"<html></html>")
-        result, _ = self.run_script(routes)
+        result, _ = self.run_script(routes, "LEO-1")
         self.assertEqual(result.returncode, 1, result.stdout)
         self.assertRegex(result.stdout, r"FAIL\s+200\s+Produkte je Markt.*keine JSON-Liste")
 
     def test_store_list_server_error_fails(self):
         routes = healthy_routes()
         routes["/api/products?size=5&storeCode=LEO-1"] = (500, b"")
-        result, _ = self.run_script(routes)
+        result, _ = self.run_script(routes, "LEO-1")
         self.assertEqual(result.returncode, 1, result.stdout)
         self.assertRegex(result.stdout, r"FAIL\s+500\s+Produkte je Markt")
 

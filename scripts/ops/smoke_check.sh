@@ -7,6 +7,7 @@
 # Pflichtpruefungen (FAIL -> Exit 1): oeffentliche Endpunkte liefern 200, geschuetzte Endpunkte
 # liefern ohne Anmeldung 401/403/302 und nie 200 oder 5xx. Mit storeCode muessen Produktliste und
 # Suche des Markts mindestens 1 Treffer liefern (ein leerer Markt ist ein FAIL, auch bei 200).
+# Ohne storeCode wird jeder Markt aus /api/mobile/stores geprueft; FAIL nur, wenn keiner Produkte hat.
 # Hinweise (INFO): Health-Pfade, die der Ingress evtl. nicht freigibt.
 # Nicht geprueft: Seiten nach dem Login. Das macht ein Mensch (siehe RELEASE_PLAN_NEXT.md).
 set -u
@@ -125,27 +126,57 @@ echo
 echo "## Keycloak (Prod-Realm)"
 check "Realm-Metadaten"         "/keycloak/realms/indooro/.well-known/openid-configuration" "200" info
 
-# Stores aus der Liste lesen, wenn kein storeCode uebergeben wurde.
-if [[ -z "$STORE_CODE" ]]; then
-  STORE_CODE="$(body_of '/api/mobile/stores' | python3 -c '
-import json, sys
-try:
-    data = json.load(sys.stdin)
-    items = data if isinstance(data, list) else data.get("stores", [])
-    print((items[0].get("storeCode") or "") if items else "")
-except Exception:
-    print("")
-' 2>/dev/null || true)"
-fi
-
+# Ohne storeCode: alle Maerkte aus /api/mobile/stores pruefen. Pflicht ist, dass mindestens ein Markt
+# Produkte hat (ein leerer erster Markt allein ist kein Fehler). Mit storeCode gilt die strenge Regel.
 if [[ -n "$STORE_CODE" ]]; then
   echo
   echo "## Store-bezogen (storeCode=${STORE_CODE})"
   check_items "Produkte je Markt" "/api/products?size=5&storeCode=${STORE_CODE}"
   check_items "Suche je Markt"    "/api/products/search?q=${QUERY}&storeCode=${STORE_CODE}"
 else
-  echo
-  echo "INFO  storeCode nicht ermittelbar, store-bezogene Pruefungen uebersprungen"
+  STORE_CODES="$(body_of '/api/mobile/stores' | python3 -c '
+import json, sys
+try:
+    data = json.load(sys.stdin)
+    items = data if isinstance(data, list) else data.get("stores", [])
+    for item in items:
+        code = (item.get("storeCode") or "").strip()
+        if code and all(c.isalnum() or c in "-_." for c in code):
+            print(code)
+except Exception:
+    pass
+' 2>/dev/null || true)"
+  if [[ -z "$STORE_CODES" ]]; then
+    echo
+    echo "INFO  storeCode nicht ermittelbar, store-bezogene Pruefungen uebersprungen"
+  else
+    echo
+    echo "## Store-bezogen (alle Maerkte, mindestens einer mit Produkten)"
+    FULL_STORE=""
+    while IFS= read -r code; do
+      [[ -z "$code" ]] && continue
+      n="$(count_of "/api/products?size=5&storeCode=${code}")"
+      [[ -z "$n" ]] && n="-1"
+      if [[ "$n" -ge 1 ]]; then
+        echo "INFO  Produkte je Markt  storeCode=${code}: ${n} Eintraege"
+        [[ -z "$FULL_STORE" ]] && FULL_STORE="$code"
+      elif [[ "$n" -eq 0 ]]; then
+        echo "INFO  Produkte je Markt  storeCode=${code}: 0 Eintraege"
+      else
+        echo "INFO  Produkte je Markt  storeCode=${code}: keine JSON-Liste"
+      fi
+    done <<< "$STORE_CODES"
+    if [[ -n "$FULL_STORE" ]]; then
+      echo "OK    200  Produkte je Markt  (storeCode=${FULL_STORE} hat Produkte)"
+      PASSES=$((PASSES + 1))
+      # Suche im Markt mit Produkten: Status 200 ist Pflicht, die Trefferzahl hier nur Information.
+      check "Suche je Markt" "/api/products/search?q=${QUERY}&storeCode=${FULL_STORE}" "200"
+      echo "INFO  Suche storeCode=${FULL_STORE}: $(count_of "/api/products/search?q=${QUERY}&storeCode=${FULL_STORE}") Eintraege fuer \"${QUERY}\""
+    else
+      echo "FAIL  ---  Produkte je Markt  kein Markt hat Produkte (Index leer oder falsch gemappt?)"
+      FAILS=$((FAILS + 1))
+    fi
+  fi
 fi
 
 echo
