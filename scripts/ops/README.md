@@ -18,6 +18,8 @@ python3 scripts/ops/restore_postgres.py backups/2026-10-17-indooro.dump
                                                      # lokaler Postgres auf 127.0.0.1:55432
 python3 scripts/ops/restore_postgres.py --down       # Container des Projekts entfernen
 python3 scripts/ops/pilot_smoke.py https://it220209.cloud.htl-leonding.ac.at <storeId> apfel
+python3 scripts/ops/load_store_catalog.py --store-code SPAR-Leonding-002
+                                                     # -> backups/<UTC-Datum>-catalog-<CODE>.csv
 ```
 
 - `backup_postgres.py`: `pg_dump -Fc` über `kubectl exec deploy/postgres`, Streaming in die Datei,
@@ -33,6 +35,11 @@ python3 scripts/ops/pilot_smoke.py https://it220209.cloud.htl-leonding.ac.at <st
   die Wegwerf-Datenbank liegt in einem tmpfs und verschwindet mit dem Container.
 - `pilot_smoke.py`: prüft Stores, Layout (Regale, Beacons) und Suche mit HTTP 200 und Inhalt;
   `/api/categories` ist nur Information (5xx zählt als Fehler). Exit 0 nur bei OK.
+- `load_store_catalog.py`: lädt Produkte ohne Markt in einen Markt, ohne Admin-Token. Prüft den
+  Store-Code exakt gegen `/api/mobile/stores` und das aktive Layout, schreibt nur Produkte mit
+  passendem Regal als CSV, der Import läuft im Admin (`/admin/next/`, CSV-Import). Danach prüft es,
+  dass jede Id live im Markt steht. `--set-default` setzt `CATALOG_DEFAULT_STORE_CODE` erst nach
+  exakter Eingabe des Codes und nimmt es zurück, wenn die Suche danach falsch ist.
 
 ## Tests
 
