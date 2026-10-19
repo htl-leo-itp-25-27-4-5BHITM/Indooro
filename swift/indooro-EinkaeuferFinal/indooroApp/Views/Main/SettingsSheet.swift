@@ -72,16 +72,24 @@ struct SettingsSheet: View {
                         set: { $0 ? recorder.start() : recorder.stop() }
                     ))
 
-                    if let url = recorder.lastRecordingURL {
+                    if recorder.isRecording {
+                        LabeledContent("Wahrheitsmarker", value: "\(recorder.truthCount)")
+                        if !recorder.unmatchedBeacons.isEmpty {
+                            // Fremde oder falsch registrierte iBeacons: stehen als `scan`-Zeilen in der Aufnahme.
+                            Text("Ohne Layout-Treffer: " + recorder.unmatchedBeacons.keys.sorted().joined(separator: ", ") + " (Major-Minor)")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
+                    }
+
+                    // Alle Aufnahmen, nicht nur die letzte: nach einem App-Neustart ist `lastRecordingURL` leer.
+                    ForEach(recorder.isRecording ? [] : NavigationRecorder.savedRecordings(), id: \.self) { url in
                         Button {
                             shareURL = url
                         } label: {
-                            Label("Aufzeichnung teilen", systemImage: "square.and.arrow.up")
+                            Label(url.lastPathComponent, systemImage: "square.and.arrow.up")
+                                .font(.caption)
                         }
-                        .disabled(recorder.isRecording)
-                        Text(url.lastPathComponent)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
                     }
 
                     Text("Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu aendern.")

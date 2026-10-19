@@ -119,7 +119,16 @@ struct HeadingRecord: Codable, Equatable {
     var source: String // "compass"
 }
 
-/// Eine Zeile der Aufzeichnung: `{"type":"measurement"|"layout"|"event"|"truth"|"step"|"heading", ...}`.
+/// iBeacon, den das Geraet hoerte, der aber zu keinem Beacon im aktiven Layout passt (nur Diagnose; der Replay ignoriert die Zeile).
+/// Ohne diese Zeilen waere eine falsch registrierte Hardware in der Aufnahme unsichtbar.
+struct ScanRecord: Codable, Equatable {
+    var t: TimeInterval
+    var major: Int
+    var minor: Int
+    var rssi: Int
+}
+
+/// Eine Zeile der Aufzeichnung: `{"type":"measurement"|"layout"|"event"|"truth"|"step"|"heading"|"scan", ...}`.
 enum NavigationRecordLine: Codable, Equatable {
     case measurement(MeasurementRecord)
     case layout(LayoutRecord)
@@ -127,9 +136,10 @@ enum NavigationRecordLine: Codable, Equatable {
     case truth(TruthRecord)
     case step(StepRecord)
     case heading(HeadingRecord)
+    case scan(ScanRecord)
 
     private enum TypeKey: String, CodingKey { case type }
-    private enum LineType: String, Codable { case measurement, layout, event, truth, step, heading }
+    private enum LineType: String, Codable { case measurement, layout, event, truth, step, heading, scan }
 
     /// Nur der Typ einer Zeile; unbekannte Typen werden beim Parsen uebersprungen.
     private struct TypeOnly: Decodable {
@@ -144,6 +154,7 @@ enum NavigationRecordLine: Codable, Equatable {
         case .truth(let record): return record.t
         case .step(let record): return record.t
         case .heading(let record): return record.t
+        case .scan(let record): return record.t
         }
     }
 
@@ -156,6 +167,7 @@ enum NavigationRecordLine: Codable, Equatable {
         case .truth: self = .truth(try TruthRecord(from: decoder))
         case .step: self = .step(try StepRecord(from: decoder))
         case .heading: self = .heading(try HeadingRecord(from: decoder))
+        case .scan: self = .scan(try ScanRecord(from: decoder))
         }
     }
 
@@ -179,6 +191,9 @@ enum NavigationRecordLine: Codable, Equatable {
             try record.encode(to: encoder)
         case .heading(let record):
             try container.encode(LineType.heading, forKey: .type)
+            try record.encode(to: encoder)
+        case .scan(let record):
+            try container.encode(LineType.scan, forKey: .type)
             try record.encode(to: encoder)
         }
     }
@@ -328,6 +343,7 @@ enum NavigationReplay {
             switch line {
             case .step, .heading: return config.motion.motionAided
             case .measurement, .layout, .event, .truth: return true
+            case .scan: return false
             }
         }
         var replay = Replay(layout: layout, config: config, entrance: entrance, onTick: onTick)
@@ -449,6 +465,8 @@ enum NavigationReplay {
                 pipeline.recordStep(cumulativeSteps: record.steps, at: record.t)
             case .heading(let record):
                 pipeline.recordHeading(bearingDegrees: record.degrees, accuracy: record.accuracy, at: record.t)
+            case .scan:
+                break
             }
         }
 

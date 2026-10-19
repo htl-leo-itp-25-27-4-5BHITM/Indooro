@@ -98,3 +98,5 @@ backups/
 
 # oasdiff base contract exported in CI
 .oasdiff/
+# Layouts, die fetch_layout.py fuer den Feldtag holt (Arbeitskopie; Beacon-Koordinaten koennen vom Maßband abweichen)
+swift/indooro-EinkaeuferFinal/NavigationFixtures/layouts/

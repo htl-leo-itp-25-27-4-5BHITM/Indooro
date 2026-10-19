@@ -43,7 +43,7 @@ DENIED_KEYS: FrozenSet[str] = frozenset({
     "ip", "host", "hostname", "user", "username", "email", "uuid", "machine",
 })
 
-LINE_TYPES: FrozenSet[str] = frozenset({"measurement", "layout", "event", "truth", "step", "heading"})
+LINE_TYPES: FrozenSet[str] = frozenset({"measurement", "layout", "event", "truth", "step", "heading", "scan"})
 PROXIMITY_VALUES: FrozenSet[str] = frozenset({"immediate", "near", "far", "unknown"})
 EVENT_KINDS: FrozenSet[str] = frozenset({
     "startTour", "stopDone", "stopSkipped", "listChanged", "replan", "routeModeToggled",
@@ -226,6 +226,17 @@ LINE_SPECS: Dict[str, Tuple[Dict[str, Validator], Set[str]]] = {
             "source": _enum(frozenset({"compass"})),
         },
         {"t", "degrees", "accuracy", "source"},
+    ),
+    # Layout-fremder iBeacon (nur Major, Minor, RSSI; bewusst ohne UUID).
+    "scan": (
+        {
+            "type": _enum(frozenset({"scan"})),
+            "t": _v_number,
+            "major": _v_int,
+            "minor": _v_int,
+            "rssi": _v_int,
+        },
+        {"t", "major", "minor", "rssi"},
     ),
 }
 

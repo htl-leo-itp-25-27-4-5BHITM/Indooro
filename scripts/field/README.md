@@ -11,8 +11,33 @@ Grundlage: `docs/pilot-readiness/hardware/MEASUREMENT_PROTOCOL.md`, Abschnitt 7.
 | `anonymize_recording.py` | Entfernt `shopName` und ersetzt Stopp-Titel durch `stop-<id>` | 4.5 |
 | `import_recordings.py` | Anonymisiert, prueft und uebernimmt Aufnahmen nach `NavigationFixtures/recordings/` | 4.5, 5.2 |
 | `field_stats.py` | Positionsfehler je Marker, Gang-Anteil, Reroutes, Stoppwechsel, Replay-Tabelle | 4.4 |
+| `analyze_walk.sh` / `analyze_walk.py` | Eine Aufnahme in einem Befehl: anonymisieren, Replay, Statistik, Report | 5.1, 5.2 |
+| `walk_report.py` | Hoerbare Beacons je Position, Spruenge, fremde iBeacons (Baustein von `analyze_walk`) | 5.2 |
+| `fetch_layout.py` | Aktives Layout eines Marktes lesend holen (zwei GET-Aufrufe) | 5.1 |
+| `make_synthetic_walk.py` | Erzeugt die synthetische Probe-Aufnahme `NavigationFixtures/synthetic/` (keine Messung) | 5.1 |
 
 Tests: `python -I -m unittest discover scripts/field`
+
+## Eine Aufnahme in einem Befehl (Feldtag)
+
+```text
+python -I scripts/field/fetch_layout.py --store SPAR-Leonding-002 --out swift/indooro-EinkaeuferFinal/NavigationFixtures/layouts/spar-leonding-002.json
+scripts/field/analyze_walk.sh swift/indooro-EinkaeuferFinal/NavigationFixtures/incoming/<datei>.jsonl \
+  --layout swift/indooro-EinkaeuferFinal/NavigationFixtures/layouts/spar-leonding-002.json \
+  [--markers docs/pilot-readiness/hardware/sites/testraum.md] [--site testraum] [--out REPORT.md]
+```
+
+- Ohne Dateiargument gilt die neueste `*.jsonl` in `NavigationFixtures/incoming/`. Das Original bleibt unveraendert.
+- Ablauf: anonymisierte Kopie und Pruefung (bei Verstoss Exit 1, kein Replay) -> `swift test --filter FieldExportTests/testFieldReplayOfSingleRecording`
+  (unveraenderte App-Pipeline, Standardkonfiguration) -> `field_stats.py` -> Report.
+- Ausgabe in `NavigationFixtures/exports/` (gitignored): `<name>.anon.jsonl`, `<name>-ticks.csv`, `<name>-replay.txt`, `<name>-report.md`.
+  Der Report folgt `hardware/reports/0000-synthetic-baseline.md` (Replay-Zeile) und ergaenzt Spruenge, Fehler je Marker und hoerbare Beacons je Position.
+- Layout: `--layout`, sonst `sites/layout-<site>.json`, `Tests/.../Resources/layout-<site>.json`, `NavigationFixtures/layouts/<site>.json`.
+  Akzeptiert auch die Antwort von `layout/current` (mit `layout`-Schluessel).
+- Dateien, deren Name mit `synthetic-` beginnt, bekommen im Report den Kasten SYNTHETISCH. Alle anderen gelten als Feldaufnahme.
+- Exit 0 Report geschrieben, 1 Anonymisierung oder Replay fehlgeschlagen, 2 Aufruf- oder Eingabefehler (fehlendes Layout, Datei).
+- Der Gang-Anteil braucht eine Gang-Tabelle in der Standort-Datei; Layouts aus dem Backend haben keine Elemente vom Typ `aisle`.
+- `scan`-Zeilen (iBeacons ohne Layout-Treffer) listet der Report; der Replay ignoriert sie.
 
 ## Import und Anonymisierungspruefung
 

@@ -13,6 +13,10 @@ final class NavigationRecorder: ObservableObject {
 
     @Published private(set) var isRecording = false
     @Published private(set) var lastRecordingURL: URL?
+    /// Wahrheitsmarker der laufenden Aufzeichnung (Rueckmeldung fuer die Person mit dem iPhone).
+    @Published private(set) var truthCount = 0
+    /// Layout-fremde iBeacons der laufenden Aufzeichnung: `major-minor` -> Anzahl `scan`-Zeilen.
+    @Published private(set) var unmatchedBeacons: [String: Int] = [:]
 
     /// Liefert die aktuelle Layout-Identitaet (setzt `BeaconManager`); wird beim Start als erste Zeile geschrieben.
     var layoutProvider: (() -> LayoutRecord?)?
@@ -23,6 +27,9 @@ final class NavigationRecorder: ObservableObject {
     private var flushTimer: DispatchSourceTimer?
     private var active = false
     private let pedometer = CMPedometer()
+    private var lastScanWrite: [String: TimeInterval] = [:]
+    /// Mindestabstand zwischen zwei `scan`-Zeilen desselben fremden Beacons (Sekunden).
+    static let scanInterval: TimeInterval = 1
 
     private init() {}
 
@@ -49,8 +56,11 @@ final class NavigationRecorder: ObservableObject {
             }
             DispatchQueue.main.async {
                 self.lastRecordingURL = url
+                self.truthCount = 0
+                self.unmatchedBeacons = [:]
                 self.isRecording = true
             }
+            queue.sync { lastScanWrite.removeAll() }
             if let layout = layoutProvider?() {
                 record(.layout(layout))
             }
@@ -93,6 +103,14 @@ final class NavigationRecorder: ObservableObject {
         }
     }
 
+    /// Alle Aufnahmen im Documents-Ordner, neueste zuerst. Der Name ist ein Zeitstempel, also sortiert er zeitlich.
+    static func savedRecordings() -> [URL] {
+        let files = (try? FileManager.default.contentsOfDirectory(at: recordingsDirectory, includingPropertiesForKeys: nil)) ?? []
+        return files
+            .filter { $0.pathExtension == "jsonl" }
+            .sorted { $0.lastPathComponent > $1.lastPathComponent }
+    }
+
     static var recordingsDirectory: URL {
         FileManager.default
             .urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -128,6 +146,19 @@ final class NavigationRecorder: ObservableObject {
         )))
     }
 
+    /// iBeacon ohne Treffer im aktiven Layout (falsche Registrierung oder falsches Layout). Nur Diagnose.
+    func recordUnmatchedBeacon(major: Int, minor: Int, rssi: Int, at timestamp: TimeInterval) {
+        let key = "\(major)-\(minor)"
+        queue.async { [weak self] in
+            guard let self, self.active else { return }
+            if let last = self.lastScanWrite[key], timestamp - last < Self.scanInterval { return }
+            self.lastScanWrite[key] = timestamp
+            guard let text = try? NavigationRecordLine.scan(ScanRecord(t: timestamp, major: major, minor: minor, rssi: rssi)).jsonLine() else { return }
+            self.buffer.append(text)
+            DispatchQueue.main.async { self.unmatchedBeacons[key, default: 0] += 1 }
+        }
+    }
+
     func recordStep(steps: Int, distance: Double?, at timestamp: TimeInterval) {
         record(.step(StepRecord(t: timestamp, steps: steps, distance: distance, source: "pedometer")))
     }
@@ -159,6 +190,7 @@ final class NavigationRecorder: ObservableObject {
 
     func recordTruth(x: Float, y: Float) {
         record(.truth(TruthRecord(t: Date().timeIntervalSince1970, x: x, y: y)))
+        DispatchQueue.main.async { if self.isRecording { self.truthCount += 1 } }
     }
 
     // MARK: - Schreiben

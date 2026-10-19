@@ -21,6 +21,7 @@ struct MapView: View {
     #if DEBUG
     /// Waehrend eines langen Drucks (Wahrheitsmarkierung) wird der folgende Tap ignoriert.
     @State private var truthPressActive = false
+    @ObservedObject private var recorder = NavigationRecorder.shared
     #endif
 
     private let routeAccent = Color(red: 0.15, green: 0.57, blue: 0.88)
@@ -175,6 +176,7 @@ struct MapView: View {
                                                 guard !truthPressActive,
                                                       case .second(true, let drag?) = value else { return }
                                                 truthPressActive = true
+                                                UINotificationFeedbackGenerator().notificationOccurred(.success)
                                                 NavigationRecorder.shared.recordTruth(
                                                     x: Float(drag.location.x / fittedPixelsPerMeter),
                                                     y: Float(drag.location.y / fittedPixelsPerMeter)
@@ -200,6 +202,19 @@ struct MapView: View {
                             .accessibilityIdentifier("mapSummary")
                     }
                     .frame(width: mapWidth, height: mapHeight)
+                    #if DEBUG
+                    .overlay(alignment: .topLeading) {
+                        if recorder.isRecording {
+                            MapCanvasStatusBadge(
+                                title: "REC · \(recorder.truthCount) Marker",
+                                systemImage: "record.circle",
+                                tint: .red
+                            )
+                            .padding(12)
+                            .accessibilityIdentifier("recorderBadge")
+                        }
+                    }
+                    #endif
                     .overlay(alignment: .topTrailing) {
                         if allowsManualMapTap {
                             MapCanvasStatusBadge(

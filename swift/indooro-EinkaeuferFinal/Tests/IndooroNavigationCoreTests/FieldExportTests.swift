@@ -15,6 +15,10 @@ import simd
 enum FieldExport {
     static let environmentKey = "FIELD_EXPORT_DIR"
     static let layoutEnvironmentKey = "FIELD_EXPORT_LAYOUT"
+    /// Einzelne Aufnahme (beliebiger Pfad, kein Namensmuster noetig); setzt `scripts/field/analyze_walk.sh`.
+    static let singleRecordingEnvironmentKey = "FIELD_REPLAY_RECORDING"
+    /// Ausgabename fuer `FIELD_REPLAY_RECORDING`; Standard: Dateiname ohne Endung.
+    static let singleNameEnvironmentKey = "FIELD_REPLAY_NAME"
 
     /// `NavigationFixtures/` im Repo, relativ zu dieser Datei.
     static var fixturesDirectory: URL {
@@ -100,6 +104,23 @@ enum FieldExport {
             + "lagP95=\(metrics.p95LagMeters.map { String(format: "%.2f", $0) } ?? "-") "
             + "offRouteDelays=[\(delays)] lowConfToggles=\(metrics.lowConfidenceToggles) "
             + "planning=\(metrics.planningSeconds.count)x"
+    }
+
+    /// Replay einer einzelnen Aufnahme mit explizitem Layout. Schreibt `<name>-ticks.csv` und `<name>-replay.txt`
+    /// (die `REPLAY`-Zeile) nach `directory`. `scripts/field/analyze_walk.sh` liest beide Dateien.
+    @discardableResult
+    static func replaySingle(
+        recording: URL,
+        layout layoutURL: URL,
+        name: String,
+        to directory: URL
+    ) throws -> (ticks: URL, replay: URL, metrics: ReplayMetrics) {
+        let layout = try JSONDecoder().decode(LayoutData.self, from: Data(contentsOf: layoutURL))
+        let lines = try NavigationRecordLine.parse(jsonl: String(contentsOf: recording, encoding: .utf8))
+        let written = try write(recording: lines, layout: layout, name: name, to: directory)
+        let replayURL = directory.appendingPathComponent("\(name)-replay.txt")
+        try (replayLine(name: name, metrics: written.metrics) + "\n").write(to: replayURL, atomically: true, encoding: .utf8)
+        return (written.url, replayURL, written.metrics)
     }
 
     struct ExportSummary: Equatable {
@@ -269,5 +290,65 @@ final class FieldExportTests: XCTestCase {
             throw XCTSkip("\(summary.recordingCount) Aufnahme(n) ohne Layout: Resources/layout-<site>.json ablegen oder FIELD_EXPORT_LAYOUT setzen")
         }
         XCTAssertEqual(summary.exported.count + summary.skipped.count, summary.recordingCount)
+    }
+
+    /// `FIELD_REPLAY_RECORDING` + `FIELD_EXPORT_LAYOUT`: eine Aufnahme (z. B. frisch vom iPhone) durch dieselbe Kette wie die App.
+    /// Ohne die Variablen uebersprungen. Ausgabe: `FIELD_EXPORT_DIR` bzw. `NavigationFixtures/exports/`.
+    func testFieldReplayOfSingleRecording() throws {
+        let environment = ProcessInfo.processInfo.environment
+        guard let recordingPath = environment[FieldExport.singleRecordingEnvironmentKey], !recordingPath.isEmpty else {
+            throw XCTSkip("\(FieldExport.singleRecordingEnvironmentKey) nicht gesetzt (nur fuer scripts/field/analyze_walk.sh)")
+        }
+        guard let layoutURL = FieldExport.layoutOverride else {
+            throw XCTSkip("\(FieldExport.layoutEnvironmentKey) nicht gesetzt")
+        }
+        let recording = URL(fileURLWithPath: recordingPath)
+        let name = environment[FieldExport.singleNameEnvironmentKey].flatMap { $0.isEmpty ? nil : $0 }
+            ?? recording.deletingPathExtension().lastPathComponent
+        let result = try FieldExport.replaySingle(recording: recording, layout: layoutURL, name: name, to: FieldExport.defaultDirectory)
+        print(FieldExport.replayLine(name: name, metrics: result.metrics))
+        XCTAssertGreaterThan(result.metrics.tickCount, 0, "Aufnahme ohne Ticks: leer oder ohne Messungen")
+    }
+
+    func testReplaySingleWritesTicksAndReplayLine() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("fieldexport-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        var synthetic = SyntheticRecording(layout: try layout(), seed: 7)
+        synthetic.walk([SIMD2(2.5, 9.5), SIMD2(10.5, 9.5)], speed: 1.2)
+        synthetic.stand(at: SIMD2(10.5, 9.5), seconds: 5)
+        let recording = root.appendingPathComponent("synthetic-single.jsonl")
+        try NavigationRecordLine.jsonl(synthetic.lines).write(to: recording, atomically: true, encoding: .utf8)
+        let layoutURL = root.appendingPathComponent("layout.json")
+        try TestLayouts.demoSupermarketData().write(to: layoutURL)
+
+        let output = root.appendingPathComponent("out", isDirectory: true)
+        let result = try FieldExport.replaySingle(recording: recording, layout: layoutURL, name: "synthetic-single", to: output)
+        XCTAssertEqual(result.ticks.lastPathComponent, "synthetic-single-ticks.csv")
+        XCTAssertEqual(result.replay.lastPathComponent, "synthetic-single-replay.txt")
+        let line = try String(contentsOf: result.replay, encoding: .utf8)
+        XCTAssertTrue(line.hasPrefix("REPLAY synthetic-single ticks=\(result.metrics.tickCount) "), line)
+        XCTAssertGreaterThan(result.metrics.tickCount, 0)
+    }
+
+    /// `scan`-Zeilen (fremde iBeacons) sind Diagnose: sie aendern weder Ticks noch Metriken des Replays.
+    func testScanLinesDoNotChangeReplay() throws {
+        let layout = try layout()
+        var synthetic = SyntheticRecording(layout: layout, seed: 11)
+        synthetic.walk([SIMD2(2.5, 9.5), SIMD2(10.5, 9.5)], speed: 1.2)
+        let baseline = NavigationReplay.run(recording: synthetic.lines, layout: layout)
+
+        let first = synthetic.lines.first!.timestamp
+        let last = synthetic.lines.last!.timestamp
+        var mixed = synthetic.lines
+        mixed.insert(.scan(ScanRecord(t: first - 100, major: 9, minor: 9, rssi: -80)), at: 0)
+        mixed.append(.scan(ScanRecord(t: last + 100, major: 9, minor: 9, rssi: -80)))
+        mixed.append(.scan(ScanRecord(t: (first + last) / 2, major: 1, minor: 2, rssi: -70)))
+        XCTAssertEqual(NavigationReplay.run(recording: mixed, layout: layout), baseline)
+
+        let text = try NavigationRecordLine.jsonl(mixed)
+        XCTAssertTrue(text.contains(#""type":"scan""#))
+        XCTAssertEqual(try NavigationRecordLine.parse(jsonl: text), mixed)
     }
 }

@@ -24,6 +24,7 @@ CLEAN = [
     '{"t":1000003,"type":"truth","x":10.5,"y":9.5}',
     '{"distance":0.7,"source":"pedometer","steps":4,"t":1000004,"type":"step"}',
     '{"accuracy":10,"degrees":181.5,"source":"compass","t":1000005,"type":"heading"}',
+    '{"major":1,"minor":7,"rssi":-72,"t":1000006,"type":"scan"}',
 ]
 
 
@@ -33,6 +34,15 @@ def messages(lines, **options):
 
 def reasons(lines, **options):
     return [violation.reason for violation in checker.check_lines(lines, **options)]
+
+
+class ScanLineTests(unittest.TestCase):
+    def test_scan_line_with_uuid_is_rejected(self):
+        line = '{"major":1,"minor":7,"rssi":-72,"t":1,"type":"scan","uuid":"%s"}' % FOREIGN_UUID
+        self.assertTrue(any("uuid" in reason for reason in reasons([line])))
+
+    def test_scan_line_needs_major_minor_rssi(self):
+        self.assertTrue(any("fehlt" in reason for reason in reasons(['{"t":1,"type":"scan","major":1}'])))
 
 
 class CleanRecordingTests(unittest.TestCase):

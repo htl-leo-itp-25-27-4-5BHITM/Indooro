@@ -15,3 +15,16 @@ Real recordings committed to the repository SHALL contain no device identifiers,
 - **GIVEN** a recording shared from a test iPhone
 - **WHEN** it is added as a fixture
 - **THEN** an anonymization check passes and a replay test reproduces the metrics in its report
+
+### Requirement: One recorded walk is analysable with a single command
+A DEBUG recording of one walk SHALL be analysable on the Mac with one command that anonymizes a copy, replays it through the unchanged positioning pipeline with the committed default configuration, and writes a report with the replay metrics, the position error per truth marker, the projected-position jumps and the number of audible beacons per truth position. The DEBUG recorder SHALL give feedback for every truth marker and SHALL record iBeacons that match no beacon of the active layout as `scan` entries (major, minor, RSSI, no UUID) that the replay ignores. Reports from synthetic recordings SHALL be labelled as synthetic and SHALL NOT be cited as field results.
+
+#### Scenario: Registration does not match the layout
+- **GIVEN** a recording in which one layout beacon never appears and a foreign major/minor does
+- **WHEN** the walk is analysed
+- **THEN** the report lists the silent layout beacon and the unmatched major/minor instead of silently showing fewer beacons
+
+#### Scenario: Synthetic dry run
+- **GIVEN** a recording whose file name starts with `synthetic-`
+- **WHEN** it is analysed
+- **THEN** the report starts with a banner stating that it is not a measurement

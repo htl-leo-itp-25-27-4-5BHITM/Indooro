@@ -108,6 +108,8 @@ Die Uhrzeit wird nicht in der Aufnahme gespeichert. Aufnahmen dürfen keine Frei
 
 ## 7. Mac-Pipeline
 
+Kurzweg für eine einzelne Aufnahme (Testraum-Tag): `scripts/field/analyze_walk.sh <datei> --layout <layout.json>` führt Anonymisierung, Replay, Statistik und Report in einem Befehl aus; Ablauf in `TESTRAUM_TAG.md`. Die Schritte unten sind der ausführliche Weg für mehrere importierte Aufnahmen.
+
 Die Befehle laufen auf dem Mac im Repo-Wurzelverzeichnis, außer wenn anders angegeben. Die Skripte in `scripts/field/` entstehen mit Task 4.4 und 4.5; die Flags sind festgelegt.
 
 1. Import und Anonymisierungsprüfung:
