@@ -19,6 +19,7 @@ export const staffRoutes: readonly StaffRoute[] = [
   { label: "Kategorien", path: "/admin/categories/", roles: ["admin"] },
   { label: "Rezepte", path: "/admin/recipes/", roles: ["admin"] },
   { label: "Layout Editor", path: "/admin/editor/", roles: ["admin", "region-manager", "store-manager"] },
+  { label: "Suchindex", path: "/admin/search-index/", roles: ["admin"] },
   { label: "Diagnose", path: "/admin/server-logs/", roles: ["admin"] }
 ];
 
@@ -69,6 +70,9 @@ export function candidateAccess(pathname: string, role: string, requestedStoreId
     return role === "admin" ? "allowed" : "forbidden";
   }
   if (pathname === "/admin/next/categories/" || pathname === "/admin/next/categories") {
+    return role === "admin" ? "allowed" : "forbidden";
+  }
+  if (pathname === "/admin/next/search-index/" || pathname === "/admin/next/search-index") {
     return role === "admin" ? "allowed" : "forbidden";
   }
   if (pathname === "/admin/next/server-logs/" || pathname === "/admin/next/server-logs") {

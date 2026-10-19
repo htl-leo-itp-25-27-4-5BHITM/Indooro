@@ -68,6 +68,16 @@ public class OpenSearchService {
      */
     public record ActivateResult(String alias, String index, List<String> previous) {}
 
+    /** Ein Versionsindex {@code <prefix><N>}; {@code docCount} ist null, wenn die Zaehlung fehlschlug. */
+    public record IndexVersion(String name, Long docCount, boolean active) {}
+
+    /**
+     * Zustand der Suchindizes fuer die Admin-Seite: Alias, Quellindex mit Dokumentzahl, die Versionsindizes
+     * (aufsteigend nach Nummer) und die Versionen, die den Alias tragen. Eine nicht ermittelte Zahl ist null.
+     */
+    public record IndexOverview(String alias, String sourceIndex, Long sourceCount, List<String> activeIndices,
+                                List<IndexVersion> versions) {}
+
     /** Ergebnis der Mapping-Pruefung fuer die Subfelder {@code name.prefix} und {@code name.parts}. */
     private record NameSubfieldSupport(boolean supported, long checkedAtNanos) {}
 
@@ -797,6 +807,44 @@ public class OpenSearchService {
 
         LOG.info("Alias " + aliasName + " umgeschaltet: " + previous + " -> " + targetIndex);
         return new ActivateResult(aliasName, targetIndex, previous);
+    }
+
+    /**
+     * Liest den Zustand der Suchindizes (nur lesend): Versionsindizes mit Dokumentzahl, Alias-Ziel und Quellindex.
+     * Eine Zahl, die nicht gezaehlt werden kann, bleibt null und wird nicht geschaetzt.
+     */
+    public IndexOverview describeIndices() throws IOException {
+        Map<String, IndexState> versions = versionedIndices();
+        List<IndexVersion> list = new ArrayList<>();
+        List<String> active = new ArrayList<>();
+        versions.entrySet().stream()
+                .sorted(Comparator.comparingLong(e -> versionNumber(e.getKey())))
+                .forEach(entry -> {
+                    boolean carriesAlias = entry.getValue() != null && entry.getValue().aliases() != null
+                            && entry.getValue().aliases().containsKey(aliasName);
+                    if (carriesAlias) {
+                        active.add(entry.getKey());
+                    }
+                    list.add(new IndexVersion(entry.getKey(), countOrNull(entry.getKey()), carriesAlias));
+                });
+        return new IndexOverview(aliasName, indexName, countOrNull(indexName), List.copyOf(active), List.copyOf(list));
+    }
+
+    private Long countOrNull(String index) {
+        try {
+            return client.count(CountRequest.of(c -> c.index(index))).count();
+        } catch (IOException | RuntimeException e) {
+            LOG.warn("Dokumentzahl von " + index + " nicht lesbar: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private long versionNumber(String name) {
+        try {
+            return Long.parseLong(name.substring(indexPrefix.length()));
+        } catch (NumberFormatException | IndexOutOfBoundsException e) {
+            return Long.MAX_VALUE;
+        }
     }
 
     /** Pattern fuer Versionsnamen {@code <prefix><Zahl>}, z. B. products_v12. */

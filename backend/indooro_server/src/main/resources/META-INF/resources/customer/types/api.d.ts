@@ -454,7 +454,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Read the search index state (alias target and version indices with document counts).
+         * @description Read-only. A count that cannot be read is null, never estimated.
+         */
+        get: operations["getProductIndexOverview"];
         put?: never;
         post?: never;
         /** Delete the product index (destructive). */
@@ -1378,6 +1382,24 @@ export interface components {
             targetCount: number;
             /** @enum {string} */
             status: "OK";
+        };
+        IndexVersion: {
+            /** @description Version index, for example products_v1. */
+            name: string;
+            /** @description Document count; null when it could not be read. */
+            docCount?: number | null;
+            /** @description True when the alias points to this version. */
+            active: boolean;
+        };
+        IndexOverview: {
+            alias: string;
+            /** @description Index or alias the backend reads and writes. */
+            sourceIndex: string;
+            sourceCount?: number | null;
+            /** @description Version indices that carry the alias. */
+            activeIndices: string[];
+            /** @description Version indices ascending by number. */
+            versions: components["schemas"]["IndexVersion"][];
         };
         ActivateResult: {
             alias: string;
@@ -3148,6 +3170,29 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
             500: components["responses"]["ServerError"];
+            503: components["responses"]["ServiceUnavailable"];
+        };
+    };
+    getProductIndexOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Alias, source index and version indices. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndexOverview"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             503: components["responses"]["ServiceUnavailable"];
         };
     };

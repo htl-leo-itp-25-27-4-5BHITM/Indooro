@@ -168,6 +168,50 @@ class OpenSearchReindexServiceTest {
         verify(indices, never()).create(any(CreateIndexRequest.class));
     }
 
+    // ---- Uebersicht ----
+
+    @Test
+    void overviewListsVersionsAscendingByNumberWithCountsAndActiveAlias() throws IOException {
+        stubVersions(version("products_v10"), version("products_v2", "products_live"), version("products_v1"));
+        stubCounts(7, 3);
+
+        OpenSearchService.IndexOverview overview = service.describeIndices();
+
+        assertEquals("products_live", overview.alias());
+        assertEquals("products", overview.sourceIndex());
+        assertEquals(7L, overview.sourceCount());
+        assertEquals(List.of("products_v2"), overview.activeIndices());
+        assertEquals(List.of("products_v1", "products_v2", "products_v10"),
+                overview.versions().stream().map(OpenSearchService.IndexVersion::name).toList());
+        assertEquals(List.of(false, true, false),
+                overview.versions().stream().map(OpenSearchService.IndexVersion::active).toList());
+        verify(indices, never()).updateAliases(any(UpdateAliasesRequest.class));
+        verify(indices, never()).delete(any(DeleteIndexRequest.class));
+        verify(indices, never()).create(any(CreateIndexRequest.class));
+    }
+
+    @Test
+    void overviewWithoutVersionsIsEmpty() throws IOException {
+        stubVersions();
+
+        OpenSearchService.IndexOverview overview = service.describeIndices();
+
+        assertEquals(List.of(), overview.versions());
+        assertEquals(List.of(), overview.activeIndices());
+    }
+
+    @Test
+    void overviewReportsUnreadableCountAsNullInsteadOfZero() throws IOException {
+        stubVersions(version("products_v1", "products_live"));
+        when(client.count(any(CountRequest.class))).thenThrow(new IOException("down"));
+
+        OpenSearchService.IndexOverview overview = service.describeIndices();
+
+        assertEquals(null, overview.sourceCount());
+        assertEquals(null, overview.versions().get(0).docCount());
+        assertTrue(overview.versions().get(0).active());
+    }
+
     // ---- Alias-Umschaltung ----
 
     @Test

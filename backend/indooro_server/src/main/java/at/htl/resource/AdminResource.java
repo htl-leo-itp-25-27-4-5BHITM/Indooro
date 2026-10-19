@@ -47,6 +47,24 @@ public class AdminResource {
     }
 
     /**
+     * Zustand der Suchindizes: Alias-Ziel, Versionsindizes mit Dokumentzahl. Nur lesend.
+     * GET /api/admin/index
+     */
+    @Operation(operationId = "getProductIndexOverview")
+    @GET
+    @Path("/index")
+    @RolesAllowed("admin")
+    public Response indexOverview() {
+        adminAccessService.requireAdmin();
+        try {
+            return Response.ok(openSearchService.describeIndices()).build();
+        } catch (IOException e) {
+            LOG.error("Error reading index overview", e);
+            throw new WebApplicationException("OpenSearch ist nicht erreichbar.", Response.Status.SERVICE_UNAVAILABLE);
+        }
+    }
+
+    /**
      * Löscht den Index
      * DELETE /api/admin/index
      */
