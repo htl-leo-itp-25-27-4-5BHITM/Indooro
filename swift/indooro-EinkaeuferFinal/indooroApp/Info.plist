@@ -8,6 +8,11 @@
 	<string>$(INDOORO_API_BASE_URL)</string>
 	<key>IndooroFeatureProfile</key>
 	<string>pilot</string>
+#ifdef INDOORO_FILE_SHARING
+	<!-- Nur Debug (Config/Shared.xcconfig): Aufnahmen des Recorders in der Dateien-App und im Finder. -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+#endif
 #if INDOORO_LOCAL_HTTP
 	<!-- Nur Debug-Local (Config/Debug-Local.xcconfig): Klartext-HTTP zu localhost. Alle anderen Konfigurationen haben keine ATS-Ausnahme. -->
 	<key>NSAppTransportSecurity</key>

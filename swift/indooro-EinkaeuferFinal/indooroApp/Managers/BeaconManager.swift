@@ -904,6 +904,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             handleDetectedStoreBeacon(detectedBeacon, rssi: lookupRSSI)
 
             guard let beaconName = matchingBeaconName(for: rangedBeacon) else {
+                #if DEBUG
+                NavigationRecorder.shared.recordUnmatchedBeacon(
+                    major: rangedBeacon.major.intValue,
+                    minor: rangedBeacon.minor.intValue,
+                    rssi: rangedBeacon.rssi,
+                    at: timestamp
+                )
+                #endif
                 continue
             }
 
@@ -2263,6 +2271,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 )
                 return
             }
+            #if DEBUG
+            NavigationRecorder.shared.recordUnmatchedBeacon(
+                major: storeBeacon.major,
+                minor: storeBeacon.minor,
+                rssi: value,
+                at: timestamp
+            )
+            #endif
             appendDebugLog(
                 "iBeacon passt zu keinem Beacon im aktiven Layout uuid=\(storeBeacon.uuidLookupKey) major=\(storeBeacon.major) minor=\(storeBeacon.minor)",
                 key: "ibeacon-no-layout-match-\(storeBeacon.uuidLookupKey)",

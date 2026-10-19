@@ -123,6 +123,20 @@ Release builds contain no recorder.
    file must give identical metrics (planning wall time excluded); a metric that
    differs is a determinism bug. Metrics are printed as `REPLAY <name> ...` lines.
 
+### Feldtag: eine Aufnahme in einem Befehl
+
+`docs/pilot-readiness/hardware/TESTRAUM_TAG.md` ist die Checkliste fuer den Testraum. Kurzform:
+
+- Die Debug-Aufnahme enthaelt zusaetzlich `scan`-Zeilen (`major`, `minor`, `rssi`) fuer iBeacons ohne Layout-Treffer; der Replay ignoriert sie.
+  Der Recorder zeigt waehrend der Aufnahme `REC · n Marker` auf der Karte, jeder Long-Press vibriert, und die Einstellungen listen alle Aufnahmen
+  (nicht nur die letzte). Debug-Builds zeigen `Documents/NavigationRecordings/` in der Dateien-App (`UIFileSharingEnabled`, nur Debug).
+- `scripts/field/fetch_layout.py --store <storeCode> --out <datei>` holt das aktive Layout lesend.
+- `scripts/field/analyze_walk.sh [aufnahme.jsonl] --layout <datei>` anonymisiert eine Kopie, spielt sie ueber
+  `FIELD_REPLAY_RECORDING=<aufnahme> FIELD_EXPORT_LAYOUT=<layout> swift test --filter FieldExportTests/testFieldReplayOfSingleRecording`
+  durch dieselbe Pipeline und schreibt den Report (`scripts/field/README.md`).
+- `NavigationFixtures/synthetic/` enthaelt die erkennbar synthetische Probe-Aufnahme (`scripts/field/make_synthetic_walk.py`).
+  Sie ist keine Messung und gehoert nie in `recordings/`.
+
 The app build is still verified with (konkretes Simulator-Ziel; das generische Ziel mit `-sdk iphonesimulator`
 ist nicht unterstützt, siehe „Build-Konfigurationen und Schemes“ unten):
 
