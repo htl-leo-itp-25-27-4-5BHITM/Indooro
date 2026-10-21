@@ -27,7 +27,7 @@ spec:
           # Fester Tag = Git-Commit-SHA der CI, gleich dem Live-Stand (Release 2026-10-18, UID 10001).
           # Rollout/Rollback siehe docs/pilot-readiness/operations/RELEASE_RUNBOOK.md.
           # Nicht auf a47c5e6 zuruecksetzen: Root-Image (JDK 25), startet mit runAsNonRoot nicht.
-          image: ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:ed845e3
+          image: ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:6278040
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
