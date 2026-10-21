@@ -6,6 +6,7 @@ Die Vorlagen für Markt, Testpersonen und Termin liegen im Ordner `../kit/`.
 
 ## Dateien
 
+- `MARKT_EINRICHTEN.md`: Anleitung für Betreiber auf einer Seite. Gleiche Schritte und Reihenfolge wie die Checkliste „Einrichtung“ auf der Store-Seite im Admin, mit Vorbereitung, Befund-Tabelle und Ansprechpersonen. Zuerst lesen, wenn ein neuer Markt in das System kommt.
 - `LAYOUT_CONVENTIONS.md`: Regeln für jedes Pilot-Layout. Maßstab 1 Zelle = 1 m, genau ein Eingang, Regalbeschriftung im Format „Gang <n> · <links|rechts> · <Warengruppe>“, Zählung von Fach und Reihe, Beispiel-JSON und Skizzen.
 - `STORE_DATA_ENTRY.md`: Schritt für Schritt von der Vermessung bis zur Prüfung in der App. Enthält den Konverter-Ablauf mit Befehlen, den Abschnitt zu echten Marktdaten (wartet auf Aufgabe 5.2) und die Zuordnung für `regalplan_export.csv` (wartet auf Aufgabe 5.2).
 - `STORE_ONBOARDING_CHECKLIST.md`: Neun Punkte, die vor jedem Termin im Markt erledigt sein müssen. Zusätzlich die Einwilligungsregeln und die Sperrregel für fehlendes Backup.
@@ -13,6 +14,7 @@ Die Vorlagen für Markt, Testpersonen und Termin liegen im Ordner `../kit/`.
 
 ## Wer liest was
 
+- Neuen Markt einrichten: `MARKT_EINRICHTEN.md`.
 - Vor der ersten Vermessung: `LAYOUT_CONVENTIONS.md`, dann `STORE_DATA_ENTRY.md`.
 - Vor jedem Termin: `STORE_ONBOARDING_CHECKLIST.md` und die Vorlagen aus `../kit/`.
 - Am Termin: `SESSION_RUN_SHEET.md`.
