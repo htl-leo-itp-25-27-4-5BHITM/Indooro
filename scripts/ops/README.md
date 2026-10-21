@@ -41,6 +41,13 @@ python3 scripts/ops/load_store_catalog.py --store-code SPAR-Leonding-002
   dass jede Id live im Markt steht. `--set-default` setzt `CATALOG_DEFAULT_STORE_CODE` erst nach
   exakter Eingabe des Codes und nimmt es zurück, wenn die Suche danach falsch ist.
 
+## Neuen Markt einrichten
+
+Die Reihenfolge der Schritte (Layout, Regale, Beacons, Sortiment, Suche, Bereitschaft) steht in
+`docs/pilot-readiness/operations/MARKT_EINRICHTEN.md`. Dieselben Schritte zeigt die Checkliste
+„Einrichtung“ auf der Store-Seite im Admin. `load_store_catalog.py` und `pilot_smoke.py` gehören zu
+den Schritten 5 und 6.
+
 ## Tests
 
 Aus dem Repo-Root, ohne Netzwerk, ohne kubectl, ohne docker:

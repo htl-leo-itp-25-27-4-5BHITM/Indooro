@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
 import { READINESS_PROFILE_OPTIONS, profileLabel } from "./readiness";
+import { StoreSetupSection } from "./StoreSetupSection";
 
 interface Region { id: string; code: string; name: string }
 interface StoreDetail {
@@ -104,6 +105,7 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
     <div className="page-intro"><div><p className="eyebrow">{store.region.code} · {store.storeCode}</p><h2>{store.name}</h2><p>{store.street}, {store.zipCode} {store.city} · {store.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</p></div><div className="form-actions"><a className="button" href={`/admin/next/stores/readiness/?storeId=${encodeURIComponent(store.id)}`}>Pilot-Bereitschaft</a><a className="button" href={`/admin/next/stores/anchors/?storeId=${encodeURIComponent(store.id)}`}>QR-Codes drucken</a><a className="button" href="/admin/next/stores/">Zur Store-Liste</a></div></div>
     {notice && <p className="notice success-state" role="status">{notice}</p>}
     {mutationError && <div className="notice error-state" role="alert"><strong>Änderung nicht gespeichert</strong><p>{mutationError}</p></div>}
+    <StoreSetupSection api={api} user={user} store={store} refreshKey={revision} />
     <section className="notice detail-section" aria-labelledby="store-data-title"><div className="section-heading"><h3 id="store-data-title">Stammdaten</h3>{store.status === "ACTIVE" && !editing && <button className="button" onClick={() => setEditing(true)}>Bearbeiten</button>}</div>
       {editing && store.status === "ACTIVE" ? <form key={store.id} className="detail-form" onSubmit={submit}>
         <label>Region<select name="regionId" defaultValue={store.region.id} required disabled={user.role !== "admin"}>{regions.map((region) => <option key={region.id} value={region.id}>{region.code} · {region.name}</option>)}</select>{user.role !== "admin" && <input type="hidden" name="regionId" value={store.region.id} />}{fieldErrors.regionId && <small role="alert">{fieldErrors.regionId.join(" ")}</small>}</label>

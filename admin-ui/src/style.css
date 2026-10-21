@@ -131,6 +131,12 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 .detail-list small { display: block; color: var(--text-muted); }
 .detail-list time { color: var(--text-muted); font-size: .82rem; }
 .success-state { border-color: var(--success-border); color: var(--success-text); }
+.setup-steps { counter-reset: setup; }
+.setup-steps li { align-items: flex-start; }
+.setup-status { display: inline-block; padding: 0 .45rem; border-radius: 999px; border: 1px solid var(--border-strong); font-weight: 600; color: var(--text); }
+.setup-status-done { background: var(--success-surface); border-color: var(--success-border); color: var(--success-text); }
+.setup-status-open { background: var(--info-surface); color: var(--info-text); }
+.setup-status-problem { background: var(--warning-surface); border-color: var(--warning-border); color: var(--warning-text); }
 @media (max-width: 530px) { .detail-form, .detail-facts { grid-template-columns: 1fr; } .detail-list li, .inline-action { align-items: stretch; flex-direction: column; } }
 .regions-page .page-heading, .regions-page .panel-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .regions-page .page-heading { margin-bottom: 1rem; }
