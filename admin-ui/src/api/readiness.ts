@@ -22,6 +22,8 @@ export interface ReadinessCounts {
   assignedBeacons: number;
   walkableCells: number;
   lowCoverageCells: number;
+  /** Global catalog products left out because the store has its own products; 0 when the global catalog was checked. */
+  skippedGlobalProducts: number;
 }
 
 export interface ReadinessReport {
@@ -43,16 +45,18 @@ export interface ReadinessReport {
   maxLowCoverageShare: number | null;
 }
 
-export const DEFAULT_READINESS_RADIUS = 8.0;
 export const MIN_READINESS_RADIUS = 0.5;
 export const MAX_READINESS_RADIUS = 30;
 
-export function readinessPath(storeId: string, radius: number = DEFAULT_READINESS_RADIUS): string {
-  return `/api/stores/${encodeURIComponent(storeId)}/readiness?radius=${encodeURIComponent(String(radius))}`;
+/** radius null: no radius parameter, the server uses the default radius of the store's coverage profile. */
+export function readinessPath(storeId: string, radius: number | null = null): string {
+  const path = `/api/stores/${encodeURIComponent(storeId)}/readiness`;
+  return radius === null ? path : `${path}?radius=${encodeURIComponent(String(radius))}`;
 }
 
 const statuses: readonly string[] = ["RED", "YELLOW", "GREEN"];
 const severities: readonly string[] = ["BLOCKING", "WARNING"];
+// skippedGlobalProducts is read leniently: a server from before that field counts as "none skipped".
 const countKeys = ["shelves", "entrances", "products", "placedBeacons", "assignedBeacons", "walkableCells", "lowCoverageCells"] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -94,7 +98,11 @@ export function parseReadinessReport(value: unknown): ReadinessReport {
     status: value.status as ReadinessStatus,
     blockingCount: value.blockingCount,
     warningCount: value.warningCount,
-    counts: value.counts as unknown as ReadinessCounts,
+    counts: {
+      ...(value.counts as unknown as ReadinessCounts),
+      skippedGlobalProducts: typeof (value.counts as Record<string, unknown>).skippedGlobalProducts === "number"
+        ? (value.counts as Record<string, number>).skippedGlobalProducts : 0
+    },
     findings,
     profile: typeof value.profile === "string" && value.profile ? value.profile : "market",
     // A server that does not send the flag gets "computed" only when it reported walkable cells.
@@ -107,7 +115,7 @@ export function parseReadinessReport(value: unknown): ReadinessReport {
 export async function fetchStoreReadiness(
   api: ApiClient,
   storeId: string,
-  radius: number = DEFAULT_READINESS_RADIUS,
+  radius: number | null = null,
   options: { signal?: AbortSignal } = {}
 ): Promise<ReadinessReport> {
   const payload = await api.get<unknown>(readinessPath(storeId, radius), { signal: options.signal });

@@ -23,7 +23,7 @@ async function mockStore(page: Page, role: "admin" | "store-manager", options: {
   await page.route("**/api/stores/store-1/layout/versions", (route) => route.fulfill({ json: [] }));
   await page.route("**/api/stores/store-1/audit", (route) => route.fulfill({ json: { entries: [] } }));
   await page.route("**/api/beacons/free", (route) => route.fulfill({ json: [] }));
-  await page.route("**/api/stores/store-1/readiness?*", (route) => route.fulfill({ json: options.readiness }));
+  await page.route("**/api/stores/store-1/readiness*", (route) => route.fulfill({ json: options.readiness }));
   await page.route("**/api/mobile/stores/store-1/layout/current", (route) => route.fulfill({ json: { storeId: "store-1", source: "ACTIVE", fallback: false, layout: {} } }));
   await page.route("**/api/products?*", (route) => route.fulfill({ json: options.products }));
   await page.route("**/api/products/search?*", (route) => route.fulfill({ json: options.hits ?? [] }));

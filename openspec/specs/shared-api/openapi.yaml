@@ -3187,6 +3187,7 @@ components:
             assignedBeacons: { type: integer }
             walkableCells: { type: integer }
             lowCoverageCells: { type: integer }
+            skippedGlobalProducts: { type: integer, description: "Global catalog products (neither storeId nor storeCode) that were left out because the store has its own products; 0 when the global catalog was checked." }
         findings:
           type: array
           items: { $ref: "#/components/schemas/ReadinessFinding" }

@@ -27,7 +27,7 @@ test("readiness page shows a red summary, grouped findings and a Markdown fallba
   const radii: string[] = [];
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
   await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
-  await page.route("**/api/stores/store-1/readiness?*", (route) => {
+  await page.route("**/api/stores/store-1/readiness*", (route) => {
     radii.push(new URL(route.request().url()).searchParams.get("radius") ?? "");
     return route.fulfill({ json: redReport });
   });
@@ -36,7 +36,9 @@ test("readiness page shows a red summary, grouped findings and a Markdown fallba
   await expect(page.getByRole("heading", { name: "Pilot-Bereitschaft" })).toBeVisible();
   await expect(page.getByText("Nicht bereit", { exact: true })).toBeVisible();
   await expect(page.getByText("Blockierend: 2 · Warnungen: 1")).toBeVisible();
-  expect(radii).toEqual(["8"]);
+  // The first request carries no radius: the server uses the default of the store's profile.
+  expect(radii).toEqual([""]);
+  await expect(page.getByLabel("Beacon-Radius in Metern")).toHaveValue("8.0");
 
   await expect(page.getByRole("heading", { name: "Blockierend (2)" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Warnungen (1)" })).toBeVisible();
@@ -52,7 +54,7 @@ test("readiness page shows a red summary, grouped findings and a Markdown fallba
   await page.getByLabel("Beacon-Radius in Metern").fill("40");
   await page.getByRole("button", { name: "Prüfen" }).click();
   await expect(page.getByRole("alert")).toContainText("Der Radius muss zwischen 0,5 und 30 Metern liegen.");
-  expect(radii).toEqual(["8"]);
+  expect(radii).toEqual([""]);
   await page.getByLabel("Beacon-Radius in Metern").fill("12.5");
   await page.getByRole("button", { name: "Prüfen" }).click();
   await expect.poll(() => radii.at(-1)).toBe("12.5");
@@ -68,7 +70,7 @@ test("ready store shows a green summary and copies the Markdown checklist", asyn
   });
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "region-1", username: "region", email: null, role: "region-manager", scope: { regionId: "region-1", regionName: "Oberösterreich", storeId: null, storeName: null } } }));
   await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
-  await page.route("**/api/stores/store-1/readiness?*", (route) => route.fulfill({ json: greenReport }));
+  await page.route("**/api/stores/store-1/readiness*", (route) => route.fulfill({ json: greenReport }));
 
   await page.goto("/admin/next/stores/readiness/?storeId=store-1");
   await expect(page.getByText("Bereit", { exact: true })).toBeVisible();
@@ -88,7 +90,7 @@ test("readiness page explains a forbidden market and offers no retry", async ({ 
   let readinessCalls = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "region-2", username: "region", email: null, role: "region-manager", scope: { regionId: "region-2", regionName: "Wien", storeId: null, storeName: null } } }));
   await page.route("**/api/stores/foreign-store", (route) => route.fulfill({ status: 403, json: { error: "Forbidden" } }));
-  await page.route("**/api/stores/foreign-store/readiness?*", (route) => {
+  await page.route("**/api/stores/foreign-store/readiness*", (route) => {
     readinessCalls += 1;
     return route.fulfill({ status: 403, json: { error: "Forbidden" } });
   });
@@ -110,7 +112,7 @@ test("readiness page names the coverage profile, its rule and the computed share
   const radii: Array<string | null> = [];
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
   await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
-  await page.route("**/api/stores/store-1/readiness?*", (route) => {
+  await page.route("**/api/stores/store-1/readiness*", (route) => {
     radii.push(new URL(route.request().url()).searchParams.get("radius"));
     return route.fulfill({ json: testroomReport });
   });
@@ -130,7 +132,7 @@ test("readiness page says so when the coverage was not computed", async ({ page 
   };
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
   await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
-  await page.route("**/api/stores/store-1/readiness?*", (route) => route.fulfill({ json: notComputed }));
+  await page.route("**/api/stores/store-1/readiness*", (route) => route.fulfill({ json: notComputed }));
 
   await page.goto("/admin/next/stores/readiness/?storeId=store-1");
   await expect(page.getByText("Abdeckung nicht berechnet", { exact: true })).toBeVisible();
@@ -148,7 +150,7 @@ test("readiness page shows beacon registry findings with a link to the beacon ad
   };
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
   await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
-  await page.route("**/api/stores/store-1/readiness?*", (route) => route.fulfill({ json: report }));
+  await page.route("**/api/stores/store-1/readiness*", (route) => route.fulfill({ json: report }));
 
   await page.goto("/admin/next/stores/readiness/?storeId=store-1");
   await expect(page.getByText("2 Abweichungen zwischen Registrierung und Layout")).toBeVisible();
@@ -162,7 +164,47 @@ test("readiness page shows beacon registry findings with a link to the beacon ad
 test("readiness page says consistent only when there are beacons to compare", async ({ page }) => {
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
   await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
-  await page.route("**/api/stores/store-1/readiness?*", (route) => route.fulfill({ json: greenReport }));
+  await page.route("**/api/stores/store-1/readiness*", (route) => route.fulfill({ json: greenReport }));
   await page.goto("/admin/next/stores/readiness/?storeId=store-1");
   await expect(page.getByText("Registrierung und Layout stimmen überein")).toBeVisible();
+});
+
+test("readiness radius field starts at the radius of the testroom profile and a manual radius wins until the profile changes", async ({ page }) => {
+  const radii: string[] = [];
+  let profile = { id: "testroom", defaultRadius: 10 };
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
+  await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: { ...store, readinessProfile: "testroom" } }));
+  await page.route("**/api/stores/store-1/readiness*", (route) => {
+    const radius = new URL(route.request().url()).searchParams.get("radius");
+    radii.push(radius ?? "");
+    return route.fulfill({ json: { ...greenReport, profile: profile.id, radius: radius === null ? profile.defaultRadius : Number(radius) } });
+  });
+
+  await page.goto("/admin/next/stores/readiness/?storeId=store-1");
+  const radiusField = page.getByLabel("Beacon-Radius in Metern");
+  await expect(radiusField).toHaveValue("10.0");
+  await expect(page.getByText("Radius 10 m", { exact: false })).toBeVisible();
+  expect(radii).toEqual([""]);
+
+  // A manual radius is sent and stays in the field.
+  await radiusField.fill("12.5");
+  await page.getByRole("button", { name: "Prüfen" }).click();
+  await expect.poll(() => radii.at(-1)).toBe("12.5");
+  await expect(radiusField).toHaveValue("12.5");
+
+  // The store is switched to the market profile: the next report names the other profile, so the field drops the manual radius.
+  profile = { id: "market", defaultRadius: 8 };
+  await page.getByRole("button", { name: "Prüfen" }).click();
+  await expect(radiusField).toHaveValue("8.0");
+  expect(radii.slice(-2)).toEqual(["12.5", ""]);
+});
+
+test("readiness page names the global products that were left out", async ({ page }) => {
+  const report = { ...greenReport, counts: { ...greenReport.counts, skippedGlobalProducts: 79 } };
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
+  await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
+  await page.route("**/api/stores/store-1/readiness*", (route) => route.fulfill({ json: report }));
+
+  await page.goto("/admin/next/stores/readiness/?storeId=store-1");
+  await expect(page.getByText("79 nicht geprüft (die Filiale hat eigene Produkte)")).toBeVisible();
 });

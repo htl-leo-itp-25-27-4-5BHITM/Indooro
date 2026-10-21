@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import type { ApiClient } from "./api/client";
-import { DEFAULT_READINESS_RADIUS, fetchStoreReadiness, type ReadinessFinding, type ReadinessReport } from "./api/readiness";
+import { fetchStoreReadiness, type ReadinessFinding, type ReadinessReport } from "./api/readiness";
 import type { CurrentUser } from "./routes";
 import {
   BEACON_CONSISTENCY_CODES,
@@ -9,7 +9,11 @@ import {
   describeReadinessError,
   formatRadius,
   groupFindings,
+  INITIAL_RADIUS_FIELD,
   parseRadiusInput,
+  radiusFieldAfterReport,
+  radiusFieldApplied,
+  radiusFieldTyped,
   profileLabel,
   readinessToMarkdown,
   ruleText,
@@ -63,9 +67,10 @@ function FindingItem({ finding, storeId, isAdmin }: { finding: ReadinessFinding;
 
 export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser }) {
   const storeId = new URLSearchParams(window.location.search).get("storeId");
-  const [radiusInput, setRadiusInput] = useState(DEFAULT_READINESS_RADIUS.toFixed(1));
+  // radius null: the server answers with the default radius of the store's profile, which the field then shows.
+  const [radiusField, setRadiusField] = useState(INITIAL_RADIUS_FIELD);
   const [radiusError, setRadiusError] = useState<string | null>(null);
-  const [radius, setRadius] = useState(DEFAULT_READINESS_RADIUS);
+  const radius = radiusField.radius;
   const [report, setReport] = useState<ReadinessReport | null>(null);
   const [loadError, setLoadError] = useState<LoadError | null>(null);
   const [revision, setRevision] = useState(0);
@@ -90,7 +95,11 @@ export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser
     setLoadError(null);
     setReport(null);
     fetchStoreReadiness(api, storeId, radius, { signal: controller.signal })
-      .then((result) => { if (!controller.signal.aborted) setReport(result); })
+      .then((result) => {
+        if (controller.signal.aborted) return;
+        setReport(result);
+        setRadiusField((field) => radiusFieldAfterReport(field, result));
+      })
       .catch((cause: unknown) => { if (!controller.signal.aborted) setLoadError(describeReadinessError(cause)); });
     return () => controller.abort();
   }, [api, storeId, radius, revision]);
@@ -103,13 +112,13 @@ export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser
 
   function applyRadius(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const parsed = parseRadiusInput(radiusInput);
+    const parsed = parseRadiusInput(radiusField.input);
     if ("error" in parsed) {
       setRadiusError(parsed.error);
       return;
     }
     setRadiusError(null);
-    setRadius(parsed.radius);
+    setRadiusField((field) => radiusFieldApplied(field, parsed.radius));
     setRevision((value) => value + 1);
   }
 
@@ -133,7 +142,7 @@ export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser
 
     {/* noValidate: the range is checked by parseRadiusInput so the message stays German and consistent. */}
     <form className="readiness-controls notice" noValidate onSubmit={applyRadius}>
-      <label>Beacon-Radius in Metern<input name="radius" type="number" min={0.5} max={30} step="any" inputMode="decimal" value={radiusInput} aria-invalid={!!radiusError} aria-describedby={radiusError ? "readiness-radius-error" : undefined} onChange={(event) => setRadiusInput(event.currentTarget.value)} /></label>
+      <label>Beacon-Radius in Metern<input name="radius" type="number" min={0.5} max={30} step="any" inputMode="decimal" value={radiusField.input} aria-invalid={!!radiusError} aria-describedby={radiusError ? "readiness-radius-error" : undefined} onChange={(event) => { const input = event.currentTarget.value; setRadiusField((field) => radiusFieldTyped(field, input)); }} /></label>
       <button className="button" type="submit">Prüfen</button>
       {radiusError && <small id="readiness-radius-error" role="alert">{radiusError}</small>}
     </form>
@@ -153,6 +162,7 @@ export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser
           <div><dt>Regale</dt><dd>{report.counts.shelves}</dd></div>
           <div><dt>Eingänge</dt><dd>{report.counts.entrances}</dd></div>
           <div><dt>Produkte</dt><dd>{report.counts.products}</dd></div>
+          {report.counts.skippedGlobalProducts > 0 && <div className="wide"><dt>Globale Produkte</dt><dd>{report.counts.skippedGlobalProducts} nicht geprüft (die Filiale hat eigene Produkte)</dd></div>}
           <div><dt>Beacons platziert</dt><dd>{report.counts.placedBeacons}</dd></div>
           <div><dt>Beacons zugewiesen</dt><dd>{report.counts.assignedBeacons}</dd></div>
           {ruleText(report) && <div className="wide"><dt>Abdeckungsregel</dt><dd>{ruleText(report)}</dd></div>}

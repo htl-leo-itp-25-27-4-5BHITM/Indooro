@@ -2151,6 +2151,8 @@ export interface components {
                 assignedBeacons?: number;
                 walkableCells?: number;
                 lowCoverageCells?: number;
+                /** @description Global catalog products (neither storeId nor storeCode) that were left out because the store has its own products; 0 when the global catalog was checked. */
+                skippedGlobalProducts?: number;
             };
             findings: components["schemas"]["ReadinessFinding"][];
             /** @description Coverage profile the store was checked with (`market` by default). */

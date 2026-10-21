@@ -23,9 +23,11 @@ import java.util.UUID;
  * Loads the products of one store from OpenSearch, page by page, with search_after on id.
  *
  * <p>A product belongs to a store when its storeId equals the store UUID or its storeCode equals the
- * store code. Products without either field are the global catalog (today every pilot product, see
- * add-store-scoped-catalog); the apps search it without a store filter, so customers of every store can
- * be sent to them and they are checked against the store layout as well.
+ * store code. Products without either field are the global catalog (the legacy pilot products, see
+ * add-store-scoped-catalog). Both are loaded, then {@link #select} decides: a store with at least one own
+ * product is checked against its own products only, because the apps scope product requests by store
+ * code and the global products are noise for it; the number of skipped global products is reported. A
+ * store without own products keeps being checked against the global catalog.
  * Existing OpenSearchService.searchAdminProductsPage has no store filter, so this reader queries the
  * index directly. The scan stops after MAX_PAGES pages and reports truncation.
  */
@@ -43,7 +45,7 @@ public class StoreProductSource {
 
     public ProductPage loadStoreProducts(UUID storeId, String storeCode) throws IOException {
         Query query = storeQuery(storeId, storeCode);
-        List<ProductRef> products = new ArrayList<>();
+        List<Product> loaded = new ArrayList<>();
         List<String> searchAfter = null;
         for (int page = 0; page < MAX_PAGES; page++) {
             SearchRequest.Builder request = new SearchRequest.Builder()
@@ -56,25 +58,53 @@ public class StoreProductSource {
             }
             SearchResponse<Product> response = client.search(request.build(), Product.class);
             List<Hit<Product>> hits = response.hits().hits();
-            hits.stream()
-                    .map(Hit::source)
-                    .filter(Objects::nonNull)
-                    .map(product -> new ProductRef(product.getId(), product.getName(), product.getLayoutCode()))
-                    .forEach(products::add);
+            hits.stream().map(Hit::source).filter(Objects::nonNull).forEach(loaded::add);
             if (hits.size() < PAGE_SIZE) {
-                return new ProductPage(products, false);
+                return select(loaded, storeId, storeCode, false);
             }
             searchAfter = hits.get(hits.size() - 1).sort();
             if (searchAfter == null || searchAfter.isEmpty()) {
-                return new ProductPage(products, false);
+                return select(loaded, storeId, storeCode, false);
             }
         }
-        return new ProductPage(products, true);
+        return select(loaded, storeId, storeCode, true);
+    }
+
+    /**
+     * Picks the products the readiness check evaluates. With at least one own product (storeId or
+     * storeCode matches) only the own products are returned and the global ones are counted as skipped.
+     * Without own products everything loaded is returned.
+     */
+    static ProductPage select(List<Product> loaded, UUID storeId, String storeCode, boolean truncated) {
+        String storeIdText = storeId.toString();
+        String normalizedCode = normalizeCode(storeCode);
+        List<Product> own = loaded.stream()
+                .filter(product -> isOwn(product, storeIdText, normalizedCode))
+                .toList();
+        if (own.isEmpty()) {
+            return new ProductPage(loaded.stream().map(StoreProductSource::toRef).toList(), truncated, 0);
+        }
+        return new ProductPage(own.stream().map(StoreProductSource::toRef).toList(), truncated,
+                loaded.size() - own.size());
+    }
+
+    private static boolean isOwn(Product product, String storeIdText, String normalizedCode) {
+        return (product.getStoreId() != null && storeIdText.equalsIgnoreCase(product.getStoreId().trim()))
+                || (normalizedCode != null && product.getStoreCode() != null
+                && normalizedCode.equals(product.getStoreCode().trim()));
+    }
+
+    private static ProductRef toRef(Product product) {
+        return new ProductRef(product.getId(), product.getName(), product.getLayoutCode());
+    }
+
+    private static String normalizeCode(String storeCode) {
+        return storeCode == null || storeCode.isBlank() ? null : storeCode.trim();
     }
 
     private static Query storeQuery(UUID storeId, String storeCode) {
         String storeIdText = storeId.toString();
-        String normalizedCode = storeCode == null || storeCode.isBlank() ? null : storeCode.trim();
+        String normalizedCode = normalizeCode(storeCode);
         return Query.of(query -> query.bool(bool -> {
             bool.should(should -> should.term(term -> term.field("storeId").value(value -> value.stringValue(storeIdText))));
             if (normalizedCode != null) {
