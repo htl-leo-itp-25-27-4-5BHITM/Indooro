@@ -57,6 +57,51 @@ export function formatRadius(radius: number): string {
   return String(radius).replace(".", ",");
 }
 
+/**
+ * State of the radius field on the readiness page. The first request carries no radius, so the server
+ * answers with the default radius of the store's coverage profile and the field shows it. A value typed by
+ * the user wins until the profile of a later report differs; then the field falls back to the profile default.
+ */
+export interface RadiusFieldState {
+  /** Text in the input. */
+  input: string;
+  /** Radius sent to the server; null asks for the default radius of the store's profile. */
+  radius: number | null;
+  /** True once the user changed the input or applied a radius. */
+  touched: boolean;
+  /** Profile of the last report; null before the first one. */
+  profile: string | null;
+}
+
+export const INITIAL_RADIUS_FIELD: RadiusFieldState = { input: "", radius: null, touched: false, profile: null };
+
+function radiusInputText(radius: number): string {
+  return Number.isInteger(radius) ? radius.toFixed(1) : String(radius);
+}
+
+export function radiusFieldTyped(state: RadiusFieldState, input: string): RadiusFieldState {
+  return { ...state, input, touched: true };
+}
+
+export function radiusFieldApplied(state: RadiusFieldState, radius: number): RadiusFieldState {
+  return { ...state, input: radiusInputText(radius), radius, touched: true };
+}
+
+/** Applies a report that was requested with state.radius. */
+export function radiusFieldAfterReport(state: RadiusFieldState, report: Pick<ReadinessReport, "radius" | "profile">): RadiusFieldState {
+  const profileChanged = state.profile !== null && state.profile !== report.profile;
+  const requestedDefault = state.radius === null;
+  // After a profile change with an explicit radius the radius resets to null, which requests a new report that sets the input.
+  const touched = profileChanged ? false : state.touched;
+  const showDefault = !touched && requestedDefault;
+  return {
+    input: showDefault ? radiusInputText(report.radius) : state.input,
+    radius: profileChanged ? null : state.radius,
+    touched,
+    profile: report.profile
+  };
+}
+
 /** Accepts "8", "8.0" or "8,0"; the radius must be inside the server-side range 0.5 to 30. */
 export function parseRadiusInput(raw: string): { radius: number } | { error: string } {
   const normalized = raw.trim().replace(",", ".");
@@ -148,6 +193,7 @@ export function readinessToMarkdown(report: ReadinessReport, options: { storeNam
     `- Regale: ${counts.shelves}`,
     `- Eingänge: ${counts.entrances}`,
     `- Produkte: ${counts.products}`,
+    ...(counts.skippedGlobalProducts > 0 ? [`- Globale Produkte nicht geprüft: ${counts.skippedGlobalProducts}`] : []),
     `- Beacons platziert: ${counts.placedBeacons}`,
     `- Beacons zugewiesen: ${counts.assignedBeacons}`,
     `- Beacon-Registrierung: ${beaconConsistencyText(report)}`,

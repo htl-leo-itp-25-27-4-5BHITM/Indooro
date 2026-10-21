@@ -65,7 +65,8 @@ public final class StoreReadinessEvaluator {
             findings.add(finding(Severity.BLOCKING, "NO_ACTIVE_LAYOUT",
                     "Keine aktive Layout-Version: Die Filiale kann nicht getestet werden.",
                     null, null, null, null));
-            return report(input, findings, new ReadinessCounts(0, 0, products.size(), 0, assigned.size(), 0, 0),
+            return report(input, findings, new ReadinessCounts(0, 0, products.size(), 0, assigned.size(), 0, 0,
+                    Math.max(0, input.skippedGlobalProducts())),
                     profile, rule, false);
         }
 
@@ -202,7 +203,8 @@ public final class StoreReadinessEvaluator {
                 beacons.size(),
                 assigned.size(),
                 walkable,
-                lowCoverage);
+                lowCoverage,
+                Math.max(0, input.skippedGlobalProducts()));
         return report(input, findings, counts, profile, rule, coverageComputed);
     }
 

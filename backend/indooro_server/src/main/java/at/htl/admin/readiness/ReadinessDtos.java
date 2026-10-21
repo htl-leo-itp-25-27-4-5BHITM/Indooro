@@ -31,6 +31,11 @@ public final class ReadinessDtos {
     ) {
     }
 
+    /**
+     * products is the number of products that were checked. skippedGlobalProducts is the number of global
+     * catalog products (neither storeId nor storeCode) that were left out because the store has its own
+     * products; it is 0 when the global catalog was checked.
+     */
     public record ReadinessCounts(
             int shelves,
             int entrances,
@@ -38,8 +43,14 @@ public final class ReadinessDtos {
             int placedBeacons,
             int assignedBeacons,
             int walkableCells,
-            int lowCoverageCells
+            int lowCoverageCells,
+            int skippedGlobalProducts
     ) {
+
+        public ReadinessCounts(int shelves, int entrances, int products, int placedBeacons, int assignedBeacons,
+                               int walkableCells, int lowCoverageCells) {
+            this(shelves, entrances, products, placedBeacons, assignedBeacons, walkableCells, lowCoverageCells, 0);
+        }
     }
 
     /**
@@ -69,8 +80,16 @@ public final class ReadinessDtos {
     public record ProductRef(Integer id, String name, String layoutCode) {
     }
 
-    /** One page of store products; truncated is true when the safety limit stopped the scan. */
-    public record ProductPage(List<ProductRef> products, boolean truncated) {
+    /**
+     * The products to check for one store; truncated is true when the safety limit stopped the scan.
+     * skippedGlobalProducts counts the global catalog products that were left out because the store has
+     * its own products.
+     */
+    public record ProductPage(List<ProductRef> products, boolean truncated, int skippedGlobalProducts) {
+
+        public ProductPage(List<ProductRef> products, boolean truncated) {
+            this(products, truncated, 0);
+        }
     }
 
     /**
@@ -106,6 +125,7 @@ public final class ReadinessDtos {
     /**
      * Pure evaluator input. layout is the stored layout document; null means no active layout.
      * profile is the coverage profile id; null or an unknown id is evaluated with the default "market".
+     * skippedGlobalProducts is only passed through to the report counts.
      */
     public record ReadinessInput(
             UUID storeId,
@@ -116,15 +136,24 @@ public final class ReadinessDtos {
             boolean productListTruncated,
             List<AssignedBeacon> assignedBeacons,
             double radius,
-            String profile
+            String profile,
+            int skippedGlobalProducts
     ) {
+
+        /** Input without skipped global products. */
+        public ReadinessInput(UUID storeId, UUID layoutId, Integer layoutVersionNo, JsonNode layout,
+                              List<ProductRef> products, boolean productListTruncated,
+                              List<AssignedBeacon> assignedBeacons, double radius, String profile) {
+            this(storeId, layoutId, layoutVersionNo, layout, products, productListTruncated, assignedBeacons,
+                    radius, profile, 0);
+        }
 
         /** Input for the default profile "market". */
         public ReadinessInput(UUID storeId, UUID layoutId, Integer layoutVersionNo, JsonNode layout,
                               List<ProductRef> products, boolean productListTruncated,
                               List<AssignedBeacon> assignedBeacons, double radius) {
             this(storeId, layoutId, layoutVersionNo, layout, products, productListTruncated, assignedBeacons,
-                    radius, null);
+                    radius, null, 0);
         }
     }
 }

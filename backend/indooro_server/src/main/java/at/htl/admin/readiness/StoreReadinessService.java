@@ -74,7 +74,8 @@ public class StoreReadinessService {
                 page.truncated(),
                 assigned,
                 radius,
-                profile));
+                profile,
+                page.skippedGlobalProducts()));
     }
 
     private ProductPage loadProducts(StoreEntity store) {

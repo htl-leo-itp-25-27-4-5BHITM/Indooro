@@ -9,14 +9,18 @@ import {
   coverageText,
   describeReadinessError,
   groupFindings,
+  INITIAL_RADIUS_FIELD,
   parseRadiusInput,
+  radiusFieldAfterReport,
+  radiusFieldApplied,
+  radiusFieldTyped,
   profileLabel,
   readinessToMarkdown,
   ruleText,
   statusLabel
 } from "./readiness";
 
-const counts = { shelves: 12, entrances: 1, products: 340, placedBeacons: 4, assignedBeacons: 5, walkableCells: 300, lowCoverageCells: 12 };
+const counts = { shelves: 12, entrances: 1, products: 340, placedBeacons: 4, assignedBeacons: 5, walkableCells: 300, lowCoverageCells: 12, skippedGlobalProducts: 0 };
 
 const redReport: ReadinessReport = {
   storeId: "store-1",
@@ -107,8 +111,9 @@ test("radius input accepts German and English decimals inside 0.5 to 30 metres",
   assert.ok("error" in parseRadiusInput("acht"));
 });
 
-test("readiness request uses the default radius and encodes the store id", () => {
-  assert.equal(readinessPath("store 1"), "/api/stores/store%201/readiness?radius=8");
+test("readiness request without a radius leaves the default to the store's profile and encodes the store id", () => {
+  assert.equal(readinessPath("store 1"), "/api/stores/store%201/readiness");
+  assert.equal(readinessPath("store 1", null), "/api/stores/store%201/readiness");
   assert.equal(readinessPath("store-1", 12.5), "/api/stores/store-1/readiness?radius=12.5");
 });
 
@@ -142,7 +147,7 @@ test("rule text states beacons, radius and the allowed share, or nothing when th
 });
 
 test("coverage is never shown as a result when it was not computed", () => {
-  const notComputed = { ...redReport, coverageComputed: false, counts: { ...counts, walkableCells: 0, lowCoverageCells: 0 } };
+  const notComputed = { ...redReport, coverageComputed: false, counts: { ...counts, walkableCells: 0, lowCoverageCells: 0, skippedGlobalProducts: 0 } };
   assert.equal(coverageSummary(notComputed), "Abdeckung nicht berechnet");
   assert.equal(coverageSummary(redReport), coverageText(counts));
   const markdown = readinessToMarkdown(notComputed, { storeName: "A", checkedOn: "" });
@@ -169,7 +174,7 @@ test("report parsing reads profile and rule values and stays honest for older se
   assert.equal(parsed.coverageComputed, true);
   assert.equal(parsed.minBeaconsPerCell, null);
   assert.equal(parsed.maxLowCoverageShare, null);
-  const legacyEmpty = parseReadinessReport({ ...legacy, counts: { ...counts, walkableCells: 0, lowCoverageCells: 0 } });
+  const legacyEmpty = parseReadinessReport({ ...legacy, counts: { ...counts, walkableCells: 0, lowCoverageCells: 0, skippedGlobalProducts: 0 } });
   assert.equal(legacyEmpty.coverageComputed, false);
 });
 
@@ -192,4 +197,55 @@ test("beacon consistency text names deviations and does not claim consistency wi
 test("markdown export lists the beacon registry state", () => {
   assert.match(readinessToMarkdown({ ...redReport, findings: [zeroUuidFinding] }, { storeName: "A", checkedOn: "" }), /- Beacon-Registrierung: 1 Abweichung zwischen/);
   assert.match(readinessToMarkdown(greenReport, { storeName: "A", checkedOn: "" }), /- Beacon-Registrierung: Registrierung und Layout stimmen überein/);
+});
+
+test("radius field shows the radius of the profile of the first report", () => {
+  const market = radiusFieldAfterReport(INITIAL_RADIUS_FIELD, { radius: 8, profile: "market" });
+  assert.deepEqual(market, { input: "8.0", radius: null, touched: false, profile: "market" });
+  const testroom = radiusFieldAfterReport(INITIAL_RADIUS_FIELD, { radius: 10, profile: "testroom" });
+  assert.equal(testroom.input, "10.0");
+  assert.equal(testroom.radius, null);
+});
+
+test("radius field follows a profile change while the user has not touched it", () => {
+  const market = radiusFieldAfterReport(INITIAL_RADIUS_FIELD, { radius: 8, profile: "market" });
+  const testroom = radiusFieldAfterReport(market, { radius: 10, profile: "testroom" });
+  assert.equal(testroom.input, "10.0");
+  assert.equal(testroom.radius, null);
+});
+
+test("a radius the user applied wins until the profile changes", () => {
+  const first = radiusFieldAfterReport(INITIAL_RADIUS_FIELD, { radius: 10, profile: "testroom" });
+  const applied = radiusFieldApplied(radiusFieldTyped(first, "6,5"), 6.5);
+  assert.deepEqual(applied, { input: "6.5", radius: 6.5, touched: true, profile: "testroom" });
+  // The report for the applied radius does not overwrite the input.
+  const sameProfile = radiusFieldAfterReport(applied, { radius: 6.5, profile: "testroom" });
+  assert.deepEqual(sameProfile, applied);
+  // A report with another profile drops the manual radius and asks for the profile default.
+  const changed = radiusFieldAfterReport(applied, { radius: 6.5, profile: "market" });
+  assert.equal(changed.radius, null);
+  assert.equal(changed.touched, false);
+  assert.equal(changed.profile, "market");
+  const defaultReport = radiusFieldAfterReport(changed, { radius: 8, profile: "market" });
+  assert.equal(defaultReport.input, "8.0");
+});
+
+test("typed but not applied input is kept when a report arrives", () => {
+  const first = radiusFieldAfterReport(INITIAL_RADIUS_FIELD, { radius: 8, profile: "market" });
+  const typed = radiusFieldTyped(first, "12");
+  assert.equal(radiusFieldAfterReport(typed, { radius: 8, profile: "market" }).input, "12");
+});
+
+test("report parsing reads the skipped global products and treats an older server as none skipped", () => {
+  const withSkipped = parseReadinessReport({ ...redReport, counts: { ...redReport.counts, skippedGlobalProducts: 79 } });
+  assert.equal(withSkipped.counts.skippedGlobalProducts, 79);
+  const oldCounts: Record<string, number> = { ...redReport.counts };
+  delete oldCounts.skippedGlobalProducts;
+  assert.equal(parseReadinessReport({ ...redReport, counts: oldCounts }).counts.skippedGlobalProducts, 0);
+});
+
+test("markdown export names skipped global products only when there are some", () => {
+  const skipped = { ...redReport, counts: { ...redReport.counts, skippedGlobalProducts: 79 } };
+  assert.match(readinessToMarkdown(skipped, { storeName: "A", checkedOn: "" }), /- Globale Produkte nicht geprüft: 79/);
+  assert.doesNotMatch(readinessToMarkdown(redReport, { storeName: "A", checkedOn: "" }), /Globale Produkte/);
 });

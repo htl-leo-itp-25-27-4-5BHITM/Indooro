@@ -11,7 +11,7 @@ function finding(code: string, severity: "BLOCKING" | "WARNING" = "BLOCKING"): R
 function report(overrides: Partial<ReadinessReport> = {}): ReadinessReport {
   return {
     storeId: "store-1", layoutId: "layout-1", layoutVersionNo: 3, radius: 8, status: "GREEN", blockingCount: 0, warningCount: 0,
-    counts: { shelves: 12, entrances: 1, products: 40, placedBeacons: 6, assignedBeacons: 6, walkableCells: 300, lowCoverageCells: 0 },
+    counts: { shelves: 12, entrances: 1, products: 40, placedBeacons: 6, assignedBeacons: 6, walkableCells: 300, lowCoverageCells: 0, skippedGlobalProducts: 0 },
     findings: [], profile: "market", coverageComputed: true, minBeaconsPerCell: 3, maxLowCoverageShare: 0.05,
     ...overrides
   };
@@ -28,7 +28,7 @@ const readyInput: SetupInput = {
 const emptyInput: SetupInput = {
   store: { id: "store-1", status: "ACTIVE", activeLayout: null },
   mobileLayoutFallback: true,
-  readiness: report({ layoutId: null, layoutVersionNo: null, status: "RED", blockingCount: 1, findings: [finding("NO_ACTIVE_LAYOUT")], counts: { shelves: 0, entrances: 0, products: 0, placedBeacons: 0, assignedBeacons: 0, walkableCells: 0, lowCoverageCells: 0 } }),
+  readiness: report({ layoutId: null, layoutVersionNo: null, status: "RED", blockingCount: 1, findings: [finding("NO_ACTIVE_LAYOUT")], counts: { shelves: 0, entrances: 0, products: 0, placedBeacons: 0, assignedBeacons: 0, walkableCells: 0, lowCoverageCells: 0, skippedGlobalProducts: 0 } }),
   storeProductCount: 0,
   search: "no-products"
 };
