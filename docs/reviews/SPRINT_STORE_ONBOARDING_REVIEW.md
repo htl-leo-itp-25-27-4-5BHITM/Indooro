@@ -42,6 +42,8 @@ Kurzbegründung:
    - Ein neuer Betreiber bekommt Zugang nur über die Keycloak-Konsole **und** eine SQL-Zeile in `user_access_assignments`.
    - Ein `store-manager` darf weder einen Markt anlegen noch Produkte importieren.
    - Einzelne Produkte lassen sich live nicht speichern oder löschen (HTTP 409), solange die 153 Altdokumente im Index liegen.
+
+   *Nachtrag 2026-10-26:* Betreiber ist laut Entscheidung T0 der Indooro-Admin. Damit sind Zugang und Rollen kein Abnahmehindernis mehr. Für ein ERFÜLLT fehlen noch D3 (T5) und ein Live-Durchlauf als Admin.
 2. **Kriterium 2:** Die Prüfung liefert bei echten Fehlern eine konkrete, deutschsprachige Liste. Sie hat aber eine Lücke, die den Sinn des Kriteriums trifft: Ein Markt **ohne Regale und ohne Produkte** wird grün und als „Bereit“ angezeigt. Ein Unit-Test schreibt das sogar als erwartet fest. Ein Markt ohne Produkte oder ganz ohne Beacons wird nur gelb, und Gelb heißt in der Oberfläche „Bereit mit Hinweisen“. Live gibt es noch keinen Markt, der grün ist.
 3. **Kriterium 3:** Der Filter läuft serverseitig als `term` auf dem `keyword`-Feld `storeCode`. Kunden-Web und iOS senden den Markt mit, sobald er gewählt ist. Live bestätigt: Altdokumente ohne Markt tauchen in marktbezogenen Ergebnissen nicht auf. Die Umlaut-URL `Spar-Hörsching-001` wird korrekt kodiert. Ohne `storeCode` filtert der Server dagegen gar nicht und mischt alle Märkte. Das trifft die iOS-App, solange sie noch keinen Markt kennt.
 
@@ -101,7 +103,9 @@ Kurzbegründung:
   Dazu die beiden Tests anpassen und die OpenAPI-Beschreibung nachziehen. Keine Prüfregel lockern.
 - **Aufwand:** 0,5–1 Personentag.
 
-### D2 – Zugang für einen neuen Betreiber nur über Keycloak-Konsole und SQL (P0, Kriterium 1, Entscheidung nötig)
+### D2 – Zugang für einen neuen Betreiber nur über Keycloak-Konsole und SQL (P1 nach Entscheidung T0)
+
+> **Entscheidung 2026-10-26 (T0):** Betreiber im Sinne von Kriterium 1 ist der **Indooro-Admin**. Damit blockiert D2 die Abnahme nicht mehr, und T2 und T8 sind P1. Die Demo läuft mit der Rolle `admin`.
 
 - **Problem:** Ein Benutzer braucht eine Zeile in `user_access_assignments`. Dafür gibt es weder eine Oberfläche noch einen Schreib-Endpunkt. Die Doku beschreibt ein `INSERT` per `psql` (`DEPLOYMENT.md:318-345`, `docs/pilot-readiness/team/ADMIN_LOGIN.md:16-17`, `RELEASE_PLAN_NEXT.md:118-139`).
 - **Dateien:**
@@ -265,15 +269,15 @@ Einmaliger lokaler Nachweis, kein CI-Test. Er ersetzt T7 nicht.
 
 | ID | Prio | Task | Wer | Aufwand | Abhängig von |
 |---|---|---|---|---|---|
-| T0 | P0 | Entscheidung: Wer ist „Betreiber“ im Sinne von Kriterium 1 (Indooro-Admin oder Marktleiter)? | Erik/Team mit PO | 15 min | – |
+| T0 | erledigt | Entscheidung: Betreiber = Indooro-Admin (2026-10-26) | Erik | – | – |
 | T1 | P0 | Readiness: leere Märkte nie „Bereit“ (D1) | Claude-Session | 0,5–1 PT | – |
-| T2 | P0* | Admin-Seite „Zugänge“ statt SQL (D2) | Claude-Session | 1–1,5 PT | T0 (*P1, wenn Betreiber = Admin) |
+| T2 | P1 | Admin-Seite „Zugänge“ statt SQL (D2) | Claude-Session | 1–1,5 PT | – |
 | T3 | P1 | Suche ohne Markt fail-closed (D4) | Claude-Session | 0,5 PT | – |
 | T4 | P0 | Deploy von T1 und T3 (und T2) mit festem Tag | Codex | 1 h | T1, T3 |
 | T5 | P0 | Altbestand entfernen, entsperrt Einzelprodukt-Korrektur (D3) | Erik | 1–2 h | T4 (T3 live) |
 | T6 | P0 | Testraum korrigieren: Beacon-Werte und Eingang (D7) | Erik/Team (ablesen), Codex (Eingabe in Eriks Sitzung) | 1–2 h | nRF-Werte |
 | T7 | P1 | Isolationstest gegen echtes OpenSearch in der CI (D5) | Claude-Session | 0,5–1 PT | – |
-| T8 | P1 | Produkte und CSV für `store-manager` marktbezogen öffnen (D6) | Claude-Session | 0,5 PT | T0 |
+| T8 | P1 | Produkte und CSV für `store-manager` marktbezogen öffnen (D6) | Claude-Session | 0,5 PT | – |
 | T9 | P1 | Demo-Daten (CSV, Layout) und Generalprobe | Claude-Session (Dateien), Erik/Team (Probe) | 0,5 PT | T1, T6 |
 | T10 | P1 | `k8s/backend.yaml` und Release-Protokoll nach Deploy | Claude-Session | 0,5 h | T4 |
 | T11 | P2 | Readiness-Texte für Betreiber und Sprung zum Element im Editor (D8) | Claude-Session | 0,5 PT | – |
@@ -285,25 +289,9 @@ Einmaliger lokaler Nachweis, kein CI-Test. Er ersetzt T7 nicht.
 
 **T1 – Claude-Session: Readiness meldet leere Märkte nicht als bereit**
 
-> Arbeite in einem eigenen Worktree von `origin/main`, Branch `fix/readiness-empty-store`, PR gegen `main`, nicht mergen.
->
-> Bereich: `backend/indooro_server/src/main/java/at/htl/admin/readiness/StoreReadinessEvaluator.java`, `StoreProductSource.java`, `ReadinessDtos.java`, Tests in `backend/indooro_server/src/test/java/at/htl/admin/readiness/` und `.../resource/admin/StoreReadinessResourceTest.java`, OpenAPI-Beschreibung von `GET /api/stores/{id}/readiness` in `openspec/specs/shared-api/openapi.yaml` sowie das generierte `admin-ui/src/api/generated/schema.d.ts`.
->
-> Neue blockierende Befunde mit deutschem Text:
-> - `NO_SHELVES`: kein Regal im aktiven Layout.
-> - `NO_STORE_PRODUCTS`: Der Markt hat 0 eigene Produkte. Der Rückfall auf den globalen Katalog in `StoreProductSource.select` entfällt; die übersprungenen globalen Produkte werden weiter gezählt.
-> - `NO_BEACONS`: kein platziertes Beacon mit vollständiger Identität.
->
-> Keine bestehende Regel lockern, Profile `testroom` und `market` unverändert.
->
-> Fertig heißt:
-> - `emptyTestRoomWithNineBeaconsIsGreenInTheTestroomProfile` (`StoreReadinessEvaluatorTest.java:325`) ist umbenannt und erwartet RED mit `NO_SHELVES` und `NO_STORE_PRODUCTS`. Die Abdeckungsaussage des Tests bleibt erhalten.
-> - Ein neuer Test zeigt: Markt mit Regalen, ohne Produkte ergibt RED. Markt ohne Beacons ergibt RED. `readyStoreIsGreenWithoutFindings` bleibt GREEN.
-> - Die Checkliste (`admin-ui/src/storeSetup.ts`) zeigt weiterhin korrekte Schritte; Playwright `readiness.spec.ts` und `store-setup.spec.ts` sind angepasst, falls nötig.
->
-> Tests: `./mvnw test` im Backend, `npm test` und `npx playwright test` in `admin-ui`. CI grün: `backend-test`, `contract`, `mobile-contract`, `swift-tests`, `build-and-push`. Keine Änderungen an iOS-Routing oder Positionierung.
+Separat als direkt verwendbarer Brief: [`T1_BRIEF_READINESS_EMPTY_STORE.md`](T1_BRIEF_READINESS_EMPTY_STORE.md).
 
-**T2 – Claude-Session: Zugänge ohne SQL vergeben** (nur nach T0, falls Betreiber = Marktleiter)
+**T2 – Claude-Session: Zugänge ohne SQL vergeben** (P1, nach der Abnahme)
 
 > Eigener Worktree von `origin/main`, Branch `feat/admin-access-assignments`, PR gegen `main`, nicht mergen.
 >
@@ -405,7 +393,7 @@ Einmaliger lokaler Nachweis, kein CI-Test. Er ersetzt T7 nicht.
 >
 > Fertig heißt: CI-Job `backend-test` führt den Test aus und er ist grün; ein absichtlich auf `text` geändertes Mapping lässt ihn lokal rot werden (im PR beschreiben).
 
-**T8 – Claude-Session: Produkte und CSV für store-manager** (nur nach T0, falls Betreiber = Marktleiter)
+**T8 – Claude-Session: Produkte und CSV für store-manager** (P1, nach der Abnahme)
 
 > Eigener Worktree, Branch `feat/store-manager-catalog`, PR gegen `main`.
 >
@@ -477,16 +465,13 @@ Einmaliger lokaler Nachweis, kein CI-Test. Er ersetzt T7 nicht.
 
 **Exakt notwendige Arbeiten bis zur Abnahme:**
 
-1. T0: Entscheidung „Wer ist Betreiber?“ (heute, 15 min).
+1. T0: erledigt am 2026-10-26, Betreiber = Indooro-Admin.
 2. T1: Readiness-Lücke schließen (1 Tag inklusive Review).
 3. T3: Suche ohne Markt fail-closed (0,5 Tage, parallel zu T1).
 4. T4 und T10: Deploy und Manifest (1 h).
 5. T5: Altbestand entfernen (1–2 h, Erik).
 6. T6: Testraum-Beacons und Eingang (1–2 h, sobald die nRF-Werte vorliegen).
 7. T9: Demo-Kit und Generalprobe (0,5 Tage).
-8. T2 und T8 nur, wenn der PO „Betreiber = Marktleiter“ verlangt (zusätzlich 1,5–2 Tage).
+8. T2 und T8 sind nach der Entscheidung P1 und für die Abnahme nicht nötig.
 
-**Realistisch:**
-
-- Mit „Betreiber = Indooro-Admin“ sind es etwa 2–3 Arbeitstage Durchlaufzeit, inklusive CI und Reviews. Das passt sicher vor den 04.11. und erst recht vor den 13.11.
-- Mit „Betreiber = Marktleiter“ sind es 4–5 Arbeitstage. Das ist bis zum 04.11. knapp, bis zum 13.11. machbar.
+**Realistisch:** Mit „Betreiber = Indooro-Admin“ sind es etwa 2–3 Arbeitstage Durchlaufzeit, inklusive CI und Reviews. Das passt sicher vor den 04.11. und erst recht vor den 13.11.
