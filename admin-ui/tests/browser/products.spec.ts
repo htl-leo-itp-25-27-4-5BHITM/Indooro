@@ -103,13 +103,73 @@ test("product sort and readiness filter are requested from the server before pag
   expect(requests.at(-1)?.searchParams.get("routable")).toBe("true");
 });
 
-test("region manager product direct link calls no product API", async ({ page }) => {
+test("viewer product direct link calls no product API", async ({ page }) => {
   let calls = 0;
-  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "region-1", username: "manager", role: "region-manager", scope: { regionId: "region-1" } } }));
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "viewer-1", username: "viewer", role: "viewer", scope: null } }));
   await page.route("**/api/admin/products?*", (route) => { calls += 1; return route.fulfill({ json: { content: [], page: 0, size: 20, totalElements: 0 } }); });
   await page.goto("/admin/next/products/");
   await expect(page.getByRole("alert")).toContainText("Zugriff verweigert");
   expect(calls).toBe(0);
+});
+
+test("region manager sees Produkte in the navigation and only picks stores of the own region", async ({ page }) => {
+  const stores = [
+    { ...IMPORT_STORE, region: { id: "region-1", name: "Oberösterreich" } },
+    { id: "store-2", storeCode: "WELS-01", name: "Indooro Wels", region: { id: "region-1", name: "Oberösterreich" } },
+    { id: "store-3", storeCode: "WIEN-01", name: "Indooro Wien", region: { id: "region-2", name: "Wien" } }
+  ];
+  const listQueries: URLSearchParams[] = [];
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "region-1", username: "region", role: "region-manager", scope: { regionId: "region-1", regionName: "Oberösterreich", storeId: null, storeName: null } } }));
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: stores, page: 0, size: 100, totalElements: stores.length } }));
+  await page.route("**/api/categories?*", (route) => route.fulfill({ json: [] }));
+  await page.route("**/api/admin/products?*", (route) => {
+    listQueries.push(new URL(route.request().url()).searchParams);
+    return route.fulfill({ json: { content: [], page: 0, size: 20, totalElements: 0 } });
+  });
+  await page.goto("/admin/next/products/");
+  await expect(page.getByRole("navigation", { name: "Admin Navigation" }).getByRole("link", { name: "Produkte" })).toBeVisible();
+  const picker = page.getByRole("combobox", { name: "Markt" });
+  await expect(picker.locator("option")).toHaveText(["Markt wählen", "Indooro Linz (LINZ-01)", "Indooro Wels (WELS-01)"]);
+  expect(listQueries).toHaveLength(0);
+  await picker.selectOption("store-2");
+  await expect(page.getByText("Der Produktkatalog ist leer.")).toBeVisible();
+  expect(listQueries.map((query) => query.get("storeCode"))).toEqual(["WELS-01"]);
+});
+
+test("store manager imports a CSV into the own store and the foreign store stays locked", async ({ page }) => {
+  // A stale remembered selection of another store must not leak into the store manager's session.
+  await page.addInitScript(() => sessionStorage.setItem("indooro.admin.selectedStoreId", "store-2"));
+  const foreign = { id: "store-2", storeCode: "WELS-01", name: "Indooro Wels", region: null };
+  const { bulkCalls, listQueries } = await mockProductImport(page, {
+    user: { subject: "store-1", username: "marktleiter", role: "store-manager", scope: { regionId: null, regionName: null, storeId: "store-1", storeName: "Indooro Linz" } },
+    stores: [IMPORT_STORE, foreign]
+  });
+  const picker = page.getByRole("combobox", { name: "Markt" });
+  await expect(picker).toBeDisabled();
+  await expect(picker.locator("option")).toHaveText(["Markt wählen", "Indooro Linz (LINZ-01)"]);
+  await expect(page.getByRole("navigation", { name: "Admin Navigation" }).getByRole("link", { name: "Produkte" })).toBeVisible();
+
+  await uploadCsv(page, [CSV_HEADER, "1;Apfel;310;1;1;1;1,99", "2;Birne;420;1;1;2;1,49"].join("\n"));
+  await expect(page.getByText("2 Zeilen · 2 gültig · 0 ungültig")).toBeVisible();
+  await page.getByRole("button", { name: "Produkte importieren" }).click();
+  await expect(page.getByText("Import abgeschlossen: 2 Produkte gespeichert.")).toBeVisible();
+
+  expect(bulkCalls).toHaveLength(1);
+  expect(bulkCalls[0].query).toContain("storeCode=LINZ-01");
+  expect(bulkCalls[0].query).not.toContain("WELS-01");
+  expect(listQueries.length).toBeGreaterThan(0);
+  expect(listQueries.every((query) => query.get("storeCode") === "LINZ-01")).toBe(true);
+});
+
+test("store manager without a store scope gets no store and no product request", async ({ page }) => {
+  const { listQueries } = await mockProductImport(page, {
+    user: { subject: "store-9", username: "marktleiter", role: "store-manager", scope: null },
+    stores: [IMPORT_STORE],
+    expectStore: false
+  });
+  await expect(page.getByText("Für diesen Benutzer ist kein Markt verfügbar.")).toBeVisible();
+  await expect(page.getByLabel("CSV-Datei wählen")).toBeDisabled();
+  expect(listQueries).toHaveLength(0);
 });
 
 test("admin validates and creates a product with the documented layout code", async ({ page }) => {
@@ -254,14 +314,26 @@ const savedReply = (count: number): BulkReply => ({
 });
 
 /** Admin mit einem Markt, Layout mit Regalen 310/1 und 420/1 und einem Bulk-Endpunkt, der `reply` je Aufruf liefert. */
-async function mockProductImport(page: Page, options: { existingIds?: number[]; reply?: (call: BulkCall, attempt: number) => BulkReply } = {}) {
+async function mockProductImport(page: Page, options: {
+  existingIds?: number[];
+  reply?: (call: BulkCall, attempt: number) => BulkReply;
+  user?: Record<string, unknown>;
+  stores?: Array<Record<string, unknown>>;
+  expectStore?: boolean;
+} = {}) {
   const bulkCalls: BulkCall[] = [];
+  const listQueries: URLSearchParams[] = [];
+  const stores = options.stores ?? [IMPORT_STORE];
   const existing = (options.existingIds ?? []).map((id) => ({ id, name: `Bestand ${id}`, price: 1, layoutCode: "310/1/1/1", storeId: "store-1", storeCode: "LINZ-01" }));
-  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  const user = options.user ?? { subject: "admin-1", username: "admin", role: "admin", scope: null };
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: user }));
   await page.route("**/api/categories?*", (route) => route.fulfill({ json: [{ categoryCode: 310, categoryName: "Obst" }] }));
-  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [IMPORT_STORE], page: 0, size: 100, totalElements: 1 } }));
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: stores, page: 0, size: 100, totalElements: stores.length } }));
   await page.route("**/api/stores/store-1/layout/editor-context", (route) => route.fulfill({ json: { store: IMPORT_STORE, currentLayout: { layoutId: "active-1", versionNo: 1, status: "ACTIVE", layout: IMPORT_LAYOUT }, assignedBeacons: [] } }));
-  await page.route("**/api/admin/products?*", (route) => route.fulfill({ json: { content: existing, page: 0, size: 20, totalElements: existing.length } }));
+  await page.route("**/api/admin/products?*", (route) => {
+    listQueries.push(new URL(route.request().url()).searchParams);
+    return route.fulfill({ json: { content: existing, page: 0, size: 20, totalElements: existing.length } });
+  });
   await page.route("**/api/admin/products/bulk?*", async (route) => {
     const url = new URL(route.request().url());
     const call: BulkCall = {
@@ -274,9 +346,10 @@ async function mockProductImport(page: Page, options: { existingIds?: number[]; 
     return route.fulfill({ status: reply.status, json: reply.json });
   });
   await page.goto("/admin/next/products/");
+  if (options.expectStore === false) return { bulkCalls, listQueries };
   await expect(page.getByRole("combobox", { name: "Markt" })).toHaveValue("store-1");
   await expect(page.getByLabel("CSV-Datei wählen")).toBeEnabled();
-  return { bulkCalls };
+  return { bulkCalls, listQueries };
 }
 
 const uploadCsv = (page: Page, text: string) =>
