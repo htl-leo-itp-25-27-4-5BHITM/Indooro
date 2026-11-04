@@ -353,18 +353,30 @@ class ApplyTest(unittest.TestCase):
             self.assertIn("HTTP 403", err)
 
 
-class DeleteLegacyTest(unittest.TestCase):
-    """Zustandsbehafteter OpenSearch-Fake: zaehlt Dokumente und loescht per _delete_by_query."""
+OS = "http://127.0.0.1:9200"
 
-    def make_os(self, legacy, migrated):
-        state = {"legacy": legacy, "migrated": migrated, "deletes": 0}
+
+class OpenSearchFake(unittest.TestCase):
+    """Zustandsbehafteter OpenSearch-Fake: Alias products_live -> products_v1, zaehlt und loescht."""
+
+    def make_os(self, legacy, migrated, alias="products_live", concrete=("products_v1",),
+                legacy_ids=None):
+        ids = list(legacy_ids) if legacy_ids is not None else [str(n) for n in range(1, legacy + 1)]
+        state = {"legacy": legacy, "migrated": migrated, "deletes": 0, "ids": ids}
 
         def responder(method, url, body):
-            if url.endswith("/products/_count"):
+            if method == "GET" and url in (f"{OS}/{alias}", f"{OS}/{concrete[0]}"):
+                return mp.FetchResult(status=200, body=json.dumps(
+                    {name: {"aliases": {alias: {}}} for name in concrete}))
+            if url.endswith("/_count"):
+                self.assertIn(f"/{concrete[0]}/_count", url, "Zaehlen nur auf dem konkreten Index")
                 query = json.loads(body)
                 if "must_not" in json.dumps(query):
                     return mp.FetchResult(status=200, body=json.dumps({"count": state["legacy"]}))
                 return mp.FetchResult(status=200, body=json.dumps({"count": state["migrated"]}))
+            if url.endswith("/_search"):
+                hits = [{"_id": doc_id} for doc_id in state["ids"][:state["legacy"]]]
+                return mp.FetchResult(status=200, body=json.dumps({"hits": {"hits": hits}}))
             if "_delete_by_query" in url:
                 state["deletes"] += 1
                 deleted = state["legacy"]
@@ -375,10 +387,15 @@ class DeleteLegacyTest(unittest.TestCase):
 
         return RecordingSend(responder), state
 
+    def delete_argv(self, *extra):
+        return ["--store-code", CODE, "--delete-legacy", "--opensearch-url", OS, *extra]
+
+
+class DeleteLegacyTest(OpenSearchFake):
+
     def test_sicherheitsabbruch_wenn_migriert_kleiner_als_legacy(self):
         send, state = self.make_os(legacy=3, migrated=2)
-        code, _, err, _ = run(["--store-code", CODE, "--delete-legacy", "--yes",
-                               "--opensearch-url", "http://127.0.0.1:9200"], send=send)
+        code, _, err, _ = run(self.delete_argv("--yes"), send=send)
         self.assertEqual(code, 1)
         self.assertIn("Abbruch", err)
         self.assertEqual(state["deletes"], 0)
@@ -393,34 +410,65 @@ class DeleteLegacyTest(unittest.TestCase):
 
     def test_dry_run_ohne_yes_loescht_nicht(self):
         send, state = self.make_os(legacy=153, migrated=153)
-        code, out, err, _ = run(["--store-code", CODE, "--delete-legacy",
-                                 "--opensearch-url", "http://127.0.0.1:9200"], send=send)
+        code, out, err, _ = run(self.delete_argv(), send=send)
         self.assertEqual(code, 0, err)
         self.assertEqual(state["deletes"], 0)
         self.assertEqual(send.urls("POST"), [])
         self.assertIn("wuerde 153 Dokumente", out)
 
-    def test_mit_yes_genau_ein_delete_by_query(self):
+    def test_mit_yes_loescht_auf_dem_aufgeloesten_index_nicht_dem_alias(self):
         send, state = self.make_os(legacy=153, migrated=153)
-        code, out, err, _ = run(["--store-code", CODE, "--delete-legacy", "--yes",
-                                 "--opensearch-url", "http://127.0.0.1:9200"], send=send)
+        code, out, err, _ = run(self.delete_argv("--yes"), send=send)
         self.assertEqual(code, 0, err)
         deletes = [u for u in send.urls("POST") if "_delete_by_query" in u]
-        self.assertEqual(deletes, ["http://127.0.0.1:9200/products/_delete_by_query?refresh=true"])
+        self.assertEqual(deletes, [f"{OS}/products_v1/_delete_by_query?refresh=true"])
+        self.assertEqual(send.urls("POST"), deletes)
         body = json.loads(next(c["body"] for c in send.calls if c["method"] == "POST"))
         self.assertEqual(body, {"query": {"bool": {"must_not": {"exists": {"field": "storeCode"}}}}})
-        self.assertIn("153 Dokumente ohne storeCode geloescht", out)
+        self.assertIn("Index: products_live -> products_v1", out)
+        self.assertIn("153 Dokumente ohne storeCode aus products_v1 geloescht", out)
+
+    def test_alias_wird_vor_dem_zaehlen_aufgeloest(self):
+        send, _ = self.make_os(legacy=2, migrated=2)
+        run(self.delete_argv(), send=send)
+        self.assertEqual(send.calls[0]["method"], "GET")
+        self.assertEqual(send.calls[0]["url"], f"{OS}/products_live")
+
+    def test_index_option_wird_aufgeloest(self):
+        send, state = self.make_os(legacy=2, migrated=2, alias="products_x", concrete=("products_x_v2",))
+        code, out, err, _ = run(self.delete_argv("--index", "products_x", "--yes"), send=send)
+        self.assertEqual(code, 0, err)
+        self.assertIn("Index: products_x -> products_x_v2", out)
+        self.assertEqual(state["deletes"], 1)
+
+    def test_alias_mit_zwei_indizes_ist_abbruch(self):
+        send, state = self.make_os(legacy=2, migrated=2, concrete=("products", "products_v1"))
+        code, _, err, _ = run(self.delete_argv("--yes"), send=send)
+        self.assertEqual(code, 1)
+        self.assertIn("2 Indizes", err)
+        self.assertEqual(state["deletes"], 0)
+        self.assertEqual(send.urls("POST"), [])
+
+    def test_unbekannter_alias_ist_abbruch(self):
+        def responder(method, url, body):
+            return mp.FetchResult(status=404, body="{}")
+
+        send = RecordingSend(responder)
+        code, _, err, _ = run(self.delete_argv("--yes"), send=send)
+        self.assertEqual(code, 1)
+        self.assertIn("nicht gefunden", err)
+        self.assertEqual(send.urls("POST"), [])
 
     def test_delete_mit_failures_exit_1(self):
         def responder(method, url, body):
+            if method == "GET" and url == f"{OS}/products_live":
+                return mp.FetchResult(status=200, body=json.dumps({"products_v1": {}}))
             if "_delete_by_query" in url:
                 return mp.FetchResult(status=200, body=json.dumps(
                     {"deleted": 1, "failures": [{"cause": "x"}], "timed_out": False}))
             return mp.FetchResult(status=200, body=json.dumps({"count": 2}))
 
-        code, _, err, _ = run(["--store-code", CODE, "--delete-legacy", "--yes",
-                               "--opensearch-url", "http://127.0.0.1:9200"],
-                              send=RecordingSend(responder))
+        code, _, err, _ = run(self.delete_argv("--yes"), send=RecordingSend(responder))
         self.assertEqual(code, 1)
         self.assertIn("Fehler", err)
 
@@ -448,9 +496,143 @@ class DeleteLegacyTest(unittest.TestCase):
         send, _ = self.make_os(legacy=1, migrated=1)
         code, _, _, _ = run(["--store-code", CODE, "--delete-legacy", "--apply",
                              "--base-url", "https://x.test",
-                             "--opensearch-url", "http://127.0.0.1:9200"], send=send)
+                             "--opensearch-url", OS], send=send)
         self.assertEqual(code, 2)
         self.assertEqual(send.calls, [])
+
+    def test_ungueltiger_indexname_wird_abgelehnt(self):
+        for name in ("*", "a,b", "../x", "Products"):
+            with self.subTest(name=name):
+                send, _ = self.make_os(legacy=1, migrated=1)
+                code, _, _, _ = run(self.delete_argv("--index", name), send=send)
+                self.assertEqual(code, 2)
+                self.assertEqual(send.calls, [])
+
+    def test_index_ohne_delete_legacy_ist_fehler(self):
+        code, _, _, send = run(["--store-code", CODE, "--input", "x.ndjson", "--index", "other"])
+        self.assertEqual(code, 2)
+        self.assertEqual(send.calls, [])
+
+
+class AllowUnmigratedLegacyTest(OpenSearchFake):
+    """--allow-unmigrated-legacy: Freigabe nur durch eine Sicherung mit allen Legacy-IDs."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+
+    def backup(self, ids, name="backup.ndjson", store_ids=(), fmt="ndjson"):
+        rows = [{"id": int(i), "name": f"P{i}"} for i in ids]
+        rows += [{"id": int(i), "name": f"M{i}", "storeCode": CODE} for i in store_ids]
+        path = Path(self.tmp.name) / name
+        if fmt == "search":
+            hits = [{"_id": f"{r['storeCode']}:{r['id']}" if r.get("storeCode") else str(r["id"]),
+                     "_source": r} for r in rows]
+            path.write_text(json.dumps({"hits": {"hits": hits}}), encoding="utf-8")
+        else:
+            path.write_text("\n".join(json.dumps(r) for r in rows) + "\n", encoding="utf-8")
+        return str(path)
+
+    def argv(self, backup, *extra):
+        return self.delete_argv("--allow-unmigrated-legacy", "--backup", backup, *extra)
+
+    def test_standard_sicherung_greift_ohne_flag_bei_live_zahlen(self):
+        send, state = self.make_os(legacy=153, migrated=74)
+        code, _, err, _ = run(self.delete_argv("--yes"), send=send)
+        self.assertEqual(code, 1)
+        self.assertIn("nur 74 migrierte Dokumente, aber 153", err)
+        self.assertEqual(state["deletes"], 0)
+
+    def test_flag_mit_vollstaendiger_sicherung_loescht(self):
+        send, state = self.make_os(legacy=153, migrated=74)
+        backup = self.backup(range(1, 154), store_ids=range(500, 574))
+        code, out, err, _ = run(self.argv(backup, "--yes"), send=send)
+        self.assertEqual(code, 0, err)
+        self.assertEqual(state["deletes"], 1)
+        self.assertIn("enthaelt alle 153 Legacy-IDs", out)
+        self.assertIn("153 Dokumente ohne storeCode aus products_v1 geloescht", out)
+        self.assertEqual([u for u in send.urls("POST") if "_delete_by_query" in u],
+                         [f"{OS}/products_v1/_delete_by_query?refresh=true"])
+
+    def test_flag_ohne_yes_ist_dry_run(self):
+        send, state = self.make_os(legacy=153, migrated=74)
+        code, out, err, _ = run(self.argv(self.backup(range(1, 154))), send=send)
+        self.assertEqual(code, 0, err)
+        self.assertEqual(state["deletes"], 0)
+        self.assertNotIn("_delete_by_query", " ".join(send.urls()))
+        self.assertIn("DRY-RUN", out)
+
+    def test_flag_mit_search_antwort_als_sicherung(self):
+        send, state = self.make_os(legacy=3, migrated=1)
+        backup = self.backup(range(1, 4), store_ids=(9,), fmt="search")
+        code, _, err, _ = run(self.argv(backup, "--yes"), send=send)
+        self.assertEqual(code, 0, err)
+        self.assertEqual(state["deletes"], 1)
+
+    def test_fehlende_id_in_sicherung_bricht_ab(self):
+        send, state = self.make_os(legacy=153, migrated=74)
+        backup = self.backup([i for i in range(1, 154) if i != 77])
+        code, _, err, _ = run(self.argv(backup, "--yes"), send=send)
+        self.assertEqual(code, 1)
+        self.assertIn("1 von 153 Legacy-IDs fehlen", err)
+        self.assertIn("77", err)
+        self.assertEqual(state["deletes"], 0)
+        self.assertEqual(send.urls("POST"), [f"{OS}/products_v1/_search"])
+
+    def test_markt_dokumente_in_sicherung_decken_legacy_nicht_ab(self):
+        send, state = self.make_os(legacy=2, migrated=1, legacy_ids=["1", "2"])
+        backup = self.backup([1], store_ids=[2])
+        code, _, err, _ = run(self.argv(backup, "--yes"), send=send)
+        self.assertEqual(code, 1)
+        self.assertIn("1 von 2 Legacy-IDs fehlen", err)
+        self.assertEqual(state["deletes"], 0)
+
+    def test_sicherung_nicht_lesbar_bricht_ab(self):
+        send, state = self.make_os(legacy=2, migrated=1)
+        code, _, err, _ = run(self.argv(str(Path(self.tmp.name) / "fehlt.ndjson"), "--yes"), send=send)
+        self.assertEqual(code, 1)
+        self.assertIn("nicht lesbar", err)
+        self.assertEqual(state["deletes"], 0)
+
+    def test_leere_oder_kaputte_sicherung_bricht_ab(self):
+        for content in ("", "kein json\n", "[]"):
+            with self.subTest(content=content):
+                send, state = self.make_os(legacy=2, migrated=1)
+                path = Path(self.tmp.name) / "leer.ndjson"
+                path.write_text(content, encoding="utf-8")
+                code, _, _, _ = run(self.argv(str(path), "--yes"), send=send)
+                self.assertEqual(code, 1)
+                self.assertEqual(state["deletes"], 0)
+
+    def test_flag_ohne_legacy_dokumente_bricht_ab(self):
+        send, state = self.make_os(legacy=0, migrated=5)
+        code, _, err, _ = run(self.argv(self.backup([1]), "--yes"), send=send)
+        self.assertEqual(code, 1)
+        self.assertIn("nichts zu loeschen", err)
+        self.assertEqual(state["deletes"], 0)
+
+    def test_search_liefert_andere_zahl_als_count_bricht_ab(self):
+        send, state = self.make_os(legacy=3, migrated=1, legacy_ids=["1", "2"])
+        code, _, err, _ = run(self.argv(self.backup([1, 2, 3]), "--yes"), send=send)
+        self.assertEqual(code, 1)
+        self.assertIn("_count meldet 3", err)
+        self.assertEqual(state["deletes"], 0)
+
+    def test_flag_und_backup_nur_zusammen(self):
+        send, _ = self.make_os(legacy=1, migrated=1)
+        for argv in (self.delete_argv("--allow-unmigrated-legacy"),
+                     self.delete_argv("--backup", "x.ndjson")):
+            with self.subTest(argv=argv):
+                code, _, _, _ = run(argv, send=send)
+                self.assertEqual(code, 2)
+        self.assertEqual(send.calls, [])
+
+    def test_flag_und_backup_ohne_delete_legacy_sind_fehler(self):
+        for extra in (["--allow-unmigrated-legacy"], ["--backup", "x.ndjson"]):
+            with self.subTest(extra=extra):
+                code, _, _, send = run(["--store-code", CODE, "--input", "x.ndjson", *extra])
+                self.assertEqual(code, 2)
+                self.assertEqual(send.calls, [])
 
 
 class HelpTest(unittest.TestCase):
