@@ -35,7 +35,7 @@ export function StoreDemo() {
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,13fr)_minmax(0,7fr)] lg:gap-6" data-testid="store-demo">
       {/* Map column */}
-      <div className="min-w-0">
+      <div className="min-w-0 lg:sticky lg:top-24 lg:self-start">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <div role="radiogroup" aria-label="Demomarkt wählen" className="inline-flex rounded-full bg-white/5 p-1 ring-1 ring-white/10">
             {demo.markets.map((m) => {
@@ -102,6 +102,7 @@ export function StoreDemo() {
             position={sim.position}
             activeStopIndex={sim.activeStopIndex}
             reachedStopIds={sim.reachedStopIds ?? EMPTY_SET}
+            progress={sim.progress}
             start={start}
           />
         </StoreMap>
@@ -124,8 +125,8 @@ export function StoreDemo() {
       </div>
 
       {/* Panel column */}
-      <section aria-label="Suche, Einkaufsliste und Navigation" className="relative min-w-0 lg:min-h-[30rem]">
-        <div className="flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-ink-900/80 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] lg:absolute lg:inset-0">
+      <section aria-label="Suche, Einkaufsliste und Navigation" className="relative min-w-0">
+        <div className="flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-ink-900/80 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] lg:min-h-[36rem]">
           <div role="tablist" aria-label="Bereiche der Demo" className="grid shrink-0 grid-cols-3 gap-1 border-b border-white/8 p-1.5">
             {tabs.map((t) => {
               const on = demo.tab === t.id;
@@ -166,7 +167,7 @@ export function StoreDemo() {
             role="tabpanel"
             id={`demo-panel-${demo.tab}`}
             aria-labelledby={`demo-tab-${demo.tab}`}
-            className="max-h-[34rem] min-h-0 flex-1 overflow-y-auto p-4 lg:max-h-none"
+            className="min-h-0 flex-1 p-4"
           >
             <AnimatePresence mode="wait" initial={false}>
               <motion.div

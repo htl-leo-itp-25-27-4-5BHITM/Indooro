@@ -70,7 +70,6 @@ export function RouteLayer({ route, position, activeStopIndex, reachedStopIds, s
   const hasEnd = !lastStop || lastStop.cell.x !== lastCell.x || lastStop.cell.y !== lastCell.y;
   const s0 = centre(start);
   const e0 = centre(lastCell);
-  const startLabelUp = s0.y >= 2.4;
   const endLabelUp = e0.y >= 2.4;
 
   const glowId = `${uid}-glow`;
@@ -166,7 +165,7 @@ export function RouteLayer({ route, position, activeStopIndex, reachedStopIds, s
       <g data-testid="route-start">
         <circle cx={s0.x} cy={s0.y} r={0.62} fill={INK} stroke={MINT} strokeWidth={0.16} />
         <circle cx={s0.x} cy={s0.y} r={0.2} fill={MINT} />
-        <Pill x={s0.x} y={s0.y + (startLabelUp ? -1.45 : 1.45)} text="Start" fill="rgba(7,17,23,0.92)" color={MINT_SOFT} />
+        <Pill x={s0.x + 1.9} y={s0.y} text="Start" fill="rgba(7,17,23,0.92)" color={MINT_SOFT} />
       </g>
 
       {/* end marker */}

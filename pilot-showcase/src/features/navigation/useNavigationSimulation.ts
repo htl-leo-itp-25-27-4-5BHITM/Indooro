@@ -64,7 +64,7 @@ export function useNavigationSimulation(route: PlannedRoute | null): NavigationS
   const model = useMemo<SimModel>(() => ({ length: routeModel?.length ?? 0, stopDistances: routeModel?.stopDistances ?? [] }), [routeModel]);
 
   const [store, setStore] = useState<Store>({ sig, sim: initialSim() });
-  const [speed, setSpeedState] = useState<number>(1);
+  const [speed, setSpeedState] = useState<number>(2);
 
   // route changed → restart from the beginning, idle
   if (store.sig !== sig) setStore({ sig, sim: initialSim() });

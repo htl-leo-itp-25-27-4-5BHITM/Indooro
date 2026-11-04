@@ -180,7 +180,7 @@ export function useStoreDemo(): StoreDemo {
 
   const route = useMemo<PlannedRoute | null>(() => {
     if (stops.length === 0) return null;
-    return planRoute(grid, entranceCell(market.layout), stops, checkoutCell(market.layout));
+    return planRoute(grid, entranceCell(market.layout, grid), stops, checkoutCell(market.layout, grid));
   }, [grid, market, stops]);
 
   const sim = useNavigationSimulation(route);
