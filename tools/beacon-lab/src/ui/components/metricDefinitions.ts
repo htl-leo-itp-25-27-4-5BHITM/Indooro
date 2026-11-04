@@ -85,7 +85,7 @@ export const DYNAMIC_METRIC_DEFINITIONS: Record<Exclude<keyof DynamicMetrics, "u
   },
   lagSec: {
     label: "Verzögerung",
-    definition: "Zeitversatz in Sekunden, bei dem die Schätzungen im Mittel am besten zur Referenz passen. Positiv = Schätzung hinkt der Wahrheit hinterher. Nur ein Näherungswert.",
+    definition: "Zeitversatz in Sekunden, bei dem der mittlere Fehler der Schätzungen gegenüber der Referenz minimal wird. Positiv = Schätzung hinkt der Wahrheit hinterher. Nur ein Näherungswert.",
   },
   stationaryPrecision: {
     label: "Präzision (stationär)",
