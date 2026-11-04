@@ -9,6 +9,11 @@ export default defineConfig({
   reporter: [["list"]],
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
+    // The first-visit tour hint (toast after 6 s) would cover controls in slow runs; mark it as seen.
+    storageState: {
+      cookies: [],
+      origins: [{ origin: `http://127.0.0.1:${PORT}`, localStorage: [{ name: "indooro-pilot-tour-hint", value: "1" }] }]
+    },
     trace: "retain-on-failure"
   },
   projects: [
