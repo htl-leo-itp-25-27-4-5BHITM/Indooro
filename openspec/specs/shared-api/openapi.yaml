@@ -326,6 +326,7 @@ paths:
       tags: [catalog]
       operationId: listProducts
       summary: List product documents (match_all).
+      description: "List product documents. Without storeId and storeCode (and without a configured default store) the read is fail-closed: only legacy documents without storeCode are returned, never products of a store."
       x-indooro-access: public
       x-indooro-consumers: [ios, customer-web]
       x-indooro-findings: [API-14, PERF-25]
@@ -379,6 +380,7 @@ paths:
       tags: [catalog]
       operationId: searchProducts
       summary: Fuzzy product search with optional store filter.
+      description: "Fuzzy product search. Without storeId and storeCode (and without a configured default store) the read is fail-closed: only legacy documents without storeCode are returned, never products of a store."
       x-indooro-access: public
       x-indooro-consumers: [ios, customer-web, admin-ui]
       x-indooro-findings: [API-04, API-13, SEC-22]
@@ -407,6 +409,7 @@ paths:
       tags: [catalog]
       operationId: getProduct
       summary: Product by id.
+      description: "Product by id. Without storeId and storeCode (and without a configured default store) the read is fail-closed: only legacy documents without storeCode are returned, never products of a store."
       x-indooro-access: public
       x-indooro-consumers: [api-tests]
       parameters:
