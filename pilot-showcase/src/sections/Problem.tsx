@@ -1,5 +1,6 @@
 import { Clock, MessageCircleQuestion, RefreshCw, UserRoundSearch } from "lucide-react";
 import { Card, Eyebrow, Reveal, Section } from "../components/ui";
+import { NextChapter } from "../features/tour/NextChapter";
 
 const POINTS = [
   {
@@ -67,6 +68,7 @@ export function Problem() {
           ))}
         </ul>
       </div>
+      <NextChapter href="#demo" tone="light" title="Probieren Sie es in der Demo aus" text="Produkt suchen, Liste füllen, den Weg durch einen fiktiven Markt ansehen." />
     </Section>
   );
 }

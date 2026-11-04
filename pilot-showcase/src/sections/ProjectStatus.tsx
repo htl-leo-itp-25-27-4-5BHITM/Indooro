@@ -3,6 +3,7 @@ import { Check, CircleDashed, FlaskConical } from "lucide-react";
 import { Tag } from "../components/ui/Tag";
 import { DONE, OPEN, SIMULATED, TIMELINE, type StatusItem } from "../content/status";
 import { Container, Reveal, SectionHeading } from "../features/operator/ui";
+import { NextChapter } from "../features/tour/NextChapter";
 
 function Column({ title, tag, icon, items, delay }: { title: string; tag: ReactNode; icon: ReactNode; items: StatusItem[]; delay: number }) {
   return (
@@ -62,6 +63,7 @@ export function ProjectStatus() {
             ))}
           </ol>
         </Reveal>
+        <NextChapter href="#pilot" tone="light" title="So läuft ein Pilot ab" text="Fünf Schritte vom Erstgespräch bis zur gemeinsamen Auswertung." />
       </Container>
     </section>
   );

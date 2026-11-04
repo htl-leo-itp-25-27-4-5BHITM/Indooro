@@ -3,6 +3,7 @@ import { Tag } from "../components/ui/Tag";
 import { ACCEPTANCE_CRITERIA, OPERATOR_HEADLINE, OPERATOR_SUBLINE, USER_STORY } from "../content/operator";
 import { OperatorDemo } from "../features/operator/OperatorDemo";
 import { Container, Eyebrow, Reveal } from "../features/operator/ui";
+import { NextChapter } from "../features/tour/NextChapter";
 
 /** Betreiber-Bereich: „Ihr Markt. In Ihrer Hand.“ mit User Story und geführter Simulation. */
 export function OperatorSection() {
@@ -49,6 +50,7 @@ export function OperatorSection() {
         <Reveal className="mt-10" delay={0.05}>
           <OperatorDemo />
         </Reveal>
+        <NextChapter href="#projektstand" tone="light" title="Wo das Projekt heute steht" text="Was umgesetzt ist, was nur simuliert ist und was noch offen bleibt." />
       </Container>
     </section>
   );
