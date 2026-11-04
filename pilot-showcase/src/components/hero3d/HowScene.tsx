@@ -86,7 +86,7 @@ function Layer({ k, how, children }: { k: number; how: React.RefObject<How>; chi
   return (
     <group ref={g}>
       {children}
-      <Html position={[-PW / 2 + 0.1, 0.15, PD / 2 + 0.55]} zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
+      <Html position={[-PW / 2 + 1.6, 0.15, PD / 2 + 0.4]} zIndexRange={[10, 0]} style={{ pointerEvents: "none" }}>
         <div ref={tag} className="whitespace-nowrap rounded-full bg-ink-900/80 px-2.5 py-1 text-[11px] font-medium tracking-wide backdrop-blur" style={{ opacity: 0 }}>
           {LABELS[k]}
         </div>
@@ -233,7 +233,7 @@ function Director({ progress, how, state, onFrame }: { progress: { current: numb
   const aspect = size.width / Math.max(1, size.height);
   const look = useMemo(() => new THREE.Vector3(), []);
   useEffect(() => {
-    (camera as THREE.PerspectiveCamera).fov = aspect < 0.9 ? 40 : 30;
+    (camera as THREE.PerspectiveCamera).fov = aspect < 0.9 ? 40 : 34;
     camera.updateProjectionMatrix();
   }, [camera, aspect]);
   useFrame((_, delta) => {
@@ -254,10 +254,10 @@ function Director({ progress, how, state, onFrame }: { progress: { current: numb
       onFrame();
     }
     const a = lerp(-0.6, 0.5, p);
-    const R = aspect < 0.9 ? 31 : 25;
+    const R = aspect < 0.9 ? 36 : aspect < 1.4 ? 29 : 26;
     const cy = layerY(STEP_COUNT - 1, e) * 0.5 + 0.4;
-    look.set(0, cy, 0);
-    camera.position.set(Math.sin(a) * R, cy + 8.5 + 3.5 * smoothstep(0, 0.25, p), Math.cos(a) * R);
+    look.set(0, cy - 0.6, 0);
+    camera.position.set(Math.sin(a) * R, cy + 12.5 + 2.5 * smoothstep(0, 0.25, p), Math.cos(a) * R);
     camera.lookAt(look);
   });
   return null;
