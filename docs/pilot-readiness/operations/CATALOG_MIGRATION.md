@@ -21,13 +21,13 @@ Platzhalter: `<DEMO_STORE_CODE>` ist der Markt-Code des Demo-Markts. Diese Entsc
 
 ## Reihenfolge
 
-1. **Backup.** Produkt-Export als NDJSON:
+1. **Backup.** Produkt-Export als NDJSON. Vollsicherung direkt aus dem Index (Port-Forward aus Schritt 6 in einem zweiten Terminal):
 
    ```bash
-   python3 scripts/ops/export_products.py --base-url https://it220209.cloud.htl-leonding.ac.at
+   python3 scripts/ops/export_products.py --opensearch-url http://127.0.0.1:9200
    ```
 
-   Ergebnis: `backups/<UTC-Datum>-products.ndjson`. Die Datei ist die Grundlage für alle folgenden Schritte und für den Rollback. Eine Kopie auf einen sicheren Datenträger legen.
+   Ergebnis: `backups/<UTC-Datum>-products-all.ndjson` (Altdokumente und alle Märkte). Der frühere Aufruf mit `--base-url` liefert seit Release `4cb1e03` ohne Markt nur Altdokumente und höchstens 500 Zeilen; er ist kein Backup mehr. Die folgenden Schritte nennen die Datei `backups/<UTC-Datum>-products.ndjson`; bei der Vollsicherung gilt der Name `-products-all.ndjson`. Vor Schritt 4 liegen nur Altdokumente im Index, die Datei ist dann direkt als `--input` verwendbar. Die Datei ist die Grundlage für alle folgenden Schritte und für den Rollback. Eine Kopie auf einen sicheren Datenträger legen.
 
 2. **Backend-Release mit Store-Katalog ausrollen.** Ablauf wie im Release-Runbook (`RELEASE_RUNBOOK.md`, Branch `pilot/release-backend`). Die Variable `CATALOG_DEFAULT_STORE_CODE` wird jetzt noch **nicht** gesetzt.
 
@@ -61,7 +61,7 @@ Platzhalter: `<DEMO_STORE_CODE>` ist der Markt-Code des Demo-Markts. Diese Entsc
 
    Erwartet: mindestens ein Treffer mit `storeCode` `<DEMO_STORE_CODE>`. Zusätzlich die Anzahl der Dokumente im Index prüfen (Schritt 6, Dry-Run zeigt die Zahlen).
 
-6. **Legacy-Dokumente entfernen.** Live (Alias `products_live` → `products_v1`) nicht mit diesem Skript, sondern nach `LEGACY_CLEANUP.md`: Das Skript arbeitet fest auf dem Index `products`. Für eine lokale Umgebung ohne Alias gilt weiter: OpenSearch ist nicht öffentlich. Der Zugriff läuft über einen Port-Forward, in einem zweiten Terminal offen lassen:
+6. **Legacy-Dokumente entfernen.** Das Skript arbeitet auf `--index` (Standard `products_live`, der Alias, den das Backend liest). Es löst den Alias vor dem Zählen und Löschen auf den konkreten Index auf (live `products_v1`), gibt ihn aus (`Index: products_live -> products_v1`) und bricht ab, wenn der Alias auf mehrere Indizes zeigt. OpenSearch ist nicht öffentlich. Der Zugriff läuft über einen Port-Forward, in einem zweiten Terminal offen lassen:
 
    ```bash
    kubectl -n student-it220209 port-forward svc/opensearch 9200:9200
@@ -77,6 +77,16 @@ Platzhalter: `<DEMO_STORE_CODE>` ist der Markt-Code des Demo-Markts. Diese Entsc
    ```
 
    Das Skript zählt Dokumente ohne `storeCode` (Legacy) und Dokumente im Markt. Es löscht nur, wenn Legacy > 0 und Migrierte ≥ Legacy. Sonst bricht es mit Exit 1 ab. Ohne `--yes` passiert nichts. Nur Loopback-Adressen sind als `--opensearch-url` erlaubt.
+
+   **Altbestand, der nicht in den Markt migriert wird.** Liegen weniger Dokumente im Markt als Legacy-Dokumente existieren (live: 74 gegenüber 153), bricht die Prüfung ab. Sind die übrigen Legacy-Dokumente nicht gebraucht, hebt `--allow-unmigrated-legacy` nur diese Prüfung auf, und nur zusammen mit `--backup DATEI`:
+
+   ```bash
+   python3 scripts/ops/migrate_products_to_store.py --store-code <DEMO_STORE_CODE> \
+       --delete-legacy --opensearch-url http://127.0.0.1:9200 \
+       --allow-unmigrated-legacy --backup backups/<UTC-Datum>-products-all.ndjson
+   ```
+
+   Das Skript liest die IDs aller Legacy-Dokumente aus dem Index und bricht ab (Exit 1, nichts gelöscht), sobald eine ID in der Sicherung fehlt. Als Sicherung gelten die Vollsicherung aus Schritt 1, eine NDJSON-Datei oder ein JSON-Array mit `id`, oder eine rohe `_search`-Antwort (`LEGACY_CLEANUP.md`, Schritt 3). Nur Zeilen ohne `storeCode` zählen. Ohne `--yes` bleibt es ein Dry-Run. Die Sicherung vorher selbst prüfen, das Skript prüft nur die IDs, nicht die übrigen Felder.
 
 7. **Default-Markt setzen.** Erst jetzt `CATALOG_DEFAULT_STORE_CODE=<DEMO_STORE_CODE>` im Backend-Deployment setzen. Der Env-Eintrag in `k8s/backend.yaml` gehört zum Release (Schritt 2). Der Default-Markt wirkt auf Lesezugriffe ohne Markt-Parameter. Er soll erst greifen, wenn alle Dokumente im Markt liegen.
 

@@ -12,8 +12,8 @@ Voraussetzungen: Python 3.10+, `kubectl` mit gültiger LeoCloud-Anmeldung, Docke
 ```text
 python3 scripts/ops/backup_postgres.py --dry-run     # zeigt nur den kubectl-Befehl
 python3 scripts/ops/backup_postgres.py               # -> backups/<UTC-Datum>-indooro.dump
-python3 scripts/ops/export_products.py --base-url https://it220209.cloud.htl-leonding.ac.at
-                                                     # -> backups/<UTC-Datum>-products.ndjson
+python3 scripts/ops/export_products.py --opensearch-url http://127.0.0.1:9200
+                                                     # Vollsicherung -> backups/<UTC-Datum>-products-all.ndjson
 python3 scripts/ops/restore_postgres.py backups/2026-10-17-indooro.dump
                                                      # lokaler Postgres auf 127.0.0.1:55432
 python3 scripts/ops/restore_postgres.py --down       # Container des Projekts entfernen
@@ -24,8 +24,11 @@ python3 scripts/ops/load_store_catalog.py --store-code SPAR-Leonding-002
 
 - `backup_postgres.py`: `pg_dump -Fc` über `kubectl exec deploy/postgres`, Streaming in die Datei,
   danach Prüfung auf Magic `PGDMP` und Mindestgröße. Ausgabe: Pfad, Größe, SHA-256.
-- `export_products.py`: `GET /api/products?size=…`, eine JSON-Zeile pro Produkt. Wiederholt bei
-  5xx und Netzwerkfehlern (`--retries`). Nur http/https.
+- `export_products.py`: `--opensearch-url` (nur Loopback, Port-Forward) liest per Scroll den Index hinter
+  `--index` (Standard: Alias `products_live`) und schreibt eine JSON-Zeile pro Dokument, Altdokumente und
+  alle Märkte. Nur lesend; Abbruch bei abweichendem `_count`. `--base-url` (`GET /api/products`) ist nur
+  ein Teilexport (ohne Markt nur Altdokumente, `size` höchstens 500) und warnt. Wiederholt bei 5xx und
+  Netzwerkfehlern (`--retries`).
 - `restore_postgres.py`: startet `restore-compose.yml` mit eigenem Projektnamen
   (`-p indooro-restore`), wartet auf Postgres (60 s), spielt den Dump per `pg_restore` ein und
   zählt die Zeilen der Kerntabellen. Das Passwort ist zufällig, wird nur an docker compose
