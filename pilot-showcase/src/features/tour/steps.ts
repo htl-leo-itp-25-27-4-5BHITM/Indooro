@@ -107,7 +107,7 @@ export const STEPS: readonly TourStep[] = [
     title: "Produkt suchen",
     body: "Wir suchen „Paradeiser“. Die Suche kennt österreichische Begriffe und findet die Tomaten.",
     target: [tid("search-input")],
-    placement: "auto",
+    placement: "left",
     onEnter: async (ctx) => {
       await applyDemo(ctx, { market: NORD, tab: "suche", list: "empty", sim: "idle", select: null });
       await ctx.type(tid("search-input"), "Paradeiser");
@@ -119,7 +119,7 @@ export const STEPS: readonly TourStep[] = [
     title: "Treffer am Regal",
     body: "Der Treffer nennt das Regal. Der markierte Punkt auf dem Plan zeigt, wo das Produkt im Markt steht.",
     target: [tid("selected-pin"), tid("store-map")],
-    placement: "auto",
+    placement: "right",
     onEnter: async (ctx) => {
       await applyDemo(ctx, { market: NORD, tab: "suche", list: "empty", sim: "idle" });
       await ctx.type(tid("search-input"), "Paradeiser", true);
@@ -134,7 +134,7 @@ export const STEPS: readonly TourStep[] = [
     title: "Auf die Einkaufsliste",
     body: "Mit „+ Liste“ landet das Produkt auf der Einkaufsliste, so wie Kundinnen und Kunden es zuhause vorbereiten.",
     target: [tid("add-button")],
-    placement: "auto",
+    placement: "left",
     onEnter: async (ctx) => {
       await applyDemo(ctx, { market: NORD, tab: "suche", list: "empty", sim: "idle", select: "tomaten" });
       await ctx.type(tid("search-input"), "Paradeiser", true);
@@ -150,7 +150,7 @@ export const STEPS: readonly TourStep[] = [
     title: "Eine ganze Liste",
     body: "Ein Einkauf besteht aus mehreren Produkten. Wir laden eine Beispielliste und sehen, wo alles liegt.",
     target: [tid("list-count"), tid("tab-liste")],
-    placement: "auto",
+    placement: "left",
     onEnter: async (ctx) => {
       await applyDemo(ctx, { market: NORD, tab: "liste", list: "empty", sim: "idle" });
       await ctx.sleep(300);
@@ -176,7 +176,7 @@ export const STEPS: readonly TourStep[] = [
     title: "Navigation, simuliert",
     body: "Jetzt läuft eine Navigation. Die Position ist hier ausdrücklich eine „Simulierte Position“, in dieser Demo wird nichts gemessen.",
     target: [tid("store-map")],
-    placement: "auto",
+    placement: "right",
     onEnter: async (ctx) => {
       await applyDemo(ctx, { market: NORD, tab: "navigation", list: "example", sim: "idle", select: null });
       await ctx.sleep(250);
@@ -190,7 +190,7 @@ export const STEPS: readonly TourStep[] = [
     title: "Suche gilt pro Markt",
     body: "Im „Nahversorger Pöstlingberg“ gibt es keine Hafermilch, also findet die Suche sie dort auch nicht. Es zählt nur, was der gewählte Markt führt.",
     target: [tid("search-empty"), tid("search-input")],
-    placement: "auto",
+    placement: "left",
     onEnter: async (ctx) => {
       await applyDemo(ctx, { market: SUED, tab: "suche", sim: "pause", select: null });
       await ctx.type(tid("search-input"), "Hafermilch");

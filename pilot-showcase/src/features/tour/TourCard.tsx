@@ -31,22 +31,23 @@ export const TourCard = forwardRef<HTMLDivElement, Props>(function TourCard(
     "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-4 text-[14px] font-semibold transition-[background-color,box-shadow,opacity] duration-300 disabled:pointer-events-none disabled:opacity-35";
 
   return (
-    <motion.div
+    <div
       ref={ref}
+      tabIndex={-1}
+      className={`pointer-events-auto fixed left-0 top-0 z-[2] outline-none max-sm:!inset-x-2 max-sm:!bottom-2 max-sm:!top-auto max-sm:w-auto ${presentation ? "w-[480px]" : "w-[380px]"}`}
+    >
+    <motion.div
       data-testid="tour-card"
       data-step={step.id}
       data-busy={busy ? "true" : "false"}
       role="dialog"
       aria-modal="false"
       aria-label="Geführte Tour"
-      tabIndex={-1}
       initial={reduce ? false : { opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      className={`on-dark pointer-events-auto fixed left-0 top-0 z-[2] overflow-hidden rounded-3xl bg-ink-950/88 text-white shadow-[0_30px_80px_-20px_rgb(0_0_0/0.7),0_0_0_1px_rgb(255_255_255/0.1)] outline-none backdrop-blur-2xl backdrop-saturate-150 max-sm:!inset-x-2 max-sm:!bottom-2 max-sm:!top-auto max-sm:w-auto ${
-        presentation ? "w-[480px]" : "w-[380px]"
-      }`}
+      className="on-dark relative overflow-hidden rounded-3xl bg-ink-950/88 text-white shadow-[0_30px_80px_-20px_rgb(0_0_0/0.7),0_0_0_1px_rgb(255_255_255/0.1)] backdrop-blur-2xl backdrop-saturate-150"
     >
       <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-mint/12 blur-3xl" />
 
@@ -148,5 +149,6 @@ export const TourCard = forwardRef<HTMLDivElement, Props>(function TourCard(
         ) : null}
       </div>
     </motion.div>
+    </div>
   );
 });
