@@ -163,6 +163,192 @@ class WriteTest(unittest.TestCase):
             self.assertEqual(code, 1)
 
 
+OS_URL = "http://127.0.0.1:9200"
+OS_DOCS = [
+    ("SPAR-Leonding-002:7", {"id": 7, "name": "Hafermilch", "price": 1.9, "storeCode": "SPAR-Leonding-002"}),
+    ("1", {"id": 1, "name": "Apfel", "price": 1.5, "storeCode": None}),
+    ("SPAR-Leonding-002:8", {"id": 8, "name": "Käse", "price": 3.2, "storeCode": "SPAR-Leonding-002"}),
+    ("2", {"id": 2, "name": "Milch", "price": 1.2}),
+    ("SPAR-Leonding-001:3", {"id": 3, "name": "Brot", "price": 2.0, "storeCode": "SPAR-Leonding-001"}),
+]
+
+
+class RecordingSend:
+    """Fake-OpenSearch: Alias, Scroll in Seiten zu 2 Treffern, _count. Zeichnet alle Aufrufe auf."""
+
+    def __init__(self, docs=OS_DOCS, alias=("products_v1",), count=None, page=2, status=200,
+                 start_status=200):
+        self.docs = list(docs)
+        self.alias = list(alias)
+        self.count = len(docs) if count is None else count
+        self.page = page
+        self.status = status
+        self.start_status = start_status
+        self.calls = []
+
+    def hits(self, start):
+        return [{"_id": doc_id, "_source": source} for doc_id, source in self.docs[start:start + self.page]]
+
+    def __call__(self, method, url, body, headers, timeout):
+        self.calls.append({"method": method, "url": url, "body": body})
+        if url.endswith("/_count"):
+            return ep.FetchResult(status=self.status, body=json.dumps({"count": self.count}))
+        if "/_search/scroll" in url:
+            position = json.loads(body)["scroll_id"]
+            start = int(position)
+            return ep.FetchResult(status=200, body=json.dumps(
+                {"_scroll_id": str(start + self.page), "hits": {"hits": self.hits(start)}}))
+        if "_search?scroll=" in url:
+            return ep.FetchResult(status=self.start_status, body=json.dumps(
+                {"_scroll_id": str(self.page), "hits": {"hits": self.hits(0)}}))
+        if method == "GET":
+            if not self.alias:
+                return ep.FetchResult(status=404, body="{}")
+            return ep.FetchResult(status=200, body=json.dumps({name: {"aliases": {}} for name in self.alias}))
+        return ep.FetchResult(status=404, body="{}")
+
+    def methods(self):
+        return {c["method"] for c in self.calls}
+
+
+class OpenSearchExportTest(unittest.TestCase):
+
+    def run_main(self, argv, send, fetch=None):
+        out, err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+            try:
+                code = ep.main(argv, fetch=fetch or SequenceFetch([]), sleep=FakeSleep(), now=NOW, send=send)
+            except SystemExit as exc:
+                code = exc.code
+        return code, out.getvalue(), err.getvalue()
+
+    def test_exports_legacy_and_all_stores_sorted_by_id(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            send = RecordingSend()
+            code, out, err = self.run_main(["--opensearch-url", OS_URL, "--out-dir", tmp], send)
+            self.assertEqual(code, 0, err)
+            target = Path(tmp) / "2026-10-17-products-all.ndjson"
+            rows = [json.loads(line) for line in target.read_text(encoding="utf-8").splitlines()]
+            self.assertEqual([r["id"] for r in rows], [1, 2, 3, 7, 8])
+            self.assertEqual(sum(1 for r in rows if not r.get("storeCode")), 2)
+            self.assertIn("Käse", target.read_text(encoding="utf-8"))
+            self.assertIn("5 Produkte", out)
+            self.assertIn("Ohne storeCode: 2", out)
+            self.assertIn("Markt SPAR-Leonding-002: 2", out)
+            self.assertIn("Markt SPAR-Leonding-001: 1", out)
+            self.assertIn("products_live -> products_v1", out)
+
+    def test_default_index_is_alias_and_index_option_is_used(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            send = RecordingSend()
+            self.run_main(["--opensearch-url", OS_URL, "--out-dir", tmp], send)
+            urls = [c["url"] for c in send.calls]
+            self.assertEqual(urls[0], f"{OS_URL}/products_live")
+            self.assertIn(f"{OS_URL}/products_live/_search?scroll=2m", urls)
+            self.assertIn(f"{OS_URL}/products_live/_count", urls)
+            send = RecordingSend()
+            self.run_main(["--opensearch-url", OS_URL, "--index", "products_v1", "--out-dir", tmp], send)
+            self.assertIn(f"{OS_URL}/products_v1/_count", [c["url"] for c in send.calls])
+
+    def test_only_read_calls_are_made(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            send = RecordingSend()
+            self.run_main(["--opensearch-url", OS_URL, "--out-dir", tmp], send)
+            for call in send.calls:
+                self.assertIn(call["method"], ("GET", "POST"))
+                if call["method"] == "POST":
+                    self.assertTrue("_search" in call["url"], call["url"])
+                    self.assertNotIn("_delete", call["url"])
+                    self.assertNotIn("_update", call["url"])
+                    self.assertNotIn("_bulk", call["url"])
+
+    def test_count_mismatch_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code, _, err = self.run_main(["--opensearch-url", OS_URL, "--out-dir", tmp],
+                                         RecordingSend(count=6))
+            self.assertEqual(code, 1)
+            self.assertIn("_count meldet 6", err)
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_alias_with_two_indices_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            send = RecordingSend(alias=("products", "products_v1"))
+            code, _, err = self.run_main(["--opensearch-url", OS_URL, "--out-dir", tmp], send)
+            self.assertEqual(code, 1)
+            self.assertIn("2 Indizes", err)
+            self.assertEqual(len(send.calls), 1)
+
+    def test_unknown_index_returns_1(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code, _, err = self.run_main(["--opensearch-url", OS_URL, "--out-dir", tmp],
+                                         RecordingSend(alias=()))
+            self.assertEqual(code, 1)
+            self.assertIn("nicht gefunden", err)
+
+    def test_empty_index_returns_1(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code, _, err = self.run_main(["--opensearch-url", OS_URL, "--out-dir", tmp],
+                                         RecordingSend(docs=[]))
+            self.assertEqual(code, 1)
+            self.assertIn("leerer Index", err)
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_search_error_returns_1(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            code, _, err = self.run_main(["--opensearch-url", OS_URL, "--out-dir", tmp],
+                                         RecordingSend(start_status=500))
+            self.assertEqual(code, 1)
+            self.assertIn("HTTP 500", err)
+            self.assertEqual(list(Path(tmp).iterdir()), [])
+
+    def test_network_error_returns_1(self):
+        def broken(method, url, body, headers, timeout):
+            return ep.FetchResult(status=None, error="refused")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            code, _, err = self.run_main(["--opensearch-url", OS_URL, "--out-dir", tmp], broken)
+            self.assertEqual(code, 1)
+            self.assertIn("nicht erreichbar", err)
+
+    def test_duplicate_document_ids_return_1(self):
+        docs = OS_DOCS + [("1", {"id": 1, "name": "Apfel"})]
+        with tempfile.TemporaryDirectory() as tmp:
+            code, _, err = self.run_main(["--opensearch-url", OS_URL, "--out-dir", tmp],
+                                         RecordingSend(docs=docs))
+            self.assertEqual(code, 1)
+            self.assertIn("mehrfach", err)
+
+    def test_non_loopback_is_rejected_without_calls(self):
+        for url in ("http://opensearch.example.test:9200", "https://10.0.0.5:9200",
+                    "http://user@127.0.0.1:9200", "http://127.0.0.1:9200/products"):
+            with self.subTest(url=url):
+                send = RecordingSend()
+                code, _, _ = self.run_main(["--opensearch-url", url], send)
+                self.assertEqual(code, 2)
+                self.assertEqual(send.calls, [])
+
+    def test_one_source_is_required_and_exclusive(self):
+        for argv in ([], ["--opensearch-url", OS_URL, "--base-url", "https://x.test"]):
+            with self.subTest(argv=argv):
+                code, _, _ = self.run_main(argv, RecordingSend())
+                self.assertEqual(code, 2)
+
+    def test_invalid_index_name_is_rejected(self):
+        for name in ("*", "a,b", "../x", "Products", ""):
+            with self.subTest(name=name):
+                code, _, _ = self.run_main(["--opensearch-url", OS_URL, "--index", name], RecordingSend())
+                self.assertEqual(code, 2)
+
+    def test_base_url_mode_warns_about_partial_export(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            send = RecordingSend()
+            code, _, err = self.run_main(["--base-url", "https://x.test", "--out-dir", tmp], send,
+                                         fetch=SequenceFetch([ok_products()]))
+            self.assertEqual(code, 0)
+            self.assertIn("Teilexport", err)
+            self.assertEqual(send.calls, [])
+
+
 class ValidateResponseTest(unittest.TestCase):
 
     def test_valid_array(self):
