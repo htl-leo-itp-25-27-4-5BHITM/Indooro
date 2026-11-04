@@ -109,7 +109,8 @@ export function histogram(values: readonly number[], opts: HistogramOptions): Hi
   if (opts.binWidth !== undefined) {
     width = opts.binWidth;
     if (!(width > 0)) throw new Error("binWidth must be > 0");
-    start = Math.floor(lo / width + 1e-9) * width;
+    // an explicit range fixes the first bin edge exactly; otherwise align edges to multiples of the width
+    start = opts.range ? lo : Math.floor(lo / width + 1e-9) * width;
     n = Math.max(1, Math.ceil((hi - start) / width - 1e-9));
   } else {
     n = Math.max(1, Math.floor(opts.bins));
