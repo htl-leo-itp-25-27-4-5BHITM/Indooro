@@ -105,7 +105,7 @@ export const STEPS: readonly TourStep[] = [
     chapter: "Demo",
     title: "Ein fiktiver Demomarkt",
     body: "Markt und Sortiment sind frei erfunden und laufen nur in Ihrem Browser. Wir steuern die Demo für Sie, Sie können jederzeit selbst eingreifen.",
-    target: [tid("store-map")],
+    target: [tid("store-map"), tid("store-3d")],
     placement: "auto",
     onEnter: async (ctx) => {
       await applyDemo(ctx, { market: NORD, tab: "suche", list: "empty", sim: "idle", select: null });
@@ -129,7 +129,7 @@ export const STEPS: readonly TourStep[] = [
     chapter: "Demo",
     title: "Treffer am Regal",
     body: "Der Treffer nennt das Regal. Der markierte Punkt auf dem Plan zeigt, wo das Produkt im Markt steht.",
-    target: [`${tid("selected-pin")} > g`, tid("store-map")],
+    target: [`${tid("selected-pin")} > g`, tid("store-map"), tid("store-3d")],
     placement: "right",
     onEnter: async (ctx) => {
       await applyDemo(ctx, { market: NORD, tab: "suche", list: "empty", sim: "idle" });
@@ -174,7 +174,7 @@ export const STEPS: readonly TourStep[] = [
     chapter: "Demo",
     title: "Die Route durch den Markt",
     body: "Indooro ordnet die Produkte zu einer Route vom Eingang bis zur Kasse. Die Nummern zeigen die Reihenfolge.",
-    target: [tid("route-path"), tid("store-map")],
+    target: [tid("route-path"), tid("store-map"), tid("store-3d")],
     placement: "auto",
     onEnter: async (ctx) => {
       await applyDemo(ctx, { market: NORD, tab: "navigation", list: "example", sim: "idle", select: null });
@@ -186,7 +186,7 @@ export const STEPS: readonly TourStep[] = [
     chapter: "Demo",
     title: "Navigation, simuliert",
     body: "Jetzt läuft eine Navigation. Die Position ist hier ausdrücklich eine „Simulierte Position“, in dieser Demo wird nichts gemessen.",
-    target: [tid("store-map")],
+    target: [tid("store-map"), tid("store-3d")],
     placement: "right",
     onEnter: async (ctx) => {
       await applyDemo(ctx, { market: NORD, tab: "navigation", list: "example", sim: "idle", select: null });
