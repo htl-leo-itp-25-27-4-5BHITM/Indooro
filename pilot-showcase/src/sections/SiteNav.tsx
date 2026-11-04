@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
+import { createPortal } from "react-dom";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { Button, Container, Logo } from "../components/ui";
 import { useActiveSection } from "../lib";
@@ -74,7 +75,7 @@ export function SiteNav() {
 
   return (
     <header
-      className={`on-dark fixed inset-x-0 top-0 z-50 transition-[background-color,box-shadow,backdrop-filter] duration-500 ease-out-expo ${
+      className={`on-dark fixed inset-x-0 top-0 z-[60] transition-[background-color,box-shadow,backdrop-filter] duration-500 ease-out-expo ${
         solid ? "bg-ink-950/75 shadow-[inset_0_-1px_0_rgb(255_255_255/0.08)] backdrop-blur-xl backdrop-saturate-150" : "bg-transparent shadow-[inset_0_-1px_0_transparent]"
       }`}
     >
@@ -114,7 +115,7 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Button href="#pilot" size="md" variant="primary" data-testid="nav-cta" className="hidden !min-h-10 sm:inline-flex" icon={<ArrowRight className="size-4" />}>
+          <Button href="#pilot" size="md" variant="primary" data-testid="nav-cta" className="max-sm:!hidden !min-h-10" icon={<ArrowRight className="size-4" />}>
             Pilotpartner werden
           </Button>
           <button
@@ -132,7 +133,7 @@ export function SiteNav() {
         </div>
       </Container>
 
-      <AnimatePresence>
+      {createPortal(<AnimatePresence>
         {open ? (
           <motion.div
             id="mobile-menu"
@@ -144,7 +145,7 @@ export function SiteNav() {
             animate={{ opacity: 1 }}
             exit={reduce ? { opacity: 0, transition: { duration: 0 } } : { opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-[55] flex flex-col overflow-y-auto bg-ink-950/95 px-5 pb-8 pt-24 backdrop-blur-2xl scrollbar-dark lg:hidden"
+            className="on-dark fixed inset-0 z-[55] flex flex-col overflow-y-auto bg-ink-950/95 px-5 pb-8 pt-24 backdrop-blur-2xl scrollbar-dark lg:hidden"
           >
             <div aria-hidden className="pointer-events-none absolute -right-32 -top-24 size-[28rem] rounded-full bg-mint/10 blur-3xl" />
             <ul className="relative flex flex-col">
@@ -175,7 +176,7 @@ export function SiteNav() {
             </div>
           </motion.div>
         ) : null}
-      </AnimatePresence>
+      </AnimatePresence>, document.body)}
     </header>
   );
 }
