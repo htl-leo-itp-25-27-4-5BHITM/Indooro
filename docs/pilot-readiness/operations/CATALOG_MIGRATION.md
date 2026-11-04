@@ -61,7 +61,7 @@ Platzhalter: `<DEMO_STORE_CODE>` ist der Markt-Code des Demo-Markts. Diese Entsc
 
    Erwartet: mindestens ein Treffer mit `storeCode` `<DEMO_STORE_CODE>`. Zusätzlich die Anzahl der Dokumente im Index prüfen (Schritt 6, Dry-Run zeigt die Zahlen).
 
-6. **Legacy-Dokumente entfernen.** OpenSearch ist nicht öffentlich. Der Zugriff läuft über einen Port-Forward, in einem zweiten Terminal offen lassen:
+6. **Legacy-Dokumente entfernen.** Live (Alias `products_live` → `products_v1`) nicht mit diesem Skript, sondern nach `LEGACY_CLEANUP.md`: Das Skript arbeitet fest auf dem Index `products`. Für eine lokale Umgebung ohne Alias gilt weiter: OpenSearch ist nicht öffentlich. Der Zugriff läuft über einen Port-Forward, in einem zweiten Terminal offen lassen:
 
    ```bash
    kubectl -n student-it220209 port-forward svc/opensearch 9200:9200
