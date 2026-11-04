@@ -31,7 +31,7 @@ Jede Person aktualisiert nur ihre eigene Zeile und ihre eigenen Blocker. Datum J
 |---|---|
 | Admin-Neubau in `main` gemergt | **erledigt 2026-10-16** (PR #105, `39b5f9a`; Fix PR #107) |
 | `main` in `pilot/first-store` gemergt | **erledigt 2026-10-16** (`f6cdf17`; swift test 77/77, xcodebuild ok, mvnw test 142/0) |
-| Erster Pilot-Release auf LeoCloud (neuer Admin, gehärtet) | neuer Admin live seit 2026-10-16; **seit 2026-10-21 live: Image `:6278040`** (Flyway 19, Einrichtungs-Checkliste, Prüfprofil Testraum; `docs/pilot-readiness/releases/RELEASE_2026-10-18.md`); seit 2026-10-19 Suchindex `products_live → products_v1` und 74 Produkte im Testraum `SPAR-Leonding-002`. Offen: echter Admin, Keycloak-Prod-Realm, Beacon-Daten und Eingang im Testraum |
+| Erster Pilot-Release auf LeoCloud (neuer Admin, gehärtet) | neuer Admin live seit 2026-10-16; **seit 2026-11-04 live: Image `:4cb1e03`** (Flyway 20; Store-Onboarding-Sprint: Bereitschaftsprüfung ohne Fehlalarm „Bereit“, Suche ohne Markt fail-closed, Zugänge ohne SQL, Produkte für store-manager, Freigabe neuer Märkte; `docs/pilot-readiness/releases/RELEASE_2026-11-04.md`; davor `:6278040`, `RELEASE_2026-10-18.md`); seit 2026-10-19 Suchindex `products_live → products_v1` und 74 Produkte im Testraum `SPAR-Leonding-002`. Offen: echter Admin, Keycloak-Prod-Realm, Beacon-Daten und Eingang im Testraum, Altdokumente ohne Markt löschen (T5) |
 | Erste echte Messung (Testraum) | offen |
 | Gate „bereit für den Markt“ | offen |
 | Pilotmarkt zugesagt | offen |
