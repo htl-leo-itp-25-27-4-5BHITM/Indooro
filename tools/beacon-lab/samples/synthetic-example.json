@@ -1,0 +1,631 @@
+{
+ "format": "indooro-lab-json",
+ "note": "SYNTHETISCH – vom Lab-Generator erzeugt, kein Messergebnis. Gehört zum fiktiven Demo-Markt (Beacons LAB-B01, LAB-B05, LAB-B08).",
+ "origin": "synthetic",
+ "runName": "SYNTHETISCH: Beispiel Lab-JSON",
+ "kind": "stationary",
+ "deviceId": "SynthGeraet",
+ "samples": [
+  {
+   "t": 0.161,
+   "beaconId": "LAB-B05",
+   "rssi": -80
+  },
+  {
+   "t": 0.301,
+   "beaconId": "LAB-B01",
+   "rssi": -82
+  },
+  {
+   "t": 0.774,
+   "beaconId": "LAB-B08",
+   "rssi": -80
+  },
+  {
+   "t": 1.161,
+   "beaconId": "LAB-B05",
+   "rssi": -81
+  },
+  {
+   "t": 1.301,
+   "beaconId": "LAB-B01",
+   "rssi": -83
+  },
+  {
+   "t": 1.774,
+   "beaconId": "LAB-B08",
+   "rssi": -86
+  },
+  {
+   "t": 2.161,
+   "beaconId": "LAB-B05",
+   "rssi": -76
+  },
+  {
+   "t": 2.301,
+   "beaconId": "LAB-B01",
+   "rssi": -83
+  },
+  {
+   "t": 2.774,
+   "beaconId": "LAB-B08",
+   "rssi": -83
+  },
+  {
+   "t": 3.161,
+   "beaconId": "LAB-B05",
+   "rssi": -83
+  },
+  {
+   "t": 3.301,
+   "beaconId": "LAB-B01",
+   "rssi": -77
+  },
+  {
+   "t": 3.774,
+   "beaconId": "LAB-B08",
+   "rssi": -81
+  },
+  {
+   "t": 4.161,
+   "beaconId": "LAB-B05",
+   "rssi": -79
+  },
+  {
+   "t": 4.301,
+   "beaconId": "LAB-B01",
+   "rssi": -81
+  },
+  {
+   "t": 4.774,
+   "beaconId": "LAB-B08",
+   "rssi": -84
+  },
+  {
+   "t": 5.161,
+   "beaconId": "LAB-B05",
+   "rssi": -76
+  },
+  {
+   "t": 5.301,
+   "beaconId": "LAB-B01",
+   "rssi": -88
+  },
+  {
+   "t": 5.774,
+   "beaconId": "LAB-B08",
+   "rssi": -80
+  },
+  {
+   "t": 6.161,
+   "beaconId": "LAB-B05",
+   "rssi": -76
+  },
+  {
+   "t": 6.301,
+   "beaconId": "LAB-B01",
+   "rssi": -81
+  },
+  {
+   "t": 6.774,
+   "beaconId": "LAB-B08",
+   "rssi": -78
+  },
+  {
+   "t": 7.161,
+   "beaconId": "LAB-B05",
+   "rssi": -81
+  },
+  {
+   "t": 7.301,
+   "beaconId": "LAB-B01",
+   "rssi": -88
+  },
+  {
+   "t": 7.774,
+   "beaconId": "LAB-B08",
+   "rssi": -87
+  },
+  {
+   "t": 8.161,
+   "beaconId": "LAB-B05",
+   "rssi": -81
+  },
+  {
+   "t": 8.301,
+   "beaconId": "LAB-B01",
+   "rssi": -86
+  },
+  {
+   "t": 8.774,
+   "beaconId": "LAB-B08",
+   "rssi": -79
+  },
+  {
+   "t": 9.161,
+   "beaconId": "LAB-B05",
+   "rssi": -78
+  },
+  {
+   "t": 9.301,
+   "beaconId": "LAB-B01",
+   "rssi": -75
+  },
+  {
+   "t": 9.774,
+   "beaconId": "LAB-B08",
+   "rssi": -85
+  },
+  {
+   "t": 10.161,
+   "beaconId": "LAB-B05",
+   "rssi": -75
+  },
+  {
+   "t": 10.301,
+   "beaconId": "LAB-B01",
+   "rssi": -76
+  },
+  {
+   "t": 10.774,
+   "beaconId": "LAB-B08",
+   "rssi": -80
+  },
+  {
+   "t": 11.161,
+   "beaconId": "LAB-B05",
+   "rssi": -81
+  },
+  {
+   "t": 11.301,
+   "beaconId": "LAB-B01",
+   "rssi": -80
+  },
+  {
+   "t": 11.774,
+   "beaconId": "LAB-B08",
+   "rssi": -82
+  },
+  {
+   "t": 12.161,
+   "beaconId": "LAB-B05",
+   "rssi": -77
+  },
+  {
+   "t": 12.301,
+   "beaconId": "LAB-B01",
+   "rssi": -78
+  },
+  {
+   "t": 12.774,
+   "beaconId": "LAB-B08",
+   "rssi": -81
+  },
+  {
+   "t": 13.161,
+   "beaconId": "LAB-B05",
+   "rssi": -82
+  },
+  {
+   "t": 13.301,
+   "beaconId": "LAB-B01",
+   "rssi": -83
+  },
+  {
+   "t": 13.774,
+   "beaconId": "LAB-B08",
+   "rssi": -82
+  },
+  {
+   "t": 14.161,
+   "beaconId": "LAB-B05",
+   "rssi": -78
+  },
+  {
+   "t": 14.774,
+   "beaconId": "LAB-B08",
+   "rssi": -79
+  },
+  {
+   "t": 15.161,
+   "beaconId": "LAB-B05",
+   "rssi": -76
+  },
+  {
+   "t": 15.301,
+   "beaconId": "LAB-B01",
+   "rssi": -81
+  },
+  {
+   "t": 15.774,
+   "beaconId": "LAB-B08",
+   "rssi": -81
+  },
+  {
+   "t": 16.161,
+   "beaconId": "LAB-B05",
+   "rssi": -83
+  },
+  {
+   "t": 16.301,
+   "beaconId": "LAB-B01",
+   "rssi": -83
+  },
+  {
+   "t": 16.774,
+   "beaconId": "LAB-B08",
+   "rssi": -82
+  },
+  {
+   "t": 17.161,
+   "beaconId": "LAB-B05",
+   "rssi": -86
+  },
+  {
+   "t": 17.301,
+   "beaconId": "LAB-B01",
+   "rssi": -77
+  },
+  {
+   "t": 17.774,
+   "beaconId": "LAB-B08",
+   "rssi": -80
+  },
+  {
+   "t": 18.161,
+   "beaconId": "LAB-B05",
+   "rssi": -78
+  },
+  {
+   "t": 18.301,
+   "beaconId": "LAB-B01",
+   "rssi": -83
+  },
+  {
+   "t": 18.774,
+   "beaconId": "LAB-B08",
+   "rssi": -82
+  },
+  {
+   "t": 19.161,
+   "beaconId": "LAB-B05",
+   "rssi": -81
+  },
+  {
+   "t": 19.301,
+   "beaconId": "LAB-B01",
+   "rssi": -86
+  },
+  {
+   "t": 19.774,
+   "beaconId": "LAB-B08",
+   "rssi": -81
+  },
+  {
+   "t": 25.161,
+   "beaconId": "LAB-B05",
+   "rssi": -76
+  },
+  {
+   "t": 25.301,
+   "beaconId": "LAB-B01",
+   "rssi": -94
+  },
+  {
+   "t": 25.774,
+   "beaconId": "LAB-B08",
+   "rssi": -83
+  },
+  {
+   "t": 26.161,
+   "beaconId": "LAB-B05",
+   "rssi": -81
+  },
+  {
+   "t": 26.301,
+   "beaconId": "LAB-B01",
+   "rssi": -94
+  },
+  {
+   "t": 26.774,
+   "beaconId": "LAB-B08",
+   "rssi": -80
+  },
+  {
+   "t": 27.161,
+   "beaconId": "LAB-B05",
+   "rssi": -83
+  },
+  {
+   "t": 27.301,
+   "beaconId": "LAB-B01",
+   "rssi": -93
+  },
+  {
+   "t": 27.774,
+   "beaconId": "LAB-B08",
+   "rssi": -85
+  },
+  {
+   "t": 28.161,
+   "beaconId": "LAB-B05",
+   "rssi": -79
+  },
+  {
+   "t": 28.301,
+   "beaconId": "LAB-B01",
+   "rssi": -91
+  },
+  {
+   "t": 28.774,
+   "beaconId": "LAB-B08",
+   "rssi": -76
+  },
+  {
+   "t": 29.161,
+   "beaconId": "LAB-B05",
+   "rssi": -82
+  },
+  {
+   "t": 29.301,
+   "beaconId": "LAB-B01",
+   "rssi": -92
+  },
+  {
+   "t": 29.774,
+   "beaconId": "LAB-B08",
+   "rssi": -83
+  },
+  {
+   "t": 30.161,
+   "beaconId": "LAB-B05",
+   "rssi": -78
+  },
+  {
+   "t": 30.301,
+   "beaconId": "LAB-B01",
+   "rssi": -98
+  },
+  {
+   "t": 30.774,
+   "beaconId": "LAB-B08",
+   "rssi": -83
+  },
+  {
+   "t": 31.161,
+   "beaconId": "LAB-B05",
+   "rssi": -84
+  },
+  {
+   "t": 31.301,
+   "beaconId": "LAB-B01",
+   "rssi": -90
+  },
+  {
+   "t": 31.774,
+   "beaconId": "LAB-B08",
+   "rssi": -77
+  },
+  {
+   "t": 32.161,
+   "beaconId": "LAB-B05",
+   "rssi": -85
+  },
+  {
+   "t": 32.301,
+   "beaconId": "LAB-B01",
+   "rssi": -91
+  },
+  {
+   "t": 32.774,
+   "beaconId": "LAB-B08",
+   "rssi": -79
+  },
+  {
+   "t": 33.161,
+   "beaconId": "LAB-B05",
+   "rssi": -79
+  },
+  {
+   "t": 33.301,
+   "beaconId": "LAB-B01",
+   "rssi": -98
+  },
+  {
+   "t": 33.774,
+   "beaconId": "LAB-B08",
+   "rssi": -76
+  },
+  {
+   "t": 34.161,
+   "beaconId": "LAB-B05",
+   "rssi": -85
+  },
+  {
+   "t": 34.301,
+   "beaconId": "LAB-B01",
+   "rssi": -92
+  },
+  {
+   "t": 34.774,
+   "beaconId": "LAB-B08",
+   "rssi": -78
+  },
+  {
+   "t": 35.161,
+   "beaconId": "LAB-B05",
+   "rssi": -77
+  },
+  {
+   "t": 35.301,
+   "beaconId": "LAB-B01",
+   "rssi": -92
+  },
+  {
+   "t": 35.774,
+   "beaconId": "LAB-B08",
+   "rssi": -78
+  },
+  {
+   "t": 36.161,
+   "beaconId": "LAB-B05",
+   "rssi": -82
+  },
+  {
+   "t": 36.301,
+   "beaconId": "LAB-B01",
+   "rssi": -91
+  },
+  {
+   "t": 36.774,
+   "beaconId": "LAB-B08",
+   "rssi": -78
+  },
+  {
+   "t": 37.161,
+   "beaconId": "LAB-B05",
+   "rssi": -85
+  },
+  {
+   "t": 37.301,
+   "beaconId": "LAB-B01",
+   "rssi": -85
+  },
+  {
+   "t": 37.774,
+   "beaconId": "LAB-B08",
+   "rssi": -75
+  },
+  {
+   "t": 38.161,
+   "beaconId": "LAB-B05",
+   "rssi": -77
+  },
+  {
+   "t": 38.301,
+   "beaconId": "LAB-B01",
+   "rssi": -98
+  },
+  {
+   "t": 38.774,
+   "beaconId": "LAB-B08",
+   "rssi": -85
+  },
+  {
+   "t": 39.161,
+   "beaconId": "LAB-B05",
+   "rssi": -85
+  },
+  {
+   "t": 39.301,
+   "beaconId": "LAB-B01",
+   "rssi": -94
+  },
+  {
+   "t": 39.774,
+   "beaconId": "LAB-B08",
+   "rssi": -72
+  },
+  {
+   "t": 40.161,
+   "beaconId": "LAB-B05",
+   "rssi": -83
+  },
+  {
+   "t": 40.301,
+   "beaconId": "LAB-B01",
+   "rssi": -88
+  },
+  {
+   "t": 40.774,
+   "beaconId": "LAB-B08",
+   "rssi": -80
+  },
+  {
+   "t": 41.161,
+   "beaconId": "LAB-B05",
+   "rssi": -82
+  },
+  {
+   "t": 41.301,
+   "beaconId": "LAB-B01",
+   "rssi": -89
+  },
+  {
+   "t": 41.774,
+   "beaconId": "LAB-B08",
+   "rssi": -80
+  },
+  {
+   "t": 42.161,
+   "beaconId": "LAB-B05",
+   "rssi": -77
+  },
+  {
+   "t": 42.301,
+   "beaconId": "LAB-B01",
+   "rssi": -89
+  },
+  {
+   "t": 42.774,
+   "beaconId": "LAB-B08",
+   "rssi": -84
+  },
+  {
+   "t": 43.161,
+   "beaconId": "LAB-B05",
+   "rssi": -81
+  },
+  {
+   "t": 43.301,
+   "beaconId": "LAB-B01",
+   "rssi": -93
+  },
+  {
+   "t": 43.774,
+   "beaconId": "LAB-B08",
+   "rssi": -79
+  },
+  {
+   "t": 44.161,
+   "beaconId": "LAB-B05",
+   "rssi": -81
+  },
+  {
+   "t": 44.301,
+   "beaconId": "LAB-B01",
+   "rssi": -95
+  },
+  {
+   "t": 44.774,
+   "beaconId": "LAB-B08",
+   "rssi": -75
+  }
+ ],
+ "references": [
+  {
+   "t": 0,
+   "x": 10,
+   "y": 5.5,
+   "label": "P1"
+  },
+  {
+   "t": 20,
+   "x": 10,
+   "y": 5.5,
+   "label": "P1"
+  },
+  {
+   "t": 25,
+   "x": 20,
+   "y": 8.5,
+   "label": "P2"
+  },
+  {
+   "t": 45,
+   "x": 20,
+   "y": 8.5,
+   "label": "P2"
+  }
+ ]
+}

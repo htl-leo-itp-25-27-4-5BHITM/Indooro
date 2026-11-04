@@ -1,0 +1,155 @@
+{
+  "elements": [
+    {
+      "category": "501/1",
+      "color": "#2196F3",
+      "height": 1,
+      "id": 9000000000,
+      "label": "Regal 1",
+      "meter": 1,
+      "type": "shelf",
+      "width": 2,
+      "x": 1,
+      "y": 3
+    },
+    {
+      "category": "502/1",
+      "color": "#2196F3",
+      "height": 1,
+      "id": 9000000001,
+      "label": "Regal 2",
+      "meter": 1,
+      "type": "shelf",
+      "width": 2,
+      "x": 4,
+      "y": 3
+    },
+    {
+      "category": "503/1",
+      "color": "#2196F3",
+      "height": 1,
+      "id": 9000000002,
+      "label": "Regal 3",
+      "meter": 1,
+      "type": "shelf",
+      "width": 2,
+      "x": 7,
+      "y": 3
+    },
+    {
+      "category": "504/1",
+      "color": "#2196F3",
+      "height": 1,
+      "id": 9000000003,
+      "label": "Regal 4",
+      "meter": 1,
+      "type": "shelf",
+      "width": 2,
+      "x": 10,
+      "y": 3
+    },
+    {
+      "category": "505/1",
+      "color": "#2196F3",
+      "height": 1,
+      "id": 9000000004,
+      "label": "Regal 5",
+      "meter": 1,
+      "type": "shelf",
+      "width": 2,
+      "x": 1,
+      "y": 6
+    },
+    {
+      "category": "506/1",
+      "color": "#2196F3",
+      "height": 1,
+      "id": 9000000005,
+      "label": "Regal 6",
+      "meter": 1,
+      "type": "shelf",
+      "width": 2,
+      "x": 4,
+      "y": 6
+    },
+    {
+      "category": "507/1",
+      "color": "#2196F3",
+      "height": 1,
+      "id": 9000000006,
+      "label": "Regal 7",
+      "meter": 1,
+      "type": "shelf",
+      "width": 2,
+      "x": 7,
+      "y": 6
+    },
+    {
+      "category": "508/1",
+      "color": "#2196F3",
+      "height": 1,
+      "id": 9000000007,
+      "label": "Regal 8",
+      "meter": 1,
+      "type": "shelf",
+      "width": 2,
+      "x": 10,
+      "y": 6
+    },
+    {
+      "height": 2,
+      "id": 9000000008,
+      "label": "Eingang",
+      "type": "entrance",
+      "width": 1,
+      "x": 0,
+      "y": 8
+    },
+    {
+      "beaconId": "Indooro1",
+      "beaconMajor": 1,
+      "beaconMinor": 1,
+      "beaconUUID": "B5CAA23B-BB89-4040-99D2-FCED3EA4A62B",
+      "id": 9000000009,
+      "type": "beacon",
+      "x": 2.0,
+      "y": 1.5
+    },
+    {
+      "beaconId": "Indooro2",
+      "beaconMajor": 1,
+      "beaconMinor": 2,
+      "beaconUUID": "B5CAA23B-BB89-4040-99D2-FCED3EA4A62B",
+      "id": 9000000010,
+      "type": "beacon",
+      "x": 10.0,
+      "y": 1.5
+    },
+    {
+      "beaconId": "Indooro3",
+      "beaconMajor": 1,
+      "beaconMinor": 3,
+      "beaconUUID": "B5CAA23B-BB89-4040-99D2-FCED3EA4A62B",
+      "id": 9000000011,
+      "type": "beacon",
+      "x": 2.0,
+      "y": 8.5
+    },
+    {
+      "beaconId": "Indooro4",
+      "beaconMajor": 1,
+      "beaconMinor": 4,
+      "beaconUUID": "B5CAA23B-BB89-4040-99D2-FCED3EA4A62B",
+      "id": 9000000012,
+      "type": "beacon",
+      "x": 10.0,
+      "y": 8.5
+    }
+  ],
+  "exportDate": "2026-10-19",
+  "gridSize": {
+    "height": 10,
+    "width": 12
+  },
+  "shopName": "SYNTHETISCHER Testraum (keine Messung)"
+}
