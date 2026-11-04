@@ -100,7 +100,7 @@ export function PlanPage() {
     {
       key: "enabled",
       header: "Aktiv",
-      render: (b) => <Toggle checked={b.enabled} onChange={(enabled) => patchBeacon(b.id, { enabled })} label={<span className="sr-only">{`${b.id} aktiv`}</span>} />,
+      render: (b) => <Toggle checked={b.enabled} onChange={(enabled) => patchBeacon(b.id, { enabled })} label={<span className="text-xs text-muted">{b.enabled ? "aktiv" : "aus"}</span>} />,
     },
     { key: "tx", header: "TX-Power", numeric: true, render: (b) => (b.txPowerDbm === undefined ? "–" : `${b.txPowerDbm} dBm`) },
     {
