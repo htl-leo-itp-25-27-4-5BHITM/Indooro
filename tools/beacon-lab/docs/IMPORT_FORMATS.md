@@ -92,7 +92,7 @@ Pro Datei gilt **ein** Format (Messwerte und Referenzen gemeinsam). Automatische
 |---|---|---|
 | Epoch-Millisekunden | Zahl, Betrag > 1·10¹¹ | ÷ 1000 → Sekunden (Transformation) |
 | Epoch-Sekunden | Zahl 1·10⁸ … 1·10¹¹ | keine |
-| relative Sekunden | Zahl < 1·10⁸ | keine; Info `relative-time` (kein absoluter Zeitbezug) |
+| relative Sekunden | Zahl < 1·10⁸ | keine; Info `relative-time` (kein absoluter Zeitbezug), Warnung `possible-milliseconds` bei unplausiblen Abständen |
 | ISO‑8601 | `2026-10-19T10:00:00Z`, `…+02:00`, `2026-10-19 10:00:01`, nur Datum | → Epoch-Sekunden (Transformation). **Ohne Zeitzone wird UTC angenommen** und das als Transformation vermerkt. |
 
 * **Gemischte Formate in einer Datei blockieren den Import** (`mixed-time-formats`), auch „relativ + Epoch“.
@@ -131,6 +131,9 @@ verworfen, aber Nutzer muss es sehen, **info** = Hinweis.
 | `reference-unsorted` | warning | Referenzen waren unsortiert (sortiert, Transformation) |
 | `decimal-comma-converted` | info | Dezimalkomma → Punkt (nur bei `;`) |
 | `relative-time` | info | Zeit als relative Sekunden gelesen |
+| `possible-milliseconds` | warning | Relative Zeitstempel unplausibel (Median-Abstand je Beacon ≥ 50 s oder Dauer > 10⁵ s) – vermutlich Millisekunden. **Keine** automatische Umrechnung. |
+| `many-duplicates` | warning | Mehr als 5 % exakte Duplikate entfernt – bei grober Zeitauflösung können das echte Pakete sein |
+| `synthetic-origin-column` | warning | Spalte `origin` kennzeichnet Zeilen als synthetisch (z. B. re-importierter Lab-Export) → Lauf wird als SYNTHETISCH vorgeschlagen |
 | `unmatched-ibeacon` | info | `scan`-Zeilen (Major‑Minor ohne Layout-Zuordnung) nicht übernommen |
 | `ignored-lines` / `unknown-line-type` | info | `step`/`heading`/`event` bzw. unbekannte Zeilentypen ignoriert |
 
@@ -195,3 +198,9 @@ Referenzen außerhalb des Grundrisses (Kampagnen-Kontext, `validateReferences`) 
 * `acceptedRows` zählt Zeilen, die einen Messwert oder Referenzpunkt ergeben haben (vor Duplikat-Entfernung);
   `rejectedRows` die verworfenen. Ignorierte Zeilen (`scan`, `event`, …) zählen weder zu den akzeptierten noch zu den verworfenen Zeilen.
 * `ImportProvenance.sha256` ist der SHA‑256 der Datei (als Text). `sourceRow` verweist auf Zeile (CSV/JSONL) bzw. Eintrag (JSON).
+
+
+### Kalenderprüfung bei ISO-8601
+
+Unmögliche Daten oder Uhrzeiten (z. B. `2024-02-31`, `24:00`) gelten als ungültiger Zeitstempel und werden mit Zeilennummer gemeldet.
+Sie werden nicht wie bei `Date.parse` stillschweigend auf den Folgetag verschoben.

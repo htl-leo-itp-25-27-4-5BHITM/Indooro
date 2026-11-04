@@ -306,6 +306,53 @@ interface TimeCell {
   assumedUtc?: boolean;
 }
 
+/**
+ * Date.parse silently rolls over impossible dates (2024-02-31 -> 2024-03-02). Validate the calendar fields first,
+ * so an impossible timestamp is rejected and reported instead of being shifted.
+ */
+export function isoFieldsValid(date: string, time: string | undefined): boolean {
+  const [y, mo, d] = date.split("-").map(Number);
+  if (!(mo >= 1 && mo <= 12)) return false;
+  const daysInMonth = new Date(Date.UTC(y, mo, 0)).getUTCDate();
+  if (!(d >= 1 && d <= daysInMonth)) return false;
+  if (time) {
+    const [h, mi, sec] = time.split(":").map(Number);
+    if (!(h >= 0 && h <= 23 && mi >= 0 && mi <= 59)) return false;
+    if (sec !== undefined && !(sec >= 0 && sec < 60)) return false;
+  }
+  return true;
+}
+
+/**
+ * Heuristic for relative timestamps that are probably milliseconds read as seconds: BLE beacons advertise every
+ * 0.1–1 s, so a median per-beacon interval of >= 50 "s" or a run longer than ~28 h is implausible.
+ * Returns a German warning text, or null.
+ */
+export function relativeTimeLooksLikeMilliseconds(samples: readonly { t: number; beaconId: string }[]): string | null {
+  if (samples.length < 3) return null;
+  let tMin = Infinity, tMax = -Infinity;
+  const byBeacon = new Map<string, number[]>();
+  for (const s of samples) {
+    if (!Number.isFinite(s.t)) continue;
+    tMin = Math.min(tMin, s.t);
+    tMax = Math.max(tMax, s.t);
+    const arr = byBeacon.get(s.beaconId);
+    if (arr) arr.push(s.t);
+    else byBeacon.set(s.beaconId, [s.t]);
+  }
+  const dts: number[] = [];
+  for (const ts of byBeacon.values()) {
+    ts.sort((a, b) => a - b);
+    for (let i = 1; i < ts.length; i++) if (ts[i] > ts[i - 1]) dts.push(ts[i] - ts[i - 1]);
+  }
+  dts.sort((a, b) => a - b);
+  const medianDt = dts.length > 0 ? dts[Math.floor(dts.length / 2)] : NaN;
+  if ((Number.isFinite(medianDt) && medianDt >= 50) || tMax - tMin > 1e5) {
+    return `Relative Zeitstempel wirken unplausibel (Median-Abstand je Beacon ${Number.isFinite(medianDt) ? medianDt.toFixed(0) : "–"} s, Dauer ${(tMax - tMin).toFixed(0)} s). Möglicherweise sind es Millisekunden – dann Zeitformat „Epoch-Millisekunden“ wählen bzw. Datei prüfen. Es wurde NICHT automatisch umgerechnet.`;
+  }
+  return null;
+}
+
 function classifyTime(raw: unknown, row: number, fmt: TimeFormatOption, ctx: NumCtx): TimeCell {
   const num = parseNum(raw, "t", row, ctx);
   if (num === null) return { kind: "missing", value: NaN };
@@ -324,6 +371,7 @@ function classifyTime(raw: unknown, row: number, fmt: TimeFormatOption, ctx: Num
       const [, date, time, zone] = m;
       const assumedUtc = !zone;
       const iso = `${date}T${time ?? "00:00:00"}${zone ?? "Z"}`;
+      if (!isoFieldsValid(date, time)) return { kind: "invalid", value: NaN };
       const ms = Date.parse(iso);
       if (Number.isFinite(ms)) return { kind: "iso", value: ms / 1000, assumedUtc };
     }
@@ -358,7 +406,13 @@ class MetaCollector {
   kinds = new Set<RunKind>();
   firstRunName?: string;
   firstKind?: RunKind;
-  add(runName: unknown, kind: unknown): void {
+  origins = new Set<DataOrigin>();
+  add(runName: unknown, kind: unknown, origin?: unknown): void {
+    if (typeof origin === "string") {
+      const o = origin.trim().toLowerCase();
+      if (o === "synthetic" || o === "synthetisch") this.origins.add("synthetic");
+      else if (o === "real" || o === "echtdaten" || o === "echt") this.origins.add("real");
+    }
     if (typeof runName === "string" && runName.trim()) {
       this.runNames.add(runName.trim());
       this.firstRunName ??= runName.trim();
@@ -390,6 +444,14 @@ class MetaCollector {
       });
     }
     const s: NonNullable<ImportOutcome["suggested"]> = {};
+    if (this.origins.has("synthetic")) {
+      s.origin = "synthetic";
+      issues.push({
+        severity: "warning",
+        code: "synthetic-origin-column",
+        message: "Die Spalte „origin“ kennzeichnet (mindestens einen Teil der) Zeilen als SYNTHETISCH. Die Messreihe muss als synthetisch übernommen werden.",
+      });
+    } else if (this.origins.has("real")) s.origin = "real";
     if (this.firstRunName) s.runName = this.firstRunName;
     if (this.firstKind) s.kind = this.firstKind;
     return Object.keys(s).length > 0 ? s : undefined;
@@ -483,7 +545,7 @@ function parseTable(
         sampleIndex: samples.length - 1,
       });
     }
-    meta.add(get(i, "runName"), get(i, "kind"));
+    meta.add(get(i, "runName"), get(i, "kind"), table.hasColumn("origin") ? table.cell(i, "origin") : undefined);
   }
 
   const out = coll.toIssues();
@@ -970,6 +1032,10 @@ export async function runImport(args: {
       code: "relative-time",
       message: "Zeitstempel wurden als relative Sekunden (seit Messbeginn) interpretiert; es gibt keinen absoluten Zeitbezug.",
     });
+    const msHint = relativeTimeLooksLikeMilliseconds(samples);
+    if (msHint) {
+      issues.push({ severity: "warning", code: "possible-milliseconds", message: msHint });
+    }
   }
 
   // ---- 6. rejection accounting
@@ -1019,7 +1085,17 @@ export async function runImport(args: {
     deduped.push(s);
   }
   if (deduped.length < ordered.length) {
-    transformations.push(`${ordered.length - deduped.length} exakte Duplikate (gleiche Zeit, Beacon, RSSI, Gerät) entfernt; jeweils erstes Vorkommen behalten.`);
+    const removed = ordered.length - deduped.length;
+    transformations.push(`${removed} exakte Duplikate (gleiche Zeit, Beacon, RSSI, Gerät) entfernt; jeweils erstes Vorkommen behalten.`);
+    const frac = removed / ordered.length;
+    if (frac > 0.05) {
+      issues.push({
+        severity: "warning",
+        code: "many-duplicates",
+        count: removed,
+        message: `${(frac * 100).toFixed(1)} % der Messwerte waren exakte Duplikate und wurden entfernt. Bei grober Zeitauflösung (z. B. ganze Sekunden) können das echte, gleich starke Pakete sein – die Abtastrate sinkt dann künstlich. Zeitauflösung der Quelle prüfen.`,
+      });
+    }
   }
 
   // references: collapse exact repeats (long format repeats the reference on every beacon row), sort
