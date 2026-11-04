@@ -27,8 +27,8 @@ function useHintProgress(): [boolean, boolean, boolean] {
   return [searched || hasList || !!demo?.selectedProductId, hasList, !!demo && demo.sim.state !== "idle"];
 }
 
-export function DemoSection() {
-  const reduce = useReducedMotion();
+/** Interactive hint chips. Separate component so that demo-handle updates do not re-render the demo itself. */
+function DemoHints({ reveal }: { reveal: Record<string, unknown> }) {
   const demo = useDemoHandle();
   const done = useHintProgress();
   const act = (i: number) => {
@@ -38,6 +38,33 @@ export function DemoSection() {
     } else if (i === 1) demo?.setTab("suche");
     else demo?.setTab("navigation");
   };
+  return (
+        <motion.ol {...reveal} className="mt-8 flex flex-wrap gap-2.5" aria-label="So probieren Sie die Demo aus">
+          {STEPS.map((s, i) => (
+            <li key={s.n}>
+              <button
+                type="button"
+                data-testid={`demo-hint-${s.n}`}
+                data-done={done[i] ? "true" : "false"}
+                onClick={() => act(i)}
+                className={`inline-flex min-h-10 items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-4 text-[13px] ring-1 transition-colors duration-500 ${
+                  done[i] ? "bg-mint/10 ring-mint/40" : "bg-white/5 ring-white/10 hover:bg-white/8"
+                }`}
+              >
+                <span className={`grid size-6 place-items-center rounded-full text-xs font-bold transition-colors duration-500 ${done[i] ? "bg-mint text-ink-950" : "bg-white/12 text-white"}`}>
+                  {done[i] ? <Check className="size-3.5" strokeWidth={3} aria-label="erledigt" /> : s.n}
+                </span>
+                <span className="font-semibold text-white">{s.label}</span>
+                <span className="hidden text-ink-300 sm:inline">{s.hint}</span>
+              </button>
+            </li>
+          ))}
+        </motion.ol>
+  );
+}
+
+export function DemoSection() {
+  const reduce = useReducedMotion();
   const reveal = (delay = 0) => ({
     initial: reduce ? false : { opacity: 0, y: 24 },
     whileInView: { opacity: 1, y: 0 },
@@ -64,27 +91,7 @@ export function DemoSection() {
           </motion.p>
         </div>
 
-        <motion.ol {...reveal(0.18)} className="mt-8 flex flex-wrap gap-2.5" aria-label="So probieren Sie die Demo aus">
-          {STEPS.map((s, i) => (
-            <li key={s.n}>
-              <button
-                type="button"
-                data-testid={`demo-hint-${s.n}`}
-                data-done={done[i] ? "true" : "false"}
-                onClick={() => act(i)}
-                className={`inline-flex min-h-10 items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-4 text-[13px] ring-1 transition-colors duration-500 ${
-                  done[i] ? "bg-mint/10 ring-mint/40" : "bg-white/5 ring-white/10 hover:bg-white/8"
-                }`}
-              >
-                <span className={`grid size-6 place-items-center rounded-full text-xs font-bold transition-colors duration-500 ${done[i] ? "bg-mint text-ink-950" : "bg-white/12 text-white"}`}>
-                  {done[i] ? <Check className="size-3.5" strokeWidth={3} aria-label="erledigt" /> : s.n}
-                </span>
-                <span className="font-semibold text-white">{s.label}</span>
-                <span className="hidden text-ink-300 sm:inline">{s.hint}</span>
-              </button>
-            </li>
-          ))}
-        </motion.ol>
+        <DemoHints reveal={reveal(0.18)} />
 
         <motion.div {...reveal(0.1)} className="mt-8 sm:mt-10">
           <StoreDemo />
