@@ -23,4 +23,12 @@ public final class AdminUserDtos {
             String storeName
     ) {
     }
+
+    /** Token identity of the signed-in user, also without an access assignment (for the forbidden page). */
+    public record CurrentIdentityResponse(
+            String subject,
+            String username,
+            String email
+    ) {
+    }
 }

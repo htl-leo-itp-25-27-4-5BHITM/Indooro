@@ -43,6 +43,8 @@ tags:
     description: Current admin user.
   - name: admin-logs
     description: Audit and error logs.
+  - name: admin-access
+    description: Admin-UI access assignments (Keycloak subject to role and scope).
   - name: admin-products
     description: Admin product catalog maintenance.
   - name: admin-recipes
@@ -870,6 +872,22 @@ paths:
               schema: { $ref: "#/components/schemas/CurrentUserResponse" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/me/identity:
+    get:
+      tags: [admin-session]
+      operationId: getCurrentAdminIdentity
+      summary: Keycloak subject and name of the signed-in user, also without an access assignment.
+      description: Read from the token only. The forbidden page shows the subject so an admin can create the access assignment.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: authenticated
+      x-indooro-consumers: [admin-ui]
+      responses:
+        "200":
+          description: Token identity.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CurrentIdentityResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
   /api/admin/logs:
     get:
       tags: [admin-logs]
@@ -912,6 +930,78 @@ paths:
               schema: { $ref: "#/components/schemas/ErrorLogResponse" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+  /api/admin/access-assignments:
+    get:
+      tags: [admin-access]
+      operationId: listAccessAssignments
+      summary: Access assignments, active first. Without status all rows.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [ACTIVE, DISABLED] }
+      responses:
+        "200":
+          description: Access assignments.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/AccessAssignmentResponse" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: [admin-access]
+      operationId: createAccessAssignment
+      summary: Give a Keycloak user admin-UI access with a role and scope.
+      description: >-
+        store-manager needs storeId, region-manager needs regionId, admin has neither. Region and store must be
+        active. One active assignment per Keycloak subject (409 otherwise). Writes an audit entry USER_ACCESS/CREATE.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AccessAssignmentCreateRequest" }
+      responses:
+        "200":
+          description: Created assignment.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessAssignmentResponse" }
+        "400": { $ref: "#/components/responses/ValidationFailed" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/admin/access-assignments/{assignmentId}/deactivate:
+    patch:
+      tags: [admin-access]
+      operationId: deactivateAccessAssignment
+      summary: Deactivate an access assignment (status DISABLED). The own assignment cannot be deactivated (409).
+      description: Idempotent for an already disabled assignment. Writes an audit entry USER_ACCESS/DEACTIVATE.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Deactivated assignment.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessAssignmentResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
 
   # ---------------------------------------------------------------- admin products
   /api/admin/products:
@@ -2924,6 +3014,38 @@ components:
               errorType: { type: [string, "null"] }
               stackTrace: { type: [string, "null"] }
               createdAt: { type: string, format: date-time }
+    CurrentIdentityResponse:
+      type: object
+      properties:
+        subject: { type: string }
+        username: { type: [string, "null"] }
+        email: { type: [string, "null"] }
+    AccessAssignmentCreateRequest:
+      type: object
+      required: [keycloakSubject, username, role]
+      properties:
+        keycloakSubject: { type: string, maxLength: 120, description: "Keycloak user id (claim sub)." }
+        username: { type: string, maxLength: 120 }
+        email: { type: [string, "null"], format: email, maxLength: 254 }
+        role: { type: string, enum: [admin, region-manager, store-manager] }
+        regionId: { type: [string, "null"], format: uuid, description: "Required for region-manager, otherwise null." }
+        storeId: { type: [string, "null"], format: uuid, description: "Required for store-manager, otherwise null." }
+    AccessAssignmentResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        keycloakSubject: { type: string }
+        username: { type: string }
+        email: { type: [string, "null"] }
+        role: { type: string, enum: [admin, region-manager, store-manager] }
+        regionId: { type: [string, "null"], format: uuid }
+        regionName: { type: [string, "null"] }
+        storeId: { type: [string, "null"], format: uuid }
+        storeCode: { type: [string, "null"] }
+        storeName: { type: [string, "null"] }
+        status: { type: string, enum: [ACTIVE, DISABLED] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
 
     # ---------- regions & stores
     RegionUpsertRequest:
