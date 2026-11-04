@@ -28,7 +28,7 @@ function Director({ state, wrap, onFrame }: { state: SceneState; wrap: React.Ref
     cam.far = 120;
     // Move the scene to the right (desktop, text on the left) or up (mobile, text below).
     if (aspect >= 1.15) cam.setViewOffset(size.width, size.height, -size.width * 0.16, 0, size.width, size.height);
-    else cam.setViewOffset(size.width, size.height, 0, size.height * 0.17, size.width, size.height);
+    else cam.setViewOffset(size.width, size.height, 0, size.height * 0.2, size.width, size.height);
     cam.updateProjectionMatrix();
     return () => cam.clearViewOffset();
   }, [camera, size.width, size.height, aspect]);

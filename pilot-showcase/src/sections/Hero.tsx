@@ -29,7 +29,7 @@ export function Hero() {
         };
 
   return (
-    <section id="top" aria-labelledby="hero-title" className="on-dark relative isolate flex min-h-[100svh] items-end overflow-hidden bg-ink-950 pb-12 pt-28 text-ink-100 lg:items-center lg:pb-20 lg:pt-32">
+    <section id="top" aria-labelledby="hero-title" className="on-dark relative isolate flex min-h-[100svh] items-end overflow-hidden bg-ink-950 pb-8 pt-24 sm:pb-12 sm:pt-28 text-ink-100 lg:items-center lg:pb-20 lg:pt-32">
       {/* atmosphere: glows, fine grid, grain */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -right-40 -top-40 size-[44rem] rounded-full bg-[radial-gradient(closest-side,rgb(99_230_180/0.16),transparent)]" />
@@ -44,7 +44,7 @@ export function Hero() {
           </div>
           {/* legibility scrims: left on desktop, bottom on mobile */}
           <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 -z-[4] hidden w-[68%] bg-gradient-to-r from-ink-950 via-ink-950/85 to-transparent lg:block" />
-          <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-[4] h-[72%] bg-gradient-to-t from-ink-950 via-ink-950/90 to-transparent lg:hidden" />
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-[4] h-[66%] bg-gradient-to-t from-ink-950 via-ink-950/92 to-transparent lg:hidden" />
           <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-[4] h-28 bg-gradient-to-b from-ink-950/70 to-transparent" />
           <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-[4] h-32 bg-gradient-to-b from-transparent to-ink-950" />
           {ready ? (
@@ -63,16 +63,16 @@ export function Hero() {
             <Eyebrow onDark>Pilotprojekt · HTL Leonding</Eyebrow>
           </motion.div>
 
-          <motion.h1 id="hero-title" {...rise(1)} className="display mt-6 text-[2.75rem] text-white sm:text-6xl lg:text-7xl ">
+          <motion.h1 id="hero-title" {...rise(1)} className="display mt-6 text-[2.3rem] text-white sm:text-6xl lg:text-7xl">
             Jedes Produkt.
             <span className="block bg-gradient-to-r from-mint via-mint-soft to-teal bg-clip-text text-transparent">Auf direktem Weg.</span>
           </motion.h1>
 
-          <motion.p {...rise(2)} className="text-pretty mt-6 max-w-xl text-lg leading-relaxed text-ink-200 sm:text-xl">
+          <motion.p {...rise(2)} className="text-pretty mt-4 max-w-xl text-[15px] leading-relaxed text-ink-200 sm:mt-6 sm:text-xl">
             <strong className="font-semibold text-white">Indooro führt Ihre Kundinnen und Kunden direkt zum Produkt.</strong> Per Produktsuche, Einkaufsliste und Route durch den Markt – eingerichtet vom Markt selbst, ohne Entwickler.
           </motion.p>
 
-          <motion.ul {...rise(3)} className="mt-6 flex flex-wrap gap-2" aria-label="Funktionen">
+          <motion.ul {...rise(3)} className="mt-6 hidden flex-wrap gap-2 sm:flex" aria-label="Funktionen">
             {CAPABILITIES.map(({ icon: Icon, label }) => (
               <li key={label} className="inline-flex items-center gap-2 rounded-full bg-white/[0.05] px-3.5 py-1.5 text-[13px] font-medium text-ink-100 ring-1 ring-inset ring-white/10">
                 <Icon className="size-3.5 text-mint" aria-hidden />
@@ -81,19 +81,19 @@ export function Hero() {
             ))}
           </motion.ul>
 
-          <motion.div {...rise(4)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            <Button size="lg" variant="primary" data-testid="hero-cta-tour" onClick={() => startTour()} icon={<Play className="size-4" fill="currentColor" />}>
+          <motion.div {...rise(4)} className="mt-6 grid grid-cols-2 gap-2.5 sm:mt-8 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+            <Button size="lg" variant="primary" className="col-span-2" data-testid="hero-cta-tour" onClick={() => startTour()} icon={<Play className="size-4" fill="currentColor" />}>
               Geführte Tour starten
             </Button>
-            <Button href="#demo" size="lg" variant="ghost-dark" data-testid="hero-cta-demo" icon={<ArrowDown className="size-4" />}>
+            <Button href="#demo" size="lg" variant="ghost-dark" className="!px-4" data-testid="hero-cta-demo" icon={<ArrowDown className="size-4" />}>
               Live-Demo starten
             </Button>
-            <Button href="#pilot" size="lg" variant="ghost-dark" data-testid="hero-cta-pilot" icon={<ArrowRight className="size-4" />}>
+            <Button href="#pilot" size="lg" variant="ghost-dark" className="!px-4" data-testid="hero-cta-pilot" icon={<ArrowRight className="size-4" />}>
               Pilotpartner werden
             </Button>
           </motion.div>
 
-          <motion.p {...rise(5)} className="mt-7 flex max-w-xl items-start gap-2.5 text-[13px] leading-relaxed text-ink-300">
+          <motion.p {...rise(5)} className="mt-5 flex max-w-xl items-start gap-2.5 text-[12.5px] sm:mt-7 sm:text-[13px] leading-relaxed text-ink-300">
             <span aria-hidden className="relative mt-[0.45rem] flex size-2 shrink-0">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber/60 motion-reduce:hidden" />
               <span className="relative inline-flex size-2 rounded-full bg-amber" />
