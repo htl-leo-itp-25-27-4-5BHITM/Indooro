@@ -551,6 +551,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/me/identity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Keycloak subject and name of the signed-in user, also without an access assignment.
+         * @description Read from the token only. The forbidden page shows the subject so an admin can create the access assignment.
+         */
+        get: operations["getCurrentAdminIdentity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/logs": {
         parameters: {
             query?: never;
@@ -583,6 +603,47 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/admin/access-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Access assignments, active first. Without status all rows. */
+        get: operations["listAccessAssignments"];
+        put?: never;
+        /**
+         * Give a Keycloak user admin-UI access with a role and scope.
+         * @description store-manager needs storeId, region-manager needs regionId, admin has neither. Region and store must be active. One active assignment per Keycloak subject (409 otherwise). Writes an audit entry USER_ACCESS/CREATE.
+         */
+        post: operations["createAccessAssignment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/access-assignments/{assignmentId}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Deactivate an access assignment (status DISABLED). The own assignment cannot be deactivated (409).
+         * @description Idempotent for an already disabled assignment. Writes an audit entry USER_ACCESS/DEACTIVATE.
+         */
+        patch: operations["deactivateAccessAssignment"];
         trace?: never;
     };
     "/api/admin/products": {
@@ -1950,6 +2011,52 @@ export interface components {
                 /** Format: date-time */
                 createdAt?: string;
             }[];
+        };
+        CurrentIdentityResponse: {
+            subject?: string;
+            username?: string | null;
+            email?: string | null;
+        };
+        AccessAssignmentCreateRequest: {
+            /** @description Keycloak user id (claim sub). */
+            keycloakSubject: string;
+            username: string;
+            /** Format: email */
+            email?: string | null;
+            /** @enum {string} */
+            role: "admin" | "region-manager" | "store-manager";
+            /**
+             * Format: uuid
+             * @description Required for region-manager, otherwise null.
+             */
+            regionId?: string | null;
+            /**
+             * Format: uuid
+             * @description Required for store-manager, otherwise null.
+             */
+            storeId?: string | null;
+        };
+        AccessAssignmentResponse: {
+            /** Format: uuid */
+            id?: string;
+            keycloakSubject?: string;
+            username?: string;
+            email?: string | null;
+            /** @enum {string} */
+            role?: "admin" | "region-manager" | "store-manager";
+            /** Format: uuid */
+            regionId?: string | null;
+            regionName?: string | null;
+            /** Format: uuid */
+            storeId?: string | null;
+            storeCode?: string | null;
+            storeName?: string | null;
+            /** @enum {string} */
+            status?: "ACTIVE" | "DISABLED";
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string;
         };
         RegionUpsertRequest: {
             code: string;
@@ -3371,6 +3478,27 @@ export interface operations {
             403: components["responses"]["Forbidden"];
         };
     };
+    getCurrentAdminIdentity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Token identity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CurrentIdentityResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     listAuditLogs: {
         parameters: {
             query?: {
@@ -3417,6 +3545,85 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listAccessAssignments: {
+        parameters: {
+            query?: {
+                status?: "ACTIVE" | "DISABLED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Access assignments. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessAssignmentResponse"][];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    createAccessAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccessAssignmentCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Created assignment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessAssignmentResponse"];
+                };
+            };
+            400: components["responses"]["ValidationFailed"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    deactivateAccessAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deactivated assignment. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessAssignmentResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     listAdminProducts: {

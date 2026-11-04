@@ -105,6 +105,21 @@ public class AdminAccessService {
         );
     }
 
+    /**
+     * Subject and name claims of the signed-in user, read from the token only. Works without an access
+     * assignment, so the forbidden page can show the user the Keycloak id an admin needs.
+     */
+    public AdminUserDtos.CurrentIdentityResponse currentIdentity() {
+        if (identity == null || identity.isAnonymous()) {
+            throw new NotAuthorizedException("Admin-Login erforderlich.");
+        }
+        return new AdminUserDtos.CurrentIdentityResponse(
+                subject(),
+                claim("preferred_username", identity.getPrincipal().getName()),
+                claim("email", null)
+        );
+    }
+
     public void requireAdmin() {
         if (currentUser().role() != AdminRole.ADMIN) {
             throw new ForbiddenException("Diese Aktion ist Administratoren vorbehalten.");

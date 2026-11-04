@@ -11,6 +11,10 @@ Weiterführend: Maße und Regelwerk in `LAYOUT_CONVENTIONS.md`, Vermessung und K
 - **Beacon-Werte:** Pro Beacon UUID, Major und Minor. Lies sie mit der App **nRF Connect** (Scanner, Beacon antippen, Abschnitt „Apple iBeacon“). Die Projekt-UUID steht in `../hardware/BEACON_STANDARD.md`; Major ist die Standortnummer (Märkte ab 10), Minor die Nummer auf dem Etikett. UUID aus lauter Nullen ist ungültig.
 - **Sortiment als CSV** (UTF-8, Trenner `;`, Kopfzeile): `id;name;kategorie;meter;fach;reihe;preis`. Pflicht sind `name`, `kategorie`, `meter`, `fach`, `reihe`; `id` und `preis` sind optional. Jedes Regal `kategorie/meter` muss im aktiven Layout existieren.
 
+## Zugang für die Marktleitung
+
+Soll die Marktleitung selbst im Admin arbeiten, braucht sie einen Keycloak-Benutzer mit der Realm-Rolle `store-manager` (Keycloak-Konsole, Erik) und einen Zugang für genau diesen Markt. Den Zugang legt ein Administrator unter Admin → **Zugänge** an: Keycloak-ID (`sub`), Rolle „Marktleiter (store-manager)“, Markt wählen. Die Keycloak-ID sieht die Person nach dem ersten Login auf der Seite „Zugriff verweigert“ und kann sie dort kopieren. Kein SQL nötig; Ablauf und Regeln in `../team/ADMIN_LOGIN.md`, Abschnitt „Neuen Zugang vergeben“.
+
 ## Schritte
 
 1. **Markt angelegt.** Admin → Stores → „Neuer Store“ (Administrator oder Regionsleitung). Für einen Testraum stellt ein Administrator das Abdeckungsprofil „Testraum“ ein (Store bearbeiten).

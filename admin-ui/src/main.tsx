@@ -16,6 +16,8 @@ import { LegacyEditorRoute } from "./LegacyEditorRoute";
 import { ProductsPage } from "./ProductsPage";
 import { CategoriesPage } from "./CategoriesPage";
 import { SearchIndexPage } from "./SearchIndexPage";
+import { AccessAssignmentsPage } from "./AccessAssignmentsPage";
+import { ForbiddenIdentity } from "./ForbiddenIdentity";
 import { candidateAccess, candidateNavigationPath, visibleRoutes, type CurrentUser } from "./routes";
 import "./style.css";
 
@@ -63,6 +65,7 @@ function AdminCandidate() {
           {error && <section role="alert" className="notice">
             <h2>{error.kind === "unauthorized" ? "Sitzung abgelaufen" : error.kind === "forbidden" ? "Zugriff verweigert" : "Profil nicht verfügbar"}</h2>
             <p>{error.message}</p>
+            {error.kind === "forbidden" && <ForbiddenIdentity api={api} />}
             <a href="/admin/">{error.kind === "unauthorized" ? "Erneut anmelden" : "Zur bisherigen Administration"}</a>
           </section>}
           {user && access === "forbidden" && <section role="alert" className="notice"><h2>Zugriff verweigert</h2><p>Für diesen Bereich fehlt die Berechtigung.</p></section>}
@@ -85,6 +88,7 @@ function AdminCandidate() {
             : window.location.pathname.includes("/categories") ? <CategoriesPage api={api} />
             : window.location.pathname.includes("/search-index") ? <SearchIndexPage api={api} user={user} />
             : window.location.pathname.includes("/server-logs") ? <DiagnosticsPage api={api} user={user} />
+            : window.location.pathname.includes("/access") ? <AccessAssignmentsPage api={api} user={user} />
             : <Dashboard api={api} user={user} />)}
         </main>
       </div>

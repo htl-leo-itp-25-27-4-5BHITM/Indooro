@@ -317,6 +317,8 @@ Demo-Benutzer (Passwoerter: `KC_DEMO_ADMIN_PASSWORD`, `KC_DEMO_REGION_PASSWORD`,
 
 Die Migration `V4__user_access_assignments.sql` legt den Admin-Demozugang automatisch an. Fuer `region-manager` und `store-manager` muessen nach dem Anlegen von Region und Filiale passende Indooro-Scope-Zuordnungen gesetzt werden, weil diese Rollen echte Domain-IDs brauchen.
 
+Diese Zuordnungen vergibt ein Administrator im Admin unter "Zugänge" (`/admin/next/access/`, Ablauf in `docs/pilot-readiness/team/ADMIN_LOGIN.md`). Das SQL unten ist nur ein Notbehelf fuer eine lokale Datenbank ohne Admin-Zugang.
+
 Beispiel-SQL fuer eine Region und eine Filiale:
 
 ```sql
@@ -341,7 +343,7 @@ WHERE s.store_code = 'SPAR-LNZ-001'
 ON CONFLICT DO NOTHING;
 ```
 
-Wenn Benutzer im Keycloak Admin UI neu angelegt werden, ist der stabile Wert fuer Indooro die Keycloak User-ID beziehungsweise der OIDC `sub` Claim. Die Admin UI zeigt den aktuell angemeldeten Benutzer ueber `/api/admin/me`.
+Wenn Benutzer im Keycloak Admin UI neu angelegt werden, ist der stabile Wert fuer Indooro die Keycloak User-ID beziehungsweise der OIDC `sub` Claim. Die Admin UI zeigt den aktuell angemeldeten Benutzer ueber `/api/admin/me`. Ohne Zugang zeigt die Seite "Zugriff verweigert" die eigene `sub` zum Kopieren (`/api/admin/me/identity`).
 
 ### LeoCloud Keycloak
 

@@ -2,6 +2,7 @@ package at.htl.resource.admin;
 
 import at.htl.admin.dto.AdminUserDtos;
 import at.htl.admin.service.AdminAccessService;
+import io.quarkus.security.Authenticated;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
@@ -24,5 +25,14 @@ public class AdminCurrentUserResource {
     @GET
     public AdminUserDtos.CurrentUserResponse me() {
         return adminAccessService.currentUserResponse();
+    }
+
+    /** Any signed-in user, also without a role or access assignment: the own Keycloak subject to hand to an admin. */
+    @Operation(operationId = "getCurrentAdminIdentity")
+    @GET
+    @Path("/identity")
+    @Authenticated
+    public AdminUserDtos.CurrentIdentityResponse identity() {
+        return adminAccessService.currentIdentity();
     }
 }
