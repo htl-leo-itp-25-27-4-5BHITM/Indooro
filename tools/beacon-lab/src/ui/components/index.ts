@@ -8,4 +8,8 @@ export * from "./Tabs";
 export * from "./Callout";
 export * from "./Modal";
 export * from "./FileDrop";
+export * from "./StatTile";
+export * from "./DataTable";
+export * from "./IssueList";
+export * from "./metricDefinitions";
 export { cn } from "./cn";
