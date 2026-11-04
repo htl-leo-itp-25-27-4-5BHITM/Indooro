@@ -106,57 +106,59 @@ export function ShoppingList({
               key={product.id}
               data-testid="list-item"
               data-product-id={product.id}
-              className={`flex items-center gap-2.5 rounded-2xl border px-2.5 py-2 transition-colors ${
+              className={`rounded-2xl border px-3 py-2.5 transition-colors ${
                 isSel ? "border-amber/50 bg-amber/10" : "border-transparent bg-white/[0.04] hover:bg-white/[0.07]"
               }`}
             >
-              <span
-                aria-label={`Station ${n}`}
-                className="grid size-7 shrink-0 place-items-center rounded-full bg-ink-950 text-xs font-bold tabular-nums text-mint ring-1 ring-mint/50"
-              >
-                {n}
-              </span>
-              <button type="button" onClick={() => onSelect(product.id)} className="flex min-w-0 flex-1 items-center gap-2.5 text-left" aria-label={`${product.name} auf der Karte zeigen`}>
-                <span aria-hidden className="text-xl">
-                  {product.emoji}
-                </span>
-                <span className="min-w-0">
-                  <span className="block truncate text-[14px] font-semibold text-white">{product.name}</span>
-                  <span className="block truncate text-xs text-ink-300">{shelfText(product)}</span>
-                </span>
-              </button>
-              <div className="flex shrink-0 items-center rounded-full bg-ink-950/70 ring-1 ring-white/10" role="group" aria-label={`Menge ${product.name}`}>
-                <button
-                  type="button"
-                  aria-label="Menge verringern"
-                  data-testid="qty-minus"
-                  onClick={() => onQty(product.id, item.qty - 1)}
-                  className="grid size-10 place-items-center rounded-full text-ink-200 transition hover:bg-white/8 hover:text-white"
+              <div className="flex items-center gap-2.5">
+                <span
+                  aria-label={`Station ${n}`}
+                  className="grid size-7 shrink-0 place-items-center rounded-full bg-ink-950 text-xs font-bold tabular-nums text-mint ring-1 ring-mint/50"
                 >
-                  <Minus className="size-3.5" aria-hidden />
+                  {n}
+                </span>
+                <button type="button" onClick={() => onSelect(product.id)} className="flex min-w-0 flex-1 items-center gap-2 text-left" aria-label={`${product.name} auf der Karte zeigen`}>
+                  <span aria-hidden className="text-xl">
+                    {product.emoji}
+                  </span>
+                  <span className="truncate text-[14px] font-semibold text-white">{product.name}</span>
                 </button>
-                <span className="w-5 text-center text-[13px] font-semibold tabular-nums text-white" data-testid="qty-value">
-                  {item.qty}
-                </span>
                 <button
                   type="button"
-                  aria-label="Menge erhöhen"
-                  data-testid="qty-plus"
-                  onClick={() => onQty(product.id, item.qty + 1)}
-                  className="grid size-10 place-items-center rounded-full text-ink-200 transition hover:bg-white/8 hover:text-white"
+                  aria-label={`${product.name} entfernen`}
+                  data-testid="remove-item"
+                  onClick={() => onRemove(product.id)}
+                  className="-mr-1.5 grid size-10 shrink-0 place-items-center rounded-full text-ink-300 transition hover:bg-danger/10 hover:text-danger"
                 >
-                  <Plus className="size-3.5" aria-hidden />
+                  <X className="size-4" aria-hidden />
                 </button>
               </div>
-              <button
-                type="button"
-                aria-label={`${product.name} entfernen`}
-                data-testid="remove-item"
-                onClick={() => onRemove(product.id)}
-                className="grid size-10 shrink-0 place-items-center rounded-full text-ink-300 transition hover:bg-danger/10 hover:text-danger"
-              >
-                <X className="size-4" aria-hidden />
-              </button>
+              <div className="mt-0.5 flex items-center justify-between gap-3 pl-[2.375rem]">
+                <span className="min-w-0 text-xs leading-snug text-ink-300">{shelfText(product)}</span>
+                <div className="flex shrink-0 items-center rounded-full bg-ink-950/70 ring-1 ring-white/10" role="group" aria-label={`Menge ${product.name}`}>
+                  <button
+                    type="button"
+                    aria-label="Menge verringern"
+                    data-testid="qty-minus"
+                    onClick={() => onQty(product.id, item.qty - 1)}
+                    className="grid size-10 place-items-center rounded-full text-ink-200 transition hover:bg-white/8 hover:text-white"
+                  >
+                    <Minus className="size-3.5" aria-hidden />
+                  </button>
+                  <span className="w-5 text-center text-[13px] font-semibold tabular-nums text-white" data-testid="qty-value">
+                    {item.qty}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Menge erhöhen"
+                    data-testid="qty-plus"
+                    onClick={() => onQty(product.id, item.qty + 1)}
+                    className="grid size-10 place-items-center rounded-full text-ink-200 transition hover:bg-white/8 hover:text-white"
+                  >
+                    <Plus className="size-3.5" aria-hidden />
+                  </button>
+                </div>
+              </div>
             </li>
           );
         })}

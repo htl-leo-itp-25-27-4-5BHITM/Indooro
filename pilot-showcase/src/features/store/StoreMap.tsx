@@ -35,6 +35,34 @@ export interface StoreMapProps {
 }
 
 const PAD = 0.9;
+
+/** Short zone names used when the full category name does not fit on the shelf. */
+const SHORT_LABEL: Record<string, string> = {
+  "110": "Brot",
+  "320": "Fleisch",
+  "410": "Milch",
+  "420": "Käse & Eier",
+  "510": "Tiefkühl",
+  "610": "Nudeln & Reis",
+  "620": "Frühstück",
+  "630": "Süßes",
+  "640": "Öl & Gewürze",
+  "650": "Konserven",
+  "710": "Getränke",
+  "720": "Bier & Wein",
+  "810": "Haushalt",
+  "820": "Pflege"
+};
+
+/** Picks the longest label variant that fits into `room` metres (rough Inter width estimate). */
+function fitLabel(shelf: LayoutElement, fontSize: number): string | null {
+  const room = Math.max(shelf.width, shelf.height) - 0.45;
+  if (Math.min(shelf.width, shelf.height) < 0.9) return null;
+  const est = (t: string) => t.length * fontSize * 0.58;
+  const short = SHORT_LABEL[shelf.category ?? ""];
+  const variants = [shelf.label, short, short?.split(/[ ,]/)[0]].filter((v): v is string => Boolean(v));
+  return variants.find((v) => est(v) <= room) ?? null;
+}
 const AMBER = "#E8B86D";
 const MINT = "#63E6B4";
 
@@ -124,7 +152,7 @@ export function StoreMap({
   const hoverShelf = hover ? shelves.find((s) => s.id === hover.shelfId) : undefined;
   const hoverProducts = hoverShelf ? productsOnShelf(market, hoverShelf) : [];
 
-  const labelFont = 0.56;
+  const labelFont = 0.52;
   const edgeLabel = Math.max(0.6, 10 / pxPerM);
 
   return (
@@ -274,7 +302,7 @@ export function StoreMap({
                   {s.type === "cooler" && (
                     <rect x={s.x + 0.2} y={s.y + 0.2} width={s.width - 0.4} height={s.height - 0.4} rx={0.12} fill="none" stroke="#fff" strokeOpacity={0.12} strokeWidth={0.04} strokeDasharray="0.25 0.2" />
                   )}
-                  {showLabels && s.width * s.height >= 4 && (
+                  {showLabels && fitLabel(s, labelFont) && (
                     <text
                       x={s.x + s.width / 2}
                       y={s.y + s.height / 2}
@@ -287,7 +315,7 @@ export function StoreMap({
                       fillOpacity={0.82}
                       pointerEvents="none"
                     >
-                      {s.label}
+                      {fitLabel(s, labelFont)}
                     </text>
                   )}
                   {/* focus ring */}
@@ -315,7 +343,7 @@ export function StoreMap({
                       ))}
                     <circle cx={cx} cy={cy} r={0.2} fill={MINT} fillOpacity={0.95} />
                     <circle cx={cx} cy={cy} r={0.34} fill="none" stroke={MINT} strokeOpacity={0.5} strokeWidth={0.05} />
-                    {showLabels && (
+                    {pxPerM >= 22 && (
                       <text x={cx} y={cy - 0.5} textAnchor="middle" fontSize={0.42} fill={MINT} fillOpacity={0.75} fontWeight={600}>
                         {b.beaconCode}
                       </text>

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import type { ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Footprints, ListChecks, Maximize2, Radio, Search } from "lucide-react";
+import { Maximize2, Radio } from "lucide-react";
 import { Tag } from "../../components/ui/Tag";
 import { entranceCell } from "../../domain/routing";
 import { productsOnShelf, shelfName } from "../../data";
@@ -27,9 +27,9 @@ export function StoreDemo() {
     : null;
 
   const tabs: Array<{ id: DemoTab; label: string; icon: ReactNode; badge?: number }> = [
-    { id: "suche", label: "Suche", icon: <Search className="size-4" aria-hidden /> },
-    { id: "liste", label: "Einkaufsliste", icon: <ListChecks className="size-4" aria-hidden />, badge: demo.items.length },
-    { id: "navigation", label: "Navigation", icon: <Footprints className="size-4" aria-hidden /> }
+    { id: "suche", label: "Suche", icon: null },
+    { id: "liste", label: "Einkaufsliste", icon: null, badge: demo.items.length },
+    { id: "navigation", label: "Navigation", icon: null }
   ];
 
   return (
@@ -144,7 +144,14 @@ export function StoreDemo() {
                   }`}
                 >
                   {t.icon}
-                  <span className="truncate">{t.label}</span>
+                  {t.id === "liste" ? (
+                    <span className="truncate">
+                      <span className="sm:hidden">Liste</span>
+                      <span className="hidden sm:inline">{t.label}</span>
+                    </span>
+                  ) : (
+                    <span className="truncate">{t.label}</span>
+                  )}
                   {t.badge ? (
                     <span className="grid h-5 min-w-5 place-items-center rounded-full bg-mint px-1 text-[11px] font-bold tabular-nums text-ink-950" data-testid="tab-badge">
                       {t.badge}

@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
-import { Check, CornerDownLeft, Plus, Search, X } from "lucide-react";
+import { Check, Plus, Search, X } from "lucide-react";
 import type { Market, Product } from "../../domain/types";
 import { SEARCH_SUGGESTIONS, searchProducts } from "../../data";
 
@@ -163,7 +163,7 @@ export function ProductSearch({ market, selectedProductId, onSelect, has, onAdd,
                         <span className="block truncate text-xs text-ink-300">
                           {[p.brand, p.unit].filter(Boolean).join(" · ")}
                         </span>
-                        <span className="mt-0.5 block truncate text-xs font-medium text-mint/90">{shelfText(p)}</span>
+                        <span className="mt-0.5 block text-xs font-medium leading-snug text-mint/90">{shelfText(p)}</span>
                       </span>
                     </button>
                     <button
@@ -184,13 +184,8 @@ export function ProductSearch({ market, selectedProductId, onSelect, has, onAdd,
                 );
               })}
             </ul>
-            <p className="mt-3 hidden items-center gap-1.5 px-1 text-[11px] text-ink-300 sm:flex">
-              <kbd className="rounded border border-white/12 px-1 py-0.5 font-sans">↑</kbd>
-              <kbd className="rounded border border-white/12 px-1 py-0.5 font-sans">↓</kbd> wählen ·{" "}
-              <kbd className="inline-flex items-center rounded border border-white/12 px-1 py-0.5 font-sans">
-                <CornerDownLeft className="size-3" aria-hidden />
-              </kbd>{" "}
-              zeigt auf der Karte · Umschalt + Enter setzt auf die Liste · Esc leert
+            <p className="mt-3 hidden px-1 text-[11px] leading-relaxed text-ink-300 sm:block">
+              Pfeiltasten wählen · Enter zeigt das Produkt auf dem Plan · Umschalt + Enter setzt es auf die Liste · Esc leert die Suche
             </p>
           </>
         ) : trimmed ? (
