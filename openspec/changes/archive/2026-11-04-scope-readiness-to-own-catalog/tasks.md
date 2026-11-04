@@ -13,4 +13,4 @@
 ## 3. Verification
 
 - [x] 3.1 `./mvnw test`, `npm run typecheck`, `npm run lint`, `npm test`, `npx playwright test`, `npm run contract:check`, `openspec validate`.
-- [ ] 3.2 Human step: deploy the backend and admin UI, then re-run the readiness check for `SPAR-Leonding-002` (expected: no `PRODUCT_NO_SHELF` from global products, `skippedGlobalProducts` 153).
+- [x] 3.2 Human step: deploy the backend and admin UI, then re-run the readiness check for `SPAR-Leonding-002` (expected: no `PRODUCT_NO_SHELF` from global products, `skippedGlobalProducts` 153). Evidence: `docs/pilot-readiness/releases/RELEASE_2026-10-18.md:43-44` (rollout `:6278040`; check with 10 m: 74 own products checked, 153 without store skipped, 4 blocking findings, none `PRODUCT_NO_SHELF`).

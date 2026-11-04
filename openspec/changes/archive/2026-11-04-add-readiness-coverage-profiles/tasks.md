@@ -15,4 +15,4 @@
 
 - [x] 3.1 Note the proposal in `docs/pilot-readiness/team/STATUS.md` and `hardware/PLANNER.md`.
 - [x] 3.2 `./mvnw test`, `npm run typecheck`, `npm run lint`, `npm test`, `npx playwright test`, `npm run contract:check`, `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
-- [ ] 3.3 Human step: decide the final `testroom` values (Erik) and apply migration V19 with the next backend rollout.
+- [x] 3.3 Human step: decide the final `testroom` values (Erik) and apply migration V19 with the next backend rollout. Evidence: `docs/pilot-readiness/releases/RELEASE_2026-10-18.md:41-42` (rollout `:e70d5b6` ran Flyway V19, `19|t`; `SPAR-Leonding-002` set to profile `testroom`, 10 m).
