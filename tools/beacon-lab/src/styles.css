@@ -22,3 +22,8 @@
 html, body, #root { height: 100%; }
 body { background: var(--color-page); color: var(--color-ink); font-family: var(--font-sans); }
 .tabular { font-variant-numeric: tabular-nums; }
+
+/* ---- component-level CSS (ui/components, ui/charts) ---- */
+.bl-split { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1024px) { .bl-split { grid-template-columns: var(--split-cols); } }
+.bl-chart text { font-family: var(--font-sans); font-variant-numeric: tabular-nums; }
