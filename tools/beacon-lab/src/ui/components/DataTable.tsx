@@ -68,7 +68,7 @@ export function DataTable<T>({ columns, rows, rowKey, caption, emptyMessage = "K
     setSort((s) => (s?.key === key ? (s.dir === "asc" ? { key, dir: "desc" } : null) : { key, dir: "asc" }));
 
   return (
-    <div className="overflow-auto rounded-xl border border-line bg-white" style={maxHeight ? { maxHeight } : undefined}>
+    <div className="relative overflow-auto rounded-xl border border-line bg-white" style={maxHeight ? { maxHeight } : undefined}>
       <table className="w-full border-collapse text-sm">
         {caption && <caption className="sr-only">{caption}</caption>}
         <thead>
