@@ -72,7 +72,7 @@ export interface ProductBlock {
   r: number;
 }
 
-const BLOCK_PITCH = 0.34;
+const BLOCK_PITCH = 0.46;
 const BLOCK_DEPTH = 0.16;
 /** How far the product blocks protrude beyond the shelf footprint. */
 const PROTRUDE = 0.07;
@@ -95,8 +95,8 @@ export function productBlocks(shelf: LayoutElement, grid: GridSize): ProductBloc
     for (let i = 0; i < per; i++) {
       const along = -length / 2 + pitch * (i + 0.5);
       const r = rand();
-      const sh = levelGap * (0.5 + rand() * 0.22);
-      const sAlong = pitch * (0.62 + rand() * 0.2);
+      const sh = levelGap * (0.46 + rand() * 0.2);
+      const sAlong = pitch * (0.6 + rand() * 0.18);
       let x = c.x;
       let z = c.z;
       let sx = sAlong;

@@ -7,7 +7,7 @@ import { CameraRig, FOV_DEG } from "./CameraRig";
 import { homePose } from "./camera";
 import { Beacons3D } from "./Beacons3D";
 import { Checkouts, Floor, Gates, Walls } from "./Environment3D";
-import { FadeLabel, LabelScaleContext } from "./FadeLabel";
+import { FadeLabel, LabelRootContext, LabelScaleContext } from "./FadeLabel";
 import { ProductTarget } from "./Markers3D";
 import { Route3D } from "./Route3D";
 import { Shelves3D } from "./Shelves3D";
@@ -16,6 +16,7 @@ import { shelfHeight, elementCentre, toWorld } from "./transforms";
 import type { Store3DViewProps } from "./types";
 
 export interface SceneProps extends Store3DViewProps {
+  labelRoot: React.RefObject<HTMLElement | null>;
   reduce: boolean;
   compact: boolean;
   following: boolean;
@@ -24,7 +25,7 @@ export interface SceneProps extends Store3DViewProps {
 }
 
 /** Everything inside the <Canvas>. Rebuilt (keyed) when the market changes. */
-export function Scene({ market, route, sim, selected, listPins, activeShelfId, showBeacons, onShelfClick, reduce, compact, following, followWanted, overviewNonce }: SceneProps) {
+export function Scene({ market, route, sim, selected, listPins, activeShelfId, showBeacons, onShelfClick, reduce, compact, following, followWanted, overviewNonce, labelRoot }: SceneProps) {
   const grid = market.layout.gridSize;
   const els = market.layout.elements;
   const shopper = useRef<ShopperPose>({ x: 0, z: 0, heading: 0, active: false });
@@ -56,6 +57,7 @@ export function Scene({ market, route, sim, selected, listPins, activeShelfId, s
   const hoverProducts = hovered ? productsOnShelf(market, hovered) : [];
 
   return (
+    <LabelRootContext.Provider value={labelRoot}>
     <LabelScaleContext.Provider value={labelScale}>
       <hemisphereLight args={["#9fc9d3", "#07111a", 0.55]} />
       <directionalLight position={[-14, 26, 12]} intensity={0.85} color="#fff1dc" />
@@ -101,5 +103,6 @@ export function Scene({ market, route, sim, selected, listPins, activeShelfId, s
         )}
       </group>
     </LabelScaleContext.Provider>
+    </LabelRootContext.Provider>
   );
 }

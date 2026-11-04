@@ -140,7 +140,7 @@ function Shelf({ shelf, market, grid, highlight, onShelfClick, onHover }: ShelfP
         onHover(null);
       }}
     >
-      <RoundedBox args={[shelf.width - 0.1, h, shelf.height - 0.1]} radius={0.07} smoothness={3} position={[0, h / 2, 0]} material={body as Material} />
+      <RoundedBox args={[shelf.width - 0.1, h, shelf.height - 0.1]} radius={0.07} smoothness={2} position={[0, h / 2, 0]} material={body as Material} />
       <RoundedBox args={[sw, 0.06, sd]} radius={0.025} smoothness={2} position={[0, h + 0.02, 0]} material={top as Material} />
       {/* emissive rails along both long edges */}
       {[-1, 1].map((side) => (

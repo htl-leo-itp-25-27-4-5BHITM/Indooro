@@ -1,10 +1,12 @@
-import { createContext, useContext, useMemo, useRef, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useRef, type ReactNode, type RefObject } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { Vector3 } from "three";
 
 /** Scales label fade distances with the overview distance of the camera (bigger on narrow screens). */
 export const LabelScaleContext = createContext(1);
+/** DOM container for the labels (stable portal target, avoids drei re-targeting during unmount). */
+export const LabelRootContext = createContext<RefObject<HTMLElement | null> | null>(null);
 
 interface FadeLabelProps {
   position: [number, number, number];
@@ -21,6 +23,7 @@ interface FadeLabelProps {
 export function FadeLabel({ position, children, fadeStart = 36, fadeEnd = 58, nearHide = 0, zIndex = 0 }: FadeLabelProps) {
   const ref = useRef<HTMLDivElement>(null);
   const scale = useContext(LabelScaleContext);
+  const portal = useContext(LabelRootContext);
   const v = useMemo(() => new Vector3(...position), [position]);
   useFrame(({ camera }) => {
     const el = ref.current;
@@ -32,7 +35,7 @@ export function FadeLabel({ position, children, fadeStart = 36, fadeEnd = 58, ne
     el.style.visibility = o < 0.02 ? "hidden" : "visible";
   });
   return (
-    <Html position={position} center zIndexRange={[20 + zIndex, 0]} style={{ pointerEvents: "none" }}>
+    <Html portal={(portal ?? undefined) as RefObject<HTMLElement> | undefined} position={position} center zIndexRange={[20 + zIndex, 0]} style={{ pointerEvents: "none" }}>
       <div ref={ref} style={{ transition: "opacity 120ms linear" }}>
         {children}
       </div>

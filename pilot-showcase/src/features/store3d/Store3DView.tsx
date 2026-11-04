@@ -66,6 +66,7 @@ export default function Store3DView(props: Store3DViewProps) {
   const reduce = Boolean(useReducedMotion());
   const compact = useMediaQuery("(max-width: 639px)");
   const rootRef = useRef<HTMLDivElement>(null);
+  const labelRoot = useRef<HTMLDivElement>(null);
   const visible = useVisible(rootRef);
   const [follow, setFollow] = useState(true);
   const [overviewNonce, setOverviewNonce] = useState(0);
@@ -99,11 +100,13 @@ export default function Store3DView(props: Store3DViewProps) {
           onCreated={({ gl }) => gl.domElement.setAttribute("data-testid", "store-3d-canvas")}
           style={{ position: "absolute", inset: 0 }}
         >
-          <Scene {...props} reduce={reduce} compact={compact} following={following} followWanted={follow} overviewNonce={overviewNonce} />
+          <Scene {...props} labelRoot={labelRoot} reduce={reduce} compact={compact} following={following} followWanted={follow} overviewNonce={overviewNonce} />
         </Canvas>
 
         {/* vignette */}
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_55%,rgba(7,17,23,0.75)_100%)]" />
+
+        <div ref={labelRoot} aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden" />
 
         {/* top-left: honesty badges */}
         <div className="pointer-events-none absolute left-3 top-3 flex flex-wrap items-center gap-1.5 sm:left-4 sm:top-4">

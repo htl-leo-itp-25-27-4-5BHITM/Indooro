@@ -67,6 +67,12 @@ export function CameraRig({ home, width, depth, marketKey, reduce, compact, foll
     anim.current = { from: currentPose(), to, t0: clockT.current, dur };
   };
 
+  // on phones a one-finger vertical swipe must still scroll the page
+  useEffect(() => {
+    const el = controls.current?.domElement as HTMLElement | undefined;
+    if (el) el.style.touchAction = compact ? "pan-y" : "none";
+  }, [compact]);
+
   // intro fly-in on mount and whenever the market changes
   useEffect(() => {
     const h = homeRef.current;

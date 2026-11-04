@@ -73,11 +73,11 @@ export function Walls({ elements, grid }: { elements: LayoutElement[]; grid: Gri
           <group key={w.id} position={[c.x, 0, c.z]}>
             <mesh position={[0, h / 2, 0]}>
               <boxGeometry args={[w.width, h, w.height]} />
-              <meshStandardMaterial color="#10222a" transparent opacity={0.42} roughness={0.5} metalness={0.1} depthWrite={false} />
+              <meshStandardMaterial color="#0a171d" transparent opacity={0.5} roughness={0.5} metalness={0.1} depthWrite={false} />
             </mesh>
             <mesh position={[0, h + 0.015, 0]}>
               <boxGeometry args={[w.width + 0.02, 0.03, w.height + 0.02]} />
-              <meshBasicMaterial color="#5f8d99" toneMapped={false} />
+              <meshBasicMaterial color="#3d6772" toneMapped={false} />
             </mesh>
           </group>
         );
@@ -160,8 +160,8 @@ export function Checkouts({ elements, grid, compact }: { elements: LayoutElement
               <meshStandardMaterial color="#0b161b" roughness={0.9} />
             </mesh>
             {/* amber edge */}
-            <mesh position={[0, 0.99, 0]}>
-              <boxGeometry args={[w + 0.02, 0.03, d + 0.02]} />
+            <mesh position={alongX ? [0, 0.99, d / 2] : [w / 2, 0.99, 0]}>
+              <boxGeometry args={alongX ? [w + 0.02, 0.03, 0.06] : [0.06, 0.03, d + 0.02]} />
               <meshBasicMaterial color={AMBER} toneMapped={false} />
             </mesh>
             {/* display */}
