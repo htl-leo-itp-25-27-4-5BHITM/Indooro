@@ -140,6 +140,75 @@ class OpenSearchStoreScopeTest {
     }
 
     @Test
+    void searchWithoutStoreExcludesEveryDocumentWithStoreCode() throws IOException {
+        when(client.search(any(SearchRequest.class), org.mockito.ArgumentMatchers.eq(Product.class)))
+                .thenReturn(searchResponse(List.of()));
+
+        service.searchProducts("Backpulver", 10, null, null);
+        service.searchProducts("Backpulver", 10, "  ", "  ");
+
+        assertOnlyLegacyScope(2);
+    }
+
+    @Test
+    void listWithoutStoreExcludesEveryDocumentWithStoreCode() throws IOException {
+        when(client.search(any(SearchRequest.class), org.mockito.ArgumentMatchers.eq(Product.class)))
+                .thenReturn(searchResponse(List.of()));
+
+        service.getAllProducts(100, null, null);
+
+        assertOnlyLegacyScope(1);
+    }
+
+    @Test
+    void productByIdWithoutStoreExcludesEveryDocumentWithStoreCode() throws IOException {
+        when(client.search(any(SearchRequest.class), org.mockito.ArgumentMatchers.eq(Product.class)))
+                .thenReturn(searchResponse(List.of()));
+
+        service.getProductById(101, null, null);
+
+        assertOnlyLegacyScope(1);
+    }
+
+    @Test
+    void productByIdWithoutStoreArgumentsStaysAcrossAllStoresForInternalCallers() throws IOException {
+        when(client.search(any(SearchRequest.class), org.mockito.ArgumentMatchers.eq(Product.class)))
+                .thenReturn(searchResponse(List.of()));
+
+        service.getProductById(101);
+
+        ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
+        verify(client).search(captor.capture(), org.mockito.ArgumentMatchers.eq(Product.class));
+        assertTrue(captor.getValue().query().bool().mustNot().isEmpty());
+    }
+
+    @Test
+    void readsWithStoreCodeDoNotAddLegacyExclusion() throws IOException {
+        when(client.search(any(SearchRequest.class), org.mockito.ArgumentMatchers.eq(Product.class)))
+                .thenReturn(searchResponse(List.of()));
+
+        service.searchProducts("Backpulver", 10, null, PILOT_CODE);
+        service.getAllProducts(100, null, PILOT_CODE);
+        service.getProductById(101, PILOT_ID, null);
+
+        ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
+        verify(client, org.mockito.Mockito.times(3)).search(captor.capture(), org.mockito.ArgumentMatchers.eq(Product.class));
+        captor.getAllValues().forEach(request -> assertTrue(request.query().bool().mustNot().isEmpty()));
+    }
+
+    private void assertOnlyLegacyScope(int calls) throws IOException {
+        ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
+        verify(client, org.mockito.Mockito.times(calls)).search(captor.capture(), org.mockito.ArgumentMatchers.eq(Product.class));
+        for (SearchRequest request : captor.getAllValues()) {
+            var bool = request.query().bool();
+            assertTrue(bool.mustNot().stream().anyMatch(clause -> clause.isExists()
+                    && "storeCode".equals(clause.exists().field())), "must_not exists storeCode missing");
+            assertTrue(bool.filter().stream().noneMatch(clause -> clause.isTerm()
+                    && ("storeCode".equals(clause.term().field()) || "storeId".equals(clause.term().field()))));
+        }
+    }
+
+    @Test
     void adminPagingAddsStoreFilterToQuery() throws IOException {
         when(client.search(any(SearchRequest.class), org.mockito.ArgumentMatchers.eq(Product.class)))
                 .thenReturn(searchResponse(List.of()));

@@ -221,7 +221,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List product documents (match_all). */
+        /**
+         * List product documents (match_all).
+         * @description List product documents. Without storeId and storeCode (and without a configured default store) the read is fail-closed: only legacy documents without storeCode are returned, never products of a store.
+         */
         get: operations["listProducts"];
         put?: never;
         /** Index one product (legacy write path). */
@@ -239,7 +242,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Fuzzy product search with optional store filter. */
+        /**
+         * Fuzzy product search with optional store filter.
+         * @description Fuzzy product search. Without storeId and storeCode (and without a configured default store) the read is fail-closed: only legacy documents without storeCode are returned, never products of a store.
+         */
         get: operations["searchProducts"];
         put?: never;
         post?: never;
@@ -256,7 +262,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Product by id. */
+        /**
+         * Product by id.
+         * @description Product by id. Without storeId and storeCode (and without a configured default store) the read is fail-closed: only legacy documents without storeCode are returned, never products of a store.
+         */
         get: operations["getProduct"];
         put?: never;
         post?: never;

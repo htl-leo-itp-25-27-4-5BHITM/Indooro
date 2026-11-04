@@ -17,7 +17,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-/** Without indooro.catalog.default-store-code: requests without a store keep the old, unfiltered behavior. */
+/** Without indooro.catalog.default-store-code: requests without a store pass no store; the service then reads fail-closed. */
 @QuarkusTest
 class ProductStoreReadTest {
 
@@ -37,7 +37,7 @@ class ProductStoreReadTest {
     }
 
     @Test
-    void searchWithoutStoreAndWithoutDefaultStaysUnfiltered() throws Exception {
+    void searchWithoutStoreAndWithoutDefaultPassesNoStore() throws Exception {
         given().queryParam("q", "Backpulver")
                 .when().get("/api/products/search")
                 .then().statusCode(200);
@@ -63,6 +63,22 @@ class ProductStoreReadTest {
                 .then().statusCode(200).body("id", equalTo(101));
 
         verify(products).getProductById(101, null, PILOT_CODE);
+    }
+
+    @Test
+    void unscopedReadsNeverExposeProductsWithStoreCode() throws Exception {
+        Product legacy = new Product(7, "Vollmilch Legacy", 1.19, "310/1/1/1", null, null);
+        when(products.searchProducts(anyString(), anyInt(), isNull(), isNull())).thenReturn(List.of(legacy));
+        when(products.getAllProducts(anyInt(), isNull(), isNull())).thenReturn(List.of(legacy));
+
+        given().queryParam("q", "milch").when().get("/api/products/search")
+                .then().statusCode(200).body("storeCode", org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.nullValue()));
+        given().when().get("/api/products")
+                .then().statusCode(200).body("storeCode", org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.nullValue()));
+
+        // Resource never invents a store: the service receives no store and applies the legacy-only scope.
+        verify(products).searchProducts("milch", 10, null, null);
+        verify(products).getAllProducts(100, null, null);
     }
 
     private static Product product(int id, String storeCode) {
