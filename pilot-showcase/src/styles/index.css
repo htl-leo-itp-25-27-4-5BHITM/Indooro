@@ -70,11 +70,100 @@
   }
   :focus-visible {
     outline: 2px solid var(--color-teal);
-    outline-offset: 2px;
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  .on-dark :focus-visible {
+    outline-color: var(--color-mint);
+  }
+  a,
+  button,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
   }
   [id] {
-    scroll-margin-top: 5rem;
+    scroll-margin-top: 4.5rem;
   }
+}
+
+/* ---------- Utilities ---------- */
+@utility text-balance {
+  text-wrap: balance;
+}
+@utility text-pretty {
+  text-wrap: pretty;
+}
+/* Display headline: pair with text-5xl ... lg:text-7xl */
+@utility display {
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  line-height: 1.02;
+  text-wrap: balance;
+}
+@utility hairline {
+  box-shadow: inset 0 0 0 1px var(--color-line);
+}
+@utility hairline-dark {
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+@utility shadow-soft {
+  box-shadow:
+    0 1px 0 rgb(15 31 23 / 0.04),
+    0 2px 4px rgb(15 31 23 / 0.04),
+    0 12px 32px -8px rgb(15 31 23 / 0.1);
+}
+@utility shadow-lift {
+  box-shadow:
+    0 1px 0 rgb(15 31 23 / 0.04),
+    0 4px 8px rgb(15 31 23 / 0.05),
+    0 24px 56px -12px rgb(15 31 23 / 0.18);
+}
+/* Thin scrollbar for dark panels */
+@utility scrollbar-dark {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(255 255 255 / 0.18) transparent;
+  &::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgb(255 255 255 / 0.16);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+/* Fine grids */
+@utility bg-grid-dark {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+@utility bg-grid-light {
+  background-image:
+    linear-gradient(to right, rgb(15 31 23 / 0.045) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(15 31 23 / 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+/* Tiny CSS-only grain; put on a positioned parent */
+@utility grain {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+@utility mask-radial {
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
 }
 
 @media (prefers-reduced-motion: reduce) {
