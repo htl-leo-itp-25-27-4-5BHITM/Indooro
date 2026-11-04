@@ -47,7 +47,7 @@ export const TourCard = forwardRef<HTMLDivElement, Props>(function TourCard(
       animate={{ opacity: 1, scale: 1 }}
       exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.97 }}
       transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-      className="on-dark relative overflow-hidden rounded-3xl bg-ink-950/88 text-white shadow-[0_30px_80px_-20px_rgb(0_0_0/0.7),0_0_0_1px_rgb(255_255_255/0.1)] backdrop-blur-2xl backdrop-saturate-150"
+      className="on-dark relative overflow-clip rounded-3xl bg-ink-950/88 text-white shadow-[0_30px_80px_-20px_rgb(0_0_0/0.7),0_0_0_1px_rgb(255_255_255/0.1)] backdrop-blur-2xl backdrop-saturate-150"
     >
       <div aria-hidden className="pointer-events-none absolute -right-16 -top-20 size-56 rounded-full bg-mint/12 blur-3xl" />
 
