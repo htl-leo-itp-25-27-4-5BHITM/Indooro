@@ -224,6 +224,21 @@ export function StageProducts({ state, dispatch }: StageProps) {
 
 const CHECKS = ["Layout aktiv und genau ein Eingang", "Regale beschriftet", "Produkte gegen Regale", "Beacons: UUID, Major, Minor", "Abdeckung im Radius"];
 
+/** Finding codes covered by each check row (same grouping as StoreReadinessEvaluator). */
+const CHECK_CODES: readonly (readonly string[])[] = [
+  ["NO_ACTIVE_LAYOUT", "ENTRANCE_COUNT", "GRID_SIZE_IMPLAUSIBLE"],
+  ["TARGET_SHELF_WITHOUT_LABEL"],
+  ["PRODUCT_NO_SHELF", "SHELF_WITHOUT_PRODUCTS", "DUPLICATE_PRODUCT_ID", "PRODUCT_LIMIT_REACHED"],
+  ["BEACON_UUID_ALL_ZERO", "BEACON_MAJOR_MINOR_MISSING", "BEACON_IDENTITY_DUPLICATE", "BEACON_IDENTITY_MISMATCH", "LAYOUT_BEACON_NOT_REGISTERED", "BEACON_WITHOUT_IDENTITY", "BEACON_ASSIGNED_NOT_PLACED"],
+  ["LOW_BEACON_COVERAGE", "COVERAGE_NOT_COMPUTED"]
+];
+
+function checkOutcome(findings: readonly Finding[], index: number): "ok" | "warn" | "block" {
+  const hits = findings.filter((f) => CHECK_CODES[index].includes(f.code));
+  if (hits.some((f) => f.severity === "BLOCKING")) return "block";
+  return hits.length > 0 ? "warn" : "ok";
+}
+
 function SeverityChip({ f }: { f: Finding }) {
   const block = f.severity === "BLOCKING";
   return (
@@ -290,14 +305,29 @@ export function StageCheck({ state, dispatch }: StageProps) {
     <div className="grid gap-6 md:grid-cols-2">
       <div>
         <ul className="space-y-2.5" aria-label="Prüfschritte">
-          {CHECKS.map((c, i) => (
-            <li key={c} className="flex items-center gap-3 text-[14.5px]">
-              <span className={`grid size-6 shrink-0 place-items-center rounded-full ring-1 ring-inset transition-colors duration-300 ${i < shown ? "bg-ok/20 text-[#13744a] ring-ok/40" : "text-muted ring-line"}`}>
-                {i < shown ? <Check className="size-3.5" aria-hidden /> : running && i === shown ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : null}
-              </span>
-              <span className={i < shown ? "text-text" : "text-muted"}>{c}</span>
-            </li>
-          ))}
+          {CHECKS.map((c, i) => {
+            const outcome = finished ? checkOutcome(report.findings, i) : "ok";
+            const tone =
+              i >= shown
+                ? "text-muted ring-line"
+                : outcome === "block"
+                  ? "bg-danger/12 text-[#b3262b] ring-danger/35"
+                  : outcome === "warn"
+                    ? "bg-warn/20 text-[#7a5212] ring-warn/40"
+                    : "bg-ok/20 text-[#13744a] ring-ok/40";
+            return (
+              <li key={c} className="flex items-center gap-3 text-[14.5px]" data-outcome={i < shown ? outcome : "pending"}>
+                <span className={`grid size-6 shrink-0 place-items-center rounded-full ring-1 ring-inset transition-colors duration-300 ${tone}`}>
+                  {i < shown ? (
+                    outcome === "block" ? <CircleAlert className="size-3.5" aria-label="blockierender Befund" /> : outcome === "warn" ? <TriangleAlert className="size-3.5" aria-label="Warnung" /> : <Check className="size-3.5" aria-label="in Ordnung" />
+                  ) : running && i === shown ? (
+                    <Loader2 className="size-3.5 animate-spin" aria-hidden />
+                  ) : null}
+                </span>
+                <span className={i < shown ? "text-text" : "text-muted"}>{c}</span>
+              </li>
+            );
+          })}
         </ul>
         {!finished ? (
           <button type="button" className={`${primaryBtn} mt-5`} onClick={start} disabled={running || !state.imported} data-testid="operator-run-check">
