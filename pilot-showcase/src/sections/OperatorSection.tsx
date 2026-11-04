@@ -32,7 +32,7 @@ export function OperatorSection() {
               <ol className="mt-4 divide-y divide-line border-y border-line">
                 {ACCEPTANCE_CRITERIA.map((a) => (
                   <li key={a.id} className="flex gap-4 py-3.5">
-                    <span className="mt-0.5 h-fit rounded-full bg-accent/10 px-2.5 py-0.5 text-[11.5px] font-semibold text-accent ring-1 ring-inset ring-accent/20">{a.label}</span>
+                    <span className="mt-0.5 h-fit shrink-0 whitespace-nowrap rounded-full bg-accent/10 px-2.5 py-0.5 text-[11.5px] font-semibold text-accent ring-1 ring-inset ring-accent/20">{a.label}</span>
                     <div>
                       <p className="text-[15px] leading-snug text-text">{a.text}</p>
                       <p className="mt-1 text-[12.5px] text-muted">

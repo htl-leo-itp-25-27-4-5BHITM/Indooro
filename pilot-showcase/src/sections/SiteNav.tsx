@@ -76,7 +76,7 @@ export function SiteNav() {
   return (
     <header
       className={`on-dark fixed inset-x-0 top-0 z-[60] transition-[background-color,box-shadow,backdrop-filter] duration-500 ease-out-expo ${
-        solid ? "bg-ink-950/75 shadow-[inset_0_-1px_0_rgb(255_255_255/0.08)] backdrop-blur-xl backdrop-saturate-150" : "bg-transparent shadow-[inset_0_-1px_0_transparent]"
+        solid ? "bg-ink-950/90 shadow-[inset_0_-1px_0_rgb(255_255_255/0.08),0_10px_30px_-12px_rgb(5_12_16/0.45)] backdrop-blur-xl backdrop-saturate-150" : "bg-transparent shadow-[inset_0_-1px_0_transparent]"
       }`}
     >
       <Container className="relative z-[60] flex h-16 items-center justify-between gap-4">
