@@ -78,3 +78,21 @@ test("setup checklist is complete for a ready store and hides admin-only links f
   await expect(search.getByRole("link")).toHaveCount(0);
   await expect(search).toContainText("Administrator");
 });
+
+test("setup checklist shows the catalog step as a problem and the readiness step as a problem for a store without own products", async ({ page }) => {
+  await mockStore(page, "admin", {
+    readiness: report({
+      status: "RED", blockingCount: 1,
+      counts: { shelves: 12, entrances: 1, products: 0, placedBeacons: 9, assignedBeacons: 9, walkableCells: 400, lowCoverageCells: 8, skippedGlobalProducts: 30 },
+      findings: [{ severity: "BLOCKING", code: "NO_STORE_PRODUCTS", message: "Der Markt hat noch keine eigenen Produkte. Sortiment per CSV-Import laden.", elementId: null, productId: null, layoutCode: null, beaconCode: null }]
+    }),
+    products: []
+  });
+  await page.goto("/admin/next/stores/detail/?storeId=store-1");
+  const section = page.getByRole("region", { name: "Einrichtung" });
+  const catalog = section.locator('li[data-step="catalog"]');
+  await expect(catalog).toHaveAttribute("data-status", "problem");
+  await expect(catalog).toContainText("30 Produkte");
+  await expect(catalog).toContainText("gemeinsamer Katalog");
+  await expect(section.locator('li[data-step="readiness"]')).toHaveAttribute("data-status", "problem");
+});

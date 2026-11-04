@@ -50,13 +50,13 @@ class StoreProductSourceTest {
     }
 
     @Test
-    void storeWithoutOwnProductsKeepsTheGlobalCatalog() {
+    void storeWithoutOwnProductsGetsAnEmptyListAndCountsTheGlobalCatalogAsSkipped() {
         List<Product> loaded = List.of(global(1, "999/9/9/9"), global(2, "999/9/9/9"));
 
         ProductPage page = StoreProductSource.select(loaded, STORE_ID, STORE_CODE, true);
 
-        assertEquals(2, page.products().size());
-        assertEquals(0, page.skippedGlobalProducts());
+        assertEquals(0, page.products().size());
+        assertEquals(2, page.skippedGlobalProducts());
         assertTrue(page.truncated());
     }
 
@@ -89,15 +89,16 @@ class StoreProductSourceTest {
     }
 
     @Test
-    void globalCatalogIsCheckedAsBeforeWhenTheStoreHasNoOwnProducts() {
+    void globalCatalogIsNeverCheckedWhenTheStoreHasNoOwnProducts() {
         List<Product> loaded = List.of(global(1, "999/9/9/9"), global(2, MATCHING_CODE), global(2, MATCHING_CODE));
 
         ReadinessReport report = evaluate(StoreProductSource.select(loaded, STORE_ID, STORE_CODE, false));
 
-        assertTrue(report.findings().stream().anyMatch(f -> "PRODUCT_NO_SHELF".equals(f.code()) && f.productId() == 1));
-        assertTrue(report.findings().stream().anyMatch(f -> "DUPLICATE_PRODUCT_ID".equals(f.code()) && f.productId() == 2));
-        assertEquals(3, report.counts().products());
-        assertEquals(0, report.counts().skippedGlobalProducts());
+        assertTrue(report.findings().stream().anyMatch(f -> "NO_STORE_PRODUCTS".equals(f.code())), report.findings().toString());
+        assertTrue(report.findings().stream().noneMatch(f -> "PRODUCT_NO_SHELF".equals(f.code())), report.findings().toString());
+        assertTrue(report.findings().stream().noneMatch(f -> "DUPLICATE_PRODUCT_ID".equals(f.code())), report.findings().toString());
+        assertEquals(0, report.counts().products());
+        assertEquals(3, report.counts().skippedGlobalProducts());
     }
 
     private static ReadinessReport evaluate(ProductPage page) {

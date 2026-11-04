@@ -32,9 +32,9 @@ public final class ReadinessDtos {
     }
 
     /**
-     * products is the number of products that were checked. skippedGlobalProducts is the number of global
-     * catalog products (neither storeId nor storeCode) that were left out because the store has its own
-     * products; it is 0 when the global catalog was checked.
+     * products is the number of own products of the store that were checked. skippedGlobalProducts is the
+     * number of global catalog products (neither storeId nor storeCode) that were left out; they are never
+     * checked.
      */
     public record ReadinessCounts(
             int shelves,
@@ -82,8 +82,8 @@ public final class ReadinessDtos {
 
     /**
      * The products to check for one store; truncated is true when the safety limit stopped the scan.
-     * skippedGlobalProducts counts the global catalog products that were left out because the store has
-     * its own products.
+     * skippedGlobalProducts counts the global catalog products that were left out; only own products of the
+     * store are checked.
      */
     public record ProductPage(List<ProductRef> products, boolean truncated, int skippedGlobalProducts) {
 

@@ -28,6 +28,9 @@ Jeder Befund hat einen Code, einen Satz und, wo möglich, einen Link. **Blockier
 | Befund | Bedeutung | Was tun |
 |---|---|---|
 | `NO_ACTIVE_LAYOUT` | Kein Layout veröffentlicht | Schritt 2 |
+| `NO_SHELVES` | Das Layout hat keine Regale | Regale im Layout-Editor anlegen und beschriften (Schritt 3) |
+| `NO_STORE_PRODUCTS` | Der Markt hat keine eigenen Produkte; Produkte ohne Markt (alter gemeinsamer Katalog) zählen nicht | Sortiment per CSV-Import laden (Schritt 5) |
+| `NO_BEACONS` | Im Layout ist kein Beacon mit UUID, Major und Minor platziert | Beacons zuordnen und im Editor platzieren (Schritt 4) |
 | `ENTRANCE_COUNT` | Nicht genau ein Eingang | Eingang im Editor korrigieren |
 | `PRODUCT_NO_SHELF` | Layout-Code eines Produkts trifft kein Regal | Regal anlegen oder Produkt in der CSV korrigieren |
 | `TARGET_SHELF_WITHOUT_LABEL` | Regal mit Produkten ohne Bezeichnung | Schritt 3 |

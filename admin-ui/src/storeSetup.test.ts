@@ -103,10 +103,12 @@ test("an empty catalog is open, and the search step waits for it", () => {
 });
 
 test("products without a market do not count as the market's catalog", () => {
-  const input: SetupInput = { ...readyInput, storeProductCount: 0, search: "no-products" };
+  // The check no longer counts global products as the store's products: it reports 0 products and the skipped ones.
+  const input: SetupInput = { ...readyInput, storeProductCount: 0, search: "no-products", readiness: report({ counts: { ...report().counts, products: 0, skippedGlobalProducts: 5 } }) };
   const catalog = deriveSetupSteps(input).find((step) => step.id === "catalog");
   assert.equal(catalog?.status, "problem");
   assert.match(catalog?.detail ?? "", /gemeinsamer Katalog/);
+  assert.match(catalog?.detail ?? "", /5 Produkte/);
 });
 
 test("a product that the search does not find is a problem that points at the search index", () => {
