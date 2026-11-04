@@ -55,7 +55,8 @@ public final class StoreDtos {
             String status,
             StoreRegionSummary region,
             long activeBeaconCount,
-            boolean hasActiveLayout
+            boolean hasActiveLayout,
+            boolean released
     ) {
     }
 
@@ -76,7 +77,8 @@ public final class StoreDtos {
             ActiveLayoutSummary activeLayout,
             Instant createdAt,
             Instant updatedAt,
-            String readinessProfile
+            String readinessProfile,
+            boolean released
     ) {
     }
 

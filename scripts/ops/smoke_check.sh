@@ -9,6 +9,8 @@
 # Suche des Markts mindestens 1 Treffer liefern (ein leerer Markt ist ein FAIL, auch bei 200).
 # Ohne storeCode wird jeder Markt aus /api/mobile/stores geprueft; FAIL nur, wenn keiner Produkte hat.
 # Hinweise (INFO): Health-Pfade, die der Ingress evtl. nicht freigibt.
+# Warnungen (WARN, kein FAIL): ein gelisteter Markt ohne eigene Produkte. Neue Maerkte erscheinen erst nach
+# Freigabe in der Liste; ein leerer gelisteter Markt sollte wieder zurueckgenommen werden.
 # Nicht geprueft: Seiten nach dem Login. Das macht ein Mensch (siehe RELEASE_PLAN_NEXT.md).
 set -u
 
@@ -28,6 +30,7 @@ fi
 
 FAILS=0
 PASSES=0
+WARNS=0
 
 # urlenc <text>: Prozent-Kodierung fuer Query-Werte (UTF-8), z. B. "Hörsching" -> "H%C3%B6rsching".
 urlenc() {
@@ -168,7 +171,8 @@ except Exception:
         echo "INFO  Produkte je Markt  storeCode=${code}: ${n} Eintraege"
         [[ -z "$FULL_STORE" ]] && FULL_STORE="$code"
       elif [[ "$n" -eq 0 ]]; then
-        echo "INFO  Produkte je Markt  storeCode=${code}: 0 Eintraege"
+        echo "WARN  Produkte je Markt  storeCode=${code}: 0 Eintraege, Markt ist gelistet aber leer (Freigabe zuruecknehmen oder Katalog importieren)"
+        WARNS=$((WARNS + 1))
       else
         echo "INFO  Produkte je Markt  storeCode=${code}: keine JSON-Liste"
       fi
@@ -188,7 +192,7 @@ except Exception:
 fi
 
 echo
-echo "Ergebnis: ${PASSES} OK, ${FAILS} FAIL"
+echo "Ergebnis: ${PASSES} OK, ${WARNS} WARN, ${FAILS} FAIL"
 if [[ "$FAILS" -gt 0 ]]; then
   exit 1
 fi

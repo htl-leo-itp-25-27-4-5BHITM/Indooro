@@ -138,3 +138,35 @@ test("a store manager cannot pick the coverage profile and does not send it", as
   expect(bodies).toHaveLength(1);
   expect("readinessProfile" in bodies[0]).toBe(false);
 });
+
+test("admin releases an unreleased store for customers and can withdraw it again", async ({ page }) => {
+  const store = { ...profileStore("market"), released: false };
+  const calls: string[] = [];
+  await mockStoreDetail(page, "admin", store, []);
+  for (const action of ["release", "withdraw"]) {
+    await page.route(`**/api/stores/store-1/${action}`, (route) => {
+      calls.push(`${route.request().method()} ${action}`);
+      store.released = action === "release";
+      return route.fulfill({ json: store });
+    });
+  }
+  page.on("dialog", (dialog) => void dialog.accept());
+
+  await page.goto("/admin/next/stores/detail/?storeId=store-1");
+  await expect(page.getByText("Nicht freigegeben", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Für Kunden freigeben" }).click();
+  await expect(page.getByText("Store für Kunden freigegeben.")).toBeVisible();
+  await expect(page.getByText("Freigegeben", { exact: true })).toBeVisible();
+
+  await page.getByRole("button", { name: "Freigabe zurücknehmen" }).click();
+  await expect(page.getByText("Freigabe zurückgenommen.")).toBeVisible();
+  expect(calls).toEqual(["PATCH release", "PATCH withdraw"]);
+});
+
+test("a store manager sees the release state but no release button", async ({ page }) => {
+  await mockStoreDetail(page, "store-manager", { ...profileStore("market"), released: false }, []);
+
+  await page.goto("/admin/next/stores/detail/?storeId=store-1");
+  await expect(page.getByText("Nicht freigegeben", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Für Kunden freigeben" })).toHaveCount(0);
+});

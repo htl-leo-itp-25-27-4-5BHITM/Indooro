@@ -43,7 +43,7 @@ public class MobileStoreService {
     DefaultLayoutProvider defaultLayoutProvider;
 
     public List<MobileDtos.MobileStoreSummary> listStores() {
-        return storeRepository.find("status = ?1 order by name", RecordStatus.ACTIVE)
+        return storeRepository.find("status = ?1 and released = true order by name", RecordStatus.ACTIVE)
                 .list()
                 .stream()
                 .map(this::toStoreSummary)

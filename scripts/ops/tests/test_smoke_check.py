@@ -117,8 +117,11 @@ class SmokeCheckTest(unittest.TestCase):
         routes = self.auto_routes(["SPAR-1", "SPAR-2", "HA-01"], filled={"SPAR-2"})
         result, seen = self.run_script(routes)
         self.assertEqual(result.returncode, 0, result.stdout)
-        self.assertRegex(result.stdout, r"INFO\s+Produkte je Markt\s+storeCode=SPAR-1: 0 Eintraege")
+        # A listed market without own products is a WARN, never a FAIL.
+        self.assertRegex(result.stdout, r"WARN\s+Produkte je Markt\s+storeCode=SPAR-1: 0 Eintraege")
+        self.assertRegex(result.stdout, r"WARN\s+Produkte je Markt\s+storeCode=HA-01: 0 Eintraege")
         self.assertRegex(result.stdout, r"INFO\s+Produkte je Markt\s+storeCode=SPAR-2: 1 Eintraege")
+        self.assertIn("2 WARN, 0 FAIL", result.stdout)
         self.assertRegex(result.stdout, r"OK\s+200\s+Produkte je Markt\s+\(storeCode=SPAR-2 hat Produkte\)")
         self.assertTrue(any("q=milch&storeCode=SPAR-2" in path for _, path, _ in seen), seen)
         self.assertFalse(any("q=milch&storeCode=SPAR-1" in path for _, path, _ in seen), seen)

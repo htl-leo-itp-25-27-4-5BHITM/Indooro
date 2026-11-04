@@ -1030,6 +1030,40 @@ export interface paths {
         patch: operations["archiveStore"];
         trace?: never;
     };
+    "/api/stores/{storeId}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Show the store in the customer market list (GET /api/mobile/stores). Idempotent. */
+        patch: operations["releaseStore"];
+        trace?: never;
+    };
+    "/api/stores/{storeId}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Hide the store from the customer market list again. Idempotent. */
+        patch: operations["withdrawStore"];
+        trace?: never;
+    };
     "/api/stores/{storeId}/audit": {
         parameters: {
             query?: never;
@@ -1958,6 +1992,8 @@ export interface components {
             region?: components["schemas"]["StoreRegionSummary"];
             activeBeaconCount?: number;
             hasActiveLayout?: boolean;
+            /** @description True when the store is listed in the customer market list. */
+            released?: boolean;
         };
         StoreSummaryPage: {
             content: components["schemas"]["StoreSummaryResponse"][];
@@ -1994,6 +2030,8 @@ export interface components {
             updatedAt?: string;
             /** @description Coverage profile of the readiness check. */
             readinessProfile?: string;
+            /** @description True when the store is listed in the customer market list. */
+            released?: boolean;
         };
         StoreAuditResponse: {
             /** Format: uuid */
@@ -4282,6 +4320,39 @@ export interface operations {
         };
     };
     archiveStore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                storeId: components["parameters"]["StoreIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["StoreDetailOk"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    releaseStore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                storeId: components["parameters"]["StoreIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: components["responses"]["StoreDetailOk"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    withdrawStore: {
         parameters: {
             query?: never;
             header?: never;
