@@ -67,7 +67,8 @@ export function applyTemporalFilter(
 
     // 1) speed gate
     let p: Point = { x: position.x, y: position.y };
-    if (maxSpeedUnits > 0 && gated) {
+    // dt <= 0 (duplicate timestamps from direct callers): no speed can be derived -> gate skipped.
+    if (maxSpeedUnits > 0 && gated && dt > 0) {
       const dx = p.x - gated.x;
       const dy = p.y - gated.y;
       const dist = Math.hypot(dx, dy);

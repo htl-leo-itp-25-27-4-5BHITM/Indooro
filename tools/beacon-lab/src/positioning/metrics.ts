@@ -52,7 +52,7 @@ export function computeErrorMetrics(est: readonly PositionEstimate[], scale: Map
     rmse: valid === 0 ? null : Math.sqrt(errs.reduce((s, x) => s + x * x, 0) / valid),
     p90: percentile(errs, 90),
     p95: percentile(errs, 95),
-    max: valid === 0 ? null : Math.max(...errs),
+    max: valid === 0 ? null : errs.reduce((a, b) => (b > a ? b : a), -Infinity),
     within2: within(WITHIN_THRESHOLDS[0]),
     within3: within(WITHIN_THRESHOLDS[1]),
     within5: within(WITHIN_THRESHOLDS[2]),
