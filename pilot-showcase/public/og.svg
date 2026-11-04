@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <radialGradient id="g" cx="85%" cy="0%" r="70%"><stop offset="0" stop-color="#63E6B4" stop-opacity=".25"/><stop offset="1" stop-color="#63E6B4" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1200" height="630" fill="#050C10"/>
+  <rect width="1200" height="630" fill="url(#g)"/>
+  <g transform="translate(96 84) scale(2.2)">
+    <path d="M6.5 26.5C13 26.5 12 20 17.5 20C22 20 22.5 17.6 22.5 15.5" stroke="#63E6B4" stroke-opacity=".22" stroke-width="6" stroke-linecap="round" fill="none"/>
+    <path d="M6.5 26.5C13 26.5 12 20 17.5 20C22 20 22.5 17.6 22.5 15.5" stroke="#63E6B4" stroke-width="2.6" stroke-linecap="round" fill="none"/>
+    <circle cx="6.5" cy="26.5" r="3" fill="#071117" stroke="#63E6B4" stroke-width="2"/>
+    <path d="M22.5 2C26.6 2 29.5 4.9 29.5 8.6c0 4.3-5.2 9.2-6.4 10.3a.9.9 0 0 1-1.2 0C20.7 17.8 15.5 12.9 15.5 8.6 15.5 4.9 18.4 2 22.5 2Z" fill="#E03830"/>
+    <circle cx="22.5" cy="8.6" r="2.4" fill="#071117"/>
+  </g>
+  <text x="180" y="132" font-family="Inter, Helvetica, Arial, sans-serif" font-size="46" font-weight="600" fill="#fff" letter-spacing="-2">indooro</text>
+  <text x="96" y="340" font-family="Inter, Helvetica, Arial, sans-serif" font-size="104" font-weight="600" fill="#fff" letter-spacing="-4">Jedes Produkt.</text>
+  <text x="96" y="450" font-family="Inter, Helvetica, Arial, sans-serif" font-size="104" font-weight="600" fill="#63E6B4" letter-spacing="-4">Auf direktem Weg.</text>
+  <text x="96" y="550" font-family="Inter, Helvetica, Arial, sans-serif" font-size="30" fill="#9DB0B2">Pilotprojekt der HTL Leonding · Wir suchen einen Testmarkt in Linz</text>
+</svg>
