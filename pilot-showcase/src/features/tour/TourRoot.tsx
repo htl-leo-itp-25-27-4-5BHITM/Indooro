@@ -1,5 +1,8 @@
 import { useEffect } from "react";
+import { ChapterRail } from "./ChapterRail";
+import { TourLauncher } from "./TourLauncher";
 import { TourOverlay } from "./TourOverlay";
+import { TourToast } from "./TourToast";
 import { tourStore } from "./store";
 
 /** Global tour components, mounted once in App. */
@@ -17,5 +20,12 @@ export function TourRoot() {
     return () => window.clearTimeout(t);
   }, []);
 
-  return <TourOverlay />;
+  return (
+    <>
+      <ChapterRail />
+      <TourLauncher />
+      <TourToast />
+      <TourOverlay />
+    </>
+  );
 }

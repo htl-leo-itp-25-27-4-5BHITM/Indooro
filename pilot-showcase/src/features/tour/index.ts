@@ -13,3 +13,5 @@ export function stopTour(): void {
 }
 
 export { useTour } from "./store";
+export { NextChapter } from "./NextChapter";
+export { ReadingProgress } from "./ReadingProgress";
