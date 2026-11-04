@@ -1,7 +1,15 @@
 /**
- * Guided tour public API. OWNER: tour agent. Stub until implemented.
- * startTour() opens the presenter-style walkthrough through the whole page.
+ * Guided tour public API. OWNER: tour agent.
+ * startTour() opens the presenter-style walkthrough through the whole page (the overlay is mounted once in App).
  */
+import { tourStore } from "./store";
+
 export function startTour(): void {
-  document.getElementById("demo")?.scrollIntoView({ behavior: "smooth" });
+  tourStore.start(0);
 }
+
+export function stopTour(): void {
+  tourStore.stop();
+}
+
+export { useTour } from "./store";

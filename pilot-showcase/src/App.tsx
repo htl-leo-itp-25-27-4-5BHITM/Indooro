@@ -8,6 +8,7 @@ import { OperatorSection } from "./sections/OperatorSection";
 import { ProjectStatus } from "./sections/ProjectStatus";
 import { PilotSection } from "./sections/PilotSection";
 import { SiteFooter } from "./sections/SiteFooter";
+import { TourRoot } from "./features/tour/TourRoot";
 
 /**
  * One page, anchor sections (ids): #top, #problem, #demo, #so-funktionierts, #betreiber,
@@ -35,6 +36,7 @@ export function App() {
         <PilotSection />
       </main>
       <SiteFooter />
+      <TourRoot />
     </>
   );
 }
