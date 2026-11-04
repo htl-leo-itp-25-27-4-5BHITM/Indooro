@@ -9,7 +9,7 @@ import type {
   PositioningConfig,
 } from "../core/types";
 import { ALGORITHMS, prepareObservations, type AlgorithmContext } from "./algorithms";
-import { buildEpochs } from "./epochs";
+import { MAX_EPOCHS, buildEpochs } from "./epochs";
 import { LeakageError } from "./errors";
 import { buildFingerprints } from "./fingerprint";
 import { filterSamplesPerBeacon } from "./filters";
@@ -36,7 +36,8 @@ export interface RunPositioningArgs {
  *
  * Leakage rules (LeakageError):
  *  - `run.role === "calibration"` (never evaluate on calibration data);
- *  - any calibration run has role "evaluation" or the same id as `run`.
+ *  - any calibration run has role "evaluation", the same id as `run` or identical raw data (provenance.sha256);
+ *  - the algorithm uses a path-loss model that was fitted on `run` (fittedOnRunIds).
  * Pure: inputs are not mutated. Everything else (empty data, degenerate geometry, NaN) yields failures in
  * the estimates / warnings, not exceptions.
  *
@@ -62,9 +63,25 @@ export function runPositioning(args: RunPositioningArgs): EvaluationResult {
     if (c.id === run.id) {
       throw new LeakageError(`Datenleck: Kalibrierungs- und Auswertungslauf sind identisch („${run.name}“, ${run.id}).`);
     }
+    // Content check: identical raw data (same file / same generator config) under another id or role.
+    if (c.provenance?.sha256 && c.provenance.sha256 === run.provenance?.sha256) {
+      throw new LeakageError(
+        `Datenleck: Kalibrierungslauf „${c.name}“ hat dieselben Rohdaten (SHA-256 ${c.provenance.sha256.slice(0, 12)}…) wie der Auswertungslauf „${run.name}“.`,
+      );
+    }
   }
 
   const algorithm = ALGORITHMS[config.algorithm];
+  if (algorithm.requires.calibration) {
+    const models = [{ owner: "Kampagnenmodell", m: campaign.pathLoss }, ...campaign.beacons.map((b) => ({ owner: `Beacon ${b.id}`, m: b.pathLoss }))];
+    for (const { owner, m } of models) {
+      if (m?.fittedOnRunIds?.includes(run.id)) {
+        throw new LeakageError(
+          `Datenleck: Das Pfadverlustmodell (${owner}) wurde auf dem Lauf „${run.name}“ gefittet und darf nicht auf demselben Lauf ausgewertet werden.`,
+        );
+      }
+    }
+  }
   const scale = campaign.floorPlan.scale;
   const mpu = scale.metersPerUnit;
   const warnings: string[] = [];
@@ -85,6 +102,16 @@ export function runPositioning(args: RunPositioningArgs): EvaluationResult {
   // 1-2) filter + epochs
   const filtered = filterSamplesPerBeacon(run.samples, config.rssiFilter);
   const epochs = buildEpochs(filtered, config);
+  if (epochs.length >= MAX_EPOCHS) {
+    warnings.push(
+      `Epochenzahl auf ${MAX_EPOCHS.toLocaleString("de-AT")} begrenzt: Der Lauf wurde nach dieser Epoche ABGESCHNITTEN, spätere Daten fehlen in allen Kennzahlen. Schrittweite erhöhen oder Zeitbasis prüfen (Millisekunden als Sekunden importiert?).`,
+    );
+  }
+  if (config.rssiFilter.outlier.enabled) {
+    warnings.push(
+      "Hampel-Ausreißerfilter aktiv: Er arbeitet mit einem zentrierten Fenster und nutzt damit auch spätere Samples (nicht kausal). Ergebnisse sind daher nicht exakt in Echtzeit reproduzierbar.",
+    );
+  }
 
   // 3) algorithm per epoch
   const raw = epochs.map((ep) => {
