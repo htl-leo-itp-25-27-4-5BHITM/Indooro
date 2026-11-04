@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { ArrowDown, ArrowRight, ListChecks, Route, Search } from "lucide-react";
+import { ArrowDown, ArrowRight, ListChecks, Play, Route, Search } from "lucide-react";
 import { Button, Container, Eyebrow } from "../components/ui";
 import { HeroPhone } from "../components/ui/HeroPhone";
+import { HeroStage, useScene3dEnabled } from "../components/hero3d";
+import { startTour } from "../features/tour";
 
 const CAPABILITIES = [
   { icon: Search, label: "Produktsuche" },
@@ -12,6 +15,10 @@ const CAPABILITIES = [
 /** First impression: what Indooro does for an operator, in one glance. */
 export function Hero() {
   const reduce = useReducedMotion();
+  const enabled3d = useScene3dEnabled();
+  const [failed, setFailed] = useState(false);
+  const [ready, setReady] = useState(false);
+  const use3d = enabled3d && !failed;
   const rise = (i: number) =>
     reduce
       ? {}
@@ -22,7 +29,7 @@ export function Hero() {
         };
 
   return (
-    <section id="top" aria-labelledby="hero-title" className="on-dark relative isolate flex min-h-[100svh] items-center overflow-hidden bg-ink-950 pb-16 pt-28 text-ink-100 lg:pb-20 lg:pt-32">
+    <section id="top" aria-labelledby="hero-title" className="on-dark relative isolate flex min-h-[100svh] items-end overflow-hidden bg-ink-950 pb-12 pt-28 text-ink-100 lg:items-center lg:pb-20 lg:pt-32">
       {/* atmosphere: glows, fine grid, grain */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute -right-40 -top-40 size-[44rem] rounded-full bg-[radial-gradient(closest-side,rgb(99_230_180/0.16),transparent)]" />
@@ -30,6 +37,24 @@ export function Hero() {
         <div className="bg-grid-dark mask-radial absolute inset-0 opacity-90" />
         <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-b from-transparent to-ink-950" />
       </div>
+      {use3d ? (
+        <>
+          <div className="absolute inset-0 -z-[5]">
+            <HeroStage onReady={() => setReady(true)} onError={() => setFailed(true)} />
+          </div>
+          {/* legibility scrims: left on desktop, bottom on mobile */}
+          <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 -z-[4] hidden w-[68%] bg-gradient-to-r from-ink-950 via-ink-950/85 to-transparent lg:block" />
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-[4] h-[72%] bg-gradient-to-t from-ink-950 via-ink-950/90 to-transparent lg:hidden" />
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-[4] h-28 bg-gradient-to-b from-ink-950/70 to-transparent" />
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-[4] h-32 bg-gradient-to-b from-transparent to-ink-950" />
+          {ready ? (
+            <p className="pointer-events-none absolute bottom-7 right-8 z-10 hidden items-center gap-2 rounded-full bg-ink-900/70 px-3.5 py-1.5 text-[11.5px] font-medium text-ink-200 ring-1 ring-inset ring-white/10 backdrop-blur lg:flex">
+              <span aria-hidden className="size-1.5 rounded-full bg-mint" />
+              Simulation · Fiktiver Demomarkt
+            </p>
+          ) : null}
+        </>
+      ) : null}
       <div aria-hidden className="grain pointer-events-none absolute inset-0 -z-10" />
 
       <Container className="grid items-center gap-14 lg:grid-cols-12 lg:gap-8">
@@ -56,8 +81,11 @@ export function Hero() {
             ))}
           </motion.ul>
 
-          <motion.div {...rise(4)} className="mt-9 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button href="#demo" size="lg" variant="primary" data-testid="hero-cta-demo" icon={<ArrowDown className="size-4" />}>
+          <motion.div {...rise(4)} className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+            <Button size="lg" variant="primary" data-testid="hero-cta-tour" onClick={() => startTour()} icon={<Play className="size-4" fill="currentColor" />}>
+              Geführte Tour starten
+            </Button>
+            <Button href="#demo" size="lg" variant="ghost-dark" data-testid="hero-cta-demo" icon={<ArrowDown className="size-4" />}>
               Live-Demo starten
             </Button>
             <Button href="#pilot" size="lg" variant="ghost-dark" data-testid="hero-cta-pilot" icon={<ArrowRight className="size-4" />}>
@@ -74,9 +102,12 @@ export function Hero() {
           </motion.p>
         </div>
 
-        <div className="lg:col-span-5">
-          <HeroPhone />
-        </div>
+        {/* 2D fallback (loading, no WebGL, reduced motion): the phone mock-up. Hidden once the 3D scene shows. */}
+        {!use3d || !ready ? (
+          <div className={use3d ? "hidden lg:col-span-5 lg:block" : "lg:col-span-5"}>
+            <HeroPhone />
+          </div>
+        ) : null}
       </Container>
     </section>
   );

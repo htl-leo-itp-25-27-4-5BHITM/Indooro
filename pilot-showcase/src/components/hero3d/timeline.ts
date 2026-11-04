@@ -39,11 +39,11 @@ export interface CameraKey {
  * wrap-around at LOOP is invisible. World: x right, y up, z towards the viewer, store ~26 x 17 m.
  */
 export const CAMERA_KEYS: readonly CameraKey[] = [
-  { t: 0, pos: [15, 12.5, 21], look: [0.5, 0, 0.5] },
-  { t: 2.4, pos: [-9.5, 3.1, 10.5], look: [-3, 0.9, 3] },
-  { t: 4.4, pos: [-3.5, 3.4, 4.6], look: [2.5, 0.9, -0.5] },
-  { t: 6.4, pos: [6.8, 4.6, 4.2], look: [5.2, 0.9, -2] },
-  { t: 8.1, pos: [10, 7.4, 10.5], look: [2.5, 0.2, -0.5] }
+  { t: 0, pos: [15, 20, 24], look: [0, 0, 0.5] },
+  { t: 2.4, pos: [-7, 12, 18], look: [1.5, 0, 1.5] },
+  { t: 4.4, pos: [1, 12, 12.5], look: [3.5, 0, -1] },
+  { t: 6.4, pos: [11, 12, 11], look: [4.5, 0, -1.5] },
+  { t: 8.1, pos: [15, 14, 19], look: [1, 0, 0] }
 ];
 
 /**
