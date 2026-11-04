@@ -8,7 +8,7 @@ interface Region { id: string; code: string; name: string }
 interface StoreDetail {
   id: string; storeCode: string; name: string; street: string; zipCode: string; city: string; country: string;
   latitude: number | null; longitude: number | null; notes: string | null; status: string;
-  region: Region; activeLayout: { id: string; versionNo: number } | null; readinessProfile?: string;
+  region: Region; activeLayout: { id: string; versionNo: number } | null; readinessProfile?: string; released?: boolean;
 }
 interface BeaconAssignment { beaconId: string; beaconCode: string; identityKey: string; assignedAt: string; isActive?: boolean }
 interface FreeBeacon { id: string; beaconCode: string; identityKey: string }
@@ -100,12 +100,21 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
   };
   const canAssign = user.role !== "store-manager" && store.status === "ACTIVE";
   const canArchive = user.role === "admin" && store.status === "ACTIVE";
+  // A server that predates the release gate omits the field; those stores are visible.
+  const released = store.released ?? true;
 
   return <div className="store-detail-page">
     <div className="page-intro"><div><p className="eyebrow">{store.region.code} · {store.storeCode}</p><h2>{store.name}</h2><p>{store.street}, {store.zipCode} {store.city} · {store.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</p></div><div className="form-actions"><a className="button" href={`/admin/next/stores/readiness/?storeId=${encodeURIComponent(store.id)}`}>Pilot-Bereitschaft</a><a className="button" href={`/admin/next/stores/anchors/?storeId=${encodeURIComponent(store.id)}`}>QR-Codes drucken</a><a className="button" href="/admin/next/stores/">Zur Store-Liste</a></div></div>
     {notice && <p className="notice success-state" role="status">{notice}</p>}
     {mutationError && <div className="notice error-state" role="alert"><strong>Änderung nicht gespeichert</strong><p>{mutationError}</p></div>}
     <StoreSetupSection api={api} user={user} store={store} refreshKey={revision} />
+    {store.status === "ACTIVE" && <section className="notice detail-section" aria-labelledby="release-title"><div className="section-heading"><h3 id="release-title">Kundenansicht</h3><span className={`status-pill ${released ? "ready" : "missing"}`}>{released ? "Freigegeben" : "Nicht freigegeben"}</span></div>
+      <p>{released ? "Kunden sehen diesen Markt in der Marktliste der App und der Kundenseite." : "Dieser Markt ist für Kunden noch nicht sichtbar. Geben Sie ihn frei, sobald Layout, Beacons und Produkte stehen (siehe Pilot-Bereitschaft)."}</p>
+      {user.role === "admin" ? (released
+        ? <button className="button" disabled={busy} onClick={() => { if (window.confirm(`Freigabe für ${store.name} zurücknehmen? Der Markt verschwindet aus der Marktliste der Kunden.`)) void mutate(() => api.request(`${path}/withdraw`, { method: "PATCH" }), "Freigabe zurückgenommen."); }}>Freigabe zurücknehmen</button>
+        : <button className="button primary" disabled={busy} onClick={() => { if (window.confirm(`${store.name} für Kunden freigeben? Der Markt erscheint sofort in der Marktliste.`)) void mutate(() => api.request(`${path}/release`, { method: "PATCH" }), "Store für Kunden freigegeben."); }}>Für Kunden freigeben</button>)
+        : <small>Nur ein Administrator kann einen Markt freigeben oder zurücknehmen.</small>}
+    </section>}
     <section className="notice detail-section" aria-labelledby="store-data-title"><div className="section-heading"><h3 id="store-data-title">Stammdaten</h3>{store.status === "ACTIVE" && !editing && <button className="button" onClick={() => setEditing(true)}>Bearbeiten</button>}</div>
       {editing && store.status === "ACTIVE" ? <form key={store.id} className="detail-form" onSubmit={submit}>
         <label>Region<select name="regionId" defaultValue={store.region.id} required disabled={user.role !== "admin"}>{regions.map((region) => <option key={region.id} value={region.id}>{region.code} · {region.name}</option>)}</select>{user.role !== "admin" && <input type="hidden" name="regionId" value={store.region.id} />}{fieldErrors.regionId && <small role="alert">{fieldErrors.regionId.join(" ")}</small>}</label>

@@ -149,6 +149,7 @@ public class StoreAdminService {
         StoreEntity store = new StoreEntity();
         applyStoreRequest(store, request, region);
         store.status = RecordStatus.ACTIVE;
+        store.released = false;
         storeRepository.persist(store);
 
         StoreDtos.StoreDetailResponse response = toDetailResponse(store);
@@ -174,6 +175,34 @@ public class StoreAdminService {
 
         StoreDtos.StoreDetailResponse after = toDetailResponse(store);
         auditLogService.log("STORE", store.id, "UPDATE", "Filiale aktualisiert", before, after);
+        return after;
+    }
+
+    /** Shows the store in the customer market list. Admin only; idempotent. */
+    @Transactional
+    public StoreDtos.StoreDetailResponse releaseStore(UUID storeId) {
+        return setReleased(storeId, true, "RELEASE", "Filiale für Kunden freigegeben");
+    }
+
+    /** Hides the store from the customer market list again. Admin only; idempotent. */
+    @Transactional
+    public StoreDtos.StoreDetailResponse withdrawStore(UUID storeId) {
+        return setReleased(storeId, false, "WITHDRAW", "Freigabe der Filiale zurückgenommen");
+    }
+
+    private StoreDtos.StoreDetailResponse setReleased(UUID storeId, boolean released, String action, String summary) {
+        adminAccessService.requireAdmin();
+        StoreEntity store = requireStore(storeId);
+        if (released && store.status != RecordStatus.ACTIVE) {
+            throw conflict("Eine archivierte Filiale kann nicht freigegeben werden.");
+        }
+        if (store.released == released) {
+            return toDetailResponse(store);
+        }
+        StoreDtos.StoreDetailResponse before = toDetailResponse(store);
+        store.released = released;
+        StoreDtos.StoreDetailResponse after = toDetailResponse(store);
+        auditLogService.log("STORE", store.id, action, summary, before, after);
         return after;
     }
 
@@ -284,7 +313,8 @@ public class StoreAdminService {
                 entity.status.name(),
                 toRegionSummary(entity.region),
                 activeBeaconCount,
-                hasActiveLayout
+                hasActiveLayout,
+                entity.released
         );
     }
 
@@ -307,7 +337,8 @@ public class StoreAdminService {
                 activeLayout == null ? null : new StoreDtos.ActiveLayoutSummary(activeLayout.id, activeLayout.versionNo, activeLayout.createdAt),
                 entity.createdAt,
                 entity.updatedAt,
-                entity.readinessProfile
+                entity.readinessProfile,
+                entity.released
         );
     }
 

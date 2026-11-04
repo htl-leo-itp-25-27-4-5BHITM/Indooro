@@ -80,6 +80,20 @@ public class StoreAdminResource extends AdminApiSupport {
         return storeAdminService.archiveStore(storeId);
     }
 
+    @Operation(operationId = "releaseStore")
+    @PATCH
+    @Path("/{storeId}/release")
+    public StoreDtos.StoreDetailResponse releaseStore(@PathParam("storeId") UUID storeId) {
+        return storeAdminService.releaseStore(storeId);
+    }
+
+    @Operation(operationId = "withdrawStore")
+    @PATCH
+    @Path("/{storeId}/withdraw")
+    public StoreDtos.StoreDetailResponse withdrawStore(@PathParam("storeId") UUID storeId) {
+        return storeAdminService.withdrawStore(storeId);
+    }
+
     @Operation(operationId = "getStoreAudit")
     @GET
     @Path("/{storeId}/audit")
