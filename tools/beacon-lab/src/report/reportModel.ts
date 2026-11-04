@@ -243,7 +243,10 @@ function metricRow(label: string[], m: ErrorMetrics): string[] {
     pct(m.within5),
   ];
 }
-const METRIC_HEADERS = ["Epochen m. Ref.", "Gültig", "Fehlschläge", "Ausfallrate", "Mittel", "Median", "RMSE", "P90", "P95", "Maximum", "≤ 2 m", "≤ 3 m", "≤ 5 m"];
+/** Threshold headers carry the real unit: "m" only with a confirmed scale, otherwise layout units. */
+function metricHeaders(unit: "m" | "LE"): string[] {
+  return ["Epochen m. Ref.", "Gültig", "Fehlschläge", "Ausfallrate", "Mittel", "Median", "RMSE", "P90", "P95", "Maximum", `≤ 2 ${unit}`, `≤ 3 ${unit}`, `≤ 5 ${unit}`];
+}
 
 function dynamicRow(label: string[], d: DynamicMetrics): string[] {
   return [
@@ -261,6 +264,7 @@ function dynamicRow(label: string[], d: DynamicMetrics): string[] {
 export function buildReportModel(input: ReportInput): ReportModel {
   const { campaign, runs, results, qualityByRun, commonComparison, figures = [], toolVersion, gitCommit, generatedAt } = input;
   const scale = campaign.floorPlan.scale;
+  const METRIC_HEADERS = metricHeaders(scale.confirmed ? "m" : "LE");
   const hasSynthetic = runs.some((r) => r.origin === "synthetic") || results.some((r) => r.origin === "synthetic");
   const sections: ReportSection[] = [];
   const add = (id: string, title: string, blocks: ReportBlock[]) => sections.push({ id, number: sections.length + 1, title, blocks });
@@ -442,7 +446,7 @@ export function buildReportModel(input: ReportInput): ReportModel {
         headers: ["Lauf", "Herkunft", "Algorithmus", ...METRIC_HEADERS],
         numericColumns: Array.from({ length: METRIC_HEADERS.length }, (_, i) => i + 3),
         rows: sorted.map((r) => metricRow([r.runName, ORIGIN_TEXT[r.origin], algorithmLabel(r.config.algorithm)], r.metrics)),
-        note: "Sortierung: Lauf (alphabetisch), dann Algorithmus – keine Rangfolge nach Güte. Mittel, Median, RMSE, P90, P95, Maximum: nur gültige Schätzungen. Trefferquoten (≤ 2/3/5 m): bezogen auf alle Epochen mit Referenz, Fehlschläge zählen als nicht innerhalb.",
+        note: "Sortierung: Lauf (alphabetisch), dann Algorithmus – keine Rangfolge nach Güte. Mittel, Median, RMSE, P90, P95, Maximum: nur gültige Schätzungen. Trefferquoten (≤ 2/3/5 m bzw. LE bei unbestätigtem Maßstab): bezogen auf alle Epochen mit Referenz, Fehlschläge zählen als nicht innerhalb.",
       },
     });
     resBlocks.push({
