@@ -47,8 +47,14 @@ npm run dev        # http://localhost:4316
 npm run typecheck
 npm test           # Unit-Tests (vitest): Routing, Suche, Demo-Daten, Betreiber-Ablauf
 npm run build
-npm run test:e2e   # Playwright, Desktop + Mobile (baut nicht selbst – vorher npm run build)
+npm run test:e2e   # Playwright, Desktop + Mobile (vorher npm run build; nutzt Port 4317)
 ```
+
+Testumfang: Routing (A*, 2-opt, Hindernisse in beiden Demomärkten mit je 120 Zufallslisten),
+Suche (Synonyme, Tippfehler, Marktbindung), Datenintegrität (jeder layoutCode trifft genau ein Regal),
+Betreiber-Ablauf und Bereitschaftslogik; e2e: Suche, Liste, Route, Simulation, Marktwechsel,
+Betreiber-Demo, Pilotbereich, Deep-Links, Fehlerfälle (ungültiger Markt, gesperrter localStorage,
+reduzierte Bewegung) auf Desktop und Mobil.
 
 ## Hosting
 
@@ -56,6 +62,14 @@ npm run test:e2e   # Playwright, Desktop + Mobile (baut nicht selbst – vorher 
 Sie kann ohne Server-Konfiguration auf jedem statischen Host liegen (z. B. GitHub Pages, Netlify,
 nginx, ein Unterordner der Schul-Webseite) und funktioniert nach dem Laden auch offline.
 Es gibt keine Backend-Verbindung, keine Datenbank, keine Anmeldung und keine externen Dienste.
+
+## Bekannte Einschränkungen
+
+- Position, Märkte, Produkte und Preise sind simuliert bzw. fiktiv; es gibt noch keine Messwerte zur BLE-Ortung.
+- Der Betreiber-Ablauf ist eine geführte Simulation, keine Verbindung zur echten Admin-Plattform.
+- Raster 1 m wie in Indooro; die Route wird für die Darstellung geglättet.
+- Kein Zoom/Pan im Marktplan (bewusst einfach gehalten, „Route im Fokus“ zoomt auf die Route).
+- Das Teilen-Bild (`og.svg`) ist ein SVG; manche soziale Netzwerke zeigen nur PNG/JPG an.
 
 ## Vor dem Einsatz beim Markt
 
