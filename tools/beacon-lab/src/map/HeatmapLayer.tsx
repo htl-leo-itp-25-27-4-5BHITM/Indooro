@@ -215,6 +215,7 @@ export function HeatmapLegend({
   valueDigits = 1,
   className = "",
 }: HeatmapLegendProps) {
+  const hatchId = `legend-hatch-${useId().replace(/:/g, "")}`;
   const [lo, hi] = resolveDomain(points, domain);
   const gradient = rampGradientCss(colorScale);
   const distText = (u: number) =>
@@ -240,11 +241,11 @@ export function HeatmapLegend({
         <div className="mt-1 flex items-center gap-1.5 text-muted">
           <svg width="16" height="12" aria-hidden="true">
             <defs>
-              <pattern id="legend-hatch" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
+              <pattern id={hatchId} patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)">
                 <line x1="0" y1="0" x2="0" y2="5" stroke="#9fb1bd" strokeWidth="1" />
               </pattern>
             </defs>
-            <rect width="16" height="12" fill="url(#legend-hatch)" stroke="#cfdbe1" />
+            <rect width="16" height="12" fill={`url(#${hatchId})`} stroke="#cfdbe1" />
           </svg>
           keine Daten
         </div>
