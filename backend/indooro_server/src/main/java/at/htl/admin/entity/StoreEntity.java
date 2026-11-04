@@ -50,6 +50,13 @@ public class StoreEntity extends AuditableEntity {
     @Column(name = "readiness_profile", nullable = false, length = 20)
     public String readinessProfile = "market";
 
+    /**
+     * Release gate of the customer market list. Existing stores are released (migration default); the
+     * application creates new stores unreleased. An unreleased store is hidden from GET /api/mobile/stores only.
+     */
+    @Column(nullable = false)
+    public boolean released = true;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     public RecordStatus status = RecordStatus.ACTIVE;

@@ -1795,6 +1795,35 @@ paths:
         "200": { $ref: "#/components/responses/StoreDetailOk" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+  /api/stores/{storeId}/release:
+    patch:
+      tags: [stores]
+      operationId: releaseStore
+      summary: Show the store in the customer market list (GET /api/mobile/stores). Idempotent.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdPath"
+      responses:
+        "200": { $ref: "#/components/responses/StoreDetailOk" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+  /api/stores/{storeId}/withdraw:
+    patch:
+      tags: [stores]
+      operationId: withdrawStore
+      summary: Hide the store from the customer market list again. Idempotent.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/StoreIdPath"
+      responses:
+        "200": { $ref: "#/components/responses/StoreDetailOk" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/stores/{storeId}/audit:
     get:
       tags: [stores]
@@ -3105,6 +3134,7 @@ components:
         region: { $ref: "#/components/schemas/StoreRegionSummary" }
         activeBeaconCount: { type: integer }
         hasActiveLayout: { type: boolean }
+        released: { type: boolean, description: "True when the store is listed in the customer market list." }
     StoreSummaryPage:
       type: object
       required: [content, page, size, totalElements]
@@ -3142,6 +3172,7 @@ components:
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
         readinessProfile: { type: string, description: Coverage profile of the readiness check. }
+        released: { type: boolean, description: "True when the store is listed in the customer market list." }
     StoreAuditResponse:
       type: object
       properties:

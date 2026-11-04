@@ -24,6 +24,7 @@ Soll die Marktleitung selbst im Admin arbeiten, braucht sie einen Keycloak-Benut
 5. **Sortiment importiert.** Admin → Produkte → CSV-Import (Administrator, Regionsleitung und Marktleitung; die Märkte zur Auswahl sind auf die eigenen begrenzt). Zuerst die Vorschau lesen, erst dann importieren. Die Checkliste zählt nur Produkte, die diesem Markt gehören.
 6. **Suche findet Produkte des Markts.** Die Checkliste sucht nach dem ersten Produkt des Markts. „Problem“ heißt: Das Produkt ist importiert, die Suche findet es nicht. Dann Admin → Suchindex (nur Administrator), Index prüfen und neu aufbauen; Ablauf in `SEARCH_REINDEX.md`.
 7. **Bereitschaftsprüfung ohne blockierende Befunde.** Seite „Pilot-Bereitschaft“. Ziel: Ampel nicht rot. Warnungen bleiben erlaubt, gehören aber in die Checkliste des Termins.
+8. **Für Kunden freigeben.** Ein neuer Markt ist in der Marktliste der App und der Kundenseite (`/customer/`) erst sichtbar, nachdem ein Administrator ihn freigegeben hat. Store-Seite → „Kundenansicht“ → „Für Kunden freigeben“; „Freigabe zurücknehmen“ blendet ihn wieder aus. Die Freigabe ist manuell und hängt nicht an der Ampel. Der Smoke-Check (`scripts/ops/smoke_check.sh`) meldet gelistete Märkte ohne eigene Produkte als `WARN`.
 
 ## Befunde lesen
 
