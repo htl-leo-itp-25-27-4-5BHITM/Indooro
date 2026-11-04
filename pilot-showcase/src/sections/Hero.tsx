@@ -43,7 +43,7 @@ export function Hero() {
             <HeroStage onReady={() => setReady(true)} onError={() => setFailed(true)} />
           </div>
           {/* legibility scrims: left on desktop, bottom on mobile */}
-          <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 -z-[4] hidden w-[68%] bg-gradient-to-r from-ink-950 via-ink-950/85 to-transparent lg:block" />
+          <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 -z-[4] hidden w-[78%] bg-[linear-gradient(90deg,var(--color-ink-950)_0%,var(--color-ink-950)_52%,rgb(5_12_16/0.88)_72%,transparent_100%)] lg:block" />
           <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-[4] h-[66%] bg-gradient-to-t from-ink-950 via-ink-950/92 to-transparent lg:hidden" />
           <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-[4] h-28 bg-gradient-to-b from-ink-950/70 to-transparent" />
           <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-[4] h-32 bg-gradient-to-b from-transparent to-ink-950" />
