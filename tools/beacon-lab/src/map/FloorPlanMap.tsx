@@ -50,6 +50,8 @@ export interface FloorPlanMapProps {
   underlay?: ReactNode;
   /** Overlay slot rendered inside the SVG above the plan: nodes or a render-prop. */
   overlays?: ReactNode;
+  /** HTML legends shown under the map (e.g. EstimateLegend, HeatmapLegend). */
+  legend?: ReactNode;
   children?: ReactNode;
   selectedId?: string;
   onSelect?: (sel: MapSelection) => void;
@@ -155,6 +157,7 @@ export function FloorPlanMap(props: FloorPlanMapProps) {
     availableLayers,
     underlay,
     overlays,
+    legend,
     children,
     selectedId,
     onSelect,
@@ -662,6 +665,8 @@ export function FloorPlanMap(props: FloorPlanMapProps) {
           </div>
         )}
       </div>
+
+      {legend && <div className="flex flex-wrap gap-3 border-t border-line px-3 py-2">{legend}</div>}
 
       <fieldset className="flex flex-wrap gap-1.5 border-t border-line px-3 py-2">
         <legend className="sr-only">Ebenen</legend>
