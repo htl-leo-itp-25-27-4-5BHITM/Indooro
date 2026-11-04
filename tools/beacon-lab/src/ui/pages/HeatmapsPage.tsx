@@ -149,6 +149,7 @@ export function HeatmapsPage() {
         </div>
       </Card>
 
+      <div className="max-w-full overflow-x-auto">
       <Tabs
         label="Heatmap-Typ"
         value={type}
@@ -161,6 +162,7 @@ export function HeatmapsPage() {
           { id: "density", label: "Messpunktdichte" },
         ]}
       />
+      </div>
 
       {!hasRefs && (
         <Callout tone="warning" title="Keine Ground Truth in dieser Messreihe" >
@@ -170,8 +172,8 @@ export function HeatmapsPage() {
         </Callout>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-6">
           {type === "rssi" && (
             <Card title="RSSI-Heatmap">
               <Field label="Beacon">
@@ -253,7 +255,7 @@ export function HeatmapsPage() {
           </Card>
         </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {evalError && (
             <Callout tone="danger" title="Auswertung nicht möglich">
               {evalError}

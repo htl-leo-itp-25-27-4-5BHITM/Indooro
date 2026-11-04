@@ -137,8 +137,8 @@ export function CalibrationPage() {
         Kalibrierung und Auswertung müssen getrennte Messungen sein: Würde das Modell auf denselben Daten angepasst, auf denen es später bewertet wird, wären die Fehlerwerte zu optimistisch (Datenleck). Deshalb sind hier ausschließlich Läufe mit der Rolle „Kalibrierung“ wählbar, und die Auswertung verweigert Kalibrierungsläufe.
       </Callout>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
-        <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,360px)_minmax(0,1fr)]">
+        <div className="min-w-0 space-y-6">
           <Card title="Aktuelles Kampagnenmodell">
             <div className="flex flex-wrap items-center gap-2" data-testid="calibration-current-model">
               <span data-testid="calibration-current-source">
@@ -203,7 +203,7 @@ export function CalibrationPage() {
           </Card>
         </div>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
           {fatal && (
             <Callout tone="danger" title="Kalibrierung nicht möglich">
               {fatal}

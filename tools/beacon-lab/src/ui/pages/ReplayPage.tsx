@@ -76,7 +76,7 @@ export function ReplayPage() {
               </ul>
             </Callout>
           )}
-          <div data-testid="replay-container">
+          <div data-testid="replay-container" className="min-w-0 max-w-full overflow-x-hidden [&_select]:max-w-full">
             <Replay
               plan={campaign.floorPlan}
               beacons={campaign.beacons}
