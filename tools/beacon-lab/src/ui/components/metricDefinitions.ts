@@ -113,3 +113,11 @@ export const METRIC_DEFINITIONS: Record<string, MetricDefinition> = {
   ...DYNAMIC_METRIC_DEFINITIONS,
   ...Object.fromEntries(Object.entries(RSSI_STAT_DEFINITIONS).map(([k, v]) => [`rssi.${k}`, v])),
 };
+
+/**
+ * Label for the "within threshold" metrics in the actual distance unit.
+ * With an unconfirmed scale the thresholds are applied in layout units, so the label must say "LE", never "m".
+ */
+export function withinLabel(threshold: 2 | 3 | 5, unit: "m" | "LE"): string {
+  return `Innerhalb ${threshold} ${unit}`;
+}

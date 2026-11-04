@@ -3,7 +3,7 @@ import { toDisplayDistance } from "../../../core/units";
 import type { Campaign, EvaluationResult, MeasurementRun } from "../../../core/types";
 import { EstimateLayer, EstimateLegend, ErrorVectorLayer, FloorPlanMap, ReferenceLayer, TrajectoryLayer, TrajectoryLegend, type LayerId } from "../../../map";
 import { CdfChart, LineChart, type LineSeries } from "../../charts";
-import { Callout, Card, DataTable, DYNAMIC_METRIC_DEFINITIONS, ERROR_METRIC_DEFINITIONS, StatTile, type DataColumn } from "../../components";
+import { Callout, Card, DataTable, DYNAMIC_METRIC_DEFINITIONS, ERROR_METRIC_DEFINITIONS, StatTile, withinLabel, type DataColumn } from "../../components";
 import { useNarrow } from "./useNarrow";
 
 function fmt(v: number | null | undefined, digits = 2): string {
@@ -51,9 +51,9 @@ export function MetricsGrid({ result }: { result: EvaluationResult }) {
         <StatTile label={E.p90.label} value={fmt(m.p90)} unit={u} definition={E.p90.definition} />
         <StatTile label={E.p95.label} value={fmt(m.p95)} unit={u} definition={E.p95.definition} />
         <StatTile label={E.max.label} value={fmt(m.max)} unit={u} definition={E.max.definition} />
-        <StatTile label={`${E.within2.label} (${u})`} value={pct(m.within2)} unit="%" definition={E.within2.definition} />
-        <StatTile label={`${E.within3.label} (${u})`} value={pct(m.within3)} unit="%" definition={E.within3.definition} />
-        <StatTile label={`${E.within5.label} (${u})`} value={pct(m.within5)} unit="%" definition={E.within5.definition} />
+        <StatTile label={withinLabel(2, u)} value={pct(m.within2)} unit="%" definition={E.within2.definition} />
+        <StatTile label={withinLabel(3, u)} value={pct(m.within3)} unit="%" definition={E.within3.definition} />
+        <StatTile label={withinLabel(5, u)} value={pct(m.within5)} unit="%" definition={E.within5.definition} />
       </div>
       <h4 className="text-xs font-semibold uppercase tracking-wider text-muted">Dynamik</h4>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4" data-testid="dynamic-grid">
