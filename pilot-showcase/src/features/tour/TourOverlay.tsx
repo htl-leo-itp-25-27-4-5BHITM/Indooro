@@ -26,7 +26,12 @@ export function TourOverlay() {
 }
 
 function TourStage() {
-  const { index, presentation } = useTour();
+  const tour = useTour();
+  const { presentation } = tour;
+  // While the exit animation plays the store is already reset; keep showing (and not re-running) the last step.
+  const lastIndex = useRef(tour.index);
+  if (tour.active) lastIndex.current = tour.index;
+  const index = lastIndex.current;
   const reduce = !!useReducedMotion();
   const step = STEPS[index];
   const maskId = useId();
@@ -138,6 +143,7 @@ function TourStage() {
     let last = performance.now();
     const cur = { x: window.innerWidth / 2, y: window.innerHeight / 2, w: 0, h: 0, on: 0 };
     const cardPos = { x: 0, y: 0, init: false };
+    const held: { rect: Rect | null } = { rect: null };
     const tick = (now: number) => {
       raf = requestAnimationFrame(tick);
       const dt = Math.min(64, now - last);
@@ -148,7 +154,14 @@ function TourStage() {
       let goal: Rect | null = null;
       if (el) {
         const r = el.getBoundingClientRect();
-        goal = clipToViewport(inflate({ x: r.left, y: r.top, w: r.width, h: r.height }, PAD), vp);
+        const raw = clipToViewport(inflate({ x: r.left, y: r.top, w: r.width, h: r.height }, PAD), vp);
+        // Hysteresis: pulsing or animated targets (map pins) must not make the spotlight and card jitter.
+        const prev = held.rect;
+        const moved = !prev || Math.abs(prev.x - raw.x) > 5 || Math.abs(prev.y - raw.y) > 5 || Math.abs(prev.w - raw.w) > 5 || Math.abs(prev.h - raw.h) > 5;
+        if (moved) held.rect = raw;
+        goal = held.rect;
+      } else {
+        held.rect = null;
       }
       const hl = reduce ? 0 : 80;
       if (goal) {

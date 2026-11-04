@@ -72,5 +72,7 @@ export function scrollTargetFor(rect: Rect, scrollY: number, freeTop: number, fr
 }
 
 /** Exponential approach used for the eased spotlight (frame-rate independent). */
-export const approach = (current: number, target: number, dtMs: number, halfLifeMs = 90): number =>
-  target + (current - target) * Math.pow(0.5, dtMs / halfLifeMs);
+export const approach = (current: number, target: number, dtMs: number, halfLifeMs = 90): number => {
+  const next = target + (current - target) * Math.pow(0.5, dtMs / halfLifeMs);
+  return Math.abs(next - target) < 0.3 ? target : next;
+};

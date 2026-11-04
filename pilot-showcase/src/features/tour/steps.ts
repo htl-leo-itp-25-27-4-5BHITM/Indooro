@@ -1,3 +1,4 @@
+import { demoBridge } from "../store/demoBridge";
 import { resolveTarget, tid } from "./actions";
 import type { TourCtx } from "./actions";
 import type { DemoTab } from "../store/useStoreDemo";
@@ -42,10 +43,18 @@ async function applyDemo(ctx: TourCtx, o: DemoTarget): Promise<void> {
     d = ctx.demo() ?? d;
   }
   if (o.sim === "idle" && d.sim.state !== "idle") d.sim.reset();
-  if (o.sim === "pause" && d.sim.state === "running") d.sim.pause();
+  if (o.sim === "pause" && (d.sim.state === "running" || d.sim.state === "arrived-at-stop")) d.sim.pause();
   if (o.list === "empty" && d.items.length > 0) d.clearList();
   if (o.list === "example" && d.items.length < 3) d.loadExample();
-  if (o.list === "empty" || o.list === "example") await ctx.sleep(140);
+  if (o.list === "empty" || o.list === "example") {
+    // wait until React has applied the list change (the handle is republished on render)
+    for (let i = 0; i < 30; i++) {
+      await ctx.sleep(50);
+      const n = ctx.demo()?.items.length ?? 0;
+      if (o.list === "empty" ? n === 0 : n >= 3) break;
+    }
+    await ctx.sleep(60);
+  }
   d = ctx.demo() ?? d;
   if (o.tab && d.tab !== o.tab) {
     d.setTab(o.tab);
@@ -66,6 +75,8 @@ function stopOperatorAutoplay(): void {
 /** Restores a sane demo state when the tour ends or is aborted. */
 export function restoreAfterTour(): void {
   stopOperatorAutoplay();
+  const d = demoBridge.get();
+  if (d && (d.sim.state === "running" || d.sim.state === "arrived-at-stop")) d.sim.pause();
 }
 
 async function clearSearch(ctx: TourCtx): Promise<void> {
@@ -118,14 +129,14 @@ export const STEPS: readonly TourStep[] = [
     chapter: "Demo",
     title: "Treffer am Regal",
     body: "Der Treffer nennt das Regal. Der markierte Punkt auf dem Plan zeigt, wo das Produkt im Markt steht.",
-    target: [tid("selected-pin"), tid("store-map")],
+    target: [`${tid("selected-pin")} > g`, tid("store-map")],
     placement: "right",
     onEnter: async (ctx) => {
       await applyDemo(ctx, { market: NORD, tab: "suche", list: "empty", sim: "idle" });
       await ctx.type(tid("search-input"), "Paradeiser", true);
       await ctx.waitFor(tid("search-result"));
       await applyDemo(ctx, { select: "tomaten" });
-      await ctx.waitFor(tid("selected-pin"), 1500);
+      await ctx.waitFor(`${tid("selected-pin")} > g`, 1500);
     }
   },
   {
