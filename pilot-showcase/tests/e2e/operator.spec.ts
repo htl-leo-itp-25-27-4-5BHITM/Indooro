@@ -5,6 +5,8 @@ const next = (page: Page) => page.getByTestId("operator-next");
 const status = (page: Page) => page.getByTestId("operator-status");
 
 test.describe("Betreiber-Simulation", () => {
+  // The readiness check animates five rows before the result; seven steps plus the check need more than 30 s on slow runners.
+  test.describe.configure({ timeout: 60_000 });
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
     await page.getByTestId("operator-demo").scrollIntoViewIfNeeded();
@@ -78,7 +80,8 @@ test.describe("Betreiber-Simulation", () => {
     await page.getByTestId("operator-fix-PRODUCT_NO_SHELF").click();
     await expect(status(page)).not.toHaveAttribute("data-status", "RED");
     const warning = page.getByTestId("operator-fix-SHELF_WITHOUT_PRODUCTS");
-    if (await warning.isVisible()) await warning.click();
+    await expect(warning).toBeVisible();
+    await warning.click();
     await expect(status(page)).toHaveAttribute("data-status", "GREEN");
     await expect(status(page)).toHaveText(/^\s*Bereit\s*$/);
   });
