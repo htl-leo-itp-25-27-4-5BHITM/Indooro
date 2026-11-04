@@ -89,7 +89,7 @@ export default function Store3DView(props: Store3DViewProps) {
         data-following={following ? "true" : "false"}
         role="group"
         aria-label={`3D-Ansicht ${market.name} (fiktiver Demomarkt, simulierte Position)`}
-        className="relative aspect-[4/5] w-full overflow-hidden rounded-3xl bg-ink-950 ring-1 ring-white/10 sm:aspect-[16/10]"
+        className="relative isolate aspect-[4/5] w-full overflow-hidden rounded-3xl bg-ink-950 ring-1 ring-white/10 sm:aspect-[16/10]"
         onPointerDown={() => setTouched(true)}
       >
         <Canvas
