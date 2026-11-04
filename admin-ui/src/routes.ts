@@ -15,7 +15,7 @@ export const staffRoutes: readonly StaffRoute[] = [
   { label: "Regionen", path: "/admin/regions/", roles: ["admin", "region-manager"] },
   { label: "Stores", path: "/admin/stores/", roles: ["admin", "region-manager", "store-manager"] },
   { label: "Beacons", path: "/admin/beacons/", roles: ["admin", "region-manager", "store-manager"] },
-  { label: "Produkte", path: "/admin/products/", roles: ["admin"] },
+  { label: "Produkte", path: "/admin/products/", roles: ["admin", "region-manager", "store-manager"] },
   { label: "Kategorien", path: "/admin/categories/", roles: ["admin"] },
   { label: "Rezepte", path: "/admin/recipes/", roles: ["admin"] },
   { label: "Layout Editor", path: "/admin/editor/", roles: ["admin", "region-manager", "store-manager"] },
@@ -68,7 +68,8 @@ export function candidateAccess(pathname: string, role: string, requestedStoreId
     return role === "admin" ? "allowed" : "forbidden";
   }
   if (pathname === "/admin/next/products/" || pathname === "/admin/next/products") {
-    return role === "admin" ? "allowed" : "forbidden";
+    // The page limits the market picker to the user's own stores; the backend checks store access on every call.
+    return ["admin", "region-manager", "store-manager"].includes(role) ? "allowed" : "forbidden";
   }
   if (pathname === "/admin/next/categories/" || pathname === "/admin/next/categories") {
     return role === "admin" ? "allowed" : "forbidden";

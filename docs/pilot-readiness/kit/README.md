@@ -7,6 +7,7 @@ Alle Dateien sind Vorlagen. Platzhalter in spitzen Klammern (`<…>`) werden vor
 ## Dateien
 
 - `produkte-vorlage.csv`: Vorlage für die Produktliste eines Pilotbereichs, Spalten `id;name;marke;menge;regal_label;kategorie;meter;fach;reihe;preis`. Fünf Beispielzeilen mit synthetischen Produkten. Umwandlung mit `scripts/pilot-data/csv_to_ndjson.py`.
+- `demo/`: Demo-Kit für das Sprint-Review (Markt einrichten, CSV-Import, Bereitschaft, Suche je Markt): `demo-layout.json`, `demo-markt.csv`, `demo-markt-fehler.csv` und `DEMO_ABLAUF.md`. Synthetische Daten, keine Personendaten.
 - `one-pager.md`: Ein-Seiten-Vorschlag für den Markt, Vorlage aus `06_BUSINESS_OUTREACH.md`, Abschnitt C.
 - `brief-an-markt.md`: Kurzvorstellung, Brief für die Übergabe im Markt, E-Mail nach Zustimmung und Vermittlungsbitte, mit Versandregeln für den Erstkontakt.
 - `pilotvereinbarung.md`: Vereinbarung über den Testbetrieb, eine Seite, Vorlage aus `05_PILOT_IMPLEMENTATION.md`, Abschnitt 8.

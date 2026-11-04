@@ -295,6 +295,7 @@ paths:
         - catalog
       operationId: listProducts
       summary: List product documents (match_all).
+      description: "List product documents. Without storeId and storeCode (and without a configured default store) the read is fail-closed: only legacy documents without storeCode are returned, never products of a store."
       parameters:
         - name: size
           in: query
@@ -325,6 +326,7 @@ paths:
         - catalog
       operationId: searchProducts
       summary: Fuzzy product search with optional store filter.
+      description: "Fuzzy product search. Without storeId and storeCode (and without a configured default store) the read is fail-closed: only legacy documents without storeCode are returned, never products of a store."
       parameters:
         - name: q
           in: query

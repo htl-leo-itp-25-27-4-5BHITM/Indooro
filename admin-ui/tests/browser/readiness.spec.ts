@@ -206,5 +206,26 @@ test("readiness page names the global products that were left out", async ({ pag
   await page.route("**/api/stores/store-1/readiness*", (route) => route.fulfill({ json: report }));
 
   await page.goto("/admin/next/stores/readiness/?storeId=store-1");
-  await expect(page.getByText("79 nicht geprüft (die Filiale hat eigene Produkte)")).toBeVisible();
+  await expect(page.getByText("79 nicht geprüft (Produkte ohne Markt zählen nicht)")).toBeVisible();
+});
+
+test("readiness page lists NO_STORE_PRODUCTS and NO_SHELVES as blocking for an empty store", async ({ page }) => {
+  const report = {
+    ...greenReport, status: "RED", blockingCount: 2,
+    counts: { shelves: 0, entrances: 1, products: 0, placedBeacons: 9, assignedBeacons: 9, walkableCells: 400, lowCoverageCells: 8, skippedGlobalProducts: 12 },
+    findings: [
+      { severity: "BLOCKING", code: "NO_SHELVES", message: "Das Layout hat keine Regale. Regale im Layout-Editor anlegen und beschriften.", elementId: null, productId: null, layoutCode: null, beaconCode: null },
+      { severity: "BLOCKING", code: "NO_STORE_PRODUCTS", message: "Der Markt hat noch keine eigenen Produkte. Sortiment per CSV-Import laden. (12 Produkte ohne Markt wurden nicht mitgezählt.)", elementId: null, productId: null, layoutCode: null, beaconCode: null }
+    ]
+  };
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: adminUser }));
+  await page.route("**/api/stores/store-1", (route) => route.fulfill({ json: store }));
+  await page.route("**/api/stores/store-1/readiness*", (route) => route.fulfill({ json: report }));
+
+  await page.goto("/admin/next/stores/readiness/?storeId=store-1");
+  await expect(page.getByText("Nicht bereit", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Blockierend (2)" })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Der Markt hat noch keine eigenen Produkte." })).toBeVisible();
+  await expect(page.getByRole("listitem").filter({ hasText: "Das Layout hat keine Regale." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Warnungen" })).toHaveCount(0);
 });

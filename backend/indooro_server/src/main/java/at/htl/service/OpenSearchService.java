@@ -191,7 +191,7 @@ public class OpenSearchService {
                             ))
                             .minimumShouldMatch("1");
 
-                    applyStoreFilter(b, normalizedStoreId, normalizedStoreCode);
+                    applyReadScope(b, normalizedStoreId, normalizedStoreCode);
                     return b;
                 }))
         );
@@ -209,10 +209,15 @@ public class OpenSearchService {
      * das erste Treffer-Produkt ueber alle Maerkte.
      */
     public Product getProductById(Integer id) throws IOException {
-        return getProductById(id, null, null);
+        return findProductById(id, null, null, false);
     }
 
+    /** Store-scoped lookup; without storeId and storeCode only documents without storeCode (legacy) match. */
     public Product getProductById(Integer id, String storeId, String storeCode) throws IOException {
+        return findProductById(id, storeId, storeCode, true);
+    }
+
+    private Product findProductById(Integer id, String storeId, String storeCode, boolean failClosed) throws IOException {
         final String normalizedStoreId = normalizeOptionalFilter(storeId);
         final String normalizedStoreCode = normalizeOptionalFilter(storeCode);
 
@@ -224,7 +229,11 @@ public class OpenSearchService {
                             .field("id")
                             .value(FieldValue.of(id.intValue()))
                     ));
-                    applyStoreFilter(b, normalizedStoreId, normalizedStoreCode);
+                    if (failClosed) {
+                        applyReadScope(b, normalizedStoreId, normalizedStoreCode);
+                    } else {
+                        applyStoreFilter(b, normalizedStoreId, normalizedStoreCode);
+                    }
                     return b;
                 }))
         );
@@ -333,7 +342,7 @@ public class OpenSearchService {
     }
 
     /**
-     * Holt Produkte, optional nur eines Marktes
+     * Holt Produkte eines Marktes. Ohne storeId und storeCode nur Produkte ohne storeCode (Altbestand).
      */
     public List<Product> getAllProducts(Integer size, String storeId, String storeCode) throws IOException {
         final Integer finalSize = (size == null) ? 100 : size;
@@ -344,7 +353,7 @@ public class OpenSearchService {
                 .index(indexName)
                 .query(q -> q.bool(b -> {
                     b.must(m -> m.matchAll(ma -> ma));
-                    applyStoreFilter(b, normalizedStoreId, normalizedStoreCode);
+                    applyReadScope(b, normalizedStoreId, normalizedStoreCode);
                     return b;
                 }))
                 .size(finalSize)
@@ -959,6 +968,18 @@ public class OpenSearchService {
             }
             throw e;
         }
+    }
+
+    /**
+     * Scope for public product reads, fail-closed: without any store only documents without storeCode (legacy
+     * stock, see {@link #countLegacyProducts()}) match, never products of a store.
+     */
+    private void applyReadScope(BoolQuery.Builder bool, String storeId, String storeCode) {
+        if (storeId == null && storeCode == null) {
+            bool.mustNot(mn -> mn.exists(e -> e.field("storeCode")));
+            return;
+        }
+        applyStoreFilter(bool, storeId, storeCode);
     }
 
     private void applyStoreFilter(BoolQuery.Builder bool, String storeId, String storeCode) {

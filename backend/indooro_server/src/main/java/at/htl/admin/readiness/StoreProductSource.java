@@ -71,9 +71,9 @@ public class StoreProductSource {
     }
 
     /**
-     * Picks the products the readiness check evaluates. With at least one own product (storeId or
-     * storeCode matches) only the own products are returned and the global ones are counted as skipped.
-     * Without own products everything loaded is returned.
+     * Picks the products the readiness check evaluates: only the own products (storeId or storeCode
+     * matches). Everything else that was loaded, the global catalog, is counted as skipped. A store without
+     * own products yields an empty list.
      */
     static ProductPage select(List<Product> loaded, UUID storeId, String storeCode, boolean truncated) {
         String storeIdText = storeId.toString();
@@ -81,9 +81,6 @@ public class StoreProductSource {
         List<Product> own = loaded.stream()
                 .filter(product -> isOwn(product, storeIdText, normalizedCode))
                 .toList();
-        if (own.isEmpty()) {
-            return new ProductPage(loaded.stream().map(StoreProductSource::toRef).toList(), truncated, 0);
-        }
         return new ProductPage(own.stream().map(StoreProductSource::toRef).toList(), truncated,
                 loaded.size() - own.size());
     }

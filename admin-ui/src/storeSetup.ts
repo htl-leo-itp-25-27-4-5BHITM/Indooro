@@ -95,11 +95,11 @@ function beaconsStep(input: SetupInput): SetupStep {
 
 function catalogStep(input: SetupInput): SetupStep {
   const title = "Sortiment importiert";
-  const csv = link("CSV-Import öffnen", "/admin/next/products/", true);
+  const csv = link("CSV-Import öffnen", "/admin/next/products/");
   const count = input.storeProductCount;
   if (count === null) return { id: "catalog", title, status: "unknown", detail: "Die Produkte des Markts konnten nicht geladen werden.", link: null };
   if (count > 0) return { id: "catalog", title, status: "done", detail: "Der Markt hat eigene Produkte.", link: null };
-  const shared = input.readiness?.counts.products ?? 0;
+  const shared = input.readiness?.counts.skippedGlobalProducts ?? 0;
   if (shared > 0) {
     return { id: "catalog", title, status: "problem", detail: `Die Prüfung sieht ${plural(shared, "Produkt", "Produkte")}, aber keines gehört dem Markt (gemeinsamer Katalog ohne Markt). Sortiment dieses Markts per CSV importieren.`, link: csv };
   }

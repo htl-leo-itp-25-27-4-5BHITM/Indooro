@@ -22,6 +22,7 @@ import java.util.UUID;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -52,15 +53,16 @@ class StoreReadinessResourceTest {
         when(productSource.loadStoreProducts(any(), any()))
                 .thenReturn(new ProductPage(List.of(new ProductRef(1, "Milch", "520/1/1/1")), false, 4));
 
-        // No beacons are placed, so the only finding is the low-coverage warning: YELLOW, no blocking.
+        // No beacons are placed: NO_BEACONS blocks (RED) and the low-coverage warning comes in addition.
         given().get(path()).then().statusCode(200)
                 .body("storeId", equalTo(STORE.toString()))
-                .body("status", equalTo("YELLOW"))
-                .body("blockingCount", equalTo(0))
+                .body("status", equalTo("RED"))
+                .body("blockingCount", equalTo(1))
                 .body("counts.shelves", equalTo(1))
                 .body("counts.products", equalTo(1))
                 .body("counts.skippedGlobalProducts", equalTo(4))
-                .body("findings[0].code", equalTo("LOW_BEACON_COVERAGE"));
+                .body("findings[0].code", equalTo("NO_BEACONS"))
+                .body("findings[1].code", equalTo("LOW_BEACON_COVERAGE"));
         verify(access).requireStoreAccess(STORE);
     }
 
@@ -71,7 +73,9 @@ class StoreReadinessResourceTest {
         arrangeActiveLayout();
         when(productSource.loadStoreProducts(any(), any())).thenReturn(new ProductPage(List.of(), false));
 
-        given().get(path()).then().statusCode(200).body("status", equalTo("YELLOW"));
+        // No products and no beacons: both block.
+        given().get(path()).then().statusCode(200).body("status", equalTo("RED"))
+                .body("findings.code", hasItems("NO_STORE_PRODUCTS", "NO_BEACONS"));
     }
 
     @Test

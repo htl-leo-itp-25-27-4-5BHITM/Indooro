@@ -96,6 +96,25 @@ jobs:
     permissions:
       contents: read
 
+    # Echter OpenSearch für StoreIsolationOpenSearchIntegrationTest (Marktisolation mit Repo-Mapping).
+    # Der Test schlägt in der CI fehl, wenn der Dienst nicht erreichbar ist (kein stilles Überspringen).
+    services:
+      opensearch:
+        image: opensearchproject/opensearch:2.9.0
+        ports:
+          - 9200:9200
+        env:
+          discovery.type: single-node
+          plugins.security.disabled: "true"
+          DISABLE_INSTALL_DEMO_CONFIG: "true"
+          OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+        options: >-
+          --health-cmd "curl -fsS http://localhost:9200/_cluster/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+          --health-start-period 20s
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -124,6 +143,8 @@ jobs:
 
       - name: Test with Maven (tests must pass; no -DskipTests)
         working-directory: backend/indooro_server
+        env:
+          STORE_ISOLATION_OPENSEARCH_PORT: "9200"
         run: mvn -B verify
 
       - name: Test ops scripts

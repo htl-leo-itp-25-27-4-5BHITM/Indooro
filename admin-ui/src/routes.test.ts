@@ -4,8 +4,8 @@ import { candidateAccess, candidateNavigationPath, visibleRoutes } from "./route
 
 test("navigation follows current staff roles", () => {
   assert.equal(visibleRoutes("admin").length, 11);
-  assert.deepEqual(visibleRoutes("region-manager").map((route) => route.label), ["Dashboard", "Regionen", "Stores", "Beacons", "Layout Editor"]);
-  assert.deepEqual(visibleRoutes("store-manager").map((route) => route.label), ["Dashboard", "Stores", "Beacons", "Layout Editor"]);
+  assert.deepEqual(visibleRoutes("region-manager").map((route) => route.label), ["Dashboard", "Regionen", "Stores", "Beacons", "Produkte", "Layout Editor"]);
+  assert.deepEqual(visibleRoutes("store-manager").map((route) => route.label), ["Dashboard", "Stores", "Beacons", "Produkte", "Layout Editor"]);
   assert.deepEqual(visibleRoutes("unknown"), []);
 });
 
@@ -30,7 +30,9 @@ test("candidate direct links deny unknown roles and unknown paths", () => {
   assert.equal(candidateAccess("/admin/next/search-index/", "store-manager"), "forbidden");
   assert.equal(candidateAccess("/admin/next/search-index/", "viewer"), "forbidden");
   assert.equal(candidateAccess("/admin/next/products/", "admin"), "allowed");
-  assert.equal(candidateAccess("/admin/next/products/", "region-manager"), "forbidden");
+  assert.equal(candidateAccess("/admin/next/products/", "region-manager"), "allowed");
+  assert.equal(candidateAccess("/admin/next/products/", "store-manager"), "allowed");
+  assert.equal(candidateAccess("/admin/next/products/", "viewer"), "forbidden");
   assert.equal(candidateAccess("/admin/next/categories/", "admin"), "allowed");
   assert.equal(candidateAccess("/admin/next/editor/", "store-manager", "store-2", "store-1"), "forbidden");
   assert.equal(candidateAccess("/admin/next/editor/", "admin"), "allowed");

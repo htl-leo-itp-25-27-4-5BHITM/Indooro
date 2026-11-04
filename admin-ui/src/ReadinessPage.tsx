@@ -162,7 +162,7 @@ export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser
           <div><dt>Regale</dt><dd>{report.counts.shelves}</dd></div>
           <div><dt>Eingänge</dt><dd>{report.counts.entrances}</dd></div>
           <div><dt>Produkte</dt><dd>{report.counts.products}</dd></div>
-          {report.counts.skippedGlobalProducts > 0 && <div className="wide"><dt>Globale Produkte</dt><dd>{report.counts.skippedGlobalProducts} nicht geprüft (die Filiale hat eigene Produkte)</dd></div>}
+          {report.counts.skippedGlobalProducts > 0 && <div className="wide"><dt>Globale Produkte</dt><dd>{report.counts.skippedGlobalProducts} nicht geprüft (Produkte ohne Markt zählen nicht)</dd></div>}
           <div><dt>Beacons platziert</dt><dd>{report.counts.placedBeacons}</dd></div>
           <div><dt>Beacons zugewiesen</dt><dd>{report.counts.assignedBeacons}</dd></div>
           {ruleText(report) && <div className="wide"><dt>Abdeckungsregel</dt><dd>{ruleText(report)}</dd></div>}

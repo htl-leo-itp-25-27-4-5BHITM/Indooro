@@ -221,7 +221,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List product documents (match_all). */
+        /**
+         * List product documents (match_all).
+         * @description List product documents. Without storeId and storeCode (and without a configured default store) the read is fail-closed: only legacy documents without storeCode are returned, never products of a store.
+         */
         get: operations["listProducts"];
         put?: never;
         /** Index one product (legacy write path). */
@@ -239,7 +242,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Fuzzy product search with optional store filter. */
+        /**
+         * Fuzzy product search with optional store filter.
+         * @description Fuzzy product search. Without storeId and storeCode (and without a configured default store) the read is fail-closed: only legacy documents without storeCode are returned, never products of a store.
+         */
         get: operations["searchProducts"];
         put?: never;
         post?: never;
@@ -256,7 +262,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Product by id. */
+        /**
+         * Product by id.
+         * @description Product by id. Without storeId and storeCode (and without a configured default store) the read is fail-closed: only legacy documents without storeCode are returned, never products of a store.
+         */
         get: operations["getProduct"];
         put?: never;
         post?: never;
@@ -1230,7 +1239,7 @@ export interface paths {
         };
         /**
          * Pilot readiness of the store's active layout, products and beacons.
-         * @description RED when a blocking finding exists, YELLOW when only warnings exist, GREEN otherwise. Products are matched to shelves by exact category base and meter (31 never matches 310). The store's products are those whose storeId equals the store id or whose storeCode equals the store code. Without an active layout the response is HTTP 200 with a NO_ACTIVE_LAYOUT blocking finding. The product scan stops after 20 pages of 500 and then reports PRODUCT_LIMIT_REACHED.
+         * @description RED when a blocking finding exists, YELLOW when only warnings exist, GREEN otherwise. Products are matched to shelves by exact category base and meter (31 never matches 310). Only the store's own products are checked: those whose storeId equals the store id or whose storeCode equals the store code. Global catalog products without a store are never checked; they are reported in counts.skippedGlobalProducts. A store with an active layout is RED (blocking) when it has no shelves (NO_SHELVES), no own products (NO_STORE_PRODUCTS) or no placed beacon with a complete identity (NO_BEACONS). Without an active layout the response is HTTP 200 with a NO_ACTIVE_LAYOUT blocking finding. The product scan stops after 20 pages of 500 and then reports PRODUCT_LIMIT_REACHED.
          */
         get: operations["getStoreReadiness"];
         put?: never;
@@ -2258,7 +2267,7 @@ export interface components {
                 assignedBeacons?: number;
                 walkableCells?: number;
                 lowCoverageCells?: number;
-                /** @description Global catalog products (neither storeId nor storeCode) that were left out because the store has its own products; 0 when the global catalog was checked. */
+                /** @description Global catalog products (neither storeId nor storeCode) that were left out; only the store's own products are checked. */
                 skippedGlobalProducts?: number;
             };
             findings: components["schemas"]["ReadinessFinding"][];
@@ -2275,7 +2284,7 @@ export interface components {
             /** @enum {string} */
             severity: "BLOCKING" | "WARNING";
             /** @enum {string} */
-            code: "NO_ACTIVE_LAYOUT" | "ENTRANCE_COUNT" | "PRODUCT_NO_SHELF" | "TARGET_SHELF_WITHOUT_LABEL" | "SHELF_WITHOUT_PRODUCTS" | "DUPLICATE_PRODUCT_ID" | "BEACON_ASSIGNED_NOT_PLACED" | "BEACON_WITHOUT_IDENTITY" | "LOW_BEACON_COVERAGE" | "GRID_SIZE_IMPLAUSIBLE" | "PRODUCT_LIMIT_REACHED";
+            code: "NO_ACTIVE_LAYOUT" | "NO_SHELVES" | "NO_STORE_PRODUCTS" | "NO_BEACONS" | "ENTRANCE_COUNT" | "PRODUCT_NO_SHELF" | "TARGET_SHELF_WITHOUT_LABEL" | "SHELF_WITHOUT_PRODUCTS" | "DUPLICATE_PRODUCT_ID" | "BEACON_ASSIGNED_NOT_PLACED" | "BEACON_WITHOUT_IDENTITY" | "LOW_BEACON_COVERAGE" | "GRID_SIZE_IMPLAUSIBLE" | "PRODUCT_LIMIT_REACHED" | "COVERAGE_NOT_COMPUTED" | "BEACON_UUID_ALL_ZERO" | "BEACON_MAJOR_MINOR_MISSING" | "BEACON_IDENTITY_DUPLICATE" | "BEACON_IDENTITY_MISMATCH" | "LAYOUT_BEACON_NOT_REGISTERED";
             /** @description German text for the editor and the checklist. */
             message: string;
             /** @description Layout element id as text. */

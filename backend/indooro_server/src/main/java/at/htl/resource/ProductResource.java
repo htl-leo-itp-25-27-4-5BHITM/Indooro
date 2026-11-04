@@ -56,7 +56,7 @@ public class ProductResource {
     @Inject
     AuditLogService auditLogService;
 
-    /** Store used for read requests that name no store. Empty = no default, old behavior (no store filter). */
+    /** Store used for read requests that name no store. Empty = no default: such reads see only legacy documents without storeCode (fail-closed). */
     @ConfigProperty(name = "indooro.catalog.default-store-code")
     Optional<String> defaultStoreCode;
 
@@ -240,12 +240,15 @@ public class ProductResource {
         }
     }
 
-    /** Explicit store parameter wins; without any store parameter the configured default store applies (if set). */
     /** Out-of-range sizes are clamped to the bounds instead of rejected; a missing size keeps the default. */
     static int clamp(Integer value, int min, int max) {
         return Math.min(Math.max(value == null ? min : value, min), max);
     }
 
+    /**
+     * Explicit store parameter wins; without any store parameter the configured default store applies (if set).
+     * Without both, null is returned and OpenSearchService restricts the read to documents without storeCode.
+     */
     private String effectiveStoreCode(String storeId, String storeCode) {
         if (isBlank(storeId) && isBlank(storeCode)) {
             return defaultStoreCode

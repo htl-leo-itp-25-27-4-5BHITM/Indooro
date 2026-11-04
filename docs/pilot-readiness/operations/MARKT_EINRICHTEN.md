@@ -21,7 +21,7 @@ Soll die Marktleitung selbst im Admin arbeiten, braucht sie einen Keycloak-Benut
 2. **Layout aktiv.** Im Editor das Layout zeichnen (genau ein Eingang), speichern und **veröffentlichen**. Solange kein Layout aktiv ist, sehen Kundinnen und Kunden nur das Standard-Layout. Die Checkliste meldet „Problem“, wenn die App trotz aktivem Layout das Standard-Layout liefert.
 3. **Regale beschriftet.** Im Editor jedes Regal mit Kategorie, Meter und Bezeichnung `Gang <n> · <links|rechts> · <Warengruppe>` versehen. Ein Regal, das Produkte ansteuern, aber keine Bezeichnung hat, ist ein Problem.
 4. **Beacons registriert und platziert.** Seite „Beacons“: Beacons mit UUID, Major und Minor anlegen und dem Markt zuordnen. Dann im Editor jedes Beacon an seiner Montageposition setzen. „Problem“ heißt: UUID/Major/Minor fehlt, ist doppelt oder passt nicht zum Layout. „Offen“ heißt: Beacon fehlt oder ist noch nicht im Layout.
-5. **Sortiment importiert.** Admin → Produkte → CSV-Import (nur Administrator). Zuerst die Vorschau lesen, erst dann importieren. Die Checkliste zählt nur Produkte, die diesem Markt gehören.
+5. **Sortiment importiert.** Admin → Produkte → CSV-Import (Administrator, Regionsleitung und Marktleitung; die Märkte zur Auswahl sind auf die eigenen begrenzt). Zuerst die Vorschau lesen, erst dann importieren. Die Checkliste zählt nur Produkte, die diesem Markt gehören.
 6. **Suche findet Produkte des Markts.** Die Checkliste sucht nach dem ersten Produkt des Markts. „Problem“ heißt: Das Produkt ist importiert, die Suche findet es nicht. Dann Admin → Suchindex (nur Administrator), Index prüfen und neu aufbauen; Ablauf in `SEARCH_REINDEX.md`.
 7. **Bereitschaftsprüfung ohne blockierende Befunde.** Seite „Pilot-Bereitschaft“. Ziel: Ampel nicht rot. Warnungen bleiben erlaubt, gehören aber in die Checkliste des Termins.
 
@@ -32,6 +32,9 @@ Jeder Befund hat einen Code, einen Satz und, wo möglich, einen Link. **Blockier
 | Befund | Bedeutung | Was tun |
 |---|---|---|
 | `NO_ACTIVE_LAYOUT` | Kein Layout veröffentlicht | Schritt 2 |
+| `NO_SHELVES` | Das Layout hat keine Regale | Regale im Layout-Editor anlegen und beschriften (Schritt 3) |
+| `NO_STORE_PRODUCTS` | Der Markt hat keine eigenen Produkte; Produkte ohne Markt (alter gemeinsamer Katalog) zählen nicht | Sortiment per CSV-Import laden (Schritt 5) |
+| `NO_BEACONS` | Im Layout ist kein Beacon mit UUID, Major und Minor platziert | Beacons zuordnen und im Editor platzieren (Schritt 4) |
 | `ENTRANCE_COUNT` | Nicht genau ein Eingang | Eingang im Editor korrigieren |
 | `PRODUCT_NO_SHELF` | Layout-Code eines Produkts trifft kein Regal | Regal anlegen oder Produkt in der CSV korrigieren |
 | `TARGET_SHELF_WITHOUT_LABEL` | Regal mit Produkten ohne Bezeichnung | Schritt 3 |

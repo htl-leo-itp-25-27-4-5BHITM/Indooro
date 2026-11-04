@@ -8,6 +8,9 @@
 # - #144: paging bounds (products/search size 1..100, products size 1..500, layout/history limit 1..50).
 #   Clients stay within them (iOS uses 80 and 500, admin-ui defaults lower).
 # - Beacon major/minor bounded to 0..65535 (iBeacon value range; larger values were never valid).
+#
+# Accepted 2026-11-04 for PR #204 (T1): 9 response enum values added to readiness findings (3 new blocking
+# codes, 6 existing codes that were missing from the enum). Only admin-ui reads this API; iOS and customer web do not.
 GET /api/layout/history for the `query` request parameter `limit`, the max was set to `50.00`
 GET /api/layout/history for the `query` request parameter `limit`, the min was set to `1.00`
 GET /api/mobile/stores/{storeId}/layout/current the `layout/elements/items/category` response's property `type` changed from `string, integer` to `string, null` for status `200`
@@ -33,6 +36,15 @@ GET /api/stores/{storeId}/layout/versions/{layoutId} the `layout/elements/items/
 GET /api/stores/{storeId}/layout/versions/{layoutId} the `layout/elements/items/meter` response's property `type` changed from `string, integer` to `integer, null` for status `200`
 GET /api/stores/{storeId}/layout/versions/{layoutId} the response property `layout/elements/items/category` became nullable for the status `200`
 GET /api/stores/{storeId}/layout/versions/{layoutId} the response property `layout/elements/items/meter` became nullable for the status `200`
+GET /api/stores/{storeId}/readiness added the new `BEACON_IDENTITY_DUPLICATE` enum value to the `findings/items/code` response property for the response status `200`
+GET /api/stores/{storeId}/readiness added the new `BEACON_IDENTITY_MISMATCH` enum value to the `findings/items/code` response property for the response status `200`
+GET /api/stores/{storeId}/readiness added the new `BEACON_MAJOR_MINOR_MISSING` enum value to the `findings/items/code` response property for the response status `200`
+GET /api/stores/{storeId}/readiness added the new `BEACON_UUID_ALL_ZERO` enum value to the `findings/items/code` response property for the response status `200`
+GET /api/stores/{storeId}/readiness added the new `COVERAGE_NOT_COMPUTED` enum value to the `findings/items/code` response property for the response status `200`
+GET /api/stores/{storeId}/readiness added the new `LAYOUT_BEACON_NOT_REGISTERED` enum value to the `findings/items/code` response property for the response status `200`
+GET /api/stores/{storeId}/readiness added the new `NO_BEACONS` enum value to the `findings/items/code` response property for the response status `200`
+GET /api/stores/{storeId}/readiness added the new `NO_SHELVES` enum value to the `findings/items/code` response property for the response status `200`
+GET /api/stores/{storeId}/readiness added the new `NO_STORE_PRODUCTS` enum value to the `findings/items/code` response property for the response status `200`
 POST /api/beacons the `major` request property's max was set to `65535.00`
 POST /api/beacons the `major` request property's min was set to `0.00`
 POST /api/beacons the `minor` request property's max was set to `65535.00`
