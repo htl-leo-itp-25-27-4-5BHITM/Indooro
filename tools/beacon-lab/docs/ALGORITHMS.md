@@ -95,12 +95,12 @@ Fehlgrund z. B. `zu wenige Beacons (2 < 3)`.
   `d_m` wird auf `[distanceClampMinM, distanceClampMaxM]` (Standard 0,35 … 11 m) begrenzt (sehr schwache RSSI ⇒ riesige Distanzen, nicht ungeklammert verwendbar)
   und mit `metersPerUnit` in LE umgerechnet.
 - **Optimierung:** Minimiere `Σ w_i ρ(|x − a_i| − d_i)` mit Huber-ρ (`δ = huberDeltaM / metersPerUnit`; `huberDeltaM = 0` ⇒ Summe der Fehlerquadrate)
-  und statischem Gewicht `w_i = 1 / max(d_m, 0,4)` (der Distanzfehler wächst mit der Distanz). Levenberg-Marquardt/IRLS, höchstens **20 Iterationen**
+  und statischem Gewicht `w_i = 1 / max(d_m, 0,4)` (der Distanzfehler wächst mit der Distanz). Levenberg-Marquardt/IRLS, höchstens **100 Iterationen** (Schritt-Toleranz 1e-3 LE)
   insgesamt; bei aktivem Huber zuerst 6 Iterationen quadratisch (Aufwärmen), dann Huber. Nur kostensenkende Schritte werden akzeptiert.
   Startwert: Inverse-Distanz-Schwerpunkt.
 - **Voraussetzungen:** ≥ 3 Beacons **und** nicht-kollineare Geometrie: `sqrt(λ₂/λ₁)` der Streuung der Beacon-Positionen < 0,01 ⇒
   Fehlschlag `degenerierte Geometrie (Beacons kollinear)` (bei Kollinearität ist die Lösung wegen der Spiegelung mehrdeutig). Gültiger Maßstab (`metersPerUnit > 0`).
-- **Fehlschläge:** zu wenige Beacons, kollinear, ungültiges Modell/Maßstab, NaN, nicht konvergiert (20 Iterationen).
+- **Fehlschläge:** zu wenige Beacons, kollinear, ungültiges Modell/Maßstab, NaN, nicht konvergiert (100 Iterationen).
   Es wird **nicht** auf den Grundriss geklemmt – Positionen außerhalb sind ein sichtbares Symptom.
 - **Annahmen:** log-distance-Modell mit einem Exponenten für den ganzen Markt; Fehler unabhängig zwischen Beacons; Gewichtung `1/d`. Regale, Körperabschattung,
   Mehrwegeausbreitung verletzen das – daher die Fehlerverteilung (Ausreißer) und `Huber`.
@@ -111,6 +111,21 @@ Fehlgrund z. B. `zu wenige Beacons (2 < 3)`.
 - **Kalibrierung:** `calibrateFromRuns` (`pathloss.ts`) passt `A` und `n` per OLS `rssi = A − 10 n log10(d)` an (≥ 10 Paare, ≥ 2 verschiedene Distanzen, `d ≥ 0,1 m`),
   global und je Beacon; nur aus Läufen mit `role = "calibration"` und Haltepunkten (siehe `METRICS.md`/Referenz). Ergebnis enthält `r2`, `residualStdDb`, `sampleCount`.
   Warnung, wenn der Maßstab unbestätigt ist (Meter beruhen dann auf der Konvention).
+
+### 6a. Zensierung durch die Empfangsgrenze (Kalibrierung)
+
+Ein Empfänger meldet nur Pakete oberhalb seiner Empfindlichkeit (in der Simulation −100 dBm). Ferne Beacons
+erscheinen dann nur, wenn die Ausbreitung zufällig günstig ist. Die beobachteten RSSI-Werte sind in großer Distanz
+also systematisch zu stark, und der Fit unterschätzt `n`. Das ist ein reales Problem und kein Simulationsartefakt.
+
+- `calibrateFromRuns(runs, campaign, cfg, { maxDistanceM })` begrenzt die verwendeten Beacon-Haltepunkt-Paare
+  auf eine Maximaldistanz.
+- `detectCensoring` vergleicht die Empfangsrate (Samples/s) jedes Beacon-Haltepunkt-Paars mit dem Median im
+  Nahbereich (≤ 5 m). Ab der Distanz, ab der mindestens die Hälfte der Paare unter 50 % dieser Rate liegt, gibt die
+  Kalibrierung eine **Warnung** mit empfohlener Maximaldistanz aus.
+- Beleg (synthetische Demo-Kampagne, simuliert A = −70 dBm, n = 2,6): ohne Grenze A = −74,1 / n = 2,05 mit Warnung,
+  mit `maxDistanceM = 8` A = −70,6 / n = 2,54 ohne Warnung (`src/integration/pipeline.integration.test.ts`).
+- Der Lab wählt die Grenze nicht automatisch. Die Entscheidung bleibt beim Team und wird im Bericht dokumentiert.
 
 ## 7. kNN-Fingerprinting (`knn-fingerprint`)
 

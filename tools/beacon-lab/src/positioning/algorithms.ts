@@ -147,7 +147,8 @@ function centroidOf(items: { p: Point; w: number }[]): Point {
 
 /** Smallest sqrt(lambda2/lambda1) of the beacon position scatter that still counts as non-collinear. */
 export const COLLINEARITY_RATIO = 0.01;
-const TRILATERATION_MAX_ITER = 20;
+/** IRLS with Huber weights converges only linearly – 100 iterations is a generous but bounded budget. */
+const TRILATERATION_MAX_ITER = 100;
 
 /** Ratio of the principal standard deviations of the 2D point set (0 = collinear / coincident). */
 export function geometryRatio(points: readonly Point[]): number {
@@ -271,7 +272,7 @@ function levenbergMarquardt(x0: Point, rs: readonly Range[], delta: number, maxI
  *  2. Seed: inverse-distance weighted centroid (like BeaconPositionSolver.swift).
  *  3. Levenberg-Marquardt on  sum_i w_i * rho(|x - a_i| - d_i)  with Huber rho (delta = huberDeltaM / metersPerUnit;
  *     0 = plain least squares), static weight w_i = 1/max(d_i, 0.4 m) (distance error grows with distance),
- *     iteratively reweighted. Max 20 iterations in total (first 6 as plain least squares warm-up when Huber is on).
+ *     iteratively reweighted. Max 100 iterations in total, step tolerance 1e-3 LE (first 6 as plain least squares warm-up when Huber is on).
  *     Only cost-reducing steps are accepted.
  *  4. Requires >= 3 beacons AND non-collinear geometry (sqrt(lambda2/lambda1) of the position scatter >= 0.01).
  * Fails with a reason on degenerate geometry, invalid scale / model, NaN or non-convergence.
@@ -305,7 +306,8 @@ const trilateration: PositioningAlgorithm = {
 
     const delta = Number.isFinite(ctx.params.huberDeltaM) && ctx.params.huberDeltaM > 0 ? ctx.params.huberDeltaM / mpu : 0;
     const seed = centroidOf(ranges.map((r) => ({ p: r.p, w: 1 / Math.max(r.d, 1e-9) })));
-    const tol = 1e-5 * Math.max(1, ...ranges.map((r) => r.d));
+    // Step tolerance 1e-3 layout units (~1 mm at 1 m/LE): far below any achievable BLE precision.
+    const tol = 1e-3;
 
     // Stage 1: plain least squares (a few iterations) brings the estimate close to the data;
     // stage 2: Huber IRLS from there converges quickly when most residuals are small (and at once for
@@ -321,7 +323,7 @@ const trilateration: PositioningAlgorithm = {
     if (sol.nan || !Number.isFinite(sol.x.x) || !Number.isFinite(sol.x.y)) {
       return { position: null, reason: "numerisch instabil (NaN in der Ausgleichsrechnung)" };
     }
-    if (!sol.converged) return { position: null, reason: "Ausgleichsrechnung nicht konvergiert (20 Iterationen)" };
+    if (!sol.converged) return { position: null, reason: `Ausgleichsrechnung nicht konvergiert (${TRILATERATION_MAX_ITER} Iterationen)` };
     return { position: sol.x };
   },
 };
