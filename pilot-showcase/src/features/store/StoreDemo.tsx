@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Maximize2, Radio } from "lucide-react";
+import { Box, Map as MapIcon, Maximize2, Radio } from "lucide-react";
 import { Tag } from "../../components/ui/Tag";
 import { entranceCell } from "../../domain/routing";
 import { productsOnShelf, shelfName } from "../../data";
@@ -11,6 +11,19 @@ import { ShoppingList } from "./ShoppingList";
 import { StoreMap } from "./StoreMap";
 import { useStoreDemo } from "./useStoreDemo";
 import type { DemoTab } from "./useStoreDemo";
+import { demoBridge, type ViewMode } from "./demoBridge";
+import { Store3DView, supportsWebGL } from "../store3d";
+
+/** ?ansicht=2d|3d forces a view; otherwise 3D when WebGL is available and motion is not reduced. */
+function initialViewMode(reduce: boolean): ViewMode {
+  try {
+    const forced = new URLSearchParams(window.location.search).get("ansicht");
+    if (forced === "2d" || forced === "3d") return forced;
+  } catch {
+    /* ignore */
+  }
+  return !reduce && supportsWebGL() ? "3d" : "2d";
+}
 
 const EMPTY_SET: ReadonlySet<string> = new Set();
 
@@ -18,6 +31,17 @@ export function StoreDemo() {
   const demo = useStoreDemo();
   const reduce = useReducedMotion();
   const { market, sim, route } = demo;
+  const [viewMode, setViewMode] = useState<ViewMode>(() => initialViewMode(!!reduce));
+
+  useEffect(() => {
+    demoBridge.publish({ ...demo, viewMode, setViewMode });
+  });
+  useEffect(() => () => demoBridge.publish(null), []);
+
+  const selectedLocation = useMemo(() => {
+    const p = demo.selectedProductId ? market.products.find((x) => x.id === demo.selectedProductId) : undefined;
+    return p ? (demo.locationOf(p) ?? null) : null;
+  }, [demo, market]);
 
   const productById = useMemo(() => new Map(market.products.map((p) => [p.id, p])), [market]);
   const start = useMemo(() => entranceCell(market.layout), [market]);
@@ -85,27 +109,64 @@ export function StoreDemo() {
           </div>
         </div>
 
-        <StoreMap
-          market={market}
-          selectedProductId={demo.selectedProductId}
-          listLocations={demo.listPins}
-          activeShelfId={demo.activeShelf?.id ?? null}
-          showBeacons={demo.showBeacons}
-          focusRect={demo.focusRect}
-          onShelfClick={(shelf) => {
-            demo.setActiveShelf(shelf);
-            demo.setTab("suche");
-          }}
-        >
-          <RouteLayer
-            route={route}
-            position={sim.position}
-            activeStopIndex={sim.activeStopIndex}
-            reachedStopIds={sim.reachedStopIds ?? EMPTY_SET}
-            progress={sim.progress}
-            start={start}
-          />
-        </StoreMap>
+        <div className="mb-3 flex items-center gap-2">
+          <div role="radiogroup" aria-label="Ansicht wählen" className="inline-flex rounded-full bg-white/5 p-1 ring-1 ring-white/10" data-testid="view-switch">
+            {(["3d", "2d"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="radio"
+                aria-checked={viewMode === m}
+                data-testid={`view-${m}`}
+                onClick={() => setViewMode(m)}
+                className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition-colors ${viewMode === m ? "bg-white text-ink-950" : "text-ink-200 hover:text-white"}`}
+              >
+                {m === "3d" ? <Box className="size-4" aria-hidden /> : <MapIcon className="size-4" aria-hidden />}
+                {m === "3d" ? "3D-Ansicht" : "Grundriss"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {viewMode === "3d" ? (
+          <Suspense fallback={<div className="grid aspect-[40/26] place-items-center rounded-3xl bg-ink-800 text-sm text-ink-200">3D-Ansicht wird geladen …</div>}>
+            <Store3DView
+              market={market}
+              route={route}
+              sim={sim}
+              selected={selectedLocation}
+              listPins={demo.listPins}
+              activeShelfId={demo.activeShelf?.id ?? null}
+              showBeacons={demo.showBeacons}
+              onShelfClick={(shelf) => {
+                demo.setActiveShelf(shelf);
+                demo.setTab("suche");
+              }}
+            />
+          </Suspense>
+        ) : (
+          <StoreMap
+            market={market}
+            selectedProductId={demo.selectedProductId}
+            listLocations={demo.listPins}
+            activeShelfId={demo.activeShelf?.id ?? null}
+            showBeacons={demo.showBeacons}
+            focusRect={demo.focusRect}
+            onShelfClick={(shelf) => {
+              demo.setActiveShelf(shelf);
+              demo.setTab("suche");
+            }}
+          >
+            <RouteLayer
+              route={route}
+              position={sim.position}
+              activeStopIndex={sim.activeStopIndex}
+              reachedStopIds={sim.reachedStopIds ?? EMPTY_SET}
+              progress={sim.progress}
+              start={start}
+            />
+          </StoreMap>
+        )}
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 px-1 text-xs text-ink-200">
           <Tag kind="fiktiv" onDark>

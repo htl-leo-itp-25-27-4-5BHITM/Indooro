@@ -5,7 +5,9 @@ export const isMobile = (info: TestInfo) => info.project.name === "mobile";
 
 /** Opens the page and waits until the interactive demo is mounted. */
 export async function openDemo(page: Page, query = "") {
-  await page.goto(`/${query}`);
+  // The 2D floor plan carries the precise test ids; the 3D view has its own spec.
+  const q = query.startsWith("?") ? `${query}&ansicht=2d` : `?ansicht=2d${query}`;
+  await page.goto(`/${q}`);
   await expect(page.getByTestId("store-demo")).toBeAttached();
   await page.locator("#demo").scrollIntoViewIfNeeded();
 }
