@@ -1,1 +1,91 @@
+@import "@fontsource-variable/inter";
 @import "tailwindcss";
+
+/*
+ * Indooro pilot showcase design tokens.
+ * Derived from the Indooro product film (indooro-motion/src/design/tokens.ts: ink, mint, teal, amber)
+ * and the logo (green #309048, pin red #E03830). Mint is an accent on dark surfaces only;
+ * on light surfaces the accessible accent #167768 (admin-ui) is used for text.
+ */
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+
+  /* Dark surfaces (hero, demo, map) */
+  --color-ink-950: #050c10;
+  --color-ink-900: #071117;
+  --color-ink-850: #0a161c;
+  --color-ink-800: #0d1b22;
+  --color-ink-700: #11242b;
+  --color-ink-600: #18313a;
+  --color-ink-500: #29454d;
+  --color-ink-400: #31515a;
+  --color-ink-300: #5a777a;
+  --color-ink-200: #9db0b2;
+  --color-ink-100: #d6e0e0;
+
+  /* Light surfaces */
+  --color-paper: #f4f7f5;
+  --color-paper-2: #eaf0ec;
+  --color-line: #dce5e1;
+  --color-text: #0f1f17;
+  --color-muted: #50645a;
+
+  /* Brand accents */
+  --color-mint: #63e6b4;
+  --color-mint-soft: #b8f5dc;
+  --color-teal: #27b9ab;
+  --color-accent: #167768; /* accessible on paper */
+  --color-accent-strong: #0f5e52;
+  --color-brand-green: #309048;
+  --color-pin: #e03830;
+  --color-amber: #e8b86d;
+  --color-warn: #f2a541;
+  --color-danger: #e5484d;
+  --color-ok: #3ccf8e;
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-quart: cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  body {
+    @apply bg-paper text-text font-sans;
+    font-feature-settings: "cv11", "ss01", "ss03";
+    overflow-x: hidden;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--color-mint) 45%, transparent);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-teal);
+    outline-offset: 2px;
+  }
+  [id] {
+    scroll-margin-top: 5rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
