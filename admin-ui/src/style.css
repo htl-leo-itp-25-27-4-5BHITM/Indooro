@@ -301,3 +301,11 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 .search-index-page { display: grid; gap: 1rem; }
 .search-index-page table { width: 100%; border-collapse: collapse; text-align: left; }
 .search-index-page th, .search-index-page td { border-bottom: 1px solid var(--border-subtle); padding: .7rem .5rem; }
+
+/* Zugänge (access assignments) and the Keycloak id on the forbidden page */
+.access-page code.subject { font-size: .8rem; color: var(--text-muted); word-break: break-all; }
+.forbidden-identity input { min-height: 40px; border: 1px solid var(--border-input); border-radius: .5rem; padding: .4rem .6rem; font: inherit; font-family: ui-monospace, monospace; }
+.forbidden-identity .toolbar { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+/* Compact mobile navigation: eleven admin entries must leave the editor canvas in the first viewport. */
+@media (max-width: 700px) { .sidebar { gap: .1rem; } .sidebar a { padding: .45rem .6rem; } }
