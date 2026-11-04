@@ -267,6 +267,8 @@ Einmaliger lokaler Nachweis, kein CI-Test. Er ersetzt T7 nicht.
 
 ## F. Priorisierter Sprint-Restaufwand
 
+**Stand 2026-11-04:** T1 (#204), T3 (#200), T7 (#203), T8 (#206), T9 Dateien (#201), T13 (#205) und T14 (#202) sind auf `main` gemergt. T2 (#207) ist fertig und wartet nur auf einen macOS-Runner für `swift-tests`. T4 führt Claude Code nach dem Merge von #207 aus (Entscheidung Erik), T10 folgt direkt danach (`docs/release-2026-11-04`). Offen für Erik/Team: T5, T6, Generalprobe.
+
 | ID | Prio | Task | Wer | Aufwand | Abhängig von |
 |---|---|---|---|---|---|
 | T0 | erledigt | Entscheidung: Betreiber = Indooro-Admin (2026-10-26) | Erik | – | – |
