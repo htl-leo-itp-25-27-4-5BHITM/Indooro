@@ -58,7 +58,7 @@ export function ReplayPage() {
 
       {state?.error ? (
         <Callout tone="danger" title="Replay nicht möglich">
-          <span data-testid="replay-error">{state.error}</span>
+          <span data-testid="replay-page-error">{state.error}</span>
         </Callout>
       ) : state?.result ? (
         <>

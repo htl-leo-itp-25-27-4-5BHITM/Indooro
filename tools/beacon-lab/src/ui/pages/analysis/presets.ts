@@ -82,10 +82,10 @@ export interface ParsedSweepValues {
   errors: string[];
 }
 
-/** Parses "1, 2; 3 4" (separators: comma, semicolon, whitespace; decimals with a dot or a comma between digits). */
+/** Parses "1, 2; 3 4". Separators: comma, semicolon, whitespace. Decimal point is a dot; a decimal comma is only recognised when values are separated by ";" or whitespace ("0,5; 1,5"). */
 export function parseSweepValues(text: string, param: SweepParam): ParsedSweepValues {
   const errors: string[] = [];
-  // a comma between two digits is a decimal comma only if no other separators are used ("0,5"); otherwise it separates values
+  // "0,5; 1,5": with ; or whitespace as separators a comma between digits is a decimal comma; "0,5" alone is two values
   const normalized = /[;\s]/.test(text.trim()) ? text.replace(/(\d),(\d)/g, "$1.$2") : text;
   const tokens = normalized
     .split(/[\s;,]+/)
