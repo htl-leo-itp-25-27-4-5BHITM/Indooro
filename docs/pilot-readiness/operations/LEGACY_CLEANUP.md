@@ -2,12 +2,11 @@
 
 Anleitung für Erik. Claude Code führt diese Schritte nicht aus: Index-Löschungen bleiben beim Menschen mit Cluster-Zugang.
 
-## Warum nicht `migrate_products_to_store.py --delete-legacy`
+## Zwei Wege: curl oder Skript
 
-`CATALOG_MIGRATION.md` Schritt 6 funktioniert live nicht. Es gibt zwei Gründe (geprüft am 2026-11-04, nur lesend):
+Dieselbe Löschung geht von Hand (Schritte 3 bis 5 unten) oder mit `migrate_products_to_store.py --delete-legacy`. Das Skript wurde angepasst (geprüft am 2026-11-04, nur lesend): Es arbeitet auf `--index` (Standard `products_live`), löst den Alias auf den konkreten Index (`products_v1`) auf und löscht dort. Vor der Änderung zählte und löschte es fest im Index `products`, den das Backend seit 2026-10-19 nicht mehr liest.
 
-1. **Falscher Index.** Das Skript zählt und löscht fest im Index `products`. Das Backend liest seit 2026-10-19 den Alias `products_live`, und der zeigt auf `products_v1`. Das Skript würde also den alten Index ändern, und die Schreibsperre (409) bliebe bestehen.
-2. **Die Sicherung im Skript greift.** Das Skript löscht nur, wenn mindestens so viele Dokumente im Markt liegen wie Dokumente ohne Markt existieren. Live liegen 74 Dokumente in `SPAR-Leonding-002`, aber 153 sind ohne `storeCode`. Das Skript bricht deshalb mit Exit 1 ab.
+Die Sicherung des Skripts (Markt-Dokumente ≥ Legacy-Dokumente) greift live weiter: 74 Dokumente in `SPAR-Leonding-002`, 153 ohne `storeCode`. Hier ist das gewollt anders. Mit `--allow-unmigrated-legacy --backup <Rohsicherung>` entfällt nur diese Prüfung, und nur wenn die Sicherung jede der 153 Legacy-IDs enthält (siehe „Löschen mit dem Skript“).
 
 Die 79 Altprodukte ohne passendes Regal im Testraum werden in keinem Markt gebraucht. Sie bleiben im alten Index `products` und in der Sicherung erhalten.
 
@@ -34,7 +33,7 @@ Alle Befehle im Repo-Wurzelverzeichnis. Zwei Terminals.
 python3 scripts/ops/backup_postgres.py --namespace student-it220209
 ```
 
-`export_products.py` reicht hier nicht mehr: Seit Release `4cb1e03` liefert `GET /api/products` ohne Markt nur noch die Altdokumente. Den ganzen Index deshalb direkt sichern (Schritt 3).
+`export_products.py --base-url` reicht hier nicht: Seit Release `4cb1e03` liefert `GET /api/products` ohne Markt nur noch die Altdokumente. Den ganzen Index sichert `export_products.py --opensearch-url` (nach Schritt 2) oder die Rohsicherung in Schritt 3.
 
 ### 2. Port-Forward (Terminal 2, offen lassen)
 
@@ -89,6 +88,19 @@ Danach den Port-Forward in Terminal 2 beenden.
 
 In `docs/pilot-readiness/releases/RELEASE_2026-11-04.md` einen Nachtrag schreiben: Zählungen vorher und nachher, Name der Rohsicherung, Smoke-Check-Ergebnis.
 
+## Löschen mit dem Skript
+
+Statt Schritt 4 von Hand. Port-Forward (Schritt 2) offen. Die Vollsicherung des Index (Schritt 1 oder 3) liegt in `backups/`:
+
+```bash
+python3 scripts/ops/export_products.py --opensearch-url http://127.0.0.1:9200   # -> backups/<UTC-Datum>-products-all.ndjson
+python3 scripts/ops/migrate_products_to_store.py --store-code SPAR-Leonding-002 --delete-legacy \
+    --opensearch-url http://127.0.0.1:9200 --allow-unmigrated-legacy \
+    --backup backups/<UTC-Datum>-products-all.ndjson            # Dry-Run
+```
+
+Erwartete Ausgabe: `Index: products_live -> products_v1`, `ohne storeCode 153, in Markt SPAR-Leonding-002 74`, `Sicherung ... enthaelt alle 153 Legacy-IDs.`, `DRY-RUN`. Bei Abweichung hier aufhören (Exit 1 heißt: nichts gelöscht). Erst dann mit `--yes` wiederholen. Die Rohsicherung aus Schritt 3 (`..._search`-Antwort) ist als `--backup` ebenso erlaubt.
+
 ## Rollback
 
 Die 153 Dokumente aus dem alten Index zurückholen; die IDs bleiben gleich:
@@ -106,4 +118,5 @@ Erwartet: `"created":153`. Ist der alte Index nicht mehr da, aus der Rohsicherun
 
 - Den Index `products` nicht löschen. Er ist die Rollback-Quelle.
 - `CATALOG_DEFAULT_STORE_CODE` nicht setzen.
-- `migrate_products_to_store.py --delete-legacy` nicht verwenden, solange das Skript fest auf `products` zeigt.
+- `--index products` nicht angeben. Der Standard `products_live` ist der Index, den das Backend liest.
+- `--allow-unmigrated-legacy` nicht ohne eine geprüfte Sicherung verwenden.

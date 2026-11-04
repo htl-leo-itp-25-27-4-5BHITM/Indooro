@@ -11,6 +11,13 @@ Aufrufe (aus dem Repo-Root):
         --apply --base-url https://it220209.cloud.htl-leonding.ac.at
     python3 scripts/ops/migrate_products_to_store.py --store-code <CODE> --delete-legacy \\
         --opensearch-url http://127.0.0.1:9200            # Dry-Run; mit --yes wirklich loeschen
+    python3 scripts/ops/migrate_products_to_store.py --store-code <CODE> --delete-legacy \\
+        --opensearch-url http://127.0.0.1:9200 --allow-unmigrated-legacy \\
+        --backup backups/<datei>.ndjson                    # Sicherung statt Migration als Freigabe
+
+--delete-legacy arbeitet auf --index (Standard: products_live, der Alias, den das Backend liest). Der
+Alias wird vor dem Zaehlen und Loeschen auf den konkreten Index aufgeloest und ausgegeben; zeigt er auf
+mehrere Indizes, bricht das Skript ab.
 
 Ausgabedatei: backups/<UTC-Datum>-products-<CODE>.ndjson (Produkte ohne Markt, mit storeCode).
 Die Quelle wird nie veraendert. Produkte mit anderem Markt werden nicht angefasst.
@@ -46,6 +53,9 @@ ALLOWED_SCHEMES = ("http", "https")
 LOOPBACK_HOSTS = ("127.0.0.1", "localhost", "::1")
 USER_AGENT = "indooro-migrate-products/1.0"
 PROBLEM_LIMIT = 20
+DEFAULT_INDEX = "products_live"
+INDEX_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,254}$")
+MAX_LEGACY_LISTING = 10000
 STORE_CODE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 TOKEN_ENV_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,127}$")
 
@@ -115,6 +125,13 @@ def _store_code(value: str) -> str:
     return stripped
 
 
+def _index_name(value: str) -> str:
+    stripped = value.strip()
+    if not INDEX_NAME_RE.match(stripped):
+        raise argparse.ArgumentTypeError("gueltiger Indexname oder Alias erwartet (klein, ohne Platzhalter)")
+    return stripped
+
+
 def _token_env(value: str) -> str:
     stripped = value.strip()
     if not TOKEN_ENV_RE.match(stripped):
@@ -157,7 +174,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Migriert Produkte ohne Markt in den store-scoped Katalog (Standard: Dry-Run).",
         epilog=(
             "Quelle: --input DATEI ODER --base-url URL (mit --apply ist --base-url das Ziel).\n"
-            "--delete-legacy laeuft allein und braucht --opensearch-url. OpenSearch ist nicht "
+            "--delete-legacy laeuft allein und braucht --opensearch-url (Index: --index, Standard products_live). OpenSearch ist nicht "
             "oeffentlich: kubectl -n student-it220209 port-forward svc/opensearch 9200:9200, "
             "dann --opensearch-url http://127.0.0.1:9200. Nur Loopback-Hosts sind erlaubt.\n"
             "Das Admin-Token kommt aus einer Umgebungsvariable (--token-env) und wird nie ausgegeben."
@@ -181,7 +198,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--retries", type=_non_negative_int, default=DEFAULT_RETRIES,
                         help=f"Wiederholungen beim Lesen (GET) bei 5xx/Netzwerkfehler (Standard: {DEFAULT_RETRIES})")
     parser.add_argument("--delete-legacy", action="store_true",
-                        help="Dokumente ohne storeCode aus dem Index products loeschen (eigenstaendig)")
+                        help="Dokumente ohne storeCode aus --index loeschen (eigenstaendig)")
+    parser.add_argument("--index", type=_index_name, default=DEFAULT_INDEX,
+                        help=f"Index oder Alias fuer --delete-legacy (Standard: {DEFAULT_INDEX}, "
+                             "der Alias, den das Backend liest)")
+    parser.add_argument("--allow-unmigrated-legacy", action="store_true",
+                        help="Sicherung 'migrierte >= Legacy' ueberspringen; nur mit --backup DATEI, die "
+                             "jede ID ohne storeCode enthaelt")
+    parser.add_argument("--backup", metavar="DATEI",
+                        help="Rohsicherung (NDJSON/JSON-Array oder _search-Antwort) fuer --allow-unmigrated-legacy")
     parser.add_argument("--opensearch-url", type=parse_opensearch_url,
                         help="OpenSearch-Basis-URL, nur Loopback (fuer --delete-legacy)")
     parser.add_argument("--yes", action="store_true",
@@ -196,9 +221,16 @@ def argument_problem(args: argparse.Namespace) -> str:
             return "--delete-legacy laeuft allein: nicht zusammen mit --input, --base-url oder --apply"
         if not args.opensearch_url:
             return "--delete-legacy braucht --opensearch-url"
+        if args.allow_unmigrated_legacy and not args.backup:
+            return "--allow-unmigrated-legacy braucht --backup DATEI"
+        if args.backup and not args.allow_unmigrated_legacy:
+            return "--backup gehoert zu --allow-unmigrated-legacy"
         return ""
-    if args.opensearch_url or args.yes:
-        return "--opensearch-url und --yes gehoeren zu --delete-legacy"
+    if args.opensearch_url or args.yes or args.allow_unmigrated_legacy or args.backup:
+        return ("--opensearch-url, --yes, --allow-unmigrated-legacy und --backup "
+                "gehoeren zu --delete-legacy")
+    if args.index != DEFAULT_INDEX:
+        return "--index gehoert zu --delete-legacy"
     if args.input and args.base_url and not args.apply:
         return "nur eine Quelle: --input ODER --base-url (mit --apply ist --base-url das Ziel)"
     if not args.input and not args.base_url:
@@ -375,6 +407,36 @@ def legacy_delete_problem(legacy: int, migrated: int) -> str:
     return ""
 
 
+def backup_legacy_ids(text: str) -> tuple[set[str], str]:
+    """Doc-IDs ohne storeCode aus einer Rohsicherung. Gibt (IDs, Fehlertext).
+
+    Akzeptiert eine _search-Antwort (hits.hits mit _id/_source) oder Produkte als NDJSON/JSON-Array
+    (Doc-ID eines Altdokuments = id)."""
+    stripped = text.strip()
+    if stripped.startswith("{"):
+        try:
+            data = json.loads(stripped)
+        except json.JSONDecodeError:
+            data = None
+        hits = data.get("hits", {}).get("hits") if isinstance(data, dict) and isinstance(data.get("hits"), dict) else None
+        if isinstance(hits, list):
+            ids = {str(hit["_id"]) for hit in hits
+                   if isinstance(hit, dict) and isinstance(hit.get("_id"), (str, int))
+                   and isinstance(hit.get("_source"), dict)
+                   and not _text(hit["_source"].get("storeCode"))}
+            return ids, ("" if ids else "Sicherung enthaelt keine Dokumente ohne storeCode")
+    items, problem = parse_products_text(text)
+    if problem:
+        return set(), problem
+    ids = {_text(item.get("id")) for item in items
+           if isinstance(item, dict) and _text(item.get("id")) and not _text(item.get("storeCode"))}
+    return ids, ("" if ids else "Sicherung enthaelt keine Dokumente ohne storeCode")
+
+
+def missing_from_backup(legacy_ids: Sequence[str], backup_ids: set[str]) -> list[str]:
+    return sorted(doc_id for doc_id in legacy_ids if doc_id not in backup_ids)
+
+
 def redact(text: str, secret: str) -> str:
     return text.replace(secret, "***") if secret else text
 
@@ -529,10 +591,31 @@ def run_migration(args: argparse.Namespace, send: Send, sleep: Sleep, now: datet
     return send_blocks(plan.to_migrate, args.base_url, args.store_code, token, send, args.timeout)
 
 
-def count_documents(send: Send, base: str, query: Mapping[str, Any],
+def resolve_index(send: Send, base: str, name: str, timeout: float) -> tuple[str, str]:
+    """Loest einen Alias auf den konkreten Index auf (nur Lesen). Gibt (Index, Fehlertext)."""
+    result = send("GET", f"{base}/{urllib.parse.quote(name, safe='')}", None, JSON_HEADERS, timeout)
+    if result.status is None:
+        return "", f"OpenSearch nicht erreichbar ({result.error or 'Transportfehler'})"
+    if result.status == 404:
+        return "", f"Index oder Alias {name} nicht gefunden"
+    if result.status != 200:
+        return "", f"OpenSearch HTTP {result.status} bei der Alias-Abfrage"
+    try:
+        data = json.loads(result.body)
+    except json.JSONDecodeError:
+        return "", "Alias-Antwort ist kein JSON"
+    if not isinstance(data, dict) or not data:
+        return "", "Alias-Antwort ohne Index"
+    if len(data) != 1:
+        return "", (f"{name} zeigt auf {len(data)} Indizes ({', '.join(sorted(map(str, data)))}) - "
+                    "Abbruch, eindeutigen Index mit --index angeben")
+    return str(next(iter(data))), ""
+
+
+def count_documents(send: Send, base: str, index: str, query: Mapping[str, Any],
                     timeout: float) -> tuple[Optional[int], str]:
     body = json.dumps(query).encode("utf-8")
-    result = send("GET", f"{base}/products/_count", body, JSON_HEADERS, timeout)
+    result = send("GET", f"{base}/{index}/_count", body, JSON_HEADERS, timeout)
     if result.status is None:
         return None, f"OpenSearch nicht erreichbar ({result.error or 'Transportfehler'})"
     if result.status != 200:
@@ -545,6 +628,30 @@ def count_documents(send: Send, base: str, query: Mapping[str, Any],
     if not isinstance(count, int) or isinstance(count, bool) or count < 0:
         return None, "_count-Antwort ohne gueltige Zahl"
     return count, ""
+
+
+def list_legacy_ids(send: Send, base: str, index: str, expected: int,
+                    timeout: float) -> tuple[list[str], str]:
+    """Doc-IDs aller Dokumente ohne storeCode (nur Lesen). Muss genau `expected` liefern."""
+    if expected > MAX_LEGACY_LISTING:
+        return [], f"mehr als {MAX_LEGACY_LISTING} Dokumente ohne storeCode - Abbruch"
+    body = json.dumps({"size": MAX_LEGACY_LISTING, "_source": False, **LEGACY_QUERY}).encode("utf-8")
+    result = send("POST", f"{base}/{index}/_search", body, JSON_HEADERS, timeout)
+    if result.status is None:
+        return [], f"OpenSearch nicht erreichbar ({result.error or 'Transportfehler'})"
+    if result.status != 200:
+        return [], f"OpenSearch HTTP {result.status} bei _search"
+    try:
+        data = json.loads(result.body)
+    except json.JSONDecodeError:
+        return [], "_search-Antwort ist kein JSON"
+    hits = data.get("hits", {}).get("hits") if isinstance(data, dict) and isinstance(data.get("hits"), dict) else None
+    if not isinstance(hits, list):
+        return [], "_search-Antwort ohne hits"
+    ids = [str(hit["_id"]) for hit in hits if isinstance(hit, dict) and "_id" in hit]
+    if len(ids) != expected:
+        return [], f"{len(ids)} Legacy-IDs gelesen, aber _count meldet {expected} - Abbruch"
+    return ids, ""
 
 
 def parse_delete_response(result: FetchResult) -> tuple[int, str]:
@@ -567,39 +674,76 @@ def parse_delete_response(result: FetchResult) -> tuple[int, str]:
     return deleted, ""
 
 
+def check_backup_covers_legacy(args: argparse.Namespace, send: Send, base: str, index: str,
+                               legacy: int) -> str:
+    """Leer, wenn --backup jede Legacy-ID enthaelt. Sonst Fehlertext."""
+    path = Path(args.backup)
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except OSError as exc:
+        return f"Sicherung nicht lesbar: {path} ({exc.strerror or exc})"
+    backup_ids, problem = backup_legacy_ids(text)
+    if problem:
+        return f"Sicherung {path}: {problem}"
+    legacy_ids, problem = list_legacy_ids(send, base, index, legacy, args.timeout)
+    if problem:
+        return problem
+    missing = missing_from_backup(legacy_ids, backup_ids)
+    if missing:
+        shown = ", ".join(missing[:PROBLEM_LIMIT]) + (" ..." if len(missing) > PROBLEM_LIMIT else "")
+        return (f"{len(missing)} von {legacy} Legacy-IDs fehlen in der Sicherung {path} ({shown}) - "
+                "Abbruch, nichts geloescht")
+    print(f"Sicherung {path} enthaelt alle {legacy} Legacy-IDs.")
+    return ""
+
+
 def run_delete_legacy(args: argparse.Namespace, send: Send) -> int:
     base = args.opensearch_url
-    legacy, problem = count_documents(send, base, LEGACY_QUERY, args.timeout)
+    index, problem = resolve_index(send, base, args.index, args.timeout)
     if problem:
         print(f"FEHLER: {problem}", file=sys.stderr)
         return 1
-    migrated, problem = count_documents(send, base, migrated_query(args.store_code), args.timeout)
+    print(f"Index: {args.index} -> {index}")
+    legacy, problem = count_documents(send, base, index, LEGACY_QUERY, args.timeout)
     if problem:
         print(f"FEHLER: {problem}", file=sys.stderr)
         return 1
-    print(f"Index products: ohne storeCode {legacy}, in Markt {args.store_code} {migrated}")
-    problem = legacy_delete_problem(legacy, migrated)
+    migrated, problem = count_documents(send, base, index, migrated_query(args.store_code), args.timeout)
+    if problem:
+        print(f"FEHLER: {problem}", file=sys.stderr)
+        return 1
+    print(f"Index {index}: ohne storeCode {legacy}, in Markt {args.store_code} {migrated}")
+    if args.allow_unmigrated_legacy:
+        if legacy == 0:
+            print("FEHLER: keine Dokumente ohne storeCode gefunden - nichts zu loeschen (Abbruch)",
+                  file=sys.stderr)
+            return 1
+        print(f"--allow-unmigrated-legacy: Pruefung 'migrierte >= Legacy' entfaellt "
+              f"({migrated} migriert, {legacy} Legacy).")
+        problem = check_backup_covers_legacy(args, send, base, index, legacy)
+    else:
+        problem = legacy_delete_problem(legacy, migrated)
     if problem:
         print(f"FEHLER: {problem}", file=sys.stderr)
         return 1
     if not args.yes:
-        print(f"DRY-RUN: wuerde {legacy} Dokumente ohne storeCode loeschen. "
+        print(f"DRY-RUN: wuerde {legacy} Dokumente ohne storeCode aus {index} loeschen. "
               "Zum Loeschen erneut mit --yes starten.")
         return 0
 
     body = json.dumps(LEGACY_QUERY).encode("utf-8")
-    result = send("POST", f"{base}/products/_delete_by_query?refresh=true", body, JSON_HEADERS,
+    result = send("POST", f"{base}/{index}/_delete_by_query?refresh=true", body, JSON_HEADERS,
                   DELETE_TIMEOUT_SECONDS)
     deleted, problem = parse_delete_response(result)
     if problem:
         print(f"FEHLER: {problem}", file=sys.stderr)
         return 1
-    remaining, problem = count_documents(send, base, LEGACY_QUERY, args.timeout)
+    remaining, problem = count_documents(send, base, index, LEGACY_QUERY, args.timeout)
     if problem or remaining:
         detail = problem or f"noch {remaining} Dokumente ohne storeCode"
         print(f"FEHLER: Nach dem Loeschen: {detail}", file=sys.stderr)
         return 1
-    print(f"{deleted} Dokumente ohne storeCode geloescht. Verbleibend ohne storeCode: 0. "
+    print(f"{deleted} Dokumente ohne storeCode aus {index} geloescht. Verbleibend ohne storeCode: 0. "
           f"In Markt {args.store_code}: {migrated}.")
     return 0
 

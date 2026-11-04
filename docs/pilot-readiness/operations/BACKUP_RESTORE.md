@@ -9,11 +9,13 @@ Wann: vor jedem Rollout, vor jeder Rotation (`SECRET_ROTATION.md`) und am Tag je
 ```bash
 NS=student-it220209
 python3 scripts/ops/backup_postgres.py --namespace $NS
-python3 scripts/ops/export_products.py --base-url https://it220209.cloud.htl-leonding.ac.at
+kubectl -n $NS port-forward svc/opensearch 9200:9200      # zweites Terminal, offen lassen
+python3 scripts/ops/export_products.py --opensearch-url http://127.0.0.1:9200
 ```
 
 - `backup_postgres.py` führt `pg_dump -Fc` im Pod `deploy/postgres` aus und streamt das Ergebnis nach `backups/<UTC-Datum>-indooro.dump`. Das Skript prüft den Dateikopf (`PGDMP`) und die Mindestgröße und gibt Größe und SHA-256 aus. Bei einem Fehler löscht es die Datei und endet mit Exit-Code 1.
-- `export_products.py` holt `GET /api/products?size=10000` und schreibt `backups/<UTC-Datum>-products.ndjson` (eine Zeile pro Produkt). Exit 1 bei leerem Ergebnis: dann ist der Produktindex leer und der Export kein gültiges Backup. Der Produktindex (OpenSearch) ist nicht Teil des Dumps; Produkte lassen sich aus der NDJSON-Datei über `POST /api/products/bulk` (Admin) wiederherstellen.
+- `export_products.py --opensearch-url` liest den Index hinter dem Alias `products_live` (`--index` ändert das) und schreibt `backups/<UTC-Datum>-products-all.ndjson`: eine Zeile pro Dokument, also die Altdokumente ohne `storeCode` **und** alle Märkte. Das Skript liest nur (`GET` auf den Alias, `_search` mit Scroll, `_count`), erlaubt nur Loopback-Adressen, gibt den aufgelösten Index (`products_live -> products_v1`) sowie die Zahlen je Markt aus und bricht ohne Datei ab, wenn die gelesene Zahl nicht zu `_count` passt, der Alias auf mehrere Indizes zeigt oder der Index leer ist (Exit 1). Der Produktindex ist nicht Teil des Dumps. Wiederherstellen: Zeilen ohne `storeCode` per `POST /api/products/bulk` (Admin), Zeilen mit `storeCode` je Markt per `POST /api/products/bulk?storeCode=<CODE>`.
+- Der frühere Aufruf `export_products.py --base-url ...` ist **keine Vollsicherung** mehr: Seit Release `4cb1e03` liefert `GET /api/products` ohne Markt nur die Altdokumente ohne `storeCode`, und die API begrenzt `size` auf 500. Der Modus bleibt für einen schnellen Blick ohne Cluster-Zugang und warnt auf stderr.
 - `--dry-run` zeigt nur den `kubectl`-Befehl.
 
 ## Restore-Probe (lokal, Docker)
