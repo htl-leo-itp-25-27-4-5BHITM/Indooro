@@ -32,6 +32,8 @@ export function PlanPage() {
 
   const dirty = useMemo(() => JSON.stringify(beacons) !== JSON.stringify(campaign.beacons), [beacons, campaign.beacons]);
   const scaleDirty = useMemo(() => JSON.stringify(scale) !== JSON.stringify(plan.scale), [scale, plan.scale]);
+  // the stored note of an unconfirmed scale is only the Indooro convention, not a verification
+  const noteMissing = scale.note.trim() === "" || (!plan.scale.confirmed && scale.note === plan.scale.note);
   const outsideBeacons = beacons.filter((b) => outside(b, plan));
 
   const patchBeacon = (id: string, patch: Partial<Beacon>) => setBeacons((bs) => bs.map((b) => (b.id === id ? { ...b, ...patch } : b)));
@@ -42,7 +44,7 @@ export function PlanPage() {
   };
 
   const saveScale = async () => {
-    if (scale.confirmed && scale.note.trim() === "") {
+    if (scale.confirmed && noteMissing) {
       setScaleError("Zum Bestätigen ist eine Notiz nötig: Wie wurde der Maßstab geprüft (z. B. „Regal 4: 10,0 m gemessen = 10 LE“)?");
       return;
     }
@@ -169,7 +171,7 @@ export function PlanPage() {
                   checked={scale.confirmed}
                   onChange={(confirmed) => setScale((s) => ({ ...s, confirmed }))}
                   label="Maßstab vor Ort bestätigt"
-                  description={scale.note.trim() === "" ? "Ohne Notiz kann nicht gespeichert werden." : undefined}
+                  description={scale.confirmed && noteMissing ? "Ohne eigene Prüfnotiz kann nicht gespeichert werden." : undefined}
                 />
                 {scaleError && (
                   <p role="alert" className="text-xs text-danger" data-testid="scale-error">
