@@ -22,8 +22,9 @@ import java.util.regex.Pattern;
 /**
  * Pure evaluation of a store's readiness for a pilot session. No CDI, no I/O.
  *
- * <p>Blocking: no active layout, entrance count not exactly one, product without a matching shelf,
- * target shelf without label, and beacon registry inconsistencies (all-zero UUID, missing major/minor,
+ * <p>Blocking: no active layout, entrance count not exactly one, layout without shelves, store without
+ * own products, layout without a placed beacon that has a complete identity, product without a matching
+ * shelf, target shelf without label, and beacon registry inconsistencies (all-zero UUID, missing major/minor,
  * duplicate uuid/major/minor, layout beacon not registered or registered with another identity). Warnings: shelf without products, duplicate product ids, assigned beacon
  * not placed, placed beacon without identity, grid size outside 5 to 200, more than 5 % of walkable
  * cells with fewer than three placed beacons within the radius, product list truncated by the
@@ -94,6 +95,27 @@ public final class StoreReadinessEvaluator {
                     null, null, null, null));
         }
 
+        // A layout without shelves, a store without own products or a layout without usable beacons is empty,
+        // not ready. These checks come first so that an empty store never ends up green or yellow.
+        if (shelves.isEmpty()) {
+            findings.add(finding(Severity.BLOCKING, "NO_SHELVES",
+                    "Das Layout hat keine Regale. Regale im Layout-Editor anlegen und beschriften.",
+                    null, null, null, null));
+        }
+        if (products.isEmpty()) {
+            int skipped = Math.max(0, input.skippedGlobalProducts());
+            findings.add(finding(Severity.BLOCKING, "NO_STORE_PRODUCTS",
+                    "Der Markt hat noch keine eigenen Produkte. Sortiment per CSV-Import laden."
+                            + (skipped > 0 ? " (" + skipped + " Produkte ohne Markt wurden nicht mitgezaehlt.)" : ""),
+                    null, null, null, null));
+        }
+        if (beacons.stream().noneMatch(beacon -> beacon.identityKey() != null)) {
+            findings.add(finding(Severity.BLOCKING, "NO_BEACONS",
+                    "Im Layout ist kein Beacon mit UUID, Major und Minor platziert. "
+                            + "Beacons zuordnen und im Editor platzieren.",
+                    null, null, null, null));
+        }
+
         // Products against shelves
         if (input.productListTruncated()) {
             findings.add(finding(Severity.WARNING, "PRODUCT_LIMIT_REACHED",
@@ -134,7 +156,8 @@ public final class StoreReadinessEvaluator {
                         "Regal " + shelf.category() + " wird von Produkten angesteuert, hat aber kein Label.",
                         shelf.id(), null, shelf.category(), null));
             }
-            if (!hit[i]) {
+            // With no own products at all NO_STORE_PRODUCTS already says it; one warning per shelf would only bury it.
+            if (!hit[i] && !products.isEmpty()) {
                 findings.add(finding(Severity.WARNING, "SHELF_WITHOUT_PRODUCTS",
                         "Regal " + shelf.category() + " hat keine Produkte.",
                         shelf.id(), null, shelf.category(), null));

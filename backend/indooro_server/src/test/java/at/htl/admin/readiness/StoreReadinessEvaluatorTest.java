@@ -94,8 +94,9 @@ class StoreReadinessEvaluatorTest {
     @Test
     void unlabeledShelfWithoutProductsIsNotATargetShelf() {
         ReadinessReport report = evaluate(
-                layout(20, 20, entrance("e1", 0, 0), shelf("s1", 5, 5, 4, 1, "520/1", null)),
-                List.of(), List.of(), 8.0);
+                layout(20, 20, entrance("e1", 0, 0), shelf("s1", 5, 5, 4, 1, "520/1", null),
+                        shelf("s2", 5, 8, 4, 1, "520/2", "Obst")),
+                List.of(product(1, "520/2/1/1")), List.of(), 8.0);
 
         assertFalse(hasCode(report, "TARGET_SHELF_WITHOUT_LABEL"));
         assertTrue(hasFinding(report, Severity.WARNING, "SHELF_WITHOUT_PRODUCTS"));
@@ -130,16 +131,95 @@ class StoreReadinessEvaluatorTest {
 
     @Test
     void shelfWithoutProductsIsWarning() {
+        // s1 has a product, s9 has none. The store has products and a registered beacon, so only warnings remain.
         ReadinessReport report = evaluate(
-                layout(20, 20, entrance("e1", 0, 0), shelf("s9", 5, 5, 4, 1, "520/2", "Obst")),
-                List.of(), List.of(), 8.0);
+                layout(20, 20, entrance("e1", 0, 0), shelf("s1", 5, 8, 4, 1, "520/1", "Milch"),
+                        shelf("s9", 5, 5, 4, 1, "520/2", "Obst"), singleBeacon()),
+                List.of(product(1, "520/1/1/1")), singleBeaconRegistered(), 8.0);
 
         ReadinessFinding finding = findFinding(report, "SHELF_WITHOUT_PRODUCTS");
         assertEquals(Severity.WARNING, finding.severity());
         assertEquals("s9", finding.elementId());
         assertEquals("520/2", finding.layoutCode());
+        assertEquals(1, report.findings().stream().filter(f -> "SHELF_WITHOUT_PRODUCTS".equals(f.code())).count());
         assertEquals(0, report.blockingCount());
         assertEquals(Status.YELLOW, report.status());
+    }
+
+    // ----------------------------------------------------------------- empty stores are never ready
+
+    @Test
+    void emptyLayoutWithEntranceAndBeaconsIsRedWithoutShelvesAndProducts() {
+        ReadinessReport report = evaluate(layout(20, 20, entrance("e1", 0, 0), singleBeacon()),
+                List.of(), singleBeaconRegistered(), 8.0);
+
+        assertEquals(Status.RED, report.status());
+        assertEquals(Severity.BLOCKING, findFinding(report, "NO_SHELVES").severity());
+        assertEquals(Severity.BLOCKING, findFinding(report, "NO_STORE_PRODUCTS").severity());
+        assertFalse(hasCode(report, "NO_BEACONS"));
+        assertEquals(2, report.blockingCount());
+    }
+
+    @Test
+    void shelvesWithoutAnyOwnProductGiveOneNoStoreProductsAndNoPerShelfWarnings() {
+        ReadinessReport report = evaluate(
+                layout(20, 20, entrance("e1", 0, 0), shelf("s1", 5, 5, 4, 1, "520/1", "Milch"),
+                        shelf("s2", 5, 8, 4, 1, "520/2", "Obst"), singleBeacon()),
+                List.of(), singleBeaconRegistered(), 8.0);
+
+        assertEquals(Status.RED, report.status());
+        assertEquals(1, report.findings().stream().filter(f -> "NO_STORE_PRODUCTS".equals(f.code())).count());
+        assertFalse(hasCode(report, "SHELF_WITHOUT_PRODUCTS"), report.findings().toString());
+        assertFalse(hasCode(report, "NO_SHELVES"));
+        assertEquals(1, report.blockingCount());
+    }
+
+    @Test
+    void noStoreProductsNamesTheSkippedGlobalProducts() {
+        JsonNode layout = layout(20, 20, entrance("e1", 0, 0), shelf("s1", 5, 5, 4, 1, "520/1", "Milch"),
+                singleBeacon());
+        ReadinessReport withSkipped = EVALUATOR.evaluate(new ReadinessInput(UUID.randomUUID(), UUID.randomUUID(), 1,
+                layout, List.of(), false, singleBeaconRegistered(), 8.0, "market", 7));
+        ReadinessReport withoutSkipped = evaluate(layout, List.of(), singleBeaconRegistered(), 8.0);
+
+        assertTrue(findFinding(withSkipped, "NO_STORE_PRODUCTS").message().contains("(7 Produkte ohne Markt"),
+                withSkipped.findings().toString());
+        assertEquals(7, withSkipped.counts().skippedGlobalProducts());
+        assertFalse(findFinding(withoutSkipped, "NO_STORE_PRODUCTS").message().contains("ohne Markt"));
+    }
+
+    @Test
+    void layoutWithoutAnyBeaconIsRedWithNoBeacons() {
+        ReadinessReport report = evaluate(
+                layout(20, 20, entrance("e1", 0, 0), shelf("s1", 5, 5, 4, 1, "520/1", "Milch")),
+                List.of(product(1, "520/1/1/1")), List.of(), 8.0);
+
+        assertEquals(Status.RED, report.status());
+        assertEquals(Severity.BLOCKING, findFinding(report, "NO_BEACONS").severity());
+        // Coverage findings stay and come in addition.
+        assertTrue(hasFinding(report, Severity.WARNING, "LOW_BEACON_COVERAGE"));
+    }
+
+    @Test
+    void beaconElementsWithoutCompleteIdentityGiveNoBeaconsAndTheIdentityWarnings() {
+        ReadinessReport report = evaluate(
+                layout(20, 20, entrance("e1", 0, 0), shelf("s1", 5, 5, 4, 1, "520/1", "Milch"),
+                        beacon("b1", 10, 10, "A", null, null, null), beacon("b2", 12, 12, "B", UUID_HEX, 1, null)),
+                List.of(product(1, "520/1/1/1")), List.of(), 8.0);
+
+        assertEquals(Status.RED, report.status());
+        assertTrue(hasFinding(report, Severity.BLOCKING, "NO_BEACONS"));
+        assertEquals(2, report.findings().stream().filter(f -> "BEACON_WITHOUT_IDENTITY".equals(f.code())).count());
+    }
+
+    @Test
+    void registeredButNotPlacedBeaconsStillGiveNoBeacons() {
+        ReadinessReport report = evaluate(
+                layout(20, 20, entrance("e1", 0, 0), shelf("s1", 5, 5, 4, 1, "520/1", "Milch")),
+                List.of(product(1, "520/1/1/1")), singleBeaconRegistered(), 8.0);
+
+        assertTrue(hasFinding(report, Severity.BLOCKING, "NO_BEACONS"));
+        assertTrue(hasFinding(report, Severity.WARNING, "BEACON_ASSIGNED_NOT_PLACED"));
     }
 
     @Test
@@ -321,28 +401,51 @@ class StoreReadinessEvaluatorTest {
                 false, registeredRaster(), radius, profile));
     }
 
+    /** One shelf with one product, so that the profile tests are about coverage and not about an empty store. */
+    private static ReadinessReport evaluateRoom(String profile, double radius) {
+        return EVALUATOR.evaluate(new ReadinessInput(UUID.randomUUID(), UUID.randomUUID(), 1,
+                layout(20, 20, entrance("e1", 0, 0), shelf("s1", 5, 5, 4, 1, "520/1", "Milch"), raster3x3()),
+                List.of(product(1, "520/1/1/1")), false, registeredRaster(), radius, profile));
+    }
+
     @Test
-    void emptyTestRoomWithNineBeaconsIsGreenInTheTestroomProfile() {
-        ReadinessReport report = evaluateProfile(layout(20, 20, entrance("e1", 0, 0), raster3x3()), "testroom", 10.0);
+    void roomWithNineBeaconsIsGreenInTheTestroomProfile() {
+        ReadinessReport report = evaluateRoom("testroom", 10.0);
 
         assertEquals("testroom", report.profile());
         assertTrue(report.coverageComputed());
         assertFalse(hasCode(report, "LOW_BEACON_COVERAGE"));
         assertEquals(Status.GREEN, report.status());
+        // The 4 x 1 shelf at (5,5) blocks 4 of the 400 cells, so 396 are walkable. The share is computed, not
+        // assumed: 8 of the 396 cells (2.0 %) have fewer than three beacons, none of them under the shelf.
+        assertEquals(396, report.counts().walkableCells());
+        assertEquals(8, report.counts().lowCoverageCells());
+    }
+
+    @Test
+    void emptyTestRoomWithNineBeaconsIsRedInTheTestroomProfile() {
+        ReadinessReport report = evaluateProfile(layout(20, 20, entrance("e1", 0, 0), raster3x3()), "testroom", 10.0);
+
+        // Coverage alone is not readiness: no shelves and no own products block.
+        assertEquals(Status.RED, report.status());
+        assertTrue(hasFinding(report, Severity.BLOCKING, "NO_SHELVES"));
+        assertTrue(hasFinding(report, Severity.BLOCKING, "NO_STORE_PRODUCTS"));
+        assertFalse(hasCode(report, "NO_BEACONS"));
+        assertFalse(hasCode(report, "LOW_BEACON_COVERAGE"));
         assertEquals(400, report.counts().walkableCells());
-        // The share is computed, not assumed: 8 of 400 cells (2 %) have fewer than three beacons.
         assertEquals(8, report.counts().lowCoverageCells());
     }
 
     @Test
     void sameRoomIsStillYellowInTheMarketProfileAtEightMetres() {
-        ReadinessReport report = evaluateProfile(layout(20, 20, entrance("e1", 0, 0), raster3x3()), "market", 8.0);
+        ReadinessReport report = evaluateRoom("market", 8.0);
 
         assertEquals("market", report.profile());
         assertEquals(Status.YELLOW, report.status());
         ReadinessFinding finding = findFinding(report, "LOW_BEACON_COVERAGE");
         assertTrue(finding.message().contains("Profil market"), finding.message());
         assertTrue(finding.message().contains("erlaubt: 5.0 %"), finding.message());
+        // Same 136 as without the shelf: its four cells all have enough beacons in the 8 m radius.
         assertEquals(136, report.counts().lowCoverageCells());
     }
 
@@ -385,9 +488,12 @@ class StoreReadinessEvaluatorTest {
     @Test
     void gridThatCannotBeComputedIsAWarningAndNotACoverageResult() {
         ObjectNode noGrid = JSON.createObjectNode();
-        noGrid.putArray("elements").add(entrance("e1", 0, 0));
-        ReadinessReport missing = evaluate(noGrid, List.of(), List.of(), 8.0);
-        ReadinessReport tooLarge = evaluate(layout(1001, 1001, entrance("e1", 0, 0)), List.of(), List.of(), 8.0);
+        noGrid.putArray("elements").add(entrance("e1", 0, 0)).add(shelf("s1", 5, 5, 4, 1, "520/1", "Milch"))
+                .add(singleBeacon());
+        List<ProductRef> products = List.of(product(1, "520/1/1/1"));
+        ReadinessReport missing = evaluate(noGrid, products, singleBeaconRegistered(), 8.0);
+        ReadinessReport tooLarge = evaluate(layout(1001, 1001, entrance("e1", 0, 0),
+                shelf("s1", 5, 5, 4, 1, "520/1", "Milch"), singleBeacon()), products, singleBeaconRegistered(), 8.0);
 
         for (ReadinessReport report : List.of(missing, tooLarge)) {
             assertFalse(report.coverageComputed(), report.findings().toString());
@@ -651,6 +757,15 @@ class StoreReadinessEvaluatorTest {
             node.put("minor", minor);
         }
         return node;
+    }
+
+    /** One placed beacon with a complete identity; {@link #singleBeaconRegistered()} is its registration. */
+    private static ObjectNode singleBeacon() {
+        return beacon("b1", 10, 10, "B-1", UUID_HEX, 1, 1);
+    }
+
+    private static List<AssignedBeacon> singleBeaconRegistered() {
+        return List.of(assignedBeacon("B-1", UUID_HEX, 1, 1));
     }
 
     /** Registry entries that match {@link #raster3x3()} (major 2, minor index + 1). */
