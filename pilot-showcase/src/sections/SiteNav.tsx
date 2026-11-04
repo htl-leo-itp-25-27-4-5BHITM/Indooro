@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import { createPortal } from "react-dom";
-import { ArrowRight, Menu, X } from "lucide-react";
+import { ArrowRight, Menu, Play, X } from "lucide-react";
+import { ReadingProgress } from "../features/tour/ReadingProgress";
+import { tourStore, useTour } from "../features/tour/store";
 import { Button, Container, Logo } from "../components/ui";
 import { useActiveSection } from "../lib";
 
@@ -21,6 +23,7 @@ export function SiteNav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const active = useActiveSection(SECTION_IDS);
+  const tour = useTour();
   const sheetRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -75,6 +78,7 @@ export function SiteNav() {
 
   return (
     <header
+      hidden={tour.active && tour.presentation}
       className={`on-dark fixed inset-x-0 top-0 z-[60] transition-[background-color,box-shadow,backdrop-filter] duration-500 ease-out-expo ${
         solid ? "bg-ink-950/90 shadow-[inset_0_-1px_0_rgb(255_255_255/0.08),0_10px_30px_-12px_rgb(5_12_16/0.45)] backdrop-blur-xl backdrop-saturate-150" : "bg-transparent shadow-[inset_0_-1px_0_transparent]"
       }`}
@@ -115,6 +119,14 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            data-testid="nav-tour"
+            onClick={() => tourStore.start(0)}
+            className="inline-flex min-h-10 items-center gap-2 rounded-full px-3.5 text-[13.5px] font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/10"
+          >
+            <Play className="size-3.5 fill-current" aria-hidden /> Tour
+          </button>
           <Button href="#pilot" size="md" variant="primary" data-testid="nav-cta" className="max-sm:!hidden !min-h-10" icon={<ArrowRight className="size-4" />}>
             Pilotpartner werden
           </Button>
@@ -132,6 +144,7 @@ export function SiteNav() {
           </button>
         </div>
       </Container>
+      <ReadingProgress />
 
       {createPortal(<AnimatePresence>
         {open ? (
