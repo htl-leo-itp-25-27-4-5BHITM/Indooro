@@ -107,10 +107,40 @@ export interface CalibrationResult {
  * - A global model (all beacons pooled) plus one model per beacon (needs enough own data, else an error entry).
  * - If the scale is not confirmed, metres rely on the "1 cell = 1 m" convention: a warning is added.
  */
+export interface CalibrationOptions {
+  /** only use (beacon, hold) pairs up to this distance in metres; default: no limit */
+  maxDistanceM?: number;
+}
+
+/**
+ * Censoring heuristic: reception rate (samples/s) of each (beacon, hold) pair is compared with the median rate of
+ * near pairs (<= 5 m). Pairs below 50 % of that rate are "sparse". Returns the smallest distance from which on
+ * at least half of all pairs are sparse, or null if no such distance exists or there are too few near pairs.
+ */
+export function detectCensoring(
+  cells: readonly { distanceM: number; count: number; durationSec: number }[],
+): { onsetM: number; sparsePairs: number } | null {
+  const near = cells.filter((c) => c.distanceM <= 5).map((c) => c.count / c.durationSec).sort((a, b) => a - b);
+  if (near.length < 3) return null;
+  const ref = near[Math.floor(near.length / 2)];
+  if (!(ref > 0)) return null;
+  const sorted = [...cells].sort((a, b) => a.distanceM - b.distanceM);
+  const sparse = sorted.map((c) => c.count / c.durationSec < 0.5 * ref);
+  const sparsePairs = sparse.filter(Boolean).length;
+  for (let i = 0; i < sorted.length; i++) {
+    const tail = sparse.slice(i);
+    if (tail.length >= 3 && tail.filter(Boolean).length / tail.length >= 0.5) {
+      return { onsetM: sorted[i].distanceM, sparsePairs };
+    }
+  }
+  return null;
+}
+
 export function calibrateFromRuns(
   runs: readonly MeasurementRun[],
   campaign: Campaign,
   cfg: PositioningConfig,
+  opts: CalibrationOptions = {},
 ): CalibrationResult {
   for (const r of runs) {
     if (r.role !== "calibration") {
@@ -130,13 +160,23 @@ export function calibrateFromRuns(
   }
   if (runs.length === 0) return { perBeacon: {}, error: "keine Kalibrierungsläufe", warnings };
 
+  const maxD = opts.maxDistanceM !== undefined && Number.isFinite(opts.maxDistanceM) && opts.maxDistanceM > 0 ? opts.maxDistanceM : Infinity;
   const beaconById = new Map(campaign.beacons.map((b) => [b.id, b]));
+  /** samples per (beacon, hold) – used to detect censoring by the receiver sensitivity */
+  const cellCounts = new Map<string, { distanceM: number; count: number; durationSec: number }>();
   const global: { distanceM: number; rssi: number }[] = [];
   const per = new Map<string, { distanceM: number; rssi: number }[]>();
   let holdCount = 0;
   for (const run of runs) {
     const holds = runHolds(run);
     holdCount += holds.length;
+    holds.forEach((h, hi) => {
+      for (const b of campaign.beacons) {
+        if (!Number.isFinite(b.position.x) || !Number.isFinite(b.position.y)) continue;
+        const d = Math.hypot(b.position.x - h.position.x, b.position.y - h.position.y) * mpu;
+        cellCounts.set(`${run.id}|${hi}|${b.id}`, { distanceM: d, count: 0, durationSec: Math.max(h.end - h.start, 1e-9) });
+      }
+    });
     for (const s of run.samples) {
       if (!Number.isFinite(s.t) || !Number.isFinite(s.rssi) || s.rssi < cfg.params.rssiThreshold) continue;
       const b = beaconById.get(s.beaconId);
@@ -144,12 +184,21 @@ export function calibrateFromRuns(
       const hold = holds.find((h) => s.t >= h.start && s.t <= h.end);
       if (!hold) continue;
       const d = Math.hypot(b.position.x - hold.position.x, b.position.y - hold.position.y) * mpu;
+      const cell = cellCounts.get(`${run.id}|${holds.indexOf(hold)}|${b.id}`);
+      if (cell) cell.count++;
+      if (d > maxD) continue;
       const pair = { distanceM: d, rssi: s.rssi };
       global.push(pair);
       const arr = per.get(b.id);
       if (arr) arr.push(pair);
       else per.set(b.id, [pair]);
     }
+  }
+  const censoring = detectCensoring([...cellCounts.values()]);
+  if (censoring !== null && censoring.onsetM <= maxD) {
+    warnings.push(
+      `Mögliche Zensierung durch die Empfangsgrenze: Ab etwa ${censoring.onsetM.toFixed(1)} m werden Beacons deutlich seltener empfangen (${censoring.sparsePairs} Beacon-Haltepunkt-Paare unter 50 % der Nahbereichs-Rate). Ferne Beacons erscheinen dann nur bei zufällig günstiger Ausbreitung – das verzerrt den Fit (n wird tendenziell unterschätzt). Empfehlung: maximale Kalibrierdistanz auf ≤ ${censoring.onsetM.toFixed(0)} m begrenzen.`,
+    );
   }
   if (holdCount === 0) {
     return { perBeacon: {}, error: "keine stationären Haltepunkte (identische aufeinanderfolgende Referenzpunkte) gefunden", warnings };
