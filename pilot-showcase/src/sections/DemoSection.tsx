@@ -1,5 +1,9 @@
+import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
+import { Check } from "lucide-react";
 import { StoreDemo } from "../features/store/StoreDemo";
+import { useDemoHandle } from "../features/store/demoBridge";
+import { NextChapter } from "../features/tour/NextChapter";
 
 const STEPS = [
   { n: 1, label: "Produkt suchen", hint: "z. B. „Paradeiser“" },
@@ -7,8 +11,33 @@ const STEPS = [
   { n: 3, label: "Route starten", hint: "im Reiter Navigation" }
 ];
 
+/** Live progress of the three hints, driven by what visitors actually do in the demo. */
+function useHintProgress(): [boolean, boolean, boolean] {
+  const demo = useDemoHandle();
+  const [searched, setSearched] = useState(false);
+  useEffect(() => {
+    const onInput = (e: Event) => {
+      const t = e.target;
+      if (t instanceof HTMLInputElement && t.dataset.testid === "search-input" && t.value.trim()) setSearched(true);
+    };
+    document.addEventListener("input", onInput);
+    return () => document.removeEventListener("input", onInput);
+  }, []);
+  const hasList = (demo?.items.length ?? 0) > 0;
+  return [searched || hasList || !!demo?.selectedProductId, hasList, !!demo && demo.sim.state !== "idle"];
+}
+
 export function DemoSection() {
   const reduce = useReducedMotion();
+  const demo = useDemoHandle();
+  const done = useHintProgress();
+  const act = (i: number) => {
+    if (i === 0) {
+      demo?.setTab("suche");
+      window.setTimeout(() => document.querySelector<HTMLInputElement>('[data-testid="search-input"]')?.focus(), 120);
+    } else if (i === 1) demo?.setTab("suche");
+    else demo?.setTab("navigation");
+  };
   const reveal = (delay = 0) => ({
     initial: reduce ? false : { opacity: 0, y: 24 },
     whileInView: { opacity: 1, y: 0 },
@@ -36,14 +65,23 @@ export function DemoSection() {
         </div>
 
         <motion.ol {...reveal(0.18)} className="mt-8 flex flex-wrap gap-2.5" aria-label="So probieren Sie die Demo aus">
-          {STEPS.map((s) => (
-            <li
-              key={s.n}
-              className="inline-flex items-center gap-2.5 rounded-full bg-white/5 py-1.5 pl-1.5 pr-4 text-[13px] ring-1 ring-white/10"
-            >
-              <span className="grid size-6 place-items-center rounded-full bg-mint text-xs font-bold text-ink-950">{s.n}</span>
-              <span className="font-semibold text-white">{s.label}</span>
-              <span className="hidden text-ink-300 sm:inline">{s.hint}</span>
+          {STEPS.map((s, i) => (
+            <li key={s.n}>
+              <button
+                type="button"
+                data-testid={`demo-hint-${s.n}`}
+                data-done={done[i] ? "true" : "false"}
+                onClick={() => act(i)}
+                className={`inline-flex min-h-10 items-center gap-2.5 rounded-full py-1.5 pl-1.5 pr-4 text-[13px] ring-1 transition-colors duration-500 ${
+                  done[i] ? "bg-mint/10 ring-mint/40" : "bg-white/5 ring-white/10 hover:bg-white/8"
+                }`}
+              >
+                <span className={`grid size-6 place-items-center rounded-full text-xs font-bold transition-colors duration-500 ${done[i] ? "bg-mint text-ink-950" : "bg-white/12 text-white"}`}>
+                  {done[i] ? <Check className="size-3.5" strokeWidth={3} aria-label="erledigt" /> : s.n}
+                </span>
+                <span className="font-semibold text-white">{s.label}</span>
+                <span className="hidden text-ink-300 sm:inline">{s.hint}</span>
+              </button>
             </li>
           ))}
         </motion.ol>
@@ -56,6 +94,7 @@ export function DemoSection() {
           Hinweis: Markt, Sortiment und Preise sind frei erfunden. Die Position auf dem Plan wird in dieser Demo simuliert; es handelt sich nicht um eine
           Messung mit Bluetooth-Beacons.
         </p>
+        <NextChapter href="#so-funktionierts" tone="dark" title="So funktioniert’s: Ortung, Suche und Route" text="Was hinter der Demo steckt, in drei Schritten erklärt." />
       </div>
     </section>
   );
