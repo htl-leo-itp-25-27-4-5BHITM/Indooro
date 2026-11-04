@@ -54,7 +54,7 @@ export function OperatorDemo() {
         <p className="text-[13.5px] leading-snug text-[#5c4210]">{SIMULATION_BANNER}</p>
       </div>
 
-      <div className="grid lg:grid-cols-[272px_1fr]">
+      <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[272px_minmax(0,1fr)]">
         {/* Stepper */}
         <nav aria-label="Schritte der Einrichtung" className="border-b border-line bg-paper/60 lg:border-b-0 lg:border-r">
           <ol className="flex snap-x gap-1 overflow-x-auto p-3 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:p-4">
