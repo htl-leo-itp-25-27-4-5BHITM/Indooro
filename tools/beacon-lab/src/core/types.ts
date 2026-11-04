@@ -237,8 +237,9 @@ export interface SyntheticScenarioConfig {
 /**
  * trimmed-mean = mirrors the iOS app (PositioningPipeline.swift): last `window` samples,
  *                drop min and max when >= 5 samples, average the rest.
- * kalman       = scalar random-walk Kalman per beacon (BeaconMeasurementStore.swift uses Q=4.0, R=0.02
- *                in its own parametrisation – the lab exposes q/r explicitly).
+ * kalman       = scalar random-walk Kalman per beacon on RSSI (dB). Note: the iOS app filters DISTANCE, not RSSI
+ *                (BeaconMeasurementStore.swift: processNoise 0.02, measurementNoise 4.0), so its values are
+ *                not directly comparable with the lab's kalmanQ/kalmanR in dB^2.
  */
 export type RssiFilterKind = "none" | "moving-average" | "ema" | "median" | "trimmed-mean" | "kalman";
 
@@ -275,7 +276,7 @@ export interface TemporalFilterConfig {
 }
 
 export interface AlgorithmParams {
-  /** weighted centroid: weight = (10^(rssi/20))^... see positioning/algorithms docs */
+  /** weighted centroid: weight = (10^(rssi/10))^g with g = weightExponent (received power in mW); see docs/ALGORITHMS.md */
   weightExponent: number;
   /** minimum number of beacons required (algorithm specific lower bound applies) */
   minBeacons: number;
