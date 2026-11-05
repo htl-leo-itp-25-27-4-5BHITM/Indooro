@@ -17,7 +17,8 @@ export function metersToUnits(meters: number, scale: MapScale): number {
 
 export function formatDistance(units: number | null | undefined, scale: MapScale, digits = 2): string {
   if (units === null || units === undefined || !Number.isFinite(units)) return "–";
-  return `${toDisplayDistance(units, scale).toFixed(digits)} ${distanceUnit(scale)}`;
+  // German number format (decimal comma), consistent with all tables in the lab
+  return `${toDisplayDistance(units, scale).toLocaleString("de-DE", { minimumFractionDigits: digits, maximumFractionDigits: digits, useGrouping: false })} ${distanceUnit(scale)}`;
 }
 
 export function formatPercent(fraction: number | null | undefined, digits = 1): string {

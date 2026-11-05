@@ -150,7 +150,7 @@ describe("Replay", () => {
     expect(screen.getByTestId("replay-epoch").textContent).toBe("1 / 4");
     fireEvent.click(screen.getByLabelText("Eine Epoche vor"));
     expect(screen.getByTestId("replay-epoch").textContent).toBe("2 / 4");
-    expect(screen.getByTestId("replay-error").textContent).toMatch(/0\.50 LE/);
+    expect(screen.getByTestId("replay-error").textContent).toMatch(/0,50 LE/);
     fireEvent.click(screen.getByLabelText("Eine Epoche vor"));
     expect(screen.getByTestId("replay-epoch").textContent).toBe("3 / 4");
     expect(screen.getByTestId("replay-failed").textContent).toMatch(/keine Schätzung: zu wenige Beacons/);

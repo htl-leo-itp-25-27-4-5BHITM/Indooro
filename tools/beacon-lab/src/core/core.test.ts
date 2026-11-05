@@ -43,11 +43,11 @@ describe("core/units", () => {
   it("never shows metres without a confirmed scale", () => {
     expect(distanceUnit(unconfirmed)).toBe("LE");
     expect(toDisplayDistance(4, unconfirmed)).toBe(4);
-    expect(formatDistance(4, unconfirmed)).toBe("4.00 LE");
+    expect(formatDistance(4, unconfirmed)).toBe("4,00 LE");
   });
   it("converts with a confirmed scale", () => {
     expect(distanceUnit(confirmed)).toBe("m");
-    expect(formatDistance(4, confirmed)).toBe("2.00 m");
+    expect(formatDistance(4, confirmed)).toBe("2,00 m");
     expect(formatDistance(null, confirmed)).toBe("–");
   });
 });

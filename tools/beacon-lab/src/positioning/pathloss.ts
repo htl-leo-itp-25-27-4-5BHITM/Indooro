@@ -199,7 +199,7 @@ export function calibrateFromRuns(
   const censoring = detectCensoring([...cellCounts.values()]);
   if (censoring !== null && censoring.onsetM <= maxD) {
     warnings.push(
-      `Mögliche Zensierung durch die Empfangsgrenze: Ab etwa ${censoring.onsetM.toFixed(1)} m werden Beacons deutlich seltener empfangen (${censoring.sparsePairs} Beacon-Haltepunkt-Paare unter 50 % der Nahbereichs-Rate). Ferne Beacons erscheinen dann nur bei zufällig günstiger Ausbreitung – das verzerrt den Fit (n wird tendenziell unterschätzt). Empfehlung: maximale Kalibrierdistanz auf ≤ ${censoring.onsetM.toFixed(0)} m begrenzen.`,
+      `Mögliche Zensierung durch die Empfangsgrenze: Ab etwa ${censoring.onsetM.toFixed(1).replace(".", ",")} m werden Beacons deutlich seltener empfangen (${censoring.sparsePairs} Beacon-Haltepunkt-Paare unter 50 % der Nahbereichs-Rate). Ferne Beacons erscheinen dann nur bei zufällig günstiger Ausbreitung – das verzerrt den Fit (n wird tendenziell unterschätzt). Empfehlung: maximale Kalibrierdistanz auf ≤ ${censoring.onsetM.toFixed(0)} m begrenzen.`,
     );
   }
   if (holdCount === 0) {
