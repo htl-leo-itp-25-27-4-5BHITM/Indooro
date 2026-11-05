@@ -3,15 +3,12 @@ import type { ErrorMetrics, EvaluationResult } from "../../core/types";
 import { TOOL_VERSION, downloadText } from "../../data/export";
 import { assessRunQuality } from "../../data/validate";
 import { compareAlgorithms } from "../../positioning/pipeline";
-import { ReportPreview, buildResultsJson, resultsToCsv, type ReportFigureInput, type ReportInput, type RunQuality } from "../../report";
+import { ALL_FIGURE_KINDS, FIGURE_KINDS, ReportPreview, buildReportFigures, buildResultsJson, resultsToCsv, type FigureKind, type ReportInput, type RunQuality } from "../../report";
 import { ALGORITHMS } from "../../positioning/algorithms";
-import { CdfChart, chartToSvgString } from "../charts";
 import { Badge, Button, Callout, Card, EmptyState, Field, OriginBadge, PageHeader, SplitPane, TextInput, Textarea } from "../components";
 import { href } from "../router";
-import { describeConfig } from "../shared";
 import { useCampaign } from "../state/LabContext";
 import { fileSlug } from "./workflow/files";
-import { validErrors } from "./workflow/ResultView";
 
 function Check({ checked, onChange, children, testId }: { checked: boolean; onChange: (v: boolean) => void; children: React.ReactNode; testId?: string }) {
   return (
@@ -26,6 +23,7 @@ export function ReportPage() {
   const { campaign, runs, results } = useCampaign();
   const [selResults, setSelResults] = useState<Set<string>>(() => new Set(results.map((r) => r.id)));
   const [selRuns, setSelRuns] = useState<Set<string>>(() => new Set(runs.map((r) => r.id)));
+  const [figureKinds, setFigureKinds] = useState<Set<FigureKind>>(() => new Set(ALL_FIGURE_KINDS));
   const [notes, setNotes] = useState("");
   const [commit, setCommit] = useState("");
   const [generatedAt, setGeneratedAt] = useState(() => new Date().toISOString());
@@ -45,6 +43,9 @@ export function ReportPage() {
     return runs.filter((r) => selRuns.has(r.id) || need.has(r.id));
   }, [runs, selRuns, chosenResults]);
 
+  // figures depend only on the selected results, campaign and figure types (not on typed notes)
+  const figures = useMemo(() => buildReportFigures({ campaign, results: chosen.map((c) => ({ id: c.id, result: c.result })), kinds: figureKinds }), [campaign, chosen, figureKinds]);
+
   const input: ReportInput | null = useMemo(() => {
     if (chosen.length === 0) return null;
     const qualityByRun: Record<string, RunQuality> = {};
@@ -52,24 +53,6 @@ export function ReportPage() {
       const q = assessRunQuality(r, campaign);
       qualityByRun[r.id] = { issues: q.issues, evaluable: q.evaluable, reasons: q.reasons, perBeacon: q.perBeacon };
     }
-    const figures: ReportFigureInput[] = chosen
-      .filter((c) => c.result.metrics.epochsWithTruth > 0)
-      .map((c) => ({
-        id: `cdf-${c.id}`,
-        title: `Fehlerverteilung: ${c.label}`,
-        svg: chartToSvgString(
-          <CdfChart
-            title={`Kumulative Fehlerverteilung – ${c.label}`}
-            series={[{ id: c.id, label: c.label, values: validErrors(c.result, campaign), total: c.result.metrics.epochsWithTruth }]}
-            unit={c.result.metrics.unit}
-            synthetic={c.result.origin === "synthetic"}
-            width={720}
-            height={320}
-          />,
-        ),
-        caption: `Kumulative Verteilung des Positionsfehlers (${c.result.metrics.unit}); ${describeConfig(c.result.config)}; Messreihe ${c.result.runName}; Config-Hash ${c.result.configHash}. Fehlschläge zählen als „nicht innerhalb“.`,
-      }));
-
     let commonComparison: { commonEpochs: number; common: ErrorMetrics[] } | undefined;
     const runIds = new Set(chosenResults.map((r) => r.runId));
     if (chosenResults.length >= 2 && runIds.size === 1) {
@@ -102,7 +85,7 @@ export function ReportPage() {
       interpretationNotes: notes.trim() || undefined,
       generatedAt,
     };
-  }, [chosen, chosenResults, reportRuns, runs, campaign, commit, notes, generatedAt]);
+  }, [chosen, chosenResults, reportRuns, runs, campaign, figures, commit, notes, generatedAt]);
 
   const hasSynthetic = campaign.floorPlan.origin === "synthetic" || reportRuns.some((r) => r.origin === "synthetic") || chosenResults.some((r) => r.origin === "synthetic");
 
@@ -196,6 +179,16 @@ export function ReportPage() {
               Der Bericht wird entsprechend gekennzeichnet.
             </Callout>
           )}
+          <Card title="Abbildungen" subtitle="Abbildungstypen für den Bericht wählen. Alle Abbildungen werden aus den gewählten Ergebnissen berechnet.">
+            <fieldset className="grid gap-2 sm:grid-cols-2" data-testid="figure-select">
+              <legend className="sr-only">Abbildungen</legend>
+              {FIGURE_KINDS.map((k) => (
+                <Check key={k.id} checked={figureKinds.has(k.id)} onChange={(v) => setFigureKinds(toggle(figureKinds, k.id, v) as Set<FigureKind>)} testId={`figure-check-${k.id}`}>
+                  {k.label} <span className="text-xs text-muted">({k.scope})</span>
+                </Check>
+              ))}
+            </fieldset>
+          </Card>
           {input ? (
             <div data-testid="report-preview">
               <ReportPreview input={input} />

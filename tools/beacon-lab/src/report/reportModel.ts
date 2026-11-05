@@ -56,7 +56,7 @@ export type ReportBlock =
   | { type: "bullets"; items: string[] }
   | { type: "kv"; rows: { key: string; value: string }[] }
   | { type: "table"; table: ReportTable }
-  | { type: "figure"; id: string; title: string; svg: string; caption: string }
+  | { type: "figure"; id: string; /** running figure number (Abbildung N) */ number: number; title: string; svg: string; caption: string }
   | { type: "notice"; tone: "info" | "warning" | "synthetic"; text: string };
 
 export interface ReportSection {
@@ -484,7 +484,7 @@ export function buildReportModel(input: ReportInput): ReportModel {
   add(
     "figures",
     "Abbildungen",
-    figures.length === 0 ? [{ type: "paragraph", text: "Keine Abbildungen angehängt." }] : figures.map((f) => ({ type: "figure" as const, id: f.id, title: f.title, svg: f.svg, caption: f.caption })),
+    figures.length === 0 ? [{ type: "paragraph", text: "Keine Abbildungen angehängt." }] : figures.map((f, i) => ({ type: "figure" as const, id: f.id, number: i + 1, title: f.title, svg: f.svg, caption: f.caption })),
   );
 
   /* 9 Grenzen der Aussagekraft */

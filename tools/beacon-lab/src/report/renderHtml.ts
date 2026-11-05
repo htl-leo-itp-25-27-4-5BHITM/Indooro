@@ -109,7 +109,7 @@ function renderBlock(b: ReportBlock, sectionId: string): string {
       return `<div class="notice ${b.tone}" role="note">${escapeHtml(b.text)}</div>`;
     case "figure": {
       const svg = sanitizeSvg(b.svg);
-      return `<figure id="fig-${escapeHtml(b.id)}">${svg || `<p class="note">Abbildung nicht darstellbar (ungültiges SVG).</p>`}<figcaption><strong>${escapeHtml(b.title)}.</strong> ${escapeHtml(b.caption)}</figcaption></figure>`;
+      return `<figure id="fig-${escapeHtml(b.id)}" data-figure="${b.number}">${svg || `<p class="note">Abbildung nicht darstellbar (ungültiges SVG).</p>`}<figcaption><strong>Abbildung ${b.number}: ${escapeHtml(b.title)}.</strong> ${escapeHtml(b.caption)}</figcaption></figure>`;
     }
   }
 }
