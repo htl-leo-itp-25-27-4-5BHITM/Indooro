@@ -1,6 +1,6 @@
 # Integrationsspezifikation: iOS-Messdaten → Positioning Lab
 
-Status: **Vorschlag**. Dieses Dokument verändert die iOS-App nicht. Es beschreibt, was die App heute schon liefert,
+Status: **Format festgelegt (v2)**. Die App-Umsetzung erfolgt in einem separaten PR; dieses Dokument selbst verändert die App nicht. Es beschreibt, was die App heute schon liefert,
 was der Lab direkt importieren kann und welche additiven Erweiterungen eine spätere, separate Änderung bringen sollte.
 Die Umsetzung sollte über eine eigene OpenSpec-Change laufen (`openspec/changes/…`), nicht über diesen Branch.
 
@@ -37,33 +37,47 @@ als Grundriss importiert wird. `measurement.beacon` muss dem `beaconId` im Layou
 6. **Keine Uhrensynchronisation** zu externen Referenzen (z. B. Video). Für Gehversuche mit Video-Ground-Truth wäre
    ein Sync-Event nötig.
 
-## 3. Vorgeschlagene additive Erweiterung (abwärtskompatibel)
+## 3. Format `indooro-recording/2` (verbindlich für App und Lab)
 
-Alle Vorschläge sind **neue, optionale** Zeilentypen oder Felder. Bestehende Parser (`NavigationReplay`,
-`scripts/field`) ignorieren unbekannte Felder nicht automatisch – deshalb neue Zeilentypen nur nach Anpassung von
-`NavigationRecordLine` (Decoder wirft heute bei unbekanntem `type`). Diese Anpassung gehört in die separate Change.
+Additiv und abwärtskompatibel: alte Aufnahmen (ohne `session`) bleiben gültig. Neue Zeilentypen erfordern die
+Anpassung von `NavigationRecordLine` (der Decoder wirft heute bei unbekanntem `type`) und des Anonymisierungs-Prüfers
+`scripts/field/check_recording_anonymized.py` (strikte Feld-Allowlist).
 
-### 3.1 `session` (erste Zeile)
+### 3.1 `session` – genau eine, erste Zeile nach Start der Aufnahme
 ```json
 {"type":"session","t":1792000000.0,"schema":"indooro-recording/2","app":"1.4.0 (123)",
- "deviceModel":"iPhone15,3","os":"iOS 18.1","scenario":"S1","role":"evaluation",
- "campaign":"testraum-2026-11-20","scanMode":"ranging+cb"}
+ "deviceModel":"iPhone15,3","os":"iOS 18.1","scenario":"S1","role":"evaluation"}
 ```
-`deviceModel` ist eine Modellkennung, keine Gerätekennung (keine UDID, kein Name) – kompatibel mit der Anonymisierung.
+| Feld | Typ | Regel |
+| --- | --- | --- |
+| `schema` | String | immer `indooro-recording/2` |
+| `app` | String | `CFBundleShortVersionString (CFBundleVersion)`, max. 32 Zeichen |
+| `deviceModel` | String | Hardware-Modellkennung (`utsname.machine`, z. B. `iPhone15,3`) – **keine** Geräte-ID, kein Gerätename |
+| `os` | String | `iOS <Version>` |
+| `scenario` | optional | `S1` · `S2` · `S3` · `S4` (Messprotokoll) |
+| `role` | optional | `calibration` · `evaluation` |
 
-### 3.2 `truth` mit Marker-Name
+Keine Freitextfelder (Anonymisierung).
+
+### 3.2 `truth` mit optionalem Marker
 ```json
-{"type":"truth","t":1792000004.9,"x":11.0,"y":5.0,"marker":"M3","method":"long-press"}
+{"type":"truth","t":1792000004.9,"x":11.0,"y":5.0,"marker":"M3"}
 ```
+`marker` erfüllt `^M[0-9]{1,3}$`. Die App setzt den aktuell in den Einstellungen gewählten Marker. Ohne Auswahl entfällt das Feld.
 
-### 3.3 `measurement` mit Measured Power
-`txPower` aus Byte 24 des iBeacon-Frames befüllen (signed Int8, dBm bei 1 m).
-
-### 3.4 `sync`
+### 3.3 `sync`
 ```json
-{"type":"sync","t":1792000100.0,"label":"clap-1"}
+{"type":"sync","t":1792000100.0,"label":"sync-1"}
 ```
-Für die zeitliche Zuordnung externer Referenzen (Video, Stoppuhr).
+`label` erfüllt `^sync-[0-9]{1,4}$` (fortlaufend je Aufnahme). Dient der zeitlichen Zuordnung externer Referenzen.
+
+### 3.4 Lab-Verhalten
+- `session.role` und `session.scenario` werden beim Import als Vorschlag übernommen (Rolle, Laufart: S1 → stationär,
+  S2–S4 → Gehversuch), `deviceModel`/`os`/`app` als Gerät in der Provenienz.
+- `truth.marker` wird zum Label des Referenzpunkts.
+- `sync`-Zeilen werden gezählt und als Info gemeldet (keine Samples).
+- Measured Power (Byte 24) ist **nicht** Teil von Version 2 (CoreBluetooth liefert iBeacon-Frames auf iOS
+  vermutlich nicht, siehe Review C.7) und bleibt offen.
 
 ## 4. Abnahmekriterien für die spätere iOS-Change
 
