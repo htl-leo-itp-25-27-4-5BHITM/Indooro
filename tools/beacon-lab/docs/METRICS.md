@@ -83,3 +83,58 @@ bleiben daneben maßgeblich für die Verfügbarkeit. Vergleiche nur mit gleichem
 
 Unkalibriertes/manuelles Pfadverlustmodell (nur Verfahren, die es nutzen), unbestätigter Maßstab, keine Referenzpunkte, < 100 ausgewertete Epochen („explorativ“), synthetische Daten,
 Interpolations-Annahme, unbekannte Beacon-IDs im Lauf, aktive zeitliche Glättung, fehlende Fingerprints.
+
+## Unsicherheit und Mehrlauf-Auswertung
+
+Implementierung: `src/positioning/uncertainty.ts`, `aggregate.ts`, `trackError.ts`; Oberfläche: Seite „Statistik & Mehrlauf“. Alle Funktionen sind rein und deterministisch (Seed).
+
+### Wilson-Intervall (Anteile)
+
+Für Trefferquoten (`within2/3/5`) und die Ausfallrate (k Erfolge bei n Versuchen, p = k/n, z = 1,96 für 95 %):
+
+```
+Mitte = (p + z²/2n) / (1 + z²/n)
+Halbbreite = z · sqrt( p(1−p)/n + z²/4n² ) / (1 + z²/n)
+Intervall = Mitte ± Halbbreite   (auf [0, 1] begrenzt)
+```
+
+Beispiel: 8 von 10 → [0,490; 0,943]. n = 0 → kein Intervall. Nenner und Zählung wie in `computeErrorMetrics`: Nenner = Epochen mit Referenz, Fehlschläge zählen als „nicht innerhalb“.
+Das Wilson-Intervall setzt **unabhängige** Versuche voraus; Epochen eines Laufs sind autokorreliert, das Intervall ist daher eher **zu eng**.
+
+### Block-Bootstrap (Mittel, Median, P90, P95)
+
+Aufeinanderfolgende RSSI-Epochen sind autokorreliert (fast dieselbe Messung im Sekundentakt). Würden einzelne Epochen neu gezogen, entstünden Intervalle, die so tun, als gäbe es 1800 unabhängige Beobachtungen.
+Deshalb werden **ganze Blöcke** mit Zurücklegen gezogen (Standard 2000 Wiederholungen, Seed fest und im Export/Bericht dokumentiert), die Statistik wird auf den zusammengesetzten Fehlern berechnet und das
+Intervall ist das **Perzentilintervall** (2,5 % / 97,5 % bei 95 %). Die Statistiken sind – wie in `computeErrorMetrics` – bedingt auf eine gültige Schätzung.
+
+**Blockdefinition:**
+
+| Fall | Block |
+| --- | --- |
+| stationärer Lauf | ein Halt (identische aufeinanderfolgende Referenzen); Epochen außerhalb von Halten: feste 10-s-Segmente |
+| Gehversuch | festes 10-s-Zeitsegment (ab der ersten Epoche mit Referenz) |
+| mehrere Läufe gepoolt, Ebene „Läufe“ | ein Lauf = ein Block |
+
+**Mindestzahl:** weniger als **5** nicht leere Blöcke → kein Intervall (`lo`/`hi` = null, Grund „zu wenige Blöcke“, in der Oberfläche „n. b.“). Mit weniger als 5 Läufen fällt die gepoolte Zeile daher auf
+**Zeitblöcke innerhalb der Läufe** zurück; dieses Intervall erfasst nur die Streuung innerhalb der Läufe, **nicht** die zwischen Läufen (Standort, Tag, Gerät). Die Ebene „Läufe als Blöcke“ wird ab 5 Läufen verwendet.
+Zusätzlich wird die Streuung der Lauf-Mediane (Min, Max, Standardabweichung) ausgewiesen.
+
+### Einheiten
+
+Alle Werte folgen der Anzeigeeinheit: Meter nur bei bestätigtem Maßstab, sonst Layout-Einheiten (LE); die Schwellen 2/3/5 gelten in derselben Einheit.
+
+### Längs- und Querfehler (Gehversuche mit interpolierter Referenz)
+
+Lokale Richtung u = normierter Vektor vom vorigen zum nächsten Referenzpunkt (zentrale Differenz). Fehlervektor e = Schätzung − Referenz.
+
+- **Längsfehler** `along = e · u`: positiv = Schätzung **vor** der Referenz, negativ = hinterher. Eine Verzögerung (Lag) erscheint als `along ≈ −Lag · Geschwindigkeit`.
+- **Querfehler** `cross = e · n`, n = (−u_y, u_x): positiv = **rechts** der Gehrichtung (Layout-y zeigt nach unten). Ein seitlicher Versatz ist reiner Querfehler.
+- Stillstand (lokale Referenzgeschwindigkeit < 0,2 LE/s), Lücken > 5 s zwischen den Nachbarn und Fehlschläge werden übersprungen und gezählt. Kennzahlen: Mittel (vorzeichenbehaftet, = systematischer Anteil), Median |·|, P95 |·|.
+
+### Regeln zur Interpretation
+
+- **Überlappende Intervalle sind kein Beleg für Gleichheit**, nicht überlappende kein formaler Test. Für „A besser als B“ braucht es wiederholte Läufe unter derselben Bedingung und idealerweise gepaarte Vergleiche.
+- Intervalle beschreiben nur die **statistische** Unsicherheit der vorliegenden Messung, nicht systematische Fehler (falscher Maßstab, unkalibriertes Pfadverlustmodell, unsichere interpolierte Referenz).
+- **Synthetische** Intervalle beschreiben nur die Simulation (angenommene Störungen), keine reale Hardware.
+- **Explorativ** gekennzeichnet: weniger als 3 Läufe oder weniger als 100 Epochen mit Referenz. Nur Läufe unter gleicher Bedingung poolen; die Eingabe „Bedingung“ wird in den Export übernommen.
+- Leckageregeln (keine Auswertung auf Kalibrierungsläufen, kein Pfadverlustmodell vom selben Lauf) gelten unverändert; ein Verstoß bricht die Mehrlauf-Auswertung mit `LeakageError` ab.
