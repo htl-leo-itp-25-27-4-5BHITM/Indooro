@@ -51,7 +51,7 @@ export async function createCampaign(page: Page, name: string, layoutFile?: stri
   await page.getByTestId("campaign-name").fill(name);
   if (layoutFile) {
     await page.getByTestId("campaign-plan-source").selectOption("layout");
-    await page.getByTestId("file-input").setInputFiles(layoutFile);
+    await page.getByRole("dialog").getByTestId("file-input").setInputFiles(layoutFile);
     await expect(page.getByText(/Layout gelesen/)).toBeVisible();
   }
   await page.getByTestId("campaign-save").click();
