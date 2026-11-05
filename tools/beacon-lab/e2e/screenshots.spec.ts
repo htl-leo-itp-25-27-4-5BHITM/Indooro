@@ -83,6 +83,25 @@ test.describe("Screenshots @screenshots", () => {
     for (let i = 0; i < 12; i++) await page.getByRole("button", { name: "Eine Epoche vor" }).click();
     await shot(page, "replay");
 
+    await goTo(page, "statistics");
+    await page.getByTestId("statistics-compute").click();
+    await expect(page.getByTestId("statistics-pooled-row")).toBeVisible({ timeout: 30_000 });
+    await page.getByTestId("statistics-table").scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, -120));
+    await shot(page, "statistics");
+
+    await goTo(page, "beacons");
+    await page.getByTestId("beacons-compute").click();
+    await expect(page.getByTestId("beacons-table")).toBeVisible({ timeout: 60_000 });
+    await page.getByTestId("beacons-map").scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, -80));
+    await shot(page, "beacon-diagnostics");
+
+    await goTo(page, "planning");
+    await page.getByTestId("planning-simulate").click();
+    await expect(page.getByTestId("planning-summary").getByTestId("stat-tile").first()).toBeVisible({ timeout: 15_000 });
+    await shot(page, "planning");
+
     await goTo(page, "report");
     const check = page.getByTestId("result-check").first();
     if (!(await check.isChecked())) await check.check();
