@@ -47,7 +47,9 @@ jobs:
 
   # Browser-Tests (Playwright, Chromium) gegen den Produktions-Build, Desktop + Mobil
   e2e:
-    runs-on: ubuntu-latest
+    # Gepinnt: Playwright 1.60 kann Chromium auf ubuntu-latest (26.04) nicht installieren
+    # ("Playwright does not support chromium on ubuntu26.04-x64"). Beim Playwright-Update erneut prüfen.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
