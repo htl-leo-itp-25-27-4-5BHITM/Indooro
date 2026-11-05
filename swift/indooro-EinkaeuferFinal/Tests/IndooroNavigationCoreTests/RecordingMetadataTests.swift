@@ -22,7 +22,10 @@ final class RecordingMetadataTests: XCTestCase {
         ]
         let text = try NavigationRecordLine.jsonl(lines)
         XCTAssertTrue(text.contains(#""type":"session""#))
-        XCTAssertTrue(text.contains(#""schema":"indooro-recording/2""#))
+        // JSONEncoder escapes "/" as "\/" (valid JSON); compare the decoded value, not the raw bytes.
+        let firstLine = try XCTUnwrap(text.split(separator: "\n").first)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(firstLine.utf8)) as? [String: Any])
+        XCTAssertEqual(object["schema"] as? String, "indooro-recording/2")
         XCTAssertTrue(text.contains(#""scenario":"S1""#))
         XCTAssertTrue(text.contains(#""role":"evaluation""#))
         XCTAssertTrue(text.contains(#""marker":"M3""#))
