@@ -36,7 +36,9 @@ const f = (v: number, d = 2): string => {
   const s = v.toFixed(d);
   return s.includes(".") ? s.replace(/0+$/, "").replace(/\.$/, "") : s;
 };
-const fmt = (v: number): string => v.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 2, useGrouping: false });
+const fmt = (v: number): string => v.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: false });
+/** heatmap cell labels: fixed one decimal so neighbouring cells are comparable at a glance */
+const fmtCell = (v: number): string => v.toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1, useGrouping: false });
 const safeId = (s: string): string => s.replace(/[^A-Za-z0-9_-]/g, "-");
 
 /** Deterministic thinning: keeps every k-th item (k = ceil(n / max)), always starting with the first. */
@@ -138,11 +140,13 @@ function gridSvg(plan: FloorPlan, k: number): string {
   return `<path d="${d}" stroke="#e6edf0" stroke-width="${f(0.75 * k)}" fill="none"/>`;
 }
 
-function beaconsSvg(beacons: Beacon[], k: number): string {
+function beaconsSvg(beacons: Beacon[], k: number, planWidth: number): string {
+  // labels of beacons in the right fifth are anchored to the left so they stay inside the plan
+  const rightHalf = (b: Beacon): boolean => b.position.x > planWidth * 0.8;
   return beacons
     .map(
       (b) =>
-        `<g class="beacon"><circle cx="${f(b.position.x)}" cy="${f(b.position.y)}" r="${f(4.5 * k)}" fill="${b.enabled ? "#102a3b" : "#ffffff"}" stroke="${b.enabled ? "#7edcc6" : "#7f95a4"}" stroke-width="${f(1.5 * k)}"/><text x="${f(b.position.x + 6 * k)}" y="${f(b.position.y - 6 * k)}" font-size="${f(9 * k)}" ${FONT} fill="${INK}">${esc(b.label ?? b.id)}</text></g>`,
+        `<g class="beacon"><circle cx="${f(b.position.x)}" cy="${f(b.position.y)}" r="${f(4.5 * k)}" fill="${b.enabled ? "#102a3b" : "#ffffff"}" stroke="${b.enabled ? "#7edcc6" : "#7f95a4"}" stroke-width="${f(1.5 * k)}"/><text x="${f(b.position.x + (rightHalf(b) ? -6 : 6) * k)}" y="${f(b.position.y - 6 * k)}" font-size="${f(9 * k)}"${rightHalf(b) ? ' text-anchor="end"' : ""} ${FONT} fill="${INK}">${esc(b.label ?? b.id)}</text></g>`,
     )
     .join("");
 }
@@ -224,7 +228,7 @@ export function renderFloorPlanSvg(input: FloorPlanFigureInput): FigureResult {
     })
     .join("");
 
-  const body = `${gridSvg(plan, k)}${elementsSvg(plan, k)}<g class="vectors" stroke="#506779" stroke-opacity="0.55" stroke-width="${f(0.8 * k)}">${vectors}</g>${grey}${beaconsSvg(beacons, k)}${refs}${points}`;
+  const body = `${gridSvg(plan, k)}${elementsSvg(plan, k)}<g class="vectors" stroke="#506779" stroke-opacity="0.55" stroke-width="${f(0.8 * k)}">${vectors}</g>${grey}${beaconsSvg(beacons, k, plan.width)}${refs}${points}`;
 
   const ly = legendRowY(fr);
   const barX = fr.margin + 260;
@@ -281,7 +285,7 @@ export function renderErrorHeatmapSvg(input: HeatmapFigureInput): HeatmapFigureR
         withData++;
         const t = normalize(hit.v, 0, maxV);
         rects += `<rect class="cell data" data-n="${hit.cell.n}" x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" fill="${colorRamp(t, "error")}" stroke="#ffffff" stroke-width="${f(0.8 * k)}"/>`;
-        if (showText) rects += `<text x="${f(x + w / 2)}" y="${f(y + h / 2)}" font-size="${f(9 * k)}" text-anchor="middle" dominant-baseline="central" ${FONT} fill="${t > 0.7 ? "#ffffff" : INK}">${fmt(hit.v)}</text>`;
+        if (showText) rects += `<text x="${f(x + w / 2)}" y="${f(y + h / 2)}" font-size="${f(9 * k)}" text-anchor="middle" dominant-baseline="central" ${FONT} fill="${t > 0.7 ? "#ffffff" : INK}">${fmtCell(hit.v)}</text>`;
       } else {
         without++;
         rects += `<rect class="cell nodata" x="${f(x)}" y="${f(y)}" width="${f(w)}" height="${f(h)}" fill="url(#${hatchId})" stroke="#e6edf0" stroke-width="${f(0.8 * k)}"/>`;
@@ -297,7 +301,7 @@ export function renderErrorHeatmapSvg(input: HeatmapFigureInput): HeatmapFigureR
       return `<rect x="${f(el.x)}" y="${f(el.y)}" width="${f(el.width)}" height="${f(el.height)}"${el.rotationDeg ? ` transform="rotate(${f(el.rotationDeg)} ${f(cx)} ${f(cy)})"` : ""}/>`;
     })
     .join("");
-  const body = `${pat}${rects}<g class="el-outline" fill="none" stroke="#4b6174" stroke-opacity="0.45" stroke-width="${f(0.8 * k)}">${outline}</g>${beaconsSvg(beacons, k)}`;
+  const body = `${pat}${rects}<g class="el-outline" fill="none" stroke="#4b6174" stroke-opacity="0.45" stroke-width="${f(0.8 * k)}">${outline}</g>${beaconsSvg(beacons, k, plan.width)}`;
 
   const ly = legendRowY(fr);
   const barX = fr.margin + 250;
