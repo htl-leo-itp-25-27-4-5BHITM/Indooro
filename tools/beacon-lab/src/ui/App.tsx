@@ -11,6 +11,9 @@ import { PositioningPage } from "./pages/PositioningPage";
 import { ReplayPage } from "./pages/ReplayPage";
 import { ReportPage } from "./pages/ReportPage";
 import { SignalsPage } from "./pages/SignalsPage";
+import { StatisticsPage } from "./pages/StatisticsPage";
+import { BeaconDiagnosticsPage } from "./pages/BeaconDiagnosticsPage";
+import { PlanningPage } from "./pages/PlanningPage";
 import { PAGES, href, useRoute, type PageId } from "./router";
 import { LabProvider, useLab } from "./state/LabContext";
 
@@ -24,6 +27,9 @@ const PAGE_COMPONENTS: Record<PageId, ComponentType> = {
   compare: ComparePage,
   heatmaps: HeatmapsPage,
   replay: ReplayPage,
+  statistics: StatisticsPage,
+  beacons: BeaconDiagnosticsPage,
+  planning: PlanningPage,
   report: ReportPage,
 };
 

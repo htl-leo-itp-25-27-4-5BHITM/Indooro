@@ -11,6 +11,9 @@ export type PageId =
   | "compare"
   | "heatmaps"
   | "replay"
+  | "statistics"
+  | "beacons"
+  | "planning"
   | "report";
 
 export interface Route {
@@ -28,6 +31,9 @@ export const PAGES: { id: PageId; label: string; group: string }[] = [
   { id: "compare", label: "Algorithmusvergleich", group: "Analyse" },
   { id: "heatmaps", label: "Heatmaps", group: "Visualisierung" },
   { id: "replay", label: "Replay", group: "Visualisierung" },
+  { id: "statistics", label: "Statistik & Mehrlauf", group: "Analyse" },
+  { id: "beacons", label: "Beacon-Diagnose", group: "Analyse" },
+  { id: "planning", label: "Platzierung (Simulation)", group: "Visualisierung" },
   { id: "report", label: "Bericht & Export", group: "Ergebnis" },
 ];
 
