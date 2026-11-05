@@ -65,7 +65,7 @@ Im Lab unter **Kampagne → Beacons** eintragen bzw. prüfen. Beacons können de
 
 ## 7. Import in den Lab
 
-1. `cd tools/beacon-lab && npm ci && npm run dev` → <http://localhost:4317>.
+1. `cd tools/beacon-lab && npm ci && npm run dev` → <http://127.0.0.1:4317>.
 2. **Neue Kampagne** anlegen: Name, Datum, Markt, Gerät, Bedingungen.
 3. **Grundriss importieren:** Layout-JSON (aus Schritt 1). Beacons werden aus dem Layout übernommen. Maßstab bestätigen.
 4. **Messreihe importieren:** `.jsonl` wählen → Format „Indooro-Aufnahme“ wird erkannt. Art (stationär/Gehversuch)

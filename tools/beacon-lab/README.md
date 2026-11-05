@@ -21,7 +21,7 @@ Voraussetzung: Node.js 22.13 oder neuer (wie `admin-ui`).
 ```bash
 cd tools/beacon-lab
 npm ci
-npm run dev          # http://localhost:4317
+npm run dev          # http://127.0.0.1:4317
 ```
 
 Im Browser auf **„Demo-Kampagne laden (synthetisch)“** klicken. Die Demo-Kampagne enthält einen fiktiven Markt mit 10 Beacons, 2 Kalibrierungsläufe und 4 Evaluationsläufe
@@ -71,7 +71,7 @@ Im Browser auf **„Demo-Kampagne laden (synthetisch)“** klicken. Die Demo-Kam
 ## Datenschutz und Datenqualität
 
 - Daten verlassen den Browser nur über einen Export, den das Team selbst auslöst. Der Speicher lässt sich über die Browser-Einstellungen
-  löschen (Website-Daten für `localhost:4317`).
+  löschen (Website-Daten für `127.0.0.1:4317`).
 - Aufnahmen aus der App vor der Weitergabe mit `scripts/field/anonymize_recording.py` anonymisieren.
 - Rohdaten werden nach dem Import nie verändert. Filter arbeiten auf Kopien. Jede Umwandlung beim Import
   (z. B. ms → s, Sortierung, Dezimalkomma, Entfernen exakter Duplikate) wird in der Provenienz der Messreihe festgehalten.
