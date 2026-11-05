@@ -42,7 +42,7 @@ export function Tabs({ tabs, value, onChange, label, renderPanel = true }: TabsP
   const active = tabs.find((t) => t.id === value);
   return (
     <div>
-      <div role="tablist" aria-label={label} className="flex gap-1 border-b border-line">
+      <div role="tablist" aria-label={label} className="flex gap-1 overflow-x-auto border-b border-line">
         {tabs.map((t) => {
           const selected = t.id === value;
           return (

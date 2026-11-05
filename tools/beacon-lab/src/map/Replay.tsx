@@ -272,10 +272,10 @@ export function Replay({
     >
       <div className="flex flex-wrap items-center gap-2 text-sm">
         {algorithmOptions && algorithmOptions.length > 0 && (
-          <label className="flex items-center gap-2 text-muted">
+          <label className="flex min-w-0 max-w-full items-center gap-2 text-muted">
             Verfahren
             <select
-              className="rounded-md border border-line bg-white px-2 py-1 text-sm text-brand"
+              className="min-w-0 max-w-full truncate rounded-md border border-line bg-white px-2 py-1 text-sm text-brand"
               value={algorithmId ?? algorithmOptions[0].id}
               onChange={(e) => onAlgorithmChange?.(e.target.value)}
               aria-label="Verfahren wählen"
