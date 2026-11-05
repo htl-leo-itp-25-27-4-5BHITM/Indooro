@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { useState } from "react";
-import { DataTable, IssueList, Modal, OriginBadge, StatTile, Tabs, FileDrop, NumberInput, Callout } from "./index";
+import { DataTable, IssueList, Modal, OriginBadge, StatTile, Tabs, FileDrop, NumberInput, Callout, Badge } from "./index";
 import type { DataColumn } from "./index";
 import { ERROR_METRIC_DEFINITIONS, DYNAMIC_METRIC_DEFINITIONS } from "./metricDefinitions";
 import type { DataIssue } from "../../core/types";
@@ -174,5 +174,18 @@ describe("NumberInput / Callout / definitions", () => {
     expect(ERROR_METRIC_DEFINITIONS.p95.definition).toContain("Typ 7");
     expect(ERROR_METRIC_DEFINITIONS.within3.definition).toContain("Fehlschläge zählen als nicht innerhalb");
     expect(DYNAMIC_METRIC_DEFINITIONS.jumpRate.definition).toContain("2 m/s");
+  });
+});
+
+describe("data attribute forwarding", () => {
+  it("Badge and NumberInput forward data-testid", () => {
+    render(
+      <div>
+        <Badge data-testid="b1">x</Badge>
+        <NumberInput value={1} onChange={() => {}} data-testid="n1" />
+      </div>,
+    );
+    expect(screen.getByTestId("b1").textContent).toBe("x");
+    expect(screen.getByTestId("n1").tagName).toBe("INPUT");
   });
 });

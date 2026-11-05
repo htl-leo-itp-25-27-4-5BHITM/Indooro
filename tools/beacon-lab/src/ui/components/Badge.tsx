@@ -13,9 +13,16 @@ const STYLES: Record<BadgeVariant, string> = {
   real: "bg-accent text-white border-accent uppercase tracking-wider",
 };
 
-export function Badge({ variant = "neutral", children, className, title }: { variant?: BadgeVariant; children: ReactNode; className?: string; title?: string }) {
+export function Badge({
+  variant = "neutral",
+  children,
+  className,
+  title,
+  ...data
+}: { variant?: BadgeVariant; children: ReactNode; className?: string; title?: string; [dataAttr: `data-${string}`]: string | undefined }) {
   return (
     <span
+      {...data}
       title={title}
       data-variant={variant}
       className={cn("inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[11px] font-semibold leading-4", STYLES[variant], className)}

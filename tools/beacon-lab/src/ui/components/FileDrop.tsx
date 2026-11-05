@@ -53,7 +53,7 @@ export function FileDrop({ onFiles, accept = ".csv,.json,.jsonl", multiple = tru
         disabled && "opacity-50",
       )}
     >
-      <p className="text-sm font-medium text-ink">{children ?? "Dateien hierher ziehen"}</p>
+      <p className="text-sm font-medium text-ink">{children ?? (multiple ? "Dateien hierher ziehen" : "Datei hierher ziehen")}</p>
       <p className="text-xs text-muted">Erlaubt: {accept.split(",").join(", ")}</p>
       <input
         id={id}

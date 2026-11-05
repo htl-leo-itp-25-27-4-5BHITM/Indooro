@@ -261,10 +261,10 @@ export function demoFloorPlan(): { plan: FloorPlan; beacons: Beacon[] } {
     el("demo-shelf-3", "shelf", 4, 9.5, 22, 1, "Regal 3"),
     el("demo-shelf-4", "shelf", 4, 12.5, 22, 1, "Regal 4"),
     el("demo-shelf-5", "shelf", 13, 15.5, 13, 1, "Regal 5"),
-    el("demo-checkout-1", "checkout", 5, 15.5, 1.2, 2.5, "Kasse 1"),
-    el("demo-checkout-2", "checkout", 7, 15.5, 1.2, 2.5, "Kasse 2"),
-    el("demo-checkout-3", "checkout", 9, 15.5, 1.2, 2.5, "Kasse 3"),
-    el("demo-checkout-4", "checkout", 11, 15.5, 1.2, 2.5, "Kasse 4"),
+    el("demo-checkout-1", "checkout", 5, 15.5, 1.2, 2.5, "K1"),
+    el("demo-checkout-2", "checkout", 7, 15.5, 1.2, 2.5, "K2"),
+    el("demo-checkout-3", "checkout", 9, 15.5, 1.2, 2.5, "K3"),
+    el("demo-checkout-4", "checkout", 11, 15.5, 1.2, 2.5, "K4"),
   ];
 
   const positions: [number, number][] = [

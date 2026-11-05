@@ -63,6 +63,8 @@ export interface NumberInputProps {
   id?: string;
   "aria-label"?: string;
   className?: string;
+  /** forwarded to the <input>, e.g. data-testid */
+  [dataAttr: `data-${string}`]: string | undefined;
 }
 
 /** Numeric input with unit suffix. Empty input yields null; out-of-range values are clamped on blur. */
@@ -81,6 +83,7 @@ export function NumberInput({ value, onChange, unit, min, max, step = 1, disable
         disabled={disabled}
         placeholder={placeholder}
         aria-label={rest["aria-label"]}
+        {...Object.fromEntries(Object.entries(rest).filter(([k]) => k.startsWith("data-")))}
         {...fp}
         onChange={(e) => {
           const raw = e.target.value;
