@@ -96,6 +96,8 @@ export interface CalibrationResult {
   warnings: string[];
   /** exactly the (distance, RSSI) pairs the global fit used – for plots, so they can never drift from the fit */
   pairs: { beaconId: string; distanceM: number; rssi: number }[];
+  /** recommended maximum calibration distance (m, rounded down) when censoring was detected; never applied automatically */
+  suggestedMaxDistanceM?: number;
 }
 
 /**
@@ -197,9 +199,10 @@ export function calibrateFromRuns(
     }
   }
   const censoring = detectCensoring([...cellCounts.values()]);
+  const suggestedMaxDistanceM = censoring !== null && censoring.onsetM <= maxD ? Math.max(1, Math.floor(censoring.onsetM)) : undefined;
   if (censoring !== null && censoring.onsetM <= maxD) {
     warnings.push(
-      `Mögliche Zensierung durch die Empfangsgrenze: Ab etwa ${censoring.onsetM.toFixed(1).replace(".", ",")} m werden Beacons deutlich seltener empfangen (${censoring.sparsePairs} Beacon-Haltepunkt-Paare unter 50 % der Nahbereichs-Rate). Ferne Beacons erscheinen dann nur bei zufällig günstiger Ausbreitung – das verzerrt den Fit (n wird tendenziell unterschätzt). Empfehlung: maximale Kalibrierdistanz auf ≤ ${censoring.onsetM.toFixed(0)} m begrenzen.`,
+      `Mögliche Zensierung durch die Empfangsgrenze: Ab etwa ${censoring.onsetM.toFixed(1).replace(".", ",")} m werden Beacons deutlich seltener empfangen (${censoring.sparsePairs} Beacon-Haltepunkt-Paare unter 50 % der Nahbereichs-Rate). Ferne Beacons erscheinen dann nur bei zufällig günstiger Ausbreitung – das verzerrt den Fit (n wird tendenziell unterschätzt). Empfehlung: maximale Kalibrierdistanz auf ≤ ${Math.max(1, Math.floor(censoring.onsetM))} m begrenzen.`,
     );
   }
   if (holdCount === 0) {
@@ -213,6 +216,6 @@ export function calibrateFromRuns(
     perBeacon[b.id] = "error" in fit ? fit : { ...fit, fittedOnRunIds: runIds };
   }
   const g = fitPathLoss(global);
-  if ("error" in g) return { perBeacon, error: g.error, warnings, pairs: global };
-  return { model: { ...g, fittedOnRunIds: runIds }, perBeacon, warnings, pairs: global };
+  if ("error" in g) return { perBeacon, error: g.error, warnings, pairs: global, suggestedMaxDistanceM };
+  return { model: { ...g, fittedOnRunIds: runIds }, perBeacon, warnings, pairs: global, suggestedMaxDistanceM };
 }

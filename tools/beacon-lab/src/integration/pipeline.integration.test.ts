@@ -30,6 +30,15 @@ describe("calibration on the synthetic demo campaign", () => {
     expect(c.warnings.some((w) => w.includes("Zensierung"))).toBe(false);
   });
 
+  it("suggests a max distance that, once applied, removes the censoring warning", () => {
+    const c = calibrateFromRuns(calibration, campaign, DEFAULT_POSITIONING_CONFIG);
+    expect(c.suggestedMaxDistanceM).toBeGreaterThanOrEqual(1);
+    const refit = calibrateFromRuns(calibration, campaign, DEFAULT_POSITIONING_CONFIG, { maxDistanceM: c.suggestedMaxDistanceM });
+    expect(refit.warnings.some((w) => w.includes("Zensierung"))).toBe(false);
+    expect(refit.suggestedMaxDistanceM).toBeUndefined();
+    expect(Math.abs(refit.model!.pathLossExponent - truth.truePathLossExponent)).toBeLessThan(0.25);
+  });
+
   it("detectCensoring returns null for uniformly received pairs", () => {
     const cells = Array.from({ length: 20 }, (_, i) => ({ distanceM: i + 1, count: 100, durationSec: 50 }));
     expect(detectCensoring(cells)).toBeNull();

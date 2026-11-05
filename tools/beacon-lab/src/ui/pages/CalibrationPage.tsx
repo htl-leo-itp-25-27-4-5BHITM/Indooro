@@ -37,12 +37,12 @@ export function CalibrationPage() {
   const synthetic = selectedRuns.some((r) => r.origin === "synthetic") || campaign.floorPlan.origin === "synthetic";
   const cfg = DEFAULT_POSITIONING_CONFIG;
 
-  const calibrate = () => {
+  const calibrate = (limit: number | null = maxDistance) => {
     setFatal(null);
     setStatus(null);
     try {
-      const result = calibrateFromRuns(selectedRuns, campaign, cfg, maxDistance !== null && maxDistance > 0 ? { maxDistanceM: maxDistance } : {});
-      setState({ result, runIds: selectedRuns.map((r) => r.id), maxDistance });
+      const result = calibrateFromRuns(selectedRuns, campaign, cfg, limit !== null && limit > 0 ? { maxDistanceM: limit } : {});
+      setState({ result, runIds: selectedRuns.map((r) => r.id), maxDistance: limit });
     } catch (e) {
       setState(null);
       setFatal(e instanceof Error ? e.message : String(e));
@@ -200,7 +200,7 @@ export function CalibrationPage() {
                 </div>
               </Field>
             </div>
-            <Button className="mt-4 w-full" data-testid="calibration-run" disabled={selectedRuns.length === 0} onClick={calibrate}>
+            <Button className="mt-4 w-full" data-testid="calibration-run" disabled={selectedRuns.length === 0} onClick={() => calibrate()}>
               Kalibrieren
             </Button>
           </Card>
@@ -228,7 +228,27 @@ export function CalibrationPage() {
               {state.result.warnings.map((w, i) => {
                 const censor = w.includes("Zensierung");
                 return (
-                  <Callout key={i} tone="warning" title={censor ? "Zensierung durch die Empfangsgrenze" : w.startsWith("Maßstab") ? "Maßstab nicht bestätigt" : "Hinweis"}>
+                  <Callout
+                    key={i}
+                    tone="warning"
+                    title={censor ? "Zensierung durch die Empfangsgrenze" : w.startsWith("Maßstab") ? "Maßstab nicht bestätigt" : "Hinweis"}
+                    actions={
+                      censor && state.result.suggestedMaxDistanceM !== undefined ? (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          data-testid="calibration-apply-suggested-distance"
+                          onClick={() => {
+                            const d = state.result.suggestedMaxDistanceM!;
+                            setMaxDistance(d);
+                            calibrate(d);
+                          }}
+                        >
+                          Mit ≤ {state.result.suggestedMaxDistanceM} m neu fitten
+                        </Button>
+                      ) : undefined
+                    }
+                  >
                     <span data-testid={censor ? "calibration-censoring-warning" : "calibration-warning"}>{w}</span>
                   </Callout>
                 );
