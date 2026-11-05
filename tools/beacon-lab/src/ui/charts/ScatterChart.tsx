@@ -77,8 +77,8 @@ export function ScatterChart({ series, curves = [], xLabel, yLabel, xUnit, yUnit
         const sy = linearScale(yd, [g.ih, 0]);
         return (
           <>
-            <YAxis g={g} scale={sy} ticks={yTicks} label={yLabel} />
-            <XAxis g={g} scale={sx} ticks={xTicks} label={xLabel} grid={xLog} format={(v) => (xLog ? String(v) : formatTick(v, xTicks[1] - xTicks[0]))} />
+            <YAxis g={g} scale={sy} ticks={yTicks} label={yUnit ? `${yLabel} (${yUnit})` : yLabel} />
+            <XAxis g={g} scale={sx} ticks={xTicks} label={xUnit ? `${xLabel} (${xUnit})` : xLabel} grid={xLog} format={(v) => (xLog ? String(v) : formatTick(v, xTicks[1] - xTicks[0]))} />
             {series.map((s, i) => (
               <path
                 key={s.id}
