@@ -15,6 +15,7 @@ import type {
   ReferencePoint,
   RssiSample,
   RunKind,
+  RunRole,
 } from "../core/types";
 import { parseCsv, stripBom } from "./csv";
 import { IssueCollector, hasBlockingError } from "./issues";
@@ -74,7 +75,7 @@ export function suggestColumnMapping(header: string[]): ColumnMapping {
 /* Format detection & draft                                            */
 /* ------------------------------------------------------------------ */
 
-const JSONL_TYPES = new Set(["measurement", "truth", "layout", "scan", "step", "heading", "event"]);
+const JSONL_TYPES = new Set(["measurement", "truth", "layout", "scan", "step", "heading", "event", "session", "sync"]);
 
 export function detectFormat(fileName: string, text: string): ImportFormat {
   const lower = fileName.toLowerCase();
@@ -243,7 +244,7 @@ export interface ImportOutcome {
   /** layout found inside an Indooro recording ("layout" line) – metadata only */
   layoutInfo?: { layoutId?: string; revision?: number; shopName?: string };
   /** hints found in the file (run name / kind column, declared origin) – the UI may pre-fill with them */
-  suggested?: { runName?: string; kind?: RunKind; origin?: DataOrigin };
+  suggested?: { runName?: string; kind?: RunKind; origin?: DataOrigin; role?: RunRole; deviceId?: string };
 }
 
 export type TimeFormatOption = "auto" | "epoch-s" | "epoch-ms" | "iso";
@@ -728,6 +729,8 @@ function parseJsonlFile(text: string): ParsedFile {
   let rejected = 0;
   let layoutInfo: ImportOutcome["layoutInfo"];
   const layoutVariants = new Set<string>();
+  let session: { schema?: string; app?: string; deviceModel?: string; os?: string; scenario?: string; role?: RunRole } | undefined;
+  let syncCount = 0;
 
   lines.forEach((line, idx) => {
     if (line.trim() === "") return;
@@ -757,8 +760,32 @@ function parseJsonlFile(text: string): ParsedFile {
         });
         break;
       }
-      case "truth":
-        refs.push({ row, t: o.t, x: o.x, y: o.y });
+      case "truth": {
+        // indooro-recording/2: optional marker name (M1…M999) becomes the reference label
+        const marker = typeof o.marker === "string" && /^M[0-9]{1,3}$/.test(o.marker) ? o.marker : undefined;
+        if (typeof o.marker === "string" && !marker) {
+          coll.add("invalid-marker", "warning", row, (n) => `${n} Referenzzeilen mit ungültigem Marker-Namen (erwartet M1…M999); der Name wurde ignoriert, die Position übernommen.`);
+        }
+        refs.push({ row, t: o.t, x: o.x, y: o.y, label: marker });
+        break;
+      }
+      case "session": {
+        if (session) {
+          coll.add("multiple-sessions", "warning", row, (n) => `${n} weitere „session“-Zeilen gefunden – es gilt nur die erste. Wurden Aufnahmen zusammengefügt?`);
+          break;
+        }
+        session = {
+          schema: typeof o.schema === "string" ? o.schema : undefined,
+          app: typeof o.app === "string" ? o.app : undefined,
+          deviceModel: typeof o.deviceModel === "string" ? o.deviceModel : undefined,
+          os: typeof o.os === "string" ? o.os : undefined,
+          scenario: typeof o.scenario === "string" && /^S[1-4]$/.test(o.scenario) ? o.scenario : undefined,
+          role: o.role === "calibration" || o.role === "evaluation" ? o.role : undefined,
+        };
+        break;
+      }
+      case "sync":
+        syncCount++;
         break;
       case "layout": {
         const info = {
@@ -807,6 +834,36 @@ function parseJsonlFile(text: string): ParsedFile {
         `Ignoriert (nicht relevant für die RSSI-Auswertung): ${ignored.map((k) => `${counts[k]}× ${k}`).join(", ")}.`,
     });
   }
+  let suggested: ImportOutcome["suggested"];
+  const transformations: string[] = [];
+  if (session) {
+    suggested = {};
+    if (session.role) suggested.role = session.role;
+    if (session.scenario) suggested.kind = session.scenario === "S1" ? "stationary" : "walk";
+    const device = [session.deviceModel, session.os].filter(Boolean).join(" · ");
+    if (device) suggested.deviceId = device;
+    if (session.schema !== "indooro-recording/2") {
+      issues.push({ severity: "warning", code: "unknown-recording-schema", message: `Unbekannte Aufnahme-Version „${session.schema ?? "–"}“ – gelesen wie indooro-recording/2. Ergebnis prüfen.` });
+    }
+    issues.push({
+      severity: "info",
+      code: "recording-session",
+      message:
+        `Aufnahme-Metadaten (${session.schema ?? "ohne Version"}): Gerät ${device || "–"}, App ${session.app ?? "–"}` +
+        `${session.scenario ? `, Szenario ${session.scenario}` : ""}${session.role ? `, Rolle ${session.role === "calibration" ? "Kalibrierung" : "Evaluation"}` : ""}. ` +
+        "Rolle und Laufart wurden als Vorschlag übernommen und können vor der Übernahme geändert werden.",
+    });
+    transformations.push("„session“-Zeile gelesen: Gerät, Szenario und Rolle als Vorschläge übernommen (keine Messwerte).");
+    if (Object.keys(suggested).length === 0) suggested = undefined;
+  }
+  if (syncCount > 0) {
+    issues.push({
+      severity: "info",
+      code: "sync-markers",
+      count: syncCount,
+      message: `${syncCount} Sync-Marke(n) zur Zuordnung externer Referenzen (z. B. Video) gefunden. Sie sind keine Messwerte und wurden nicht übernommen.`,
+    });
+  }
   if (layoutVariants.size > 1) {
     issues.push({
       severity: "warning",
@@ -820,8 +877,10 @@ function parseJsonlFile(text: string): ParsedFile {
     refs,
     issues,
     transformations: [
-      "Indooro-Aufzeichnung (JSON Lines) gelesen: „measurement“ → RSSI-Messwerte, „truth“ → Referenzpunkte (Langdruck-Markierungen in Layout-Einheiten).",
+      "Indooro-Aufzeichnung (JSON Lines) gelesen: „measurement“ → RSSI-Messwerte, „truth“ → Referenzpunkte (Langdruck-Markierungen in Layout-Einheiten; Marker-Name → Label).",
+      ...transformations,
     ],
+    suggested,
     totalRows: total,
     rejectedRows: rejected,
     convertDecimalComma: false,

@@ -204,3 +204,17 @@ Referenzen außerhalb des Grundrisses (Kampagnen-Kontext, `validateReferences`) 
 
 Unmögliche Daten oder Uhrzeiten (z. B. `2024-02-31`, `24:00`) gelten als ungültiger Zeitstempel und werden mit Zeilennummer gemeldet.
 Sie werden nicht wie bei `Date.parse` stillschweigend auf den Folgetag verschoben.
+
+## Indooro-Aufzeichnung Version 2 (`indooro-recording/2`)
+
+Format: siehe `docs/IOS_INTEGRATION_SPEC.md`, Abschnitt 3. Der Lab liest zusätzlich:
+
+| Zeile / Feld | Verhalten im Lab |
+| --- | --- |
+| `session` | Gerät (`deviceModel · os`) → Messgerät der Messreihe. `role` → vorgeschlagene Rolle. `scenario` → vorgeschlagene Laufart (S1 → stationär, S2–S4 → Gehversuch). Alle Vorschläge lassen sich vor der Übernahme ändern. Info `recording-session` |
+| `truth.marker` | Label des Referenzpunkts (`M1`…`M999`). Ungültige Namen: Warnung `invalid-marker`, Position bleibt erhalten |
+| `sync` | gezählt, Info `sync-markers`, keine Messwerte |
+| mehrere `session` | Warnung `multiple-sessions`, nur die erste gilt |
+| `schema` ≠ `indooro-recording/2` | Warnung `unknown-recording-schema` |
+
+Aufnahmen ohne `session` (Version 1) importieren unverändert.

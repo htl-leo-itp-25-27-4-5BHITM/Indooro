@@ -25,6 +25,8 @@ export function buildRunFromOutcome(outcome: ImportOutcome, meta: NewRunMeta, no
     role: meta.role,
     origin: meta.origin,
     notes: meta.notes,
+    // device from the recording's session line (indooro-recording/2), if any
+    ...(outcome.suggested?.deviceId ? { deviceId: outcome.suggested.deviceId } : {}),
     createdAt: now.toISOString(),
     samples: outcome.samples,
     references: outcome.references,

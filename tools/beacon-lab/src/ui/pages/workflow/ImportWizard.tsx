@@ -83,6 +83,7 @@ export function ImportWizard() {
       setOutcome(o);
       if (o.suggested?.runName) setName(o.suggested.runName);
       if (o.suggested?.kind) setKind(o.suggested.kind);
+      if (o.suggested?.role) setRole(o.suggested.role);
       if (o.suggested?.origin) setOrigin(guessOrigin(loaded.fileName, o.suggested.origin));
     } finally {
       setBusy(false);

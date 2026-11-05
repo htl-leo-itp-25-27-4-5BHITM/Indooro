@@ -116,3 +116,36 @@ describe("import honesty", () => {
     expect(out.provenance.issues.some((i) => i.code === "many-duplicates")).toBe(true);
   });
 });
+
+describe("indooro-recording/2 import", () => {
+  const v2 = [
+    '{"type":"session","t":1792000000.0,"schema":"indooro-recording/2","app":"1.4.0 (123)","deviceModel":"iPhone15,3","os":"iOS 18.1","scenario":"S2","role":"calibration"}',
+    '{"revision":1,"t":1792000000.0,"type":"layout"}',
+    '{"t":1792000000.0,"type":"truth","x":1.0,"y":5.0,"marker":"M1"}',
+    '{"beacon":"Indooro1","rssi":-70,"source":"ranging","t":1792000000.5,"type":"measurement"}',
+    '{"beacon":"Indooro1","rssi":-71,"source":"ranging","t":1792000001.5,"type":"measurement"}',
+    '{"t":1792000002.0,"type":"sync","label":"sync-1"}',
+    '{"t":1792000003.0,"type":"truth","x":3.0,"y":5.0,"marker":"bogus name"}',
+    '{"beacon":"Indooro1","rssi":-72,"source":"ranging","t":1792000003.5,"type":"measurement"}',
+  ].join("\n");
+
+  it("reads session suggestions, marker labels and sync lines", async () => {
+    const out = await runImport({ fileName: "rec.jsonl", text: v2, knownBeaconIds: ["Indooro1"] });
+    expect(out.ok).toBe(true);
+    expect(out.samples).toHaveLength(3);
+    expect(out.suggested).toMatchObject({ role: "calibration", kind: "walk", deviceId: "iPhone15,3 · iOS 18.1" });
+    expect(out.references.map((r) => r.label)).toEqual(["M1", undefined]);
+    const codes = out.provenance.issues.map((i) => i.code);
+    expect(codes).toContain("recording-session");
+    expect(codes).toContain("sync-markers");
+    expect(codes).toContain("invalid-marker");
+  });
+
+  it("old recordings without session still import unchanged", async () => {
+    const v1 = v2.split("\n").filter((l) => !l.includes('"session"') && !l.includes('"sync"')).map((l) => l.replace(/,"marker":"[^"]*"/, "")).join("\n");
+    const out = await runImport({ fileName: "rec.jsonl", text: v1, knownBeaconIds: ["Indooro1"] });
+    expect(out.ok).toBe(true);
+    expect(out.suggested).toBeUndefined();
+    expect(out.references.every((r) => r.label === undefined)).toBe(true);
+  });
+});
