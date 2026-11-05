@@ -3,7 +3,7 @@
 - [x] 1.1 Add `SessionRecord`, `SyncRecord` and `TruthRecord.marker` to `NavigationRecordLine`; replay ignores `session` and `sync`.
 - [x] 1.2 DEBUG recorder writes the `session` line first, adds the selected marker to `truth` lines and writes `sync-<n>` lines with a per-recording counter.
 - [x] 1.3 DEBUG settings: pickers for scenario, role and marker, button for a sync mark.
-- [ ] 1.4 Swift tests: round trip, old line without marker, format-conform values, replay ignores new lines. Written; to be confirmed by the CI job `swift-tests`.
+- [x] 1.4 Swift tests: round trip, old line without marker, format-conform values, replay ignores new lines. Confirmed by the CI job `swift-tests` (289 tests green).
 
 ## 2. Field Tooling and Documentation
 
