@@ -309,3 +309,41 @@ The lab SHALL generate synthetic runs with eight scenarios (`good-coverage`, `po
 - **GIVEN** the user changes the noise of a scenario before generating
 - **WHEN** the run is generated
 - **THEN** the changed value is stored in `provenance.synthetic` and the run has a different identifier
+
+### Requirement: Uncertainty is reported with every aggregated accuracy figure
+The lab SHALL report Wilson score intervals for proportions (share within 2/3/5 units, failure rate) and block-bootstrap percentile intervals (seeded, 2000 iterations by default) for mean, median, P90 and P95. Blocks SHALL be stationary holds or 10-second segments within a run, and whole runs when at least five runs are pooled; with fewer than five blocks no interval SHALL be shown ("n. b."). The statistics page SHALL pool several evaluation runs of one configuration, show per-run and pooled rows, decompose walk-run errors into along-track and cross-track components, and state the interval method, seed and block definition. Calibration runs SHALL NOT be selectable.
+
+#### Scenario: Pooled runs with intervals
+- **GIVEN** four evaluation runs of the synthetic demo campaign
+- **WHEN** the user evaluates them on the statistics page
+- **THEN** a pooled row shows the median with a bracketed interval and states that fewer than five runs only capture within-run spread
+
+#### Scenario: Too few blocks
+- **GIVEN** a run with fewer than five blocks
+- **WHEN** bootstrap intervals are computed
+- **THEN** the interval is reported as not computable instead of a degenerate value
+
+### Requirement: Beacon diagnostics are evidence-based and never a verdict
+The lab SHALL offer leave-one-out impact per beacon (difference in median, P95 and failure rate when the beacon is disabled, evaluation runs only), residuals of measured RSSI against the path-loss model within 10 m of stationary holds (bias and spread per beacon, flag above 6 dB), and reception checks (beacon within 5 m of a hold but heard at less than 10 % of the near-field rate). Findings SHALL list neutral possible causes, require minimum data (30 samples, 3 holds) and SHALL report a campaign-wide bias as a model problem rather than as a beacon fault.
+
+#### Scenario: Misplaced beacon
+- **GIVEN** a beacon whose registered position is 5 m off its simulated position
+- **WHEN** diagnostics run on stationary data
+- **THEN** that beacon is flagged with a systematic residual deviation and possible causes
+
+#### Scenario: Insufficient data
+- **GIVEN** a beacon with fewer than 30 samples
+- **WHEN** diagnostics run
+- **THEN** the beacon is reported as "zu wenige Daten" without a finding
+
+### Requirement: Placement simulation is a labelled model prognosis
+The lab SHALL predict, per walkable cell, median and P90 error, failure rate, audible beacons and HDOP for a beacon layout with a seeded Monte Carlo signal model, compare an edited variant with the campaign layout using common random numbers, and suggest one additional beacon position as a heuristic. Every view SHALL be labelled "MODELLPROGNOSE – keine Messung"; prognoses SHALL NOT be stored as runs or results, and applying a variant to the campaign SHALL require confirmation that existing measurements refer to the old layout.
+
+#### Scenario: Variant comparison
+- **GIVEN** the user adds a beacon in a weakly covered corner in variant B
+- **WHEN** both variants are simulated with the same seed
+- **THEN** the difference map shows the change caused by the layout only
+
+#### Scenario: Applying a variant
+- **WHEN** the user applies variant B to the campaign
+- **THEN** a confirmation dialog states that measurements and calibration refer to the old layout before the beacons are saved

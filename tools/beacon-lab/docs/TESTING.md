@@ -4,8 +4,8 @@ Stand der Zahlen: Lauf vom 2026-11-05 (zweimal hintereinander grün, keine Wiede
 
 | Ebene | Werkzeug | Umfang |
 | --- | --- | --- |
-| Unit / Integration | Vitest (jsdom, fake-indexeddb, Testing Library) | **446 Tests in 36 Dateien** |
-| End-to-End | Playwright (Chromium), gegen den Produktions-Build | **20 Tests** (17 Desktop 1440×900, 1 Mobil Pixel 7, 2 Screenshots) |
+| Unit / Integration | Vitest (jsdom, fake-indexeddb, Testing Library) | **521 Tests in 47 Dateien** |
+| End-to-End | Playwright (Chromium), gegen den Produktions-Build | **23 Tests** (20 Desktop 1440×900, 1 Mobil Pixel 7, 2 Screenshots) |
 
 ## Testpyramide
 
@@ -40,6 +40,8 @@ Jeder Test startet mit leerem Browser-Speicher (IndexedDB je Testkontext) und sc
 12. Beacon in der Plankarte auswählen.
 
 `import.spec.ts` (5 Szenarien): CSV im Langformat (Zuordnung, Vorschau, Prüfung, Übernahme, Laufliste); Indooro-Aufnahme `.jsonl` in einer Kampagne mit importiertem Layout `layout-synthetic-testraum.json` (als synthetisch gekennzeichnet, Auswertbarkeit ausgewiesen); kaputte CSV ohne `rssi`-Spalte; kaputte CSV mit ungültigen Werten („übernehmen“ bleibt gesperrt); nicht unterstützte Dateiendung.
+
+`statistics.spec.ts`, `beacon-diagnostics.spec.ts`, `planning.spec.ts` (je 1 Szenario): Mehrlauf-Auswertung mit gepoolter Zeile und Intervall im Format „2,19 [1,61 – 2,94] LE“; Beacon-Diagnose mit Tabelle, Karte und Export; Platzierungs-Simulation mit Banner „MODELLPROGNOSE – keine Messung“, Variante B und Δ-Ansicht.
 
 `mobile.spec.ts` (Pixel 7): Kampagnenliste, Übersicht, Daten, Positionierung, Vergleich, Bericht und weitere Seiten ohne horizontalen Überlauf (`scrollWidth <= clientWidth + 1`); Navigationsmenü öffnet und schließt nach Navigation.
 

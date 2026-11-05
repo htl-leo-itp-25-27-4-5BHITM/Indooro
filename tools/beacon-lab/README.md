@@ -50,7 +50,10 @@ Im Browser auf **„Demo-Kampagne laden (synthetisch)“** klicken. Die Demo-Kam
 | Vergleich | Mehrere Konfigurationen auf derselben Messreihe, zusätzlich auf der gemeinsamen Epochenmenge, Parameter-Sweep, CDF, Export |
 | Heatmaps | RSSI, Positionsfehler, Beacon-Abdeckung, Messpunktdichte; als Punkte, Raster oder IDW-Interpolation (gekennzeichnet, mit Reichweitengrenze) |
 | Replay | Zeitliche Wiedergabe von Ground Truth und Schätzung, aktive Beacons, aktueller Fehler, Geschwindigkeit, Einzelschritte, Algorithmuswechsel |
-| Bericht | Druckbarer HTML-Bericht (PDF über den Druckdialog), JSON/CSV-Export, automatisch erzeugte Grenzen der Aussagekraft, Reproduzierbarkeitsangaben |
+| Bericht | Druckbarer HTML-Bericht (PDF über den Druckdialog), nummerierte Abbildungen (CDF, Grundriss, Fehler-Heatmap, Boxplot, Ausfallrate), Konfidenzintervalle, JSON/CSV-Export, automatisch erzeugte Grenzen der Aussagekraft, Reproduzierbarkeitsangaben |
+| Statistik & Mehrlauf | Konfidenzintervalle (Block-Bootstrap, Wilson), Auswertung über mehrere Läufe je Bedingung, Fehler längs und quer zur Gehrichtung |
+| Beacon-Diagnose | Leave-one-out-Wirkung je Beacon, Residuen gegen das Pfadverlustmodell, „nicht empfangen obwohl nah“, neutrale Befunde mit Belegen |
+| Platzierung (Simulation) | MODELLPROGNOSE je begehbarer Zelle (Medianfehler, P90, Ausfall, hörbare Beacons, HDOP), Varianten mit Beacons hinzufügen/entfernen/verschieben, Vorschlag für einen zusätzlichen Beacon |
 
 ## Dokumentation
 
@@ -64,6 +67,8 @@ Im Browser auf **„Demo-Kampagne laden (synthetisch)“** klicken. Die Demo-Kam
 | [docs/MAP_AND_HEATMAPS.md](docs/MAP_AND_HEATMAPS.md) | Koordinatensystem, Heatmap-Regeln, Replay |
 | [docs/SYNTHETIC_DATA.md](docs/SYNTHETIC_DATA.md) | Simulationsmodell, Szenarien, Seeds |
 | [docs/REPORTING.md](docs/REPORTING.md) | Berichtsaufbau, Exporte, korrektes Zitieren |
+| [docs/BEACON_DIAGNOSTICS.md](docs/BEACON_DIAGNOSTICS.md) | Beacon-Diagnose: Verfahren, Schwellen, Interpretation vor Ort |
+| [docs/PLACEMENT_SIMULATION.md](docs/PLACEMENT_SIMULATION.md) | Platzierungs-Simulation: Modell, Annahmen, Validierung mit Messungen |
 | [docs/IOS_INTEGRATION_SPEC.md](docs/IOS_INTEGRATION_SPEC.md) | Was die iOS-App heute aufzeichnet und welche Erweiterungen sinnvoll sind |
 | [docs/TESTING.md](docs/TESTING.md) | Teststrategie und Ausführung |
 | [samples/README.md](samples/README.md) | Beispieldateien (synthetisch) |

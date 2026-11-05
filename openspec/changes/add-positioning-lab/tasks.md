@@ -52,9 +52,16 @@
 - [x] 8.3 `npm run typecheck` and `npm run build` in `tools/beacon-lab`.
 - [x] 8.4 CI workflow `.github/workflows/beacon-lab.yaml` runs only for `tools/beacon-lab/**` and is green on the pull request (jobs `test` and `e2e`; E2E pinned to ubuntu-24.04, servers bound to 127.0.0.1).
 
+## 8a. Extensions
+
+- [x] 8a.1 Uncertainty (Wilson, block bootstrap), multi-run aggregation and along/cross-track error (`src/positioning/{uncertainty,aggregate,trackError}.ts`, statistics page, report table).
+- [x] 8a.2 Beacon diagnostics: leave-one-out, residuals, reception (`src/positioning/diagnostics.ts`, beacon diagnostics page).
+- [x] 8a.3 Placement simulation and variant comparison (`src/planning/**`, planning page).
+- [x] 8a.4 Tests: 521 Vitest tests and 23 Playwright tests green.
+
 ## 9. Open Work (not part of this change)
 
 - [ ] 9.1 First real field campaign: record walks per `establish-pilot-field-measurement`, anonymize, import into the lab, evaluate with the lab. Until then no accuracy statement about real hardware exists. (Human step.)
 - [ ] 9.2 Confirm the scale on site with a measured reference distance and record the review note in the lab. (Human step.)
-- [ ] 9.3 Separate OpenSpec change for the iOS recorder `indooro-recording/2` (`session`, `truth.marker`, `sync`), including `NavigationRecordLine`, `scripts/field/check_recording_anonymized.py` and `FieldExportTests`.
+- [x] 9.3 Separate OpenSpec change for the iOS recorder (done in `extend-navigation-recording-metadata`, separate pull request) `indooro-recording/2` (`session`, `truth.marker`, `sync`), including `NavigationRecordLine`, `scripts/field/check_recording_anonymized.py` and `FieldExportTests`.
 - [ ] 9.4 Archive this change after verification (`openspec archive add-positioning-lab`) and replace the generated "TBD" purpose of the new `positioning-lab` spec.
