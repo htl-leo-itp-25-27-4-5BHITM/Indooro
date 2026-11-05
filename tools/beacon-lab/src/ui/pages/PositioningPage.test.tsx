@@ -21,7 +21,7 @@ describe("PositioningPage", () => {
     expect(values.length).toBeGreaterThanOrEqual(13);
     // epochs with truth is a computed positive integer, the median a number with two decimals
     expect(Number(values[0])).toBeGreaterThan(0);
-    expect(values[5]).toMatch(/^\d+\.\d{2}$/);
+    expect(values[5]).toMatch(/^\d+,\d{2}$/);
     expect(screen.getByTestId("config-hash").textContent).toMatch(/^[0-9a-f]+$/);
     expect(screen.getByTestId("compute-time")).toBeTruthy();
     // unconfirmed scale -> layout units

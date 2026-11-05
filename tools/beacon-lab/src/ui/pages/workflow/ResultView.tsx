@@ -7,10 +7,11 @@ import { Callout, Card, DataTable, DYNAMIC_METRIC_DEFINITIONS, ERROR_METRIC_DEFI
 import { useNarrow } from "./useNarrow";
 
 function fmt(v: number | null | undefined, digits = 2): string {
-  return v === null || v === undefined || !Number.isFinite(v) ? "–" : v.toFixed(digits);
+  // German number format, consistent with the comparison tables (src/ui/pages/analysis/format.ts)
+  return v === null || v === undefined || !Number.isFinite(v) ? "–" : v.toLocaleString("de-DE", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 function pct(v: number | null | undefined): string {
-  return v === null || v === undefined || !Number.isFinite(v) ? "–" : `${(v * 100).toFixed(1)}`;
+  return v === null || v === undefined || !Number.isFinite(v) ? "–" : (v * 100).toLocaleString("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
 export function failureReasons(result: EvaluationResult): { reason: string; count: number }[] {
