@@ -227,6 +227,8 @@ test.describe("Workflow: Kampagne bis Bericht", () => {
     expect(srcdoc).toContain(hash);
     expect(srcdoc).toContain("E2E-Interpretation des Teams.");
     expect(srcdoc).toMatch(/Median/);
+    expect(srcdoc).toContain("Abbildung 2");
+    await expect(page.getByTestId("figure-select").locator("input[type=checkbox]")).toHaveCount(5);
     expect(srcdoc).toMatch(/\d+[.,]\d{2}/);
     expect(srcdoc).not.toContain("<script");
 
