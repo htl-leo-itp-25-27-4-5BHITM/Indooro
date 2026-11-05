@@ -6,7 +6,7 @@ import { ScatterChart, type CurveOverlay } from "../charts";
 import { Badge, Button, Callout, Card, DataTable, EmptyState, Field, NumberInput, PageHeader, StatTile, Toggle, type DataColumn } from "../components";
 import { runLabel } from "../shared";
 import { useCampaign } from "../state/LabContext";
-import { SOURCE_LABEL, calibrationPairs, modelCurve } from "./analysis/calibrationData";
+import { SOURCE_LABEL, modelCurve } from "./analysis/calibrationData";
 import { decimate, fmt } from "./analysis/format";
 
 const MAX_POINTS = 3000;
@@ -49,15 +49,18 @@ export function CalibrationPage() {
     }
   };
 
-  const pairs = useMemo(
-    () => (state ? calibrationPairs(runs.filter((r) => state.runIds.includes(r.id)), campaign, cfg.params.rssiThreshold, state.maxDistance) : []),
-    [state, runs, campaign, cfg.params.rssiThreshold],
-  );
+  // exactly the pairs the fit used (returned by calibrateFromRuns) – the plot can never drift from the fit
+  const pairs = useMemo(() => (state ? state.result.pairs.filter((p) => p.distanceM > 0) : []), [state]);
 
   const curves = useMemo<CurveOverlay[]>(() => {
     const ds = pairs.map((p) => p.distanceM);
-    const lo = ds.length ? Math.min(...ds) : 0.5;
-    const hi = ds.length ? Math.max(...ds) : 15;
+    // loop instead of Math.min(...ds): calibration can have >100k pairs (argument-spread stack overflow)
+    let lo = Infinity, hi = -Infinity;
+    for (const d of ds) {
+      if (d < lo) lo = d;
+      if (d > hi) hi = d;
+    }
+    if (!Number.isFinite(lo)) [lo, hi] = [0.5, 15];
     const out: CurveOverlay[] = [];
     if (state?.result.model) out.push({ id: "fit", label: "neu angepasstes Modell", color: "#167768", points: modelCurve(state.result.model, lo, hi) });
     out.push({ id: "campaign", label: `aktuelles Kampagnenmodell (${SOURCE_LABEL[campaign.pathLoss.source]})`, color: "#d97706", dashed: true, points: modelCurve(campaign.pathLoss, lo, hi) });

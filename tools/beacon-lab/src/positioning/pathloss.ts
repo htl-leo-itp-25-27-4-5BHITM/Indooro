@@ -94,6 +94,8 @@ export interface CalibrationResult {
   error?: string;
   /** German warnings, e.g. unconfirmed scale */
   warnings: string[];
+  /** exactly the (distance, RSSI) pairs the global fit used – for plots, so they can never drift from the fit */
+  pairs: { beaconId: string; distanceM: number; rssi: number }[];
 }
 
 /**
@@ -156,15 +158,15 @@ export function calibrateFromRuns(
     );
   }
   if (!(Number.isFinite(mpu) && mpu > 0)) {
-    return { perBeacon: {}, error: "ungültiger Maßstab (metersPerUnit <= 0)", warnings };
+    return { perBeacon: {}, error: "ungültiger Maßstab (metersPerUnit <= 0)", warnings, pairs: [] };
   }
-  if (runs.length === 0) return { perBeacon: {}, error: "keine Kalibrierungsläufe", warnings };
+  if (runs.length === 0) return { perBeacon: {}, error: "keine Kalibrierungsläufe", warnings, pairs: [] };
 
   const maxD = opts.maxDistanceM !== undefined && Number.isFinite(opts.maxDistanceM) && opts.maxDistanceM > 0 ? opts.maxDistanceM : Infinity;
   const beaconById = new Map(campaign.beacons.map((b) => [b.id, b]));
   /** samples per (beacon, hold) – used to detect censoring by the receiver sensitivity */
   const cellCounts = new Map<string, { distanceM: number; count: number; durationSec: number }>();
-  const global: { distanceM: number; rssi: number }[] = [];
+  const global: { beaconId: string; distanceM: number; rssi: number }[] = [];
   const per = new Map<string, { distanceM: number; rssi: number }[]>();
   let holdCount = 0;
   for (const run of runs) {
@@ -188,7 +190,7 @@ export function calibrateFromRuns(
       if (cell) cell.count++;
       if (d > maxD) continue;
       const pair = { distanceM: d, rssi: s.rssi };
-      global.push(pair);
+      global.push({ beaconId: b.id, ...pair });
       const arr = per.get(b.id);
       if (arr) arr.push(pair);
       else per.set(b.id, [pair]);
@@ -201,7 +203,7 @@ export function calibrateFromRuns(
     );
   }
   if (holdCount === 0) {
-    return { perBeacon: {}, error: "keine stationären Haltepunkte (identische aufeinanderfolgende Referenzpunkte) gefunden", warnings };
+    return { perBeacon: {}, error: "keine stationären Haltepunkte (identische aufeinanderfolgende Referenzpunkte) gefunden", warnings, pairs: [] };
   }
   const runIds = runs.map((r) => r.id);
   const perBeacon: Record<string, PathLossModel | { error: string }> = {};
@@ -211,6 +213,6 @@ export function calibrateFromRuns(
     perBeacon[b.id] = "error" in fit ? fit : { ...fit, fittedOnRunIds: runIds };
   }
   const g = fitPathLoss(global);
-  if ("error" in g) return { perBeacon, error: g.error, warnings };
-  return { model: { ...g, fittedOnRunIds: runIds }, perBeacon, warnings };
+  if ("error" in g) return { perBeacon, error: g.error, warnings, pairs: global };
+  return { model: { ...g, fittedOnRunIds: runIds }, perBeacon, warnings, pairs: global };
 }
