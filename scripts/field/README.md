@@ -62,6 +62,8 @@ python -I scripts/field/check_recording_anonymized.py --allow-uuid 1234ABCD-... 
 python -I scripts/field/anonymize_recording.py roh.jsonl anonym.jsonl
 ```
 
+Format `indooro-recording/2`: Die Pruefung akzeptiert zusaetzlich `session` (Schema, App, Hardware-Modell, iOS-Version, optional Szenario/Rolle), `sync` (`label` = `sync-<n>`) und das optionale Feld `marker` (`M<n>`) in `truth`. Alle drei haben feste Muster und keinen Freitext; `session` mit weiteren Feldern wird abgelehnt. Die Analyse-Skripte ignorieren `session` und `sync`.
+
 - `--allow-uuid` erlaubt zusaetzliche Beacon-UUIDs. Standardmaessig erlaubt ist die Projekt-UUID aus `BEACON_STANDARD.md`.
 - `--allow-free-text` erlaubt `shopName` und Stopp-Titel. Fuer Import und Anonymisierung nicht noetig.
 - Exit 1 bei Verstoessen, Ausgabe `<datei>:<zeile>: <grund>`. Exit 2, wenn eine Datei nicht lesbar ist.

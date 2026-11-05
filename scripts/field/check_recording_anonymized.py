@@ -43,12 +43,25 @@ DENIED_KEYS: FrozenSet[str] = frozenset({
     "ip", "host", "hostname", "user", "username", "email", "uuid", "machine",
 })
 
-LINE_TYPES: FrozenSet[str] = frozenset({"measurement", "layout", "event", "truth", "step", "heading", "scan"})
+LINE_TYPES: FrozenSet[str] = frozenset({
+    "measurement", "layout", "event", "truth", "step", "heading", "scan", "session", "sync",
+})
 PROXIMITY_VALUES: FrozenSet[str] = frozenset({"immediate", "near", "far", "unknown"})
 EVENT_KINDS: FrozenSet[str] = frozenset({
     "startTour", "stopDone", "stopSkipped", "listChanged", "replan", "routeModeToggled",
     "calibrate", "stopTour", "setTarget", "clearTarget",
 })
+
+# indooro-recording/2: session (genau eine Kopfzeile), sync, truth.marker. Keine Freitextfelder.
+SESSION_SCHEMA = "indooro-recording/2"
+SESSION_SCENARIOS: FrozenSet[str] = frozenset({"S1", "S2", "S3", "S4"})
+SESSION_ROLES: FrozenSet[str] = frozenset({"calibration", "evaluation"})
+MARKER_RE = re.compile(r"M[0-9]{1,3}")
+SYNC_LABEL_RE = re.compile(r"sync-[0-9]{1,4}")
+SESSION_APP_RE = re.compile(r"[0-9A-Za-z .()_-]{1,32}")
+SESSION_DEVICE_MODEL_RE = re.compile(r"(iPhone|iPad|iPod|arm64|x86_64)[0-9,_A-Za-z]*")
+SESSION_OS_RE = re.compile(r"iOS [0-9.]{1,16}")
+SESSION_DEVICE_MODEL_MAX = 32
 
 Validator = Callable[[str, object, "Context"], List[str]]
 
@@ -107,6 +120,17 @@ def _enum(values: FrozenSet[str]) -> Validator:
     def validate(name: str, value: object, ctx: Context) -> List[str]:
         if not isinstance(value, str) or value not in values:
             return [f"Feld '{name}' hat einen unzulaessigen Wert (erlaubt: {', '.join(sorted(values))})"]
+        return []
+    return validate
+
+
+def _pattern(pattern: "re.Pattern[str]", description: str, max_length: Optional[int] = None) -> Validator:
+    """Text, der das Muster vollstaendig erfuellt (fullmatch, kein Zeilenende am Schluss)."""
+    def validate(name: str, value: object, ctx: Context) -> List[str]:
+        if not isinstance(value, str):
+            return [f"Feld '{name}' ist kein Text"]
+        if (max_length is not None and len(value) > max_length) or pattern.fullmatch(value) is None:
+            return [f"Feld '{name}' entspricht nicht dem erlaubten Muster ({description})"]
         return []
     return validate
 
@@ -204,6 +228,7 @@ LINE_SPECS: Dict[str, Tuple[Dict[str, Validator], Set[str]]] = {
             "t": _v_number,
             "x": _v_number,
             "y": _v_number,
+            "marker": _pattern(MARKER_RE, "M gefolgt von 1 bis 3 Ziffern"),
         },
         {"t", "x", "y"},
     ),
@@ -226,6 +251,31 @@ LINE_SPECS: Dict[str, Tuple[Dict[str, Validator], Set[str]]] = {
             "source": _enum(frozenset({"compass"})),
         },
         {"t", "degrees", "accuracy", "source"},
+    ),
+    # Kopfzeile von indooro-recording/2: Geraetemodell (Hardware-Kennung), nie Geraetename oder Geraete-ID.
+    "session": (
+        {
+            "type": _enum(frozenset({"session"})),
+            "t": _v_number,
+            "schema": _enum(frozenset({SESSION_SCHEMA})),
+            "app": _pattern(SESSION_APP_RE, "A-Z a-z 0-9 Leerzeichen . ( ) _ -, max. 32 Zeichen", 32),
+            "deviceModel": _pattern(
+                SESSION_DEVICE_MODEL_RE, "Hardware-Kennung wie iPhone15,3, max. 32 Zeichen", SESSION_DEVICE_MODEL_MAX
+            ),
+            "os": _pattern(SESSION_OS_RE, "iOS <Version>"),
+            "scenario": _enum(SESSION_SCENARIOS),
+            "role": _enum(SESSION_ROLES),
+        },
+        {"t", "schema", "app", "deviceModel", "os"},
+    ),
+    # Sync-Marke zur Zuordnung externer Referenzen.
+    "sync": (
+        {
+            "type": _enum(frozenset({"sync"})),
+            "t": _v_number,
+            "label": _pattern(SYNC_LABEL_RE, "sync- gefolgt von 1 bis 4 Ziffern"),
+        },
+        {"t", "label"},
     ),
     # Layout-fremder iBeacon (nur Major, Minor, RSSI; bewusst ohne UUID).
     "scan": (

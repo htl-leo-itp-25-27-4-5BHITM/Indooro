@@ -2,6 +2,7 @@
 
 import contextlib
 import io
+import json
 import sys
 import tempfile
 import unittest
@@ -43,6 +44,74 @@ class ScanLineTests(unittest.TestCase):
 
     def test_scan_line_needs_major_minor_rssi(self):
         self.assertTrue(any("fehlt" in reason for reason in reasons(['{"t":1,"type":"scan","major":1}'])))
+
+
+SESSION = (
+    '{"app":"1.4.0 (123)","deviceModel":"iPhone15,3","os":"iOS 18.1","role":"evaluation",'
+    '"scenario":"S1","schema":"indooro-recording/2","t":1792000000,"type":"session"}'
+)
+
+
+def session_line(**changes):
+    obj = json.loads(SESSION)
+    for key, value in changes.items():
+        if value is None:
+            obj.pop(key, None)
+        else:
+            obj[key] = value
+    return json.dumps(obj)
+
+
+class RecordingV2Tests(unittest.TestCase):
+    def test_session_sync_and_marker_lines_are_accepted(self):
+        lines = [
+            SESSION,
+            '{"marker":"M3","t":1792000004.9,"type":"truth","x":11.0,"y":5.0}',
+            '{"label":"sync-1","t":1792000100,"type":"sync"}',
+        ]
+        self.assertEqual(checker.check_lines(lines), [])
+
+    def test_session_without_optional_fields_and_ios_patch_version_pass(self):
+        line = session_line(scenario=None, role=None, os="iOS 17.6.1", deviceModel="arm64", app="1.0 (7)")
+        self.assertEqual(checker.check_lines([line]), [])
+
+    def test_session_with_extra_free_text_field_is_rejected(self):
+        for key in ("note", "deviceName", "name"):
+            result = reasons([session_line(**{key: "Max iPhone"})])
+            self.assertTrue(any(key in reason for reason in result), (key, result))
+
+    def test_session_values_outside_patterns_are_rejected(self):
+        bad = [
+            {"schema": "indooro-recording/1"},
+            {"scenario": "S5"},
+            {"role": "tester"},
+            {"deviceModel": "Max's iPhone"},
+            {"deviceModel": "iPhone" + "1" * 30},
+            {"os": "Android 14"},
+            {"os": "iOS 18.1\n"},
+            {"app": "x" * 33},
+            {"app": "1.0 <build>"},
+        ]
+        for change in bad:
+            self.assertTrue(reasons([session_line(**change)]), change)
+
+    def test_session_missing_required_field_is_rejected(self):
+        self.assertTrue(any("fehlt" in reason for reason in reasons([session_line(os=None)])))
+
+    def test_bad_marker_is_rejected(self):
+        for marker in ("M", "M1234", "m1", "Punkt A", "M1\n", 3):
+            line = '{"marker":%s,"t":1,"type":"truth","x":1,"y":2}' % json.dumps(marker)
+            self.assertTrue(reasons([line]), marker)
+
+    def test_bad_sync_label_or_extra_key_is_rejected(self):
+        for line in (
+            '{"label":"sync-","t":1,"type":"sync"}',
+            '{"label":"sync-12345","t":1,"type":"sync"}',
+            '{"label":"Mittagspause","t":1,"type":"sync"}',
+            '{"label":"sync-1","t":1,"type":"sync","note":"x"}',
+            '{"t":1,"type":"sync"}',
+        ):
+            self.assertTrue(reasons([line]), line)
 
 
 class CleanRecordingTests(unittest.TestCase):

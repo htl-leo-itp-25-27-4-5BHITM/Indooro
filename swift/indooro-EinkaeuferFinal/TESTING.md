@@ -104,7 +104,13 @@ Release builds contain no recorder.
    identity, tour events, calibrations). Nothing is sent to a server. A long press
    (0.6 s) on the map writes a `truth` line at that point without moving the
    position; use it to mark where you actually stand. Switch the toggle off to
-   flush and close the file.
+   flush and close the file. Format `indooro-recording/2`: the first line is a
+   `session` line (schema, app version, hardware model, iOS version, optional
+   scenario S1-S4 and role calibration/evaluation chosen in the same section
+   before starting). Pick a marker (M1-M30) in the section to have it written
+   as `marker` into following `truth` lines; „Sync-Marke setzen“ writes
+   `sync-<n>` lines. Old recordings without these lines stay readable; replay
+   ignores `session` and `sync`.
 2. **Share**: the same section offers „Aufzeichnung teilen“ (system share sheet,
    e.g. AirDrop to the Mac). The file name is a timestamp; it contains no device
    identifier. Check it before committing.
