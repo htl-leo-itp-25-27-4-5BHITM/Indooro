@@ -1,0 +1,81 @@
+name: Positioning Lab
+
+# Eigenständiges Forschungswerkzeug unter tools/beacon-lab (siehe tools/beacon-lab/README.md).
+# Läuft nur, wenn sich das Lab oder dieser Workflow ändert; baut und deployt nichts.
+on:
+  pull_request:
+    branches: [ "main", "master", "pilot/first-store" ]
+    paths:
+      - 'tools/beacon-lab/**'
+      - '.github/workflows/beacon-lab.yaml'
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - 'tools/beacon-lab/**'
+      - '.github/workflows/beacon-lab.yaml'
+
+concurrency:
+  group: beacon-lab-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: tools/beacon-lab
+
+jobs:
+  # Typprüfung, Unit-/Integrationstests (Vitest) und Produktions-Build
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js (version from admin-ui/.nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'admin-ui/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: tools/beacon-lab/package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  # Browser-Tests (Playwright, Chromium) gegen den Produktions-Build, Desktop + Mobil
+  e2e:
+    # Gepinnt: Playwright 1.60 kann Chromium auf ubuntu-latest (26.04) nicht installieren
+    # ("Playwright does not support chromium on ubuntu26.04-x64"). Beim Playwright-Update erneut prüfen.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js (version from admin-ui/.nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'admin-ui/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: tools/beacon-lab/package-lock.json
+
+      - run: npm ci --no-audit --no-fund
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright tests
+        env:
+          CI: 'true'
+        run: npx playwright test
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beacon-lab-playwright
+          path: |
+            tools/beacon-lab/test-results/
+            tools/beacon-lab/playwright-report/
+          retention-days: 7
