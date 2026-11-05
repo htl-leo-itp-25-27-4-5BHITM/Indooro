@@ -1,6 +1,19 @@
 import { formatPercent } from "../core/units";
 import type { Campaign, DataIssue, DataOrigin, DynamicMetrics, ErrorMetrics, EvaluationResult, MeasurementRun, PathLossModel } from "../core/types";
 import { DYNAMIC_METRIC_DEFINITIONS, ERROR_METRIC_DEFINITIONS } from "../ui/components/metricDefinitions";
+import { runHolds } from "../positioning/reference";
+import {
+  blockDefinition,
+  DEFAULT_BLOCK_SEC,
+  DEFAULT_ITERATIONS,
+  DEFAULT_SEED,
+  makeBlocks,
+  metricsWithCI,
+  MIN_BLOCKS_FOR_CI,
+  type BootstrapCI,
+  type MetricsWithCI,
+  type ProportionCI,
+} from "../positioning/uncertainty";
 
 /* ------------------------------------------------------------------ */
 /* Input                                                               */
@@ -140,6 +153,37 @@ function pathLossText(m: PathLossModel): string {
 
 function runLabel(r: { runName: string; origin: DataOrigin }): string {
   return `${r.runName} [${ORIGIN_TEXT[r.origin]}]`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Uncertainty (confidence intervals)                                  */
+/* ------------------------------------------------------------------ */
+
+const ciCache = new WeakMap<EvaluationResult, { key: string; value: MetricsWithCI }>();
+
+/** Block-bootstrap / Wilson intervals of one result (fixed seed, memoised per result object). */
+export function resultUncertainty(result: EvaluationResult, campaign: Campaign, runs: MeasurementRun[]): MetricsWithCI {
+  const scale = campaign.floorPlan.scale;
+  const run = runs.find((r) => r.id === result.runId);
+  const kind = run?.kind ?? "walk";
+  const key = `${scale.confirmed}|${scale.metersPerUnit}|${kind}|${DEFAULT_SEED}|${DEFAULT_ITERATIONS}`;
+  const hit = ciCache.get(result);
+  if (hit && hit.key === key) return hit.value;
+  const blocks = makeBlocks(result.estimates, { kind, holds: run ? runHolds(run) : [], blockSec: DEFAULT_BLOCK_SEC });
+  const value = metricsWithCI(blocks, scale, { seed: DEFAULT_SEED, iterations: DEFAULT_ITERATIONS, blockDefinition: blockDefinition(kind, DEFAULT_BLOCK_SEC) });
+  ciCache.set(result, { key, value });
+  return value;
+}
+
+function ciText(c: BootstrapCI): string {
+  if (c.estimate === null) return DASH;
+  if (c.lo === null || c.hi === null) return `${num(c.estimate)} [n. b.]`;
+  return `${num(c.estimate)} [${num(c.lo)} – ${num(c.hi)}]`;
+}
+function propText(p: ProportionCI): string {
+  if (p.p === null) return DASH;
+  if (p.lo === null || p.hi === null) return pct(p.p);
+  return `${pct(p.p)} [${pct(p.lo)} – ${pct(p.hi)}]`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -472,6 +516,19 @@ export function buildReportModel(input: ReportInput): ReportModel {
         },
       });
     }
+    const unc = sorted.map((r) => ({ r, u: resultUncertainty(r, campaign, runs) }));
+    const unit = scale.confirmed ? "m" : "LE";
+    resBlocks.push({ type: "heading", text: "Unsicherheit (Konfidenzintervalle)" });
+    resBlocks.push({
+      type: "table",
+      table: {
+        caption: `Median und P95 mit ${Math.round(unc[0].u.level * 100)} %-Block-Bootstrap-Intervall, Trefferquoten mit Wilson-Intervall (Einheit: ${unit})`,
+        headers: ["Lauf", "Herkunft", "Algorithmus", "Blöcke", `Median [KI] (${unit})`, `P95 [KI] (${unit})`, `≤ 2 ${unit} [KI]`, `≤ 3 ${unit} [KI]`, `≤ 5 ${unit} [KI]`, "Ausfallrate [KI]"],
+        numericColumns: [3, 4, 5, 6, 7, 8, 9],
+        rows: unc.map(({ r, u }) => [r.runName, ORIGIN_TEXT[r.origin], algorithmLabel(r.config.algorithm), String(u.blocks), ciText(u.median), ciText(u.p95), propText(u.within2), propText(u.within3), propText(u.within5), propText(u.failureRate)]),
+        note: `Methode: Block-Bootstrap (Perzentilintervall) über ganze Blöcke statt einzelner Epochen, weil aufeinanderfolgende Epochen autokorreliert sind; Seed ${DEFAULT_SEED}, ${DEFAULT_ITERATIONS} Wiederholungen. Blockdefinition: stationär = ein Halt, Gehversuch = ${DEFAULT_BLOCK_SEC}-s-Segment. Bei weniger als ${MIN_BLOCKS_FOR_CI} Blöcken ist kein Intervall berechenbar (n. b.). Wilson-Intervalle setzen unabhängige Epochen voraus und sind bei autokorrelierten Epochen eher zu eng. Intervalle beschreiben nur die statistische Unsicherheit dieser Messung; überlappende Intervalle belegen keine Gleichheit.${hasSynthetic ? " Bei synthetischen Läufen beschreiben die Intervalle nur die Simulation." : ""}`,
+      },
+    });
     resBlocks.push({ type: "heading", text: "Metrikdefinitionen" });
     resBlocks.push({
       type: "bullets",
