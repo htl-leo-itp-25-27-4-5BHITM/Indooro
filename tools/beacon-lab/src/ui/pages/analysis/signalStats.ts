@@ -51,8 +51,9 @@ export function summarizeBeacon(beaconId: string, own: readonly RssiSample[], ga
     mean: mean(vals) as number,
     median: median(vals) as number,
     std: std(vals),
-    min: Math.min(...vals),
-    max: Math.max(...vals),
+    // reduce, not Math.min(...vals): a long recording can exceed the engine's argument limit
+    min: vals.reduce((a, b) => (b < a ? b : a), Infinity),
+    max: vals.reduce((a, b) => (b > a ? b : a), -Infinity),
     rateHz: own.length >= 2 && span > 0 ? (own.length - 1) / span : null,
     maxGapSec: maxGap,
     gapsOver,

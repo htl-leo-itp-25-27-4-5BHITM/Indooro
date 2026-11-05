@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createDemoCampaign } from "../../../data/synthetic";
 import { DEFAULT_POSITIONING_CONFIG } from "../../../core/defaults";
 import { compareAlgorithms } from "../../../positioning/pipeline";
-import { calibrationPairs, modelCurve } from "./calibrationData";
+import { modelCurve } from "./calibrationData";
+import { calibrateFromRuns } from "../../../positioning/pathloss";
 import { decimate, fmt } from "./format";
 import {
   MAX_SWEEP_VALUES,
@@ -122,12 +123,13 @@ describe("signal statistics", () => {
 });
 
 describe("calibration data", () => {
-  it("builds pairs within holds and respects the distance limit", () => {
-    const all = calibrationPairs([calRun], demo.campaign, -100);
-    const near = calibrationPairs([calRun], demo.campaign, -100, 4);
-    expect(all.length).toBeGreaterThan(0);
-    expect(near.length).toBeLessThan(all.length);
-    expect(near.every((p) => p.distanceM <= 4)).toBe(true);
+  it("calibrateFromRuns returns exactly the pairs it fitted, respecting the distance limit", () => {
+    const all = calibrateFromRuns([calRun], demo.campaign, DEFAULT_POSITIONING_CONFIG);
+    const near = calibrateFromRuns([calRun], demo.campaign, DEFAULT_POSITIONING_CONFIG, { maxDistanceM: 4 });
+    expect(all.pairs.length).toBeGreaterThan(0);
+    expect(near.pairs.length).toBeLessThan(all.pairs.length);
+    expect(near.pairs.every((p) => p.distanceM <= 4)).toBe(true);
+    expect(near.model?.sampleCount).toBe(near.pairs.filter((p) => p.distanceM >= 0.1).length);
   });
   it("model curve is monotonically falling", () => {
     const c = modelCurve({ rssiAt1m: -60, pathLossExponent: 2, source: "manual" }, 0.5, 20);
@@ -167,5 +169,14 @@ describe("format helpers", () => {
     expect(d).toHaveLength(10);
     expect(d[0]).toBe(0);
     expect(d[9]).toBe(999);
+  });
+});
+
+describe("large inputs", () => {
+  it("signal stats handle 300k samples without argument-spread overflow", () => {
+    const samples = Array.from({ length: 300_000 }, (_, i) => ({ t: i * 0.01, beaconId: "X", rssi: -60 - (i % 20) }));
+    const st = summarizeBeacon("X", samples);
+    expect(st?.min).toBe(-79);
+    expect(st?.max).toBe(-60);
   });
 });

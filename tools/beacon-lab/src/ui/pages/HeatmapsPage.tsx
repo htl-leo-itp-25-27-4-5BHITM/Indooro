@@ -282,7 +282,7 @@ export function HeatmapsPage() {
           </div>
           {points.length > 0 && (
             <p className="text-xs text-muted" data-testid="heatmap-summary">
-              {points.length} Messposition(en) · {points.reduce((s, p) => s + (p.n ?? 1), 0)} Beobachtungen · Wertebereich {fmt(Math.min(...points.map((p) => p.value)), digits)} bis {fmt(Math.max(...points.map((p) => p.value)), digits)} {unitLabel}
+              {points.length} Messposition(en) · {points.reduce((s, p) => s + (p.n ?? 1), 0)} Beobachtungen · Wertebereich {fmt(points.reduce((a, p) => (p.value < a ? p.value : a), Infinity), digits)} bis {fmt(points.reduce((a, p) => (p.value > a ? p.value : a), -Infinity), digits)} {unitLabel}
               {run.origin === "synthetic" ? " · SYNTHETISCHE Daten" : ""}
             </p>
           )}
