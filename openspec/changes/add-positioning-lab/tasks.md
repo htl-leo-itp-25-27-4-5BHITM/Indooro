@@ -50,7 +50,7 @@
 - [x] 8.1 `npm test` in `tools/beacon-lab`: 446 tests in 36 files green (run of 2026-11-05, twice in a row).
 - [x] 8.2 `npm run test:e2e` in `tools/beacon-lab`: 20 Playwright tests green (17 desktop, 1 mobile, 2 screenshots), no console errors.
 - [x] 8.3 `npm run typecheck` and `npm run build` in `tools/beacon-lab`.
-- [ ] 8.4 CI workflow `.github/workflows/beacon-lab.yaml` runs only for `tools/beacon-lab/**` and is green on the pull request. (Open: the file was not on the local branch when this change was written; confirm it is committed and triggered only by the path filter before merging.)
+- [x] 8.4 CI workflow `.github/workflows/beacon-lab.yaml` runs only for `tools/beacon-lab/**` and is green on the pull request (jobs `test` and `e2e`; E2E pinned to ubuntu-24.04, servers bound to 127.0.0.1).
 
 ## 9. Open Work (not part of this change)
 
