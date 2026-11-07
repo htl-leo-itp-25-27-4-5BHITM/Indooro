@@ -51,7 +51,7 @@ const resolveFile = (cli, fromManifest) => {
 const layoutFile = resolveFile(opts.layout, files.layout);
 const csvFile = resolveFile(opts.csv, files.csv);
 const errorCsvFile = resolveFile(opts["error-csv"], files.errorCsv);
-const storeCode = opts["store-code"] ?? manifest.store?.storeCode;
+const storeCode = opts["store-code"] ?? manifest.storeCode ?? manifest.store?.storeCode;
 if (!layoutFile || !csvFile || !errorCsvFile || !storeCode) fail("layout, csv, error-csv und store-code werden benoetigt");
 if (storeCode.length > 50) fail("storeCode ist laenger als 50 Zeichen");
 
@@ -93,9 +93,34 @@ await runCatalogImport(good.products, {
 }, { storeCode });
 if (batches.some((b) => !b.path.startsWith(`${BULK_PATH}?storeCode=`))) fail("Unerwarteter Bulk-Pfad");
 
+// Manifest normalisieren: storeCode darf oben oder in "store" stehen, Sonden heissen expectProduct/expectLayoutCode
+// (alt: expectedName/expectedLayoutCode). Fehlende Teile (Region, Zweitmarkt) werden aus dem Datensatz abgeleitet.
+const probes = (manifest.searchProbes ?? []).map((p) => ({
+  query: p.query,
+  expectedName: p.expectProduct ?? p.expectedName,
+  expectedLayoutCode: p.expectLayoutCode ?? p.expectedLayoutCode
+}));
+if (!probes.length || probes.some((p) => !p.query || !p.expectedName || !p.expectedLayoutCode)) fail("searchProbes unvollstaendig");
+const store = { street: "Teststrasse 1", zipCode: "4060", city: "Leonding", country: "AT", ...(manifest.store ?? {}), storeCode };
+if (!store.name) store.name = `Full-Run ${storeCode}`;
+const secondCode = (manifest.secondMarket?.storeCode ?? `${storeCode.slice(0, 46)}-ZWEI`);
+const secondMarket = manifest.secondMarket ?? {
+  storeCode: secondCode,
+  name: `Zweitmarkt ${secondCode}`,
+  street: "Gegenstrasse 2", zipCode: "4020", city: "Linz", country: "AT",
+  // gleichnamige Produkte wie die Sonden, aber in Regalen, die der Hauptmarkt nicht belegt
+  products: probes.map((p, i) => ({ id: i + 1, name: p.expectedName, price: 1.99, layoutCode: `998/${i + 1}/1/1` }))
+};
 const payload = {
   generatedBy: "scripts/ops/full_run/prepare.mjs",
-  dataset: { ...manifest, store: { ...(manifest.store ?? {}), storeCode } },
+  dataset: {
+    ...manifest,
+    name: manifest.name ?? path.basename(baseDir),
+    region: manifest.region ?? { code: "FULLRUN-REGION", name: "Full-Run Testregion" },
+    store,
+    searchProbes: probes,
+    secondMarket
+  },
   layoutSave: {
     layoutName: layout.shopName,
     changeNote: "Im neuen Layout-Editor als Entwurf gespeichert",
