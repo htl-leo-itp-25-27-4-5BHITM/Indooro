@@ -5,6 +5,7 @@ Ausgaben (neben diesem Skript):
   spar-markt-layout.json   Grundriss 32 x 25 m für "JSON importieren" im Layout-Editor
   spar-markt.csv           vollständiges Sortiment für den CSV-Import (Produkte)
   spar-markt-fehler.csv    dasselbe Sortiment mit zwei absichtlichen Fehlern
+  spar-markt-beacons-bulk.txt  Zeilen "Code,Minor" zum Einfügen unter Beacons -> Mehrere anlegen
   spar-markt-beacons.csv   Beacon-Liste für die Beacon-Verwaltung (Code, UUID, Major, Minor)
   dataset.json             Manifest (Markt, Beacons, Dateien, Suchproben, erwartete Fehler)
 
@@ -448,6 +449,10 @@ def main():
         for b in beacons:
             w.writerow([b["code"], b["uuid"], b["major"], b["minor"], b["x"], b["y"]])
 
+    # Für "Beacons -> Mehrere anlegen": gemeinsame UUID und Major oben im Formular, je Zeile "Code,Minor".
+    (HERE / "spar-markt-beacons-bulk.txt").write_text(
+        "".join(f"{b['code']},{b['minor']}\n" for b in beacons), encoding="utf-8")
+
     by_name = {p["name"]: p for p in products}
     probes = []
     for query, name in [("Vollmilch", "SPAR Frische Vollmilch 1 l"), ("Vöslauer", "Vöslauer still 1,5 l"),
@@ -462,7 +467,8 @@ def main():
         "storeCode": STORE_CODE,
         "store": {"name": STORE_NAME, "street": "Demostraße 1", "zipCode": "4060", "city": "Leonding", "country": "AT"},
         "files": {"layout": "spar-markt-layout.json", "csv": "spar-markt.csv",
-                  "errorCsv": "spar-markt-fehler.csv", "beacons": "spar-markt-beacons.csv"},
+                  "errorCsv": "spar-markt-fehler.csv", "beacons": "spar-markt-beacons.csv",
+                  "beaconsBulk": "spar-markt-beacons-bulk.txt"},
         "beacons": [{k: b[k] for k in ("code", "uuid", "major", "minor")} for b in beacons],
         "expectedErrors": [
             {"line": 21, "field": "kategorie", "message": "Kein Regal 999/1 im aktiven Layout."},

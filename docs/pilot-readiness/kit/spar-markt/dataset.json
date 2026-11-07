@@ -11,7 +11,8 @@
     "layout": "spar-markt-layout.json",
     "csv": "spar-markt.csv",
     "errorCsv": "spar-markt-fehler.csv",
-    "beacons": "spar-markt-beacons.csv"
+    "beacons": "spar-markt-beacons.csv",
+    "beaconsBulk": "spar-markt-beacons-bulk.txt"
   },
   "beacons": [
     {
