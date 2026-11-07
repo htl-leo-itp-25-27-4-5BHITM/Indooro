@@ -363,7 +363,11 @@ def build():
     beacons = []
     for i, (bx, by) in enumerate(BEACON_POSITIONS, start=1):
         code = f"SPAR800-B{i:02d}"
-        add({"type": "beacon", "x": bx, "y": by, "beaconId": code})
+        # Mit Identität: Ohne uuid/major/minor/identityKey zählt die Bereitschaft das Beacon nicht
+        # (NO_BEACONS, BEACON_WITHOUT_IDENTITY), auch wenn es dem Markt zugewiesen ist.
+        key_uuid = BEACON_UUID.replace("-", "").lower()
+        add({"type": "beacon", "x": bx, "y": by, "beaconId": code, "uuid": key_uuid,
+             "major": BEACON_MAJOR, "minor": i, "identityKey": f"{key_uuid}:{BEACON_MAJOR}:{i}"})
         beacons.append({"code": code, "uuid": BEACON_UUID, "major": BEACON_MAJOR, "minor": i, "x": bx, "y": by})
 
     # Produkte gleichmäßig auf die Abschnitte der Abteilung verteilen (jedes Regal bekommt mindestens eins).
