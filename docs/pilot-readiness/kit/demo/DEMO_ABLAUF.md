@@ -33,6 +33,8 @@ Beacon-Plätze (Meter, Ursprung oben links): `DEMO-B1` (0,5 | 3), `DEMO-B2` (5,5
 4. Prüfen, dass der Smoke-Check 0 FAIL zeigt und dass Beacons dem Markt frei zugeordnet werden können.
 5. Rückfall: Screenshots oder Readiness-Export jedes Schritts, falls LeoCloud ausfällt.
 
+**Beacon-Identität im Editor setzen:** `demo-layout.json` nennt die Beacons nur über ihren Code (`DEMO-B1` bis `DEMO-B4`), ohne UUID, Major und Minor. Die echten Werte stehen erst nach dem Ablesen fest. Nach dem Import im Editor deshalb für jeden Beacon-Platz einmal „Zugeordneter Beacon“ wählen. Der Editor trägt dann `uuid`, `major`, `minor` und `identityKey` ein. Ohne diesen Schritt bleibt die Bereitschaft rot (`NO_BEACONS`, `BEACON_WITHOUT_IDENTITY`). Gefunden im lokalen Komplettlauf vom 2026-11-07 (`scripts/ops/full_run/`). Der SPAR-Demo-Markt (`../spar-markt/`) hat die Identität bereits in der JSON-Datei.
+
 **Reihenfolge beachten:** Das Backend aktiviert ein Layout nur, wenn jedes Beacon darin dem Markt bereits zugeordnet ist (`Layout-Beacon ist dieser Filiale nicht zugeordnet`). Deshalb steht die Beacon-Zuordnung vor dem Aktivieren des Layouts. Das weicht von der Reihenfolge in Abschnitt G ab (dort Editor vor Beacons).
 
 Wo die Demo läuft, entscheidet Erik. Empfohlen: live mit dem Markt `DEMO-Review-001`, danach archivieren (löschen geht nicht, der Markt erscheint bis dahin in der Kunden-Marktliste). Alternative: lokal auf dem Docker-Compose-Stack.

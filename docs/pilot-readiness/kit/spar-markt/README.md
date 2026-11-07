@@ -13,19 +13,35 @@ Ja, mit dem Stand, der seit 2026-11-04 live ist (Image `4cb1e03`). Geprüft wurd
 | Markt anlegen | ja | Stores → Neuer Store. Ein neuer Markt ist erst nach „Für Kunden freigeben“ in der Kunden-Marktliste (T13). |
 | 25 Beacons anlegen | ja | Beacons → „Bulk anlegen“: gemeinsame UUID und Major, je Zeile `Code,Minor` |
 | Beacons dem Markt zuweisen | ja, aber einzeln | 25 × „Zuweisen“ mit Bestätigung, etwa 3 Minuten. Deshalb vor dem Review erledigen. |
-| Layout importieren und aktivieren | ja | Editor → „JSON importieren“. Aktivieren geht nur, wenn alle 25 Beacons dem Markt zugewiesen sind. |
+| Layout importieren und aktivieren | ja | Editor → „JSON importieren“. Die Beacon-Identität steht schon in der Datei. Aktivieren geht nur, wenn alle 25 Beacons dem Markt zugewiesen sind. |
 | CSV mit Fehlern | ja | Die Prüfung läuft im Browser. Genau 2 Fehler, der Commit bleibt gesperrt. |
 | CSV mit 205 Produkten | ja | Der Bulk-Import (`/api/admin/products/bulk`) ist nicht durch die Altbestand-Sperre (409) blockiert. Die sperrt nur Einzelspeichern und -löschen, bis T5 erledigt ist. |
 | Bereitschaft „Bereit“ | ja, erwartet GREEN | Kein Regal ohne Produkt, jedes Produkt trifft ein beschriftetes Regal, Abdeckung: 10 von 546 Zellen unter 3 Beacons (1,8 %, Grenze 5 %) |
 | Suche nur im gewählten Markt | ja | Seit T3 sind Suchen ohne Markt fail-closed. Mit Markt kommen nur dessen Produkte. |
 
-Lokal geprüft mit dem Produktionscode des Admin-UI (`parseImportedDocument`, `reviewCsvImport`):
+**Lokaler Komplettlauf am 2026-11-07: grün, 11 von 11 Schritten.** Der Lauf nutzt ein frisches Postgres mit Flyway und OpenSearch 2.9 in Docker. Er ruft nur echte REST-Endpunkte auf, ohne Login. Die CSV-Prüfung und die Import-Blöcke kommen aus dem Produktionscode des Admin-UI.
 
-- Layout akzeptiert, 151 Elemente, 32 × 25.
-- `spar-markt.csv`: 205 von 205 gültig.
-- `spar-markt-fehler.csv`: 203 gültig und 2 Fehler, genau wie unten erwartet.
+```bash
+scripts/ops/full_run/run_full_local.sh docs/pilot-readiness/kit/spar-markt
+```
 
-Der Backend-Lauf über alle Schritte gegen ein lokales Postgres und OpenSearch steht in `scripts/ops/full_run/`. Er prüft Layout-Validator, Aktivierung, Readiness und Suche ohne Login.
+Ergebnis je Schritt:
+
+1. Markt angelegt.
+2. 25 Beacons angelegt und zugewiesen.
+3. Layout gespeichert, unverändert aus der JSON-Datei.
+4. Layout aktiviert.
+5. Bereitschaft **rot** mit `NO_STORE_PRODUCTS`.
+6. Fehler-CSV: genau die 2 erwarteten Fehler, 0 Produkte gespeichert.
+7. 205 Produkte gespeichert. Eine Wiederholung derselben Anfrage wird erkannt und nicht doppelt gespeichert.
+8. Bereitschaft **GREEN**: 120 Regale, 205 Produkte, 25 Beacons, 10 von 546 Zellen unter 3 Beacons.
+9. Freigabe: Der Markt erscheint in der Kunden-Marktliste.
+10. Zweiter Markt mit gleichnamigen Produkten in anderen Regalen angelegt.
+11. 5 Suchproben: Jede findet je Markt nur dessen Regal. Ohne Markt kommt kein marktgebundenes Produkt.
+
+Mehr dazu in `scripts/ops/full_run/README.md`.
+
+**Wichtig: Die Beacon-Identität steht im Layout.** Die Bereitschaft zählt ein Beacon im Layout nur, wenn es `uuid`, `major`, `minor` und `identityKey` hat. Fehlen diese Felder, wird sie trotz Zuweisung rot (`NO_BEACONS`, `BEACON_WITHOUT_IDENTITY`). `spar-markt-layout.json` enthält die Felder passend zu `spar-markt-beacons-bulk.txt`. Deshalb müssen UUID und Major beim Anlegen genau stimmen.
 
 **Nicht geprüft:** der Ablauf live nach dem Login. Claude meldet sich nicht an. Das zeigt erst die Generalprobe.
 
