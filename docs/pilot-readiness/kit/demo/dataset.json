@@ -1,0 +1,48 @@
+{
+  "name": "demo",
+  "description": "Demo-Kit: 15 Produkte, 6 Regale, 4 Beacons (siehe DEMO_ABLAUF.md).",
+  "region": { "code": "FULLRUN-REGION", "name": "Full-Run Testregion" },
+  "store": {
+    "storeCode": "DEMO-FULLRUN-001",
+    "name": "Demo-Markt Full-Run",
+    "street": "Teststrasse 1",
+    "zipCode": "4060",
+    "city": "Leonding",
+    "country": "AT",
+    "latitude": 48.2736,
+    "longitude": 14.2519
+  },
+  "beacons": [
+    { "code": "DEMO-B1", "uuid": "2f234454-cf6d-4a0f-adf2-f4911ba9ffa6", "major": 100, "minor": 1 },
+    { "code": "DEMO-B2", "uuid": "2f234454-cf6d-4a0f-adf2-f4911ba9ffa6", "major": 100, "minor": 2 },
+    { "code": "DEMO-B3", "uuid": "2f234454-cf6d-4a0f-adf2-f4911ba9ffa6", "major": 100, "minor": 3 },
+    { "code": "DEMO-B4", "uuid": "2f234454-cf6d-4a0f-adf2-f4911ba9ffa6", "major": 100, "minor": 4 }
+  ],
+  "files": {
+    "layout": "demo-layout.json",
+    "csv": "demo-markt.csv",
+    "errorCsv": "demo-markt-fehler.csv"
+  },
+  "expectedProductCount": 15,
+  "expectedErrors": [
+    { "line": 11, "field": "kategorie", "message": "Kein Regal 230/1 im aktiven Layout." }
+  ],
+  "searchProbes": [
+    { "query": "Vollmilch", "expectedName": "SPAR Frische Vollmilch 1L", "expectedLayoutCode": "210/1/1/1" },
+    { "query": "Mineralwasser", "expectedName": "Vöslauer Mineralwasser still 1.5L", "expectedLayoutCode": "220/1/1/1" },
+    { "query": "Spaghetti", "expectedName": "Barilla Spaghetti N.5 500g", "expectedLayoutCode": "310/1/1/1" }
+  ],
+  "secondMarket": {
+    "storeCode": "DEMO-FULLRUN-002",
+    "name": "Zweiter Markt Full-Run",
+    "street": "Gegenstrasse 2",
+    "zipCode": "4020",
+    "city": "Linz",
+    "country": "AT",
+    "products": [
+      { "id": 1, "name": "SPAR Frische Vollmilch 1L", "price": 1.59, "layoutCode": "520/1/1/1" },
+      { "id": 2, "name": "Vöslauer Mineralwasser still 1.5L", "price": 0.89, "layoutCode": "510/1/1/1" },
+      { "id": 3, "name": "Barilla Spaghetti N.5 500g", "price": 1.99, "layoutCode": "430/1/1/1" }
+    ]
+  }
+}
