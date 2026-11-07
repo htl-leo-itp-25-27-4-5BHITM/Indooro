@@ -1,0 +1,206 @@
+id;name;kategorie;meter;fach;reihe;preis
+1;SPAR Lebkuchen Herzen 200 g;100;1;1;1;1,99
+2;Manner Weihnachtsbaumbehang 300 g;100;2;1;1;4,99
+3;SPAR Glühwein rot 1 l;100;1;1;2;2,99
+4;Ölz Christstollen 750 g;100;2;1;2;6,99
+5;Bananen 1 kg;110;1;1;1;1,89
+6;Äpfel Gala 1 kg;110;2;1;1;2,49
+7;Birnen Williams 1 kg;110;3;1;1;2,99
+8;Orangen 2 kg Netz;110;4;1;1;3,99
+9;Zitronen 500 g Netz;110;1;1;2;1,79
+10;Weintrauben weiß 500 g;110;2;1;2;2,99
+11;Heidelbeeren 125 g;110;3;1;2;2,49
+12;SPAR Natur*pur Bio Äpfel 1 kg;110;4;1;2;3,49
+13;Rispentomaten 1 kg;120;1;1;1;3,49
+14;Salatgurke;120;2;1;1;0,99
+15;Paprika rot 1 kg;120;3;1;1;4,99
+16;SPAR Natur*pur Bio Karotten 1 kg;120;4;1;1;1,79
+17;Kartoffeln festkochend 2 kg;120;1;1;2;2,99
+18;Zwiebel 1 kg;120;2;1;2;1,49
+19;Zucchini 1 kg;120;3;1;2;2,99
+20;Knoblauch 3 Stück;999;1;1;2;1,19
+21;Eisbergsalat;130;1;1;1;1,49
+22;Vogerlsalat 100 g;130;2;1;1;1,99
+23;Salatmix 150 g;130;1;1;2;1,79
+24;Champignons 250 g;130;2;1;2;1,99
+25;Basilikum im Topf;130;1;1;3;1,99
+26;Schnittlauch im Topf;130;2;1;3;1,79
+27;Semmel;140;1;1;1;0,35
+28;Kaisersemmel;140;2;1;1;0,39
+29;Bauernbrot 750 g;140;3;1;1;3,29
+30;Vollkornbrot 500 g;140;4;1;1;2,99
+31;Buttercroissant;140;1;1;2;1,19
+32;Laugenbrezel;140;2;1;2;0,89
+33;Ölz Toastbrot 500 g;140;3;1;2;2,29
+34;Kornspitz;140;4;1;2;0,59
+35;Extrawurst 100 g;150;1;1;1;1,79
+36;Leberkäse 100 g;150;2;1;1;1,49
+37;Beinschinken 100 g;150;3;1;1;2,59
+38;Ungarische Salami 100 g;150;1;1;2;3,49
+39;Bauernspeck 100 g;150;2;1;2;2,79
+40;Putenschnitzel paniert 100 g;150;3;1;2;1,79
+41;Emmentaler 100 g;160;1;1;1;1,69
+42;Vorarlberger Bergkäse 100 g;160;2;1;1;2,49
+43;Gouda jung 100 g;160;1;1;2;1,39
+44;Grüne Oliven mit Mandeln 100 g;160;2;1;2;1,99
+45;Mozzarella di Bufala 100 g;160;1;1;3;1,29
+46;SPAR Natur*pur Bio Putenbrust 100 g;210;1;1;1;2,49
+47;SPAR Salami Aufschnitt 100 g;210;2;1;1;2,29
+48;Käsekrainer 4 Stück;210;3;1;1;3,99
+49;Frankfurter Würstel 2 Paar;210;1;1;2;1,99
+50;Speck Streifen 150 g;210;2;1;2;2,19
+51;Leberkäse Scheiben 4 Stück;210;3;1;2;2,79
+52;Bergbaron Scheiben 150 g;220;1;1;1;2,99
+53;SPAR Gouda Scheiben 150 g;220;2;1;1;1,99
+54;SPAR Hirtenkäse 200 g;220;3;1;1;2,79
+55;SPAR Mozzarella 125 g;220;1;1;2;1,19
+56;Parmesan gerieben 100 g;220;2;1;2;1,99
+57;Philadelphia Frischkäse 200 g;220;3;1;2;2,69
+58;SPAR Gouda Block 400 g;220;1;1;3;4,19
+59;Hühnerbrustfilet 400 g;230;1;1;1;5,49
+60;Schweinsschnitzel 400 g;230;2;1;1;5,99
+61;Faschiertes gemischt 500 g;230;3;1;1;5,29
+62;Hendl ganz 1,2 kg;230;1;1;2;6,99
+63;Cordon bleu 2 Stück;230;2;1;2;4,49
+64;Schweinskotelett 4 Stück;230;3;1;2;6,49
+65;Schärdinger Frische Vollmilch 3,5 % 1 l;240;1;1;1;1,59
+66;SPAR Frische Vollmilch 1 l;240;2;1;1;1,39
+67;SPAR Natur*pur Bio Vollmilch 1 l;240;3;1;1;1,69
+68;NÖM Joghurt natur 500 g;240;4;1;1;1,49
+69;NÖM Fruchtjoghurt Erdbeere 180 g;240;5;1;1;0,69
+70;Schärdinger Teebutter 250 g;240;1;1;2;3,49
+71;SPAR Schlagobers 200 ml;240;2;1;2;1,59
+72;SPAR Sauerrahm 200 g;240;3;1;2;1,19
+73;SPAR Topfen 250 g;240;4;1;2;1,49
+74;SPAR Vital Skyr natur 450 g;240;5;1;2;1,99
+75;SPAR Freilandeier 10 Stück;250;1;1;1;3,99
+76;SPAR Natur*pur Bio Eier 6 Stück;250;1;1;2;3,29
+77;Bodenhaltungseier 10 Stück;250;1;1;3;3,49
+78;Frische Tortellini Ricotta 250 g;260;1;1;1;2,99
+79;Pizzateig frisch 400 g;260;2;1;1;1,79
+80;SPAR Veggie Hummus 200 g;260;3;1;1;1,99
+81;Sushi Box 8 Stück;260;1;1;2;5,99
+82;Hendl-Wrap;260;2;1;2;3,49
+83;Frische Rindsuppe 400 ml;260;3;1;2;3,49
+84;Iglo Fischstäbchen 450 g;310;1;1;1;4,99
+85;Dr. Oetker Ristorante Salami;310;2;1;1;5,49
+86;SPAR Pommes frites 750 g;310;3;1;1;2,29
+87;Iglo Blattspinat 450 g;310;4;1;1;1,99
+88;SPAR Erbsen 750 g;310;1;1;2;2,29
+89;Iglo Gemüse Mix 400 g;310;2;1;2;2,49
+90;SPAR Backhendl 500 g;310;3;1;2;3,99
+91;SPAR Marillenknödel 6 Stück;310;4;1;2;3,49
+92;Eskimo Magnum Classic 3 Stück;320;1;1;1;3,99
+93;Mövenpick Bourbon Vanille 850 ml;320;2;1;1;5,99
+94;SPAR Premium Eis Vanille 500 ml;320;3;1;1;3,49
+95;Eskimo Cremissimo Schoko 750 ml;320;1;1;2;4,99
+96;Eskimo Nogger 5 Stück;320;2;1;2;3,99
+97;Vöslauer prickelnd 1,5 l;410;1;1;1;0,89
+98;Vöslauer still 1,5 l;410;2;1;1;0,89
+99;Römerquelle prickelnd 1,5 l;410;3;1;1;0,89
+100;Römerquelle Emotion Birne-Melisse 0,75 l;410;4;1;1;
+101;Gasteiner Mineralwasser 1 l;410;1;1;2;1,19
+102;Vöslauer 6 x 1,5 l;410;2;1;2;5,29
+103;S-Budget Mineralwasser 2 l;410;3;1;2;0,55
+104;Pago Orange 1 l;420;1;1;1;2,29
+105;Rauch Happy Day Apfel 1 l;420;2;1;1;2,29
+106;Almdudler 1 l;420;3;1;1;1,89
+107;Coca-Cola 1,5 l;420;1;1;2;2,29
+108;Fanta Orange 1,5 l;420;2;1;2;2,29
+109;Red Bull 250 ml;420;3;1;2;1,79
+110;Pfanner Eistee Zitrone 2 l;420;1;1;3;2,99
+111;Frucade 1 l;420;2;1;3;1,99
+112;Gösser Märzen 0,5 l;430;1;1;1;1,29
+113;Stiegl Goldbräu 0,5 l;430;2;1;1;1,39
+114;Zipfer Märzen 0,5 l;430;3;1;1;1,29
+115;Puntigamer 0,5 l;430;4;1;1;1,19
+116;Schlossgold alkoholfrei 0,5 l;430;5;1;1;0,99
+117;Gösser Radler 6 x 0,5 l;430;1;1;2;5,99
+118;Grüner Veltliner Weinviertel DAC 0,75 l;440;1;1;1;5,99
+119;Zweigelt Niederösterreich 0,75 l;440;2;1;1;5,49
+120;Prosecco DOC 0,75 l;440;3;1;1;5,99
+121;Schlumberger Sparkling Brut 0,75 l;440;4;1;1;7,99
+122;Stroh Inländer Rum 38 % 0,5 l;440;5;1;1;14,99
+123;Jägermeister 0,7 l;440;1;1;2;16,99
+124;Aperol 0,7 l;440;2;1;2;13,99
+125;Julius Meinl Präsident gemahlen 500 g;510;1;1;1;8,49
+126;Jacobs Krönung gemahlen 500 g;510;2;1;1;7,99
+127;SPAR Kaffeekapseln Lungo 10 Stück;510;3;1;1;3,99
+128;Julius Meinl Wiener Melange Bohne 1 kg;510;4;1;1;15,99
+129;Teekanne Früchtetee 20 Beutel;510;5;1;1;2,59
+130;SPAR Pfefferminztee 20 Beutel;510;1;1;2;1,49
+131;Nesquik Kakao 400 g;510;2;1;2;3,49
+132;Kellogg's Cornflakes 375 g;520;1;1;1;3,49
+133;SPAR Haferflocken zart 500 g;520;2;1;1;1,29
+134;Nutella 450 g;520;3;1;1;4,49
+135;Staud's Marillenmarmelade 450 g;520;4;1;1;3,99
+136;Österreichischer Blütenhonig 500 g;520;5;1;1;6,99
+137;SPAR Knuspermüsli Schoko 500 g;520;1;1;2;3,29
+138;Manner Original Neapolitaner 75 g;530;1;1;1;1,19
+139;Manner Neapolitaner 400 g;530;2;1;1;3,49
+140;Milka Alpenmilch 100 g;530;3;1;1;1,89
+141;Ritter Sport Voll-Nuss 100 g;530;4;1;1;1,89
+142;Haribo Goldbären 175 g;530;5;1;1;1,79
+143;Kinder Riegel 8 Stück;530;6;1;1;2,29
+144;Ferrero Rocher 200 g;530;1;1;2;5,99
+145;Mirabell Mozartkugeln 150 g;530;2;1;2;4,99
+146;Leibniz Butterkeks 200 g;530;3;1;2;1,99
+147;Pringles Original 165 g;540;1;1;1;2,99
+148;Kelly's Chips Paprika 150 g;540;2;1;1;2,29
+149;Soletti Salzstangerl 100 g;540;3;1;1;1,49
+150;SPAR Erdnüsse geröstet 200 g;540;4;1;1;2,19
+151;SPAR Studentenfutter 200 g;540;1;1;2;2,49
+152;Kelly's Popcorn salzig 100 g;540;2;1;2;1,79
+153;SPAR Gemüsemais 340 g;550;1;1;1;1,49
+154;SPAR Tomaten gehackt 400 g;550;2;1;1;0,99
+155;SPAR Kidneybohnen 400 g;550;3;1;1;0,99
+156;Rio Mare Thunfisch 3 x 80 g;550;4;1;1;4,49
+157;SPAR Ananas Scheiben 565 g;550;5;1;1;2,29
+158;Essiggurken 720 ml;550;1;1;2;2,49
+159;Inzersdorfer Gulasch 400 g;550;2;1;2;3,49
+160;Barilla Spaghetti N.5 500 g;560;1;1;1;1,99
+161;Recheis Eierspätzle 500 g;560;2;1;1;2,49
+162;Recheis Fusilli 500 g;560;3;1;1;2,29
+163;S-Budget Spaghetti 500 g;560;4;1;1;0,99
+164;SPAR Basmatireis 1 kg;560;5;1;1;3,99
+165;SPAR Polenta 500 g;560;1;1;2;1,79
+166;Knorr Fix Spaghetti Bolognese;570;1;1;1;1,29
+167;Heinz Tomato Ketchup 570 g;570;2;1;1;2,99
+168;Estragon Senf 200 g;570;3;1;1;1,49
+169;SPAR Sonnenblumenöl 1 l;570;4;1;1;3,49
+170;SPAR Premium Olivenöl nativ extra 750 ml;570;1;1;2;8,99
+171;Mautner Markhof Apfelessig 1 l;570;2;1;2;1,49
+172;Fini's Feinstes Mehl glatt 1 kg;580;1;1;1;1,49
+173;Wiener Kristallzucker 1 kg;580;2;1;1;1,69
+174;Wiener Staubzucker 500 g;580;3;1;1;1,29
+175;Dr. Oetker Backin 6 Stück;580;4;1;1;1,29
+176;Dr. Oetker Vanillezucker 6 Stück;580;1;1;2;1,09
+177;Frischgerm 42 g;580;2;1;2;0,59
+178;Kotányi Paprika edelsüß 50 g;590;1;1;1;1,69
+179;Kotányi Pfeffer schwarz gemahlen 50 g;590;2;1;1;1,79
+180;Bad Ischler Speisesalz 1 kg;590;1;1;2;0,79
+181;Kotányi Curry 50 g;590;2;1;2;1,69
+182;Kotányi Kümmel ganz 50 g;590;1;1;3;1,49
+183;Nivea Creme 150 ml;610;1;1;1;3,99
+184;Elmex Zahnpasta 75 ml;610;2;1;1;3,49
+185;Colgate Total 75 ml;610;3;1;1;2,29
+186;Fa Duschgel 250 ml;610;4;1;1;2,19
+187;Schauma Shampoo 250 ml;610;5;1;1;2,99
+188;Zewa Taschentücher 10 x 10;610;1;1;2;2,49
+189;Hansaplast Pflaster 20 Stück;610;2;1;2;3,49
+190;Fairy Spülmittel 500 ml;620;1;1;1;2,99
+191;Persil Pulver 1,3 kg;620;2;1;1;9,99
+192;Domestos WC-Reiniger 750 ml;620;3;1;1;2,49
+193;Zewa Küchenrolle 4 Rollen;620;4;1;1;4,99
+194;Hakle Toilettenpapier 8 Rollen;620;5;1;1;3,99
+195;SPAR Müllsäcke 35 l;620;1;1;2;1,79
+196;SPAR Alufolie 30 m;620;2;1;2;2,49
+197;Whiskas Nassfutter 4 x 85 g;630;1;1;1;2,49
+198;Felix Sensations 4 x 85 g;630;2;1;1;2,69
+199;Pedigree Dose Rind 400 g;630;3;1;1;1,49
+200;Chappi Trockenfutter 1,5 kg;630;4;1;1;3,99
+201;SPAR Katzenstreu 10 l;630;5;1;1;4,99
+202;Wrigley's Extra Peppermint;710;1;1;1;1,49
+203;Tic Tac Mint;710;2;1;1;1,29
+204;Duracell AA 4 Stück;710;1;1;2;5,99
+205;Kronen Zeitung;710;2;1;2;1,70
