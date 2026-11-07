@@ -100,3 +100,4 @@ backups/
 .oasdiff/
 # Layouts, die fetch_layout.py fuer den Feldtag holt (Arbeitskopie; Beacon-Koordinaten koennen vom Maßband abweichen)
 swift/indooro-EinkaeuferFinal/NavigationFixtures/layouts/
+target-full-run/
