@@ -152,6 +152,32 @@ export function assignableStores(user: CurrentUser, stores: BeaconStore[]): Beac
   return [];
 }
 
+export interface BulkAssignResult {
+  assigned: string[];
+  failed: { beaconCode: string; message: string }[];
+}
+
+/** Weist Beacons nacheinander einem Store zu; ein Fehler bricht die übrigen nicht ab. */
+export async function assignBeaconsToStore(api: Pick<ApiClient, "post">, beacons: Pick<Beacon, "id" | "beaconCode">[], storeId: string): Promise<BulkAssignResult> {
+  const result: BulkAssignResult = { assigned: [], failed: [] };
+  for (const beacon of beacons) {
+    try {
+      await api.post(`/api/beacons/${encodeURIComponent(beacon.id)}/assign`, { storeId });
+      result.assigned.push(beacon.beaconCode);
+    } catch (error) {
+      result.failed.push({ beaconCode: beacon.beaconCode, message: errorMessage(error) });
+    }
+  }
+  return result;
+}
+
+export function assignNotice(result: BulkAssignResult, storeName: string): string {
+  const ok = result.assigned.length === 1 ? `${result.assigned[0]} wurde ${storeName} zugewiesen.` : `${result.assigned.length} Beacons wurden ${storeName} zugewiesen.`;
+  if (!result.failed.length) return ok;
+  const failed = result.failed.map((item) => `${item.beaconCode}: ${item.message}`).join("; ");
+  return `${result.assigned.length ? ok + " " : ""}Nicht zugewiesen: ${failed}`;
+}
+
 function errorMessage(error: unknown): string {
   return error instanceof ApiClientError ? error.message : "Die Anfrage ist fehlgeschlagen. Bitte erneut versuchen.";
 }
@@ -185,10 +211,11 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [assignmentTarget, setAssignmentTarget] = useState<Beacon | null>(null);
-  const [targetStoreId, setTargetStoreId] = useState("");
   const [assignmentError, setAssignmentError] = useState("");
   const [assigning, setAssigning] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [selectionStoreId, setSelectionStoreId] = useState("");
+  const [createStoreId, setCreateStoreId] = useState("");
   const [archiveError, setArchiveError] = useState("");
   const [pendingActionId, setPendingActionId] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
@@ -206,9 +233,14 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
   const contextStore = storesForUser.find((store) => store.id === contextStoreId);
 
   useEffect(() => {
+    if (contextStore && !selectionStoreId) setSelectionStoreId(contextStore.id);
+  }, [contextStore, selectionStoreId]);
+
+  useEffect(() => {
     const controller = new AbortController();
     storeGeneration.current += 1;
     setLoading(true);
+    setSelectedIds(new Set());
     setLoadingMoreStores(false);
     setLoadError("");
     setStorePageError("");
@@ -287,8 +319,12 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
     return primary || a.beaconCode.localeCompare(b.beaconCode, "de", { numeric: true, sensitivity: "base" });
   }), [beacons, sort]);
 
+  const selectable = useMemo(() => sortedBeacons.filter((beacon) => beacon.status === "ACTIVE" && (canManageBeacon(user, beacon, stores) || !beacon.currentStore) && storesForUser.length > 0), [sortedBeacons, user, stores, storesForUser]);
+  const selected = useMemo(() => selectable.filter((beacon) => selectedIds.has(beacon.id)), [selectable, selectedIds]);
+
   function openCreate() {
     setEditing(null);
+    setCreateStoreId(contextStore?.id ?? "");
     setDraft(blankDraft());
     setFormErrors({});
     setFormError("");
@@ -318,10 +354,16 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
     setSaving(true);
     try {
       const payload = beaconPayload(draft);
+      let message = "Beacon wurde gespeichert.";
       if (editing) await api.put<Beacon>(`/api/beacons/${encodeURIComponent(editing.id)}`, payload);
-      else await api.post<Beacon>("/api/beacons", payload);
+      else {
+        const created = await api.post<Beacon>("/api/beacons", payload);
+        message = "Beacon wurde angelegt.";
+        const store = storesForUser.find((candidate) => candidate.id === createStoreId);
+        if (store && created?.id) message = `Beacon wurde angelegt. ${assignNotice(await assignBeaconsToStore(api, [created], store.id), store.name)}`;
+      }
       setEditing(false);
-      setNotice(editing ? "Beacon wurde gespeichert." : "Beacon wurde angelegt.");
+      setNotice(message);
       setRevision((value) => value + 1);
     } catch (error) {
       setFormError(errorMessage(error));
@@ -358,7 +400,8 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
 
   async function commitBulk() {
     if (!admin || bulkSaving || !bulkReview?.length || bulkReview.some((row) => row.error)) return;
-    const confirmed = window.confirm(`${bulkReview.length} Beacons anlegen? Diese Aktion kann nicht rückgängig gemacht werden.`);
+    const targetStore = storesForUser.find((candidate) => candidate.id === createStoreId);
+    const confirmed = window.confirm(`${bulkReview.length} Beacons anlegen${targetStore ? ` und ${targetStore.name} zuweisen` : ""}? Diese Aktion kann nicht rückgängig gemacht werden.`);
     if (!confirmed) return;
     setBulkSaving(true);
     setBulkError("");
@@ -370,7 +413,10 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
         items: bulkReview.map(({ beaconCode, minor }) => ({ beaconCode, minor }))
       };
       const result = await api.post<{ created: number; items: Beacon[] }>("/api/beacons/bulk", payload);
-      setNotice(`${result.created} Beacon${result.created === 1 ? "" : "s"} wurden angelegt.`);
+      let message = `${result.created} Beacon${result.created === 1 ? "" : "s"} wurden angelegt.`;
+      const store = storesForUser.find((candidate) => candidate.id === createStoreId);
+      if (store && Array.isArray(result.items) && result.items.length) message += ` ${assignNotice(await assignBeaconsToStore(api, result.items, store.id), store.name)}`;
+      setNotice(message);
       setBulkOpen(false);
       setBulkReview(null);
       setBulkText("");
@@ -382,30 +428,26 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
     }
   }
 
-  function openAssignment(beacon: Beacon) {
-    setAssignmentTarget(beacon);
-    setTargetStoreId(contextStoreId ? contextStore?.id ?? "" : beacon.currentStore?.id ?? storesForUser[0]?.id ?? "");
-    setAssignmentError("");
-  }
-
-  async function assignBeacon(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!assignmentTarget || !targetStoreId || assigning) return;
-    const store = storesForUser.find((candidate) => candidate.id === targetStoreId);
+  async function assignTo(targets: Beacon[], storeId: string) {
+    if (!targets.length || !storeId || assigning) return;
+    const store = storesForUser.find((candidate) => candidate.id === storeId);
     if (!store) {
       setAssignmentError("Der Ziel-Store liegt außerhalb Ihres Zugriffs oder ist nicht aktiv.");
       return;
     }
-    if (!window.confirm(`${assignmentTarget.beaconCode} ${assignmentTarget.currentStore ? `von ${assignmentTarget.currentStore.name} nach ${store.name} verschieben` : `dem Store ${store.name} zuweisen`}?`)) return;
+    const moving = targets.filter((beacon) => beacon.currentStore && beacon.currentStore.id !== store.id);
+    const question = targets.length === 1
+      ? `${targets[0].beaconCode} ${targets[0].currentStore ? `von ${targets[0].currentStore.name} nach ${store.name} verschieben` : `dem Store ${store.name} zuweisen`}?`
+      : `${targets.length} Beacons dem Store ${store.name} zuweisen?${moving.length ? ` ${moving.length} davon werden aus einem anderen Store verschoben.` : ""}`;
+    if (!window.confirm(question)) return;
     setAssigning(true);
     setAssignmentError("");
     try {
-      await api.post(`/api/beacons/${encodeURIComponent(assignmentTarget.id)}/assign`, { storeId: targetStoreId });
-      setNotice(`${assignmentTarget.beaconCode} wurde ${store.name} zugewiesen.`);
-      setAssignmentTarget(null);
+      const result = await assignBeaconsToStore(api, targets, store.id);
+      if (result.failed.length) setAssignmentError(assignNotice(result, store.name));
+      else setNotice(assignNotice(result, store.name));
+      setSelectionStoreId("");
       setRevision((value) => value + 1);
-    } catch (error) {
-      setAssignmentError(errorMessage(error));
     } finally {
       setAssigning(false);
     }
@@ -445,7 +487,7 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
 
   return <section className="beacons-page" aria-labelledby="beacons-title">
     <div className="page-heading"><div><p className="eyebrow">Inventar</p><h2 id="beacons-title">Beacons</h2><p>Hardware-Identitäten und Store-Zuweisungen verwalten.</p></div>
-      {admin && <div className="toolbar"><button type="button" onClick={openCreate}>Beacon anlegen</button><button type="button" className="primary" onClick={() => { setBulkOpen((value) => !value); setBulkReview(null); setBulkError(""); }}>Bulk anlegen</button></div>}
+      {admin && <div className="toolbar"><button type="button" onClick={openCreate}>Beacon anlegen</button><button type="button" className="primary" onClick={() => { setBulkOpen((value) => !value); setBulkReview(null); setBulkError(""); setCreateStoreId(contextStore?.id ?? ""); }}>Bulk anlegen</button></div>}
     </div>
     {notice && <p role="status" className="notice success">{notice}</p>}
     {archiveError && <p role="alert" className="notice error">{archiveError}</p>}
@@ -455,6 +497,7 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
       {bulkError && <p role="alert" className="notice error">{bulkError}</p>}
       <div className="form-grid"><label>Gemeinsame UUID<input disabled={bulkReviewing || bulkSaving} value={bulkUuid} onChange={(event) => { setBulkUuid(event.currentTarget.value); setBulkReview(null); }} placeholder="fda50693-a4e2-4fb1-afcf-c6eb07647825" maxLength={40} /></label>
         <label>Gemeinsamer Major<input disabled={bulkReviewing || bulkSaving} inputMode="numeric" value={bulkMajor} onChange={(event) => { setBulkMajor(event.currentTarget.value); setBulkReview(null); }} /></label>
+        <label>Direkt zuweisen an (optional)<select disabled={bulkReviewing || bulkSaving} value={createStoreId} onChange={(event) => setCreateStoreId(event.currentTarget.value)}><option value="">Nicht zuweisen</option>{storesForUser.map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select></label>
         <label>Notizen<textarea disabled={bulkReviewing || bulkSaving} maxLength={2000} value={bulkNotes} onChange={(event) => setBulkNotes(event.currentTarget.value)} /></label>
         <label className="span-2">Zeilen im Format Beacon-Code,Minor (Major und Minor gemeinsam leer für UUID-only)<textarea disabled={bulkReviewing || bulkSaving} rows={6} value={bulkText} onChange={(event) => { setBulkText(event.currentTarget.value); setBulkReview(null); }} placeholder={"B-001,1\nB-002,2\nB-003,3"} /></label>
       </div>
@@ -469,19 +512,16 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
         <label>UUID<input required maxLength={40} value={draft.uuid} aria-invalid={!!formErrors.uuid} onChange={(event) => setDraft({ ...draft, uuid: event.currentTarget.value })} />{formErrors.uuid && <small role="alert">{formErrors.uuid}</small>}</label>
         <label>Major (optional)<input inputMode="numeric" value={draft.major} aria-invalid={!!formErrors.major} onChange={(event) => setDraft({ ...draft, major: event.currentTarget.value })} />{formErrors.major && <small role="alert">{formErrors.major}</small>}</label>
         <label>Minor (optional)<input inputMode="numeric" value={draft.minor} aria-invalid={!!formErrors.minor} onChange={(event) => setDraft({ ...draft, minor: event.currentTarget.value })} />{formErrors.minor && <small role="alert">{formErrors.minor}</small>}</label>
+        {!editing && <label>Direkt zuweisen an (optional)<select value={createStoreId} onChange={(event) => setCreateStoreId(event.currentTarget.value)}><option value="">Nicht zuweisen</option>{storesForUser.map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select></label>}
         {formErrors.identity && <p role="alert" className="span-2">{formErrors.identity}</p>}
         <label className="span-2">Notizen<textarea maxLength={2000} rows={3} value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.currentTarget.value })} />{formErrors.notes && <small role="alert">{formErrors.notes}</small>}</label>
         <div className="toolbar span-2"><button type="submit" className="primary" disabled={saving}>{saving ? "Speichert …" : "Speichern"}</button><button type="button" onClick={closeForm} disabled={saving}>Abbrechen</button></div>
       </form>
     </section>}
 
-    {assignmentTarget && <section className="panel" aria-labelledby="beacon-assignment-title"><div className="panel-header"><h3 id="beacon-assignment-title">Beacon zuweisen</h3></div>
-      {contextStore && <p>Aus Store-Detail: Ziel-Store {contextStore.storeCode} · {contextStore.name}</p>}
-      {contextStoreId && !contextStore && <p role="status" className="notice">Der Store aus dem Link ist nicht verfügbar oder liegt außerhalb Ihres Zugriffs. Bitte wählen Sie einen zugänglichen Ziel-Store.</p>}
-      {assignmentError && <p role="alert" className="notice error">{assignmentError}</p>}
-      <form className="toolbar" onSubmit={assignBeacon}><label>Ziel-Store<select required value={targetStoreId} onChange={(event) => setTargetStoreId(event.currentTarget.value)}><option value="">Store auswählen</option>{storesForUser.map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select></label>
-        <button className="primary" type="submit" disabled={assigning || !storesForUser.length}>{assigning ? "Weist zu …" : "Zuweisung bestätigen"}</button><button type="button" onClick={() => setAssignmentTarget(null)} disabled={assigning}>Abbrechen</button></form>
-    </section>}
+    {assignmentError && <p role="alert" className="notice error">{assignmentError}</p>}
+    {contextStore && <p role="status" className="notice">Aus Store-Detail: Ziel-Store {contextStore.storeCode} · {contextStore.name}</p>}
+    {contextStoreId && !contextStore && !loading && <p role="status" className="notice">Der Store aus dem Link ist nicht verfügbar oder liegt außerhalb Ihres Zugriffs. Bitte wählen Sie einen zugänglichen Ziel-Store.</p>}
 
     <section className="panel" aria-labelledby="beacon-list-title"><div className="panel-header"><h3 id="beacon-list-title">Inventar</h3><span>{loading || loadError ? "–" : sortedBeacons.length} Beacons</span></div>
       <form className="filters" role="search" onSubmit={(event) => event.preventDefault()}>
@@ -495,12 +535,18 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
       {storePageError && <p role="alert" className="notice error">Weitere Stores konnten nicht geladen werden: {storePageError}</p>}
       {loading && <p role="status">Beacons werden geladen …</p>}
       {!loading && !loadError && sortedBeacons.length === 0 && <p className="empty-state">Keine Beacons passen zu Suche, Filtern oder Zugriff.</p>}
-      {!loading && !loadError && sortedBeacons.length > 0 && <div className="table-scroll"><table><thead><tr><th>Code</th><th>Identität</th><th>Status</th><th>Store</th><th>Aktionen</th></tr></thead><tbody>{sortedBeacons.map((beacon) => {
+      {!loading && !loadError && selectable.length > 0 && <div className="toolbar" aria-label="Auswahl zuweisen">
+        <span>{selected.length} ausgewählt</span>
+        <label>Auswahl zuweisen an<select value={selectionStoreId} disabled={assigning || !selected.length} onChange={(event) => setSelectionStoreId(event.currentTarget.value)}><option value="">Store auswählen</option>{storesForUser.map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select></label>
+        <button type="button" className="primary" disabled={assigning || !selected.length || !selectionStoreId} onClick={() => void assignTo(selected, selectionStoreId)}>{assigning ? "Weist zu …" : `${selected.length} zuweisen`}</button>
+        {selected.length > 0 && <button type="button" disabled={assigning} onClick={() => setSelectedIds(new Set())}>Auswahl aufheben</button>}
+      </div>}
+      {!loading && !loadError && sortedBeacons.length > 0 && <div className="table-scroll"><table><thead><tr><th><input type="checkbox" aria-label="Alle zuweisbaren Beacons auswählen" disabled={!selectable.length || assigning} checked={selectable.length > 0 && selected.length === selectable.length} onChange={(event) => setSelectedIds(event.currentTarget.checked ? new Set(selectable.map((beacon) => beacon.id)) : new Set())} /></th><th>Code</th><th>Identität</th><th>Status</th><th>Store</th><th>Aktionen</th></tr></thead><tbody>{sortedBeacons.map((beacon) => {
         const manageable = canManageBeacon(user, beacon, stores);
         const canAssign = beacon.status === "ACTIVE" && (manageable || !beacon.currentStore) && storesForUser.length > 0;
-        return <tr key={beacon.id}><td><strong>{beacon.beaconCode}</strong><small>{beacon.notes || ""}</small></td><td><code>{beacon.identityKey}</code></td><td><span className={`status-pill ${beacon.status === "ARCHIVED" ? "missing" : beacon.currentStore ? "info" : "ready"}`}>{statusLabel(beacon)}</span></td><td>{beacon.currentStore?.name ?? "–"}</td><td><div className="row-actions">
+        return <tr key={beacon.id}><td>{canAssign && <input type="checkbox" aria-label={`${beacon.beaconCode} auswählen`} disabled={assigning} checked={selectedIds.has(beacon.id)} onChange={(event) => { const checked = event.currentTarget.checked; setSelectedIds((current) => { const next = new Set(current); if (checked) next.add(beacon.id); else next.delete(beacon.id); return next; }); }} />}</td><td><strong>{beacon.beaconCode}</strong><small>{beacon.notes || ""}</small></td><td><code>{beacon.identityKey}</code></td><td><span className={`status-pill ${beacon.status === "ARCHIVED" ? "missing" : beacon.currentStore ? "info" : "ready"}`}>{statusLabel(beacon)}</span></td><td>{beacon.currentStore?.name ?? "–"}</td><td><div className="row-actions">
           {manageable && beacon.status === "ACTIVE" && <button type="button" onClick={() => openEdit(beacon)}>Bearbeiten</button>}
-          {canAssign && <button type="button" onClick={() => openAssignment(beacon)}>{beacon.currentStore ? "Verschieben" : "Zuweisen"}</button>}
+          {canAssign && <select aria-label={`${beacon.beaconCode} ${beacon.currentStore ? "verschieben" : "zuweisen"}`} value="" disabled={assigning} onChange={(event) => { const storeId = event.currentTarget.value; if (storeId) void assignTo([beacon], storeId); }}><option value="">{beacon.currentStore ? "Verschieben nach …" : "Zuweisen an …"}</option>{storesForUser.filter((store) => store.id !== beacon.currentStore?.id).map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select>}
           {beacon.currentStore && manageable && <button type="button" onClick={() => releaseBeacon(beacon)} disabled={pendingActionId === beacon.id}>Freigeben</button>}
           {manageable && beacon.status === "ACTIVE" && <button type="button" className="danger" onClick={() => archiveBeacon(beacon)} disabled={pendingActionId === beacon.id}>Archivieren</button>}
         </div></td></tr>;
