@@ -14,6 +14,7 @@ Status: Entwurf. Gehört zu `openspec/changes/establish-pilot-field-measurement/
 | `REPORT_TEMPLATE.md` | Vorlage für Messberichte (ausstehend, Datei noch nicht vorhanden) |
 | `CHECKLIST_GROSSER_RAUM.md` | Checkliste für den großen Testraum (Tasks 5.3 und 5.4) |
 | `PARAMETER_ANALYSIS.md` | Parameteranalyse der Off-Route-Regel und des Sprung-Gates, Entscheidungsregel |
+| `POSITIONING_DECISION.md` | Vorschlag: vorab festgelegte Entscheidungsregel, ob die neue Positions-Engine eingeschaltet wird (Story #195) |
 | `RESULT_SUMMARY.md` | Ergebnisübersicht je Standort, Empfehlung für Abstand und Pilotmodus |
 | `sites/SITE_TEMPLATE.md` | Vorlage für die Standort-Datei mit Marker- und Gang-Tabelle |
 | `reports/0000-synthetic-baseline.md` | Synthetischer Replay-Stand, keine Messung |
