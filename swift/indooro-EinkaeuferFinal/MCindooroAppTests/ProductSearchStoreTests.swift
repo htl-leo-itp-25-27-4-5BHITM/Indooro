@@ -4,6 +4,7 @@ import XCTest
 
 /// Prueft, dass Produktanfragen die aktive Filiale als `storeCode` mitschicken und dass ein
 /// Filialwechsel die Trefferliste leert. Keine Netzwerkaufrufe: nur URL-Bildung und Zustand.
+@MainActor
 final class ProductSearchStoreTests: XCTestCase {
     // MARK: - storeCode in Produktanfragen
 

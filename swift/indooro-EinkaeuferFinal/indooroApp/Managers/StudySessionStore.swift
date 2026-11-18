@@ -16,6 +16,8 @@ enum StudyFailure: LocalizedError {
 
 @MainActor
 final class StudySessionStore: ObservableObject {
+    nonisolated deinit {}
+
     static let openRequested = Notification.Name("IndooroStudyOpenRequested")
     @Published private(set) var savedSessions: [StudySession] = []
     @Published private(set) var session: StudySession?

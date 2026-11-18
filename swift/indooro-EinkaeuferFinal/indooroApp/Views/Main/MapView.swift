@@ -1,5 +1,6 @@
 import IndooroModels
 import SwiftUI
+import IndooroNavigation
 
 struct MapView: View {
     @ObservedObject var beaconManager: BeaconManager
@@ -321,6 +322,8 @@ private struct ZoomableMapScrollView<Content: View>: UIViewRepresentable {
     }
 
     final class Coordinator: NSObject, UIScrollViewDelegate {
+        nonisolated deinit {}
+
         var zoomScale: Binding<Double>
         var hostingController: UIHostingController<Content>?
         var contentSize: CGSize = .zero

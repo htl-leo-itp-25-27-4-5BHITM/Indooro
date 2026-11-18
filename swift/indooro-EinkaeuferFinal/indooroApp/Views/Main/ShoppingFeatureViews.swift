@@ -483,8 +483,8 @@ struct ProductsPage: View {
 
     let onNavigateToProduct: (Product) -> Void
     let onAddToList: (Product) -> Void
-    let onOpenShopping: () -> Void
 
+    @Environment(AppRouter.self) private var router
     @State private var searchText = ""
     @State private var selectedCategory: ShoppingCategoryFilter?
     @State private var selectedCertification: ProductCertificationFilter = .plain
@@ -649,7 +649,7 @@ struct ProductsPage: View {
                     Spacer(minLength: 0)
 
                     Button {
-                        onOpenShopping()
+                        router.open(.shopping)
                     } label: {
                         Text("Einkaufen")
                             .font(.caption.weight(.semibold))
@@ -681,7 +681,7 @@ struct ProductsPage: View {
 
                 if plannedItems.count > 7 {
                     Button {
-                        onOpenShopping()
+                        router.open(.shopping)
                     } label: {
                         Label("Alle \(plannedItems.count) Artikel anzeigen", systemImage: "checklist.checked")
                             .font(.subheadline.weight(.semibold))

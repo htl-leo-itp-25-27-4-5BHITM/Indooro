@@ -1,6 +1,7 @@
 import IndooroModels
 import Foundation
 import IndooroNetworking
+import IndooroUpsell
 import Observation
 import os
 
@@ -8,6 +9,8 @@ import os
 @Observable
 @MainActor
 final class UpsellModel {
+    nonisolated deinit {}
+
     var activePrompt: UpsellPrompt?
     private(set) var isLoading = false
 

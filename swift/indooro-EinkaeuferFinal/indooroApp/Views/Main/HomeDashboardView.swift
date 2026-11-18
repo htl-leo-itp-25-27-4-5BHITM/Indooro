@@ -4,10 +4,7 @@ import SwiftUI
 struct HomeDashboardView: View {
     let selectedList: ShoppingList?
     let activeBanner: ShoppingSessionBanner?
-    let onOpenPlanning: () -> Void
-    let onOpenRecipes: () -> Void
-    let onOpenShopping: () -> Void
-    let onOpenMap: () -> Void
+    @Environment(AppRouter.self) private var router
 
     @State private var showsTutorial = false
     @ScaledMetric(relativeTo: .title) private var heroIconSize: CGFloat = 36
@@ -75,7 +72,7 @@ struct HomeDashboardView: View {
 
             VStack(spacing: 12) {
                 Button {
-                    onOpenPlanning()
+                    router.open(.planning)
                 } label: {
                     Label("Los geht's", systemImage: "arrow.right.circle.fill")
                         .font(.headline.weight(.semibold))
@@ -89,7 +86,7 @@ struct HomeDashboardView: View {
                 .shadow(color: accent.opacity(0.22), radius: 18, y: 10)
 
                 Button {
-                    onOpenMap()
+                    router.open(.map)
                 } label: {
                     Label("Karte öffnen", systemImage: "map.fill")
                         .font(.subheadline.weight(.semibold))
@@ -139,7 +136,7 @@ struct HomeDashboardView: View {
             .accessibilityElement(children: .combine)
 
             Button {
-                onOpenMap()
+                router.open(.map)
             } label: {
                 Label("Route fortsetzen", systemImage: "location.north.circle.fill")
                     .font(.subheadline.weight(.semibold))
@@ -188,7 +185,7 @@ struct HomeDashboardView: View {
             }
 
             Button {
-                onOpenShopping()
+                router.open(.shopping)
             } label: {
                 Label("Einkaufen öffnen", systemImage: "checklist.checked")
                     .font(.subheadline.weight(.semibold))
@@ -232,7 +229,7 @@ struct HomeDashboardView: View {
             }
 
             Button {
-                onOpenRecipes()
+                router.open(.recipes)
             } label: {
                 Label("Rezepte öffnen", systemImage: "cart.badge.plus")
                     .font(.subheadline.weight(.semibold))
@@ -277,7 +274,7 @@ struct HomeDashboardView: View {
 
             HStack(spacing: 10) {
                 Button {
-                    onOpenMap()
+                    router.open(.map)
                 } label: {
                     Label("Karte", systemImage: "location.fill")
                         .font(.subheadline.weight(.semibold))

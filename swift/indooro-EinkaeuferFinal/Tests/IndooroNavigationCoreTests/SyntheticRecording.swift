@@ -1,7 +1,7 @@
 import IndooroModels
 import Foundation
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Baut synthetische Aufzeichnungen (`NavigationRecordLine`) aus Wahrheitsbewegungen auf dem Demo-Layout
 /// mit eingespeisten Beacons. Je Tick (0.35 s) entstehen Messzeilen aller Beacons in Reichweite

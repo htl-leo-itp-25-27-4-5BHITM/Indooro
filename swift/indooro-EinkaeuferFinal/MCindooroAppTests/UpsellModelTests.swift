@@ -1,4 +1,5 @@
 import IndooroModels
+import IndooroUpsell
 import XCTest
 @testable import MCindooroApp
 

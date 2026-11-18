@@ -2,7 +2,7 @@ import Foundation
 
 /// Reine Textbausteine für VoiceOver-Labels und die Kartenzusammenfassung.
 /// Keine UI-Abhängigkeit, damit die Formulierungen per SwiftPM getestet werden können.
-enum AccessibilityText {
+nonisolated enum AccessibilityText {
 
     static let noTargetText = "Kein Ziel gewählt."
     static let untrustedPositionText = "Position ungenau."
