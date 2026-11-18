@@ -23,8 +23,10 @@ enum FieldExport {
     /// `NavigationFixtures/` im Repo, relativ zu dieser Datei.
     static var fixturesDirectory: URL {
         URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent() // IndooroNavigationCoreTests
+            .deletingLastPathComponent() // IndooroNavigationTests
             .deletingLastPathComponent() // Tests
+            .deletingLastPathComponent() // IndooroKit
+            .deletingLastPathComponent() // Packages
             .deletingLastPathComponent() // indooro-EinkaeuferFinal
             .appendingPathComponent("NavigationFixtures", isDirectory: true)
     }
@@ -42,10 +44,10 @@ enum FieldExport {
         fixturesDirectory.appendingPathComponent("recordings", isDirectory: true)
     }
 
-    /// `Tests/IndooroNavigationCoreTests/Resources/`: Layouts `layout-<site>.json`.
+    /// `Packages/IndooroKit/Tests/IndooroNavigationTests/Resources/`: Layouts `layout-<site>.json`.
     static var layoutDirectory: URL {
         URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent() // IndooroNavigationCoreTests
+            .deletingLastPathComponent() // IndooroNavigationTests
             .appendingPathComponent("Resources", isDirectory: true)
     }
 
