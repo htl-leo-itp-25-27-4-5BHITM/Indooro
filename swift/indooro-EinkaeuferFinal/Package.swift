@@ -29,6 +29,11 @@ let package = Package(
             // `postpilot/ios-architecture`, siehe `Positioning/README.md`) und `Positioning/Compare` im selben Modul
             // liegen wie die Navigationsquellen. Die App-Quellen unter `indooroApp/` bleiben unveraendert.
             path: ".",
+            // Alles ausserhalb von `indooroApp/` und `Positioning/` gehoert nicht zu diesem Ziel.
+            exclude: [
+                "Packages", "Tests", "NavigationFixtures", "MCindooroApp.xcodeproj", "MCindooroAppTests",
+                "MCindooroAppUITests", "Config", "Fixtures", "docs", "TESTING.md", "Positioning/CLI", "Positioning/README.md"
+            ],
             sources: [
                 "indooroApp/Utilities/IndoorGraph.swift",
                 "indooroApp/Utilities/KalmanFilter.swift",
