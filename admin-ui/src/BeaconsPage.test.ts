@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   assignableStores,
+  assignBeaconsToStore,
+  assignNotice,
   beaconListPath,
   canManageBeacon,
   normalizeBeaconUuid,
@@ -87,4 +89,21 @@ test("store and region managers only see mutation targets in their backend scope
   assert.equal(canManageBeacon(user("admin"), { ...assignedBeacon, currentStore: null }, [store]), true);
   assert.deepEqual(assignableStores(user("region-manager", "region-1"), [store, otherStore]), [store]);
   assert.deepEqual(assignableStores(user("store-manager", null, "store-2"), [store, otherStore]), [otherStore]);
+});
+
+test("assigning several beacons keeps going after a failure and reports each failed code", async () => {
+  const calls: string[] = [];
+  const api = {
+    async post<T>(path: string): Promise<T> {
+      calls.push(path);
+      if (path.includes("b-2")) throw new Error("boom");
+      return {} as T;
+    }
+  };
+  const result = await assignBeaconsToStore(api, [{ id: "b-1", beaconCode: "B-1" }, { id: "b-2", beaconCode: "B-2" }, { id: "b-3", beaconCode: "B-3" }], "store-1");
+  assert.deepEqual(calls, ["/api/beacons/b-1/assign", "/api/beacons/b-2/assign", "/api/beacons/b-3/assign"]);
+  assert.deepEqual(result.assigned, ["B-1", "B-3"]);
+  assert.equal(result.failed[0].beaconCode, "B-2");
+  assert.match(assignNotice(result, "Linz"), /^2 Beacons wurden Linz zugewiesen\. Nicht zugewiesen: B-2: /);
+  assert.equal(assignNotice({ assigned: ["B-1"], failed: [] }, "Linz"), "B-1 wurde Linz zugewiesen.");
 });
