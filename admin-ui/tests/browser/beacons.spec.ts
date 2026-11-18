@@ -81,9 +81,7 @@ test("admin validates, creates, edits, bulk reviews, assigns, releases, and arch
   await expect(page.getByText("Eingang Nord")).toBeVisible();
   expect(writes[1].method).toBe("PUT");
 
-  await page.getByRole("button", { name: "Zuweisen" }).click();
-  await page.getByRole("combobox", { name: "Ziel-Store" }).selectOption("store-1");
-  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
+  await page.getByRole("combobox", { name: "B-001 zuweisen" }).selectOption("store-1");
   await expect(page.getByText("Zugewiesen · LINZ-01")).toBeVisible();
   await page.getByRole("button", { name: "Freigeben" }).click();
   await expect(page.getByRole("cell", { name: "Frei" })).toBeVisible();
@@ -125,10 +123,10 @@ test("scoped staff can assign within scope but cannot create or bulk create", as
   await expect(page.getByRole("button", { name: "Beacon anlegen" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Bulk anlegen" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Bearbeiten" })).toHaveCount(1);
-  await page.getByRole("button", { name: "Verschieben" }).click();
   await expect(page.getByRole("option", { name: /WIEN-01/ })).toHaveCount(0);
-  await page.getByRole("combobox", { name: "Ziel-Store" }).selectOption("store-1");
-  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
+  await page.getByRole("checkbox", { name: "SCOPED-1 auswählen" }).check();
+  await page.getByRole("combobox", { name: "Auswahl zuweisen an" }).selectOption("store-1");
+  await page.getByRole("button", { name: "1 zuweisen" }).click();
   await expect(page.getByRole("button", { name: "Freigeben" })).toBeVisible();
   expect(writes).toBe(1);
 });
@@ -154,13 +152,11 @@ test("beacon assignment reaches a store beyond the first 100 results", async ({ 
   });
 
   await page.goto("/admin/next/beacons/");
-  await page.getByRole("button", { name: "Zuweisen" }).click();
-  const targetSelect = page.getByRole("combobox", { name: "Ziel-Store" });
+  const targetSelect = page.getByRole("combobox", { name: "FREE-1 zuweisen" });
   await expect(targetSelect.locator('option[value="store-target"]')).toHaveCount(0);
   await page.getByRole("button", { name: "Weitere Stores laden (100 von 101)" }).click();
   await expect(targetSelect.locator('option[value="store-target"]')).toHaveCount(1);
   await targetSelect.selectOption(target.id);
-  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Target Store zugewiesen" })).toBeVisible();
   expect(assignedStoreId).toBe(target.id);
 });
@@ -185,14 +181,14 @@ test("store deep link keeps free beacons visible and preselects its assignment t
 
   await page.goto("/admin/next/beacons/?storeId=store-1");
   await expect(page.getByRole("combobox", { name: "Store" })).toHaveValue("");
-  await expect(page.getByRole("cell", { name: "FREE-1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "FREE-1", exact: true })).toBeVisible();
   await expect.poll(() => beaconQueries.length > 0).toBe(true);
   expect(beaconQueries.every((query) => !new URLSearchParams(query).has("storeId"))).toBe(true);
-  await page.getByRole("button", { name: "Zuweisen" }).click();
-  const target = page.getByRole("combobox", { name: "Ziel-Store" });
   await expect(page.getByText("Aus Store-Detail: Ziel-Store LINZ-01 · Indooro Linz")).toBeVisible();
-  await expect(target).toHaveValue(store.id);
-  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
+  await expect(page.getByRole("combobox", { name: "Auswahl zuweisen an" })).toHaveValue(store.id);
+  await page.getByRole("checkbox", { name: "FREE-1 auswählen" }).check();
+  await page.getByRole("button", { name: "1 zuweisen" }).click();
+  await expect.poll(() => assignedStoreId).toBe(store.id);
   expect(assignedStoreId).toBe(store.id);
 });
 
@@ -220,13 +216,13 @@ test("store deep link resolves an assignment target beyond the first 100 stores 
   await page.goto("/admin/next/beacons/?storeId=store-target");
   const storeFilter = page.getByRole("combobox", { name: "Store" });
   await expect(storeFilter).toHaveValue("");
-  await expect(page.getByRole("cell", { name: "FREE-1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "FREE-1", exact: true })).toBeVisible();
   await expect.poll(() => loadedStorePages.includes(1)).toBe(true);
-  await page.getByRole("button", { name: "Zuweisen" }).click();
-  const targetSelect = page.getByRole("combobox", { name: "Ziel-Store" });
   await expect(page.getByText("Aus Store-Detail: Ziel-Store TARGET · Target Store")).toBeVisible();
-  await expect(targetSelect).toHaveValue(target.id);
-  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
+  await expect(page.getByRole("combobox", { name: "Auswahl zuweisen an" })).toHaveValue(target.id);
+  await page.getByRole("checkbox", { name: "FREE-1 auswählen" }).check();
+  await page.getByRole("button", { name: "1 zuweisen" }).click();
+  await expect.poll(() => assignedStoreId).toBe(target.id);
   expect(assignedStoreId).toBe(target.id);
 });
 
@@ -245,16 +241,15 @@ test("unavailable store deep link requires an explicit accessible assignment tar
   });
 
   await page.goto("/admin/next/beacons/?storeId=foreign-store");
-  await page.getByRole("button", { name: "Zuweisen" }).click();
-  const target = page.getByRole("combobox", { name: "Ziel-Store" });
   await expect(page.getByRole("status")).toContainText("Der Store aus dem Link ist nicht verfügbar oder liegt außerhalb Ihres Zugriffs");
+  const target = page.getByRole("combobox", { name: "Auswahl zuweisen an" });
+  await page.getByRole("checkbox", { name: "FREE-1 auswählen" }).check();
   await expect(target).toHaveValue("");
-  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
-  await expect(target).toHaveValue("");
+  await expect(page.getByRole("button", { name: "1 zuweisen" })).toBeDisabled();
   expect(assignedStoreId).toBeNull();
   await target.selectOption(store.id);
-  await page.getByRole("button", { name: "Zuweisung bestätigen" }).click();
-  expect(assignedStoreId).toBe(store.id);
+  await page.getByRole("button", { name: "1 zuweisen" }).click();
+  await expect.poll(() => assignedStoreId).toBe(store.id);
 });
 
 test("beacon inventory shows empty state and retries load failures", async ({ page }) => {
@@ -312,7 +307,7 @@ test("Beacon inventory preserves legacy Code, UUID, and Store sorting", async ({
     const panel = document.querySelector(".beacons-page .panel");
     return panel ? panel.getBoundingClientRect().right <= window.innerWidth : false;
   })).toBe(true);
-  const codes = () => page.locator(".beacons-page table tbody tr td:first-child strong").allTextContents();
+  const codes = () => page.locator(".beacons-page table tbody tr td:nth-child(2) strong").allTextContents();
   await expect(page.getByRole("combobox", { name: "Sortierung" })).toHaveValue("beaconCode");
   await expect.poll(codes).toEqual(["B-1", "B-2", "B-10"]);
   await page.getByRole("combobox", { name: "Sortierung" }).selectOption("uuid");
@@ -346,4 +341,46 @@ test("admin can create a beacon with keyboard controls and see the saved row", a
   await page.keyboard.press("Enter");
   await expect(page.getByRole("cell", { name: "KB-01" })).toBeVisible();
   await expect(page.getByRole("status")).toContainText("Beacon wurde angelegt.");
+});
+
+test("admin assigns several selected beacons and bulk-created beacons to a store in one step", async ({ page }) => {
+  const beacons = [beacon("b-1", "SEL-1", 1), beacon("b-2", "SEL-2", 2), beacon("b-3", "SEL-3", 3)];
+  const writes: { url: string; body: unknown }[] = [];
+  page.on("dialog", (dialog) => dialog.accept());
+  await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
+  await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [store], page: 0, size: 100, totalElements: 1 } }));
+  await page.route("**/api/beacons**", (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.method() === "GET") return route.fulfill({ json: url.searchParams.get("status") === "ARCHIVED" ? [] : beacons });
+    writes.push({ url: url.pathname, body: request.postDataJSON() });
+    if (url.pathname === "/api/beacons/bulk") {
+      const created = [beacon("b-4", "NEW-4", 4), beacon("b-5", "NEW-5", 5)];
+      beacons.push(...created);
+      return route.fulfill({ json: { created: 2, items: created } });
+    }
+    const id = url.pathname.split("/")[3];
+    const target = beacons.find((item) => item.id === id);
+    if (target) target.currentStore = store;
+    return route.fulfill({ json: { beaconId: id, storeId: store.id } });
+  });
+
+  await page.goto("/admin/next/beacons/");
+  await page.getByRole("checkbox", { name: "SEL-1 auswählen" }).check();
+  await page.getByRole("checkbox", { name: "SEL-3 auswählen" }).check();
+  await expect(page.getByText("2 ausgewählt")).toBeVisible();
+  await page.getByRole("combobox", { name: "Auswahl zuweisen an" }).selectOption("store-1");
+  await page.getByRole("button", { name: "2 zuweisen" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "2 Beacons wurden Indooro Linz zugewiesen." })).toBeVisible();
+  expect(writes.map((entry) => entry.url)).toEqual(["/api/beacons/b-1/assign", "/api/beacons/b-3/assign"]);
+
+  await page.getByRole("button", { name: "Bulk anlegen" }).click();
+  await page.getByRole("textbox", { name: "Gemeinsame UUID" }).fill(uuid);
+  await page.getByRole("textbox", { name: "Gemeinsamer Major" }).fill("9");
+  await page.getByRole("combobox", { name: "Direkt zuweisen an (optional)" }).selectOption("store-1");
+  await page.getByRole("textbox", { name: /Zeilen im Format/ }).fill("NEW-4,4\nNEW-5,5");
+  await page.getByRole("button", { name: "Review", exact: true }).click();
+  await page.getByRole("button", { name: /Review bestätigen und 2 anlegen/ }).click();
+  await expect(page.getByRole("status").filter({ hasText: "2 Beacons wurden angelegt. 2 Beacons wurden Indooro Linz zugewiesen." })).toBeVisible();
+  expect(writes.slice(2).map((entry) => entry.url)).toEqual(["/api/beacons/bulk", "/api/beacons/b-4/assign", "/api/beacons/b-5/assign"]);
 });
