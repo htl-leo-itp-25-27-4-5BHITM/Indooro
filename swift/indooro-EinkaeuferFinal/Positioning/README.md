@@ -18,6 +18,23 @@ Context: sprint story #195, openspec change `compare-positioning-pipelines`, dec
 All of it is compiled into the SwiftPM target `IndooroNavigationCore` (root `Package.swift`) together with the
 navigation sources from `indooroApp/Utilities/`. That is why the engine needs no `public` modifiers.
 
+## Use
+
+```text
+scripts/field/compare_positioning.sh <recording.jsonl> --store SPAR-Leonding-002      # from the repo root
+cd swift/indooro-EinkaeuferFinal && swift run compare-positioning <recording.jsonl> --layout <layout.json> --out <dir>
+cd swift/indooro-EinkaeuferFinal && swift test --filter IndooroPositioningCompareTests
+```
+
+Details, outputs and exit codes: `scripts/field/README.md`, section "Zwei Pipelines vergleichen".
+
+How the two paths are driven (`Compare/ComparisonPaths.swift`): `ReplayPlan` fixes the tick schedule once (virtual clock from the
+first line, tick every `updateIntervalSeconds`, lines up to the tick time first, no tick inside the warm-up).
+`CurrentPipelinePath` feeds `BeaconMeasurementStore` / `RSSISampleBuffer` and calls `PositioningPipeline.tick` like
+`BeaconManager`; a test shows it equals `NavigationReplay` tick for tick without warm-up. `EnginePath` creates a
+`PositioningEngine` with a manual clock and a radio without samples, hands it the measurements through `ingest` (what a radio
+would deliver) and calls `runTick()` once per scheduled tick.
+
 ## Provenance of `Engine/`
 
 Source: `origin/postpilot/ios-architecture` at commit `75ec224f7ad6026d7a947b21422eaa5ab4301f8c`,
