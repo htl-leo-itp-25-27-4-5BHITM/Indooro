@@ -218,3 +218,26 @@ Format: siehe `docs/IOS_INTEGRATION_SPEC.md`, Abschnitt 3. Der Lab liest zusätz
 | `schema` ≠ `indooro-recording/2` | Warnung `unknown-recording-schema` |
 
 Aufnahmen ohne `session` (Version 1) importieren unverändert.
+
+## Positionsvergleich `indooro-position-comparison/1` (zwei Verfahren)
+
+Kein Messformat, sondern das Ergebnis von `scripts/field/compare_positioning.sh` (Swift-Werkzeug `compare-positioning`):
+**eine** Aufnahme, durch die aktuelle App-Pipeline und die `PositioningEngine` gespielt. Die Datei enthält fertige Positionen
+je Tick (`epochs[].current` und `epochs[].engine`, Einheit Meter, 1 Rasterzelle = 1 m), die Referenz (`truth`) und die
+Kennzahlen des Werkzeugs (`summary`). Es läuft kein Algorithmus im Lab.
+
+Einlesen: `parsePositionComparison` in `src/data/positionComparison.ts` (reine Funktion, noch keine Oberfläche). Jedes Verfahren wird eine
+Liste von `PositionEstimate`; die Kennzahlen kommen aus `computeErrorMetrics` und `computeDynamicMetrics` und werden mit der `summary` der Datei
+verglichen (`summaryMismatches`; Abweichung `summary-mismatch`). So bleiben die Definitionen in `METRICS.md` an beiden Orten gleich.
+
+| Code | Schwere | Bedeutung |
+| --- | --- | --- |
+| `json-parse-error`, `json-shape`, `schema-mismatch`, `unit-unsupported` | error | Datei unlesbar oder kein `indooro-position-comparison/1` in Metern |
+| `methods-missing`, `methods-invalid`, `methods-duplicate`, `epochs-missing`, `no-valid-epochs` | error | Verfahren oder Epochen fehlen oder sind unbrauchbar |
+| `epochs-invalid` | warning | Epochen mit ungültiger Zeit, Referenz oder Position verworfen, mit Zeilennummern |
+| `synthetic-origin` | warning | `origin: synthetic`: erzeugte Daten, keine Messung |
+| `summary-mismatch` | warning | Lab und Werkzeug rechnen unterschiedlich |
+
+Eine fehlende Position (`position: null`) zählt bei vorhandener Referenz als Ausfall, nicht als Fehlerwert. Beide Verfahren nutzen dieselbe
+`PositioningPipeline`; das Format zeigt, ob die Orchestrierung der Engine dasselbe liefert, nicht ob die Funkschicht es tut.
+Beispiel: `samples/synthetic-position-comparison.json` (SYNTHETISCH).

@@ -14,6 +14,8 @@ Grundlage: `docs/pilot-readiness/hardware/MEASUREMENT_PROTOCOL.md`, Abschnitt 7.
 | `analyze_walk.sh` / `analyze_walk.py` | Eine Aufnahme in einem Befehl: anonymisieren, Replay, Statistik, Report | 5.1, 5.2 |
 | `walk_report.py` | Hoerbare Beacons je Position, Spruenge, fremde iBeacons (Baustein von `analyze_walk`) | 5.2 |
 | `fetch_layout.py` | Aktives Layout eines Marktes lesend holen (zwei GET-Aufrufe) | 5.1 |
+| `compare_positioning.sh` / `compare_positioning.py` | Eine Aufnahme durch die aktuelle App-Pipeline **und** die `PositioningEngine` spielen und vergleichen | #195 |
+| `positioning_verdict.py` | Wendet die Entscheidungsregel `POSITIONING_DECISION.md` auf mehrere Vergleiche an | #195 |
 | `make_synthetic_walk.py` | Erzeugt die synthetische Probe-Aufnahme `NavigationFixtures/synthetic/` (keine Messung) | 5.1 |
 
 Tests: `python -I -m unittest discover scripts/field`
@@ -38,6 +40,27 @@ scripts/field/analyze_walk.sh swift/indooro-EinkaeuferFinal/NavigationFixtures/i
 - Exit 0 Report geschrieben, 1 Anonymisierung oder Replay fehlgeschlagen, 2 Aufruf- oder Eingabefehler (fehlendes Layout, Datei).
 - Der Gang-Anteil braucht eine Gang-Tabelle in der Standort-Datei; Layouts aus dem Backend haben keine Elemente vom Typ `aisle`.
 - `scan`-Zeilen (iBeacons ohne Layout-Treffer) listet der Report; der Replay ignoriert sie.
+
+## Zwei Pipelines vergleichen (aktuelle Pipeline gegen PositioningEngine)
+
+Beantwortet, ob die neue Positionsberechnung (`PositioningEngine`, Flag aus) auf derselben Aufnahme dasselbe oder etwas anderes zeigt als
+die App. Nichts wird eingeschaltet, nichts ans Backend geschrieben. Regel für die Entscheidung: `docs/pilot-readiness/hardware/POSITIONING_DECISION.md`.
+
+```text
+scripts/field/compare_positioning.sh swift/indooro-EinkaeuferFinal/NavigationFixtures/incoming/<datei>.jsonl --store SPAR-Leonding-002
+scripts/field/compare_positioning.sh <datei>.jsonl --layout <layout.json> [--warmup SEKUNDEN] [--work-dir DIR]
+python -I scripts/field/positioning_verdict.py swift/indooro-EinkaeuferFinal/NavigationFixtures/exports/*-comparison.json
+```
+
+- Ohne Dateiargument gilt die neueste `*.jsonl` in `NavigationFixtures/incoming/`. Das Original bleibt unverändert; ausgewertet wird eine anonymisierte, geprüfte Kopie (wie bei `analyze_walk.sh`).
+- Layout: `--layout`, sonst mit `--store` die Datei `NavigationFixtures/layouts/<storeCode klein>.json`. Fehlt sie, wird das Layout **lesend** geholt (zwei GET-Aufrufe, `fetch_layout.py`); `--refresh-layout` holt es neu. Ohne beides sucht das Skript wie `analyze_walk.sh` (synthetische Aufnahmen finden ihr Layout daneben).
+- Ablauf: Anonymisierung und Prüfung -> `swift run compare-positioning` (im Ordner `swift/indooro-EinkaeuferFinal`, baut beim ersten Mal einige Minuten) -> Kurzfassung auf der Standardausgabe.
+- Beide Wege bekommen dieselben Samples, dieselbe virtuelle Uhr (Tick 0,35 s ab der ersten Zeile), dieselbe Aufwärmphase und dasselbe Layout. Die Kennzahlen (Median, P90, P95, Anteil ≤ 2/3/5 m, Ausfallrate, Sprungrate) folgen `tools/beacon-lab/docs/METRICS.md`.
+- Ausgabe in `NavigationFixtures/exports/` (gitignored): `<name>-comparison.csv` (eine Zeile je Tick mit Wahrheit und beiden Wegen), `<name>-comparison.json` (Schema `indooro-position-comparison/1`, vom Lab lesbar: `docs/IMPORT_FORMATS.md`), `<name>-comparison.txt` (Kurzfassung), `<name>-current-ticks.csv` und `<name>-engine-ticks.csv` (Format von `NavigationReplay.csv`, lesbar für `field_stats.py`).
+- Dateien, deren Name mit `synthetic-` beginnt, tragen in jeder Ausgabe die Kennzeichnung SYNTHETISCH. Diese Zahlen nie zitieren.
+- **Grenze:** Beide Wege nutzen dieselbe `PositioningPipeline`. Der Vergleich zeigt, ob die Engine sie gleich aufruft, nicht wie die Funkschicht der Engine sich im Feld verhält.
+- Exit 0 fertig, 1 Anonymisierung oder Vergleich fehlgeschlagen, 2 Aufruf- oder Eingabefehler (Datei, Layout, Markt-Code), 3 keine Epoche mit Referenz (keine Wahrheitsmarken; die Positionen sind geschrieben, Kennzahlen fehlen).
+- Direkter Aufruf ohne Wrapper: `cd swift/indooro-EinkaeuferFinal && swift run compare-positioning <datei>.jsonl --layout <layout.json> [--out DIR] [--name NAME] [--warmup S]`. Ohne `--out` wird nichts geschrieben.
 
 ## Import und Anonymisierungspruefung
 

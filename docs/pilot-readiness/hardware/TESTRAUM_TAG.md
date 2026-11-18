@@ -41,6 +41,10 @@ Optional danach: L4 bewusst in den falschen Gang und zurück (Uhrzeit aufs Blatt
 4. **Zuerst lesen:** Abschnitt „Auffälligkeiten“ und „Beacons ohne Layout-Treffer“. Dort steht, ob ein Layout-Beacon nie gehört wurde, ob nicht der nächste Beacon am stärksten ist oder ob fremde Major/Minor auftauchen (Registrierung passt nicht zum Layout).
 5. **Gang-Anteil** erscheint nur, wenn `sites/testraum.md` eine Gang-Tabelle hat; Layouts aus dem Backend haben keine Gang-Elemente.
 
+5. **Optional, Story #195: aktuelle Pipeline gegen neue Positions-Engine vergleichen** (nur Lesen, schaltet nichts ein):
+   `scripts/field/compare_positioning.sh swift/indooro-EinkaeuferFinal/NavigationFixtures/incoming/<datei>.jsonl --store SPAR-Leonding-002`
+   Die Kurzfassung zeigt beide Wege nebeneinander (Median, P90, P95, Anteil ≤ 2/3/5 m, Ausfallrate, Sprungrate). Eine Aufnahme ist **ein** Lauf; die Entscheidung nach `POSITIONING_DECISION.md` braucht mindestens 3 Bewertungsläufe (Rolle `evaluation` vor dem Start in den Debug-Einstellungen wählen). Probelauf mit der synthetischen Aufnahme (nur Funktionsnachweis, SYNTHETISCH): `scripts/field/compare_positioning.sh swift/indooro-EinkaeuferFinal/NavigationFixtures/synthetic/synthetic-testraum-2026-10-19-1.jsonl`.
+
 ## 5. Brauchbar, wenn
 
 - [ ] „Gehört in der Aufnahme“ nennt alle 4 Beacons. Alle Wahrheitsmarker sind da (Zahl = Notizblatt).

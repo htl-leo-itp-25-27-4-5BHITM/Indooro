@@ -8,7 +8,10 @@ let package = Package(
     name: "IndooroNavigationCore",
     platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
-        .library(name: "IndooroNavigationCore", targets: ["IndooroNavigationCore"])
+        .library(name: "IndooroNavigationCore", targets: ["IndooroNavigationCore"]),
+        // Offline-Vergleich der aktuellen Pipeline und der PositioningEngine (openspec compare-positioning-pipelines).
+        // Nicht Teil der App; das Werkzeug laeuft nur auf dem Mac.
+        .executable(name: "compare-positioning", targets: ["ComparePositioningCLI"])
     ],
     dependencies: [
         // Lokales Paket mit den Datenmodellen (Phase 4 von modernize-ios-client-architecture).
@@ -22,27 +25,37 @@ let package = Package(
             dependencies: [
                 .product(name: "IndooroModels", package: "IndooroKit")
             ],
-            path: "indooroApp",
+            // Paketwurzel statt `indooroApp`: so koennen `Positioning/Engine` (Kopie des Engine-Kerns von
+            // `postpilot/ios-architecture`, siehe `Positioning/README.md`) und `Positioning/Compare` im selben Modul
+            // liegen wie die Navigationsquellen. Die App-Quellen unter `indooroApp/` bleiben unveraendert.
+            path: ".",
+            // Alles ausserhalb von `indooroApp/` und `Positioning/` gehoert nicht zu diesem Ziel.
+            exclude: [
+                "Packages", "Tests", "NavigationFixtures", "MCindooroApp.xcodeproj", "MCindooroAppTests",
+                "MCindooroAppUITests", "Config", "Fixtures", "docs", "TESTING.md", "Positioning/CLI", "Positioning/README.md"
+            ],
             sources: [
-                "Utilities/IndoorGraph.swift",
-                "Utilities/KalmanFilter.swift",
-                "Utilities/LayoutCacheStore.swift",
-                "Utilities/AppLog.swift",
-                "Utilities/BeaconPositionSolver.swift",
-                "Utilities/PoseFusionService.swift",
-                "Utilities/WalkableProjector.swift",
-                "Utilities/BeaconMeasurementStore.swift",
-                "Utilities/NavigationSessionCore.swift",
-                "Utilities/TourPlanner.swift",
-                "Utilities/PositioningPipeline.swift",
-                "Utilities/MotionTracker.swift",
-                "Utilities/NavigationReplay.swift",
-                "Utilities/StabilizedNavigationConfig.swift",
-                "Utilities/AnchorPayload.swift",
-                "Utilities/AccessibilityText.swift",
-                "Utilities/AccessibilityPalette.swift",
-                "Utilities/ArrivalSuggestionDetector.swift",
-                "Utilities/UpsellPlanLogic.swift"
+                "indooroApp/Utilities/IndoorGraph.swift",
+                "indooroApp/Utilities/KalmanFilter.swift",
+                "indooroApp/Utilities/LayoutCacheStore.swift",
+                "indooroApp/Utilities/AppLog.swift",
+                "indooroApp/Utilities/BeaconPositionSolver.swift",
+                "indooroApp/Utilities/PoseFusionService.swift",
+                "indooroApp/Utilities/WalkableProjector.swift",
+                "indooroApp/Utilities/BeaconMeasurementStore.swift",
+                "indooroApp/Utilities/NavigationSessionCore.swift",
+                "indooroApp/Utilities/TourPlanner.swift",
+                "indooroApp/Utilities/PositioningPipeline.swift",
+                "indooroApp/Utilities/MotionTracker.swift",
+                "indooroApp/Utilities/NavigationReplay.swift",
+                "indooroApp/Utilities/StabilizedNavigationConfig.swift",
+                "indooroApp/Utilities/AnchorPayload.swift",
+                "indooroApp/Utilities/AccessibilityText.swift",
+                "indooroApp/Utilities/AccessibilityPalette.swift",
+                "indooroApp/Utilities/ArrivalSuggestionDetector.swift",
+                "indooroApp/Utilities/UpsellPlanLogic.swift",
+                "Positioning/Engine",
+                "Positioning/Compare"
             ]
         ),
         .testTarget(
@@ -54,6 +67,19 @@ let package = Package(
             ],
             path: "Tests/IndooroNavigationCoreTests",
             resources: [.copy("Resources")]
+        ),
+        .executableTarget(
+            name: "ComparePositioningCLI",
+            dependencies: ["IndooroNavigationCore"],
+            path: "Positioning/CLI"
+        ),
+        .testTarget(
+            name: "IndooroPositioningCompareTests",
+            dependencies: [
+                "IndooroNavigationCore",
+                .product(name: "IndooroModels", package: "IndooroKit")
+            ],
+            path: "Tests/IndooroPositioningCompareTests"
         )
     ]
 )

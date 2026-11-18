@@ -10,6 +10,7 @@ Messergebnisse. Sie dienen zum Ausprobieren des Imports (Format-Details: `docs/I
 | `synthetic-example.json` | Indooro Lab JSON (`samples` + `references`) | **fiktiver Demo-Markt** (gleiche drei Beacons) | getrennte Referenzliste, Metadaten (`origin: "synthetic"`, `runName`, `kind`) als Vorschläge |
 | `synthetic-indooro-recording.jsonl` | echte Indooro-Aufzeichnung (JSON Lines, iOS `NavigationRecorder`), erste 200 Zeilen der synthetischen Fixture `synthetic-testraum-2026-10-19-1.jsonl` | **synthetischer Testraum** (`layout-synthetic-testraum.json`, Beacons `Indooro1`–`Indooro4`) | `measurement`, `truth`, `layout` und `scan`-Zeilen (Info „unmatched iBeacon major-minor“ für Major/Minor 7‑99) |
 | `layout-synthetic-testraum.json` | Indooro-Layout-JSON | – | Layout zum JSONL-Beispiel; Name enthält „SYNTHETISCH“ → `origin: "synthetic"`. Import über „Grundriss aus Indooro-Layout“ |
+| `synthetic-position-comparison.json` | `indooro-position-comparison/1`, Ausgabe von `compare-positioning` auf der synthetischen Fixture | – (enthält Positionen, kein Layout nötig) | zwei Verfahren (aktuelle Pipeline, PositioningEngine) auf denselben Epochen mit Referenz; gelesen von `parsePositionComparison`, nicht vom Messdaten-Import. Wird vom Swift-Test `ComparisonSampleTests` gegen einen frischen Lauf geprüft |
 
 Hinweise
 
