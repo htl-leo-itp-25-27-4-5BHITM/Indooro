@@ -2,12 +2,12 @@ import Foundation
 import CoreGraphics
 import simd
 
-struct BeaconAnchorMeasurement {
-    let beaconName: String
-    let anchorPoint: SIMD2<Float>
-    let distanceMeters: Float
-    let quality: Float
-    let ageSeconds: Float
+public struct BeaconAnchorMeasurement {
+    public let beaconName: String
+    public let anchorPoint: SIMD2<Float>
+    public let distanceMeters: Float
+    public let quality: Float
+    public let ageSeconds: Float
 }
 
 struct BeaconPositionEstimate {

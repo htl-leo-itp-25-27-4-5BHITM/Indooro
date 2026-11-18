@@ -181,7 +181,7 @@ public final class BeaconMeasurementStore {
         activeMeasurements(at: timestamp).count
     }
 
-    func activeMeasurements(at timestamp: TimeInterval) -> [BeaconAnchorMeasurement] {
+    public func activeMeasurements(at timestamp: TimeInterval) -> [BeaconAnchorMeasurement] {
         anchors.keys.sorted().compactMap { name in
             guard let anchor = anchors[name],
                   let selected = selection(for: name, at: timestamp) else {

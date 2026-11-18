@@ -8,7 +8,10 @@ let package = Package(
     name: "IndooroNavigationCore",
     platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
-        .library(name: "IndooroNavigationCore", targets: ["IndooroNavigationCore"])
+        .library(name: "IndooroNavigationCore", targets: ["IndooroNavigationCore"]),
+        // Offline-Vergleich der aktuellen Pipeline und der PositioningEngine (openspec compare-positioning-pipelines).
+        // Nicht Teil der App; das Werkzeug laeuft nur auf dem Mac.
+        .executable(name: "compare-positioning", targets: ["ComparePositioningCLI"])
     ],
     dependencies: [
         // Lokales Paket mit den Datenmodellen (Phase 4 von modernize-ios-client-architecture).
@@ -23,13 +26,23 @@ let package = Package(
                 .product(name: "IndooroModels", package: "IndooroKit"),
                 .product(name: "IndooroNavigation", package: "IndooroKit")
             ],
-            path: "indooroApp",
+            // Paketwurzel statt `indooroApp`: so koennen `Positioning/Engine` (Kopie des Engine-Kerns von
+            // `postpilot/ios-architecture`, siehe `Positioning/README.md`) und `Positioning/Compare` im selben Modul
+            // liegen wie die Navigationsquellen. Die App-Quellen unter `indooroApp/` bleiben unveraendert.
+            path: ".",
+            // Alles ausserhalb von `indooroApp/` und `Positioning/` gehoert nicht zu diesem Ziel.
+            exclude: [
+                "Packages", "Tests", "NavigationFixtures", "MCindooroApp.xcodeproj", "MCindooroAppTests",
+                "MCindooroAppUITests", "Config", "Fixtures", "docs", "TESTING.md", "Positioning/CLI", "Positioning/README.md"
+            ],
             sources: [
-                "Utilities/AppLog.swift",
-                "Utilities/AnchorPayload.swift",
-                "Utilities/AccessibilityText.swift",
-                "Utilities/AccessibilityPalette.swift",
-                "Utilities/ArrivalSuggestionDetector.swift"
+                "indooroApp/Utilities/AppLog.swift",
+                "indooroApp/Utilities/AnchorPayload.swift",
+                "indooroApp/Utilities/AccessibilityText.swift",
+                "indooroApp/Utilities/AccessibilityPalette.swift",
+                "indooroApp/Utilities/ArrivalSuggestionDetector.swift",
+                "Positioning/Engine",
+                "Positioning/Compare"
             ]
         ),
         .testTarget(
@@ -42,6 +55,20 @@ let package = Package(
             ],
             path: "Tests/IndooroNavigationCoreTests",
             resources: [.copy("Resources")]
+        ),
+        .executableTarget(
+            name: "ComparePositioningCLI",
+            dependencies: ["IndooroNavigationCore"],
+            path: "Positioning/CLI"
+        ),
+        .testTarget(
+            name: "IndooroPositioningCompareTests",
+            dependencies: [
+                "IndooroNavigationCore",
+                .product(name: "IndooroModels", package: "IndooroKit"),
+                .product(name: "IndooroNavigation", package: "IndooroKit")
+            ],
+            path: "Tests/IndooroPositioningCompareTests"
         )
     ]
 )

@@ -7,10 +7,10 @@ import simd
 
 /// Ein Stopp eines aufgezeichneten Plans.
 public struct RecordedStop: Codable, Equatable {
-    var id: String
-    var title: String
-    var x: Float
-    var y: Float
+    public var id: String
+    public var title: String
+    public var x: Float
+    public var y: Float
 
     public init(id: String, title: String, x: Float, y: Float) {
         self.id = id
@@ -23,7 +23,7 @@ public struct RecordedStop: Codable, Equatable {
         self.init(id: stop.id, title: stop.title, x: stop.mapPoint.x, y: stop.mapPoint.y)
     }
 
-    var navigationStop: NavigationStop {
+    public var navigationStop: NavigationStop {
         NavigationStop(id: id, title: title, mapPoint: SIMD2(x, y))
     }
 }
@@ -35,13 +35,13 @@ public enum MeasurementSourceKind: String, Codable, Equatable {
 
 /// Rohmessung: RSSI-Sample (CoreBluetooth) oder Ranging-Callback (CoreLocation) eines Layout-Beacons.
 public struct MeasurementRecord: Codable, Equatable {
-    var t: TimeInterval
-    var source: MeasurementSourceKind
-    var beacon: String
-    var rssi: Int
-    var accuracy: Double?
-    var proximity: BeaconProximityClass?
-    var txPower: Float?
+    public var t: TimeInterval
+    public var source: MeasurementSourceKind
+    public var beacon: String
+    public var rssi: Int
+    public var accuracy: Double?
+    public var proximity: BeaconProximityClass?
+    public var txPower: Float?
 
     public init(
         t: TimeInterval,
@@ -63,10 +63,10 @@ public struct MeasurementRecord: Codable, Equatable {
 }
 
 public struct LayoutRecord: Codable, Equatable {
-    var t: TimeInterval
-    var layoutId: String?
-    var revision: Int
-    var shopName: String?
+    public var t: TimeInterval
+    public var layoutId: String?
+    public var revision: Int
+    public var shopName: String?
 
     public init(t: TimeInterval, layoutId: String? = nil, revision: Int, shopName: String? = nil) {
         self.t = t
@@ -90,16 +90,16 @@ public enum NavigationEventKind: String, Codable, Equatable {
 }
 
 public struct EventRecord: Codable, Equatable {
-    var t: TimeInterval
-    var kind: NavigationEventKind
+    public var t: TimeInterval
+    public var kind: NavigationEventKind
     /// Plan, wie ihn die App an die Session gegeben hat (Reihenfolge der App).
-    var plan: [RecordedStop]?
+    public var plan: [RecordedStop]?
     /// `calibrate` und `setTarget`: Kartenpunkt.
-    var x: Float?
-    var y: Float?
+    public var x: Float?
+    public var y: Float?
     /// `true`: Replay ordnet `plan` mit `TourPlanner` ab der aktuellen Position neu
     /// (synthetische Fixtures); die App schreibt es nie.
-    var optimize: Bool?
+    public var optimize: Bool?
 
     public init(
         t: TimeInterval,
@@ -120,11 +120,11 @@ public struct EventRecord: Codable, Equatable {
 
 /// Bodenwahrheit (Long-Press auf der Karte im Debug-Modus).
 public struct TruthRecord: Codable, Equatable {
-    var t: TimeInterval
-    var x: Float
-    var y: Float
+    public var t: TimeInterval
+    public var x: Float
+    public var y: Float
     /// Optionaler Referenzpunkt-Marker (`^M[0-9]{1,3}$`, indooro-recording/2); ohne Auswahl entfaellt das Feld.
-    var marker: String?
+    public var marker: String?
 
     public init(t: TimeInterval, x: Float, y: Float, marker: String? = nil) {
         self.t = t
@@ -146,13 +146,13 @@ public enum SessionRole: String, Codable, Equatable, CaseIterable {
 
 /// Erste Zeile einer Aufnahme (indooro-recording/2). Bewusst ohne Freitext, Geraetename oder Geraete-ID.
 public struct SessionRecord: Codable, Equatable {
-    var t: TimeInterval
-    var schema: String
-    var app: String
-    var deviceModel: String
-    var os: String
-    var scenario: SessionScenario?
-    var role: SessionRole?
+    public var t: TimeInterval
+    public var schema: String
+    public var app: String
+    public var deviceModel: String
+    public var os: String
+    public var scenario: SessionScenario?
+    public var role: SessionRole?
 
     public init(
         t: TimeInterval,
@@ -175,8 +175,8 @@ public struct SessionRecord: Codable, Equatable {
 
 /// Sync-Marke zur zeitlichen Zuordnung externer Referenzen (`label` = `^sync-[0-9]{1,4}$`).
 public struct SyncRecord: Codable, Equatable {
-    var t: TimeInterval
-    var label: String
+    public var t: TimeInterval
+    public var label: String
 
     public init(t: TimeInterval, label: String) {
         self.t = t
@@ -258,11 +258,11 @@ public enum RecordingMetadata {
 
 /// Schrittzaehler (CMPedometer). `steps` ist kumulativ seit Aufzeichnungsstart.
 public struct StepRecord: Codable, Equatable {
-    var t: TimeInterval
-    var steps: Int
+    public var t: TimeInterval
+    public var steps: Int
     /// Meter (kumulativ, sofern vom Schrittzaehler geliefert).
-    var distance: Double?
-    var source: String // "pedometer"
+    public var distance: Double?
+    public var source: String // "pedometer"
 
     public init(t: TimeInterval, steps: Int, distance: Double? = nil, source: String) {
         self.t = t
@@ -274,12 +274,12 @@ public struct StepRecord: Codable, Equatable {
 
 /// Kompasspeilung (CLHeading).
 public struct HeadingRecord: Codable, Equatable {
-    var t: TimeInterval
+    public var t: TimeInterval
     /// Kompasspeilung 0-360, true north wenn verfuegbar.
-    var degrees: Double
+    public var degrees: Double
     /// Grad, >= 0.
-    var accuracy: Double
-    var source: String // "compass"
+    public var accuracy: Double
+    public var source: String // "compass"
 
     public init(t: TimeInterval, degrees: Double, accuracy: Double, source: String) {
         self.t = t
@@ -292,10 +292,10 @@ public struct HeadingRecord: Codable, Equatable {
 /// iBeacon, den das Geraet hoerte, der aber zu keinem Beacon im aktiven Layout passt (nur Diagnose; der Replay ignoriert die Zeile).
 /// Ohne diese Zeilen waere eine falsch registrierte Hardware in der Aufnahme unsichtbar.
 public struct ScanRecord: Codable, Equatable {
-    var t: TimeInterval
-    var major: Int
-    var minor: Int
-    var rssi: Int
+    public var t: TimeInterval
+    public var major: Int
+    public var minor: Int
+    public var rssi: Int
 
     public init(t: TimeInterval, major: Int, minor: Int, rssi: Int) {
         self.t = t
@@ -325,7 +325,7 @@ public enum NavigationRecordLine: Codable, Equatable {
         let type: String
     }
 
-    var timestamp: TimeInterval {
+    public var timestamp: TimeInterval {
         switch self {
         case .measurement(let record): return record.t
         case .layout(let record): return record.t
@@ -402,7 +402,7 @@ public enum NavigationRecordLine: Codable, Equatable {
 
     /// Zeilen mit unbekanntem `type` werden uebersprungen (Aufnahmen neuerer Builds bleiben lesbar);
     /// ungueltiges JSON und bekannte Typen mit kaputten Feldern werfen.
-    static func parse(jsonl: String) throws -> [NavigationRecordLine] {
+    public static func parse(jsonl: String) throws -> [NavigationRecordLine] {
         let decoder = JSONDecoder()
         return try jsonl
             .split(whereSeparator: \.isNewline)
@@ -415,7 +415,7 @@ public enum NavigationRecordLine: Codable, Equatable {
             }
     }
 
-    static func jsonl(_ lines: [NavigationRecordLine]) throws -> String {
+    public static func jsonl(_ lines: [NavigationRecordLine]) throws -> String {
         try lines.map { try $0.jsonLine() }.joined(separator: "\n") + "\n"
     }
 }
@@ -427,7 +427,7 @@ extension NavigationReplay {
 
     /// CSV je Tick mit Header `csvHeader`: Dezimalpunkt, 3 Nachkommastellen, leeres Feld fuer `nil`,
     /// `route_rebuild`/`stop_change` als 0/1. Endet mit Zeilenumbruch.
-    static func csv(ticks: [ReplayTick]) -> String {
+    public static func csv(ticks: [ReplayTick]) -> String {
         var lines = [csvHeader]
         lines.reserveCapacity(ticks.count + 1)
         for tick in ticks {
@@ -457,28 +457,28 @@ extension NavigationReplay {
 /// Kennzahlen eines Replays. Alle Felder ausser `planningSeconds` (Wandzeit) sind deterministisch;
 /// die Gleichheit ignoriert deshalb `planningSeconds`.
 struct ReplayMetrics: Equatable {
-    var tickCount = 0
-    var durationSeconds: TimeInterval = 0
+    public var tickCount = 0
+    public var durationSeconds: TimeInterval = 0
     /// Neu gebaute Routen durch die Off-Route-Regel (Routenbau mit bestehender Route, ausserhalb von Ereignissen).
-    var rerouteCount = 0
-    var reroutesPerMinute: Double = 0
+    public var rerouteCount = 0
+    public var reroutesPerMinute: Double = 0
     /// Wechsel des aktiven Stopps bei Positionsupdates (ohne dass ein Ereignis ihn ausgeloest hat).
-    var activeStopChangesWithoutEvent = 0
+    public var activeStopChangesWithoutEvent = 0
     /// Schritte der projizierten Position zwischen zwei Positionen, die groesser als das Gate des Schaetzers
     /// (`maxPlausibleSpeed * dt + jumpMargin`) sind; nicht gezaehlt direkt nach Kalibrierung.
-    var projectedJumps = 0
+    public var projectedJumps = 0
     /// Groesster Schritt der projizierten Position zwischen zwei Positionen (Meter), ohne Kalibrierungsschritte.
-    var maxProjectedStepMeters: Double = 0
+    public var maxProjectedStepMeters: Double = 0
     /// Abstand projizierte Position zur Bodenwahrheit am ersten Tick nach einem `truth`-Marker (Meter).
-    var meanLagMeters: Double?
-    var p95LagMeters: Double?
+    public var meanLagMeters: Double?
+    public var p95LagMeters: Double?
     /// Sekunden von der Wahrheit „ausserhalb der Route“ (> `offRouteDistance`) bis zum Reroute.
-    var offRouteDetectionDelays: [Double] = []
-    var lowConfidenceToggles = 0
+    public var offRouteDetectionDelays: [Double] = []
+    public var lowConfidenceToggles = 0
     /// Wandzeit der Planung je Planungsereignis (Sekunden); nicht deterministisch.
-    var planningSeconds: [Double] = []
+    public var planningSeconds: [Double] = []
     /// Gebaute Routen insgesamt (Start, Ereignisse, Ursprungswechsel, Off-Route); nur Diagnose, nicht Teil der Gleichheit.
-    var routeBuildCount = 0
+    public var routeBuildCount = 0
 
     static func == (lhs: ReplayMetrics, rhs: ReplayMetrics) -> Bool {
         lhs.tickCount == rhs.tickCount
@@ -496,22 +496,42 @@ struct ReplayMetrics: Equatable {
 }
 
 /// Ein Tick des Replays fuer den Feld-Export (`NavigationReplay.csv`). Nur Beobachtung, keine Metrik.
-struct ReplayTick: Equatable {
+public struct ReplayTick: Equatable {
     /// Tickzeitpunkt (Aufzeichnungszeit).
-    var t: TimeInterval
+    public var t: TimeInterval
     /// Letzter Bodenwahrheits-Marker, sofern er im selben Raster wie die Off-Route-Pruefung liegt (sonst `nil`).
-    var truth: SIMD2<Float>?
+    public var truth: SIMD2<Float>?
     /// Vom Solver geloester Rohpunkt (`PositioningTick.solvedPoint`).
-    var solved: SIMD2<Float>?
+    public var solved: SIMD2<Float>?
     /// Projizierte Position (`PositioningTick.projectedPoint`).
-    var projected: SIMD2<Float>?
-    var confidence: Float
+    public var projected: SIMD2<Float>?
+    public var confidence: Float
     /// Frische Messungen zur Tick-Zeit (Eingang des Solvers, `BeaconMeasurementStore.activeMeasurements`).
-    var beaconsUsed: Int
+    public var beaconsUsed: Int
     /// `core.routeBuildCount` hat sich in diesem Tick erhoeht.
-    var routeRebuild: Bool
+    public var routeRebuild: Bool
     /// `core.activeStopID` hat sich in diesem Tick geaendert.
-    var stopChange: Bool
+    public var stopChange: Bool
+
+    public init(
+        t: TimeInterval,
+        truth: SIMD2<Float>?,
+        solved: SIMD2<Float>?,
+        projected: SIMD2<Float>?,
+        confidence: Float,
+        beaconsUsed: Int,
+        routeRebuild: Bool,
+        stopChange: Bool
+    ) {
+        self.t = t
+        self.truth = truth
+        self.solved = solved
+        self.projected = projected
+        self.confidence = confidence
+        self.beaconsUsed = beaconsUsed
+        self.routeRebuild = routeRebuild
+        self.stopChange = stopChange
+    }
 }
 
 /// Spielt eine Aufzeichnung durch dieselbe Kette wie die App: `PositioningPipeline`
@@ -543,7 +563,7 @@ public enum NavigationReplay {
     }
 
     /// Beacons des Layouts wie in `BeaconManager.buildBeacons`.
-    static func layoutBeacons(_ layout: LayoutData) -> [(name: String, point: SIMD2<Float>)] {
+    public static func layoutBeacons(_ layout: LayoutData) -> [(name: String, point: SIMD2<Float>)] {
         layout.elements.compactMap { element in
             guard element.type == "beacon", let name = element.beaconId else { return nil }
             return (name: name, point: SIMD2<Float>(Float(element.x), Float(element.y)))
@@ -551,7 +571,7 @@ public enum NavigationReplay {
     }
 
     /// Begehbarer Graph wie in `BeaconManager.rebuildNavigationPipeline` (Regale ohne Beacons).
-    static func makeGraph(_ layout: LayoutData) -> IndoorGraph {
+    public static func makeGraph(_ layout: LayoutData) -> IndoorGraph {
         IndoorGraphBuilder.fromLayout(
             gridWidth: Int(layout.gridSize.width),
             gridHeight: Int(layout.gridSize.height),
