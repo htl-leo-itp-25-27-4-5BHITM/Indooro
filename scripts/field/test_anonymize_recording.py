@@ -33,6 +33,16 @@ class AnonymizeLinesTests(unittest.TestCase):
     def test_canonical_line_stays_byte_identical(self):
         self.assertEqual(anonymizer.anonymize_lines([CANONICAL_MEASUREMENT]), [CANONICAL_MEASUREMENT])
 
+    def test_session_sync_and_marker_lines_stay_byte_identical_and_pass_the_checker(self):
+        lines = [
+            '{"app":"1.4.0 (123)","deviceModel":"iPhone15,3","os":"iOS 18.1","role":"evaluation","scenario":"S1",'
+            '"schema":"indooro-recording/2","t":1792000000,"type":"session"}',
+            '{"marker":"M3","t":1792000004.9,"type":"truth","x":11,"y":5}',
+            '{"label":"sync-1","t":1792000100,"type":"sync"}',
+        ]
+        self.assertEqual(anonymizer.anonymize_lines(lines), lines)
+        self.assertEqual(checker.check_lines(lines), [])
+
     def test_output_is_sorted_compact_json(self):
         unsorted = '{ "type": "truth", "t": 1, "x": 2.5, "y": 3 }'
         (line,) = anonymizer.anonymize_lines([unsorted])

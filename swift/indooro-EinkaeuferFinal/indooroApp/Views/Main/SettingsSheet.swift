@@ -72,6 +72,32 @@ struct SettingsSheet: View {
                         set: { $0 ? recorder.start() : recorder.stop() }
                     ))
 
+                    Picker("Szenario", selection: $recorder.selectedScenario) {
+                        Text("keins").tag(SessionScenario?.none)
+                        ForEach(SessionScenario.allCases, id: \.self) { scenario in
+                            Text(scenario.rawValue).tag(SessionScenario?.some(scenario))
+                        }
+                    }
+                    .disabled(recorder.isRecording)
+                    Picker("Rolle", selection: $recorder.selectedRole) {
+                        Text("keine").tag(SessionRole?.none)
+                        Text("Kalibrierung").tag(SessionRole?.some(.calibration))
+                        Text("Evaluation").tag(SessionRole?.some(.evaluation))
+                    }
+                    .disabled(recorder.isRecording)
+                    Picker("Marker", selection: $recorder.selectedMarker) {
+                        Text("keiner").tag(Int?.none)
+                        ForEach(1...30, id: \.self) { number in
+                            Text("M\(number)").tag(Int?.some(number))
+                        }
+                    }
+                    if recorder.isRecording {
+                        Button("Sync-Marke setzen") {
+                            recorder.recordSync()
+                        }
+                        LabeledContent("Sync-Marken", value: "\(recorder.syncCount)")
+                    }
+
                     if recorder.isRecording {
                         LabeledContent("Wahrheitsmarker", value: "\(recorder.truthCount)")
                         if !recorder.unmatchedBeacons.isEmpty {
@@ -92,7 +118,7 @@ struct SettingsSheet: View {
                         }
                     }
 
-                    Text("Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu aendern.")
+                    Text("Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu aendern. Szenario und Rolle gelten ab dem Start der Aufnahme, der Marker ab dem naechsten Wahrheitsmarker.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

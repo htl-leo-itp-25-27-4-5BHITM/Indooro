@@ -98,6 +98,107 @@ struct TruthRecord: Codable, Equatable {
     var t: TimeInterval
     var x: Float
     var y: Float
+    /// Optionaler Referenzpunkt-Marker (`^M[0-9]{1,3}$`, indooro-recording/2); ohne Auswahl entfaellt das Feld.
+    var marker: String?
+}
+
+/// Messszenario aus dem Messprotokoll (indooro-recording/2).
+enum SessionScenario: String, Codable, Equatable, CaseIterable {
+    case S1, S2, S3, S4
+}
+
+/// Rolle der Aufnahme (indooro-recording/2).
+enum SessionRole: String, Codable, Equatable, CaseIterable {
+    case calibration, evaluation
+}
+
+/// Erste Zeile einer Aufnahme (indooro-recording/2). Bewusst ohne Freitext, Geraetename oder Geraete-ID.
+struct SessionRecord: Codable, Equatable {
+    var t: TimeInterval
+    var schema: String
+    var app: String
+    var deviceModel: String
+    var os: String
+    var scenario: SessionScenario?
+    var role: SessionRole?
+}
+
+/// Sync-Marke zur zeitlichen Zuordnung externer Referenzen (`label` = `^sync-[0-9]{1,4}$`).
+struct SyncRecord: Codable, Equatable {
+    var t: TimeInterval
+    var label: String
+}
+
+/// Reine Hilfsfunktionen fuer die Metadaten von indooro-recording/2 (ohne UIKit, testbar).
+enum RecordingMetadata {
+    static let schema = "indooro-recording/2"
+
+    private static func isDigits(_ text: Substring, maxCount: Int) -> Bool {
+        !text.isEmpty && text.count <= maxCount && text.allSatisfy { $0 >= "0" && $0 <= "9" }
+    }
+
+    /// `M<n>` fuer 0...999, sonst `nil`.
+    static func markerLabel(_ number: Int) -> String? {
+        guard number >= 0, number <= 999 else { return nil }
+        return "M\(number)"
+    }
+
+    /// `sync-<n>` fuer 0...9999, sonst `nil`.
+    static func syncLabel(_ number: Int) -> String? {
+        guard number >= 0, number <= 9999 else { return nil }
+        return "sync-\(number)"
+    }
+
+    static func isValidMarker(_ text: String) -> Bool {
+        text.hasPrefix("M") && isDigits(text.dropFirst(), maxCount: 3)
+    }
+
+    static func isValidSyncLabel(_ text: String) -> Bool {
+        text.hasPrefix("sync-") && isDigits(text.dropFirst(5), maxCount: 4)
+    }
+
+    /// `CFBundleShortVersionString (CFBundleVersion)`, auf erlaubte Zeichen `[0-9A-Za-z .()_-]` und 32 Zeichen begrenzt.
+    static func appString(shortVersion: String?, build: String?) -> String {
+        let allowed = Set("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz .()_-")
+        let raw = "\(shortVersion ?? "0") (\(build ?? "0"))"
+        return String(String(raw.filter { allowed.contains($0) }).prefix(32))
+    }
+
+    /// Hardware-Modellkennung (`utsname.machine`), auf `[0-9,_A-Za-z]` und 32 Zeichen begrenzt.
+    /// Passt das Ergebnis nicht zum Praefix-Muster, wird `arm64` geschrieben (nie Freitext).
+    static func deviceModelString(machine: String) -> String {
+        let allowed = Set("0123456789,_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz")
+        let cleaned = String(String(machine.filter { allowed.contains($0) }).prefix(32))
+        let prefixes = ["iPhone", "iPad", "iPod", "arm64", "x86_64"]
+        return prefixes.contains(where: { cleaned.hasPrefix($0) }) ? cleaned : "arm64"
+    }
+
+    /// `iOS <major>.<minor>[.<patch>]`.
+    static func osString(major: Int, minor: Int, patch: Int) -> String {
+        patch > 0 ? "iOS \(major).\(minor).\(patch)" : "iOS \(major).\(minor)"
+    }
+
+    static func sessionRecord(
+        t: TimeInterval,
+        shortVersion: String?,
+        build: String?,
+        machine: String,
+        osMajor: Int,
+        osMinor: Int,
+        osPatch: Int,
+        scenario: SessionScenario?,
+        role: SessionRole?
+    ) -> SessionRecord {
+        SessionRecord(
+            t: t,
+            schema: schema,
+            app: appString(shortVersion: shortVersion, build: build),
+            deviceModel: deviceModelString(machine: machine),
+            os: osString(major: osMajor, minor: osMinor, patch: osPatch),
+            scenario: scenario,
+            role: role
+        )
+    }
 }
 
 /// Schrittzaehler (CMPedometer). `steps` ist kumulativ seit Aufzeichnungsstart.
@@ -128,7 +229,7 @@ struct ScanRecord: Codable, Equatable {
     var rssi: Int
 }
 
-/// Eine Zeile der Aufzeichnung: `{"type":"measurement"|"layout"|"event"|"truth"|"step"|"heading"|"scan", ...}`.
+/// Eine Zeile der Aufzeichnung: `{"type":"measurement"|"layout"|"event"|"truth"|"step"|"heading"|"scan"|"session"|"sync", ...}`.
 enum NavigationRecordLine: Codable, Equatable {
     case measurement(MeasurementRecord)
     case layout(LayoutRecord)
@@ -137,9 +238,11 @@ enum NavigationRecordLine: Codable, Equatable {
     case step(StepRecord)
     case heading(HeadingRecord)
     case scan(ScanRecord)
+    case session(SessionRecord)
+    case sync(SyncRecord)
 
     private enum TypeKey: String, CodingKey { case type }
-    private enum LineType: String, Codable { case measurement, layout, event, truth, step, heading, scan }
+    private enum LineType: String, Codable { case measurement, layout, event, truth, step, heading, scan, session, sync }
 
     /// Nur der Typ einer Zeile; unbekannte Typen werden beim Parsen uebersprungen.
     private struct TypeOnly: Decodable {
@@ -155,6 +258,8 @@ enum NavigationRecordLine: Codable, Equatable {
         case .step(let record): return record.t
         case .heading(let record): return record.t
         case .scan(let record): return record.t
+        case .session(let record): return record.t
+        case .sync(let record): return record.t
         }
     }
 
@@ -168,6 +273,8 @@ enum NavigationRecordLine: Codable, Equatable {
         case .step: self = .step(try StepRecord(from: decoder))
         case .heading: self = .heading(try HeadingRecord(from: decoder))
         case .scan: self = .scan(try ScanRecord(from: decoder))
+        case .session: self = .session(try SessionRecord(from: decoder))
+        case .sync: self = .sync(try SyncRecord(from: decoder))
         }
     }
 
@@ -194,6 +301,12 @@ enum NavigationRecordLine: Codable, Equatable {
             try record.encode(to: encoder)
         case .scan(let record):
             try container.encode(LineType.scan, forKey: .type)
+            try record.encode(to: encoder)
+        case .session(let record):
+            try container.encode(LineType.session, forKey: .type)
+            try record.encode(to: encoder)
+        case .sync(let record):
+            try container.encode(LineType.sync, forKey: .type)
             try record.encode(to: encoder)
         }
     }
@@ -343,7 +456,8 @@ enum NavigationReplay {
             switch line {
             case .step, .heading: return config.motion.motionAided
             case .measurement, .layout, .event, .truth: return true
-            case .scan: return false
+            // scan, session und sync tragen keine Messung (Replay ignoriert sie, auch fuer Tickraster und Dauer).
+            case .scan, .session, .sync: return false
             }
         }
         var replay = Replay(layout: layout, config: config, entrance: entrance, onTick: onTick)
@@ -465,7 +579,7 @@ enum NavigationReplay {
                 pipeline.recordStep(cumulativeSteps: record.steps, at: record.t)
             case .heading(let record):
                 pipeline.recordHeading(bearingDegrees: record.degrees, accuracy: record.accuracy, at: record.t)
-            case .scan:
+            case .scan, .session, .sync:
                 break
             }
         }

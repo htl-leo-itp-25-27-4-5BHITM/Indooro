@@ -35,6 +35,13 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(summary.duration_s, 10)
         self.assertEqual(summary.beacons, ["A", "B"])
 
+    def test_session_and_sync_lines_are_counted_as_lines_only(self):
+        records = [{"type": "session", "t": 9, "schema": "indooro-recording/2"}, measurement(10, "A", -60),
+                   {"type": "sync", "t": 11, "label": "sync-1"}, truth(12, 1, 1)]
+        summary = wr.summarize_recording(records)
+        self.assertEqual((summary.lines, summary.measurements, summary.truths, summary.scans), (4, 1, 1, 0))
+        self.assertEqual(summary.beacons, ["A"])
+
     def test_layout_beacons_reads_beacon_id_and_coordinates(self):
         layout = {"elements": [{"type": "beacon", "beaconId": "X", "x": 1, "y": 2.5}, {"type": "shelf", "x": 0, "y": 0}]}
         self.assertEqual(wr.layout_beacons(layout), {"X": (1.0, 2.5)})

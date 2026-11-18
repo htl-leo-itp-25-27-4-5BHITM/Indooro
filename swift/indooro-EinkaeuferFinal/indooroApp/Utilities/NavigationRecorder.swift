@@ -18,7 +18,16 @@ final class NavigationRecorder: ObservableObject {
     /// Layout-fremde iBeacons der laufenden Aufzeichnung: `major-minor` -> Anzahl `scan`-Zeilen.
     @Published private(set) var unmatchedBeacons: [String: Int] = [:]
 
-    /// Liefert die aktuelle Layout-Identitaet (setzt `BeaconManager`); wird beim Start als erste Zeile geschrieben.
+    /// Auswahl aus den Einstellungen (indooro-recording/2): Szenario und Rolle gelten ab dem naechsten Start,
+    /// der Marker ab dem naechsten Wahrheitsmarker. `nil` = keine Auswahl, das Feld entfaellt.
+    @Published var selectedScenario: SessionScenario?
+    @Published var selectedRole: SessionRole?
+    /// Marker-Nummer (`M<n>`) fuer die naechsten Wahrheitsmarker.
+    @Published var selectedMarker: Int?
+    /// Anzahl der Sync-Marken der laufenden Aufzeichnung.
+    @Published private(set) var syncCount = 0
+
+    /// Liefert die aktuelle Layout-Identitaet (setzt `BeaconManager`); wird beim Start direkt nach der `session`-Zeile geschrieben.
     var layoutProvider: (() -> LayoutRecord?)?
 
     private let queue = DispatchQueue(label: "indooro.navigation-recorder")
@@ -27,6 +36,8 @@ final class NavigationRecorder: ObservableObject {
     private var flushTimer: DispatchSourceTimer?
     private var active = false
     private let pedometer = CMPedometer()
+    /// Fortlaufender Zaehler der Sync-Marken je Aufnahme (nur auf `queue`).
+    private var syncCounter = 0
     private var lastScanWrite: [String: TimeInterval] = [:]
     /// Mindestabstand zwischen zwei `scan`-Zeilen desselben fremden Beacons (Sekunden).
     static let scanInterval: TimeInterval = 1
@@ -60,7 +71,9 @@ final class NavigationRecorder: ObservableObject {
                 self.unmatchedBeacons = [:]
                 self.isRecording = true
             }
-            queue.sync { lastScanWrite.removeAll() }
+            queue.sync { lastScanWrite.removeAll(); syncCounter = 0 }
+            DispatchQueue.main.async { self.syncCount = 0 }
+            record(.session(Self.makeSessionRecord(scenario: selectedScenario, role: selectedRole)))
             if let layout = layoutProvider?() {
                 record(.layout(layout))
             }
@@ -188,8 +201,46 @@ final class NavigationRecorder: ObservableObject {
         )))
     }
 
+    /// Sync-Marke `sync-<n>` (fortlaufend je Aufnahme) zur zeitlichen Zuordnung externer Referenzen.
+    func recordSync() {
+        let now = Date().timeIntervalSince1970
+        queue.async { [weak self] in
+            guard let self, self.active else { return }
+            let next = self.syncCounter + 1
+            guard let label = RecordingMetadata.syncLabel(next),
+                  let text = try? NavigationRecordLine.sync(SyncRecord(t: now, label: label)).jsonLine() else { return }
+            self.syncCounter = next
+            self.buffer.append(text)
+            DispatchQueue.main.async { self.syncCount = next }
+        }
+    }
+
+    static func makeSessionRecord(scenario: SessionScenario?, role: SessionRole?) -> SessionRecord {
+        var systemInfo = utsname()
+        uname(&systemInfo)
+        let machine = withUnsafePointer(to: &systemInfo.machine) {
+            $0.withMemoryRebound(to: CChar.self, capacity: 1) {
+                String(cString: $0)
+            }
+        }
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        let info = Bundle.main.infoDictionary
+        return RecordingMetadata.sessionRecord(
+            t: Date().timeIntervalSince1970,
+            shortVersion: info?["CFBundleShortVersionString"] as? String,
+            build: info?["CFBundleVersion"] as? String,
+            machine: machine,
+            osMajor: version.majorVersion,
+            osMinor: version.minorVersion,
+            osPatch: version.patchVersion,
+            scenario: scenario,
+            role: role
+        )
+    }
+
     func recordTruth(x: Float, y: Float) {
-        record(.truth(TruthRecord(t: Date().timeIntervalSince1970, x: x, y: y)))
+        let marker = selectedMarker.flatMap { RecordingMetadata.markerLabel($0) }
+        record(.truth(TruthRecord(t: Date().timeIntervalSince1970, x: x, y: y, marker: marker)))
         DispatchQueue.main.async { if self.isRecording { self.truthCount += 1 } }
     }
 

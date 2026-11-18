@@ -22,6 +22,9 @@ Die Auswertungsskripte hängen von diesen Konventionen ab. Sie werden nicht geä
 | Layout | `docs/pilot-readiness/hardware/sites/layout-<site>.json` |
 | Aufnahme | Eine Datei je Gehlauf oder Szenario, JSON Lines (`Documents/NavigationRecordings/<ISO-Zeitstempel>.jsonl`, `TESTING.md`, `NavigationRecorder.swift:76`) |
 | `truth`-Zeile | Entsteht durch langes Drücken (0,6 s) auf die Karte. Die Koordinate ist die gedrückte Kartenposition (`NavigationRecorder.swift:130`, `TESTING.md`) |
+| Aufnahmekopf | Seit Format `indooro-recording/2` schreibt die App als erste Zeile `session` (Schema, App-Version, Hardware-Modellkennung, iOS-Version, optional Szenario `S1` bis `S4` und Rolle `calibration`/`evaluation`). Szenario und Rolle werden vor dem Start in den Einstellungen (Debug) gewählt. Kein Freitext, kein Gerätename |
+| Marker-Auswahl | Vor dem langen Drücken den Marker (`M1` bis `M30`) in den Einstellungen wählen. Er steht als `marker` in der `truth`-Zeile. Ohne Auswahl entfällt das Feld, die Zuordnung erfolgt dann wie bisher über die Koordinate |
+| Sync-Marke | „Sync-Marke setzen“ in den Einstellungen schreibt `sync-1`, `sync-2`, … (fortlaufend je Aufnahme) zur zeitlichen Zuordnung externer Referenzen, zum Beispiel einer Stoppuhr oder Videoaufnahme. `sync`-Zeilen enthalten keine Messung |
 | Ticks | `<name>-ticks.csv`, erzeugt durch den Export-Test (Spalten laut `NavigationReplay.csvHeader`) |
 
 Die Marker-Koordinaten werden auf der Karte an der exakten Position getippt. Dazu den Kartenmaßstab so wählen, dass der Marker eindeutig getroffen wird (Einstellungen, Maßstab-Schieber). Das Antippen begrenzt die Genauigkeit der Referenz. Diese Grenze wird im Bericht genannt.
@@ -53,7 +56,7 @@ Eine Session ist ein Messblock an einem Tag zu einer Tageszeit. In jeder Session
 Für jeden Marker in der Reihenfolge `M1` bis `Mn` (mindestens vier):
 
 1. Ankommen und den Marker erreichen.
-2. Langes Drücken (0,6 s) auf der Karte an der Markerposition. Das schreibt die erste `truth`-Zeile.
+2. In den Einstellungen den Marker wählen, dann langes Drücken (0,6 s) auf der Karte an der Markerposition. Das schreibt die erste `truth`-Zeile (mit `marker`).
 3. Mindestens 60 s stehen bleiben, ruhig, ohne Bewegung des Geräts. Dauer mit Stoppuhr messen.
 4. Langes Drücken (0,6 s) an derselben Markerposition. Das schreibt die zweite `truth`-Zeile für diesen Marker.
 5. Zum nächsten Marker gehen.
