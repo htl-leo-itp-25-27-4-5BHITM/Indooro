@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Evaluates the 8 x 8 m beacon grid from the synthetic iOS tests with the planner's coverage rule.
 
-Placement mirrors swift/indooro-EinkaeuferFinal/Tests/IndooroNavigationCoreTests/TestLayouts.swift
+Placement mirrors swift/indooro-EinkaeuferFinal/Packages/IndooroKit/Tests/IndooroNavigationTests/TestLayouts.swift
 (demoSupermarket): one beacon per spacing x spacing cell, at (cellX + s/2, cellY + s/2), clamped to
 (width - 0.5, height - 0.5). Beacons are not moved, even if they sit in a blocked element.
 
