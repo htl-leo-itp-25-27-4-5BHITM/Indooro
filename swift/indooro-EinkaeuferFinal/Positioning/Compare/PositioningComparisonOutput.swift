@@ -84,7 +84,7 @@ extension PositioningComparisonResult {
         ]
         return try JSONSerialization.data(
             withJSONObject: object,
-            options: [.sortedKeys, .prettyPrinted, .withoutEscapingSlashes]
+            options: [.sortedKeys, .withoutEscapingSlashes]
         ) + Data("\n".utf8)
     }
 
