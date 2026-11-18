@@ -63,6 +63,19 @@ Sie kann ohne Server-Konfiguration auf jedem statischen Host liegen (z. B. GitHu
 nginx, ein Unterordner der Schul-Webseite) und funktioniert nach dem Laden auch offline.
 Es gibt keine Backend-Verbindung, keine Datenbank, keine Anmeldung und keine externen Dienste.
 
+### Auf LeoCloud (`/showcase/`)
+
+Die Demo läuft im Backend-Image mit: https://it220209.cloud.htl-leonding.ac.at/showcase/
+Die Startseite (`/`) verlinkt sie als Karte „Pilot-Demo“.
+
+- `npm run package:backend` baut die Seite nach
+  `backend/indooro_server/src/main/resources/META-INF/resources/showcase/` (gitignored).
+- Die CI (`.github/workflows/ci.yaml`) testet und baut sie dort hinein, bevor das Jar entsteht.
+  Änderungen unter `pilot-showcase/` lösen deshalb auch einen neuen Image-Build aus.
+- `ShowcaseStaticResourceTest` prüft, dass `/showcase/` ohne Login und mit den Sicherheits-Headern
+  (CSP `script-src 'self'`) ausgeliefert wird. Ohne gebautes Bundle wird der Test übersprungen.
+- Live geht eine neue Version erst mit dem nächsten Backend-Deploy (`kubectl set image` mit Commit-Tag).
+
 ## Bekannte Einschränkungen
 
 - Position, Märkte, Produkte und Preise sind simuliert bzw. fiktiv; es gibt noch keine Messwerte zur BLE-Ortung.

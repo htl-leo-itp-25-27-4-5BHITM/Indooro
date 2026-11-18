@@ -92,6 +92,7 @@ swift/*.zip
 swift/indooro-EinkaeuferFinal/NavigationFixtures/incoming/
 swift/indooro-EinkaeuferFinal/NavigationFixtures/exports/
 backend/indooro_server/src/main/resources/META-INF/resources/admin/next/
+backend/indooro_server/src/main/resources/META-INF/resources/showcase/
 test-results/
 
 backups/

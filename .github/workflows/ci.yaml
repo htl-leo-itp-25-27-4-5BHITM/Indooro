@@ -6,6 +6,7 @@ on:
     paths:
       - 'backend/indooro_server/**' # Nur wenn sich was im Backend ändert
       - 'admin-ui/**' # Neues Admin-Frontend wird ins Backend-Image gepackt
+      - 'pilot-showcase/**' # Pilot-Demo wird unter /showcase/ ins Backend-Image gepackt
       - 'openspec/**'
       - 'api/**'
       - 'api-tests/**'
@@ -131,7 +132,9 @@ jobs:
         with:
           node-version-file: 'admin-ui/.nvmrc'
           cache: 'npm'
-          cache-dependency-path: admin-ui/package-lock.json
+          cache-dependency-path: |
+            admin-ui/package-lock.json
+            pilot-showcase/package-lock.json
 
       - name: Test and build admin UI into backend resources (/admin/next/)
         working-directory: admin-ui
@@ -140,6 +143,14 @@ jobs:
           npm test
           npm run package:candidate
           test -f ../backend/indooro_server/src/main/resources/META-INF/resources/admin/next/index.html
+
+      - name: Test and build pilot showcase into backend resources (/showcase/)
+        working-directory: pilot-showcase
+        run: |
+          npm ci --no-audit --no-fund
+          npm test
+          npm run package:backend
+          test -f ../backend/indooro_server/src/main/resources/META-INF/resources/showcase/index.html
 
       - name: Test with Maven (tests must pass; no -DskipTests)
         working-directory: backend/indooro_server
@@ -173,7 +184,9 @@ jobs:
         with:
           node-version-file: 'admin-ui/.nvmrc'
           cache: 'npm'
-          cache-dependency-path: admin-ui/package-lock.json
+          cache-dependency-path: |
+            admin-ui/package-lock.json
+            pilot-showcase/package-lock.json
 
       # Die Admin-UI-Tests laufen in backend-test. Hier wird nur das Bundle gebaut, das ins Jar gehört.
       - name: Build admin UI into backend resources (/admin/next/)
@@ -182,6 +195,14 @@ jobs:
           npm ci --no-audit --no-fund
           npm run package:candidate
           test -f ../backend/indooro_server/src/main/resources/META-INF/resources/admin/next/index.html
+
+      # Die Showcase-Tests laufen in backend-test. Hier wird nur das Bundle gebaut, das ins Jar gehört.
+      - name: Build pilot showcase into backend resources (/showcase/)
+        working-directory: pilot-showcase
+        run: |
+          npm ci --no-audit --no-fund
+          npm run package:backend
+          test -f ../backend/indooro_server/src/main/resources/META-INF/resources/showcase/index.html
 
       # -DskipTests ist hier bewusst: backend-test hat mvn verify auf demselben Commit bereits ausgeführt
       # (needs: backend-test). Dieser Schritt erzeugt nur das *-runner.jar, das die Dockerfile kopiert.
