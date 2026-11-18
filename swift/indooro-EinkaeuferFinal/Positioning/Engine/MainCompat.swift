@@ -9,3 +9,6 @@ extension BeaconMeasurementStore {
         activeMeasurements(at: timestamp).count
     }
 }
+
+// On the postpilot branch `IndoorGraph` is `Sendable` (all stored properties are immutable after construction).
+extension IndoorGraph: @unchecked Sendable {}
