@@ -202,6 +202,23 @@ class Safety(FieldDayCase):
                                 replay_runner=stub.stub_replay_runner, compare_runner=stub.make_compare_runner({}, (P(1), P(1))))
             self.assertEqual(code, 2, target)
 
+    def test_offline_fails_without_a_local_layout_and_never_fetches(self):
+        fetched = []
+        err = io.StringIO()
+        empty = self.root / "layouts"
+        empty.mkdir()
+        with mock.patch.object(efd.cp, "LAYOUTS_DIR", empty), contextlib.redirect_stderr(err):
+            code = efd.main([str(self.incoming), "--out", str(self.out), "--offline"],
+                            replay_runner=stub.stub_replay_runner, compare_runner=stub.make_compare_runner({}, (P(1), P(1))),
+                            fetcher=lambda args: fetched.append(args) or 0)
+        self.assertEqual(code, 2)
+        self.assertEqual(fetched, [])
+        self.assertIn("--offline", err.getvalue())
+
+    def test_offline_with_an_explicit_layout_works(self):
+        code, _, _ = self.run_day(profiles(P(2.0), [P(1.4)] * 3), extra=["--offline"])
+        self.assertEqual(code, 0)
+
     def test_without_swift_the_real_run_stops_with_a_clear_message(self):
         err = io.StringIO()
         with mock.patch.object(efd, "swift_available", return_value=(False, "`swift` nicht gefunden.")), contextlib.redirect_stderr(err):

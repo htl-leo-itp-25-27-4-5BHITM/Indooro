@@ -15,7 +15,7 @@ Es wird nichts eingeschaltet, nichts ans Backend geschrieben. Netzzugriff nur wi
 
 Aufruf (Repo-Wurzel, ueber den Wrapper):
     scripts/field/evaluate_field_day.sh ORDNER-MIT-AUFNAHMEN [--out DIR] [--no-lab-import]
-        [--store SPAR-Leonding-002 | --layout LAYOUT.json] [--site testraum] [--markers SITE.md] [--date JJJJ-MM-TT]
+        [--store SPAR-Leonding-002 | --layout LAYOUT.json] [--offline] [--site testraum] [--markers SITE.md] [--date JJJJ-MM-TT]
 
 Exit: 0 Bericht geschrieben (egal welches Ergebnis, auch SCHLECHTER), 1 Fehler (Anonymisierung, ein Werkzeug
 ist fehlgeschlagen; der Bericht wird, soweit moeglich, trotzdem geschrieben), 2 Aufruf- oder Eingabefehler.
@@ -617,6 +617,7 @@ def evaluate_field_day(
     markers: Optional[Path] = None,
     date: Optional[str] = None,
     lab: bool = True,
+    offline: bool = False,
     replay_runner: aw.ReplayRunner = aw.swift_replay,
     compare_runner: cp.CompareRunner = cp.swift_compare,
     shadow: ShadowHook = shadow_comparison,
@@ -627,6 +628,13 @@ def evaluate_field_day(
         if not layout.is_file():
             raise FieldDayError(f"Layout nicht gefunden: {layout}", 2)
         layout_path = layout
+    elif offline:
+        cached = cp.LAYOUTS_DIR / f"{store.lower()}.json"
+        if not cached.is_file():
+            raise FieldDayError(
+                f"--offline: kein Layout. Mit --layout DATEI angeben oder {cached} vorher holen (fetch_layout.py).", 2
+            )
+        layout_path = cached
     else:
         try:
             layout_path = cp.layout_for_store(store, False, fetcher)
@@ -691,6 +699,7 @@ def main(
     parser.add_argument("--no-lab-import", action="store_true", help="Lab-Übergabeordner nicht schreiben")
     parser.add_argument("--store", default=DEFAULT_STORE, metavar="CODE", help=f"storeCode fuer das Layout (Standard: {DEFAULT_STORE})")
     parser.add_argument("--layout", type=Path, metavar="LAYOUT.json", help="Layout-JSON (statt --store)")
+    parser.add_argument("--offline", action="store_true", help="kein Netzzugriff: fehlt das Layout lokal (--layout oder NavigationFixtures/layouts/), Abbruch mit Exit 2")
     parser.add_argument("--site", default="testraum", help="Standortkennung (Standard: testraum)")
     parser.add_argument("--markers", type=Path, metavar="SITE.md", help="Standort-Datei mit Marker- und Gang-Tabelle")
     parser.add_argument("--date", metavar="JJJJ-MM-TT", help="Messdatum fuer Bericht und Lab-Namen (Standard: Datum der Aufnahmen)")
@@ -705,7 +714,7 @@ def main(
         out_dir = args.out or (aw.DEFAULT_WORK_DIR / f"feldtag-{datetime.date.today().isoformat()}")
         result = evaluate_field_day(
             args.directory, out_dir, store=args.store, layout=args.layout, site=args.site, markers=args.markers,
-            date=args.date, lab=not args.no_lab_import,
+            date=args.date, lab=not args.no_lab_import, offline=args.offline,
             replay_runner=replay_runner or aw.swift_replay, compare_runner=compare_runner or cp.swift_compare,
             shadow=shadow, fetcher=fetcher,
         )
