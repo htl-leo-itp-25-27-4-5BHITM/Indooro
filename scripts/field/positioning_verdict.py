@@ -30,6 +30,7 @@ EPSILON_ERROR_M = 0.3  # Median und P90: Unterschiede unter 0,3 m (Genauigkeit d
 DELTA_RATE = 0.01  # Ausfall- und Sprungrate: Unterschiede bis 1 Prozentpunkt gelten als gleich
 
 SYNTHETIC_PREFIX = "synthetic-"  # Abschnitt 3, Punkt 1: Dateiname nicht synthetic-...
+REHEARSAL_PREFIX = "rehearsal-"  # Generalprobe (make_synthetic_recordings.py): kein Feldlauf, ausser mit allow_rehearsal
 ROUND_DIGITS = 9  # Grenzfaelle (genau -0,3 m, genau 1 Prozentpunkt) duerfen nicht an Fliesskomma-Rauschen scheitern
 
 ERROR_FIGURES = ("median", "p90")
@@ -55,7 +56,7 @@ def _figure(summary: Dict[str, object], method: str, key: str) -> Optional[float
     return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
 
 
-def qualify(path: Path) -> Tuple[Optional[Run], Optional[str]]:
+def qualify(path: Path, allow_rehearsal: bool = False) -> Tuple[Optional[Run], Optional[str]]:
     """(Lauf, None) oder (None, Grund). Nur Bewertungslaeufe aus dem Feld zaehlen."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -65,6 +66,8 @@ def qualify(path: Path) -> Tuple[Optional[Run], Optional[str]]:
         raise InputError(f"{path}: kein {SCHEMA}")
     recording = data.get("recording") if isinstance(data.get("recording"), dict) else {}
     name = str(recording.get("name") or path.name)
+    if name.startswith(REHEARSAL_PREFIX) and not allow_rehearsal:
+        return None, "Probeaufnahme (rehearsal-), kein Feldlauf (nur mit --allow-rehearsal)"
     if data.get("origin") != "field" or name.startswith(SYNTHETIC_PREFIX):
         return None, "synthetisch oder ohne Feldherkunft"
     session = data.get("session")
@@ -178,14 +181,14 @@ class Evaluation:
     rejected_by_path: Optional[Dict[Path, str]] = None  # Vergleichsdatei -> Grund, fuer Berichte je Lauf
 
 
-def evaluate(paths: Sequence[Path]) -> Evaluation:
+def evaluate(paths: Sequence[Path], allow_rehearsal: bool = False) -> Evaluation:
     """Alle Vergleichsdateien durch die Regel schicken. Wirft InputError bei unlesbaren oder falschen Dateien."""
     accepted: List[Run] = []
     rejected: List[Tuple[str, str]] = []
     seen: Dict[str, str] = {}
     by_path: Dict[Path, str] = {}
     for path in paths:
-        run, reason = qualify(path)
+        run, reason = qualify(path, allow_rehearsal)
         if run is None:
             rejected.append((path.name, reason or "unbekannt"))
             by_path[path] = reason or "unbekannt"
@@ -241,9 +244,10 @@ def render(accepted: Sequence[Run], rejected: Sequence[Tuple[str, str]], verdict
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Entscheidungsregel fuer die Positionsberechnung anwenden.")
     parser.add_argument("comparisons", nargs="+", type=Path, metavar="LAUF-comparison.json")
+    parser.add_argument("--allow-rehearsal", action="store_true", help="rehearsal-*-Aufnahmen (Generalprobe) mitzählen; nie für eine echte Entscheidung")
     args = parser.parse_args(argv)
     try:
-        result = evaluate(args.comparisons)
+        result = evaluate(args.comparisons, args.allow_rehearsal)
     except InputError as error:
         print(f"Fehler: {error}", file=sys.stderr)
         return 2

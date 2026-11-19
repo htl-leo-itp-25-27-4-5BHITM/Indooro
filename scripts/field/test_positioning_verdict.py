@@ -125,6 +125,20 @@ class VerdictTests(unittest.TestCase):
         out = self.verdict(datas)
         self.assertIn("Bewertungslaeufe gezaehlt: 2", out)
 
+    def test_rehearsal_recordings_are_not_field_runs_unless_explicitly_allowed(self):
+        datas = [comparison(f"rehearsal-eval-{i}.jsonl", f"{i:064d}", engine={"median": 1.0, "p90": 2.0}) for i in range(3)]
+        paths = [self.write(i, d) for i, d in enumerate(datas)]
+        denied = pv.evaluate(paths)
+        self.assertEqual(denied.verdict, "EXPLORATIV")
+        self.assertEqual(len(denied.accepted), 0)
+        self.assertIn("Probeaufnahme", denied.rejected[0][1])
+        allowed = pv.evaluate(paths, allow_rehearsal=True)
+        self.assertEqual(allowed.verdict, "BESSER")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            pv.main([str(p) for p in paths] + ["--allow-rehearsal"])
+        self.assertIn("ERGEBNIS: BESSER", out.getvalue())
+
     def test_criteria_name_each_failed_condition(self):
         paths = [self.write(i, d) for i, d in enumerate(self.runs(3, engine={"median": 1.5, "p90": 3.5, "outageRate": 0.05}))]
         result = pv.evaluate(paths)

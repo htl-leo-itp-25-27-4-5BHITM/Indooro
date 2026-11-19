@@ -295,7 +295,8 @@ def apply_rule(runs: Sequence[Run]) -> pv.Evaluation:
             continue
         candidates.append(run)
     try:
-        evaluation = pv.evaluate([run.comparison_path for run in candidates])  # type: ignore[misc]
+        # Probeaufnahmen (rehearsal-*) zählen hier mit; der Bericht trägt dann den Kasten PROBELAUF.
+        evaluation = pv.evaluate([run.comparison_path for run in candidates], allow_rehearsal=True)  # type: ignore[misc]
     except pv.InputError as error:
         raise FieldDayError(f"Vergleichsdatei ungültig: {error}")
     counted = {run.path: run for run in evaluation.accepted}
