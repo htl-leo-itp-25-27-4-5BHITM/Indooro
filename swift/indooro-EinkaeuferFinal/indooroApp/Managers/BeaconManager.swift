@@ -1127,6 +1127,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func handleDetectedStoreBeacon(_ beacon: DetectedStoreBeacon, rssi: Int) {
+        #if DEBUG
+        LiveBeaconStore.shared.observe(
+            uuid: beacon.uuidLookupKey, major: beacon.major, minor: beacon.minor, rssi: rssi
+        )
+        #endif
         guard rssi >= minimumStoreLookupRSSI else {
             appendDebugLog(
                 "Store-Beacon RSSI ignoriert uuid=\(beacon.uuidLookupKey) rssi=\(rssi)",

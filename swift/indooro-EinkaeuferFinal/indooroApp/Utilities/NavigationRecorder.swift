@@ -247,6 +247,14 @@ final class NavigationRecorder: ObservableObject {
         DispatchQueue.main.async { if self.isRecording { self.truthCount += 1 } }
     }
 
+    /// Schnellauswahl M1 bis M8: waehlt den Marker und schreibt die Wahrheit an der Zellmitte (kein Kartentipp noetig).
+    /// Ausserhalb einer Aufnahme geschieht nichts (der Aufrufer zeigt die Schaltflaechen nur waehrend REC).
+    func recordTestRoomMarker(_ number: Int) {
+        guard isRecording, let point = TestRoomMarkers.point(forMarker: number) else { return }
+        selectedMarker = number
+        recordTruth(x: point.x, y: point.y)
+    }
+
     // MARK: - Schreiben
 
     private func flushLocked() {
