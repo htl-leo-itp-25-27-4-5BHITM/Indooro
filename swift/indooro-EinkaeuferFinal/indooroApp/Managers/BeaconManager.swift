@@ -250,10 +250,15 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let startTime = Date()
     /// Neue Ortungs-Engine im Schattenbetrieb; `nil`, solange der Schalter aus ist (Standard).
     private var shadowPositioning: ShadowPositioning?
+    private let engineDrivesNavigation: Bool
+    /// Laeuft die Schatten-Engine (nur mit Schalter)? Fuer Tests und die Debug-Anzeige.
+    var hasShadowEngine: Bool { shadowPositioning != nil }
 
-    /// Strom der Engine-Snapshots fuer `NavigationSession`; `nil`, solange der Schalter aus ist.
+    /// Strom der Engine-Snapshots fuer `NavigationSession`; `nil`, solange die Engine die Navigation nicht fuehrt.
+    /// Der Schattenmodus allein reicht nicht (nur Aufzeichnung): dazu braucht es `isEngineDrivingNavigation`.
     func positionSnapshots() -> AsyncStream<PositionSnapshot>? {
-        shadowPositioning?.snapshots()
+        guard engineDrivesNavigation else { return nil }
+        return shadowPositioning?.snapshots()
     }
     nonisolated(unsafe) private let locationManager = CLLocationManager()
     private var rangingConstraints: [CLBeaconIdentityConstraint] = []
@@ -358,7 +363,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     static let isUITesting = ProcessInfo.processInfo.arguments.contains("-uiTesting")
     #endif
 
-    init(dependencies: AppDependencies = .live) {
+    /// `shadowEnabled`/`engineDrivesNavigation` sind nur fuer Tests ueberschreibbar; die App nimmt die Schalter
+    /// aus `AppEnvironment` (Info.plist, DEBUG: Einstellungen und Umgebung).
+    init(
+        dependencies: AppDependencies = .live,
+        shadowEnabled: Bool = AppEnvironment.isShadowPositioningEnabled,
+        engineDrivesNavigation: Bool = AppEnvironment.isEngineDrivingNavigation
+    ) {
+        self.engineDrivesNavigation = shadowEnabled && engineDrivesNavigation
         super.init()
         appendDebugLog("BeaconManager init")
         #if DEBUG
@@ -368,8 +380,18 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }
         NavigationRecorder.shared.layoutProvider = { [weak self] in self?.currentLayoutRecord }
         #endif
-        if AppEnvironment.isShadowPositioningEnabled {
-            shadowPositioning = ShadowPositioning(dependencies: dependencies, legacyPosition: { [weak self] in self?.userPosition })
+        if shadowEnabled {
+            shadowPositioning = ShadowPositioning(
+                dependencies: dependencies,
+                legacyPosition: { [weak self] in self?.userPosition },
+                legacySide: { [weak self] in
+                    guard let self, let point = self.userPosition else { return ShadowSide(status: "none") }
+                    return ShadowSide(
+                        x: Float(point.x), y: Float(point.y),
+                        status: self.isPositionTrusted ? "tracking" : "lowConfidence"
+                    )
+                }
+            )
         }
         loadBundleLayoutFallback()
         startMotionUpdates()

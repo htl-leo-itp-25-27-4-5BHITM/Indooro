@@ -67,4 +67,17 @@ final class AppEnvironmentTests: XCTestCase {
     func testShadowPositioningIsOffByDefault() {
         XCTAssertFalse(AppEnvironment.isShadowPositioningEnabled)
     }
+
+    func testFlagPrecedenceOverrideThenEnvironmentThenPlist() {
+        XCTAssertFalse(AppEnvironment.resolveFlag(override: nil, environment: nil, plist: nil))
+        XCTAssertTrue(AppEnvironment.resolveFlag(override: nil, environment: "1", plist: nil))
+        XCTAssertTrue(AppEnvironment.resolveFlag(override: nil, environment: nil, plist: true))
+        XCTAssertFalse(AppEnvironment.resolveFlag(override: false, environment: "1", plist: true))
+        XCTAssertTrue(AppEnvironment.resolveFlag(override: true, environment: nil, plist: false))
+        XCTAssertFalse(AppEnvironment.resolveFlag(override: nil, environment: "0", plist: nil))
+    }
+
+    func testEngineDrivesNavigationIsOffByDefault() {
+        XCTAssertFalse(AppEnvironment.isEngineDrivingNavigation)
+    }
 }

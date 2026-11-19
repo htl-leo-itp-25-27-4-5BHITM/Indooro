@@ -1,17 +1,22 @@
 import Foundation
 import IndooroModels
 import IndooroPositioning
+import IndooroNavigation
 import simd
 
 /// Schattenbetrieb der neuen Ortungs-Engine (tasks.md 9.6, 9.7).
 /// `BeaconManager` bleibt der aktive Pfad. Mit dem Schalter `AppEnvironment.isShadowPositioningEnabled` laeuft
 /// `PositioningEngine` parallel mit eigenem Funkmodul, bekommt dieselben Layouts und Kalibrierungen und
 /// schreibt in Abstaenden die Abweichung zur angezeigten Position des alten Pfads ins Log (Kategorie `positioning`).
+/// Der Schattenmodus ist reine Aufzeichnung: jede Epoche landet als `shadow`-Zeile in der laufenden
+/// Aufnahme (DEBUG, `NavigationRecorder`); die Navigation nutzt die Engine nur mit `isEngineDrivingNavigation`.
 /// Die Daten dienen den Messfahrten, die vor dem Entfernen von `BeaconManager` (9.7) noetig sind.
 final class ShadowPositioning {
     private let engine: PositioningEngine
     private let output = StreamBroadcaster<PositionSnapshot>()
     private let legacyPosition: () -> CGPoint?
+    /// Alte Seite fuer die `shadow`-Zeile (Position und Status); Standard leitet sie aus `legacyPosition` ab.
+    private let legacySide: () -> ShadowSide
     private var consumer: Task<Void, Never>?
     private var lastLogAt: TimeInterval = 0
     private var isRunning = false
@@ -19,8 +24,16 @@ final class ShadowPositioning {
 
     private static let logInterval: TimeInterval = 5
 
-    init(dependencies: AppDependencies, legacyPosition: @escaping () -> CGPoint?) {
+    init(
+        dependencies: AppDependencies,
+        legacyPosition: @escaping () -> CGPoint?,
+        legacySide: (() -> ShadowSide)? = nil
+    ) {
         self.legacyPosition = legacyPosition
+        self.legacySide = legacySide ?? {
+            guard let point = legacyPosition() else { return ShadowSide(status: "none") }
+            return ShadowSide(x: Float(point.x), y: Float(point.y), status: "tracking")
+        }
         engine = PositioningEngine(
             radio: dependencies.makeBeaconRadio(),
             headingProvider: dependencies.makeHeadingProvider(),
@@ -68,6 +81,11 @@ final class ShadowPositioning {
     private func receive(_ snapshot: PositionSnapshot) {
         latestSnapshot = snapshot
         output.send(snapshot)
+        #if DEBUG
+        NavigationRecorder.shared.record(.shadow(Self.shadowRecord(
+            snapshot: snapshot, legacy: legacySide(), at: Date().timeIntervalSince1970
+        )))
+        #endif
         guard snapshot.timestamp - lastLogAt >= Self.logInterval else { return }
         lastLogAt = snapshot.timestamp
         let shadow = snapshot.displayedPoint
@@ -83,5 +101,19 @@ final class ShadowPositioning {
         beacons=\(snapshot.activeBeaconCount, privacy: .public) \
         legacyDistance=\(difference.map { String(format: "%.2f", $0) } ?? "-", privacy: .public)
         """)
+    }
+
+    /// `shadow`-Zeile einer Engine-Epoche. Ohne Position der Engine fehlen `x`/`y`; die Konfidenz steht immer da.
+    static func shadowRecord(snapshot: PositionSnapshot, legacy: ShadowSide, at timestamp: TimeInterval) -> ShadowRecord {
+        ShadowRecord(
+            t: timestamp,
+            legacy: legacy,
+            engine: ShadowSide(
+                x: snapshot.displayedPoint?.x,
+                y: snapshot.displayedPoint?.y,
+                status: snapshot.status.rawValue,
+                confidence: snapshot.confidence
+            )
+        )
     }
 }
