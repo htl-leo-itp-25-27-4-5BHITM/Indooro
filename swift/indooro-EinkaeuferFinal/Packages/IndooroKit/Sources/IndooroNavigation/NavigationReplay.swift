@@ -184,6 +184,36 @@ public struct SyncRecord: Codable, Equatable {
     }
 }
 
+/// Eine Seite eines `shadow`-Epochen-Vergleichs (alte oder neue Ortung). `x`/`y` fehlen, wenn keine Position vorliegt.
+public struct ShadowSide: Codable, Equatable {
+    public var x: Float?
+    public var y: Float?
+    public var status: String
+    /// Nur die Engine liefert eine Konfidenz (0...1); beim alten Pfad entfaellt das Feld.
+    public var confidence: Float?
+
+    public init(x: Float? = nil, y: Float? = nil, status: String, confidence: Float? = nil) {
+        self.x = x
+        self.y = y
+        self.status = status
+        self.confidence = confidence
+    }
+}
+
+/// Schattenmodus (additiv zu indooro-recording/2): je Engine-Epoche die Positionen beider Pfade nebeneinander.
+/// Der Schattenmodus ist reine Aufzeichnung; die Navigation nutzt weiter den alten Pfad.
+public struct ShadowRecord: Codable, Equatable {
+    public var t: TimeInterval
+    public var legacy: ShadowSide
+    public var engine: ShadowSide
+
+    public init(t: TimeInterval, legacy: ShadowSide, engine: ShadowSide) {
+        self.t = t
+        self.legacy = legacy
+        self.engine = engine
+    }
+}
+
 /// Reine Hilfsfunktionen fuer die Metadaten von indooro-recording/2 (ohne UIKit, testbar).
 public enum RecordingMetadata {
     public static let schema = "indooro-recording/2"
@@ -305,7 +335,7 @@ public struct ScanRecord: Codable, Equatable {
     }
 }
 
-/// Eine Zeile der Aufzeichnung: `{"type":"measurement"|"layout"|"event"|"truth"|"step"|"heading"|"scan"|"session"|"sync", ...}`.
+/// Eine Zeile der Aufzeichnung: `{"type":"measurement"|"layout"|"event"|"truth"|"step"|"heading"|"scan"|"session"|"sync"|"shadow", ...}`.
 public enum NavigationRecordLine: Codable, Equatable {
     case measurement(MeasurementRecord)
     case layout(LayoutRecord)
@@ -316,9 +346,10 @@ public enum NavigationRecordLine: Codable, Equatable {
     case scan(ScanRecord)
     case session(SessionRecord)
     case sync(SyncRecord)
+    case shadow(ShadowRecord)
 
     private enum TypeKey: String, CodingKey { case type }
-    private enum LineType: String, Codable { case measurement, layout, event, truth, step, heading, scan, session, sync }
+    private enum LineType: String, Codable { case measurement, layout, event, truth, step, heading, scan, session, sync, shadow }
 
     /// Nur der Typ einer Zeile; unbekannte Typen werden beim Parsen uebersprungen.
     private struct TypeOnly: Decodable {
@@ -336,6 +367,7 @@ public enum NavigationRecordLine: Codable, Equatable {
         case .scan(let record): return record.t
         case .session(let record): return record.t
         case .sync(let record): return record.t
+        case .shadow(let record): return record.t
         }
     }
 
@@ -351,6 +383,7 @@ public enum NavigationRecordLine: Codable, Equatable {
         case .scan: self = .scan(try ScanRecord(from: decoder))
         case .session: self = .session(try SessionRecord(from: decoder))
         case .sync: self = .sync(try SyncRecord(from: decoder))
+        case .shadow: self = .shadow(try ShadowRecord(from: decoder))
         }
     }
 
@@ -383,6 +416,9 @@ public enum NavigationRecordLine: Codable, Equatable {
             try record.encode(to: encoder)
         case .sync(let record):
             try container.encode(LineType.sync, forKey: .type)
+            try record.encode(to: encoder)
+        case .shadow(let record):
+            try container.encode(LineType.shadow, forKey: .type)
             try record.encode(to: encoder)
         }
     }
@@ -553,7 +589,7 @@ public enum NavigationReplay {
             case .step, .heading: return config.motion.motionAided
             case .measurement, .layout, .event, .truth: return true
             // scan, session und sync tragen keine Messung (Replay ignoriert sie, auch fuer Tickraster und Dauer).
-            case .scan, .session, .sync: return false
+            case .scan, .session, .sync, .shadow: return false
             }
         }
         var replay = Replay(layout: layout, config: config, entrance: entrance, onTick: onTick)
@@ -675,7 +711,7 @@ public enum NavigationReplay {
                 pipeline.recordStep(cumulativeSteps: record.steps, at: record.t)
             case .heading(let record):
                 pipeline.recordHeading(bearingDegrees: record.degrees, accuracy: record.accuracy, at: record.t)
-            case .scan, .session, .sync:
+            case .scan, .session, .sync, .shadow:
                 break
             }
         }

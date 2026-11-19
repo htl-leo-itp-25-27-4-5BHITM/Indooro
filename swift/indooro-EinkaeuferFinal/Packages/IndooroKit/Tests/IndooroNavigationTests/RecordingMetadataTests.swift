@@ -99,4 +99,38 @@ final class RecordingMetadataTests: XCTestCase {
         mixed.append(.sync(SyncRecord(t: last + 100, label: "sync-2")))
         XCTAssertEqual(NavigationReplay.run(recording: mixed, layout: layout), baseline)
     }
+
+    // MARK: - shadow (Schattenmodus, additiv zu indooro-recording/2)
+
+    func testShadowLineRoundTripAndOptionalFields() throws {
+        let line = NavigationRecordLine.shadow(ShadowRecord(
+            t: 1_792_000_010.5,
+            legacy: ShadowSide(x: 1.5, y: 7.5, status: "tracking"),
+            engine: ShadowSide(x: 1.25, y: 7.0, status: "tracking", confidence: 0.8)
+        ))
+        let text = try NavigationRecordLine.jsonl([line])
+        XCTAssertTrue(text.contains(#""type":"shadow""#))
+        XCTAssertEqual(try NavigationRecordLine.parse(jsonl: text), [line])
+
+        let noPosition = NavigationRecordLine.shadow(ShadowRecord(
+            t: 1, legacy: ShadowSide(status: "none"), engine: ShadowSide(status: "searching", confidence: 0)
+        ))
+        let parsed = try NavigationRecordLine.parse(jsonl: try NavigationRecordLine.jsonl([noPosition]))
+        XCTAssertEqual(parsed, [noPosition])
+        XCTAssertEqual(parsed.first?.timestamp, 1)
+    }
+
+    func testOlderParsersSkipShadowAsUnknownTypeAndReplayIgnoresIt() throws {
+        let layout = try TestLayouts.demoSupermarket(beaconSpacing: 8)
+        var synthetic = SyntheticRecording(layout: layout, seed: 11)
+        synthetic.walk([SIMD2(2.5, 9.5), SIMD2(10.5, 9.5)], speed: 1.2)
+        let baseline = NavigationReplay.run(recording: synthetic.lines, layout: layout)
+        var mixed = synthetic.lines
+        mixed.insert(.shadow(ShadowRecord(
+            t: synthetic.lines[0].timestamp,
+            legacy: ShadowSide(x: 1, y: 1, status: "tracking"),
+            engine: ShadowSide(x: 2, y: 2, status: "tracking", confidence: 1)
+        )), at: 1)
+        XCTAssertEqual(NavigationReplay.run(recording: mixed, layout: layout), baseline)
+    }
 }
