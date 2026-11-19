@@ -71,9 +71,12 @@ scripts/field/check_testroom_beacons.sh --values docs/pilot-readiness/hardware/T
 
 Ausgabe in `{{BACKUP_DIR}}/nachher-check.txt`. Dazu **Pilot-Bereitschaft** erneut öffnen und die Blocker zählen (`readinessBlockerNachher`). (Hinweis: Die Werte-Datei muss dieselben Werte wie die Tabelle oben enthalten; sonst meldet das Skript Abweichungen. Das ist dann ein Befund, kein Grund, die Datei anzupassen.)
 
-**5. Rücknahme-Regel.** Stelle den alten Zustand wieder her, wenn
-- das Skript nach der Änderung noch mit Exit 1 oder 2 endet **und** nicht ausschließlich wegen Dingen, die nicht zu diesem Auftrag gehören (zum Beispiel fehlende Werte-Datei-Einträge), oder
-- die Zahl der Bereitschafts-Blocker höher ist als `readinessBlockerVorher`.
+**5. Rücknahme-Regel.** Stelle den alten Zustand wieder her, wenn nach der Änderung
+- das Skript mit Exit 2 endet (Aufruf-, Netz- oder Datenfehler), oder
+- die Zahl der Bereitschafts-Blocker höher ist als `readinessBlockerVorher`, oder
+- die Werte im Admin (Beacons und Layout) von der ausgefüllten Tabelle oben abweichen.
+
+Exit 1 allein ist **kein** Grund zur Rücknahme: Dann nur berichten, welche Blocker übrig sind.
 
 Wiederherstellen heißt: Im Layout Editor `{{BACKUP_DIR}}/layout-vorher.json` mit **JSON importieren** laden, **Entwurf speichern**, **Veröffentlichen**; in **Beacons** die gesicherten Werte aus `beacons-vorher.txt` wieder eintragen, neu angelegte Beacons nicht löschen (nur melden). Danach Skript erneut laufen lassen und bestätigen, dass der Stand wieder dem „vorher“ entspricht. Nicht wiederholen und nicht weiter probieren.
 
