@@ -45,7 +45,7 @@ final class ShadowModeTests: XCTestCase {
         )
         XCTAssertEqual(record.t, 100)
         XCTAssertEqual(record.legacy, ShadowSide(x: 4, y: 7, status: "tracking"))
-        XCTAssertEqual(record.engine, ShadowSide(x: 4.5, y: 7.5, status: "tracking", confidence: 0.75))
+        XCTAssertEqual(record.engine, ShadowSide(x: 4.5, y: 7.5, status: "tracking", confidence: 0.75, t: 5))
     }
 
     func testLegacySideIsOutageWhenTickIsStaleOrHadNoPoint() {
