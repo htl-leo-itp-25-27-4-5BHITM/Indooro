@@ -1,4 +1,5 @@
 import XCTest
+@testable import IndooroNavigation
 @testable import IndooroNavigationCore
 
 /// `tools/beacon-lab/samples/synthetic-position-comparison.json` is the output of this tool on the SYNTHETIC fixture

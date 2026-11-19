@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNavigation
 import simd
 
 /// Blickrichtung der Anzeige (Logik von `BeaconManager`): Bewegungsrichtung aus aufeinanderfolgenden

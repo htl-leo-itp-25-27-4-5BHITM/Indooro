@@ -1,6 +1,7 @@
 import IndooroModels
 import XCTest
 import simd
+@testable import IndooroNavigation
 @testable import IndooroNavigationCore
 
 /// The current-pipeline path must be the chain the app runs, and the engine path must agree with it where the two

@@ -1,4 +1,5 @@
 import XCTest
+@testable import IndooroNavigation
 @testable import IndooroNavigationCore
 
 /// The expected values are the worked examples of `tools/beacon-lab/docs/METRICS.md`.

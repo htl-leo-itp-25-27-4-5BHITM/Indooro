@@ -1,4 +1,5 @@
 import XCTest
+@testable import IndooroNavigation
 @testable import IndooroNavigationCore
 
 final class TruthTrackTests: XCTestCase {

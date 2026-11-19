@@ -1,6 +1,6 @@
 import IndooroModels
 import Foundation
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 enum TestLayouts {
     enum LoadError: Error {

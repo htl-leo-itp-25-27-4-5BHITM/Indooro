@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNavigation
 
 /// Zeitquelle der Ortung. Messungen und Ticks verwenden Sekunden auf derselben Zeitbasis
 /// (App: Unix-Zeit wie bisher `Date().timeIntervalSince1970`). Tests ersetzen die Uhr durch `TestClock`.

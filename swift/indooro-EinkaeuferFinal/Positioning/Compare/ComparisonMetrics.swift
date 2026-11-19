@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNavigation
 
 /// One epoch (tick) of one pipeline for the metrics: truth (if any) and displayed position (if any).
 struct MetricEpoch: Equatable {

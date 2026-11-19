@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNavigation
 
 /// Verteilt Werte an beliebig viele `AsyncStream`-Leser. Jeder Aufruf von `makeStream()` liefert einen eigenen
 /// Strom; `send` ist von jedem Thread aus erlaubt. Die Funk- und Sensor-Adapter verwenden ihn fuer `samples()`.

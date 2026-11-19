@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNavigation
 
 /// Truth reference of a recording, built from its `truth` markers.
 ///

@@ -23,7 +23,8 @@ let package = Package(
         .target(
             name: "IndooroNavigationCore",
             dependencies: [
-                .product(name: "IndooroModels", package: "IndooroKit")
+                .product(name: "IndooroModels", package: "IndooroKit"),
+                .product(name: "IndooroNavigation", package: "IndooroKit")
             ],
             // Paketwurzel statt `indooroApp`: so koennen `Positioning/Engine` (Kopie des Engine-Kerns von
             // `postpilot/ios-architecture`, siehe `Positioning/README.md`) und `Positioning/Compare` im selben Modul
@@ -35,25 +36,11 @@ let package = Package(
                 "MCindooroAppUITests", "Config", "Fixtures", "docs", "TESTING.md", "Positioning/CLI", "Positioning/README.md"
             ],
             sources: [
-                "indooroApp/Utilities/IndoorGraph.swift",
-                "indooroApp/Utilities/KalmanFilter.swift",
-                "indooroApp/Utilities/LayoutCacheStore.swift",
                 "indooroApp/Utilities/AppLog.swift",
-                "indooroApp/Utilities/BeaconPositionSolver.swift",
-                "indooroApp/Utilities/PoseFusionService.swift",
-                "indooroApp/Utilities/WalkableProjector.swift",
-                "indooroApp/Utilities/BeaconMeasurementStore.swift",
-                "indooroApp/Utilities/NavigationSessionCore.swift",
-                "indooroApp/Utilities/TourPlanner.swift",
-                "indooroApp/Utilities/PositioningPipeline.swift",
-                "indooroApp/Utilities/MotionTracker.swift",
-                "indooroApp/Utilities/NavigationReplay.swift",
-                "indooroApp/Utilities/StabilizedNavigationConfig.swift",
                 "indooroApp/Utilities/AnchorPayload.swift",
                 "indooroApp/Utilities/AccessibilityText.swift",
                 "indooroApp/Utilities/AccessibilityPalette.swift",
                 "indooroApp/Utilities/ArrivalSuggestionDetector.swift",
-                "indooroApp/Utilities/UpsellPlanLogic.swift",
                 "Positioning/Engine",
                 "Positioning/Compare"
             ]
@@ -63,7 +50,8 @@ let package = Package(
             dependencies: [
                 "IndooroNavigationCore",
                 "IndooroPilotSupport",
-                .product(name: "IndooroModels", package: "IndooroKit")
+                .product(name: "IndooroModels", package: "IndooroKit"),
+                .product(name: "IndooroNavigation", package: "IndooroKit")
             ],
             path: "Tests/IndooroNavigationCoreTests",
             resources: [.copy("Resources")]
@@ -77,7 +65,8 @@ let package = Package(
             name: "IndooroPositioningCompareTests",
             dependencies: [
                 "IndooroNavigationCore",
-                .product(name: "IndooroModels", package: "IndooroKit")
+                .product(name: "IndooroModels", package: "IndooroKit"),
+                .product(name: "IndooroNavigation", package: "IndooroKit")
             ],
             path: "Tests/IndooroPositioningCompareTests"
         )

@@ -4,6 +4,8 @@
 <dict>
 	<key>IndooroStudyMode</key>
 	<false/>
+	<key>IndooroShadowPositioning</key>
+	<false/>
 	<key>IndooroAPIBaseURL</key>
 	<string>$(INDOORO_API_BASE_URL)</string>
 	<key>IndooroFeatureProfile</key>

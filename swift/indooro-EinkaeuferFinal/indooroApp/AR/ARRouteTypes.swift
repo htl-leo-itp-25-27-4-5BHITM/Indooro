@@ -30,6 +30,8 @@ struct SampledRoutePoint {
 }
 
 final class ARNavigationHUDModel: ObservableObject {
+    nonisolated deinit {}
+
     @Published var trackingMessage: String?
     @Published var nextTurnDistanceText: String?
     @Published var dimOverlay: Bool = false

@@ -37,11 +37,12 @@ from check_recording_anonymized import check_lines, split_lines  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SWIFT_DIR = REPO_ROOT / "swift" / "indooro-EinkaeuferFinal"
+SWIFT_PACKAGE_DIR = SWIFT_DIR / "Packages" / "IndooroKit"
 FIXTURES = SWIFT_DIR / "NavigationFixtures"
 DEFAULT_INCOMING = FIXTURES / "incoming"
 DEFAULT_WORK_DIR = FIXTURES / "exports"
 SITES_DIR = REPO_ROOT / "docs" / "pilot-readiness" / "hardware" / "sites"
-TEST_RESOURCES = SWIFT_DIR / "Tests" / "IndooroNavigationCoreTests" / "Resources"
+TEST_RESOURCES = SWIFT_PACKAGE_DIR / "Tests" / "IndooroNavigationTests" / "Resources"
 SWIFT_FILTER = "FieldExportTests/testFieldReplayOfSingleRecording"
 SYNTHETIC_PREFIX = "synthetic-"
 DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})")
@@ -141,7 +142,7 @@ def swift_replay(recording: Path, layout: Path, work_dir: Path, name: str) -> Tu
     try:
         done = subprocess.run(
             ["swift", "test", "--filter", SWIFT_FILTER],
-            cwd=SWIFT_DIR, env=env, capture_output=True, text=True, check=False,
+            cwd=SWIFT_PACKAGE_DIR, env=env, capture_output=True, text=True, check=False,
         )
     except OSError as error:
         raise AnalysisError(f"swift nicht ausfuehrbar ({error}). Xcode-Kommandozeilenwerkzeuge installiert?", 2)

@@ -2,12 +2,15 @@
 import Foundation
 import Combine
 import CoreMotion
+import IndooroNavigation
 
 /// Zeichnet Rohmessungen, Layout-Identitaet, Navigationsereignisse und Bodenwahrheit als JSON Lines nach
 /// `Documents/NavigationRecordings/<ISO-Zeitstempel>.jsonl` auf (design.md D11). Nur DEBUG-Builds:
 /// Release enthaelt weder diese Klasse noch ihre Aufrufe. Nichts wird an einen Server gesendet.
 /// Zeilen werden gepuffert und mindestens alle 2 s sowie beim Stoppen geschrieben.
 final class NavigationRecorder: ObservableObject {
+    nonisolated deinit {}
+
     static let shared = NavigationRecorder()
     static let flushInterval: TimeInterval = 2
 

@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNavigation
 
 /// Kompassrichtung des Geraets.
 struct HeadingSample: Sendable, Equatable {

@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNavigation
 
 /// Identitaet eines iBeacons (UUID, Major, Minor).
 struct BeaconIdentity: Sendable, Hashable {

@@ -4,7 +4,7 @@ import simd
 
 /// QR-Anker-Payload: eine URL `https://<host>/customer/?store=<storeCode>&a=<anchorId>`.
 /// Die Kamera-App oeffnet dieselbe URL im Browser; die App liest sie hier ein.
-struct AnchorPayload: Equatable {
+nonisolated struct AnchorPayload: Equatable {
     let storeCode: String
     let anchorId: String
 
@@ -105,7 +105,7 @@ struct AnchorPayload: Equatable {
     }
 }
 
-enum AnchorScanOutcome: Equatable {
+nonisolated enum AnchorScanOutcome: Equatable {
     /// Position auf den Mittelpunkt des Ankers setzen (Layout-Koordinaten).
     case setPosition(anchorId: String, point: SIMD2<Float>)
     /// Der Code gehoert zu einer anderen Filiale (oder es ist keine Filiale aktiv).
@@ -117,7 +117,7 @@ enum AnchorScanOutcome: Equatable {
 }
 
 /// Gescannter Anker, dessen Filiale erst geladen werden muss.
-struct PendingAnchorScan: Equatable {
+nonisolated struct PendingAnchorScan: Equatable {
     let payload: AnchorPayload
 
     /// nil, solange der aktive Store (case-insensitiv) noch nicht der Store des Payloads ist

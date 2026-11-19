@@ -7,7 +7,7 @@
 
 Datensaetze (Umgebungsvariable MOCK_DATASET):
 - nicht gesetzt (Default): zwei Stores "MOCK-QR-001" (Anker A1, A12) und "MOCK-QR-002" (Anker B1, B7) mit dem
-  Layout aus swift/indooro-EinkaeuferFinal/Tests/IndooroNavigationCoreTests/Resources/store-layout-with-anchors.json.
+  Layout aus swift/indooro-EinkaeuferFinal/Packages/IndooroKit/Tests/IndooroNavigationTests/Resources/store-layout-with-anchors.json.
   Alles andere liefert 404.
 - ui-test-store: Stores "UITEST-001" (UI-Testmarkt) und "UITEST-002" (UI-Testmarkt 2) mit den Layouts und den
   30 Produkten aus swift/indooro-EinkaeuferFinal/Fixtures/ui-test-store/. Dazu die Produktsuche
@@ -32,7 +32,7 @@ DATASET = os.environ.get("MOCK_DATASET", "default")
 
 
 def _default_dataset():
-    layout_file = APP_ROOT / "Tests/IndooroNavigationCoreTests/Resources/store-layout-with-anchors.json"
+    layout_file = APP_ROOT / "Packages/IndooroKit/Tests/IndooroNavigationTests/Resources/store-layout-with-anchors.json"
     layout_1 = json.loads(layout_file.read_text(encoding="utf-8"))
     store_id = layout_1["storeId"]
 

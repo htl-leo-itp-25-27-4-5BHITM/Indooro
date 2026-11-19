@@ -2,7 +2,7 @@ import Foundation
 import simd
 
 /// Parameter der Ankunftsvorschlaege. R = max(3 m, gemessener Median-Fehler), T = 5 s (provisional).
-public struct ArrivalSuggestionConfig: Equatable {
+public nonisolated struct ArrivalSuggestionConfig: Equatable {
     /// Radius um den aktiven Stopp in Metern (Vergleich mit `<=`).
     public var radiusMeters: Float
     /// Verweildauer innerhalb des Radius bis zum Vorschlag in Sekunden.
@@ -37,7 +37,7 @@ public struct ArrivalSuggestionConfig: Equatable {
 }
 
 /// Zaehler fuer den Studienmodus.
-public struct ArrivalSuggestionCounters: Equatable {
+public nonisolated struct ArrivalSuggestionCounters: Equatable {
     public var shown = 0
     public var accepted = 0
     public var rejected = 0
@@ -49,7 +49,7 @@ public struct ArrivalSuggestionCounters: Equatable {
 /// Vollstaendig pur: keine Seiteneffekte ausser dem Zustand dieses Werts, die Zeit wird injiziert.
 /// Der Detektor erledigt nie selbst einen Stopp; `accept()` setzt nur die Zaehler und den Dwell zurueck,
 /// der Aufrufer fuehrt danach den bestehenden `stopCompleted`-Pfad aus.
-public struct ArrivalSuggestionDetector {
+public nonisolated struct ArrivalSuggestionDetector {
     /// Groesste erlaubte Luecke zwischen zwei aufeinanderfolgenden Samples innerhalb des Radius.
     public static let maxSampleGapSeconds: TimeInterval = 3
 

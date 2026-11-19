@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNavigation
 
 /// Kumulativer Schrittzaehler (CMPedometer).
 struct StepSample: Sendable, Equatable {

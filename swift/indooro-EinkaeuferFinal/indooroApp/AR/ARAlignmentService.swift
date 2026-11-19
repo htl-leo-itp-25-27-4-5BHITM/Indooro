@@ -50,6 +50,8 @@ struct ARMapAlignment {
 }
 
 final class ContinuousAlignmentService {
+    nonisolated deinit {}
+
     private(set) var alignment: ARMapAlignment?
     private(set) var lastCalibration: ARAlignmentSnapshot?
     private(set) var smoothedFloorY: Float?

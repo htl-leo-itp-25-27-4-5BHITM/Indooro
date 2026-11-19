@@ -1,4 +1,5 @@
 import IndooroModels
+import IndooroNetworking
 import SwiftUI
 
 struct StudySessionView: View {
@@ -130,10 +131,13 @@ struct StudySessionView: View {
         Task { @MainActor in
             defer { resolvingTask = nil }
             do {
-                let url = AppEnvironment.apiBaseURL.appendingPathComponent("products/\(task.productId)")
-                let (data, response) = try await AppEnvironment.session.data(from: url)
-                if let message = PilotHTTP.errorMessage(response: response, error: nil) { store.errorMessage = message; return }
-                let product = try JSONDecoder.indooro.decode(Product.self, from: data)
+                let result = await AppEnvironment.apiClient.sendResult(LegacyGETEndpoint(path: "/products/\(task.productId)"))
+                let raw: RawJSON
+                switch result {
+                case .failure(let error): store.errorMessage = PilotHTTP.message(for: error); return
+                case .success(let value): raw = value
+                }
+                let product = try JSONDecoder.indooro.decode(Product.self, from: raw.data)
                 guard !product.layoutCode.isEmpty else { store.errorMessage = "Zu diesem Produkt ist keine Regalposition gespeichert."; return }
                 try store.updateTask(task.no, productName: product.name, layoutCode: product.layoutCode)
                 begin(task.no)

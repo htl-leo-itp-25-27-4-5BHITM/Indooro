@@ -63,4 +63,8 @@ final class AppEnvironmentTests: XCTestCase {
     func testStudyModeIsOffByDefault() {
         XCTAssertFalse(AppEnvironment.isStudyModeEnabled)
     }
+
+    func testShadowPositioningIsOffByDefault() {
+        XCTAssertFalse(AppEnvironment.isShadowPositioningEnabled)
+    }
 }

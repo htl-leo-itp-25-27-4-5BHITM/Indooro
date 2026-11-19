@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNavigation
 
 // Glue between the engine core (copied from `postpilot/ios-architecture`) and the navigation sources on `main`.
 // On the postpilot branch `BeaconMeasurementStore.activeMeasurementCount(at:)` is part of the `IndooroNavigation`

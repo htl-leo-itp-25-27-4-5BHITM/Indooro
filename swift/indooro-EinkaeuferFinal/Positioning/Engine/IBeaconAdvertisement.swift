@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNavigation
 
 /// iBeacon-Daten aus den Herstellerdaten eines BLE-Advertisements (Apple Company ID 0x004C, Typ 0x02, Laenge 0x15).
 enum IBeaconAdvertisement {

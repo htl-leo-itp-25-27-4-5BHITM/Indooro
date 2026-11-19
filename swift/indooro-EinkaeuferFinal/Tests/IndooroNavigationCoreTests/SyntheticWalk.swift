@@ -1,6 +1,6 @@
 import Foundation
 import simd
-@testable import IndooroNavigationCore
+@testable import IndooroNavigation
 
 /// Erzeugt synthetische Laufwege entlang einer Polylinie.
 /// Tick 0.35 s wie der Positionierungs-Timer der App.

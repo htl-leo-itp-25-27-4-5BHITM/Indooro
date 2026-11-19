@@ -1,4 +1,5 @@
 import Foundation
+import IndooroNavigation
 import simd
 
 /// Manuelle Kalibrierung, wie sie `BeaconManager` als `ManualCalibrationEvent` veroeffentlicht.
