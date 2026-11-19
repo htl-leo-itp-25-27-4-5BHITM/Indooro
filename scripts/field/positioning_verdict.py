@@ -46,6 +46,7 @@ class Run:
     name: str
     sha256: Optional[str]
     delta: Dict[str, float]
+    path: Optional[Path] = None
 
 
 def _figure(summary: Dict[str, object], method: str, key: str) -> Optional[float]:
@@ -84,7 +85,7 @@ def qualify(path: Path) -> Tuple[Optional[Run], Optional[str]]:
             return None, f"{key} nicht berechenbar (keine gueltigen Schaetzungen oder Paare)"
         delta[key] = round(engine - current, ROUND_DIGITS)
     sha = recording.get("sha256")
-    return Run(name=name, sha256=sha if isinstance(sha, str) else None, delta=delta), None
+    return Run(name=name, sha256=sha if isinstance(sha, str) else None, delta=delta, path=path), None
 
 
 def judge(runs: Sequence[Run]) -> Tuple[str, Dict[str, float], List[str]]:
@@ -143,22 +144,26 @@ class Criterion:
 FIGURE_LABEL = {"median": "Median", "p90": "P90", "outageRate": "Ausfallrate", "jumpRate": "Sprungrate"}
 
 
+def _de(value: float, digits: int) -> str:
+    return f"{value:+.{digits}f}".replace(".", ",")
+
+
 def criteria(runs: Sequence[Run], mean: Dict[str, float]) -> List[Criterion]:
     """Die fuenf Bedingungen fuer BESSER einzeln (Abschnitt 4), unabhaengig vom Gesamtergebnis."""
     result = [Criterion(1, len(runs) >= MIN_EVALUATION_RUNS, f"Mindestens {MIN_EVALUATION_RUNS} Bewertungsläufe: {len(runs)} gezählt.")]
     for number, key in ((2, "median"), (3, "p90")):
         worse = [run.name for run in runs if run.delta[key] >= EPSILON_ERROR_M]
         ok = bool(runs) and mean[key] <= -EPSILON_ERROR_M and not worse
-        text = f"{FIGURE_LABEL[key]}: Mittel der Differenzen {mean[key]:+.2f} m (gefordert: höchstens -{EPSILON_ERROR_M:.1f} m)"
+        text = f"{FIGURE_LABEL[key]}: Mittel der Differenzen {_de(mean[key], 2)} m (gefordert: höchstens -0,3 m)"
         text += (
-            f"; Lauf mit {EPSILON_ERROR_M:.1f} m oder mehr schlechter: {', '.join(worse)}."
+            f"; Lauf mit 0,3 m oder mehr schlechter: {', '.join(worse)}."
             if worse
             else "; kein Lauf ist um 0,3 m oder mehr schlechter."
         )
         result.append(Criterion(number, ok, text))
     for number, key in ((4, "outageRate"), (5, "jumpRate")):
         ok = bool(runs) and mean[key] <= DELTA_RATE
-        text = f"{FIGURE_LABEL[key]}: Mittel der Differenzen {mean[key] * 100:+.1f} Prozentpunkte (gefordert: höchstens +1,0)."
+        text = f"{FIGURE_LABEL[key]}: Mittel der Differenzen {_de(mean[key] * 100, 1)} Prozentpunkte (gefordert: höchstens +1,0)."
         result.append(Criterion(number, ok, text))
     return result
 
@@ -170,6 +175,7 @@ class Evaluation:
     verdict: str
     mean: Dict[str, float]
     reasons: List[str]
+    rejected_by_path: Optional[Dict[Path, str]] = None  # Vergleichsdatei -> Grund, fuer Berichte je Lauf
 
 
 def evaluate(paths: Sequence[Path]) -> Evaluation:
@@ -177,13 +183,17 @@ def evaluate(paths: Sequence[Path]) -> Evaluation:
     accepted: List[Run] = []
     rejected: List[Tuple[str, str]] = []
     seen: Dict[str, str] = {}
+    by_path: Dict[Path, str] = {}
     for path in paths:
         run, reason = qualify(path)
         if run is None:
             rejected.append((path.name, reason or "unbekannt"))
+            by_path[path] = reason or "unbekannt"
             continue
         if run.sha256 and run.sha256 in seen:
-            rejected.append((run.name, f"gleiche Aufnahme wie {seen[run.sha256]} (zweimal gezaehlt waere ein Datenleck)"))
+            why = f"gleiche Aufnahme wie {seen[run.sha256]} (zweimal gezaehlt waere ein Datenleck)"
+            rejected.append((run.name, why))
+            by_path[path] = why
             continue
         if run.sha256:
             seen[run.sha256] = run.name
@@ -192,7 +202,7 @@ def evaluate(paths: Sequence[Path]) -> Evaluation:
         verdict, mean, reasons = judge(accepted)
     else:
         verdict, mean, reasons = "EXPLORATIV", {key: 0.0 for key in FIGURES}, ["Kein Lauf erfuellt die Voraussetzungen."]
-    return Evaluation(accepted, rejected, verdict, mean, reasons)
+    return Evaluation(accepted, rejected, verdict, mean, reasons, by_path)
 
 
 DECISIONS = {
