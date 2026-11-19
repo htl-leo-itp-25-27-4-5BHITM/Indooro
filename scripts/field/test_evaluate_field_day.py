@@ -150,6 +150,17 @@ class Safety(FieldDayCase):
         self.assertEqual(self.compare_calls, [])
         self.assertFalse((self.out / "BERICHT.md").exists())
 
+    def test_stale_anonymized_and_lab_files_from_an_earlier_run_are_cleared(self):
+        for folder in ("anonymized", "lab-import/recordings"):
+            (self.out / folder).mkdir(parents=True)
+            (self.out / folder / "alt.jsonl").write_text("{}\n", encoding="utf-8")
+        keep = self.out / "mein-notizen.txt"
+        keep.write_text("bleibt", encoding="utf-8")
+        self.run_day(profiles(P(2.0), [P(1.4)] * 3))
+        self.assertFalse((self.out / "anonymized" / "alt.jsonl").exists())
+        self.assertFalse((self.out / "lab-import").exists())
+        self.assertTrue(keep.exists())
+
     def test_originals_are_never_modified(self):
         before = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in self.incoming.glob("*.jsonl")}
         self.run_day(profiles(P(2.0), [P(1.4)] * 3))

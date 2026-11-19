@@ -640,6 +640,8 @@ def evaluate_field_day(
         raise FieldDayError(f"Standort-Datei nicht gefunden: {markers}", 2)
 
     out_dir.mkdir(parents=True, exist_ok=True)
+    for stale in ("anonymized", "lab-import"):  # Altlasten früherer Läufe nie mit neuen mischen (nur innerhalb von --out)
+        shutil.rmtree(out_dir / stale, ignore_errors=True)
     runs = anonymize_and_verify(recordings, out_dir / "anonymized")  # Schritt 1, Abbruch bei Verstoss
     for run in runs:  # Schritt 2
         print(f"== {run.path.name}", file=sys.stderr)
