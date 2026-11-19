@@ -100,6 +100,21 @@ final class RecordingMetadataTests: XCTestCase {
         XCTAssertEqual(NavigationReplay.run(recording: mixed, layout: layout), baseline)
     }
 
+    func testExplorationRoleAndShadowModeFlagRoundTrip() throws {
+        let record = RecordingMetadata.sessionRecord(
+            t: 1, shortVersion: "1.0", build: "1", machine: "iPhone15,3", osMajor: 18, osMinor: 1, osPatch: 0,
+            scenario: .S2, role: .exploration, shadowMode: true
+        )
+        let text = try NavigationRecordLine.jsonl([.session(record)])
+        XCTAssertTrue(text.contains(#""role":"exploration""#))
+        XCTAssertTrue(text.contains(#""shadowMode":true"#))
+        XCTAssertEqual(try NavigationRecordLine.parse(jsonl: text), [.session(record)])
+        // Aeltere Aufnahme ohne das Feld bleibt lesbar.
+        let old = #"{"type":"session","t":1,"schema":"indooro-recording/2","app":"1.0 (1)","deviceModel":"iPhone15,3","os":"iOS 18.1"}"#
+        guard case .session(let parsed)? = try NavigationRecordLine.parse(jsonl: old).first else { return XCTFail("keine session") }
+        XCTAssertNil(parsed.shadowMode)
+    }
+
     // MARK: - shadow (Schattenmodus, additiv zu indooro-recording/2)
 
     func testShadowLineRoundTripAndOptionalFields() throws {

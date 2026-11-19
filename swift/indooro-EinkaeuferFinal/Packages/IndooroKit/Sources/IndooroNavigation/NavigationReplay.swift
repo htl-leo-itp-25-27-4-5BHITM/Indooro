@@ -141,7 +141,8 @@ public enum SessionScenario: String, Codable, Equatable, CaseIterable {
 
 /// Rolle der Aufnahme (indooro-recording/2).
 public enum SessionRole: String, Codable, Equatable, CaseIterable {
-    case calibration, evaluation
+    /// `exploration`: freie Erkundung ohne Bewertungsanspruch; zaehlt wie `calibration` nie fuer die Entscheidung.
+    case calibration, evaluation, exploration
 }
 
 /// Erste Zeile einer Aufnahme (indooro-recording/2). Bewusst ohne Freitext, Geraetename oder Geraete-ID.
@@ -153,6 +154,8 @@ public struct SessionRecord: Codable, Equatable {
     public var os: String
     public var scenario: SessionScenario?
     public var role: SessionRole?
+    /// Lief die Schatten-Engine in diesem Lauf (additiv)? Aeltere Aufnahmen haben das Feld nicht.
+    public var shadowMode: Bool?
 
     public init(
         t: TimeInterval,
@@ -161,7 +164,8 @@ public struct SessionRecord: Codable, Equatable {
         deviceModel: String,
         os: String,
         scenario: SessionScenario? = nil,
-        role: SessionRole? = nil
+        role: SessionRole? = nil,
+        shadowMode: Bool? = nil
     ) {
         self.t = t
         self.schema = schema
@@ -170,6 +174,7 @@ public struct SessionRecord: Codable, Equatable {
         self.os = os
         self.scenario = scenario
         self.role = role
+        self.shadowMode = shadowMode
     }
 }
 
@@ -276,7 +281,8 @@ public enum RecordingMetadata {
         osMinor: Int,
         osPatch: Int,
         scenario: SessionScenario?,
-        role: SessionRole?
+        role: SessionRole?,
+        shadowMode: Bool? = nil
     ) -> SessionRecord {
         SessionRecord(
             t: t,
@@ -285,7 +291,8 @@ public enum RecordingMetadata {
             deviceModel: deviceModelString(machine: machine),
             os: osString(major: osMajor, minor: osMinor, patch: osPatch),
             scenario: scenario,
-            role: role
+            role: role,
+            shadowMode: shadowMode
         )
     }
 }

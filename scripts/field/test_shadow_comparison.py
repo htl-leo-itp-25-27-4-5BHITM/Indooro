@@ -193,6 +193,18 @@ class FieldDayWithShadowTest(unittest.TestCase):
         self.assertIn("Quelle des Vergleichs: Schattenbetrieb", report)
         self.assertIn(code, (0, 2))  # Probelauf: Regel entscheidet, hier zaehlt nur die Kette
 
+    def test_exploration_role_is_valid_but_never_counts(self):
+        session = line(type="session", t=0, schema="indooro-recording/2", app="1.0 (1)", deviceModel="iPhone15,3",
+                       os="iOS 18.1", role="exploration", shadowMode=True)
+        self.assertEqual(chk.check_lines([session]), [])
+        path = self.root / "rehearsal-eval-1-comparison.json"
+        data = cp.shadow_comparison_data(self.incoming / "rehearsal-eval-1.jsonl")
+        data["session"]["role"] = "exploration"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        run, reason = pv.qualify(path, allow_rehearsal=True)
+        self.assertIsNone(run)
+        self.assertIn("exploration", reason)
+
     def test_verdict_accepts_shadow_origin_but_not_synthetic(self):
         path = self.root / "rehearsal-eval-1-comparison.json"
         data = cp.shadow_comparison_data(self.incoming / "rehearsal-eval-1.jsonl")

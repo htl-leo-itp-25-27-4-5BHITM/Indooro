@@ -103,11 +103,12 @@ struct SettingsSheet: View {
                             .onChange(of: engineDrivesNavigation) { _, value in
                                 UserDefaults.standard.set(value, forKey: AppEnvironment.engineNavigationOverrideKey)
                             }
-                        Text("Aus lassen fuer Messungen: Karte und Route bleiben bei der alten Ortung, die neue wird nur aufgezeichnet.")
+                        Text("Für Messungen aus lassen: Karte und Route bleiben bei der alten Ortung, die neue wird nur aufgezeichnet.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    Text("Schalter wirken nach dem naechsten App-Start (App beenden und neu oeffnen).")
+                    LabeledContent("Schatten-Engine läuft", value: recorder.shadowEngineRunning ? "ja" : "nein")
+                    Text("Schalter wirken nach dem nächsten App-Start (App beenden und neu öffnen). „Schatten-Engine läuft“ zeigt, was gerade gilt.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
 
@@ -127,6 +128,7 @@ struct SettingsSheet: View {
                         Text("keine").tag(SessionRole?.none)
                         Text("Kalibrierung").tag(SessionRole?.some(.calibration))
                         Text("Evaluation").tag(SessionRole?.some(.evaluation))
+                        Text("Exploration").tag(SessionRole?.some(.exploration))
                     }
                     .disabled(recorder.isRecording)
                     Picker("Marker", selection: $recorder.selectedMarker) {
@@ -146,7 +148,7 @@ struct SettingsSheet: View {
                             }
                         }
                         .padding(.vertical, 4)
-                        Text("M1 bis M8 stehen am Marker: ein Druck schreibt Marker und Wahrheit an die Zellmitte.")
+                        Text("Am Marker stehen: ein Tipp schreibt Marker und Wahrheit an die Zellmitte. Einmal beim Ankommen, einmal vor dem Weitergehen tippen (zwei Tipps bilden die Standzeit).")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         Button("Sync-Marke setzen") {
@@ -175,7 +177,7 @@ struct SettingsSheet: View {
                         }
                     }
 
-                    Text("Export: Aufnahme antippen (Teilen-Blatt), z. B. In Dateien sichern oder AirDrop. Alternativ Dateien-App, Auf meinem iPhone, Indooro, NavigationRecordings.")
+                    Text("Export: Aufnahme antippen (Teilen-Blatt), z. B. „In Dateien sichern“ oder AirDrop. Alternativ Dateien-App, Auf meinem iPhone, Indooro, NavigationRecordings.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text("Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu aendern. Szenario und Rolle gelten ab dem Start der Aufnahme, der Marker ab dem naechsten Wahrheitsmarker.")
@@ -232,7 +234,7 @@ private struct LiveBeaconList: View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let entries = LiveBeaconStore.shared.snapshot()
             if entries.isEmpty {
-                Text("Noch keine Beacons gehoert. Modus „Mit Ortung“ waehlen, Bluetooth und Standort erlauben.")
+                Text("Noch keine Beacons gehört. Modus „Mit Ortung“ wählen, Bluetooth und Standort erlauben.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {

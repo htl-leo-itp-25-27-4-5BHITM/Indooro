@@ -55,7 +55,7 @@ EVENT_KINDS: FrozenSet[str] = frozenset({
 # indooro-recording/2: session (genau eine Kopfzeile), sync, truth.marker. Keine Freitextfelder.
 SESSION_SCHEMA = "indooro-recording/2"
 SESSION_SCENARIOS: FrozenSet[str] = frozenset({"S1", "S2", "S3", "S4"})
-SESSION_ROLES: FrozenSet[str] = frozenset({"calibration", "evaluation"})
+SESSION_ROLES: FrozenSet[str] = frozenset({"calibration", "evaluation", "exploration"})
 MARKER_RE = re.compile(r"M[0-9]{1,3}")
 SYNC_LABEL_RE = re.compile(r"sync-[0-9]{1,4}")
 SESSION_APP_RE = re.compile(r"[0-9A-Za-z .()_-]{1,32}")
@@ -280,6 +280,7 @@ LINE_SPECS: Dict[str, Tuple[Dict[str, Validator], Set[str]]] = {
             "os": _pattern(SESSION_OS_RE, "iOS <Version>"),
             "scenario": _enum(SESSION_SCENARIOS),
             "role": _enum(SESSION_ROLES),
+            "shadowMode": _v_bool,
         },
         {"t", "schema", "app", "deviceModel", "os"},
     ),

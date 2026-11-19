@@ -25,6 +25,8 @@ final class NavigationRecorder: ObservableObject {
     /// der Marker ab dem naechsten Wahrheitsmarker. `nil` = keine Auswahl, das Feld entfaellt.
     @Published var selectedScenario: SessionScenario?
     @Published var selectedRole: SessionRole?
+    /// Laeuft die Schatten-Engine in dieser App-Sitzung? Gesetzt von `BeaconManager` beim Start; steht in der `session`-Zeile.
+    @Published var shadowEngineRunning = false
     /// Marker-Nummer (`M<n>`) fuer die naechsten Wahrheitsmarker.
     @Published var selectedMarker: Int?
     /// Anzahl der Sync-Marken der laufenden Aufzeichnung.
@@ -76,7 +78,7 @@ final class NavigationRecorder: ObservableObject {
             }
             queue.sync { lastScanWrite.removeAll(); syncCounter = 0 }
             DispatchQueue.main.async { self.syncCount = 0 }
-            record(.session(Self.makeSessionRecord(scenario: selectedScenario, role: selectedRole)))
+            record(.session(Self.makeSessionRecord(scenario: selectedScenario, role: selectedRole, shadowMode: shadowEngineRunning)))
             if let layout = layoutProvider?() {
                 record(.layout(layout))
             }
@@ -218,7 +220,7 @@ final class NavigationRecorder: ObservableObject {
         }
     }
 
-    static func makeSessionRecord(scenario: SessionScenario?, role: SessionRole?) -> SessionRecord {
+    static func makeSessionRecord(scenario: SessionScenario?, role: SessionRole?, shadowMode: Bool? = nil) -> SessionRecord {
         var systemInfo = utsname()
         uname(&systemInfo)
         let machine = withUnsafePointer(to: &systemInfo.machine) {
@@ -237,7 +239,8 @@ final class NavigationRecorder: ObservableObject {
             osMinor: version.minorVersion,
             osPatch: version.patchVersion,
             scenario: scenario,
-            role: role
+            role: role,
+            shadowMode: shadowMode
         )
     }
 
