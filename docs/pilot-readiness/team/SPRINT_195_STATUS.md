@@ -1,7 +1,7 @@
 # Sprint 2 (#195) – Stand der Vorbereitung
 
 Story #195: Indoor-Navigation im Testraum `SPAR-Leonding-002` unter echten Bedingungen messen und auswerten.
-Diese Datei ist das Arbeitsgedächtnis der Orchestrierung. Stand: 2026-11-19.
+Diese Datei ist das Arbeitsgedächtnis der Orchestrierung. Stand: 2026-11-19, nach Welle 1.
 
 ## Ausgangslage (geprüft 2026-11-19)
 
@@ -23,11 +23,11 @@ Diese Datei ist das Arbeitsgedächtnis der Orchestrierung. Stand: 2026-11-19.
 
 | Paket | Inhalt | Ausführung | Branch / PR | Status | Blocker |
 |---|---|---|---|---|---|
-| A | Review #218, Merge-Entscheidung | Opus-Review-Agent | #218 | Review läuft | Erik-OK nötig |
+| A | Review #218, Merge-Entscheidung | Opus-Review-Agent | #218 | Review fertig: mergen mit Folgearbeiten | Erik-OK nötig |
 | B | Debug-Build Messtag (Shadow in Aufnahme, Beacon-Liste, Schalter, `APP_AUFS_IPHONE.md`) | – | – | wartet | Entscheidung #218 |
-| C | `check_testroom_beacons.sh`, Werte-Vorlage, Admin-Anleitung, Codex-Prompt | Sonnet-Agent | `field/beacon-check` | in Arbeit | – |
-| D | `MESSTAG.md`, Checkliste, Marker-Generator, Doku zusammenlegen | Sonnet-Agent | `docs/messtag` | Entwurf in Arbeit | Platzhalter für B |
-| E | `evaluate_field_day.sh`, synthetische Generalprobe, CI `field-tools.yaml` | Sonnet-Agent | `field/evaluate-field-day` | in Arbeit | Shadow-Anbindung nach B |
+| C | `check_testroom_beacons.sh`, Werte-Vorlage, Admin-Anleitung, Codex-Prompt | Sonnet-Agent | #222 | gemergt | Live: 5 Blocker, warten auf echte Werte |
+| D | `MESSTAG.md`, Checkliste, Marker-Generator, Doku zusammenlegen | Sonnet-Agent | #223 (Draft) | Lesetest 1 eingearbeitet | Platzhalter für B, Telefon Erik |
+| E | `evaluate_field_day.sh`, synthetische Generalprobe, CI `field-tools.yaml` | Sonnet-Agent | #224 | gemergt | Hook `shadow_comparison()` füllt B |
 | F | JaCoCo-Artefakt, Tests Error-Logs | – | – | optional | A–E fertig |
 
 ## Merge-Reihenfolge
