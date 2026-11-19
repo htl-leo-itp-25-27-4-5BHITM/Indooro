@@ -10,7 +10,7 @@ Lesen Sie jedes Beacon mit der Herstellerapp ab (siehe `CONFIGURE_BEACON.md`). E
 | Feld | Bedeutung |
 | --- | --- |
 | Etikett | Das, was auf dem Gerät oder dem Aufkleber steht, zum Beispiel `IND-1-1` (siehe `BEACON_STANDARD.md`, Abschnitt 4). |
-| Zelle (x,y) | Wo das Beacon im Raum hängt, in Metern vom Nullpunkt des Layouts, als `x,y` ohne Leerzeichen (zum Beispiel `5,9`); mit dem Maßband messen. |
+| Zelle (x,y) | Die Rasterzelle im Layout, in der das Beacon liegt, als `x,y` ohne Leerzeichen (zum Beispiel `5,9`). Das sind Layout-Rasterwerte, nicht Meter; sie stehen im Layout Editor beim Beacon. Der Wert muss zur Position im Raum passen (mit dem Maßband gegenprüfen). |
 | UUID | Die lange Kennung aus der Herstellerapp, mit oder ohne Bindestriche, genau so wie angezeigt. |
 | Major | Die erste Zahl der Kennung (Standortnummer), aus der Herstellerapp. |
 | Minor | Die zweite Zahl der Kennung (Beacon-Nummer), aus der Herstellerapp. |

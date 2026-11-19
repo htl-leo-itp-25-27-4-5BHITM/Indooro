@@ -65,7 +65,7 @@ Grundregel: **Eintragen darf nur, was jemand am Gerät abgelesen hat.** Keine UU
 
 ## Schritt 7: Prüfen
 
-1. Im Terminal erneut `scripts/field/check_testroom_beacons.sh`. Ziel: „Ergebnis: BEREIT“, Exit 0.
+1. Im Terminal erneut `scripts/field/check_testroom_beacons.sh`. Ziel: Exit 0. Ohne gespeicherte Bereitschaft steht dort nur „Keine Beacon-Blocker (Bereitschaftsprüfung nicht geprüft)“; „Ergebnis: BEREIT“ erscheint erst, wenn auch die Bereitschaft (Punkt 3, `--readiness-json`) geprüft wurde und keine Blocker meldet.
 2. Mit den abgelesenen Werten vergleichen:
 
    ```text
