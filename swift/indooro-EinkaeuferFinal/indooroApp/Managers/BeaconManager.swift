@@ -382,6 +382,9 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }
         NavigationRecorder.shared.layoutProvider = { [weak self] in self?.currentLayoutRecord }
         #endif
+        #if DEBUG
+        NavigationRecorder.shared.shadowEngineRunning = shadowEnabled
+        #endif
         if shadowEnabled {
             shadowPositioning = ShadowPositioning(
                 dependencies: dependencies,
@@ -958,6 +961,15 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         for rangedBeacon in rangedBeacons {
             let detectedBeacon = DetectedStoreBeacon(rangedBeacon: rangedBeacon)
             let lookupRSSI = rangedBeacon.rssi < 0 ? rangedBeacon.rssi : minimumStoreLookupRSSI
+            #if DEBUG
+            // Rohwert fuer die Sichtpruefung: RSSI 0 heisst „kein Messwert“, dann bleibt der Eintrag stehen und wird grau.
+            if rangedBeacon.rssi != 0 {
+                LiveBeaconStore.shared.observe(
+                    uuid: detectedBeacon.uuidLookupKey, major: detectedBeacon.major, minor: detectedBeacon.minor,
+                    rssi: rangedBeacon.rssi
+                )
+            }
+            #endif
             appendDebugLog(
                 "iBeacon geranged uuid=\(detectedBeacon.uuidLookupKey) major=\(detectedBeacon.major) minor=\(detectedBeacon.minor) rssi=\(rangedBeacon.rssi)",
                 key: "ranged-ibeacon-\(detectedBeacon.uuidLookupKey)",
@@ -1136,11 +1148,6 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     }
 
     private func handleDetectedStoreBeacon(_ beacon: DetectedStoreBeacon, rssi: Int) {
-        #if DEBUG
-        LiveBeaconStore.shared.observe(
-            uuid: beacon.uuidLookupKey, major: beacon.major, minor: beacon.minor, rssi: rssi
-        )
-        #endif
         guard rssi >= minimumStoreLookupRSSI else {
             appendDebugLog(
                 "Store-Beacon RSSI ignoriert uuid=\(beacon.uuidLookupKey) rssi=\(rssi)",
@@ -2303,6 +2310,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 key: "ibeacon-\(storeBeacon.uuidLookupKey)",
                 minInterval: 2
             )
+            #if DEBUG
+            if RSSI.intValue < 0 {
+                LiveBeaconStore.shared.observe(
+                    uuid: storeBeacon.uuidLookupKey, major: storeBeacon.major, minor: storeBeacon.minor,
+                    rssi: RSSI.intValue
+                )
+            }
+            #endif
             handleDetectedStoreBeacon(storeBeacon, rssi: RSSI.intValue)
 
             if let matchedBeaconName = matchingBeaconName(
