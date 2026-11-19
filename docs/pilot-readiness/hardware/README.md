@@ -7,6 +7,9 @@ Status: Entwurf. Gehört zu `openspec/changes/establish-pilot-field-measurement/
 | Datei | Inhalt |
 | --- | --- |
 | `BEACON_STANDARD.md` | Projekt-UUID, Major und Minor, Startwerte, Etikett, Montageregeln, Abstand 6 bis 8 m |
+| `TESTRAUM_BEACON_WERTE.md` | Vorlage für die am Gerät abgelesenen Beacon-Werte des Testraums (Eingabe für `scripts/field/check_testroom_beacons.sh`) |
+| `ADMIN_BEACONS_EINTRAGEN.md` | Schritt-für-Schritt-Anleitung: Beacons im Admin eintragen, im Layout platzieren, Eingang setzen, veröffentlichen, prüfen |
+| `codex/CODEX_BEACON_EINTRAGUNG.md` | Fertiger Codex-Auftrag für das Eintragen im Browser (mit Verbotsliste, Sicherung, Rücknahme-Regel) |
 | `beacons.csv` | Konfigurationsdatensatz der Beacons (nur Kopfzeile, Daten offen) |
 | `CONFIGURE_BEACON.md` | Schritte zur Konfiguration, Log-Schlüssel für die Prüfung der Identität |
 | `HARDWARE_SELECTION.md` | Auswahl des Beacon-Modells (Stub, Vergleich offen) |

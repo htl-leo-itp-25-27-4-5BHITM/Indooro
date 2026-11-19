@@ -1,4 +1,4 @@
-"""Tests fuer positioning_verdict.py (Entscheidungsregel, mechanisch)."""
+"""Tests für positioning_verdict.py (Entscheidungsregel, mechanisch)."""
 
 import contextlib
 import io
@@ -72,6 +72,12 @@ class VerdictTests(unittest.TestCase):
         out = self.verdict(self.runs(3, engine={"median": 1.8, "p90": 3.8, "outageRate": 0.025, "jumpRate": 0.035}))
         self.assertIn("ERGEBNIS: GLEICHWERTIG", out)
 
+    def test_rates_only_worse_is_worse_with_equal_errors(self):
+        out = self.verdict(self.runs(3, engine={"outageRate": 0.04}))  # +2 pp outage, median and P90 equal
+        self.assertIn("ERGEBNIS: SCHLECHTER", out)
+        out = self.verdict(self.runs(3, engine={"jumpRate": 0.06}))
+        self.assertIn("ERGEBNIS: SCHLECHTER", out)
+
     def test_worse_engine_is_worse(self):
         out = self.verdict(self.runs(3, engine={"median": 2.6}))
         self.assertIn("ERGEBNIS: SCHLECHTER", out)
@@ -89,7 +95,7 @@ class VerdictTests(unittest.TestCase):
         datas[1]["session"]["role"] = "calibration"
         datas[2]["session"] = None
         out = self.verdict(datas)
-        self.assertIn("Bewertungslaeufe gezaehlt: 0", out)
+        self.assertIn("Bewertungsläufe gezählt: 0", out)
         self.assertIn("synthetisch", out)
         self.assertIn("calibration", out)
         self.assertIn("unbekannt", out)
@@ -103,8 +109,66 @@ class VerdictTests(unittest.TestCase):
         datas = self.runs(3, engine={"median": 1.0, "p90": 2.0})
         datas[1]["recording"]["sha256"] = datas[0]["recording"]["sha256"]
         out = self.verdict(datas)
-        self.assertIn("Bewertungslaeufe gezaehlt: 2", out)
+        self.assertIn("Bewertungsläufe gezählt: 2", out)
         self.assertIn("Datenleck", out)
+
+    def test_exactly_minus_zero_point_three_meter_passes_despite_float_noise(self):
+        # 2.0 - 1.7 = 0.30000000000000004 in floating point; the document says "<= -0.3 m" passes.
+        out = self.verdict(self.runs(3, engine={"median": 1.7, "p90": 3.7}))
+        self.assertIn("ERGEBNIS: BESSER", out)
+
+    def test_just_inside_the_tolerance_is_not_better(self):
+        out = self.verdict(self.runs(3, engine={"median": 1.71, "p90": 3.71}))
+        self.assertIn("ERGEBNIS: GLEICHWERTIG", out)
+
+    def test_exactly_one_percentage_point_more_outage_is_still_allowed(self):
+        out = self.verdict(self.runs(3, engine={"median": 1.5, "p90": 3.5, "outageRate": 0.03, "jumpRate": 0.04}))
+        self.assertIn("ERGEBNIS: BESSER", out)
+
+    def test_exactly_plus_and_minus_one_percentage_point_are_inside_the_tolerance(self):
+        # Doc condition 4/5: "höchstens +1 Prozentpunkt" passes; a difference of exactly 1 pp counts as equal, in both directions.
+        for engine in ({"outageRate": 0.03}, {"outageRate": 0.01}, {"jumpRate": 0.04}, {"jumpRate": 0.02}):
+            out = self.verdict(self.runs(3, engine=engine))
+            self.assertIn("ERGEBNIS: GLEICHWERTIG", out, engine)
+
+    def test_just_beyond_one_percentage_point_is_outside_the_tolerance(self):
+        self.assertIn("ERGEBNIS: SCHLECHTER", self.verdict(self.runs(3, engine={"outageRate": 0.0301})))
+        self.assertIn("ERGEBNIS: GEMISCHT", self.verdict(self.runs(3, engine={"outageRate": 0.0099})))
+
+    def test_recording_named_synthetic_never_counts_even_if_the_origin_claims_field(self):
+        datas = self.runs(3, engine={"median": 1.0, "p90": 2.0})
+        datas[0]["recording"]["name"] = "synthetic-testraum-1.jsonl"
+        out = self.verdict(datas)
+        self.assertIn("Bewertungsläufe gezählt: 2", out)
+
+    def test_rehearsal_recordings_are_not_field_runs_unless_explicitly_allowed(self):
+        datas = [comparison(f"rehearsal-eval-{i}.jsonl", f"{i:064d}", engine={"median": 1.0, "p90": 2.0}) for i in range(3)]
+        paths = [self.write(i, d) for i, d in enumerate(datas)]
+        denied = pv.evaluate(paths)
+        self.assertEqual(denied.verdict, "EXPLORATIV")
+        self.assertEqual(len(denied.accepted), 0)
+        self.assertIn("Probeaufnahme", denied.rejected[0][1])
+        allowed = pv.evaluate(paths, allow_rehearsal=True)
+        self.assertEqual(allowed.verdict, "BESSER")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            pv.main([str(p) for p in paths] + ["--allow-rehearsal"])
+        self.assertIn("ERGEBNIS: BESSER", out.getvalue())
+
+    def test_criteria_name_each_failed_condition(self):
+        paths = [self.write(i, d) for i, d in enumerate(self.runs(3, engine={"median": 1.5, "p90": 3.5, "outageRate": 0.05}))]
+        result = pv.evaluate(paths)
+        by_number = {c.number: c for c in pv.criteria(result.accepted, result.mean)}
+        self.assertEqual([by_number[n].passed for n in (1, 2, 3, 4, 5)], [True, True, True, False, True])
+        self.assertIn("Ausfallrate", by_number[4].text)
+
+    def test_criteria_report_the_run_that_is_clearly_worse(self):
+        datas = self.runs(3, engine={"median": 1.2, "p90": 3.0})
+        datas[2]["summary"]["engine"]["median"] = 2.5
+        result = pv.evaluate([self.write(i, d) for i, d in enumerate(datas)])
+        median = {c.number: c for c in pv.criteria(result.accepted, result.mean)}[2]
+        self.assertFalse(median.passed)
+        self.assertIn("testraum-2.jsonl", median.text)
 
     def test_wrong_schema_is_an_input_error(self):
         path = self.write(0, {"schema": "other/1"})

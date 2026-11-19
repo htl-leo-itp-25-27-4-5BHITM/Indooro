@@ -125,7 +125,15 @@ class TickTests(unittest.TestCase):
             wr.parse_ticks("")
 
     def test_jump_constants_match_config(self):
-        config = (Path(__file__).resolve().parents[2] / "swift/indooro-EinkaeuferFinal/indooroApp/Utilities/StabilizedNavigationConfig.swift").read_text(encoding="utf-8")
+        root = Path(__file__).resolve().parents[2] / "swift/indooro-EinkaeuferFinal"
+        candidates = [
+            root / "Packages/IndooroKit/Sources/IndooroNavigation/StabilizedNavigationConfig.swift",
+            root / "indooroApp/Utilities/StabilizedNavigationConfig.swift",
+        ]
+        path = next((p for p in candidates if p.is_file()), None)
+        if path is None:
+            self.fail("StabilizedNavigationConfig.swift not found at: " + ", ".join(map(str, candidates)))
+        config = path.read_text(encoding="utf-8")
         self.assertIn(f"var maxPlausibleSpeed: Float = {wr.JUMP_SPEED_MPS}", config)
         self.assertIn(f"var jumpMargin: Float = {wr.JUMP_MARGIN_M}", config)
 

@@ -11,6 +11,7 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build",
+    "package:backend": "npm run typecheck && vite build --outDir ../backend/indooro_server/src/main/resources/META-INF/resources/showcase --emptyOutDir",
     "preview": "vite preview --port 4317 --strictPort",
     "test": "vitest run",
     "test:e2e": "playwright test",
