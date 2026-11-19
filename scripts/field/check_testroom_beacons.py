@@ -43,10 +43,26 @@ class CheckError(Exception):
 Fetcher = Callable[[str, Dict[str, str]], bytes]
 
 
+class NoAuthOnRedirect(urllib.request.HTTPRedirectHandler):
+    """Gibt den Admin-Token nie an eine Weiterleitung weiter."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        new = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if new is not None:
+            for name in list(new.headers):
+                if name.lower() == "authorization":
+                    del new.headers[name]
+            for name in list(new.unredirected_hdrs):
+                if name.lower() == "authorization":
+                    del new.unredirected_hdrs[name]
+        return new
+
+
 def http_get(url: str, headers: Dict[str, str]) -> bytes:
     request = urllib.request.Request(url, method="GET", headers={"Accept": "application/json", **headers})
+    opener = urllib.request.build_opener(NoAuthOnRedirect)
     try:
-        with urllib.request.urlopen(request, timeout=TIMEOUT_S) as response:
+        with opener.open(request, timeout=TIMEOUT_S) as response:
             return response.read()
     except urllib.error.HTTPError as error:
         raise CheckError(f"{url}: Server antwortet mit HTTP {error.code}")
@@ -75,8 +91,12 @@ def as_int(value: object) -> Optional[int]:
         return None
     if isinstance(value, int):
         return value
+    if isinstance(value, float):
+        return int(value) if value.is_integer() else None
     text = str(value).strip()
-    return int(text) if re.fullmatch(r"-?\d+", text) else None
+    if re.fullmatch(r"-?\d+(\.0+)?", text):
+        return int(float(text))
+    return None
 
 
 class Report:
@@ -84,6 +104,7 @@ class Report:
         self.blockers: List[str] = []
         self.warnings: List[str] = []
         self.infos: List[str] = []
+        self.readiness_checked = False
 
     def blocker(self, text: str) -> None:
         self.blockers.append(text)
@@ -154,9 +175,13 @@ def check_layout_and_registry(report: Report, layout_response: object, identitie
         elif uuid not in registered_set:
             report.blocker(f"{name} {pos}: UUID {short(uuid)} steht im Layout, ist aber nicht registriert "
                            "(fehlt in beacon-identities). Im Admin unter Beacons anlegen und dem Markt zuweisen.")
+        for label_, raw in (("Major", beacon.get("major")), ("Minor", beacon.get("minor"))):
+            if raw is not None and as_int(raw) is None:
+                report.blocker(f"{name} {pos}: {label_} {raw!r} ist keine ganze Zahl.")
         if major is None or minor is None:
-            fehlt = " und ".join(n for n, v in (("Major", major), ("Minor", minor)) if v is None)
-            report.blocker(f"{name} {pos}: {fehlt} {'fehlen' if ' und ' in fehlt else 'fehlt'}. Ohne Major und Minor ordnet die App das Beacon nicht sicher zu.")
+            fehlt = " und ".join(n for n, v in (("Major", beacon.get("major")), ("Minor", beacon.get("minor"))) if v is None)
+            if fehlt:
+                report.blocker(f"{name} {pos}: {fehlt} {'fehlen' if ' und ' in fehlt else 'fehlt'}. Ohne Major und Minor ordnet die App das Beacon nicht sicher zu.")
         else:
             identities_seen.setdefault((uuid, major, minor), []).append(name)
             mm_seen.setdefault((major, minor), []).append(beacon)
@@ -204,8 +229,8 @@ def parse_values(text: str) -> List[Dict[str, str]]:
         if not line or line.startswith("#"):
             continue
         parts = [p.strip() for p in line.split(";")]
-        if len(parts) < 8:
-            raise CheckError(f"Werte-Zeile hat zu wenige Felder (erwartet 8, gefunden {len(parts)}): {line}")
+        if len(parts) != 8:
+            raise CheckError(f"Werte-Zeile hat {len(parts)} statt 8 Felder (Strichpunkt im Text? Nicht erlaubt): {line}")
         keys = ["etikett", "zelle", "uuid", "major", "minor", "admin_name", "tx_power", "gelesen"]
         rows.append(dict(zip(keys, parts[:8])))
     return rows
@@ -278,7 +303,11 @@ def render(report: Report) -> str:
     if report.blockers:
         lines.append(f"Ergebnis: NICHT BEREIT. {len(report.blockers)} Blocker. Exit 1.")
     else:
-        lines.append("Ergebnis: BEREIT. Keine Blocker." + (" Hinweise beachten." if report.warnings else ""))
+        hint = " Hinweise beachten." if report.warnings else ""
+        if report.readiness_checked:
+            lines.append("Ergebnis: BEREIT. Keine Blocker." + hint)
+        else:
+            lines.append("Ergebnis: Keine Beacon-Blocker (Bereitschaftspruefung nicht geprueft)." + hint)
     return "\n".join(lines)
 
 
@@ -292,6 +321,8 @@ def load_file(path: str, what: str) -> bytes:
 
 def run(args: argparse.Namespace, fetch: Fetcher, env: Dict[str, str]) -> Report:
     base = args.base_url.rstrip("/")
+    if env.get("INDOORO_ADMIN_TOKEN") and not args.readiness_json and not base.lower().startswith("https://"):
+        raise CheckError("INDOORO_ADMIN_TOKEN wird nur ueber https gesendet. Bitte eine https-Adresse verwenden oder --readiness-json nutzen.")
     if args.layout_json:
         layout = parse_json(load_file(args.layout_json, "Layout-Datei"), args.layout_json)
     else:
@@ -314,6 +345,7 @@ def run(args: argparse.Namespace, fetch: Fetcher, env: Dict[str, str]) -> Report
         readiness = parse_json(fetch(url, {"Authorization": "Bearer " + env["INDOORO_ADMIN_TOKEN"]}), "Bereitschaft")
     if readiness is not None:
         check_readiness(report, readiness)
+        report.readiness_checked = True
     else:
         report.warn("Bereitschaft nicht geprueft (weder INDOORO_ADMIN_TOKEN noch --readiness-json angegeben).")
 
@@ -341,6 +373,9 @@ def main(argv: Optional[Sequence[str]] = None, fetch: Fetcher = http_get, env: O
         report = run(args, fetch, dict(os.environ) if env is None else env)
     except CheckError as error:
         print(f"Fehler: {error}", file=sys.stderr)
+        return 2
+    except Exception as error:  # noqa: BLE001 - jeder unerwartete Fehler ist ein Aufruf-/Datenfehler
+        print(f"Fehler: Unerwartetes Problem ({type(error).__name__}: {error}). Eingabedateien und Aufruf pruefen.", file=sys.stderr)
         return 2
     print(render(report), file=out)
     return 1 if report.blockers else 0

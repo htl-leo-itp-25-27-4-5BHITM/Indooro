@@ -207,5 +207,55 @@ class Cli(unittest.TestCase):
         self.assertNotIn("geheim", out.getvalue())
 
 
+class Review(unittest.TestCase):
+    def test_token_refused_over_http(self):
+        calls = []
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            code = c.main(["--base-url", "http://example.test"], fetch=lambda u, h: calls.append(u) or b"{}",
+                          env={"INDOORO_ADMIN_TOKEN": "geheim"}, out=io.StringIO())
+        self.assertEqual(code, 2)
+        self.assertIn("https", err.getvalue())
+        self.assertNotIn("geheim", err.getvalue())
+
+    def test_redirect_strips_authorization(self):
+        import urllib.request
+        req = urllib.request.Request("https://a.test/x", headers={"Authorization": "Bearer geheim"})
+        new = c.NoAuthOnRedirect().redirect_request(req, None, 302, "Found", {}, "https://b.test/y")
+        self.assertFalse(any(k.lower() == "authorization" for k in list(new.headers) + list(new.unredirected_hdrs)))
+
+    def test_integral_float_accepted_fraction_rejected(self):
+        self.assertEqual(c.as_int(3.0), 3)
+        self.assertEqual(c.as_int("3.0"), 3)
+        self.assertIsNone(c.as_int(3.5))
+        beacons = [dict(b) for b in GOOD_BEACONS]
+        beacons[0]["major"] = 1.0
+        beacons[1]["minor"] = 2.5
+        report = analyse(layout(beacons, entrances=1), GOOD_IDENTITIES)
+        self.assertTrue(has(report.blockers, "Indooro2", "keine ganze Zahl"))
+        self.assertFalse(has(report.blockers, "Indooro1"))
+
+    def test_unexpected_exception_is_exit_two(self):
+        def fetch(url, headers):
+            raise RuntimeError("kaputt")
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            code = c.main([], fetch=fetch, env={}, out=io.StringIO())
+        self.assertEqual(code, 2)
+        self.assertIn("Unerwartetes Problem", err.getvalue())
+
+    def test_values_row_with_too_many_fields(self):
+        with self.assertRaises(c.CheckError):
+            c.parse_values(values_text(["a;1,1;u;1;1;n;-12;Erik;extra"]))
+
+    def test_result_wording_depends_on_readiness(self):
+        r = analyse(GOOD_LAYOUT, GOOD_IDENTITIES)
+        self.assertIn("nicht geprueft", c.render(r))
+        self.assertNotIn("Ergebnis: BEREIT", c.render(r))
+        r = c.Report()
+        r.readiness_checked = True
+        self.assertIn("Ergebnis: BEREIT", c.render(r))
+
+
 if __name__ == "__main__":
     unittest.main()
