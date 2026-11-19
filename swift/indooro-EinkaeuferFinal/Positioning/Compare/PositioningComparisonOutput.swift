@@ -135,8 +135,8 @@ extension PositioningComparisonResult {
         )
         if session == nil {
             list.append("Keine session-Zeile (Format 1): Rolle und Szenario sind unbekannt.")
-        } else if session?.role == .calibration {
-            list.append("Rolle calibration: diese Aufnahme zaehlt nicht zur Bewertung (POSITIONING_DECISION.md).")
+        } else if session?.role == .calibration || session?.role == .exploration {
+            list.append("Rolle \(session?.role?.rawValue ?? ""): diese Aufnahme zaehlt nicht zur Bewertung (POSITIONING_DECISION.md).")
         } else if session?.role == nil {
             list.append("Die session-Zeile nennt keine Rolle: unklar, ob Kalibrierung oder Bewertung.")
         }

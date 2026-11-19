@@ -250,10 +250,17 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     private let startTime = Date()
     /// Neue Ortungs-Engine im Schattenbetrieb; `nil`, solange der Schalter aus ist (Standard).
     private var shadowPositioning: ShadowPositioning?
+    private let engineDrivesNavigation: Bool
+    /// Letzter Tick der alten Ortung (nur fuer die `shadow`-Zeile, siehe `LegacyTickTracker`).
+    let legacyTicks = LegacyTickTracker()
+    /// Laeuft die Schatten-Engine (nur mit Schalter)? Fuer Tests und die Debug-Anzeige.
+    var hasShadowEngine: Bool { shadowPositioning != nil }
 
-    /// Strom der Engine-Snapshots fuer `NavigationSession`; `nil`, solange der Schalter aus ist.
+    /// Strom der Engine-Snapshots fuer `NavigationSession`; `nil`, solange die Engine die Navigation nicht fuehrt.
+    /// Der Schattenmodus allein reicht nicht (nur Aufzeichnung): dazu braucht es `isEngineDrivingNavigation`.
     func positionSnapshots() -> AsyncStream<PositionSnapshot>? {
-        shadowPositioning?.snapshots()
+        guard engineDrivesNavigation else { return nil }
+        return shadowPositioning?.snapshots()
     }
     nonisolated(unsafe) private let locationManager = CLLocationManager()
     private var rangingConstraints: [CLBeaconIdentityConstraint] = []
@@ -358,7 +365,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     static let isUITesting = ProcessInfo.processInfo.arguments.contains("-uiTesting")
     #endif
 
-    init(dependencies: AppDependencies = .live) {
+    /// `shadowEnabled`/`engineDrivesNavigation` sind nur fuer Tests ueberschreibbar; die App nimmt die Schalter
+    /// aus `AppEnvironment` (Info.plist, DEBUG: Einstellungen und Umgebung).
+    init(
+        dependencies: AppDependencies = .live,
+        shadowEnabled: Bool = AppEnvironment.isShadowPositioningEnabled,
+        engineDrivesNavigation: Bool = AppEnvironment.isEngineDrivingNavigation
+    ) {
+        self.engineDrivesNavigation = shadowEnabled && engineDrivesNavigation
         super.init()
         appendDebugLog("BeaconManager init")
         #if DEBUG
@@ -368,8 +382,22 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         }
         NavigationRecorder.shared.layoutProvider = { [weak self] in self?.currentLayoutRecord }
         #endif
-        if AppEnvironment.isShadowPositioningEnabled {
-            shadowPositioning = ShadowPositioning(dependencies: dependencies, legacyPosition: { [weak self] in self?.userPosition })
+        #if DEBUG
+        NavigationRecorder.shared.shadowEngineRunning = shadowEnabled
+        #endif
+        if shadowEnabled {
+            shadowPositioning = ShadowPositioning(
+                dependencies: dependencies,
+                legacyPosition: { [weak self] in self?.userPosition },
+                legacySide: { [weak self] in
+                    guard let self else { return ShadowSide(status: "none") }
+                    // 1,5 Ticks: ein Tick, der knapp vor dem Lesen liegt, darf nicht als Ausfall zaehlen.
+                    return self.legacyTicks.side(
+                        now: Date().timeIntervalSince1970,
+                        maxAge: self.navigationConfig.beacon.updateIntervalSeconds * 1.5
+                    )
+                }
+            )
         }
         loadBundleLayoutFallback()
         startMotionUpdates()
@@ -690,6 +718,12 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             }
         }
 
+        if shadowPositioning != nil {
+            legacyTicks.record(
+                point: tick.projectedPoint.map { CGPoint($0) }, trusted: isTrusted, at: tick.timestamp
+            )
+        }
+
         navigationSamples.send(
             NavigationSample(
                 projectedPosition: tick.projectedPoint,
@@ -927,6 +961,15 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
         for rangedBeacon in rangedBeacons {
             let detectedBeacon = DetectedStoreBeacon(rangedBeacon: rangedBeacon)
             let lookupRSSI = rangedBeacon.rssi < 0 ? rangedBeacon.rssi : minimumStoreLookupRSSI
+            #if DEBUG
+            // Rohwert fuer die Sichtpruefung: RSSI 0 heisst „kein Messwert“, dann bleibt der Eintrag stehen und wird grau.
+            if rangedBeacon.rssi != 0 {
+                LiveBeaconStore.shared.observe(
+                    uuid: detectedBeacon.uuidLookupKey, major: detectedBeacon.major, minor: detectedBeacon.minor,
+                    rssi: rangedBeacon.rssi
+                )
+            }
+            #endif
             appendDebugLog(
                 "iBeacon geranged uuid=\(detectedBeacon.uuidLookupKey) major=\(detectedBeacon.major) minor=\(detectedBeacon.minor) rssi=\(rangedBeacon.rssi)",
                 key: "ranged-ibeacon-\(detectedBeacon.uuidLookupKey)",
@@ -2267,6 +2310,14 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 key: "ibeacon-\(storeBeacon.uuidLookupKey)",
                 minInterval: 2
             )
+            #if DEBUG
+            if RSSI.intValue < 0 {
+                LiveBeaconStore.shared.observe(
+                    uuid: storeBeacon.uuidLookupKey, major: storeBeacon.major, minor: storeBeacon.minor,
+                    rssi: RSSI.intValue
+                )
+            }
+            #endif
             handleDetectedStoreBeacon(storeBeacon, rssi: RSSI.intValue)
 
             if let matchedBeaconName = matchingBeaconName(

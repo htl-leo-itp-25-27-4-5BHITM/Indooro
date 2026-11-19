@@ -59,10 +59,12 @@ final class NavigationSession: ObservableObject {
     private var lastTickTimestamp: TimeInterval = 0
     private weak var beaconManager: BeaconManager?
     private var cancellables = Set<AnyCancellable>()
-    /// Snapshot-Modus (Schalter `AppEnvironment.isShadowPositioningEnabled`): Positionsticks kommen aus dem
+    /// Snapshot-Modus (Schalter `AppEnvironment.isEngineDrivingNavigation`): Positionsticks kommen aus dem
     /// `PositionSnapshot`-Strom der Engine statt aus `BeaconManager.navigationSamples`.
     private var snapshotTask: Task<Void, Never>?
     private var usesSnapshotStream = false
+    /// Kommen die Routen-Ticks aus der Engine (statt aus `BeaconManager.navigationSamples`)? Fuer Tests und Diagnose.
+    var isUsingEngineSnapshots: Bool { usesSnapshotStream }
     private var snapshotPosition: SIMD2<Float>?
     private var snapshotTrusted = false
 

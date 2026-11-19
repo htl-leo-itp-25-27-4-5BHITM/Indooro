@@ -17,6 +17,8 @@ struct SettingsSheet: View {
     #if DEBUG
     @ObservedObject private var recorder = NavigationRecorder.shared
     @State private var shareURL: URL?
+    @State private var shadowEnabled = AppEnvironment.isShadowPositioningEnabled
+    @State private var engineDrivesNavigation = AppEnvironment.isEngineDrivingNavigation
     #endif
 
     var body: some View {
@@ -86,6 +88,30 @@ struct SettingsSheet: View {
                         Text("Pilot").tag("pilot")
                         Text("Vollständig").tag("full")
                     }
+                    Toggle("Schattenmodus (alt + neu aufzeichnen)", isOn: $shadowEnabled)
+                        .disabled(recorder.isRecording)
+                        .onChange(of: shadowEnabled) { _, value in
+                            UserDefaults.standard.set(value, forKey: AppEnvironment.shadowOverrideKey)
+                            if !value {
+                                engineDrivesNavigation = false
+                                UserDefaults.standard.set(false, forKey: AppEnvironment.engineNavigationOverrideKey)
+                            }
+                        }
+                    if shadowEnabled {
+                        Toggle("Neue Ortung steuert Navigation", isOn: $engineDrivesNavigation)
+                            .disabled(recorder.isRecording)
+                            .onChange(of: engineDrivesNavigation) { _, value in
+                                UserDefaults.standard.set(value, forKey: AppEnvironment.engineNavigationOverrideKey)
+                            }
+                        Text("Für Messungen aus lassen: Karte und Route bleiben bei der alten Ortung, die neue wird nur aufgezeichnet.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    LabeledContent("Schatten-Engine läuft", value: recorder.shadowEngineRunning ? "ja" : "nein")
+                    Text("Schalter wirken nach dem nächsten App-Start (App beenden und neu öffnen). „Schatten-Engine läuft“ zeigt, was gerade gilt.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
                     Toggle("Messungen aufzeichnen", isOn: Binding(
                         get: { recorder.isRecording },
                         set: { $0 ? recorder.start() : recorder.stop() }
@@ -102,6 +128,7 @@ struct SettingsSheet: View {
                         Text("keine").tag(SessionRole?.none)
                         Text("Kalibrierung").tag(SessionRole?.some(.calibration))
                         Text("Evaluation").tag(SessionRole?.some(.evaluation))
+                        Text("Exploration").tag(SessionRole?.some(.exploration))
                     }
                     .disabled(recorder.isRecording)
                     Picker("Marker", selection: $recorder.selectedMarker) {
@@ -111,6 +138,19 @@ struct SettingsSheet: View {
                         }
                     }
                     if recorder.isRecording {
+                        // Schnellauswahl Testraum: setzt Marker und Wahrheit auf die Zellmitte, kein Kartentipp noetig.
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 8) {
+                            ForEach(TestRoomMarkers.numbers, id: \.self) { number in
+                                Button("M\(number)") { recorder.recordTestRoomMarker(number) }
+                                    .buttonStyle(.borderedProminent)
+                                    .tint(recorder.selectedMarker == number ? .green : .blue)
+                                    .accessibilityIdentifier("marker-quick-M\(number)")
+                            }
+                        }
+                        .padding(.vertical, 4)
+                        Text("Am Marker stehen: ein Tipp schreibt Marker und Wahrheit an die Zellmitte. Einmal beim Ankommen, einmal vor dem Weitergehen tippen (zwei Tipps bilden die Standzeit).")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                         Button("Sync-Marke setzen") {
                             recorder.recordSync()
                         }
@@ -137,9 +177,18 @@ struct SettingsSheet: View {
                         }
                     }
 
+                    Text("Export: Aufnahme antippen (Teilen-Blatt), z. B. „In Dateien sichern“ oder AirDrop. Alternativ Dateien-App, Auf meinem iPhone, Indooro, NavigationRecordings.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                     Text("Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu aendern. Szenario und Rolle gelten ab dem Start der Aufnahme, der Marker ab dem naechsten Wahrheitsmarker.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                #endif
+
+                #if DEBUG
+                Section("Beacons live") {
+                    LiveBeaconList()
                 }
                 #endif
 
@@ -177,3 +226,37 @@ struct SettingsSheet: View {
         }
     }
 }
+
+#if DEBUG
+/// Alle gehoerten iBeacons nach RSSI sortiert (Sichtpruefung vor Ort: Sind alle vier Beacons da, wie stark?).
+private struct LiveBeaconList: View {
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { context in
+            let entries = LiveBeaconStore.shared.snapshot()
+            if entries.isEmpty {
+                Text("Noch keine Beacons gehört. Modus „Mit Ortung“ wählen, Bluetooth und Standort erlauben.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(entries) { entry in
+                    let age = context.date.timeIntervalSince(entry.lastSeen)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            Text("Major \(entry.major) / Minor \(entry.minor)").font(.subheadline.monospacedDigit())
+                            Spacer()
+                            Text(entry.rssi < 0 ? "\(entry.rssi) dBm" : "– dBm").font(.subheadline.monospacedDigit())
+                        }
+                        Text("\(entry.uuid) · vor \(Int(max(age, 0))) s")
+                            .font(.system(.caption2, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
+                    }
+                    .opacity(age > 5 ? 0.4 : 1)
+                }
+            }
+        }
+        Button("Liste leeren", role: .destructive) { LiveBeaconStore.shared.clear() }
+    }
+}
+#endif

@@ -62,6 +62,23 @@ python -I scripts/field/positioning_verdict.py swift/indooro-EinkaeuferFinal/Nav
 - Exit 0 fertig, 1 Anonymisierung oder Vergleich fehlgeschlagen, 2 Aufruf- oder Eingabefehler (Datei, Layout, Markt-Code), 3 keine Epoche mit Referenz (keine Wahrheitsmarken; die Positionen sind geschrieben, Kennzahlen fehlen).
 - Direkter Aufruf ohne Wrapper: `cd swift/indooro-EinkaeuferFinal && swift run compare-positioning <datei>.jsonl --layout <layout.json> [--out DIR] [--name NAME] [--warmup S]`. Ohne `--out` wird nichts geschrieben.
 
+### Schattenmodus (alt und neu im selben Lauf)
+
+Mit dem Debug-Schalter **Schattenmodus (alt + neu aufzeichnen)** schreibt die App je Epoche der neuen Ortung eine `shadow`-Zeile in die Aufnahme. Das ist eine **additive Erweiterung von `indooro-recording/2`** (kein neues Schema): Ältere Leser überspringen unbekannte Zeilentypen, Replay und Analyse ignorieren sie. Aufnahmen ohne die Zeile bleiben unverändert gültig.
+
+```json
+{"type":"shadow","t":1795000012.35,"legacy":{"x":4.4,"y":7.1,"status":"tracking"},"engine":{"x":4.5,"y":7.4,"status":"tracking","confidence":0.82}}
+```
+
+- `legacy`: Anzeige der bisherigen Ortung (`status`: `none` ohne Position, `lowConfidence`, `tracking`). `engine`: neue Ortung (`status`: `stopped`, `warmingUp`, `searching`, `lowConfidence`, `tracking`, `manual`; `confidence` 0 bis 1). `x`/`y` (Meter, Layout-Koordinaten wie `truth`) fehlen, wenn die Seite keine Position hat. Kein Freitext; die Anonymisierungsprüfung kennt den Typ.
+- Beide Seiten tragen optional `t`: den Zeitstempel ihrer Quelle (Tick der alten Ortung, Snapshot der Engine). Der `t` der Zeile ist der Schreibzeitpunkt; der Versatz zwischen den Seiten beträgt höchstens einen Tick (0,35 s) und fließt in die Fehler ein. Die `session`-Zeile hat `shadowMode` (lief die Schatten-Auswertung in dieser App-Sitzung) und kennt die Rolle `exploration` (zählt wie `calibration` nie für die Entscheidung).
+- Wie der Replay lässt die Auswertung die ersten 1,2 s ab der ersten `shadow`-Zeile weg (`--warmup S`) und verwirft Epochen, in denen eine Seite `stopped` oder `warmingUp` meldet, für **beide** Wege (`excludedEpochs`). Ohne Wahrheitsmarker im Zeitraum wird der Lauf wie beim Replay nicht gezählt.
+- Der Schattenmodus nimmt nur auf: Karte, Route und Ankunft nutzen weiter die alte Ortung (der Schalter „Neue Ortung steuert Navigation“ ist separat und für Messungen aus).
+- `compare_positioning.py` erkennt `shadow`-Zeilen selbst und liest sie **direkt, ohne Swift und ohne Layout**: je Zeile Fehler beider Wege gegen die Wahrheitsmarker (gleiche Interpolation, Standzeiten und Kennzahl-Definitionen wie im Replay) und schreibt `<name>-comparison.json` mit `origin: "shadow"` (Epochen sind die `shadow`-Zeilen; die Zeilen beider Wege sind paarweise). `--replay` erzwingt den Replay, `--shadow` verlangt den Schattenmodus (Exit 2 ohne `shadow`-Zeilen).
+- `positioning_verdict.py` zählt `origin: "shadow"` wie `field` (echte Messung); `synthetic-` und `rehearsal-` zählen weiter nicht.
+- `evaluate_field_day.py` ruft das für jede Aufnahme mit `shadow`-Zeilen auf; der Bericht nennt dann „Schattenbetrieb“ als Quelle.
+- Probelauf: `python -I scripts/field/make_synthetic_recordings.py --out-dir DIR --shadow` schreibt zusätzlich `shadow`-Zeilen (synthetisch, keine Messung).
+
 ## Auswertung mit einem Befehl
 
 Nach dem Feldtag alle Aufnahmen eines Ordners auf einmal auswerten und die Entscheidung nach `POSITIONING_DECISION.md` ableiten (braucht macOS mit Xcode, weil Replay und Vergleich `swift` nutzen):
@@ -104,7 +121,7 @@ python -I scripts/field/check_recording_anonymized.py --allow-uuid 1234ABCD-... 
 python -I scripts/field/anonymize_recording.py roh.jsonl anonym.jsonl
 ```
 
-Format `indooro-recording/2`: Die Pruefung akzeptiert zusaetzlich `session` (Schema, App, Hardware-Modell, iOS-Version, optional Szenario/Rolle), `sync` (`label` = `sync-<n>`) und das optionale Feld `marker` (`M<n>`) in `truth`. Alle drei haben feste Muster und keinen Freitext; `session` mit weiteren Feldern wird abgelehnt. Die Analyse-Skripte ignorieren `session` und `sync`.
+Format `indooro-recording/2`: Die Pruefung akzeptiert zusaetzlich `session` (Schema, App, Hardware-Modell, iOS-Version, optional Szenario/Rolle), `sync` (`label` = `sync-<n>`) und das optionale Feld `marker` (`M<n>`) in `truth`. Alle drei haben feste Muster und keinen Freitext; `session` mit weiteren Feldern wird abgelehnt. Die Analyse-Skripte ignorieren `session` und `sync`. Zusätzlich (additiv, gleiches Schema) `shadow` mit den Seiten `legacy` und `engine` (nur Zahlen und feste Status-Werte), siehe Abschnitt Schattenmodus.
 
 - `--allow-uuid` erlaubt zusaetzliche Beacon-UUIDs. Standardmaessig erlaubt ist die Projekt-UUID aus `BEACON_STANDARD.md`.
 - `--allow-free-text` erlaubt `shopName` und Stopp-Titel. Fuer Import und Anonymisierung nicht noetig.
