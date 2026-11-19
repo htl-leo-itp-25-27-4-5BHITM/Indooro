@@ -6,6 +6,10 @@ Status: Entwurf. Gehört zu `openspec/changes/establish-pilot-field-measurement/
 
 | Datei | Inhalt |
 | --- | --- |
+| `MESSTAG.md` | **Einstieg für den Messtag Testraum** (Story #195): Vorbereitung, Beacons ablesen, Marker, Läufe, Auswertung, Fehlerbehebung |
+| `MESSTAG_CHECKLISTE.md` | Eine Seite zum Abhaken am Messtag |
+| `marker/MARKER_SPAR-Leonding-002.html` | Druckbogen der Bodenmarker (erzeugt mit `scripts/field/generate_marker_sheet.py`) |
+| `TESTRAUM_TAG.md` | Technische Ergänzung zum Messtag (Zusatzläufe, Einzelaufnahme-Befehl) |
 | `BEACON_STANDARD.md` | Projekt-UUID, Major und Minor, Startwerte, Etikett, Montageregeln, Abstand 6 bis 8 m |
 | `beacons.csv` | Konfigurationsdatensatz der Beacons (nur Kopfzeile, Daten offen) |
 | `CONFIGURE_BEACON.md` | Schritte zur Konfiguration, Log-Schlüssel für die Prüfung der Identität |
