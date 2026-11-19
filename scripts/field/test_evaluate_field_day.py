@@ -1,8 +1,8 @@
-"""Tests fuer evaluate_field_day.py (Generalprobe des Feldtags).
+"""Tests für evaluate_field_day.py (Generalprobe des Feldtags).
 
 Die beiden Swift-Schritte (Replay `swift test`, Vergleich `swift run compare-positioning`) sind durch `stub_swift.py`
-ersetzt: Getestet werden Anonymisierung, Pruefung, Regel, Bericht, Kommentar, Lab-Uebergabe und Exit-Codes auf Linux
-und macOS. Was nur auf macOS laeuft (echter Replay und Vergleich), deckt `scripts/field/README.md`
+ersetzt: Getestet werden Anonymisierung, Prüfung, Regel, Bericht, Kommentar, Lab-Übergabe und Exit-Codes auf Linux
+und macOS. Was nur auf macOS läuft (echter Replay und Vergleich), deckt `scripts/field/README.md`
 ("Auswertung mit einem Befehl", Probelauf) ab und nicht dieser Test.
 """
 
@@ -242,7 +242,7 @@ class Hooks(FieldDayCase):
         self.assertEqual(code, 0)
         self.assertIn("ERGEBNIS: BESSER", out)
         self.assertIn("Quelle des Vergleichs: Schattenbetrieb", self.report())
-        # Replay-Vergleich lief nur fuer die Kalibrierungsaufnahme, bei der der Hook None lieferte.
+        # Replay-Vergleich lief nur für die Kalibrierungsaufnahme, bei der der Hook None lieferte.
         self.assertEqual(self.compare_calls, ["rehearsal-calibration-1"])
 
     def test_default_shadow_hook_does_nothing(self):

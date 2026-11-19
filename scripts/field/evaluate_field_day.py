@@ -2,24 +2,24 @@
 """Feldtag in einem Befehl auswerten: alle Aufnahmen eines Ordners -> Entscheidung nach POSITIONING_DECISION.md.
 
 Schritte:
-  1. Jede Aufnahme anonymisieren und mit `check_recording_anonymized` pruefen. Bei einem Verstoss Abbruch,
-     bevor irgendetwas ausgewertet wird. Die Originale bleiben unveraendert.
+  1. Jede Aufnahme anonymisieren und mit `check_recording_anonymized` prüfen. Bei einem Verstoß Abbruch,
+     bevor irgendetwas ausgewertet wird. Die Originale bleiben unverändert.
   2. Je Aufnahme `analyze_walk` (Replay-Report) und der Vergleich aktuelle Pipeline gegen PositioningEngine
      (`compare_positioning`, liefert `<name>-comparison.json`).
-  3. `positioning_verdict` ueber alle Bewertungslaeufe (Rolle `evaluation`), genau nach der Regel im Dokument.
-  4. Uebergabeordner fuer das Positioning Lab (`import_recordings`), abschaltbar mit `--no-lab-import`.
+  3. `positioning_verdict` über alle Bewertungsläufe (Rolle `evaluation`), genau nach der Regel im Dokument.
+  4. Übergabeordner für das Positioning Lab (`import_recordings`), abschaltbar mit `--no-lab-import`.
   5. `BERICHT.md` (deutsch) und 6. `KOMMENTAR_195.md` (zum Einfuegen als GitHub-Kommentar in #195).
 
 Es wird nichts eingeschaltet, nichts ans Backend geschrieben. Netzzugriff nur wie bei `compare_positioning`
 (`--store`, Layout noch nicht lokal: zwei GET-Aufrufe).
 
-Aufruf (Repo-Wurzel, ueber den Wrapper):
+Aufruf (Repo-Wurzel, über den Wrapper):
     scripts/field/evaluate_field_day.sh ORDNER-MIT-AUFNAHMEN [--out DIR] [--no-lab-import]
         [--store SPAR-Leonding-002 | --layout LAYOUT.json] [--offline] [--site testraum] [--markers SITE.md] [--date JJJJ-MM-TT]
 
 Exit: 0 Bericht geschrieben (egal welches Ergebnis, auch SCHLECHTER), 1 Fehler (Anonymisierung, ein Werkzeug
-ist fehlgeschlagen; der Bericht wird, soweit moeglich, trotzdem geschrieben), 2 Aufruf- oder Eingabefehler.
-Braucht fuer echte Auswertungen macOS mit Swift (`swift test`, `swift run`); ohne `swift` Abbruch mit Exit 2.
+ist fehlgeschlagen; der Bericht wird, soweit möglich, trotzdem geschrieben), 2 Aufruf- oder Eingabefehler.
+Braucht für echte Auswertungen macOS mit Swift (`swift test`, `swift run`); ohne `swift` Abbruch mit Exit 2.
 """
 
 from __future__ import annotations
@@ -49,7 +49,7 @@ DEFAULT_STORE = "SPAR-Leonding-002"
 REHEARSAL_PREFIX = "rehearsal-"
 POSITIONING_DECISION = "docs/pilot-readiness/hardware/POSITIONING_DECISION.md"
 
-# Beide Orte der Swift-Test-Ressourcen (vor und nach PR #218); genutzt fuer die Swift-Vorpruefung.
+# Beide Orte der Swift-Test-Ressourcen (vor und nach PR #218); genutzt für die Swift-Vorprüfung.
 SWIFT_PACKAGE_CANDIDATES = (
     aw.SWIFT_DIR,
     aw.SWIFT_DIR / "Packages" / "IndooroKit",
@@ -80,22 +80,22 @@ def swift_available() -> Tuple[bool, str]:
 
 
 # ---------------------------------------------------------------------------------------------------------------------
-# Hook fuer den Schattenbetrieb (Paket B)
+# Hook für den Schattenbetrieb (Paket B)
 
 ShadowHook = Callable[[Path, Path, Path, str], Optional[Path]]
 
 
 def shadow_comparison(recording: Path, anonymized: Path, out_dir: Path, name: str) -> Optional[Path]:
-    """HOOK fuer den Schattenbetrieb. Heute immer None: der Vergleich laeuft als Replay (`compare_positioning`).
+    """HOOK für den Schattenbetrieb. Heute immer None: der Vergleich läuft als Replay (`compare_positioning`).
 
     Sobald der Recorder je Epoche die alte und die neue Position in dieselbe Aufnahme schreibt und
     `compare_positioning.py` das lesen kann, wertet diese Funktion die Aufnahme aus und gibt den Pfad der
     `<name>-comparison.json` zurueck (Schema `indooro-position-comparison/1`, Felder `origin`, `recording.name`,
     `recording.sha256`, `session`, `summary.current|engine`, wie `positioning_verdict.py` sie liest). Gibt sie
-    None zurueck, nimmt der Auswerter den Replay. Alles danach (Regel, Bericht, Kommentar) bleibt unveraendert;
+    None zurueck, nimmt der Auswerter den Replay. Alles danach (Regel, Bericht, Kommentar) bleibt unverändert;
     der Bericht nennt als Quelle dann "Schattenbetrieb".
 
-    recording: Original, anonymized: geprueft anonymisierte Kopie, out_dir: Arbeitsordner, name: sicherer Name.
+    recording: Original, anonymized: geprüft anonymisierte Kopie, out_dir: Arbeitsordner, name: sicherer Name.
     """
     return None
 
@@ -117,7 +117,7 @@ class Run:
     comparison: Optional[Dict[str, object]] = None
     source: str = "Replay"  # Replay | Schattenbetrieb
     errors: List[str] = field(default_factory=list)  # Werkzeugfehler (fuehren zu Exit 1)
-    excluded: Optional[str] = None  # Grund, warum der Lauf nicht zaehlt
+    excluded: Optional[str] = None  # Grund, warum der Lauf nicht zählt
     counted: bool = False
 
     @property
@@ -147,7 +147,7 @@ class DayResult:
 
 
 # ---------------------------------------------------------------------------------------------------------------------
-# Schritt 1: Anonymisieren und pruefen
+# Schritt 1: Anonymisieren und prüfen
 
 def list_recordings(directory: Path) -> List[Path]:
     if not directory.is_dir():
@@ -163,7 +163,7 @@ def safe_name(path: Path) -> str:
 
 
 def anonymize_and_verify(recordings: Sequence[Path], anon_dir: Path) -> List[Run]:
-    """Alle Aufnahmen anonymisieren und danach die geschriebene Datei noch einmal pruefen. Ein Verstoss bricht ab."""
+    """Alle Aufnahmen anonymisieren und danach die geschriebene Datei noch einmal prüfen. Ein Verstoß bricht ab."""
     anon_dir.mkdir(parents=True, exist_ok=True)
     runs: List[Run] = []
     names: Dict[str, Path] = {}
@@ -187,7 +187,7 @@ def anonymize_and_verify(recordings: Sequence[Path], anon_dir: Path) -> List[Run
         runs.append(Run(path=path, name=name, anonymized=target))
     if failures:
         raise FieldDayError(
-            "Anonymisierungspruefung fehlgeschlagen, es wird nichts ausgewertet:\n  " + "\n  ".join(failures)
+            "Anonymisierungsprüfung fehlgeschlagen, es wird nichts ausgewertet:\n  " + "\n  ".join(failures)
         )
     return runs
 
@@ -241,7 +241,7 @@ def process_run(
     # Vergleich: erst der Schattenbetrieb (Hook), sonst Replay
     expected = work / f"{run.name}-comparison.json"
     if expected.exists():
-        expected.unlink()  # keine Altlasten aus frueheren Laeufen
+        expected.unlink()  # keine Altlasten aus frueheren Läufen
     try:
         shadow_path = shadow(run.path, run.anonymized, work, run.name)
     except Exception as error:  # Hook von Paket B darf die Auswertung nicht kippen
@@ -281,7 +281,7 @@ def process_run(
 # Schritt 3: Regel
 
 def apply_rule(runs: Sequence[Run]) -> pv.Evaluation:
-    """Alle Laeufe mit Vergleichsdatei durch die Regel. Zusaetzliche Ausschluesse aus Abschnitt 3 (Punkt 5)."""
+    """Alle Läufe mit Vergleichsdatei durch die Regel. Zusaetzliche Ausschlüsse aus Abschnitt 3 (Punkt 5)."""
     candidates: List[Run] = []
     for run in runs:
         if run.comparison_path is None or run.comparison is None:
@@ -310,7 +310,7 @@ def apply_rule(runs: Sequence[Run]) -> pv.Evaluation:
 
 
 # ---------------------------------------------------------------------------------------------------------------------
-# Schritt 4: Lab-Uebergabe
+# Schritt 4: Lab-Übergabe
 
 def lab_import(runs: Sequence[Run], out_dir: Path, site: str, date: str, enabled: bool) -> str:
     """Anonymisierte Aufnahmen und Vergleichsdateien in einen Ordner legen, den man im Positioning Lab laedt."""
@@ -389,7 +389,7 @@ VERDICT_TEXT = {
         "Kein Genauigkeitsgewinn belegt. Das Flag bleibt aus. Ein Einschalten wäre eine Architekturentscheidung "
         "und braucht eine eigene Begründung, nicht diese Regel."
     ),
-    "SCHLECHTER": "Die neue Positionsberechnung ist schlechter. Das Flag bleibt aus, die Ursache wird untersucht.",
+    "SCHLECHTER": "Die neue Positionsberechnung war in diesem Test bei mindestens einer Kennzahl schlechter. Das Flag bleibt aus, die Ursache wird untersucht.",
     "GEMISCHT": "Die Regel ist nicht erfüllt (zum Beispiel nur eine Kennzahl besser oder besser und schlechter zugleich). Das Flag bleibt aus.",
     "EXPLORATIV": "Zu wenige Bewertungsläufe für eine Entscheidung: noch nicht entscheiden. Das Flag bleibt aus, weitere Läufe aufnehmen.",
 }
@@ -457,7 +457,7 @@ def criteria_lines(result: DayResult) -> List[str]:
 
 
 def conspicuous_lines(result: DayResult) -> List[str]:
-    """Laeufe, in denen die Engine um die Toleranz oder mehr schlechter ist (Abschnitt 4: das blockiert BESSER)."""
+    """Läufe, in denen die Engine um die Toleranz oder mehr schlechter ist (Abschnitt 4: das blockiert BESSER)."""
     figures = (
         ("median", "Median", pv.EPSILON_ERROR_M, False), ("p90", "P90", pv.EPSILON_ERROR_M, False),
         ("outageRate", "Ausfallrate", pv.DELTA_RATE, True), ("jumpRate", "Sprungrate", pv.DELTA_RATE, True),
@@ -508,7 +508,7 @@ def render_report(result: DayResult) -> str:
         "",
         "## Kennzahlen je Lauf",
         "",
-        "Positionsfehler in Metern (1 Rasterzelle = 1 m), Raten in Prozent der Epochen. „aktuell“ ist die bisherige App-Pipeline, „Engine“ die PositioningEngine.",
+        "Positionsfehler in Metern (1 Rasterzelle = 1 m). Ausfall in % der Epochen mit Referenz, Sprung in % der Positionspaare. „aktuell“ ist die bisherige App-Pipeline, „Engine“ die PositioningEngine.",
         "",
         *runs_table(result.runs),
         "",
@@ -650,7 +650,7 @@ def evaluate_field_day(
     out_dir.mkdir(parents=True, exist_ok=True)
     for stale in ("anonymized", "lab-import"):  # Altlasten früherer Läufe nie mit neuen mischen (nur innerhalb von --out)
         shutil.rmtree(out_dir / stale, ignore_errors=True)
-    runs = anonymize_and_verify(recordings, out_dir / "anonymized")  # Schritt 1, Abbruch bei Verstoss
+    runs = anonymize_and_verify(recordings, out_dir / "anonymized")  # Schritt 1, Abbruch bei Verstoß
     for run in runs:  # Schritt 2
         print(f"== {run.path.name}", file=sys.stderr)
         process_run(
@@ -697,12 +697,12 @@ def main(
     parser.add_argument("directory", type=Path, help="Ordner mit den Aufnahmen (*.jsonl, indooro-recording/2)")
     parser.add_argument("--out", type=Path, metavar="DIR", help="Ausgabeordner (Standard: NavigationFixtures/exports/feldtag-<Datum>/, gitignored)")
     parser.add_argument("--no-lab-import", action="store_true", help="Lab-Übergabeordner nicht schreiben")
-    parser.add_argument("--store", default=DEFAULT_STORE, metavar="CODE", help=f"storeCode fuer das Layout (Standard: {DEFAULT_STORE})")
+    parser.add_argument("--store", default=DEFAULT_STORE, metavar="CODE", help=f"storeCode für das Layout (Standard: {DEFAULT_STORE})")
     parser.add_argument("--layout", type=Path, metavar="LAYOUT.json", help="Layout-JSON (statt --store)")
     parser.add_argument("--offline", action="store_true", help="kein Netzzugriff: fehlt das Layout lokal (--layout oder NavigationFixtures/layouts/), Abbruch mit Exit 2")
     parser.add_argument("--site", default="testraum", help="Standortkennung (Standard: testraum)")
     parser.add_argument("--markers", type=Path, metavar="SITE.md", help="Standort-Datei mit Marker- und Gang-Tabelle")
-    parser.add_argument("--date", metavar="JJJJ-MM-TT", help="Messdatum fuer Bericht und Lab-Namen (Standard: Datum der Aufnahmen)")
+    parser.add_argument("--date", metavar="JJJJ-MM-TT", help="Messdatum für Bericht und Lab-Namen (Standard: Datum der Aufnahmen)")
     args = parser.parse_args(argv)
 
     real_swift = replay_runner is None or compare_runner is None

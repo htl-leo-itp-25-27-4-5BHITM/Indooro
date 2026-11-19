@@ -1,4 +1,4 @@
-"""Tests fuer positioning_verdict.py (Entscheidungsregel, mechanisch)."""
+"""Tests für positioning_verdict.py (Entscheidungsregel, mechanisch)."""
 
 import contextlib
 import io
@@ -95,7 +95,7 @@ class VerdictTests(unittest.TestCase):
         datas[1]["session"]["role"] = "calibration"
         datas[2]["session"] = None
         out = self.verdict(datas)
-        self.assertIn("Bewertungslaeufe gezaehlt: 0", out)
+        self.assertIn("Bewertungsläufe gezählt: 0", out)
         self.assertIn("synthetisch", out)
         self.assertIn("calibration", out)
         self.assertIn("unbekannt", out)
@@ -109,7 +109,7 @@ class VerdictTests(unittest.TestCase):
         datas = self.runs(3, engine={"median": 1.0, "p90": 2.0})
         datas[1]["recording"]["sha256"] = datas[0]["recording"]["sha256"]
         out = self.verdict(datas)
-        self.assertIn("Bewertungslaeufe gezaehlt: 2", out)
+        self.assertIn("Bewertungsläufe gezählt: 2", out)
         self.assertIn("Datenleck", out)
 
     def test_exactly_minus_zero_point_three_meter_passes_despite_float_noise(self):
@@ -139,7 +139,7 @@ class VerdictTests(unittest.TestCase):
         datas = self.runs(3, engine={"median": 1.0, "p90": 2.0})
         datas[0]["recording"]["name"] = "synthetic-testraum-1.jsonl"
         out = self.verdict(datas)
-        self.assertIn("Bewertungslaeufe gezaehlt: 2", out)
+        self.assertIn("Bewertungsläufe gezählt: 2", out)
 
     def test_rehearsal_recordings_are_not_field_runs_unless_explicitly_allowed(self):
         datas = [comparison(f"rehearsal-eval-{i}.jsonl", f"{i:064d}", engine={"median": 1.0, "p90": 2.0}) for i in range(3)]
