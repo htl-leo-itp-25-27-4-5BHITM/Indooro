@@ -47,4 +47,29 @@ final class ShadowModeTests: XCTestCase {
         XCTAssertEqual(record.legacy, ShadowSide(x: 4, y: 7, status: "tracking"))
         XCTAssertEqual(record.engine, ShadowSide(x: 4.5, y: 7.5, status: "tracking", confidence: 0.75))
     }
+
+    func testLegacySideIsOutageWhenTickIsStaleOrHadNoPoint() {
+        let tracker = LegacyTickTracker()
+        XCTAssertEqual(tracker.side(now: 10, maxAge: 0.5).status, "none", "ohne Tick: Ausfall")
+
+        tracker.record(point: CGPoint(x: 4, y: 7), trusted: true, at: 10)
+        XCTAssertEqual(tracker.side(now: 10.3, maxAge: 0.5), ShadowSide(x: 4, y: 7, status: "tracking", t: 10))
+
+        let stale = tracker.side(now: 11, maxAge: 0.5)
+        XCTAssertNil(stale.x, "alter Punkt darf nicht als aktuell gelten")
+        XCTAssertEqual(stale.status, "none")
+
+        tracker.record(point: nil, trusted: false, at: 12)
+        XCTAssertNil(tracker.side(now: 12.1, maxAge: 0.5).x, "Tick ohne Punkt ist ein Ausfall")
+
+        tracker.record(point: CGPoint(x: 1, y: 2), trusted: false, at: 13)
+        XCTAssertEqual(tracker.side(now: 13.1, maxAge: 0.5).status, "lowConfidence")
+    }
+
+    func testEngineSideCarriesSourceTimestamp() {
+        let snapshot = PositionSnapshot(sequence: 1, timestamp: 5.25, layoutRevision: 1, status: .searching)
+        let record = ShadowPositioning.shadowRecord(snapshot: snapshot, legacy: ShadowSide(status: "none"), at: 6)
+        XCTAssertEqual(record.engine.t, 5.25)
+        XCTAssertNil(record.engine.x)
+    }
 }

@@ -112,8 +112,40 @@ final class ShadowPositioning {
                 x: snapshot.displayedPoint?.x,
                 y: snapshot.displayedPoint?.y,
                 status: snapshot.status.rawValue,
-                confidence: snapshot.confidence
+                confidence: snapshot.confidence,
+                t: snapshot.timestamp
             )
+        )
+    }
+}
+
+
+/// Letzter Tick der alten Ortung fuer die `shadow`-Zeile. `BeaconManager.userPosition` wird nie zurueckgesetzt und
+/// taugt deshalb nicht als „aktuelle“ Position: nach einem Ausfall bliebe der alte Punkt stehen und die alte Ortung
+/// sähe nie einen Ausfall. Hier zaehlt nur ein Tick mit Punkt, der nicht aelter als `maxAge` ist.
+final class LegacyTickTracker: @unchecked Sendable {
+    private let lock = NSLock()
+    private var point: CGPoint?
+    private var trusted = false
+    private var timestamp: TimeInterval?
+
+    func record(point: CGPoint?, trusted: Bool, at timestamp: TimeInterval) {
+        lock.lock()
+        defer { lock.unlock() }
+        self.point = point
+        self.trusted = trusted
+        self.timestamp = timestamp
+    }
+
+    func side(now: TimeInterval, maxAge: TimeInterval) -> ShadowSide {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let point, let timestamp, now - timestamp <= maxAge else {
+            return ShadowSide(status: "none", t: timestamp)
+        }
+        return ShadowSide(
+            x: Float(point.x), y: Float(point.y),
+            status: trusted ? "tracking" : "lowConfidence", t: timestamp
         )
     }
 }

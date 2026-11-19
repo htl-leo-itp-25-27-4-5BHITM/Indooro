@@ -191,12 +191,16 @@ public struct ShadowSide: Codable, Equatable {
     public var status: String
     /// Nur die Engine liefert eine Konfidenz (0...1); beim alten Pfad entfaellt das Feld.
     public var confidence: Float?
+    /// Zeitstempel der Quelle (Tick der alten Ortung, Snapshot der Engine); `t` der Zeile ist der Schreibzeitpunkt.
+    /// Der Versatz beider Seiten ist hoechstens ein Tick (0,35 s). Aeltere Aufnahmen haben das Feld nicht.
+    public var t: TimeInterval?
 
-    public init(x: Float? = nil, y: Float? = nil, status: String, confidence: Float? = nil) {
+    public init(x: Float? = nil, y: Float? = nil, status: String, confidence: Float? = nil, t: TimeInterval? = nil) {
         self.x = x
         self.y = y
         self.status = status
         self.confidence = confidence
+        self.t = t
     }
 }
 

@@ -251,6 +251,8 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
     /// Neue Ortungs-Engine im Schattenbetrieb; `nil`, solange der Schalter aus ist (Standard).
     private var shadowPositioning: ShadowPositioning?
     private let engineDrivesNavigation: Bool
+    /// Letzter Tick der alten Ortung (nur fuer die `shadow`-Zeile, siehe `LegacyTickTracker`).
+    let legacyTicks = LegacyTickTracker()
     /// Laeuft die Schatten-Engine (nur mit Schalter)? Fuer Tests und die Debug-Anzeige.
     var hasShadowEngine: Bool { shadowPositioning != nil }
 
@@ -385,10 +387,11 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
                 dependencies: dependencies,
                 legacyPosition: { [weak self] in self?.userPosition },
                 legacySide: { [weak self] in
-                    guard let self, let point = self.userPosition else { return ShadowSide(status: "none") }
-                    return ShadowSide(
-                        x: Float(point.x), y: Float(point.y),
-                        status: self.isPositionTrusted ? "tracking" : "lowConfidence"
+                    guard let self else { return ShadowSide(status: "none") }
+                    // 1,5 Ticks: ein Tick, der knapp vor dem Lesen liegt, darf nicht als Ausfall zaehlen.
+                    return self.legacyTicks.side(
+                        now: Date().timeIntervalSince1970,
+                        maxAge: self.navigationConfig.beacon.updateIntervalSeconds * 1.5
                     )
                 }
             )
@@ -710,6 +713,12 @@ final class BeaconManager: NSObject, ObservableObject, CBCentralManagerDelegate,
             DispatchQueue.main.async {
                 self.publishRawUserPosition(CGPoint(solvedPoint))
             }
+        }
+
+        if shadowPositioning != nil {
+            legacyTicks.record(
+                point: tick.projectedPoint.map { CGPoint($0) }, trusted: isTrusted, at: tick.timestamp
+            )
         }
 
         navigationSamples.send(
