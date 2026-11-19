@@ -72,6 +72,12 @@ class VerdictTests(unittest.TestCase):
         out = self.verdict(self.runs(3, engine={"median": 1.8, "p90": 3.8, "outageRate": 0.025, "jumpRate": 0.035}))
         self.assertIn("ERGEBNIS: GLEICHWERTIG", out)
 
+    def test_rates_only_worse_is_worse_with_equal_errors(self):
+        out = self.verdict(self.runs(3, engine={"outageRate": 0.04}))  # +2 pp outage, median and P90 equal
+        self.assertIn("ERGEBNIS: SCHLECHTER", out)
+        out = self.verdict(self.runs(3, engine={"jumpRate": 0.06}))
+        self.assertIn("ERGEBNIS: SCHLECHTER", out)
+
     def test_worse_engine_is_worse(self):
         out = self.verdict(self.runs(3, engine={"median": 2.6}))
         self.assertIn("ERGEBNIS: SCHLECHTER", out)

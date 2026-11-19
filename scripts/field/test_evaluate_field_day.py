@@ -93,6 +93,13 @@ class VerdictCases(FieldDayCase):
         self.assertIn("ERGEBNIS: SCHLECHTER", out)
         self.assertIn("SCHLECHTER – Flag bleibt aus", self.report())
 
+    def test_more_outages_with_equal_errors_is_worse(self):
+        code, out, _ = self.run_day(profiles(P(2.0), [P(2.0, outage_every=25)] * 3))  # 4 % outage against 0 %
+        self.assertEqual(code, 0)
+        self.assertIn("ERGEBNIS: SCHLECHTER", out)
+        self.assertIn("Bedingung 4: **NICHT erfüllt**", self.report())
+        self.assertIn("Ausfallrate", self.report())
+
     def test_one_run_with_a_clearly_worse_engine_blocks_better_and_is_flagged(self):
         code, out, _ = self.run_day(profiles(P(2.0), [P(1.0), P(1.0), P(2.6)]))
         self.assertEqual(code, 0)
