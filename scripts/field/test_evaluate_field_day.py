@@ -262,6 +262,11 @@ class ReportContent(FieldDayCase):
         self.assertIn("Es wird nichts eingeschaltet", comment)
         self.assertIn("| Lauf |", comment)
 
+    def test_probe_runs_are_marked_at_the_top_of_verdict_and_stdout(self):
+        code, out, _ = self.run_day(profiles(P(2.0), [P(1.4)] * 3))
+        self.assertTrue(out.startswith("PROBELAUF"), out[:80])
+        self.assertTrue((self.out / "VERDICT.txt").read_text(encoding="utf-8").startswith("PROBELAUF"))
+
     def test_per_run_reports_and_verdict_text_are_written(self):
         self.run_day(profiles(P(2.0), [P(1.4)] * 3))
         for name in EVAL:

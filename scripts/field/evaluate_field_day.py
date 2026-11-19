@@ -400,6 +400,7 @@ VERDICT_SHORT = {
     "GEMISCHT": "GEMISCHT – Flag bleibt aus",
     "EXPLORATIV": "EXPLORATIV – noch nicht entscheiden, Flag bleibt aus",
 }
+PROBE_LINE = "PROBELAUF / SYNTHETISCH – keine Messung. Diese Zahlen nie zitieren und nicht für die Entscheidung verwenden."
 PROBE_BANNER = (
     "> **PROBELAUF / SYNTHETISCH – keine Messung.** Diese Aufnahmen sind erzeugt (`rehearsal-*` oder `synthetic-*`). "
     "Das Ergebnis zeigt nur, dass die Werkzeugkette läuft. Diese Zahlen nie zitieren und nicht für die Entscheidung verwenden."
@@ -648,6 +649,8 @@ def evaluate_field_day(
         )
     evaluation = apply_rule(runs)  # Schritt 3
     verdict_text = pv.render(evaluation.accepted, evaluation.rejected, evaluation.verdict, evaluation.mean, evaluation.reasons)
+    if any(run.rehearsal or run.synthetic for run in runs):
+        verdict_text = PROBE_LINE + "\n\n" + verdict_text
     (out_dir / "VERDICT.txt").write_text(verdict_text + "\n", encoding="utf-8")
 
     first_date = date or _first_date(runs)
