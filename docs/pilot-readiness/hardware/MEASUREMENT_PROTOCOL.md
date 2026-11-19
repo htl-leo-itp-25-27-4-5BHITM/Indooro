@@ -1,6 +1,8 @@
 # Messprotokoll Feldmessung
 
-Status: Entwurf – Dry-Run (4.7) noch offen (Mensch: Dry-Run mit den vier Bestandsbeacons durchführen und Abschnitt 8 ausfüllen).
+Status: Entwurf – Dry-Run (4.7) noch offen (Mensch: Dry-Run mit den Beacons des Testraums durchführen und Abschnitt 8 ausfüllen).
+
+**Siehe `MESSTAG.md`** für den praktischen Ablauf eines Messtags im Testraum `SPAR-Leonding-002` (Vorbereitung, Beacons ablesen, Marker, Läufe für Story #195, Auswertung). Dieses Protokoll bleibt die Quelle der festen Konventionen (Abschnitt 2) und der Szenarien S1 bis S4 (Abschnitt 4).
 
 Tasks: 4.1 (Protokoll), 4.7 (Dry-Run), 5.5 (Akku-Test). Gilt für Testraum und großen Testraum (Standorte 1 und 2) sowie später für Märkte.
 
@@ -32,6 +34,8 @@ Die Marker-Koordinaten werden auf der Karte an der exakten Position getippt. Daz
 Das Gerät wird bei allen Szenarien wie bei normaler Nutzung gehalten: in der Hand, Bildschirm sichtbar. Während einer Aufnahme wird das Gerät nicht gewechselt.
 
 ## 3. Marker einrichten (Mensch)
+
+Für den Testraum `SPAR-Leonding-002` stehen Marker, Koordinaten und Druckbogen in `MESSTAG.md`, Abschnitt 4 (erzeugt mit `scripts/field/generate_marker_sheet.py`). Die Standort-Datei `sites/<site>.md` ist für `analyze_walk.sh` optional.
 
 1. (Mensch: Marker am Boden markieren, zum Beispiel mit Klebeband oder Kreuz.)
 2. (Mensch: Position jedes Markers vom Raumursprung oder einer Wandecke aus messen. Ergebnis in Layout-Metern eintragen.)
@@ -92,6 +96,8 @@ Die Uhrzeit wird nicht in der Aufnahme gespeichert. Aufnahmen dürfen keine Frei
 
 ## 5. Vor der Session: Checkliste
 
+Für den Testraum gilt die Kurzfassung `MESSTAG_CHECKLISTE.md`.
+
 - [ ] Akkustand der Geräte notiert. Ladegerät dabei (Mensch: Mindestladestand festlegen).
 - [ ] DEBUG-Build mit Recorder auf beiden Geräten installiert (`team/DEVICES.md`, Task 4.6).
 - [ ] Einstellungen, Debug, „Messungen aufzeichnen“ ist im Build vorhanden (`SettingsSheet.swift:54`, nur DEBUG).
@@ -111,7 +117,7 @@ Die Uhrzeit wird nicht in der Aufnahme gespeichert. Aufnahmen dürfen keine Frei
 
 ## 7. Mac-Pipeline
 
-Kurzweg für eine einzelne Aufnahme (Testraum-Tag): `scripts/field/analyze_walk.sh <datei> --layout <layout.json>` führt Anonymisierung, Replay, Statistik und Report in einem Befehl aus; Ablauf in `TESTRAUM_TAG.md`. Die Schritte unten sind der ausführliche Weg für mehrere importierte Aufnahmen.
+Kurzweg für eine einzelne Aufnahme: `scripts/field/analyze_walk.sh <datei> --layout <layout.json>` führt Anonymisierung, Replay, Statistik und Report in einem Befehl aus (`TESTRAUM_TAG.md`). Für den ganzen Messtag: `scripts/field/evaluate_field_day.sh <ordner>` (`MESSTAG.md`, Abschnitt 6). Die Schritte unten sind der ausführliche Weg für mehrere importierte Aufnahmen.
 
 Die Befehle laufen auf dem Mac im Repo-Wurzelverzeichnis, außer wenn anders angegeben. Die Skripte in `scripts/field/` entstehen mit Task 4.4 und 4.5; die Flags sind festgelegt.
 
@@ -142,13 +148,13 @@ Die Befehle laufen auf dem Mac im Repo-Wurzelverzeichnis, außer wenn anders ang
 
 Die Schritte 2 und 3 setzen voraus, dass die Aufnahmen vorher importiert sind.
 
-## 8. Dry-Run (Task 4.7) mit den vier Bestandsbeacons
+## 8. Dry-Run (Task 4.7) mit den Beacons des Testraums
 
-Ziel: Protokoll und Werkzeuge prüfen, bevor neue Beacons ankommen. Ergebnisse und Lücken stehen in dieser Tabelle.
+Ziel: Protokoll und Werkzeuge prüfen, bevor Beacons in einem Markt eingesetzt werden. Der Testraum hat 4 Beacons (`Indooro1` bis `Indooro4`). Ergebnisse und Lücken stehen in dieser Tabelle.
 
 Prüfpunkte:
 
-- [ ] Alle vier Bestandsbeacons erscheinen im Log (`ibeacon-…` oder `ranged-ibeacon-…`, siehe `CONFIGURE_BEACON.md`).
+- [ ] Alle vier Beacons des Testraums erscheinen im Log (`ibeacon-…` oder `ranged-ibeacon-…`, siehe `CONFIGURE_BEACON.md`).
 - [ ] Keine Meldung „passt zu keinem Beacon im aktiven Layout“ für die vier Beacons.
 - [ ] An jedem Marker sind mindestens 3 Beacons hörbar (`StabilizedNavigationConfig.swift:17`).
 - [ ] Beacon-Koordinaten stimmen mit dem Maßband auf 0,5 m (Layout und `beacons.csv`).

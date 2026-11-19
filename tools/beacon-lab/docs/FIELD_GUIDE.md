@@ -4,6 +4,8 @@ Diese Anleitung ergänzt das verbindliche Protokoll `docs/pilot-readiness/hardwa
 (Szenarien S1–S4, Marker, Standzeiten). Sie beschreibt, wie die Daten in den Lab kommen und wie sie belastbar ausgewertet werden.
 Das Protokoll hat Vorrang. Bei Widersprüchen gilt das Protokoll, und dieses Dokument wird angepasst.
 
+**Siehe `docs/pilot-readiness/hardware/MESSTAG.md`** für den praktischen Ablauf eines Messtags im Testraum (Vorbereitung, Beacons ablesen, Marker und Maßstab, Läufe, Auswertung mit einem Befehl). Dieses Dokument behält die Lab-Sicht: Metriken, Kalibrierung, Import und Bericht im Positioning Lab.
+
 ## 0. Vorab festlegen (vor dem Messtag)
 
 1. **Fragestellung und Metriken festlegen.** Bevor Evaluationsdaten angesehen werden, stehen fest: Metriken
@@ -19,7 +21,7 @@ Das Protokoll hat Vorrang. Bei Widersprüchen gilt das Protokoll, und dieses Dok
 
 | Daten | Pflicht | Wie |
 | --- | --- | --- |
-| RSSI je Beacon mit Zeitstempel | ja | iOS-Recorder (DEBUG-Build), Einstellungen → Aufnahme |
+| RSSI je Beacon mit Zeitstempel | ja | iOS-Recorder (DEBUG-Build), Einstellungen → Debug → Messungen aufzeichnen |
 | Ground Truth (Referenzposition) | ja für Fehlermetriken | Langes Drücken auf der Karte am Marker (Start und Ende jeder Standzeit) |
 | Layout mit Beacon-Positionen | ja | `python -I scripts/field/fetch_layout.py --store <code> --out layout.json` |
 | Gerätemodell, iOS-Version | ja | Notiz → Lab-Feld „Messgerät“ |
@@ -34,7 +36,7 @@ Im Lab unter **Kampagne → Beacons** eintragen bzw. prüfen. Beacons können de
 
 ## 3. Referenzpositionen bestimmen
 
-1. Marker am Boden setzen (Klebeband-Kreuz), Namen `M1…Mn` in Gehreihenfolge.
+1. Marker am Boden setzen (Klebeband-Kreuz), Namen `M1…Mn` in Gehreihenfolge. Für den Testraum: `MESSTAG.md`, Abschnitt 4.
 2. Position jedes Markers **mit Maßband/Laser** von einer Wandecke messen und in Layout-Einheiten umrechnen.
 3. **Maßstab bestätigen:** Eine bekannte Strecke (z. B. Regallänge) vor Ort messen und mit dem Layout vergleichen.
    Im Lab unter **Grundriss → Maßstab** `Meter je Layout-Einheit` eintragen und „bestätigt“ setzen, mit Notiz
@@ -61,7 +63,7 @@ Im Lab unter **Kampagne → Beacons** eintragen bzw. prüfen. Beacons können de
 1. In der App Aufnahme beenden. Dateien liegen in `Documents/NavigationRecordings/` (über Finder/Xcode Devices
    oder die Dateien-App holen).
 2. **Anonymisieren:** `python -I scripts/field/anonymize_recording.py roh.jsonl anonym.jsonl`
-   (entfernt `shopName` und Stopp-Titel). Nur anonymisierte Dateien weitergeben oder einchecken.
+   (entfernt `shopName` und Stopp-Titel). Nur anonymisierte Dateien weitergeben oder einchecken. Beim Messtag erledigt `scripts/field/evaluate_field_day.sh <ordner>` das mit (`MESSTAG.md`, Abschnitt 6).
 
 ## 7. Import in den Lab
 
