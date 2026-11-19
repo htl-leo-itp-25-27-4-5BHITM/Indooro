@@ -1,0 +1,31 @@
+name: Field tools
+
+# Python-Werkzeuge fuer den Feldtag (scripts/field). Reine Standardbibliothek, kein Swift: Die Swift-Schritte
+# (Replay, compare-positioning) sind in den Tests durch scripts/field/stub_swift.py ersetzt und laufen nur auf macOS
+# mit Xcode (siehe scripts/field/README.md, "Auswertung mit einem Befehl").
+on:
+  push:
+    paths:
+      - 'scripts/field/**'
+      - '.github/workflows/field-tools.yaml'
+  pull_request:
+    paths:
+      - 'scripts/field/**'
+      - '.github/workflows/field-tools.yaml'
+
+permissions:
+  contents: read
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run field tool tests
+        run: python3 -I -m unittest discover -s scripts/field -p 'test_*.py'

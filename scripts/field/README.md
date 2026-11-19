@@ -62,6 +62,25 @@ python -I scripts/field/positioning_verdict.py swift/indooro-EinkaeuferFinal/Nav
 - Exit 0 fertig, 1 Anonymisierung oder Vergleich fehlgeschlagen, 2 Aufruf- oder Eingabefehler (Datei, Layout, Markt-Code), 3 keine Epoche mit Referenz (keine Wahrheitsmarken; die Positionen sind geschrieben, Kennzahlen fehlen).
 - Direkter Aufruf ohne Wrapper: `cd swift/indooro-EinkaeuferFinal && swift run compare-positioning <datei>.jsonl --layout <layout.json> [--out DIR] [--name NAME] [--warmup S]`. Ohne `--out` wird nichts geschrieben.
 
+## Auswertung mit einem Befehl
+
+Nach dem Feldtag alle Aufnahmen eines Ordners auf einmal auswerten und die Entscheidung nach `POSITIONING_DECISION.md` ableiten (braucht macOS mit Xcode, weil Replay und Vergleich `swift` nutzen):
+
+```text
+scripts/field/evaluate_field_day.sh <ordner-mit-aufnahmen> [--out <dir>] [--no-lab-import]
+scripts/field/evaluate_field_day.sh swift/indooro-EinkaeuferFinal/NavigationFixtures/incoming --store SPAR-Leonding-002
+```
+
+- Ablauf: (1) jede Aufnahme anonymisieren und prüfen, bei einem Verstoß Abbruch, bevor etwas ausgewertet wird (Originale bleiben unverändert); (2) je Aufnahme `analyze_walk` und der Vergleich aktuelle Pipeline gegen Engine; (3) `positioning_verdict` über alle Läufe mit Rolle `evaluation`; (4) Übergabeordner fürs Positioning Lab (`--no-lab-import` überspringt ihn, ohne `tools/beacon-lab` wird er übersprungen); (5) `BERICHT.md`; (6) `KOMMENTAR_195.md`.
+- Layout: `--layout DATEI` oder `--store` (Standard `SPAR-Leonding-002`; lokale Datei, sonst lesend vom Backend wie bei `compare_positioning.sh`). Offline (ohne Netz) nur mit `--layout`; `--offline` verbietet jeden Netzzugriff und bricht mit Exit 2 ab, wenn das Layout lokal fehlt.
+- Ausgabe in `--out` (Standard `NavigationFixtures/exports/feldtag-<Datum>/`, gitignored): `BERICHT.md` (Ergebnis BESSER / GLEICHWERTIG / SCHLECHTER / GEMISCHT / EXPLORATIV, Tabelle je Lauf, erfüllte und nicht erfüllte Bedingungen in Klartext, nicht gezählte Läufe mit Grund), `KOMMENTAR_195.md` (zum Einfügen als GitHub-Kommentar in #195), `VERDICT.txt`, `reports/`, `work/`, `anonymized/`, `lab-import/`.
+- Grenzfall Raten: Ein Unterschied von genau 1 Prozentpunkt (Ausfall- oder Sprungrate, in beide Richtungen) liegt noch in der Toleranz und zählt als gleich; Bedingung 4 und 5 („höchstens +1 Prozentpunkt“) sind dann erfüllt. Erst mehr als 1 Prozentpunkt ist schlechter oder besser.
+- Läufe zählen nur nach Abschnitt 3 des Dokuments. Zusätzlich zur Rolle und den 100 Epochen schließt das Werkzeug Läufe aus, in denen ein Layout-Beacon nie gehört wurde oder der Report nicht durchlief. Ob alle Wahrheitsmarken da sind und die Aufnahme unverändert ist, prüft der Mensch (steht im Bericht).
+- Exit 0, sobald ein Bericht geschrieben ist, **auch bei SCHLECHTER** (das ist ein gültiges Ergebnis). Exit 1 bei einem Fehler (Anonymisierung, Werkzeug), Exit 2 bei Aufruffehlern (Ordner, Layout, kein `swift`).
+- **Schattenbetrieb:** `shadow_comparison()` in `evaluate_field_day.py` ist der Einhängepunkt. Liefert sie den Pfad einer `<name>-comparison.json`, ersetzt das den Replay-Vergleich; Regel, Bericht und Kommentar bleiben gleich.
+- **Probelauf ohne iPhone:** `python -I scripts/field/make_synthetic_recordings.py --out-dir /tmp/probe --layout-out /tmp/probe/layout.json`, dann `scripts/field/evaluate_field_day.sh /tmp/probe --layout /tmp/probe/layout.json --no-lab-import`. Die Dateien heißen `rehearsal-*` (drei gute Bewertungsläufe, ein absichtlich schlechter ohne Beacon 4, eine Kalibrierung); der Bericht trägt den Kasten PROBELAUF. Diese Zahlen nie zitieren.
+- Tests: `python3 -I -m unittest discover -s scripts/field -p 'test_*.py'` (läuft auch auf Linux, CI `field-tools.yaml`). Die Swift-Schritte sind dort durch `stub_swift.py` ersetzt; der echte Replay und Vergleich laufen nur auf macOS.
+
 ## Import und Anonymisierungspruefung
 
 ```text
