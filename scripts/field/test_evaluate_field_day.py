@@ -87,6 +87,12 @@ class VerdictCases(FieldDayCase):
         self.assertIn("EXPLORATIV – noch nicht entscheiden", self.report())
         self.assertIn("Bedingung 1: **NICHT erfüllt**", self.report())
 
+    def test_verdict_txt_lists_the_same_excluded_runs_as_the_report(self):
+        self.run_day(profiles(P(2.0), [P(1.4)] * 3))
+        verdict = (self.out / "VERDICT.txt").read_text(encoding="utf-8")
+        self.assertIn("rehearsal-eval-bad-beacon4.jsonl: Beacons des Layouts nie gehört: Indooro4", verdict)
+        self.assertIn("rehearsal-calibration-1.jsonl: Rolle ist calibration", verdict)
+
     def test_a_worse_engine_is_a_valid_result_and_exits_zero(self):
         code, out, _ = self.run_day(profiles(P(2.0), [P(2.8)] * 3))
         self.assertEqual(code, 0)

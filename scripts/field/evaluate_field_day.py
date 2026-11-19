@@ -650,7 +650,9 @@ def evaluate_field_day(
             replay_runner=replay_runner, compare_runner=compare_runner, shadow=shadow,
         )
     evaluation = apply_rule(runs)  # Schritt 3
-    verdict_text = pv.render(evaluation.accepted, evaluation.rejected, evaluation.verdict, evaluation.mean, evaluation.reasons)
+    # Dieselben nicht gezählten Läufe wie im Bericht (inkl. Werkzeug-Ausschlüsse), damit VERDICT.txt und BERICHT.md übereinstimmen.
+    not_counted = [(run.path.name, run.excluded or "unbekannt") for run in runs if not run.counted]
+    verdict_text = pv.render(evaluation.accepted, not_counted, evaluation.verdict, evaluation.mean, evaluation.reasons)
     if any(run.rehearsal or run.synthetic for run in runs):
         verdict_text = PROBE_LINE + "\n\n" + verdict_text
     (out_dir / "VERDICT.txt").write_text(verdict_text + "\n", encoding="utf-8")
