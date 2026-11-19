@@ -105,8 +105,8 @@ final class RecordingMetadataTests: XCTestCase {
     func testShadowLineRoundTripAndOptionalFields() throws {
         let line = NavigationRecordLine.shadow(ShadowRecord(
             t: 1_792_000_010.5,
-            legacy: ShadowSide(x: 1.5, y: 7.5, status: "tracking"),
-            engine: ShadowSide(x: 1.25, y: 7.0, status: "tracking", confidence: 0.8)
+            legacy: ShadowSide(x: 1.5, y: 7.5, status: "tracking", t: 1_792_000_010.25),
+            engine: ShadowSide(x: 1.25, y: 7.0, status: "tracking", confidence: 0.8, t: 1_792_000_010.4)
         ))
         let text = try NavigationRecordLine.jsonl([line])
         XCTAssertTrue(text.contains(#""type":"shadow""#))

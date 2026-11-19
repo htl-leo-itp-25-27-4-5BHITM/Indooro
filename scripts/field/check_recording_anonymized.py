@@ -134,7 +134,7 @@ def _v_shadow_side(name: str, value: object, ctx: "Context") -> List[str]:
     if not isinstance(value, dict):
         return [f"Feld '{name}' ist kein Objekt"]
     fields: Dict[str, Validator] = {
-        "x": _v_number, "y": _v_number, "status": _enum(SHADOW_STATUSES), "confidence": _v_number,
+        "x": _v_number, "y": _v_number, "status": _enum(SHADOW_STATUSES), "confidence": _v_number, "t": _v_number,
     }
     return check_record(value, fields, {"status"}, f"Feld '{name}'", ctx)
 
