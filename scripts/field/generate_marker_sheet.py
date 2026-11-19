@@ -293,16 +293,18 @@ def render(layout: Dict[str, object], markers: Sequence[Marker], store: str, cel
     out.append('<p class="note">Reihenfolge der Begehung: M1, M2, … in der Nummernfolge, danach rückwärts. '
                "Auf den folgenden Seiten steht je ein Marker.</p>")
     out.append("</section>")
+    origin_text = origin_hint(layout).split("Ecke von ")[-1] if "Ecke von " in origin_hint(layout) else "dem Ursprung (0,0)"
     for index, marker in enumerate(markers):
         name = html.escape(str(marker["id"]))
         x, y = float(marker["x"]), float(marker["y"])  # type: ignore[arg-type]
-        col, row = int(math.floor(x)) + 1, int(math.floor(y)) + 1
+        col, row = int(math.floor(x)), int(math.floor(y))
         nxt = markers[index + 1] if index + 1 < len(markers) else None
         out.append('<section class="page">')
         out.append(f"<h1>{shop} · Marker</h1>")
         out.append('<div class="row">')
         out.append(f'<div><p class="big">{name}</p><table>')
-        out.append(f"<tr><th>Zelle</th><td>Spalte {col}, Reihe {row} (von 1 gezählt)</td></tr>")
+        out.append(f"<tr><th>Zelle</th><td>Spalte {col}, Reihe {row} (Zählung ab 0, wie im Layout)</td></tr>")
+        out.append(f"<tr><th>So zählen</th><td>Ab der Ecke mit {html.escape(origin_text)}: {col} Zellen nach rechts, {row} Zellen nach unten, dann in diese Zelle. Jede Zelle ist {metres(1, cell_m)} m groß.</td></tr>")
         out.append(f"<tr><th>Layout</th><td>x = {units(x)}, y = {units(y)}</td></tr>")
         out.append(f"<tr><th>Meter ab Ursprung</th><td>x = {metres(x, cell_m)} m, y = {metres(y, cell_m)} m</td></tr>")
         out.append(f"<tr><th>Ursprung (0,0)</th><td>{html.escape(origin_hint(layout))}</td></tr>")

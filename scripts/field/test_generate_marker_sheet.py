@@ -104,6 +104,11 @@ class RenderTests(unittest.TestCase):
         self.assertIn("Beacon Indooro3", text)
         self.assertIn("Letzter Marker", text)
 
+    def test_cell_counting_from_zero(self):
+        text, _, _ = gm.build(load(), "X", 1.0)
+        self.assertIn("Spalte 4, Reihe 7 (Zählung ab 0, wie im Layout)", text)  # M2 (4.5 / 7.5)
+        self.assertIn("4 Zellen nach rechts, 7 Zellen nach unten", text)
+
 
 class CliTests(unittest.TestCase):
     def run_main(self, args, fetch=None):
