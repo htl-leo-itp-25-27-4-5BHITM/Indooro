@@ -119,6 +119,16 @@ class VerdictTests(unittest.TestCase):
         out = self.verdict(self.runs(3, engine={"median": 1.5, "p90": 3.5, "outageRate": 0.03, "jumpRate": 0.04}))
         self.assertIn("ERGEBNIS: BESSER", out)
 
+    def test_exactly_plus_and_minus_one_percentage_point_are_inside_the_tolerance(self):
+        # Doc condition 4/5: "höchstens +1 Prozentpunkt" passes; a difference of exactly 1 pp counts as equal, in both directions.
+        for engine in ({"outageRate": 0.03}, {"outageRate": 0.01}, {"jumpRate": 0.04}, {"jumpRate": 0.02}):
+            out = self.verdict(self.runs(3, engine=engine))
+            self.assertIn("ERGEBNIS: GLEICHWERTIG", out, engine)
+
+    def test_just_beyond_one_percentage_point_is_outside_the_tolerance(self):
+        self.assertIn("ERGEBNIS: SCHLECHTER", self.verdict(self.runs(3, engine={"outageRate": 0.0301})))
+        self.assertIn("ERGEBNIS: GEMISCHT", self.verdict(self.runs(3, engine={"outageRate": 0.0099})))
+
     def test_recording_named_synthetic_never_counts_even_if_the_origin_claims_field(self):
         datas = self.runs(3, engine={"median": 1.0, "p90": 2.0})
         datas[0]["recording"]["name"] = "synthetic-testraum-1.jsonl"
