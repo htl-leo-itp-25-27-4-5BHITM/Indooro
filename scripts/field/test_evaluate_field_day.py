@@ -220,7 +220,9 @@ class Hooks(FieldDayCase):
         code, _, _ = self.run_day(profiles(P(2.0), [P(1.4)] * 3), lab=True)
         self.assertEqual(code, 0)
         lab = self.out / "lab-import"
-        self.assertEqual(len(list((lab / "recordings").glob("*.jsonl"))), 5)
+        names = sorted(p.name for p in (lab / "recordings").glob("*.jsonl"))
+        self.assertEqual(len(names), 5)
+        self.assertTrue(all(n.startswith("rehearsal-testraum-") for n in names), names)
         self.assertEqual(len(list((lab / "comparisons").glob("*-comparison.json"))), 5)
         self.assertIn("lab-import", self.report())
 

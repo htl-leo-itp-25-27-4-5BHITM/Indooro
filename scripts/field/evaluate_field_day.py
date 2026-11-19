@@ -323,8 +323,11 @@ def lab_import(runs: Sequence[Run], out_dir: Path, site: str, date: str, enabled
         return f"Übersprungen: import_recordings nicht ladbar ({error})."
     target = out_dir / "lab-import"
     incoming = out_dir / "anonymized"
+    # Probe- und synthetische Aufnahmen behalten ihre Kennzeichnung im Dateinamen (rehearsal-/synthetic-), damit sie im
+    # Lab nie wie echte Feldaufnahmen aussehen. import_recordings benennt nach `<site>-<date>-<n>`; die Kennung kommt in `site`.
+    marker = next((p for p in (REHEARSAL_PREFIX, aw.SYNTHETIC_PREFIX) if any(r.path.name.startswith(p) for r in runs)), "")
     try:
-        results = import_recordings.run(incoming, target / "recordings", site, date, move=False, dry_run=False)
+        results = import_recordings.run(incoming, target / "recordings", f"{marker}{site}", date, move=False, dry_run=False)
         (target / "comparisons").mkdir(parents=True, exist_ok=True)
         copied = 0
         for run in runs:
