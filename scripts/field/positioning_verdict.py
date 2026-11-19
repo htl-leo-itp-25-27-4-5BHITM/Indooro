@@ -29,6 +29,9 @@ MIN_EPOCHS_WITH_TRUTH = 100
 EPSILON_ERROR_M = 0.3  # Median und P90: Unterschiede unter 0,3 m (Genauigkeit der Referenz) gelten als gleich
 DELTA_RATE = 0.01  # Ausfall- und Sprungrate: Unterschiede bis 1 Prozentpunkt gelten als gleich
 
+SYNTHETIC_PREFIX = "synthetic-"  # Abschnitt 3, Punkt 1: Dateiname nicht synthetic-...
+ROUND_DIGITS = 9  # Grenzfaelle (genau -0,3 m, genau 1 Prozentpunkt) duerfen nicht an Fliesskomma-Rauschen scheitern
+
 ERROR_FIGURES = ("median", "p90")
 RATE_FIGURES = ("outageRate", "jumpRate")
 FIGURES = ERROR_FIGURES + RATE_FIGURES
@@ -61,7 +64,7 @@ def qualify(path: Path) -> Tuple[Optional[Run], Optional[str]]:
         raise InputError(f"{path}: kein {SCHEMA}")
     recording = data.get("recording") if isinstance(data.get("recording"), dict) else {}
     name = str(recording.get("name") or path.name)
-    if data.get("origin") != "field":
+    if data.get("origin") != "field" or name.startswith(SYNTHETIC_PREFIX):
         return None, "synthetisch oder ohne Feldherkunft"
     session = data.get("session")
     role = session.get("role") if isinstance(session, dict) else None
@@ -79,14 +82,14 @@ def qualify(path: Path) -> Tuple[Optional[Run], Optional[str]]:
         engine, current = _figure(summary, "engine", key), _figure(summary, "current", key)
         if engine is None or current is None:
             return None, f"{key} nicht berechenbar (keine gueltigen Schaetzungen oder Paare)"
-        delta[key] = engine - current
+        delta[key] = round(engine - current, ROUND_DIGITS)
     sha = recording.get("sha256")
     return Run(name=name, sha256=sha if isinstance(sha, str) else None, delta=delta), None
 
 
 def judge(runs: Sequence[Run]) -> Tuple[str, Dict[str, float], List[str]]:
     """(Ergebnis, mittlere Differenzen, Begruendungen). `runs` sind qualifizierte, verschiedene Laeufe."""
-    mean = {key: sum(run.delta[key] for run in runs) / len(runs) for key in FIGURES}
+    mean = {key: round(sum(run.delta[key] for run in runs) / len(runs), ROUND_DIGITS) for key in FIGURES}
     reasons: List[str] = []
     if len(runs) < MIN_EVALUATION_RUNS:
         reasons.append(f"{len(runs)} von mindestens {MIN_EVALUATION_RUNS} Bewertungslaeufen: Ergebnis ist explorativ.")
@@ -128,6 +131,70 @@ def judge(runs: Sequence[Run]) -> Tuple[str, Dict[str, float], List[str]]:
     return ("SCHLECHTER" if against and not favor else "GEMISCHT"), mean, reasons
 
 
+@dataclass
+class Criterion:
+    """Eine der Bedingungen aus Abschnitt 4 (Nummer wie im Dokument) mit Ergebnis und Klartext."""
+
+    number: int
+    passed: bool
+    text: str
+
+
+FIGURE_LABEL = {"median": "Median", "p90": "P90", "outageRate": "Ausfallrate", "jumpRate": "Sprungrate"}
+
+
+def criteria(runs: Sequence[Run], mean: Dict[str, float]) -> List[Criterion]:
+    """Die fuenf Bedingungen fuer BESSER einzeln (Abschnitt 4), unabhaengig vom Gesamtergebnis."""
+    result = [Criterion(1, len(runs) >= MIN_EVALUATION_RUNS, f"Mindestens {MIN_EVALUATION_RUNS} Bewertungsläufe: {len(runs)} gezählt.")]
+    for number, key in ((2, "median"), (3, "p90")):
+        worse = [run.name for run in runs if run.delta[key] >= EPSILON_ERROR_M]
+        ok = bool(runs) and mean[key] <= -EPSILON_ERROR_M and not worse
+        text = f"{FIGURE_LABEL[key]}: Mittel der Differenzen {mean[key]:+.2f} m (gefordert: höchstens -{EPSILON_ERROR_M:.1f} m)"
+        text += (
+            f"; Lauf mit {EPSILON_ERROR_M:.1f} m oder mehr schlechter: {', '.join(worse)}."
+            if worse
+            else "; kein Lauf ist um 0,3 m oder mehr schlechter."
+        )
+        result.append(Criterion(number, ok, text))
+    for number, key in ((4, "outageRate"), (5, "jumpRate")):
+        ok = bool(runs) and mean[key] <= DELTA_RATE
+        text = f"{FIGURE_LABEL[key]}: Mittel der Differenzen {mean[key] * 100:+.1f} Prozentpunkte (gefordert: höchstens +1,0)."
+        result.append(Criterion(number, ok, text))
+    return result
+
+
+@dataclass
+class Evaluation:
+    accepted: List[Run]
+    rejected: List[Tuple[str, str]]
+    verdict: str
+    mean: Dict[str, float]
+    reasons: List[str]
+
+
+def evaluate(paths: Sequence[Path]) -> Evaluation:
+    """Alle Vergleichsdateien durch die Regel schicken. Wirft InputError bei unlesbaren oder falschen Dateien."""
+    accepted: List[Run] = []
+    rejected: List[Tuple[str, str]] = []
+    seen: Dict[str, str] = {}
+    for path in paths:
+        run, reason = qualify(path)
+        if run is None:
+            rejected.append((path.name, reason or "unbekannt"))
+            continue
+        if run.sha256 and run.sha256 in seen:
+            rejected.append((run.name, f"gleiche Aufnahme wie {seen[run.sha256]} (zweimal gezaehlt waere ein Datenleck)"))
+            continue
+        if run.sha256:
+            seen[run.sha256] = run.name
+        accepted.append(run)
+    if accepted:
+        verdict, mean, reasons = judge(accepted)
+    else:
+        verdict, mean, reasons = "EXPLORATIV", {key: 0.0 for key in FIGURES}, ["Kein Lauf erfuellt die Voraussetzungen."]
+    return Evaluation(accepted, rejected, verdict, mean, reasons)
+
+
 DECISIONS = {
     "BESSER": "Die Engine darf vorgeschlagen werden, hinter ihrem Flag eingeschaltet zu werden (eigener Change, Team entscheidet). Vorher die Funkschicht im Feld pruefen (Abschnitt 6).",
     "GLEICHWERTIG": "Kein Genauigkeitsgewinn belegt. Das Flag bleibt aus. Ein Einschalten waere eine Architekturentscheidung und braucht eine eigene Begruendung.",
@@ -165,29 +232,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Entscheidungsregel fuer die Positionsberechnung anwenden.")
     parser.add_argument("comparisons", nargs="+", type=Path, metavar="LAUF-comparison.json")
     args = parser.parse_args(argv)
-    accepted: List[Run] = []
-    rejected: List[Tuple[str, str]] = []
-    seen: Dict[str, str] = {}
     try:
-        for path in args.comparisons:
-            run, reason = qualify(path)
-            if run is None:
-                rejected.append((path.name, reason or "unbekannt"))
-                continue
-            if run.sha256 and run.sha256 in seen:
-                rejected.append((run.name, f"gleiche Aufnahme wie {seen[run.sha256]} (zweimal gezaehlt waere ein Datenleck)"))
-                continue
-            if run.sha256:
-                seen[run.sha256] = run.name
-            accepted.append(run)
+        result = evaluate(args.comparisons)
     except InputError as error:
         print(f"Fehler: {error}", file=sys.stderr)
         return 2
-    if accepted:
-        verdict, mean, reasons = judge(accepted)
-    else:
-        verdict, mean, reasons = "EXPLORATIV", {key: 0.0 for key in FIGURES}, ["Kein Lauf erfuellt die Voraussetzungen."]
-    print(render(accepted, rejected, verdict, mean, reasons))
+    print(render(result.accepted, result.rejected, result.verdict, result.mean, result.reasons))
     return 0
 
 

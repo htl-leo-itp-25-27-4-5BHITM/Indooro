@@ -106,6 +106,40 @@ class VerdictTests(unittest.TestCase):
         self.assertIn("Bewertungslaeufe gezaehlt: 2", out)
         self.assertIn("Datenleck", out)
 
+    def test_exactly_minus_zero_point_three_meter_passes_despite_float_noise(self):
+        # 2.0 - 1.7 = 0.30000000000000004 in floating point; the document says "<= -0.3 m" passes.
+        out = self.verdict(self.runs(3, engine={"median": 1.7, "p90": 3.7}))
+        self.assertIn("ERGEBNIS: BESSER", out)
+
+    def test_just_inside_the_tolerance_is_not_better(self):
+        out = self.verdict(self.runs(3, engine={"median": 1.71, "p90": 3.71}))
+        self.assertIn("ERGEBNIS: GLEICHWERTIG", out)
+
+    def test_exactly_one_percentage_point_more_outage_is_still_allowed(self):
+        out = self.verdict(self.runs(3, engine={"median": 1.5, "p90": 3.5, "outageRate": 0.03, "jumpRate": 0.04}))
+        self.assertIn("ERGEBNIS: BESSER", out)
+
+    def test_recording_named_synthetic_never_counts_even_if_the_origin_claims_field(self):
+        datas = self.runs(3, engine={"median": 1.0, "p90": 2.0})
+        datas[0]["recording"]["name"] = "synthetic-testraum-1.jsonl"
+        out = self.verdict(datas)
+        self.assertIn("Bewertungslaeufe gezaehlt: 2", out)
+
+    def test_criteria_name_each_failed_condition(self):
+        paths = [self.write(i, d) for i, d in enumerate(self.runs(3, engine={"median": 1.5, "p90": 3.5, "outageRate": 0.05}))]
+        result = pv.evaluate(paths)
+        by_number = {c.number: c for c in pv.criteria(result.accepted, result.mean)}
+        self.assertEqual([by_number[n].passed for n in (1, 2, 3, 4, 5)], [True, True, True, False, True])
+        self.assertIn("Ausfallrate", by_number[4].text)
+
+    def test_criteria_report_the_run_that_is_clearly_worse(self):
+        datas = self.runs(3, engine={"median": 1.2, "p90": 3.0})
+        datas[2]["summary"]["engine"]["median"] = 2.5
+        result = pv.evaluate([self.write(i, d) for i, d in enumerate(datas)])
+        median = {c.number: c for c in pv.criteria(result.accepted, result.mean)}[2]
+        self.assertFalse(median.passed)
+        self.assertIn("testraum-2.jsonl", median.text)
+
     def test_wrong_schema_is_an_input_error(self):
         path = self.write(0, {"schema": "other/1"})
         with contextlib.redirect_stderr(io.StringIO()):
