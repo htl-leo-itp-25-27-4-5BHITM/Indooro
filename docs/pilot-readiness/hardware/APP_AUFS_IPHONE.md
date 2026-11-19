@@ -40,19 +40,20 @@ Die App braucht keine Sonderfunktionen (keine Capabilities), deshalb reicht ein 
 2. Beim ersten Start meldet das iPhone „Nicht vertrauenswürdiger Entwickler“: siehe Abschnitt 8.
 3. Die App startet. Beim ersten Start **Bluetooth** und **Standort** (beim Verwenden der App) erlauben.
 
-Alternative ohne Xcode-Fenster: `scripts/ios/install-debug-on-device.sh` baut und installiert für das angesteckte iPhone (Team und Bundle Identifier müssen dafür im Projekt schon eingetragen sein).
+Alternative ohne Xcode-Fenster: `scripts/ios/install-debug-on-device.sh` baut und installiert für das angesteckte iPhone und liest den Bundle Identifier aus den Build-Einstellungen (Team und Bundle Identifier müssen dafür im Projekt schon eingetragen sein; sonst `BUNDLE_ID=… scripts/ios/install-debug-on-device.sh`).
 
 ## 6. Wo sind die Schalter?
 
-In der App oben das **Zahnrad** (Einstellungen). Der Abschnitt **Debug** gibt es nur im Debug-Build.
+In der App das Symbol mit den **Schiebereglern** (Beschriftung „Einstellungen“, auf der Marktkarte oben und in der Marktauswahl). Der Abschnitt **Debug** gibt es nur im Debug-Build.
 
 | Was | Wo | Wann einstellen |
 |---|---|---|
 | **Schattenmodus (alt + neu aufzeichnen)** | Einstellungen > Debug, erster Schalter | Vor der Messung an, danach **App beenden (nach oben wischen) und neu öffnen**. Die Schalter wirken erst nach dem Neustart. |
 | **Neue Ortung steuert Navigation** | erscheint unter dem Schattenmodus | **Aus lassen.** Dann bleiben Karte, Route und Ankunft bei der alten Ortung, und die neue wird nur aufgezeichnet. |
 | **Messungen aufzeichnen** | Einstellungen > Debug | An = Aufnahme läuft, auf der Karte steht **REC**. |
-| **Szenario** (S1 bis S4) und **Rolle** | Einstellungen > Debug | Vor dem Start der Aufnahme. Rolle **Evaluation** für Messungen, die zählen. **Kalibrierung** zählt nie für die Entscheidung. |
-| **M1 bis M8** (Schnellauswahl) | Einstellungen > Debug, erscheint, solange die Aufnahme läuft | Am Marker stehen, auf **M1** bis **M8** tippen. Das schreibt Marker und Wahrheitsposition an die Zellmitte, ohne die Karte anzutippen. |
+| **Szenario** (S1 bis S4) und **Rolle** | Einstellungen > Debug | Vor dem Start der Aufnahme. Rolle **Evaluation** für Messungen, die zählen. **Kalibrierung** und **Exploration** (freie Erkundung) zählen nie für die Entscheidung. |
+| **M1 bis M8** (Schnellauswahl) | Einstellungen > Debug, erscheint, solange die Aufnahme läuft | Am Marker stehen, auf **M1** bis **M8** tippen. Das schreibt Marker und Wahrheitsposition an die Zellmitte, ohne die Karte anzutippen. **Zweimal tippen:** einmal beim Ankommen, einmal kurz vor dem Weitergehen. Zwei gleiche Tipps hintereinander bilden die Standzeit; ein einzelner Tipp ist nur ein Punkt. |
+| **Schatten-Engine läuft** | Einstellungen > Debug, unter den Schaltern | Zeigt „ja“ oder „nein“: das gilt für diese App-Sitzung. Vor der Messung auf „ja“ prüfen. Der Wert steht auch in der Aufnahme (`session`-Zeile, `shadowMode`). |
 | **Sync-Marke setzen** | Einstellungen > Debug (während REC) | Für externe Referenzen (Video, Stoppuhr). |
 | **Beacons live** | Einstellungen, ganz unten (Abschnitt „Beacons live“) | Sichtprüfung vor Ort. |
 
@@ -72,10 +73,10 @@ Vor dem Messtag einmal mit dem iPhone zu Hause probieren:
 
 1. Einstellungen > Debug: Schattenmodus an, App neu starten, Modus **Mit Ortung**.
 2. Szenario S1, Rolle Evaluation wählen, **Messungen aufzeichnen** einschalten.
-3. 30 Sekunden gehen oder stehen, dabei zweimal **M1** tippen (Zähler **Wahrheitsmarker** steigt).
+3. 30 Sekunden stehen, dabei zu Beginn und am Ende je einmal **M1** tippen (Zähler **Wahrheitsmarker** steigt auf 2).
 4. **Messungen aufzeichnen** ausschalten.
 5. Export: In derselben Liste steht die Aufnahme (Dateiname = Zeitstempel). Antippen öffnet das Teilen-Blatt: **In Dateien sichern**, **AirDrop** an den Mac oder Mail an dich selbst. Die Datei endet auf `.jsonl`.
-6. Alternativ (nur Debug-Build) ohne Teilen-Blatt: App **Dateien > Auf meinem iPhone > Indooro > NavigationRecordings**, oder am Mac im Finder beim iPhone unter **Dateien**.
+6. Alternativ ohne Teilen-Blatt: App **Dateien > Auf meinem iPhone > Indooro > NavigationRecordings**, oder am Mac im Finder beim iPhone unter **Dateien**.
 7. Auswerten: Datei nach `swift/indooro-EinkaeuferFinal/NavigationFixtures/incoming/` legen und `scripts/field/evaluate_field_day.sh` (Anleitung: `scripts/field/README.md`). Aufnahmen mit Schattenmodus enthalten `shadow`-Zeilen und werden direkt ohne Replay ausgewertet.
 
 Die Aufnahmen bleiben auf dem iPhone, bis sie gelöscht werden. Es wird nichts an einen Server gesendet.
