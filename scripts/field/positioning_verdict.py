@@ -29,6 +29,7 @@ MIN_EPOCHS_WITH_TRUTH = 100
 EPSILON_ERROR_M = 0.3  # Median und P90: Unterschiede unter 0,3 m (Genauigkeit der Referenz) gelten als gleich
 DELTA_RATE = 0.01  # Ausfall- und Sprungrate: Unterschiede bis 1 Prozentpunkt gelten als gleich
 
+FIELD_ORIGINS = frozenset({"field", "shadow"})  # shadow: Schattenmodus auf dem Geraet (compare_positioning.py), echte Messung
 SYNTHETIC_PREFIX = "synthetic-"  # Abschnitt 3, Punkt 1: Dateiname nicht synthetic-...
 REHEARSAL_PREFIX = "rehearsal-"  # Generalprobe (make_synthetic_recordings.py): kein Feldlauf, außer mit allow_rehearsal
 ROUND_DIGITS = 9  # Grenzfälle (genau -0,3 m, genau 1 Prozentpunkt) duerfen nicht an Fliesskomma-Rauschen scheitern
@@ -68,7 +69,7 @@ def qualify(path: Path, allow_rehearsal: bool = False) -> Tuple[Optional[Run], O
     name = str(recording.get("name") or path.name)
     if name.startswith(REHEARSAL_PREFIX) and not allow_rehearsal:
         return None, "Probeaufnahme (rehearsal-), kein Feldlauf (nur mit --allow-rehearsal)"
-    if data.get("origin") != "field" or name.startswith(SYNTHETIC_PREFIX):
+    if data.get("origin") not in FIELD_ORIGINS or name.startswith(SYNTHETIC_PREFIX):
         return None, "synthetisch oder ohne Feldherkunft"
     session = data.get("session")
     role = session.get("role") if isinstance(session, dict) else None

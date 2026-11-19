@@ -15,8 +15,12 @@ Namen beginnen mit `rehearsal-`, nicht mit `synthetic-`: Der Feldtag-Auswerter z
 Entscheidungsregel behandelt sie sonst wie Feldaufnahmen. Damit laesst sich die ganze Kette ohne iPhone
 durchspielen, auch ein BESSER. **Die Zahlen sind keine Messung und werden nie zitiert.**
 
+Mit `--shadow` schreibt jede Aufnahme zusaetzlich je Schritt eine `shadow`-Zeile (alte und neue Position wie im
+Schattenmodus der App): die alte Ortung rauscht staerker und faellt gelegentlich aus, die neue rauscht weniger.
+In `rehearsal-eval-bad-beacon4` ist es umgekehrt. Auch diese Zahlen sind keine Messung.
+
 Aufruf (Repo-Wurzel):
-    python -I scripts/field/make_synthetic_recordings.py [--out-dir DIR] [--layout-out FILE]
+    python -I scripts/field/make_synthetic_recordings.py [--out-dir DIR] [--layout-out FILE] [--shadow]
 """
 
 from __future__ import annotations
@@ -68,6 +72,9 @@ class RunSpec:
     rssi_sigma_db: float = 2.5
     silent_beacons: Tuple[str, ...] = ()
     sync_label: Optional[str] = None
+    # Positionsrauschen (m) der alten und der neuen Ortung in `shadow`-Zeilen (nur mit --shadow).
+    shadow_sigma_legacy: float = 1.2
+    shadow_sigma_engine: float = 0.6
 
 
 RUN_SPECS: List[RunSpec] = [
@@ -75,7 +82,7 @@ RUN_SPECS: List[RunSpec] = [
     RunSpec("rehearsal-eval-2.jsonl", 22, "evaluation", "S2", "iPhone14,5", "iOS 17.6"),
     RunSpec("rehearsal-eval-3.jsonl", 33, "evaluation", "S3", "iPhone15,3", "iOS 18.1"),
     RunSpec("rehearsal-eval-bad-beacon4.jsonl", 44, "evaluation", "S2", "iPhone15,3", "iOS 18.1",
-            rssi_sigma_db=7.0, silent_beacons=("Indooro4",)),
+            rssi_sigma_db=7.0, silent_beacons=("Indooro4",), shadow_sigma_legacy=0.6, shadow_sigma_engine=2.4),
     RunSpec("rehearsal-calibration-1.jsonl", 55, "calibration", "S1", "iPhone15,3", "iOS 18.1"),
 ]
 
@@ -135,8 +142,11 @@ def _path_points(polyline: Sequence[Point]) -> List[Tuple[Point, float]]:
 
 
 class Writer:
-    def __init__(self, spec: RunSpec, index: int) -> None:
+    def __init__(self, spec: RunSpec, index: int, shadow: bool = False) -> None:
         self.spec = spec
+        self.shadow = shadow
+        self.shadow_rng = random.Random(spec.seed + 1000)  # eigener Strom: die Funkwerte bleiben mit und ohne --shadow gleich
+        self.shadow_epoch = 0
         self.rng = random.Random(spec.seed)
         self.t = START_TIME + 3600.0 * index
         self.next_ranging = self.t
@@ -174,8 +184,26 @@ class Writer:
             "marker": f"M{self.markers}",
         })
 
+    def _shadow_line(self, position: Point) -> None:
+        self.shadow_epoch += 1
+        rng = self.shadow_rng
+        legacy: Dict[str, object]
+        if self.shadow_epoch % 25 == 0:  # gelegentlicher Ausfall der alten Ortung
+            legacy = {"status": "none"}
+        else:
+            legacy = {"x": round(position[0] + rng.gauss(0, self.spec.shadow_sigma_legacy), 3),
+                      "y": round(position[1] + rng.gauss(0, self.spec.shadow_sigma_legacy), 3), "status": "tracking"}
+        engine: Dict[str, object] = {
+            "x": round(position[0] + rng.gauss(0, self.spec.shadow_sigma_engine), 3),
+            "y": round(position[1] + rng.gauss(0, self.spec.shadow_sigma_engine), 3),
+            "status": "tracking", "confidence": round(max(0.0, 1.0 - self.spec.shadow_sigma_engine / 4), 3),
+        }
+        self.lines.append({"type": "shadow", "t": round(self.t, 3), "legacy": legacy, "engine": engine})
+
     def step(self, position: Point) -> None:
         self._measure(position)
+        if self.shadow:
+            self._shadow_line(position)
         self.t += TICK_S
 
     def stand(self, point: Point, seconds: float) -> None:
@@ -198,8 +226,8 @@ class Writer:
             self.truth(polyline[index])
 
 
-def build_recording(spec: RunSpec, index: int) -> List[Dict[str, object]]:
-    writer = Writer(spec, index)
+def build_recording(spec: RunSpec, index: int, shadow: bool = False) -> List[Dict[str, object]]:
+    writer = Writer(spec, index, shadow)
     writer.stand(LOOP[0], 4.0)
     writer.walk(LOOP + LOOP[1:], corners=range(1, 2 * len(LOOP) - 1))
     writer.walk(AISLE, corners=range(1, len(AISLE)))
@@ -215,12 +243,12 @@ def dump_layout(layout: Dict[str, object]) -> str:
     return json.dumps(layout, sort_keys=True, indent=2, ensure_ascii=False) + "\n"
 
 
-def write_all(out_dir: Path, layout_out: Optional[Path] = None) -> List[Path]:
+def write_all(out_dir: Path, layout_out: Optional[Path] = None, shadow: bool = False) -> List[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     written: List[Path] = []
     for index, spec in enumerate(RUN_SPECS):
         target = out_dir / spec.name
-        target.write_text(dump_lines(build_recording(spec, index)), encoding="utf-8")
+        target.write_text(dump_lines(build_recording(spec, index, shadow)), encoding="utf-8")
         written.append(target)
     if layout_out is not None:
         layout_out.parent.mkdir(parents=True, exist_ok=True)
@@ -233,8 +261,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument("--out-dir", type=Path, required=True, metavar="DIR", help="Ordner fuer die Aufnahmen")
     parser.add_argument("--layout-out", type=Path, metavar="FILE", help=f"Layout zusaetzlich schreiben (Standard-Fixture: {LAYOUT_FIXTURE.relative_to(HERE.parents[1])})")
+    parser.add_argument("--shadow", action="store_true", help="je Schritt eine shadow-Zeile (alte und neue Position) schreiben")
     args = parser.parse_args(argv)
-    for path in write_all(args.out_dir, args.layout_out):
+    for path in write_all(args.out_dir, args.layout_out, args.shadow):
         print(f"Geschrieben: {path}")
     return 0
 
