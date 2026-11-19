@@ -15,7 +15,10 @@ set -eu
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 PROJECT="$ROOT/swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj"
 SCHEME="MCindooroApp"
-BUNDLE_ID="at.ac.htl.leonding.indooroswift2"
+# Bundle-ID aus den Build-Einstellungen (Personal Team: dort geaenderte ID gilt), BUNDLE_ID=... ueberschreibt.
+DEFAULT_BUNDLE_ID="at.ac.htl.leonding.indooroswift2"
+BUNDLE_ID="${BUNDLE_ID:-$(xcodebuild -showBuildSettings -project "$ROOT/swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj" -scheme MCindooroApp -configuration Debug 2>/dev/null | awk -F' = ' '/^ *PRODUCT_BUNDLE_IDENTIFIER = / {print $2; exit}' || true)}"
+BUNDLE_ID="${BUNDLE_ID:-$DEFAULT_BUNDLE_ID}"
 DERIVED="${DERIVED_DATA_PATH:-$ROOT/swift/indooro-EinkaeuferFinal/.build/device-derived}"
 WANTED="${1:-}"
 
