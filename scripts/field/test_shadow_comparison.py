@@ -74,7 +74,7 @@ class ShadowFileTest(unittest.TestCase):
             line(type="truth", t=10, x=0.5, y=0.5, marker="M1"),
             line(type="shadow", t=1, legacy={"x": 0.5, "y": 1.5, "status": "tracking"},
                  engine={"x": 0.5, "y": 0.75, "status": "tracking", "confidence": 0.9}),
-            line(type="shadow", t=2, legacy={"status": "none"}, engine={"x": 0.5, "y": 1.5, "status": "lowConfidence", "confidence": 0.2}),
+            line(type="shadow", t=3, legacy={"status": "none"}, engine={"x": 0.5, "y": 1.5, "status": "lowConfidence", "confidence": 0.2}),
         ]
 
     def test_summary_schema_origin_and_session(self):
@@ -84,11 +84,29 @@ class ShadowFileTest(unittest.TestCase):
         self.assertEqual(data["session"]["role"], "evaluation")
         self.assertEqual(len(data["recording"]["sha256"]), 64)
         current, engine = data["summary"]["current"], data["summary"]["engine"]
-        self.assertEqual((current["epochsWithTruth"], engine["epochsWithTruth"]), (2, 2))
-        self.assertEqual(current["outageRate"], 0.5)
+        # t=1 ist die erste Zeile (Aufwaermphase 1,2 s ab ihr): nur t=3 zaehlt
+        self.assertEqual((current["epochsWithTruth"], engine["epochsWithTruth"]), (1, 1))
+        self.assertEqual(current["outageRate"], 1.0)
         self.assertEqual(engine["outageRate"], 0.0)
-        self.assertEqual(current["median"], 1.0)
-        self.assertEqual(engine["median"], 0.625)  # Fehler 0,25 und 1,0
+        self.assertEqual(engine["median"], 1.0)
+        data0 = cp.shadow_comparison_data(self.write("rehearsal-x0.jsonl", self.sample()), warmup=0)
+        self.assertEqual(data0["summary"]["current"]["epochsWithTruth"], 2)
+        self.assertEqual(data0["summary"]["engine"]["median"], 0.625)  # Fehler 0,25 und 1,0
+
+    def test_warmup_and_not_ready_epochs_drop_for_both_paths(self):
+        lines = self.sample()[:3] + [
+            line(type="shadow", t=1, legacy={"x": 0.5, "y": 0.5, "status": "tracking"}, engine={"status": "warmingUp"}),
+            line(type="shadow", t=1.5, legacy={"x": 9, "y": 9, "status": "tracking"}, engine={"x": 9, "y": 9, "status": "tracking"}),
+            line(type="shadow", t=2.4, legacy={"x": 0.5, "y": 0.5, "status": "tracking"}, engine={"status": "stopped"}),
+            line(type="shadow", t=3, legacy={"x": 0.5, "y": 0.5, "status": "tracking"}, engine={"x": 0.5, "y": 1.5, "status": "tracking"}),
+        ]
+        data = cp.shadow_comparison_data(self.write("w.jsonl", lines))
+        # t=1 (Aufwaermphase und warmingUp), t=1.5 (Aufwaermphase 1,2 s ab erster Zeile), t=2.4 (stopped) fallen weg
+        self.assertEqual(data["excludedEpochs"], 3)
+        self.assertEqual(data["summary"]["current"]["epochs"], data["summary"]["engine"]["epochs"])
+        self.assertEqual(data["summary"]["current"]["epochs"], 1)
+        self.assertEqual(data["summary"]["current"]["median"], 0.0)
+        self.assertEqual(data["summary"]["engine"]["median"], 1.0)
 
     def test_recording_without_shadow_lines_is_not_shadow(self):
         path = self.write("a.jsonl", self.sample()[:3])
@@ -126,6 +144,26 @@ class ShadowFileTest(unittest.TestCase):
         with contextlib.redirect_stderr(io.StringIO()):
             code = cp.main([str(recording), "--layout", str(LAYOUT), "--replay", "--work-dir", str(self.root / "w")], runner=runner)
         self.assertEqual((code, calls), (0, ["rehearsal-z"]))
+
+
+class ShadowWithoutTruthTest(unittest.TestCase):
+    def test_zero_truth_epochs_exclude_the_run_like_the_replay(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            recording = root / "rehearsal-eval-1.jsonl"
+            recording.write_text(
+                "\n".join([
+                    line(type="session", t=0, schema="indooro-recording/2", app="1.0 (1)", deviceModel="iPhone15,3", os="iOS 18.1", role="evaluation"),
+                    line(type="shadow", t=1, legacy={"x": 1, "y": 1, "status": "tracking"}, engine={"x": 1, "y": 1, "status": "tracking"}),
+                    line(type="shadow", t=4, legacy={"x": 1, "y": 1, "status": "tracking"}, engine={"x": 1, "y": 1, "status": "tracking"}),
+                ]) + "\n", encoding="utf-8")
+            run = efd.Run(path=recording, name="rehearsal-eval-1", anonymized=recording)
+            efd.process_run(
+                run, layout=LAYOUT, site="testraum", markers=None, out_dir=root / "out",
+                replay_runner=stub.stub_replay_runner, compare_runner=lambda *a: 1, shadow=efd.shadow_comparison,
+            )
+            self.assertIn("keine Epoche mit Referenz", run.excluded or "")
+            self.assertIsNone(run.comparison_path)
 
 
 class FieldDayWithShadowTest(unittest.TestCase):

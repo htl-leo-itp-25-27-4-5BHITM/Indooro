@@ -216,8 +216,17 @@ def _side_position(side: object) -> Optional[Tuple[float, float]]:
     return None
 
 
-def shadow_comparison_data(recording: Path, name: Optional[str] = None) -> dict:
-    """`indooro-position-comparison/1` aus den `shadow`-Zeilen einer (anonymisierten) Aufnahme, `origin: "shadow"`."""
+SHADOW_WARMUP_S = 1.2  # wie der Replay (App-Wert); Aufwaermphase der Engine ab der ersten shadow-Zeile
+NOT_READY_STATUSES = frozenset({"stopped", "warmingUp"})
+
+
+def shadow_comparison_data(recording: Path, name: Optional[str] = None, warmup: float = SHADOW_WARMUP_S) -> dict:
+    """`indooro-position-comparison/1` aus den `shadow`-Zeilen einer (anonymisierten) Aufnahme, `origin: "shadow"`.
+
+    Wie im Replay zaehlen die ersten `warmup` Sekunden ab der ersten shadow-Zeile nicht, und Epochen, in denen eine
+    Seite `stopped` oder `warmingUp` meldet, fallen fuer **beide** Pfade weg (gleiche Epochenmenge, `excludedEpochs`).
+    Die Seiten tragen eigene Quell-Zeitstempel `t`; der Versatz ist hoechstens ein Tick (0,35 s).
+    """
     raw = recording.read_bytes()
     lines = read_recording_lines(recording)
     shadow = sorted((line for line in lines if line.get("type") == "shadow" and _is_number(line.get("t"))), key=lambda l: l["t"])
@@ -227,8 +236,14 @@ def shadow_comparison_data(recording: Path, name: Optional[str] = None) -> dict:
     rows = []
     current_epochs = []
     engine_epochs = []
+    excluded = 0
+    start = float(shadow[0]["t"])
     for line in shadow:
         t = float(line["t"])
+        statuses = {(line.get(side) or {}).get("status") for side in ("legacy", "engine") if isinstance(line.get(side), dict)}
+        if t < start + warmup or statuses & NOT_READY_STATUSES:
+            excluded += 1
+            continue
         truth = truth_at(markers, holds, t)
         legacy = _side_position(line.get("legacy"))
         engine = _side_position(line.get("engine"))
@@ -258,6 +273,8 @@ def shadow_comparison_data(recording: Path, name: Optional[str] = None) -> dict:
         "methods": ["current", "engine"],
         "epochs": rows,
         "summary": {"current": path_metrics(current_epochs), "engine": path_metrics(engine_epochs)},
+        "warmupSeconds": warmup,
+        "excludedEpochs": excluded,
         "warnings": [
             "Schattenmodus: beide Ortungen liefen im selben Lauf auf demselben Geraet, die Epochen sind die der neuen Ortung (shadow-Zeilen).",
             "Aufnahmen mit Namen synthetic- gelten nie als Feldlauf.",
@@ -265,18 +282,18 @@ def shadow_comparison_data(recording: Path, name: Optional[str] = None) -> dict:
     }
 
 
-def write_shadow_comparison(recording: Path, out_dir: Path, name: str) -> Optional[Path]:
+def write_shadow_comparison(recording: Path, out_dir: Path, name: str, warmup: float = SHADOW_WARMUP_S) -> Optional[Path]:
     """Schreibt `<name>-comparison.json`; `None`, wenn die Aufnahme keine `shadow`-Zeilen hat."""
     if not has_shadow_lines(recording):
         return None
-    data = shadow_comparison_data(recording, name)
+    data = shadow_comparison_data(recording, name, warmup)
     out_dir.mkdir(parents=True, exist_ok=True)
     target = out_dir / f"{name}-comparison.json"
     target.write_text(json.dumps(data, sort_keys=True, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return target
 
 
-def compare_shadow(recording: Path, work_dir: Path) -> int:
+def compare_shadow(recording: Path, work_dir: Path, warmup: Optional[float] = None) -> int:
     if not recording.is_file():
         raise AnalysisError(f"Aufnahme nicht gefunden: {recording}", 2)
     name = SAFE_NAME_RE.sub("-", recording.stem).strip("-") or "aufnahme"
@@ -285,7 +302,7 @@ def compare_shadow(recording: Path, work_dir: Path) -> int:
     anonymize_to(recording, anonymized)
     if is_synthetic(recording):
         print("Hinweis: synthetische Aufnahme. Das Ergebnis ist keine Messung.", file=sys.stderr)
-    target = write_shadow_comparison(anonymized, work_dir, name)
+    target = write_shadow_comparison(anonymized, work_dir, name, SHADOW_WARMUP_S if warmup is None else warmup)
     if target is None:
         raise AnalysisError("Keine shadow-Zeilen in der Aufnahme (Schattenmodus aus). Ohne --shadow laeuft der Replay.", 2)
     data = json.loads(target.read_text(encoding="utf-8"))
@@ -334,7 +351,7 @@ def compare(
     if not recording.is_file():
         raise AnalysisError(f"Aufnahme nicht gefunden: {recording}", 2)
     if mode == "shadow" or (mode == "auto" and has_shadow_lines(recording)):
-        code = compare_shadow(recording, work_dir)
+        code = compare_shadow(recording, work_dir, warmup)
         if code == NO_TRUTH_EXIT:
             print("Keine Epoche mit Referenz: keine Wahrheitsmarken (Marker M1 bis M8) im Zeitraum der shadow-Zeilen.", file=sys.stderr)
         return code

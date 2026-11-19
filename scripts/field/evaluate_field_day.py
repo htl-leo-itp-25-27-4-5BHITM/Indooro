@@ -272,6 +272,14 @@ def process_run(
         run.errors.append(f"Vergleichsdatei nicht lesbar: {error}")
         return
     run.comparison = data if isinstance(data, dict) else None
+    if shadow_path is not None and isinstance(run.comparison, dict):
+        summary = run.comparison.get("summary")
+        current = summary.get("current") if isinstance(summary, dict) else None
+        if isinstance(current, dict) and not current.get("epochsWithTruth"):
+            # wie beim Replay: ohne Wahrheitsmarken im Zeitraum der shadow-Zeilen gibt es nichts zu bewerten
+            run.excluded = "keine Epoche mit Referenz (keine Wahrheitsmarken)"
+            run.comparison_path = None
+            run.comparison = None
 
 
 # ---------------------------------------------------------------------------------------------------------------------
