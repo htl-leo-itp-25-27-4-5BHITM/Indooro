@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { DataTable } from "./DataTable";
 import type { ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
+import { EmptyState } from "./EmptyState";
 
 interface Region { id: string; code: string; name: string }
 interface StoreSummary {
@@ -88,7 +89,9 @@ export function StoresPage({ api, user }: { api: ApiClient; user: CurrentUser })
     {!page && !error && <div className="notice" role="status">Stores werden geladen …</div>}
     {page && !error && <section className="notice store-results" aria-label="Store-Ergebnisse">
       <div className="section-heading"><h3>{page.totalElements.toLocaleString("de-AT")} Stores</h3><span>Seite {page.page + 1} von {Math.max(1, totalPages)}</span></div>
-      {page.content.length === 0 ? <p>Keine Stores passen zu den Filtern.</p> : <DataTable label="Store-Tabelle"><thead><tr><th>Store</th><th className="col-low">Region</th><th className="col-mid">Ort</th><th>Beacons</th><th>Layout</th><th>Aktionen</th></tr></thead><tbody>{page.content.map((store) => <tr key={store.id}>
+      {page.content.length === 0 ? (query.query || query.regionId || query.layout || query.status !== "ACTIVE"
+        ? <EmptyState action={<a className="button" href="/admin/next/stores/">Filter zurücksetzen</a>}>Keine Stores passen zu den Filtern.</EmptyState>
+        : <EmptyState action={user.role !== "store-manager" ? <a className="button primary" href="/admin/next/stores/new/">Ersten Store anlegen</a> : undefined}>Noch keine Stores vorhanden.</EmptyState>) : <DataTable label="Store-Tabelle"><thead><tr><th>Store</th><th className="col-low">Region</th><th className="col-mid">Ort</th><th>Beacons</th><th>Layout</th><th>Aktionen</th></tr></thead><tbody>{page.content.map((store) => <tr key={store.id}>
         <td><strong>{store.name}</strong><small>{store.storeCode}</small></td><td className="col-low">{store.region?.name ?? "–"}</td><td className="col-mid">{store.city || "–"}</td><td>{store.activeBeaconCount}</td><td><span className={`status-pill ${store.hasActiveLayout ? "ready" : "missing"}`}>{store.hasActiveLayout ? "Aktiv" : "Fehlt"}</span></td><td><div className="row-actions"><a href={`/admin/next/stores/detail/?storeId=${encodeURIComponent(store.id)}`}>Details</a>{store.status === "ACTIVE" && <a href={`/admin/next/stores/detail/?storeId=${encodeURIComponent(store.id)}&edit=1`}>Bearbeiten</a>}<a href={`/admin/next/editor/?storeId=${encodeURIComponent(store.id)}`}>Editor</a></div></td>
       </tr>)}</tbody></DataTable>}
       <div className="pager"><span>{page.totalElements ? `${page.page * page.size + 1}–${Math.min((page.page + 1) * page.size, page.totalElements)} von ${page.totalElements}` : "0 Ergebnisse"}</span><div>{page.page > 0 && <a className="button" href={pageLink(page.page - 1)}>Zurück</a>}{page.page + 1 < totalPages && <a className="button" href={pageLink(page.page + 1)}>Weiter</a>}</div></div>

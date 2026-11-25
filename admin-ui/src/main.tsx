@@ -22,6 +22,7 @@ import { candidateAccess, candidateNavigationPath, visibleRoutes, type CurrentUs
 import "./style.css";
 
 const api = createApiClient();
+const ROLE_TEXT: Record<string, string> = { admin: "Administrator", "region-manager": "Regionsmanager", "store-manager": "Marktleiter" };
 
 function AdminCandidate() {
   const [user, setUser] = useState<CurrentUser | null>(null);
@@ -52,7 +53,7 @@ function AdminCandidate() {
       <a className="skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <header className="masthead">
         <a className="brand" href="/admin/next/" aria-label="Indooro Admin Startseite">Indooro <span>Admin</span></a>
-        {user && <div className="account"><span>{user.username}</span><span className="scope">{user.scope?.storeName ?? user.scope?.regionName ?? user.role}</span><a href="/admin/logout">Logout</a></div>}
+        {user && <div className="account"><span>{user.username}</span><span className="scope">{user.scope?.storeName ?? user.scope?.regionName ?? ROLE_TEXT[user.role] ?? user.role}</span><a href="/admin/logout">Abmelden</a></div>}
       </header>
       <div className="workspace">
         {user && <nav aria-label="Admin Navigation" className="sidebar">
@@ -69,7 +70,7 @@ function AdminCandidate() {
             <a href="/admin/">{error.kind === "unauthorized" ? "Erneut anmelden" : "Zur bisherigen Administration"}</a>
           </section>}
           {user && access === "forbidden" && <section role="alert" className="notice"><h2>Zugriff verweigert</h2><p>Für diesen Bereich fehlt die Berechtigung.</p></section>}
-          {user && access === "missing" && <section role="alert" className="notice"><h2>Seite nicht gefunden</h2><p>Dieser Kandidatenpfad ist nicht eingerichtet.</p></section>}
+          {user && access === "missing" && <section role="alert" className="notice"><h2>Seite nicht gefunden</h2><p>Diese Seite gibt es nicht.</p></section>}
           {user && access === "allowed" && (window.location.pathname.includes("/editor")
             ? new URLSearchParams(window.location.search).has("storeId") ? <EditorRoute api={api} /> : <LegacyEditorRoute api={api} role={user.role} />
             : window.location.pathname.includes("/stores/new")

@@ -103,7 +103,7 @@ export function SearchIndexPage({ api, user }: { api: ApiClient; user: CurrentUs
       <button className="button" type="button" disabled={disabled} onClick={refresh}>Aktualisieren</button>
     </div>
 
-    {error && <section className="notice error-state" role="alert"><h3>{error.kind === "conflict" ? "Umschaltung abgelehnt" : "Aktion nicht möglich"}</h3><p>{error.message}</p>{error.kind === "unauthorized" && <a href="/admin/">Erneut anmelden</a>}</section>}
+    {error && <section className="notice error-state" role="alert"><h3>{error.kind === "conflict" ? "Umschaltung abgelehnt" : "Aktion nicht möglich"}</h3><p>{error.message}</p>{error.kind === "unauthorized" ? <a href="/admin/">Erneut anmelden</a> : !overview && <button className="button" type="button" disabled={disabled} onClick={refresh}>Erneut versuchen</button>}</section>}
     {notice && <p className="notice" role="status">{notice}</p>}
     {busy === "load" && !overview && <p className="notice" role="status">Suchindex wird geladen …</p>}
     {busy === "reindex" && <p className="notice" role="status">Reindex läuft. Bitte warten und die Seite offen lassen …</p>}

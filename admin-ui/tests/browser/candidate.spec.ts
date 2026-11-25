@@ -35,7 +35,7 @@ test("candidate navigation follows staff role and offers logout", async ({ page 
   await expect(navigation.getByRole("link", { name: "Layout Editor" })).toHaveAttribute("href", "/admin/next/editor/?storeId=store-1");
   await expect(navigation.getByRole("link", { name: "Rezepte" })).toHaveCount(0);
   await expect(page.getByText("Indooro Linz")).toBeVisible();
-  await expect(page.getByRole("link", { name: "Logout" })).toHaveAttribute("href", "/admin/logout");
+  await expect(page.getByRole("link", { name: "Abmelden" })).toHaveAttribute("href", "/admin/logout");
   await page.goto("/admin/next/stores/detail/?storeId=store-2");
   await expect(page.getByRole("alert")).toContainText("Zugriff verweigert");
 });
@@ -83,7 +83,7 @@ test("dashboard uses scoped backend totals and only admin loads audit activity",
   await expect(metrics).toContainText("2");
   await expect(page.getByText("Layout veröffentlicht")).toBeVisible();
   await expect(page.getByRole("link", { name: "Layouts prüfen" })).toHaveAttribute("href", "/admin/next/stores/?layout=missing");
-  const manageStore = page.getByRole("link", { name: "Store verwalten" });
+  const manageStore = page.getByRole("link", { name: "Zur Store-Liste" });
   const createStore = page.getByRole("link", { name: "Store anlegen" });
   await expect(createStore).toHaveAttribute("href", "/admin/next/stores/new/");
   await manageStore.focus();
@@ -177,7 +177,7 @@ test("candidate stores exposes empty, load-error, and keyboard retry states", as
   fail = false;
   await page.getByRole("button", { name: "Erneut versuchen" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("region", { name: "Store-Ergebnisse" })).toContainText("Keine Stores passen zu den Filtern.");
+  await expect(page.getByRole("region", { name: "Store-Ergebnisse" })).toContainText("Noch keine Stores vorhanden.");
 
   await page.getByRole("searchbox", { name: "Suche" }).focus();
   await page.keyboard.type("Linz");
