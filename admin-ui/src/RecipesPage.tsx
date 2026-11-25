@@ -216,7 +216,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   };
   return <div className="recipes-page">
-    <div className="page-intro"><div><p className="eyebrow">Inhalte</p><h2>Rezepte</h2><p>Rezeptdaten, Zutaten, Schritte und Produktzuordnung.</p></div><button className="button primary" type="button" onClick={startCreate}>Rezept anlegen</button></div>
+    <div className="page-intro"><div><p className="eyebrow">Inhalte</p><h1>Rezepte</h1><p>Rezeptdaten, Zutaten, Schritte und Produktzuordnung.</p></div><button className="button primary" type="button" onClick={startCreate}>Rezept anlegen</button></div>
     <form className="notice recipe-filters" action="/admin/next/recipes/" method="get" role="search">
       <label>Suche<input type="search" name="q" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Titel oder Slug" /></label>
       <label>Status<select name="status" defaultValue={filters.status}><option value="">Alle</option><option value="DRAFT">Entwurf</option><option value="PUBLISHED">Veröffentlicht</option><option value="ARCHIVED">Archiviert</option></select></label>

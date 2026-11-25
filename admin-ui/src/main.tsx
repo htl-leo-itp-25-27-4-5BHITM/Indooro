@@ -61,16 +61,17 @@ function AdminCandidate() {
           {navigation.map(({ route, href }) => <a href={href} key={route.path} aria-current={route === currentNavigation ? "page" : undefined}>{route.label}</a>)}
         </nav>}
         <main id="main-content" tabIndex={-1} className={`content ${window.location.pathname.includes("/next/editor") ? "editor-content" : ""}`}>
-          <h1>Indooro Admin</h1>
-          {loading && <p role="status">Berechtigungen werden geladen …</p>}
+          {/* Every page renders its own h1; these cover the states and routes that do not. */}
+          {loading && <><h1 className="visually-hidden">Indooro Admin</h1><p role="status">Berechtigungen werden geladen …</p></>}
+          {user && access === "allowed" && window.location.pathname.includes("/editor") && <h1 className="visually-hidden">Layout-Editor</h1>}
           {error && <section role="alert" className="notice">
-            <h2>{error.kind === "unauthorized" ? "Sitzung abgelaufen" : error.kind === "forbidden" ? "Zugriff verweigert" : "Profil nicht verfügbar"}</h2>
+            <h1>{error.kind === "unauthorized" ? "Sitzung abgelaufen" : error.kind === "forbidden" ? "Zugriff verweigert" : "Profil nicht verfügbar"}</h1>
             <p>{error.message}</p>
             {error.kind === "forbidden" && <ForbiddenIdentity api={api} />}
             <a href="/admin/">{error.kind === "unauthorized" ? "Erneut anmelden" : "Zur bisherigen Administration"}</a>
           </section>}
-          {user && access === "forbidden" && <section role="alert" className="notice"><h2>Zugriff verweigert</h2><p>Für diesen Bereich fehlt die Berechtigung.</p></section>}
-          {user && access === "missing" && <section role="alert" className="notice"><h2>Seite nicht gefunden</h2><p>Diese Seite gibt es nicht.</p></section>}
+          {user && access === "forbidden" && <section role="alert" className="notice"><h1>Zugriff verweigert</h1><p>Für diesen Bereich fehlt die Berechtigung.</p></section>}
+          {user && access === "missing" && <section role="alert" className="notice"><h1>Seite nicht gefunden</h1><p>Diese Seite gibt es nicht.</p></section>}
           {user && access === "allowed" && (window.location.pathname.includes("/editor")
             ? new URLSearchParams(window.location.search).has("storeId") ? <EditorRoute api={api} /> : <LegacyEditorRoute api={api} role={user.role} />
             : window.location.pathname.includes("/stores/new")

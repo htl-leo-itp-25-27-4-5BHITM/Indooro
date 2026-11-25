@@ -76,7 +76,7 @@ export function StoresPage({ api, user }: { api: ApiClient; user: CurrentUser })
   const totalPages = page ? Math.ceil(page.totalElements / Math.max(1, page.size)) : 0;
   const pageLink = (next: number) => `/admin/next/stores/${storeQueryString({ ...query, page: next }) ? `?${storeQueryString({ ...query, page: next })}` : ""}`;
   return <div className="stores-page">
-    <div className="page-intro"><div><p className="eyebrow">Standorte</p><h2>Stores</h2><p>Filialen, Beacons und Layout-Status im aktuellen Zugriff.</p></div>{user.role !== "store-manager" && <a className="button primary" href="/admin/next/stores/new/">Store anlegen</a>}</div>
+    <div className="page-intro"><div><p className="eyebrow">Standorte</p><h1>Stores</h1><p>Filialen, Beacons und Layout-Status im aktuellen Zugriff.</p></div>{user.role !== "store-manager" && <a className="button primary" href="/admin/next/stores/new/">Store anlegen</a>}</div>
     <form className="notice store-filters" action="/admin/next/stores/" method="get" role="search">
       <label>Suche<input type="search" name="query" defaultValue={query.query} placeholder="Name, Code oder Ort" /></label>
       <label>Region<select key={regions.length} name="regionId" defaultValue={query.regionId}><option value="">Alle Regionen</option>{regions.map((region) => <option key={region.id} value={region.id}>{region.code} · {region.name}</option>)}</select></label>

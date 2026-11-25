@@ -153,7 +153,7 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
   }
 
   if (!canManage) {
-    return <section role="alert" className="notice"><h2>Zugriff verweigert</h2><p>Zugänge können nur Administratoren vergeben.</p></section>;
+    return <section role="alert" className="notice"><h1>Zugriff verweigert</h1><p>Zugänge können nur Administratoren vergeben.</p></section>;
   }
 
   const fieldProps = (name: keyof AccessDraft) => ({
@@ -168,7 +168,7 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
     <div className="page-intro">
       <div>
         <p className="eyebrow">Verwaltung</p>
-        <h2 id="access-title">Zugänge</h2>
+        <h1 id="access-title">Zugänge</h1>
         <p>Keycloak-Benutzer einer Rolle und einem Markt oder einer Region zuordnen. Den Benutzer selbst und seine Realm-Rolle legen Sie weiter in der Keycloak-Konsole an.</p>
       </div>
     </div>

@@ -489,7 +489,7 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
   }
 
   return <section className="beacons-page" aria-labelledby="beacons-title">
-    <div className="page-intro"><div><p className="eyebrow">Inventar</p><h2 id="beacons-title">Beacons</h2><p>Hardware-Identitäten und Store-Zuweisungen verwalten.</p></div>
+    <div className="page-intro"><div><p className="eyebrow">Inventar</p><h1 id="beacons-title">Beacons</h1><p>Hardware-Identitäten und Store-Zuweisungen verwalten.</p></div>
       {admin && <div className="toolbar"><button type="button" className="primary" onClick={openCreate}>Beacon anlegen</button><button type="button" onClick={() => { setBulkOpen((value) => !value); setBulkReview(null); setBulkError(""); setCreateStoreId(contextStore?.id ?? ""); }}>Mehrere anlegen</button></div>}
     </div>
     {notice && <p role="status" className="notice success">{notice}</p>}
