@@ -60,13 +60,13 @@ struct ShoppingSessionPanel: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(currentStop.title)
                             .font(.subheadline.weight(.bold))
-                            .lineLimit(1)
+                            .lineLimit(2)
 
                         if let location = locationText(currentStop) {
                             Text(location)
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(accent)
-                                .lineLimit(1)
+                                .lineLimit(2)
                         }
 
                         Text(currentStop.itemNamesPreview)
@@ -115,11 +115,12 @@ struct ShoppingSessionPanel: View {
                         onMarkCurrentStopDone()
                     } label: {
                         Text("Erledigt")
-                            .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.white)
-                    .frame(height: 44)
+                    .frame(minHeight: 44)
                     .background(accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                     Button("Überspringen") {
@@ -127,8 +128,8 @@ struct ShoppingSessionPanel: View {
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(accent)
-                    .frame(height: 44)
                     .padding(.horizontal, 10)
+                    .frame(minHeight: 44)
                     .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                     Button {
@@ -806,7 +807,8 @@ struct ProductsPage: View {
                 .minimumScaleFactor(0.75)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 84)
+        .padding(.vertical, 6)
+        .frame(minHeight: 84)
         .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
