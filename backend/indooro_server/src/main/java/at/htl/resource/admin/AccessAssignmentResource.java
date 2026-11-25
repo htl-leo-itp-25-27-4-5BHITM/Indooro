@@ -1,5 +1,7 @@
 package at.htl.resource.admin;
 
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 import at.htl.admin.dto.AccessAssignmentDtos;
 import at.htl.admin.entity.UserAccessStatus;
 import at.htl.admin.service.AccessAssignmentService;
@@ -43,9 +45,17 @@ public class AccessAssignmentResource {
 
     @Operation(operationId = "createAccessAssignment")
     @POST
-    public AccessAssignmentDtos.AccessAssignmentResponse createAssignment(
-            @Valid @NotNull AccessAssignmentDtos.AccessAssignmentCreateRequest request) {
-        return accessAssignmentService.createAssignment(request);
+    public Response createAssignment(
+            @Valid @NotNull AccessAssignmentDtos.AccessAssignmentCreateRequest request,
+            @Context UriInfo uriInfo) {
+        return AdminApiSupport.created(uriInfo, accessAssignmentService.createAssignment(request).id());
+    }
+
+    @Operation(operationId = "getAccessAssignment")
+    @GET
+    @Path("/{assignmentId}")
+    public AccessAssignmentDtos.AccessAssignmentResponse getAssignment(@PathParam("assignmentId") UUID assignmentId) {
+        return accessAssignmentService.getAssignment(assignmentId);
     }
 
     @Operation(operationId = "deactivateAccessAssignment")

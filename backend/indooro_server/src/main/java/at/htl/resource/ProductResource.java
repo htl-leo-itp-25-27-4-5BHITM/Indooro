@@ -1,6 +1,9 @@
 package at.htl.resource;
 
 
+import java.net.URI;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 import at.htl.admin.service.AdminAccessService;
 import at.htl.admin.service.AuditLogService;
 import at.htl.admin.util.AuditEntityIds;
@@ -150,7 +153,7 @@ public class ProductResource {
     @Operation(operationId = "indexProduct")
     @POST
     @RolesAllowed("admin")
-    public Response indexProduct(Product product) {
+    public Response indexProduct(Product product, @Context UriInfo uriInfo) {
         adminAccessService.requireAdmin();
         ProductBulkService.validateProduct(product);
 
@@ -166,7 +169,13 @@ public class ProductResource {
         try {
             String result = openSearchService.indexProduct(product);
             auditProductWrite(product.getId(), store.storeCode(), "UPSERT", product);
-            return Response.ok("{\"result\": \"" + result + "\"}").build();
+            URI location = uriInfo.getAbsolutePathBuilder()
+                    .path(String.valueOf(product.getId()))
+                    .queryParam("storeCode", store.storeCode())
+                    .build();
+            return "created".equalsIgnoreCase(result)
+                    ? Response.created(location).build()
+                    : Response.noContent().location(location).build();
         } catch (IOException e) {
             LOG.error("Error indexing product", e);
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)

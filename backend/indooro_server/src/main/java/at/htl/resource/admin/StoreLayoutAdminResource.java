@@ -1,5 +1,8 @@
 package at.htl.resource.admin;
 
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 import at.htl.admin.dto.LayoutDtos;
 import at.htl.admin.service.StoreLayoutAdminService;
 import jakarta.annotation.security.RolesAllowed;
@@ -53,9 +56,10 @@ public class StoreLayoutAdminResource {
     @Operation(operationId = "saveStoreLayoutVersion")
     @POST
     @Path("/versions")
-    public LayoutDtos.StoreLayoutResponse saveLayoutVersion(@PathParam("storeId") UUID storeId,
-                                                            @Valid LayoutDtos.LayoutSaveRequest request) {
-        return storeLayoutAdminService.saveLayoutVersion(storeId, request);
+    public Response saveLayoutVersion(@PathParam("storeId") UUID storeId,
+                                      @Valid LayoutDtos.LayoutSaveRequest request,
+                                      @Context UriInfo uriInfo) {
+        return AdminApiSupport.created(uriInfo, storeLayoutAdminService.saveLayoutVersion(storeId, request).layoutId());
     }
 
     @Operation(operationId = "activateStoreLayoutVersion")

@@ -1,5 +1,8 @@
 package at.htl.resource;
 
+import java.net.URI;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 import at.htl.admin.service.AdminAccessService;
 import at.htl.admin.service.AuditLogService;
 import at.htl.admin.util.AuditEntityIds;
@@ -83,8 +86,29 @@ public class CategoryResource {
     @Operation(operationId = "upsertCategory")
     @POST
     @RolesAllowed("admin")
-    public Response upsertCategory(@QueryParam("createOnly") @DefaultValue("false") boolean createOnly, Category category) {
+    public Response upsertCategory(@QueryParam("createOnly") @DefaultValue("false") boolean createOnly,
+                                   Category category,
+                                   @Context UriInfo uriInfo) {
         adminAccessService.requireAdmin();
+        boolean existed;
+        try {
+            existed = !createOnly && category != null && category.getCategoryCode() != null
+                    && categoryService.getCategoryByCode(category.getCategoryCode()) != null;
+        } catch (IOException e) {
+            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+        }
+        Response written = write(createOnly, category);
+        if (written.getStatus() != Response.Status.OK.getStatusCode()) {
+            return written;
+        }
+        URI location = uriInfo.getAbsolutePathBuilder().path(String.valueOf(category.getCategoryCode())).build();
+        return existed
+                ? Response.noContent().location(location).build()
+                : Response.created(location).build();
+    }
+
+    /** 200 with the stored category, or the error response. */
+    private Response write(boolean createOnly, Category category) {
         try {
             if (createOnly) {
                 Category created = categoryService.create(category);
@@ -123,7 +147,7 @@ public class CategoryResource {
         if (category != null) {
             category.setCategoryCode(categoryCode);
         }
-        return upsertCategory(false, category);
+        return write(false, category);
     }
 
     @Operation(operationId = "indexCategoriesBulk")

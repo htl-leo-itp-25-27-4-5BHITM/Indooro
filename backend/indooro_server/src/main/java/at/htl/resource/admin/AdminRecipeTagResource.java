@@ -1,5 +1,8 @@
 package at.htl.resource.admin;
 
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 import at.htl.admin.dto.RecipeDtos;
 import at.htl.admin.entity.RecordStatus;
 import at.htl.admin.service.RecipeService;
@@ -42,8 +45,15 @@ public class AdminRecipeTagResource extends AdminApiSupport {
 
     @Operation(operationId = "createRecipeTag")
     @POST
-    public RecipeDtos.RecipeTagResponse createTag(@Valid RecipeDtos.RecipeTagRequest request) {
-        return recipeService.createTag(request);
+    public Response createTag(@Valid RecipeDtos.RecipeTagRequest request, @Context UriInfo uriInfo) {
+        return created(uriInfo, recipeService.createTag(request).id());
+    }
+
+    @Operation(operationId = "getRecipeTag")
+    @GET
+    @Path("/{tagId}")
+    public RecipeDtos.RecipeTagResponse getTag(@PathParam("tagId") UUID tagId) {
+        return recipeService.getTag(tagId);
     }
 
     @Operation(operationId = "updateRecipeTag")
