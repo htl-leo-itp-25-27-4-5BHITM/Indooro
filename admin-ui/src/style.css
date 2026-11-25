@@ -63,7 +63,7 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 @media (max-width: 900px) {
   .masthead { flex-wrap: wrap; padding: .75rem 1rem; gap: .5rem 1rem; }
   .menu-toggle { display: inline-flex; align-items: center; gap: .4rem; min-height: 42px; padding: .5rem .8rem; border: 1px solid var(--text-on-brand-muted); border-radius: var(--radius-control); background: transparent; color: var(--surface); font: inherit; font-weight: 650; cursor: pointer; }
-  .brand { display: inline-flex; align-items: center; min-height: 40px; margin-right: auto; }
+  .brand { display: inline-flex; align-items: center; column-gap: .3em; min-height: 40px; margin-right: auto; }
   .workspace { display: block; }
   .sidebar { display: none; border-right: 0; border-bottom: 1px solid var(--border); padding: .75rem; }
   .sidebar.open { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
