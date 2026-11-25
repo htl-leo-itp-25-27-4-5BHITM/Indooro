@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
 import { ProductCsvImport } from "./ProductCsvImport";
 import {
@@ -15,6 +16,7 @@ import {
   type AdminStore
 } from "./productStore";
 import type { CurrentUser } from "./routes";
+import { EmptyState } from "./EmptyState";
 
 export interface Product {
   id: number;
@@ -191,6 +193,7 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
   const [stores, setStores] = useState<AdminStore[]>([]);
   const [storesLoaded, setStoresLoaded] = useState(false);
   const [storeError, setStoreError] = useState("");
+  const [storeRevision, setStoreRevision] = useState(0);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(() => readRememberedStoreId());
   const [loadError, setLoadError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -224,7 +227,7 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
         }
       });
     return () => controller.abort();
-  }, [api]);
+  }, [api, storeRevision]);
 
   useEffect(() => {
     if (!selectedStore) {
@@ -359,9 +362,9 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
   const pageItems = useMemo(() => pageData?.content ?? [], [pageData]);
 
   return <section className="products-page" aria-labelledby="products-title">
-    <div className="page-heading"><div><p className="eyebrow">Katalog</p><h2 id="products-title">Produkte</h2><p>Produkte, Kategorie-Kontext und Regalpositionen im Katalog verwalten.</p></div><button type="button" className="primary" onClick={startCreate} disabled={!selectedStore}>Produkt anlegen</button></div>
+    <div className="page-intro"><div><p className="eyebrow">Katalog</p><h2 id="products-title">Produkte</h2><p>Produkte, Kategorie-Kontext und Regalpositionen im Katalog verwalten.</p></div><button type="button" className="primary" onClick={startCreate} disabled={!selectedStore}>Produkt anlegen</button></div>
     <div className="filters" role="group" aria-label="Markt"><label>Markt<select value={selectedStore?.id ?? ""} disabled={!storesLoaded || accessible.length <= 1 || importBusy} onChange={(event) => changeStore(event.currentTarget.value)}><option value="">Markt wählen</option>{accessible.map((store) => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}</select></label></div>
-    {storeError && <p role="alert" className="notice error">{storeError}</p>}
+    {storeError && <div role="alert" className="notice error"><p>{storeError}</p><button type="button" onClick={() => { setStoreError(""); setStoresLoaded(false); setStoreRevision((value) => value + 1); }}>Erneut versuchen</button></div>}
     {storesLoaded && !storeError && accessible.length === 0 && <p role="alert" className="notice error">Für diesen Benutzer ist kein Markt verfügbar.</p>}
     <ProductCsvImport key={selectedStore?.id ?? "no-store"} api={api} store={selectedStore} onBusyChange={setImportBusy} onImported={() => setRevision((value) => value + 1)} />
     {notice && <p role="status" className="notice success">{notice}</p>}
@@ -386,21 +389,21 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
       </form>
     </section>}
 
-    <form className="filters" role="search" onSubmit={submitSearch}><label>Suche<input type="search" value={searchInput} maxLength={120} onChange={(event) => setSearchInput(event.currentTarget.value)} placeholder="Name, ID, Layout-Code oder Store-Code" /></label><label>Readiness<select value={filters.readiness} onChange={(event) => changeFilters({ ...filters, readiness: event.currentTarget.value as ProductFilters["readiness"], page: 0 })}><option value="">Alle</option><option value="ready">Routbar</option><option value="warning">Nicht routbar</option></select></label><label>Sortierung<select value={filters.sort} onChange={(event) => changeFilters({ ...filters, sort: event.currentTarget.value as ProductFilters["sort"], page: 0 })}><option value="name">Name</option><option value="id">ID</option><option value="layoutCode">Layout-Code</option></select></label><button type="submit" className="primary">Suchen</button></form>
-    <p className="help-text">Readiness prüft hier nur das vierteilige Zahlenformat des Layout-Codes. Ob ein Produkt im mobilen Store tatsächlich erreichbar ist, hängt vom veröffentlichten Store-Layout ab.</p>
+    <form className="filters" role="search" onSubmit={submitSearch}><label>Suche<input type="search" value={searchInput} maxLength={120} onChange={(event) => setSearchInput(event.currentTarget.value)} placeholder="Name, ID, Layout-Code oder Store-Code" /></label><label>Routing-Status<select value={filters.readiness} onChange={(event) => changeFilters({ ...filters, readiness: event.currentTarget.value as ProductFilters["readiness"], page: 0 })}><option value="">Alle</option><option value="ready">Routbar</option><option value="warning">Nicht routbar</option></select></label><label>Sortierung<select value={filters.sort} onChange={(event) => changeFilters({ ...filters, sort: event.currentTarget.value as ProductFilters["sort"], page: 0 })}><option value="name">Name</option><option value="id">ID</option><option value="layoutCode">Layout-Code</option></select></label><button type="submit" className="primary">Suchen</button></form>
+    <p className="help-text">Der Routing-Status prüft hier nur das vierteilige Zahlenformat des Layout-Codes. Ob ein Produkt im mobilen Store tatsächlich erreichbar ist, hängt vom veröffentlichten Store-Layout ab.</p>
     {!selectedStore && storesLoaded && accessible.length > 1 && <p role="status" className="empty-state">Bitte einen Markt wählen.</p>}
     {!selectedStore && !storesLoaded && <p role="status">Märkte werden geladen …</p>}
-    {loadError && <div role="alert" className="notice error"><p>{loadError}</p><button type="button" onClick={() => setRevision((value) => value + 1)}>Erneut laden</button></div>}
+    {loadError && <div role="alert" className="notice error"><p>{loadError}</p><button type="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
     {selectedStore && loading && <p role="status">Produkte werden geladen …</p>}
     {!loading && !loadError && pageData && <section className="panel" aria-labelledby="product-list-title">
       <div className="panel-header"><h3 id="product-list-title">{pageData.totalElements.toLocaleString("de-AT")} Produkte</h3><span>Seite {pageData.page + 1} von {Math.max(totalPages, 1)}</span></div>
-      {pageItems.length === 0 ? <p className="empty-state">{filters.q || filters.readiness ? "Keine Produkte zu Suche oder Filter gefunden." : "Der Produktkatalog ist leer."}</p> : <div className="table-scroll"><table><thead><tr><th>ID</th><th>Produkt</th><th>Preis</th><th>Kategorie</th><th>Regalposition</th><th>Store</th><th>Readiness</th><th>Aktionen</th></tr></thead><tbody>{pageItems.map((product) => {
+      {pageItems.length === 0 ? <EmptyState action={!filters.q && !filters.readiness && editor === false ? <button type="button" className="primary" onClick={startCreate}>Erstes Produkt anlegen</button> : undefined}>{filters.q || filters.readiness ? "Keine Produkte zu Suche oder Filter gefunden." : "Der Produktkatalog ist leer."}</EmptyState> : <DataTable label="Produkt-Tabelle"><thead><tr><th className="col-mid">ID</th><th>Produkt</th><th>Preis</th><th className="col-low">Kategorie</th><th>Regalposition</th><th className="col-low">Store</th><th>Routing</th><th>Aktionen</th></tr></thead><tbody>{pageItems.map((product) => {
         const readiness = productReadiness(product, categories);
-        return <tr key={product.id}><td>{product.id}</td><td><strong>{product.name}</strong></td><td>{product.price == null ? "–" : `${Number(product.price).toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}</td>
-          <td>{readiness.categoryName}</td><td><code>{product.layoutCode || "–"}</code>{readiness.ready && <small>{readiness.detail}</small>}</td><td>{product.storeCode || product.storeId || "Global"}</td>
+        return <tr key={product.id}><td className="col-mid">{product.id}</td><td><strong>{product.name}</strong></td><td>{product.price == null ? "–" : `${Number(product.price).toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}</td>
+          <td className="col-low">{readiness.categoryName}</td><td><code>{product.layoutCode || "–"}</code>{readiness.ready && <small>{readiness.detail}</small>}</td><td className="col-low">{product.storeCode || product.storeId || "Global"}</td>
           <td><span className={`status-pill ${readiness.ready ? "ready" : "missing"}`}>{readiness.label}</span>{!readiness.ready && <small>{readiness.detail}</small>}</td>
           <td><div className="row-actions"><button type="button" onClick={() => startEdit(product)}>Bearbeiten</button><button type="button" className="danger" onClick={() => deleteProduct(product)} disabled={deletingId !== null}>{deletingId === product.id ? "Löscht …" : "Löschen"}</button></div></td></tr>;
-      })}</tbody></table></div>}
+      })}</tbody></DataTable>}
       <div className="pager"><span>{pageData.totalElements ? `${pageData.page * pageData.size + 1}–${Math.min((pageData.page + 1) * pageData.size, pageData.totalElements)} von ${pageData.totalElements}` : "0 Ergebnisse"}</span><div>
         {pageData.page > 0 && <a className="button" href={productPageUrl({ ...filters, page: pageData.page - 1 })} onClick={(event) => { event.preventDefault(); changeFilters({ ...filters, page: pageData.page - 1 }); }}>Zurück</a>}
         {pageData.page + 1 < totalPages && <a className="button" href={productPageUrl({ ...filters, page: pageData.page + 1 })} onClick={(event) => { event.preventDefault(); changeFilters({ ...filters, page: pageData.page + 1 }); }}>Weiter</a>}

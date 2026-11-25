@@ -13,6 +13,7 @@ import {
 } from "./catalogCsvImport";
 import { retryUnknown, runCatalogImport, type RowStatus, type RunnerState } from "./catalogImportRunner";
 import type { AdminStore } from "./productStore";
+import { DataTable } from "./DataTable";
 
 const STATUS_LABEL: Record<RowStatus, string> = { saved: "Gespeichert", failed: "Fehlgeschlagen", unknown: "Unklar" };
 
@@ -121,9 +122,9 @@ export function ProductCsvImport({ api, store, onImported, onBusyChange }: {
     {review && <div className="catalog-review" aria-live="polite">
       <h4>Prüfung</h4>
       <p role="status">{review.counts.rows} Zeilen · {review.counts.valid} gültig · {review.counts.invalid} ungültig</p>
-      {review.errors.length > 0 && <div className="table-scroll"><table><thead><tr><th>Zeile</th><th>Feld</th><th>Meldung</th></tr></thead><tbody>
+      {review.errors.length > 0 && <DataTable label="Fehler-Tabelle"><thead><tr><th>Zeile</th><th>Feld</th><th>Meldung</th></tr></thead><tbody>
         {review.errors.map((error, index) => <tr key={`${error.line ?? "file"}-${index}`}><td>{error.line ?? "Datei"}</td><td>{error.field ?? "—"}</td><td>{error.message}</td></tr>)}
-      </tbody></table></div>}
+      </tbody></DataTable>}
       {review.overwrites.length > 0 && <div className="limit-notice">
         <p>{review.overwrites.length} vorhandene Produkte würden überschrieben: <code>{review.overwrites.join(", ")}</code></p>
         <label className="confirm-overwrite"><input type="checkbox" checked={overwriteConfirmed} disabled={running || run !== null} onChange={(event) => setOverwriteConfirmed(event.currentTarget.checked)} /> Vorhandene Produkte überschreiben</label>
@@ -162,9 +163,9 @@ export function ProductCsvImport({ api, store, onImported, onBusyChange }: {
       {!running && !progress.abortMessage && progress.unknownBatches === 0 && progress.failed === 0 && <p role="status" className="notice success">Import abgeschlossen: {progress.saved} Produkte gespeichert.</p>}
       {!running && !progress.abortMessage && progress.unknownBatches === 0 && progress.failed > 0 && <p role="status" className="notice">Import beendet: {progress.saved} gespeichert, {progress.failed} fehlgeschlagen.</p>}
 
-      {results.length > 0 && <div className="table-scroll"><table><thead><tr><th>Nr.</th><th>Produkt-ID</th><th>Ergebnis</th><th>Grund</th></tr></thead><tbody>
+      {results.length > 0 && <DataTable label="Ergebnis-Tabelle"><thead><tr><th>Nr.</th><th>Produkt-ID</th><th>Ergebnis</th><th>Grund</th></tr></thead><tbody>
         {results.map((row) => <tr key={row.position}><td>{row.position}</td><td>{row.id}</td><td><span className={`status-pill ${row.status === "saved" ? "ready" : "missing"}`}>{STATUS_LABEL[row.status]}</span></td><td>{row.reason ?? "—"}</td></tr>)}
-      </tbody></table></div>}
+      </tbody></DataTable>}
     </div>}
   </section>;
 }

@@ -63,11 +63,11 @@ export function AnchorPrintPage({ api }: { api: ApiClient }) {
     <div className="page-intro anchor-print-toolbar">
       <div><p className="eyebrow">{store.storeCode}</p><h2>QR-Codes drucken</h2><p>{store.name}</p></div>
       <div className="anchor-print-actions">
-        <a className="button" href={`/admin/next/stores/detail/?storeId=${encodeURIComponent(store.id)}`}>Zur Filiale</a>
+        <a className="button" href={`/admin/next/stores/detail/?storeId=${encodeURIComponent(store.id)}`}>Zum Store</a>
         {anchors.length > 0 && <button className="button primary" type="button" onClick={() => window.print()}>Drucken</button>}
       </div>
     </div>
-    {anchors.length === 0 ? <section className="notice" role="status"><p>Keine QR-Anker im aktiven Layout. Im Editor mit dem Werkzeug „QR-Anker“ anlegen.</p></section> : <>
+    {anchors.length === 0 ? <section className="notice" role="status"><p>Keine QR-Anker im aktiven Layout. Im Editor mit dem Werkzeug „QR-Anker“ anlegen.</p><a className="button primary" href={`/admin/next/editor/?storeId=${encodeURIComponent(store.id)}`}>Im Editor anlegen</a></section> : <>
       <p className="anchor-print-notice">{anchors.length} QR-Code{anchors.length === 1 ? "" : "s"} auf {sheets.length} A4-{sheets.length === 1 ? "Seite" : "Seiten"}. Nach jeder Layoutänderung neu drucken.</p>
       {sheets.map((sheet, index) => <section key={index} className="anchor-sheet" aria-label={`Seite ${index + 1} von ${sheets.length}`}>
         {sheet.map((anchor) => <AnchorCard key={anchor.anchorId} anchor={anchor} storeName={store.name} />)}

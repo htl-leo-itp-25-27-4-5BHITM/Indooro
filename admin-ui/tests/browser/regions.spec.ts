@@ -13,7 +13,7 @@ test("admin region create retains input after conflict and reloads confirmed det
   });
   await page.route("**/api/regions/region-1", (route) => route.fulfill({ json: regions[0] }));
   await page.goto("/admin/next/regions/");
-  await page.getByRole("button", { name: "Region anlegen" }).click();
+  await page.getByRole("button", { name: "Region anlegen", exact: true }).click();
   await page.getByRole("textbox", { name: "Code" }).fill("AT-OOE");
   await page.getByRole("textbox", { name: "Name", exact: true }).fill("Oberösterreich");
   await page.getByRole("button", { name: "Speichern" }).click();
@@ -91,7 +91,7 @@ test("region manager receives only the assigned region and has no mutation contr
   await page.goto("/admin/next/regions/");
   await page.getByRole("button", { name: "Details" }).click();
   await expect(page.getByText("Ost", { exact: true }).last()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Region anlegen" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Region anlegen", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Bearbeiten" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Archivieren" })).toHaveCount(0);
   expect(requested).toContain("/api/regions?status=ACTIVE");
@@ -109,18 +109,18 @@ test("regions exposes empty, load-error, and retry states through keyboard contr
   await page.goto("/admin/next/regions/");
   await expect(page.getByRole("alert")).toContainText("Serverfehler");
 
-  await page.getByRole("button", { name: "Erneut laden" }).focus();
+  await page.getByRole("button", { name: "Erneut versuchen" }).focus();
   await page.keyboard.press("Enter");
   await expect.poll(() => requests).toBe(2);
   await expect(page.getByRole("alert")).toContainText("Serverfehler");
-  await expect(page.getByRole("button", { name: "Erneut laden" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Erneut versuchen" })).toBeVisible();
 
   fail = false;
-  await page.getByRole("button", { name: "Erneut laden" }).focus();
+  await page.getByRole("button", { name: "Erneut versuchen" }).focus();
   await page.keyboard.press("Space");
   await expect.poll(() => requests).toBe(3);
   await expect(page.getByText("Keine Regionen in diesem Status.")).toBeVisible();
-  await page.getByRole("button", { name: "Region anlegen" }).focus();
+  await page.getByRole("button", { name: "Region anlegen", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Region anlegen" })).toBeVisible();
 });
@@ -148,7 +148,7 @@ test("failed region detail reload hides stale data and mutation controls until r
   await expect(page.getByRole("alert")).toContainText("Serverfehler");
   await expect(page.getByRole("button", { name: "Archivieren" })).toHaveCount(0);
   await expect(page.getByText("After", { exact: true }).last()).toBeVisible(); // list row remains authoritative
-  await page.getByRole("button", { name: "Erneut laden" }).focus();
+  await page.getByRole("button", { name: "Erneut versuchen" }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("button", { name: "Archivieren" })).toBeVisible();
   await expect(page.getByLabel("Details").getByText("After", { exact: true })).toBeVisible();

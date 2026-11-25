@@ -15,12 +15,12 @@
 
 ## 3. P2 Admin pages and tables (polish-admin-pages)
 
-- [ ] 3.1 Remove the intermediate page after "Store anlegen"; land on the new store detail.
-- [ ] 3.2 Add a shared responsive table container and apply it to every admin table (Beacons first).
-- [ ] 3.3 Sweep every admin page for overflow, scroll traps and spacing at 1280 px and 1440 px.
-- [ ] 3.4 Unify buttons, labels and German copy.
-- [ ] 3.5 Add or fix empty, loading and error states on every data page.
-- [ ] 3.6 Tests, lint, typecheck, build green; before/after screenshots recorded.
+- [x] 3.1 Remove the intermediate page after "Store anlegen"; land on the new store detail.
+- [x] 3.2 Add a shared responsive table container and apply it to every admin table (Beacons first).
+- [x] 3.3 Sweep every admin page for overflow, scroll traps and spacing at 1280 px and 1440 px.
+- [x] 3.4 Unify buttons, labels and German copy.
+- [x] 3.5 Add or fix empty, loading and error states on every data page.
+- [x] 3.6 Tests, lint, typecheck, build green; before/after screenshots recorded.
 
 ## 4. P3 Admin layout editor (polish-admin-editor)
 

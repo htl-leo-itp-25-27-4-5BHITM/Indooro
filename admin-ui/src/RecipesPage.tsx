@@ -1,10 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
+import { DataTable } from "./DataTable";
 import type { ApiClient } from "./api/client";
 import { accessibleStores, loadActiveStores, productErrorMessage, readRememberedStoreId, rememberStoreId, resolveStoreSelection, storeLabel, storeScopeParams, type AdminStore } from "./productStore";
 import type { CurrentUser } from "./routes";
 import { changeRecipePublication, cloneDetail, createRecipeWithContent, numeric, readRecipeFilters, recipeFiltersQuery, recipeListPath, RecipeCreatePartialError, saveRecipeChanges, type Product, type RecipeDetail, type RecipeIngredient, type RecipeIngredientMapping, type RecipeMappingResponse, type RecipePageResponse, type RecipeStep, type RecipeTag, validateDraft, validateNewRecipe } from "./RecipesPage.logic";
 import "./RecipesPage.css";
+import { EmptyState } from "./EmptyState";
+
+const STATUS_TEXT: Record<string, string> = { DRAFT: "Entwurf", PUBLISHED: "Veröffentlicht", ARCHIVED: "Archiviert" };
+const statusText = (status: string) => STATUS_TEXT[status] ?? status;
 
 export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser }) {
   const filters = useMemo(() => readRecipeFilters(window.location.search), []);
@@ -122,7 +127,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
         if (cause instanceof RecipeCreatePartialError) {
           const persisted = cloneDetail(cause.created);
           setEditor(persisted); setOriginal(persisted); setSelectedTagIds(persisted.tags.map((tag) => tag.id)); setCreating(false); setRevision((value) => value + 1);
-          setEditorError(`${message} Der gespeicherte Entwurf bleibt geöffnet; fehlende Zuordnungen können über „Mapping“ ergänzt werden.`);
+          setEditorError(`${message} Der gespeicherte Entwurf bleibt geöffnet; fehlende Zuordnungen können über „Produkt zuordnen“ ergänzt werden.`);
         } else setEditorError(message);
         return;
       }
@@ -175,7 +180,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
     try {
       const result = await api.get<RecipeMappingResponse>(`/api/admin/recipes/${encodeURIComponent(editor.id)}/mapping-status`);
       setMappings(result.ingredients ?? []);
-    } catch (cause) { setMappingError(cause instanceof Error ? cause.message : "Mapping konnte nicht geladen werden."); }
+    } catch (cause) { setMappingError(cause instanceof Error ? cause.message : "Zuordnung konnte nicht geladen werden."); }
   };
 
   const searchMapping = async () => {
@@ -194,7 +199,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
       await api.put(`/api/admin/recipes/${encodeURIComponent(editor.id)}/ingredients/${encodeURIComponent(mappingFor)}/product-mapping`, { productId: mappingSelection.id, productName: mappingSelection.name, layoutCode: mappingSelection.layoutCode ?? null, storeId: mappingSelection.storeId ?? null, storeCode: mappingSelection.storeCode ?? null, mappingType: "MANUAL", confidence: 1, manuallyConfirmed: true });
       const result = await api.get<RecipeMappingResponse>(`/api/admin/recipes/${encodeURIComponent(editor.id)}/mapping-status`);
       setMappings(result.ingredients ?? []); setMappingFor(null); setMappingSelection(null); setRevision((value) => value + 1);
-    } catch (cause) { setMappingError(cause instanceof Error ? cause.message : "Mapping konnte nicht gespeichert werden."); }
+    } catch (cause) { setMappingError(cause instanceof Error ? cause.message : "Zuordnung konnte nicht gespeichert werden."); }
     finally { setBusy(false); }
   };
 
@@ -211,12 +216,12 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   };
   return <div className="recipes-page">
-    <div className="page-intro"><div><p className="eyebrow">Inhalte</p><h2>Rezepte</h2><p>Rezeptdaten, Zutaten, Schritte und Mapping-Readiness.</p></div><button className="button primary" type="button" onClick={startCreate}>Rezept anlegen</button></div>
+    <div className="page-intro"><div><p className="eyebrow">Inhalte</p><h2>Rezepte</h2><p>Rezeptdaten, Zutaten, Schritte und Produktzuordnung.</p></div><button className="button primary" type="button" onClick={startCreate}>Rezept anlegen</button></div>
     <form className="notice recipe-filters" action="/admin/next/recipes/" method="get" role="search">
       <label>Suche<input type="search" name="q" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Titel oder Slug" /></label>
       <label>Status<select name="status" defaultValue={filters.status}><option value="">Alle</option><option value="DRAFT">Entwurf</option><option value="PUBLISHED">Veröffentlicht</option><option value="ARCHIVED">Archiviert</option></select></label>
       <label>Tag<select name="tag" defaultValue={filters.tag}><option value="">Alle Tags</option>{tags.map((tag) => <option key={tag.id} value={tag.code}>{tag.name}</option>)}</select></label>
-      <label>Sortierung<select name="sort" defaultValue={filters.sort}><option value="title">Titel</option><option value="status">Status</option><option value="publishedAt">Publiziert</option></select></label>
+      <label>Sortierung<select name="sort" defaultValue={filters.sort}><option value="title">Titel</option><option value="status">Status</option><option value="publishedAt">Veröffentlichung</option></select></label>
       <button className="button primary" type="submit">Anwenden</button>
     </form>
     {error && <div className="notice error-state" role="alert"><h3>Rezepte konnten nicht geladen werden</h3><p>{error}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
@@ -224,16 +229,18 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
     {!page && !error && <p className="notice" role="status">Rezepte werden geladen …</p>}
     {page && !error && <section className="notice recipe-results" aria-label="Rezept-Ergebnisse">
       <div className="section-heading"><h3>{page.totalElements.toLocaleString("de-AT")} Rezepte</h3><span>Seite {page.page + 1} von {Math.max(totalPages, 1)}</span></div>
-      {page.content.length === 0 ? <p>Keine Rezepte passen zu den Filtern.</p> : <div className="table-scroll"><table><thead><tr><th>Rezept</th><th>Status</th><th>Readiness</th><th>Tags</th><th>Aktion</th></tr></thead><tbody>{page.content.map((recipe) => <tr key={recipe.id}>
-        <td><strong>{recipe.title}</strong><small>{recipe.slug}</small></td><td><span className={`status-pill ${recipe.status === "PUBLISHED" ? "ready" : "missing"}`}>{recipe.status}</span></td>
-        <td>{recipe.mappedIngredientCount}/{recipe.totalIngredientCount} Zutaten{recipe.stepCount === 0 && <small className="recipe-warning">Keine Schritte</small>}</td><td>{recipe.tags?.map((tag) => tag.name).join(", ") || "–"}</td>
+      {page.content.length === 0 ? (filters.q || filters.status || filters.tag
+        ? <EmptyState action={<a className="button" href="/admin/next/recipes/">Filter zurücksetzen</a>}>Keine Rezepte passen zu den Filtern.</EmptyState>
+        : <EmptyState action={<button className="button primary" type="button" onClick={startCreate}>Erstes Rezept anlegen</button>}>Noch keine Rezepte vorhanden.</EmptyState>) : <DataTable label="Rezept-Tabelle"><thead><tr><th>Rezept</th><th>Status</th><th>Zutaten</th><th className="col-low">Tags</th><th>Aktion</th></tr></thead><tbody>{page.content.map((recipe) => <tr key={recipe.id}>
+        <td><strong>{recipe.title}</strong><small>{recipe.slug}</small></td><td><span className={`status-pill ${recipe.status === "PUBLISHED" ? "ready" : "missing"}`}>{statusText(recipe.status)}</span></td>
+        <td>{recipe.mappedIngredientCount}/{recipe.totalIngredientCount} Zutaten{recipe.stepCount === 0 && <small className="recipe-warning">Keine Schritte</small>}</td><td className="col-low">{recipe.tags?.map((tag) => tag.name).join(", ") || "–"}</td>
         <td><div className="recipe-row-actions"><button className="button small-button" onClick={() => void loadDetail(recipe.id, true)}>Vorschau</button><button className="button small-button" onClick={() => void loadDetail(recipe.id)}>Bearbeiten</button></div></td>
-      </tr>)}</tbody></table></div>}
+      </tr>)}</tbody></DataTable>}
       <div className="pager"><span>{page.totalElements ? `${page.page * page.size + 1}–${Math.min((page.page + 1) * page.size, page.totalElements)} von ${page.totalElements}` : "0 Ergebnisse"}</span><div>{page.page > 0 && <a className="button" href={pageUrl(page.page - 1)}>Zurück</a>}{page.page + 1 < totalPages && <a className="button" href={pageUrl(page.page + 1)}>Weiter</a>}</div></div>
     </section>}
     {editor && original && <div className="recipe-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) { setEditor(null); setOriginal(null); } }}>
       <section ref={dialogRef} onKeyDown={handleDialogKeyDown} className="recipe-drawer" role="dialog" aria-modal="true" aria-labelledby="recipe-editor-title" tabIndex={-1}>
-        <div className="recipe-drawer-head"><div><p className="eyebrow">{creating ? "Neues Rezept" : previewMode ? "Rezept-Vorschau" : "Rezept bearbeiten"}</p><h2 id="recipe-editor-title">{editor.title || "Rezept anlegen"}</h2></div><div className="recipe-drawer-controls"><span className={`status-pill ${editor.status === "PUBLISHED" ? "ready" : "missing"}`}>{editor.status}</span>{!creating && !previewMode && editor.status !== "PUBLISHED" && <button className="button" type="button" disabled={busy} onClick={() => void updatePublication("publish")}>Veröffentlichen</button>}{!creating && !previewMode && editor.status === "PUBLISHED" && <button className="button" type="button" disabled={busy} onClick={() => void updatePublication("deactivate")}>Deaktivieren</button>}{!creating && !previewMode && editor.status !== "ARCHIVED" && <button className="button danger-button" type="button" disabled={busy} onClick={() => void updatePublication("archive")}>Archivieren</button>}<button className="button" type="button" disabled={busy} onClick={() => { setEditor(null); setOriginal(null); setCreating(false); setPreviewMode(false); }}>Schließen</button></div></div>
+        <div className="recipe-drawer-head"><div><p className="eyebrow">{creating ? "Neues Rezept" : previewMode ? "Rezept-Vorschau" : "Rezept bearbeiten"}</p><h2 id="recipe-editor-title">{editor.title || "Rezept anlegen"}</h2></div><div className="recipe-drawer-controls"><span className={`status-pill ${editor.status === "PUBLISHED" ? "ready" : "missing"}`}>{statusText(editor.status)}</span>{!creating && !previewMode && editor.status !== "PUBLISHED" && <button className="button" type="button" disabled={busy} onClick={() => void updatePublication("publish")}>Veröffentlichen</button>}{!creating && !previewMode && editor.status === "PUBLISHED" && <button className="button" type="button" disabled={busy} onClick={() => void updatePublication("deactivate")}>Deaktivieren</button>}{!creating && !previewMode && editor.status !== "ARCHIVED" && <button className="button danger-button" type="button" disabled={busy} onClick={() => void updatePublication("archive")}>Archivieren</button>}<button className="button" type="button" disabled={busy} onClick={() => { setEditor(null); setOriginal(null); setCreating(false); setPreviewMode(false); }}>Schließen</button></div></div>
         {editorError && <div className="notice error-state" role="alert">{editorError}{recoveryDraft && <button className="button" type="button" disabled={busy} onClick={() => { setEditor(cloneDetail(recoveryDraft.detail)); setSelectedTagIds([...recoveryDraft.tagIds]); setRecoveryDraft(null); setEditorError("Ihre Eingaben wurden wiederhergestellt. Prüfen Sie bereits gespeicherte Zutaten und Schritte vor einem erneuten Speichern."); }}>Meine Eingaben wiederherstellen</button>}</div>}
         <form className="recipe-edit-form" onSubmit={(event) => void save(event)}>
           <fieldset disabled={busy || previewMode}>
@@ -244,7 +251,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
               <label>Vorbereitung min<input type="number" min="0" value={numeric(editor.prepTimeMinutes)} onChange={(event) => patchEditor({ prepTimeMinutes: event.target.value === "" ? null : Number(event.target.value) })} /></label>
               <label>Kochen min<input type="number" min="0" value={numeric(editor.cookTimeMinutes)} onChange={(event) => patchEditor({ cookTimeMinutes: event.target.value === "" ? null : Number(event.target.value) })} /></label>
               <label>Gesamt min<input type="number" min="0" value={numeric(editor.totalTimeMinutes)} onChange={(event) => patchEditor({ totalTimeMinutes: event.target.value === "" ? null : Number(event.target.value) })} /></label>
-              <label className="recipe-span-2">Summary<textarea maxLength={4000} value={editor.summary ?? ""} onChange={(event) => patchEditor({ summary: event.target.value })} /></label>
+              <label className="recipe-span-2">Kurzbeschreibung<textarea maxLength={4000} value={editor.summary ?? ""} onChange={(event) => patchEditor({ summary: event.target.value })} /></label>
               <label className="recipe-span-2">Beschreibung<textarea maxLength={12000} value={editor.description ?? ""} onChange={(event) => patchEditor({ description: event.target.value })} /></label>
               <label>Bild-URL<input value={editor.imageUrl ?? ""} onChange={(event) => patchEditor({ imageUrl: event.target.value })} /></label>
               <label>Bildbeschreibung<input maxLength={240} value={editor.imageAlt ?? ""} onChange={(event) => patchEditor({ imageAlt: event.target.value })} /></label>
@@ -255,16 +262,16 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
               {editor.ingredients.map((item, index) => <div className="recipe-item" key={item.id ?? `new-${index}`}><label>Zutat<input value={item.id ? item.displayName : item.selectedProduct?.name ?? ""} readOnly /></label>
                 <label>Menge<input value={item.quantityText ?? ""} onChange={(event) => patchIngredient(index, { quantityText: event.target.value })} /></label>
                 {!item.id && <div className="recipe-product-search"><label>Produkt aus Katalog<input value={productQuery} onChange={(event) => setProductQuery(event.target.value)} placeholder="Produktname suchen" /></label><button type="button" className="button" onClick={() => void searchProducts()}>Suchen</button>{productError && <small role="alert">{productError}</small>}{products.length > 0 && <select value={item.selectedProduct?.id ?? ""} onChange={(event) => { const product = products.find((candidate) => String(candidate.id) === event.target.value) ?? null; patchIngredient(index, { selectedProduct: product }); }}><option value="">Produkt auswählen</option>{products.map((product) => <option key={product.id} value={product.id}>{product.name} · #{product.id}</option>)}</select>}{item.selectedProduct && <small>Ausgewählt: {item.selectedProduct.name}</small>}</div>}
-                {item.id && <div className="recipe-mapping-controls"><button type="button" className="button" onClick={() => void openMapping(item.id!)}>Mapping</button><small>{mappings.find((mapping) => mapping.ingredientId === item.id)?.product?.name ?? mappings.find((mapping) => mapping.ingredientId === item.id)?.status ?? "Noch nicht gemappt"}</small></div>}
-                <button type="button" className="button danger-button" onClick={() => patchEditor({ ingredients: editor.ingredients.filter((_, i) => i !== index) })}>Entfernen</button>
+                {item.id && <div className="recipe-mapping-controls"><button type="button" className="button" onClick={() => void openMapping(item.id!)}>Produkt zuordnen</button><small>{mappings.find((mapping) => mapping.ingredientId === item.id)?.product?.name ?? mappings.find((mapping) => mapping.ingredientId === item.id)?.status ?? "Noch nicht zugeordnet"}</small></div>}
+                <button type="button" className="button danger-button" onClick={() => patchEditor({ ingredients: editor.ingredients.filter((_, i) => i !== index) })}>Löschen</button>
               </div>)}
-              {mappingFor && <div className="recipe-mapping-panel"><h4>Zutaten-Mapping</h4><label>Produkt suchen<input value={mappingQuery} onChange={(event) => setMappingQuery(event.target.value)} placeholder="Mindestens 2 Zeichen" /></label><button type="button" className="button" disabled={busy} onClick={() => void searchMapping()}>Suchen</button>{mappingError && <p role="alert">{mappingError}</p>}{mappingProducts.map((product) => <label className="recipe-mapping-option" key={product.id}><input type="radio" name="recipe-mapping-product" checked={mappingSelection?.id === product.id} onChange={() => setMappingSelection(product)} />{product.name} · #{product.id}{product.layoutCode ? ` · ${product.layoutCode}` : " · Ohne Layoutposition"}</label>)}<button type="button" className="button primary" disabled={busy || !mappingSelection} onClick={() => void saveMapping()}>Mapping bestätigen</button><button type="button" className="button" onClick={() => setMappingFor(null)}>Schließen</button></div>}
+              {mappingFor && <div className="recipe-mapping-panel"><h4>Produktzuordnung</h4><label>Produkt suchen<input value={mappingQuery} onChange={(event) => setMappingQuery(event.target.value)} placeholder="Mindestens 2 Zeichen" /></label><button type="button" className="button" disabled={busy} onClick={() => void searchMapping()}>Suchen</button>{mappingError && <p role="alert">{mappingError}</p>}{mappingProducts.map((product) => <label className="recipe-mapping-option" key={product.id}><input type="radio" name="recipe-mapping-product" checked={mappingSelection?.id === product.id} onChange={() => setMappingSelection(product)} />{product.name} · #{product.id}{product.layoutCode ? ` · ${product.layoutCode}` : " · Ohne Layoutposition"}</label>)}<button type="button" className="button primary" disabled={busy || !mappingSelection} onClick={() => void saveMapping()}>Zuordnung speichern</button><button type="button" className="button" onClick={() => setMappingFor(null)}>Abbrechen</button></div>}
             </div>
             <div className="recipe-section"><div className="section-heading"><h3>Schritte</h3><button type="button" className="button" onClick={() => patchEditor({ steps: [...editor.steps, { position: editor.steps.length + 1, instruction: "" }] })}>+ Schritt</button></div>
-              {editor.steps.map((item, index) => <div className="recipe-item" key={item.id ?? `new-step-${index}`}><label>Schritt {index + 1}<textarea required maxLength={12000} value={item.instruction} onChange={(event) => patchStep(index, { instruction: event.target.value })} /></label><label>Dauer min<input type="number" min="0" value={numeric(item.durationMinutes)} onChange={(event) => patchStep(index, { durationMinutes: event.target.value === "" ? null : Number(event.target.value) })} /></label><button type="button" className="button danger-button" onClick={() => patchEditor({ steps: editor.steps.filter((_, i) => i !== index) })}>Entfernen</button></div>)}
+              {editor.steps.map((item, index) => <div className="recipe-item" key={item.id ?? `new-step-${index}`}><label>Schritt {index + 1}<textarea required maxLength={12000} value={item.instruction} onChange={(event) => patchStep(index, { instruction: event.target.value })} /></label><label>Dauer min<input type="number" min="0" value={numeric(item.durationMinutes)} onChange={(event) => patchStep(index, { durationMinutes: event.target.value === "" ? null : Number(event.target.value) })} /></label><button type="button" className="button danger-button" onClick={() => patchEditor({ steps: editor.steps.filter((_, i) => i !== index) })}>Löschen</button></div>)}
             </div>
           </fieldset>
-          {!previewMode && <div className="recipe-form-actions"><button className="button" type="button" disabled={busy} onClick={() => { setEditor(null); setOriginal(null); setCreating(false); }}>Abbrechen</button><button className="button primary" type="submit" disabled={busy}>{busy ? "Speichert …" : creating ? "Entwurf anlegen" : "Speichern"}</button></div>}
+          {!previewMode && <div className="recipe-form-actions"><button className="button primary" type="submit" disabled={busy}>{busy ? "Speichert …" : creating ? "Entwurf anlegen" : "Speichern"}</button><button className="button" type="button" disabled={busy} onClick={() => { setEditor(null); setOriginal(null); setCreating(false); }}>Abbrechen</button></div>}
         </form>
       </section>
     </div>}

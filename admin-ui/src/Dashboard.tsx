@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
+import { EmptyState } from "./EmptyState";
 
 interface StorePage { totalElements: number }
 interface Region { id: string }
@@ -67,19 +68,19 @@ export function Dashboard({ api, user }: { api: ApiClient; user: CurrentUser }) 
     {data && !error && <>
       <section className="metrics" aria-label="Kennzahlen">
         <Metric label="Regionen" value={data.regions} detail="in Ihrem Zugriff" />
-        <Metric label="Stores" value={data.stores} detail="sichtbarer Scope" />
+        <Metric label="Stores" value={data.stores} detail="in Ihrem Zugriff" />
         <Metric label="Freie Beacons" value={data.freeBeacons} detail="bereit zur Zuweisung" />
         <Metric label="Layouts offen" value={data.storesWithoutLayout} detail="ohne aktives Layout" />
       </section>
       <div className="dashboard-columns">
         <section className="notice"><div className="section-heading"><h3>Einrichtung</h3><a href="/admin/next/stores/">Stores öffnen</a></div>
-          {data.storesWithoutLayout === 0 && data.freeBeacons === 0 ? <p>Keine offenen Einrichtungshinweise.</p> : <ul className="warning-list">
+          {data.stores === 0 ? <EmptyState action={user.role !== "store-manager" ? <a className="button primary" href="/admin/next/stores/new/">Ersten Store anlegen</a> : undefined}>Noch keine Stores vorhanden.</EmptyState> : data.storesWithoutLayout === 0 && data.freeBeacons === 0 ? <p>Keine offenen Einrichtungshinweise.</p> : <ul className="warning-list">
             {data.storesWithoutLayout > 0 && <li><strong>{data.storesWithoutLayout} Stores ohne aktives Layout</strong><span>Entwurf prüfen und veröffentlichen.</span><a href="/admin/next/stores/?layout=missing">Layouts prüfen</a></li>}
             {data.freeBeacons > 0 && <li><strong>{data.freeBeacons} freie Beacons</strong><span>Position im Store zuweisen.</span><a href="/admin/next/beacons/">Beacons zuweisen</a></li>}
           </ul>}
         </section>
         <section className="notice"><div className="section-heading"><h3>Schnellzugriff</h3></div><div className="quick-links">
-          <a href="/admin/next/stores/">Store verwalten</a>{user.role !== "store-manager" && <a href="/admin/next/stores/new/">Store anlegen</a>}<a href={user.role === "store-manager" && user.scope?.storeId ? `/admin/next/editor/?storeId=${encodeURIComponent(user.scope.storeId)}` : user.role === "region-manager" ? "/admin/next/stores/" : "/admin/next/editor/"}>Layout Editor öffnen</a><a href="/admin/next/beacons/">Beacons verwalten</a>
+          <a href="/admin/next/stores/">Zur Store-Liste</a>{user.role !== "store-manager" && <a href="/admin/next/stores/new/">Store anlegen</a>}<a href={user.role === "store-manager" && user.scope?.storeId ? `/admin/next/editor/?storeId=${encodeURIComponent(user.scope.storeId)}` : user.role === "region-manager" ? "/admin/next/stores/" : "/admin/next/editor/"}>Layout Editor öffnen</a><a href="/admin/next/beacons/">Beacons verwalten</a>
           {user.role === "admin" && <><a href="/admin/next/products/">Produkte verwalten</a><a href="/admin/next/recipes/">Rezepte verwalten</a></>}
         </div></section>
       </div>

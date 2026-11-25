@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
 import { CatalogImportPanel } from "./CatalogImport";
+import { EmptyState } from "./EmptyState";
 
 interface Category { categoryCode: number; categoryName: string }
 
@@ -53,7 +55,6 @@ export function CategoriesPage({ api }: { api: ApiClient }) {
   };
   return <div className="categories-page">
     <div className="page-intro"><div><p className="eyebrow">Katalog</p><h2>Kategorien</h2><p>Produktgruppen und ihre Codes verwalten.</p></div><button className="button primary" onClick={() => open(null)}>Kategorie anlegen</button></div>
-    <CatalogImportPanel kind="category" />
     {notice && <p role="status" className="notice success-state">{notice}</p>}
     {error && <div className="notice error-state" role="alert"><h3>Kategorien konnten nicht geladen werden</h3><p>{error}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
     {!categories && !error && <p role="status" className="notice">Kategorien werden geladen …</p>}
@@ -65,7 +66,8 @@ export function CategoriesPage({ api }: { api: ApiClient }) {
     {categories && !error && <section className="notice" aria-label="Kategorie-Ergebnisse"><div className="section-heading"><h3>{categories.length} Kategorien</h3><span>{visible.length} sichtbar</span></div>
       {categories.length >= 500 && <p className="limit-notice" role="status">Die API liefert höchstens 500 Kategorien. Für weitere Einträge ist eine paginierte API nötig.</p>}
       <label className="category-search">Suche<input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Code oder Name" /></label>
-      {visible.length === 0 ? <p>Keine Kategorie passt zur Suche.</p> : <div className="table-scroll"><table><thead><tr><th>Code</th><th>Name</th><th>Aktion</th></tr></thead><tbody>{visible.map((item) => <tr key={item.categoryCode}><td><code>{item.categoryCode}</code></td><td>{item.categoryName}</td><td><button className="button" onClick={() => open(item)}>Bearbeiten</button></td></tr>)}</tbody></table></div>}
+      {visible.length === 0 ? <EmptyState action={categories.length === 0 && selected === false ? <button className="button primary" type="button" onClick={() => open(null)}>Erste Kategorie anlegen</button> : undefined}>{categories.length === 0 ? "Noch keine Kategorien vorhanden." : "Keine Kategorie passt zur Suche."}</EmptyState> : <DataTable label="Kategorien-Tabelle"><thead><tr><th>Code</th><th>Name</th><th>Aktion</th></tr></thead><tbody>{visible.map((item) => <tr key={item.categoryCode}><td><code>{item.categoryCode}</code></td><td>{item.categoryName}</td><td><button className="button" onClick={() => open(item)}>Bearbeiten</button></td></tr>)}</tbody></DataTable>}
     </section>}
+    <CatalogImportPanel kind="category" />
   </div>;
 }

@@ -46,7 +46,7 @@ test("recipe dialog keeps keyboard focus inside and restores it to the opener", 
   const publish = dialog.getByRole("button", { name: "Veröffentlichen" });
   await expect(publish).toBeFocused();
   await page.keyboard.press("Shift+Tab");
-  await expect(dialog.getByRole("button", { name: "Speichern" })).toBeFocused();
+  await expect(dialog.getByRole("button", { name: "Abbrechen" })).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(publish).toBeFocused();
   await page.keyboard.press("Escape");
@@ -119,11 +119,11 @@ test("failed recipe publication reloads the saved content and allows a status re
   await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
   await expect(dialog.getByRole("alert")).toContainText("Statusänderung fehlgeschlagen. Der aktuelle Serverstand wurde geladen");
   await expect(dialog.getByRole("textbox", { name: "Titel" })).toHaveValue("Apfel neu");
-  await expect(dialog.getByText("DRAFT", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("Entwurf", { exact: true })).toBeVisible();
   expect(detailReads).toBeGreaterThanOrEqual(2);
 
   await dialog.getByRole("button", { name: "Veröffentlichen" }).click();
-  await expect(dialog.getByText("PUBLISHED", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("Veröffentlicht", { exact: true })).toBeVisible();
   expect(publicationAttempts).toBe(2);
 });
 
@@ -233,7 +233,7 @@ test("candidate recipe list exposes empty and load-error states with keyboard re
   await expect(page.getByRole("alert")).toContainText("Serverfehler. Bitte später erneut versuchen.");
   await page.getByRole("button", { name: "Erneut versuchen" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByText("Keine Rezepte passen zu den Filtern.")).toBeVisible();
+  await expect(page.getByText("Noch keine Rezepte vorhanden.")).toBeVisible();
   expect(listCalls).toBe(2);
 
   const search = page.getByRole("searchbox", { name: "Suche" });
@@ -287,7 +287,7 @@ test("candidate recipe create and publish preserve saved content and tags", asyn
   page.on("dialog", (dialog) => dialog.accept());
 
   await page.goto("/admin/next/recipes/");
-  await page.getByRole("button", { name: "Rezept anlegen" }).click();
+  await page.getByRole("button", { name: "Rezept anlegen", exact: true }).click();
   const dialog = page.getByRole("dialog");
   await dialog.getByRole("textbox", { name: "Slug" }).fill("birnen-mix");
   await dialog.getByRole("textbox", { name: "Titel" }).fill("Birnen Mix");
@@ -311,15 +311,15 @@ test("candidate recipe create and publish preserve saved content and tags", asyn
   expect(createBody?.steps).toEqual([{ position: 1, instruction: "Mischen", durationMinutes: null }]);
 
   await page.getByRole("button", { name: "Bearbeiten" }).click();
-  await page.getByRole("dialog").getByRole("button", { name: "Mapping" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Produkt zuordnen" }).click();
   await page.getByRole("dialog").getByRole("textbox", { name: "Produkt suchen" }).fill("Birne Bio");
   await page.getByRole("dialog").getByRole("button", { name: "Suchen" }).click();
   await page.getByRole("radio", { name: /Birne Bio/ }).check();
-  await page.getByRole("dialog").getByRole("button", { name: "Mapping bestätigen" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Zuordnung speichern" }).click();
   await expect.poll(() => confirmedMappingProductId).toBe(24);
   await page.getByRole("dialog").getByRole("button", { name: "Veröffentlichen" }).click();
   await expect.poll(() => publishMethod).toBe("PATCH");
-  await expect(page.getByRole("dialog").getByText("PUBLISHED")).toBeVisible();
+  await expect(page.getByRole("dialog").getByText("Veröffentlicht", { exact: true })).toBeVisible();
   expect(savedRecipe?.imageUrl).toBe("/images/pear.jpg");
   expect(savedRecipe?.tagIds).toEqual(["tag-1"]);
   expect(savedRecipe?.title).toBe("Birnen Mix");

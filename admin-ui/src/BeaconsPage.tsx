@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
+import { CopyableId } from "./CopyableId";
+import { EmptyState } from "./EmptyState";
 
 export interface BeaconStore {
   id: string;
@@ -486,12 +489,12 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
   }
 
   return <section className="beacons-page" aria-labelledby="beacons-title">
-    <div className="page-heading"><div><p className="eyebrow">Inventar</p><h2 id="beacons-title">Beacons</h2><p>Hardware-Identitäten und Store-Zuweisungen verwalten.</p></div>
-      {admin && <div className="toolbar"><button type="button" onClick={openCreate}>Beacon anlegen</button><button type="button" className="primary" onClick={() => { setBulkOpen((value) => !value); setBulkReview(null); setBulkError(""); setCreateStoreId(contextStore?.id ?? ""); }}>Bulk anlegen</button></div>}
+    <div className="page-intro"><div><p className="eyebrow">Inventar</p><h2 id="beacons-title">Beacons</h2><p>Hardware-Identitäten und Store-Zuweisungen verwalten.</p></div>
+      {admin && <div className="toolbar"><button type="button" className="primary" onClick={openCreate}>Beacon anlegen</button><button type="button" onClick={() => { setBulkOpen((value) => !value); setBulkReview(null); setBulkError(""); setCreateStoreId(contextStore?.id ?? ""); }}>Mehrere anlegen</button></div>}
     </div>
     {notice && <p role="status" className="notice success">{notice}</p>}
     {archiveError && <p role="alert" className="notice error">{archiveError}</p>}
-    {loadError && <div role="alert" className="notice error"><p>{loadError}</p><button type="button" onClick={() => setRevision((value) => value + 1)}>Erneut laden</button></div>}
+    {loadError && <div role="alert" className="notice error"><p>{loadError}</p><button type="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
 
     {bulkOpen && admin && <section className="panel" aria-labelledby="beacon-bulk-title"><div className="panel-header"><h3 id="beacon-bulk-title">Mehrere Beacons anlegen</h3></div>
       {bulkError && <p role="alert" className="notice error">{bulkError}</p>}
@@ -501,8 +504,8 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
         <label>Notizen<textarea disabled={bulkReviewing || bulkSaving} maxLength={2000} value={bulkNotes} onChange={(event) => setBulkNotes(event.currentTarget.value)} /></label>
         <label className="span-2">Zeilen im Format Beacon-Code,Minor (Major und Minor gemeinsam leer für UUID-only)<textarea disabled={bulkReviewing || bulkSaving} rows={6} value={bulkText} onChange={(event) => { setBulkText(event.currentTarget.value); setBulkReview(null); }} placeholder={"B-001,1\nB-002,2\nB-003,3"} /></label>
       </div>
-      <div className="toolbar"><button type="button" onClick={reviewBulk} disabled={bulkSaving || bulkReviewing}>{bulkReviewing ? "Prüft …" : "Review"}</button><button type="button" className="primary" onClick={commitBulk} disabled={bulkSaving || bulkReviewing || !bulkReview?.length || bulkReview.some((row) => row.error)}>{bulkSaving ? "Legt an …" : `Review bestätigen und ${bulkReview?.length ?? 0} anlegen`}</button><button type="button" onClick={() => { setBulkOpen(false); setBulkReview(null); }} disabled={bulkSaving || bulkReviewing}>Schließen</button></div>
-      {bulkReview && <div className="table-scroll" aria-live="polite"><table><thead><tr><th>Zeile</th><th>Beacon-Code</th><th>Minor</th><th>Review</th></tr></thead><tbody>{bulkReview.map((row) => <tr key={row.line}><td>{row.line}</td><td>{row.beaconCode || "–"}</td><td>{row.minor ?? "–"}</td><td>{row.error || "Bereit"}</td></tr>)}</tbody></table></div>}
+      <div className="toolbar"><button type="button" onClick={reviewBulk} disabled={bulkSaving || bulkReviewing}>{bulkReviewing ? "Prüft …" : "Prüfen"}</button><button type="button" className="primary" onClick={commitBulk} disabled={bulkSaving || bulkReviewing || !bulkReview?.length || bulkReview.some((row) => row.error)}>{bulkSaving ? "Legt an …" : `Geprüfte ${bulkReview?.length ?? 0} anlegen`}</button><button type="button" onClick={() => { setBulkOpen(false); setBulkReview(null); }} disabled={bulkSaving || bulkReviewing}>Abbrechen</button></div>
+      {bulkReview && <div aria-live="polite"><DataTable label="Bulk-Prüfungstabelle"><thead><tr><th>Zeile</th><th>Beacon-Code</th><th>Minor</th><th>Prüfergebnis</th></tr></thead><tbody>{bulkReview.map((row) => <tr key={row.line}><td>{row.line}</td><td>{row.beaconCode || "–"}</td><td>{row.minor ?? "–"}</td><td>{row.error || "Bereit"}</td></tr>)}</tbody></DataTable></div>}
     </section>}
 
     {editing !== false && <section className="panel" aria-labelledby="beacon-form-title"><div className="panel-header"><h3 id="beacon-form-title">{editing ? "Beacon bearbeiten" : "Beacon anlegen"}</h3></div>
@@ -534,23 +537,23 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
       {stores.length < storeTotal && <button type="button" onClick={() => void loadMoreStores()} disabled={loadingMoreStores}>{loadingMoreStores ? "Lädt …" : `Weitere Stores laden (${stores.length} von ${storeTotal})`}</button>}
       {storePageError && <p role="alert" className="notice error">Weitere Stores konnten nicht geladen werden: {storePageError}</p>}
       {loading && <p role="status">Beacons werden geladen …</p>}
-      {!loading && !loadError && sortedBeacons.length === 0 && <p className="empty-state">Keine Beacons passen zu Suche, Filtern oder Zugriff.</p>}
+      {!loading && !loadError && sortedBeacons.length === 0 && <EmptyState action={admin && editing === false && !filters.query && !filters.storeId && filters.assigned === "all" && filters.status === "ACTIVE" ? <button type="button" className="primary" onClick={openCreate}>Ersten Beacon anlegen</button> : undefined}>{!filters.query && !filters.storeId && filters.assigned === "all" && filters.status === "ACTIVE" ? "Noch keine Beacons vorhanden." : "Keine Beacons passen zu Suche, Filtern oder Zugriff."}</EmptyState>}
       {!loading && !loadError && selectable.length > 0 && <div className="toolbar" aria-label="Auswahl zuweisen">
         <span>{selected.length} ausgewählt</span>
         <label>Auswahl zuweisen an<select value={selectionStoreId} disabled={assigning || !selected.length} onChange={(event) => setSelectionStoreId(event.currentTarget.value)}><option value="">Store auswählen</option>{storesForUser.map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select></label>
         <button type="button" className="primary" disabled={assigning || !selected.length || !selectionStoreId} onClick={() => void assignTo(selected, selectionStoreId)}>{assigning ? "Weist zu …" : `${selected.length} zuweisen`}</button>
         {selected.length > 0 && <button type="button" disabled={assigning} onClick={() => setSelectedIds(new Set())}>Auswahl aufheben</button>}
       </div>}
-      {!loading && !loadError && sortedBeacons.length > 0 && <div className="table-scroll"><table><thead><tr><th><input type="checkbox" aria-label="Alle zuweisbaren Beacons auswählen" disabled={!selectable.length || assigning} checked={selectable.length > 0 && selected.length === selectable.length} onChange={(event) => setSelectedIds(event.currentTarget.checked ? new Set(selectable.map((beacon) => beacon.id)) : new Set())} /></th><th>Code</th><th>Identität</th><th>Status</th><th>Store</th><th>Aktionen</th></tr></thead><tbody>{sortedBeacons.map((beacon) => {
+      {!loading && !loadError && sortedBeacons.length > 0 && <DataTable label="Beacon-Tabelle"><thead><tr><th><input type="checkbox" aria-label="Alle zuweisbaren Beacons auswählen" disabled={!selectable.length || assigning} checked={selectable.length > 0 && selected.length === selectable.length} onChange={(event) => setSelectedIds(event.currentTarget.checked ? new Set(selectable.map((beacon) => beacon.id)) : new Set())} /></th><th>Code</th><th className="col-id">Identität</th><th>Status</th><th className="col-low">Store</th><th>Aktionen</th></tr></thead><tbody>{sortedBeacons.map((beacon) => {
         const manageable = canManageBeacon(user, beacon, stores);
         const canAssign = beacon.status === "ACTIVE" && (manageable || !beacon.currentStore) && storesForUser.length > 0;
-        return <tr key={beacon.id}><td>{canAssign && <input type="checkbox" aria-label={`${beacon.beaconCode} auswählen`} disabled={assigning} checked={selectedIds.has(beacon.id)} onChange={(event) => { const checked = event.currentTarget.checked; setSelectedIds((current) => { const next = new Set(current); if (checked) next.add(beacon.id); else next.delete(beacon.id); return next; }); }} />}</td><td><strong>{beacon.beaconCode}</strong><small>{beacon.notes || ""}</small></td><td><code>{beacon.identityKey}</code></td><td><span className={`status-pill ${beacon.status === "ARCHIVED" ? "missing" : beacon.currentStore ? "info" : "ready"}`}>{statusLabel(beacon)}</span></td><td>{beacon.currentStore?.name ?? "–"}</td><td><div className="row-actions">
+        return <tr key={beacon.id}><td>{canAssign && <input type="checkbox" aria-label={`${beacon.beaconCode} auswählen`} disabled={assigning} checked={selectedIds.has(beacon.id)} onChange={(event) => { const checked = event.currentTarget.checked; setSelectedIds((current) => { const next = new Set(current); if (checked) next.add(beacon.id); else next.delete(beacon.id); return next; }); }} />}</td><td><strong>{beacon.beaconCode}</strong><small>{beacon.notes || ""}</small></td><td className="col-id"><CopyableId value={beacon.identityKey} label={`Identität von ${beacon.beaconCode}`} /></td><td><span className={`status-pill ${beacon.status === "ARCHIVED" ? "missing" : beacon.currentStore ? "info" : "ready"}`}>{statusLabel(beacon)}</span></td><td className="col-low">{beacon.currentStore?.name ?? "–"}</td><td><div className="row-actions">
           {manageable && beacon.status === "ACTIVE" && <button type="button" onClick={() => openEdit(beacon)}>Bearbeiten</button>}
           {canAssign && <select aria-label={`${beacon.beaconCode} ${beacon.currentStore ? "verschieben" : "zuweisen"}`} value="" disabled={assigning} onChange={(event) => { const storeId = event.currentTarget.value; if (storeId) void assignTo([beacon], storeId); }}><option value="">{beacon.currentStore ? "Verschieben nach …" : "Zuweisen an …"}</option>{storesForUser.filter((store) => store.id !== beacon.currentStore?.id).map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select>}
           {beacon.currentStore && manageable && <button type="button" onClick={() => releaseBeacon(beacon)} disabled={pendingActionId === beacon.id}>Freigeben</button>}
           {manageable && beacon.status === "ACTIVE" && <button type="button" className="danger" onClick={() => archiveBeacon(beacon)} disabled={pendingActionId === beacon.id}>Archivieren</button>}
         </div></td></tr>;
-      })}</tbody></table></div>}
+      })}</tbody></DataTable>}
     </section>
   </section>;
 }

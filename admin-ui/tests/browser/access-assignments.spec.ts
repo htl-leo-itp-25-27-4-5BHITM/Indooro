@@ -46,13 +46,13 @@ test("admin gives a new store manager access to exactly one store", async ({ pag
   await expect(page.getByLabel("Rolle")).toHaveValue("store-manager");
   await expect(page.getByLabel("Region")).toHaveCount(0);
   await page.getByLabel("Markt").selectOption({ label: "SPAR Leonding Testraum (SPAR-Leonding-002) – Oberösterreich" });
-  await page.getByRole("button", { name: "Zugang anlegen" }).click();
+  await page.getByRole("button", { name: "Zugang anlegen", exact: true }).click();
 
   await expect(page.locator(".notice.success")).toContainText("Zugang für „marta“ angelegt");
   expect(posted).toEqual([{ keycloakSubject: NEW_SUB, username: "marta", email: "marta@example.test", role: "store-manager", regionId: null, storeId: "store-a" }]);
   const row = page.getByRole("row", { name: /marta/ });
   await expect(row).toContainText("SPAR Leonding Testraum (SPAR-Leonding-002)");
-  await expect(row).toContainText(NEW_SUB);
+  await expect(row.getByTitle(NEW_SUB, { exact: true })).toBeVisible();
   await expect(page.getByLabel("Keycloak-ID (sub)")).toHaveValue("");
 });
 
@@ -63,13 +63,13 @@ test("store manager without a store and region manager without a region are not 
   await page.goto("/admin/next/access/");
   await page.getByLabel("Keycloak-ID (sub)").fill("abc def");
   await page.getByLabel("Benutzername").fill("marta");
-  await page.getByRole("button", { name: "Zugang anlegen" }).click();
+  await page.getByRole("button", { name: "Zugang anlegen", exact: true }).click();
   await expect(page.locator("#access-keycloakSubject-error")).toHaveText("Die Keycloak-ID darf keine Leerzeichen enthalten.");
   await expect(page.locator("#access-storeId-error")).toHaveText("Ein Marktleiter braucht einen Markt.");
 
   await page.getByLabel("Rolle").selectOption("region-manager");
   await expect(page.getByLabel("Markt")).toHaveCount(0);
-  await page.getByRole("button", { name: "Zugang anlegen" }).click();
+  await page.getByRole("button", { name: "Zugang anlegen", exact: true }).click();
   await expect(page.locator("#access-regionId-error")).toHaveText("Ein Regionsmanager braucht eine Region.");
   expect(posts).toBe(0);
 });
@@ -82,7 +82,7 @@ test("a second active access for the same Keycloak id shows the server conflict 
   await page.getByLabel("Benutzername").fill("marta");
   await page.getByLabel("Rolle").selectOption("region-manager");
   await page.getByLabel("Region").selectOption("region-1");
-  await page.getByRole("button", { name: "Zugang anlegen" }).click();
+  await page.getByRole("button", { name: "Zugang anlegen", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText("bereits einen aktiven Zugang");
   await expect(page.getByLabel("Keycloak-ID (sub)")).toHaveValue(NEW_SUB);
 });

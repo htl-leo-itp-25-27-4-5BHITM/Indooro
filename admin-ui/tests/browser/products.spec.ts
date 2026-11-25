@@ -40,7 +40,7 @@ test("product search submits with the keyboard and list failures can be retried"
 
   await page.goto("/admin/next/products/");
   await expect(page.getByRole("alert")).toContainText("Serverfehler. Bitte später erneut versuchen.");
-  await page.getByRole("button", { name: "Erneut laden" }).click();
+  await page.getByRole("button", { name: "Erneut versuchen" }).click();
   await expect(page.getByText("Der Produktkatalog ist leer.")).toBeVisible();
   expect(listCalls).toBe(2);
 
@@ -93,7 +93,7 @@ test("product sort and readiness filter are requested from the server before pag
   });
   await page.goto("/admin/next/products/");
   await page.getByLabel("Sortierung").selectOption("layoutCode");
-  await page.getByLabel("Readiness").selectOption("ready");
+  await page.getByLabel("Routing-Status").selectOption("ready");
   await expect(page).toHaveURL(/sort=layoutCode.*readiness=ready/);
   await expect(page.getByText("Apfel 0")).toBeVisible();
   await page.getByRole("link", { name: "Weiter" }).click();
@@ -188,7 +188,7 @@ test("admin validates and creates a product with the documented layout code", as
   });
 
   await page.goto("/admin/next/products/");
-  await page.getByRole("button", { name: "Produkt anlegen" }).click();
+  await page.getByRole("button", { name: "Produkt anlegen", exact: true }).click();
   await expect(page.getByText("Layout-Code: 310/1/1/1", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Speichern" }).click();
   await expect(page.getByText("Produkt-ID muss eine positive ganze Zahl sein.")).toBeVisible();
@@ -232,12 +232,12 @@ test("admin with several stores must pick a store, then sees a new product in th
 
   await page.goto("/admin/next/products/");
   await expect(page.getByText("Bitte einen Markt wählen.", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Produkt anlegen" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Produkt anlegen", exact: true })).toBeDisabled();
   expect(listQueries).toHaveLength(0);
 
   await page.getByRole("combobox", { name: "Markt" }).selectOption("store-2");
-  await expect(page.getByRole("button", { name: "Produkt anlegen" })).toBeEnabled();
-  await page.getByRole("button", { name: "Produkt anlegen" }).click();
+  await expect(page.getByRole("button", { name: "Produkt anlegen", exact: true })).toBeEnabled();
+  await page.getByRole("button", { name: "Produkt anlegen", exact: true }).click();
   await page.getByLabel("Produkt-ID").fill("7311");
   await page.getByRole("textbox", { name: "Name", exact: true }).fill("Birnen");
   await page.getByLabel("Preis (EUR)").fill("2,49");

@@ -92,17 +92,17 @@ test("admin validates, creates, edits, bulk reviews, assigns, releases, and arch
     "/api/beacons", "/api/beacons/beacon-1", "/api/beacons/beacon-1/assign", "/api/beacons/beacon-1/release", "/api/beacons/beacon-1/archive"
   ]);
 
-  await page.getByRole("button", { name: "Bulk anlegen" }).click();
+  await page.getByRole("button", { name: "Mehrere anlegen" }).click();
   await page.getByRole("textbox", { name: "Gemeinsame UUID" }).fill(uuid);
   await page.getByRole("textbox", { name: "Gemeinsamer Major" }).fill("1");
   await page.getByRole("textbox", { name: /Zeilen im Format/ }).fill("B-002,2\nB-003,2");
-  await page.getByRole("button", { name: "Review", exact: true }).click();
+  await page.getByRole("button", { name: "Prüfen", exact: true }).click();
   await expect(page.getByText(/kommt in dieser Liste mehrfach vor/)).toBeVisible();
-  await expect(page.getByRole("button", { name: /Review bestätigen/ })).toBeDisabled();
+  await expect(page.getByRole("button", { name: /Geprüfte \d+ anlegen/ })).toBeDisabled();
   await page.getByRole("textbox", { name: /Zeilen im Format/ }).fill("B-002,3\nB-003,4");
-  await page.getByRole("button", { name: "Review", exact: true }).click();
-  await expect(page.getByRole("button", { name: /Review bestätigen und 2 anlegen/ })).toBeEnabled();
-  await page.getByRole("button", { name: /Review bestätigen und 2 anlegen/ }).click();
+  await page.getByRole("button", { name: "Prüfen", exact: true }).click();
+  await expect(page.getByRole("button", { name: /Geprüfte 2 anlegen/ })).toBeEnabled();
+  await page.getByRole("button", { name: /Geprüfte 2 anlegen/ }).click();
   expect(writes.at(-1)).toMatchObject({ method: "POST", url: "/api/beacons/bulk", body: { uuid, major: 1, items: [{ beaconCode: "B-002", minor: 3 }, { beaconCode: "B-003", minor: 4 }] } });
 });
 
@@ -121,7 +121,7 @@ test("scoped staff can assign within scope but cannot create or bulk create", as
   });
   await page.goto("/admin/next/beacons/");
   await expect(page.getByRole("button", { name: "Beacon anlegen" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Bulk anlegen" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Mehrere anlegen" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Bearbeiten" })).toHaveCount(1);
   await expect(page.getByRole("option", { name: /WIEN-01/ })).toHaveCount(0);
   await page.getByRole("checkbox", { name: "SCOPED-1 auswählen" }).check();
@@ -265,8 +265,8 @@ test("beacon inventory shows empty state and retries load failures", async ({ pa
   });
   await page.goto("/admin/next/beacons/");
   await expect(page.getByRole("alert")).toContainText("Serverfehler");
-  await page.getByRole("button", { name: "Erneut laden" }).click();
-  await expect(page.getByText("Keine Beacons passen zu Suche, Filtern oder Zugriff.")).toBeVisible();
+  await page.getByRole("button", { name: "Erneut versuchen" }).click();
+  await expect(page.getByText("Noch keine Beacons vorhanden.")).toBeVisible();
   expect(inventoryCalls).toBe(2);
 });
 
@@ -281,14 +281,14 @@ test("failed Beacon reload hides stale rows and mutation controls until retry", 
       : route.fulfill({ json: [beacon("stale-1", "STALE-1", 1)] });
   });
   await page.goto("/admin/next/beacons/");
-  await expect(page.getByRole("cell", { name: "STALE-1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "STALE-1", exact: true })).toBeVisible();
   await page.getByRole("searchbox", { name: "Suche" }).fill("STALE");
   await expect(page.getByRole("alert")).toContainText("Serverfehler");
-  await expect(page.getByRole("cell", { name: "STALE-1" })).toHaveCount(0);
+  await expect(page.getByRole("cell", { name: "STALE-1", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Bearbeiten" })).toHaveCount(0);
-  await page.getByRole("button", { name: "Erneut laden" }).focus();
+  await page.getByRole("button", { name: "Erneut versuchen" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("cell", { name: "STALE-1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "STALE-1", exact: true })).toBeVisible();
   expect(inventoryCalls).toBe(3);
 });
 
@@ -302,7 +302,7 @@ test("Beacon inventory preserves legacy Code, UUID, and Store sorting", async ({
   await page.route("**/api/stores?*", (route) => route.fulfill({ json: { content: [store], page: 0, size: 100, totalElements: 1 } }));
   await page.route("**/api/beacons?*", (route) => route.fulfill({ json: records }));
   await page.goto("/admin/next/beacons/");
-  await expect(page.getByRole("button", { name: "Bulk anlegen" })).toBeInViewport();
+  await expect(page.getByRole("button", { name: "Mehrere anlegen" })).toBeInViewport();
   await expect.poll(() => page.evaluate(() => {
     const panel = document.querySelector(".beacons-page .panel");
     return panel ? panel.getBoundingClientRect().right <= window.innerWidth : false;
@@ -339,7 +339,7 @@ test("admin can create a beacon with keyboard controls and see the saved row", a
   await page.keyboard.type(uuid);
   await page.getByRole("button", { name: "Speichern" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("cell", { name: "KB-01" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "KB-01", exact: true })).toBeVisible();
   await expect(page.getByRole("status")).toContainText("Beacon wurde angelegt.");
 });
 
@@ -374,13 +374,13 @@ test("admin assigns several selected beacons and bulk-created beacons to a store
   await expect(page.getByRole("status").filter({ hasText: "2 Beacons wurden Indooro Linz zugewiesen." })).toBeVisible();
   expect(writes.map((entry) => entry.url)).toEqual(["/api/beacons/b-1/assign", "/api/beacons/b-3/assign"]);
 
-  await page.getByRole("button", { name: "Bulk anlegen" }).click();
+  await page.getByRole("button", { name: "Mehrere anlegen" }).click();
   await page.getByRole("textbox", { name: "Gemeinsame UUID" }).fill(uuid);
   await page.getByRole("textbox", { name: "Gemeinsamer Major" }).fill("9");
   await page.getByRole("combobox", { name: "Direkt zuweisen an (optional)" }).selectOption("store-1");
   await page.getByRole("textbox", { name: /Zeilen im Format/ }).fill("NEW-4,4\nNEW-5,5");
-  await page.getByRole("button", { name: "Review", exact: true }).click();
-  await page.getByRole("button", { name: /Review bestätigen und 2 anlegen/ }).click();
+  await page.getByRole("button", { name: "Prüfen", exact: true }).click();
+  await page.getByRole("button", { name: /Geprüfte 2 anlegen/ }).click();
   await expect(page.getByRole("status").filter({ hasText: "2 Beacons wurden angelegt. 2 Beacons wurden Indooro Linz zugewiesen." })).toBeVisible();
   expect(writes.slice(2).map((entry) => entry.url)).toEqual(["/api/beacons/bulk", "/api/beacons/b-4/assign", "/api/beacons/b-5/assign"]);
 });
