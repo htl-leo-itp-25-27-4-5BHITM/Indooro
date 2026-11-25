@@ -24,7 +24,7 @@ export function StoreCreatePage({ api, user }: { api: ApiClient; user: CurrentUs
     return () => controller.abort();
   }, [api, user.role, revision]);
 
-  if (user.role === "store-manager") return <section role="alert" className="notice"><h1>Zugriff verweigert</h1><p>Store-Manager können keine neue Filiale anlegen.</p></section>;
+  if (user.role === "store-manager") return <section role="alert" className="notice"><h1>Zugriff verweigert</h1><p>Marktleiter können keine neue Filiale anlegen.</p></section>;
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (saving) return;
