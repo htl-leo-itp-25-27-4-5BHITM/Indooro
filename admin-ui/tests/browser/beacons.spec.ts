@@ -281,14 +281,14 @@ test("failed Beacon reload hides stale rows and mutation controls until retry", 
       : route.fulfill({ json: [beacon("stale-1", "STALE-1", 1)] });
   });
   await page.goto("/admin/next/beacons/");
-  await expect(page.getByRole("cell", { name: "STALE-1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "STALE-1", exact: true })).toBeVisible();
   await page.getByRole("searchbox", { name: "Suche" }).fill("STALE");
   await expect(page.getByRole("alert")).toContainText("Serverfehler");
-  await expect(page.getByRole("cell", { name: "STALE-1" })).toHaveCount(0);
+  await expect(page.getByRole("cell", { name: "STALE-1", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Bearbeiten" })).toHaveCount(0);
   await page.getByRole("button", { name: "Erneut laden" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("cell", { name: "STALE-1" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "STALE-1", exact: true })).toBeVisible();
   expect(inventoryCalls).toBe(3);
 });
 
@@ -339,7 +339,7 @@ test("admin can create a beacon with keyboard controls and see the saved row", a
   await page.keyboard.type(uuid);
   await page.getByRole("button", { name: "Speichern" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("cell", { name: "KB-01" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "KB-01", exact: true })).toBeVisible();
   await expect(page.getByRole("status")).toContainText("Beacon wurde angelegt.");
 });
 

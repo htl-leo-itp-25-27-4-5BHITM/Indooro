@@ -14,6 +14,7 @@ import {
   reindexSummary,
   type IndexErrorView
 } from "./searchIndex";
+import { DataTable } from "./DataTable";
 
 type Busy = null | "load" | "reindex" | { activate: string };
 
@@ -118,16 +119,16 @@ export function SearchIndexPage({ api, user }: { api: ApiClient; user: CurrentUs
 
       <section className="notice" aria-labelledby="index-versions-title">
         <div className="section-heading"><h3 id="index-versions-title">Versionen</h3><span>{overview.versions.length} {overview.versions.length === 1 ? "Version" : "Versionen"}</span></div>
-        {overview.versions.length === 0 ? <p>Es gibt noch keine Version. Mit „Reindex starten“ wird die erste Version angelegt.</p> : <div className="table-scroll"><table>
-          <thead><tr><th>Index</th><th>Dokumente</th><th>Quelle</th><th>Status</th><th>Aktion</th></tr></thead>
+        {overview.versions.length === 0 ? <p>Es gibt noch keine Version. Mit „Reindex starten“ wird die erste Version angelegt.</p> : <DataTable label="Index-Tabelle">
+          <thead><tr><th>Index</th><th>Dokumente</th><th className="col-mid">Quelle</th><th>Status</th><th>Aktion</th></tr></thead>
           <tbody>{overview.versions.map((version) => <tr key={version.name}>
             <td><code>{version.name}</code></td>
             <td>{formatCount(version.docCount)}</td>
-            <td>{comparisonText(compareWithSource(version, overview.sourceCount), overview.sourceCount)}</td>
+            <td className="col-mid">{comparisonText(compareWithSource(version, overview.sourceCount), overview.sourceCount)}</td>
             <td>{version.active ? <strong>Aktiv</strong> : "Nicht aktiv"}</td>
             <td>{canActivate(version) && <button className="button" type="button" disabled={disabled} aria-label={`${version.name} aktivieren`} onClick={() => startActivate(version.name)}>Aktivieren</button>}</td>
           </tr>)}</tbody>
-        </table></div>}
+        </DataTable>}
       </section>
 
       <section className="notice" aria-labelledby="index-reindex-title">

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
 
@@ -226,13 +227,13 @@ export function RegionsPage({ api, user }: { api: ApiClient; user: CurrentUser }
         {loading && <p role="status">Regionen werden geladen …</p>}
         {listError && <div role="alert" className="notice"><p>{listError}</p><button type="button" onClick={() => setReload((current) => current + 1)}>Erneut laden</button></div>}
         {!loading && !listError && visibleRegions.length === 0 && <p className="empty-state">{query ? "Keine Region passt zur Suche." : "Keine Regionen in diesem Status."}</p>}
-        {!loading && !listError && visibleRegions.length > 0 && <div className="table-scroll"><table>
+        {!loading && !listError && visibleRegions.length > 0 && <DataTable label="Regionen-Tabelle">
           <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Aktion</th></tr></thead>
           <tbody>{visibleRegions.map((region) => <tr key={region.id}>
             <td><code>{region.code}</code></td><td>{region.name}</td><td><span className={`status-pill ${region.status === "ACTIVE" ? "ready" : "missing"}`}>{region.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</span></td>
             <td><button type="button" className="text-button" onClick={() => { setEditing(false); setSelectedId(region.id); setArchiveError(""); }}>Details</button></td>
           </tr>)}</tbody>
-        </table></div>}
+        </DataTable>}
       </section>
 
       <div className="region-detail-column">

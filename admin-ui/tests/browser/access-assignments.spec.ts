@@ -52,7 +52,7 @@ test("admin gives a new store manager access to exactly one store", async ({ pag
   expect(posted).toEqual([{ keycloakSubject: NEW_SUB, username: "marta", email: "marta@example.test", role: "store-manager", regionId: null, storeId: "store-a" }]);
   const row = page.getByRole("row", { name: /marta/ });
   await expect(row).toContainText("SPAR Leonding Testraum (SPAR-Leonding-002)");
-  await expect(row).toContainText(NEW_SUB);
+  await expect(row.getByTitle(NEW_SUB, { exact: true })).toBeVisible();
   await expect(page.getByLabel("Keycloak-ID (sub)")).toHaveValue("");
 });
 

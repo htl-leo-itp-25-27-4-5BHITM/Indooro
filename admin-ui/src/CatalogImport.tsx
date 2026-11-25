@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { DataTable } from "./DataTable";
 
 export type CatalogImportKind = "product" | "category";
 export interface CatalogImportRow {
@@ -103,12 +104,12 @@ export function CatalogImportPanel({ kind }: { kind: "category" }) {
     {review && <div className="catalog-review" aria-live="polite">
       <h4>Review</h4>
       <p role="status">{review.total} Zeilen · {review.valid} gültig · {review.invalid} ungültig</p>
-      <div className="table-scroll"><table><thead><tr><th>Zeile</th><th>Status</th><th>Datensatz</th><th>Prüfung</th></tr></thead><tbody>
+      <DataTable label="Importprüfungs-Tabelle"><thead><tr><th>Zeile</th><th>Status</th><th>Datensatz</th><th>Prüfung</th></tr></thead><tbody>
         {review.rows.map(({ row, item, errors }) => <tr key={row}>
           <td>{row}</td><td><span className={`status-pill ${errors.length ? "missing" : "ready"}`}>{errors.length ? "Ungültig" : "Gültig"}</span></td>
           <td><code>{JSON.stringify(item)}</code></td><td>{errors.length ? <ul>{errors.map((reason, index) => <li key={`${row}-${index}`}>{reason}</li>)}</ul> : "—"}</td>
         </tr>)}
-      </tbody></table></div>
+      </tbody></DataTable>
       <p className="limit-notice"><strong>Commit nicht verfügbar.</strong> {limitation}</p>
       <button type="button" disabled aria-disabled="true">Commit nicht verfügbar</button>
     </div>}

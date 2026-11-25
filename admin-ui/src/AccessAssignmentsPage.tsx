@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
 import {
@@ -16,6 +17,7 @@ import {
   type AccessRole,
   type AccessStatusFilter
 } from "./accessAssignments";
+import { CopyableId } from "./CopyableId";
 
 interface RegionOption { id: string; code: string; name: string }
 interface StoreOption { id: string; storeCode: string; name: string; region: { id: string; name: string } | null }
@@ -183,12 +185,12 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
         {loading && <p role="status">Zugänge werden geladen …</p>}
         {listError && <div role="alert" className="notice"><p>{listError}</p><button type="button" onClick={() => setReload((current) => current + 1)}>Erneut laden</button></div>}
         {!loading && !listError && visibleAssignments.length === 0 && <p className="empty-state">{query ? "Kein Zugang passt zur Suche." : "Keine Zugänge in diesem Status."}</p>}
-        {!loading && !listError && visibleAssignments.length > 0 && <div className="table-scroll"><table>
+        {!loading && !listError && visibleAssignments.length > 0 && <DataTable label="Zugangs-Tabelle">
           <thead><tr><th>Benutzer</th><th>Rolle</th><th>Bereich</th><th>Status</th><th>Aktion</th></tr></thead>
           <tbody>{visibleAssignments.map((assignment) => {
             const own = assignment.keycloakSubject === user.subject;
             return <tr key={assignment.id}>
-              <td><strong>{assignment.username}</strong>{assignment.email && <><br /><span>{assignment.email}</span></>}<br /><code className="subject">{assignment.keycloakSubject}</code></td>
+              <td><strong>{assignment.username}</strong>{assignment.email && <small>{assignment.email}</small>}<CopyableId value={assignment.keycloakSubject} label={`Keycloak-ID von ${assignment.username}`} /></td>
               <td>{roleLabel(assignment.role)}</td>
               <td>{scopeLabel(assignment)}</td>
               <td><span className={`status-pill ${assignment.status === "ACTIVE" ? "ready" : "missing"}`}>{assignment.status === "ACTIVE" ? "Aktiv" : "Deaktiviert"}</span></td>
@@ -197,7 +199,7 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
                 : <button type="button" className="danger" onClick={() => void deactivate(assignment)} disabled={deactivatingId !== null} aria-label={`Zugang von ${assignment.username} deaktivieren`}>{deactivatingId === assignment.id ? "Deaktiviert …" : "Deaktivieren"}</button>)}</td>
             </tr>;
           })}</tbody>
-        </table></div>}
+        </DataTable>}
       </section>
 
       <div className="region-detail-column">

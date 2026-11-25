@@ -4,10 +4,6 @@
 .recipe-filters input, .recipe-filters select, .recipe-edit-form input, .recipe-edit-form select, .recipe-edit-form textarea { width: 100%; min-height: 42px; border: 1px solid #b6c9d1; border-radius: .5rem; background: white; color: #173047; padding: .55rem .65rem; font: inherit; }
 .recipe-edit-form textarea { min-height: 88px; resize: vertical; }
 .recipe-edit-form select[multiple] { min-height: 100px; }
-.recipe-results table { width: 100%; border-collapse: collapse; text-align: left; }
-.recipe-results th, .recipe-results td { border-bottom: 1px solid #e0eaec; padding: .8rem .6rem; vertical-align: top; }
-.recipe-results th { color: #506779; font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; }
-.recipe-results td small { display: block; color: #506779; margin-top: .2rem; }
 .recipe-row-actions { display: flex; flex-wrap: wrap; gap: .4rem; }
 .recipe-warning { color: #7f4d17 !important; font-weight: 700; }
 .small-button { min-height: 34px; padding: .4rem .65rem; }

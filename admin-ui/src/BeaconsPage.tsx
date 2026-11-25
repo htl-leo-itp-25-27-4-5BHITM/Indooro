@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
+import { CopyableId } from "./CopyableId";
 
 export interface BeaconStore {
   id: string;
@@ -502,7 +504,7 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
         <label className="span-2">Zeilen im Format Beacon-Code,Minor (Major und Minor gemeinsam leer für UUID-only)<textarea disabled={bulkReviewing || bulkSaving} rows={6} value={bulkText} onChange={(event) => { setBulkText(event.currentTarget.value); setBulkReview(null); }} placeholder={"B-001,1\nB-002,2\nB-003,3"} /></label>
       </div>
       <div className="toolbar"><button type="button" onClick={reviewBulk} disabled={bulkSaving || bulkReviewing}>{bulkReviewing ? "Prüft …" : "Review"}</button><button type="button" className="primary" onClick={commitBulk} disabled={bulkSaving || bulkReviewing || !bulkReview?.length || bulkReview.some((row) => row.error)}>{bulkSaving ? "Legt an …" : `Review bestätigen und ${bulkReview?.length ?? 0} anlegen`}</button><button type="button" onClick={() => { setBulkOpen(false); setBulkReview(null); }} disabled={bulkSaving || bulkReviewing}>Schließen</button></div>
-      {bulkReview && <div className="table-scroll" aria-live="polite"><table><thead><tr><th>Zeile</th><th>Beacon-Code</th><th>Minor</th><th>Review</th></tr></thead><tbody>{bulkReview.map((row) => <tr key={row.line}><td>{row.line}</td><td>{row.beaconCode || "–"}</td><td>{row.minor ?? "–"}</td><td>{row.error || "Bereit"}</td></tr>)}</tbody></table></div>}
+      {bulkReview && <div aria-live="polite"><DataTable label="Bulk-Prüfungstabelle"><thead><tr><th>Zeile</th><th>Beacon-Code</th><th>Minor</th><th>Review</th></tr></thead><tbody>{bulkReview.map((row) => <tr key={row.line}><td>{row.line}</td><td>{row.beaconCode || "–"}</td><td>{row.minor ?? "–"}</td><td>{row.error || "Bereit"}</td></tr>)}</tbody></DataTable></div>}
     </section>}
 
     {editing !== false && <section className="panel" aria-labelledby="beacon-form-title"><div className="panel-header"><h3 id="beacon-form-title">{editing ? "Beacon bearbeiten" : "Beacon anlegen"}</h3></div>
@@ -541,16 +543,16 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
         <button type="button" className="primary" disabled={assigning || !selected.length || !selectionStoreId} onClick={() => void assignTo(selected, selectionStoreId)}>{assigning ? "Weist zu …" : `${selected.length} zuweisen`}</button>
         {selected.length > 0 && <button type="button" disabled={assigning} onClick={() => setSelectedIds(new Set())}>Auswahl aufheben</button>}
       </div>}
-      {!loading && !loadError && sortedBeacons.length > 0 && <div className="table-scroll"><table><thead><tr><th><input type="checkbox" aria-label="Alle zuweisbaren Beacons auswählen" disabled={!selectable.length || assigning} checked={selectable.length > 0 && selected.length === selectable.length} onChange={(event) => setSelectedIds(event.currentTarget.checked ? new Set(selectable.map((beacon) => beacon.id)) : new Set())} /></th><th>Code</th><th>Identität</th><th>Status</th><th>Store</th><th>Aktionen</th></tr></thead><tbody>{sortedBeacons.map((beacon) => {
+      {!loading && !loadError && sortedBeacons.length > 0 && <DataTable label="Beacon-Tabelle"><thead><tr><th><input type="checkbox" aria-label="Alle zuweisbaren Beacons auswählen" disabled={!selectable.length || assigning} checked={selectable.length > 0 && selected.length === selectable.length} onChange={(event) => setSelectedIds(event.currentTarget.checked ? new Set(selectable.map((beacon) => beacon.id)) : new Set())} /></th><th>Code</th><th className="col-id">Identität</th><th>Status</th><th className="col-low">Store</th><th>Aktionen</th></tr></thead><tbody>{sortedBeacons.map((beacon) => {
         const manageable = canManageBeacon(user, beacon, stores);
         const canAssign = beacon.status === "ACTIVE" && (manageable || !beacon.currentStore) && storesForUser.length > 0;
-        return <tr key={beacon.id}><td>{canAssign && <input type="checkbox" aria-label={`${beacon.beaconCode} auswählen`} disabled={assigning} checked={selectedIds.has(beacon.id)} onChange={(event) => { const checked = event.currentTarget.checked; setSelectedIds((current) => { const next = new Set(current); if (checked) next.add(beacon.id); else next.delete(beacon.id); return next; }); }} />}</td><td><strong>{beacon.beaconCode}</strong><small>{beacon.notes || ""}</small></td><td><code>{beacon.identityKey}</code></td><td><span className={`status-pill ${beacon.status === "ARCHIVED" ? "missing" : beacon.currentStore ? "info" : "ready"}`}>{statusLabel(beacon)}</span></td><td>{beacon.currentStore?.name ?? "–"}</td><td><div className="row-actions">
+        return <tr key={beacon.id}><td>{canAssign && <input type="checkbox" aria-label={`${beacon.beaconCode} auswählen`} disabled={assigning} checked={selectedIds.has(beacon.id)} onChange={(event) => { const checked = event.currentTarget.checked; setSelectedIds((current) => { const next = new Set(current); if (checked) next.add(beacon.id); else next.delete(beacon.id); return next; }); }} />}</td><td><strong>{beacon.beaconCode}</strong><small>{beacon.notes || ""}</small></td><td className="col-id"><CopyableId value={beacon.identityKey} label={`Identität von ${beacon.beaconCode}`} /></td><td><span className={`status-pill ${beacon.status === "ARCHIVED" ? "missing" : beacon.currentStore ? "info" : "ready"}`}>{statusLabel(beacon)}</span></td><td className="col-low">{beacon.currentStore?.name ?? "–"}</td><td><div className="row-actions">
           {manageable && beacon.status === "ACTIVE" && <button type="button" onClick={() => openEdit(beacon)}>Bearbeiten</button>}
           {canAssign && <select aria-label={`${beacon.beaconCode} ${beacon.currentStore ? "verschieben" : "zuweisen"}`} value="" disabled={assigning} onChange={(event) => { const storeId = event.currentTarget.value; if (storeId) void assignTo([beacon], storeId); }}><option value="">{beacon.currentStore ? "Verschieben nach …" : "Zuweisen an …"}</option>{storesForUser.filter((store) => store.id !== beacon.currentStore?.id).map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select>}
           {beacon.currentStore && manageable && <button type="button" onClick={() => releaseBeacon(beacon)} disabled={pendingActionId === beacon.id}>Freigeben</button>}
           {manageable && beacon.status === "ACTIVE" && <button type="button" className="danger" onClick={() => archiveBeacon(beacon)} disabled={pendingActionId === beacon.id}>Archivieren</button>}
         </div></td></tr>;
-      })}</tbody></table></div>}
+      })}</tbody></DataTable>}
     </section>
   </section>;
 }

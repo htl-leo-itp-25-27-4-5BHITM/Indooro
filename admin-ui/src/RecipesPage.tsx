@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
+import { DataTable } from "./DataTable";
 import type { ApiClient } from "./api/client";
 import { accessibleStores, loadActiveStores, productErrorMessage, readRememberedStoreId, rememberStoreId, resolveStoreSelection, storeLabel, storeScopeParams, type AdminStore } from "./productStore";
 import type { CurrentUser } from "./routes";
@@ -224,11 +225,11 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
     {!page && !error && <p className="notice" role="status">Rezepte werden geladen …</p>}
     {page && !error && <section className="notice recipe-results" aria-label="Rezept-Ergebnisse">
       <div className="section-heading"><h3>{page.totalElements.toLocaleString("de-AT")} Rezepte</h3><span>Seite {page.page + 1} von {Math.max(totalPages, 1)}</span></div>
-      {page.content.length === 0 ? <p>Keine Rezepte passen zu den Filtern.</p> : <div className="table-scroll"><table><thead><tr><th>Rezept</th><th>Status</th><th>Readiness</th><th>Tags</th><th>Aktion</th></tr></thead><tbody>{page.content.map((recipe) => <tr key={recipe.id}>
+      {page.content.length === 0 ? <p>Keine Rezepte passen zu den Filtern.</p> : <DataTable label="Rezept-Tabelle"><thead><tr><th>Rezept</th><th>Status</th><th>Readiness</th><th className="col-low">Tags</th><th>Aktion</th></tr></thead><tbody>{page.content.map((recipe) => <tr key={recipe.id}>
         <td><strong>{recipe.title}</strong><small>{recipe.slug}</small></td><td><span className={`status-pill ${recipe.status === "PUBLISHED" ? "ready" : "missing"}`}>{recipe.status}</span></td>
-        <td>{recipe.mappedIngredientCount}/{recipe.totalIngredientCount} Zutaten{recipe.stepCount === 0 && <small className="recipe-warning">Keine Schritte</small>}</td><td>{recipe.tags?.map((tag) => tag.name).join(", ") || "–"}</td>
+        <td>{recipe.mappedIngredientCount}/{recipe.totalIngredientCount} Zutaten{recipe.stepCount === 0 && <small className="recipe-warning">Keine Schritte</small>}</td><td className="col-low">{recipe.tags?.map((tag) => tag.name).join(", ") || "–"}</td>
         <td><div className="recipe-row-actions"><button className="button small-button" onClick={() => void loadDetail(recipe.id, true)}>Vorschau</button><button className="button small-button" onClick={() => void loadDetail(recipe.id)}>Bearbeiten</button></div></td>
-      </tr>)}</tbody></table></div>}
+      </tr>)}</tbody></DataTable>}
       <div className="pager"><span>{page.totalElements ? `${page.page * page.size + 1}–${Math.min((page.page + 1) * page.size, page.totalElements)} von ${page.totalElements}` : "0 Ergebnisse"}</span><div>{page.page > 0 && <a className="button" href={pageUrl(page.page - 1)}>Zurück</a>}{page.page + 1 < totalPages && <a className="button" href={pageUrl(page.page + 1)}>Weiter</a>}</div></div>
     </section>}
     {editor && original && <div className="recipe-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !busy) { setEditor(null); setOriginal(null); } }}>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
 import { ProductCsvImport } from "./ProductCsvImport";
 import {
@@ -394,13 +395,13 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
     {selectedStore && loading && <p role="status">Produkte werden geladen …</p>}
     {!loading && !loadError && pageData && <section className="panel" aria-labelledby="product-list-title">
       <div className="panel-header"><h3 id="product-list-title">{pageData.totalElements.toLocaleString("de-AT")} Produkte</h3><span>Seite {pageData.page + 1} von {Math.max(totalPages, 1)}</span></div>
-      {pageItems.length === 0 ? <p className="empty-state">{filters.q || filters.readiness ? "Keine Produkte zu Suche oder Filter gefunden." : "Der Produktkatalog ist leer."}</p> : <div className="table-scroll"><table><thead><tr><th>ID</th><th>Produkt</th><th>Preis</th><th>Kategorie</th><th>Regalposition</th><th>Store</th><th>Readiness</th><th>Aktionen</th></tr></thead><tbody>{pageItems.map((product) => {
+      {pageItems.length === 0 ? <p className="empty-state">{filters.q || filters.readiness ? "Keine Produkte zu Suche oder Filter gefunden." : "Der Produktkatalog ist leer."}</p> : <DataTable label="Produkt-Tabelle"><thead><tr><th className="col-mid">ID</th><th>Produkt</th><th>Preis</th><th className="col-low">Kategorie</th><th>Regalposition</th><th className="col-low">Store</th><th>Readiness</th><th>Aktionen</th></tr></thead><tbody>{pageItems.map((product) => {
         const readiness = productReadiness(product, categories);
-        return <tr key={product.id}><td>{product.id}</td><td><strong>{product.name}</strong></td><td>{product.price == null ? "–" : `${Number(product.price).toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}</td>
-          <td>{readiness.categoryName}</td><td><code>{product.layoutCode || "–"}</code>{readiness.ready && <small>{readiness.detail}</small>}</td><td>{product.storeCode || product.storeId || "Global"}</td>
+        return <tr key={product.id}><td className="col-mid">{product.id}</td><td><strong>{product.name}</strong></td><td>{product.price == null ? "–" : `${Number(product.price).toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}</td>
+          <td className="col-low">{readiness.categoryName}</td><td><code>{product.layoutCode || "–"}</code>{readiness.ready && <small>{readiness.detail}</small>}</td><td className="col-low">{product.storeCode || product.storeId || "Global"}</td>
           <td><span className={`status-pill ${readiness.ready ? "ready" : "missing"}`}>{readiness.label}</span>{!readiness.ready && <small>{readiness.detail}</small>}</td>
           <td><div className="row-actions"><button type="button" onClick={() => startEdit(product)}>Bearbeiten</button><button type="button" className="danger" onClick={() => deleteProduct(product)} disabled={deletingId !== null}>{deletingId === product.id ? "Löscht …" : "Löschen"}</button></div></td></tr>;
-      })}</tbody></table></div>}
+      })}</tbody></DataTable>}
       <div className="pager"><span>{pageData.totalElements ? `${pageData.page * pageData.size + 1}–${Math.min((pageData.page + 1) * pageData.size, pageData.totalElements)} von ${pageData.totalElements}` : "0 Ergebnisse"}</span><div>
         {pageData.page > 0 && <a className="button" href={productPageUrl({ ...filters, page: pageData.page - 1 })} onClick={(event) => { event.preventDefault(); changeFilters({ ...filters, page: pageData.page - 1 }); }}>Zurück</a>}
         {pageData.page + 1 < totalPages && <a className="button" href={productPageUrl({ ...filters, page: pageData.page + 1 })} onClick={(event) => { event.preventDefault(); changeFilters({ ...filters, page: pageData.page + 1 }); }}>Weiter</a>}

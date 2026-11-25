@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
 import { CatalogImportPanel } from "./CatalogImport";
 
@@ -65,7 +66,7 @@ export function CategoriesPage({ api }: { api: ApiClient }) {
     {categories && !error && <section className="notice" aria-label="Kategorie-Ergebnisse"><div className="section-heading"><h3>{categories.length} Kategorien</h3><span>{visible.length} sichtbar</span></div>
       {categories.length >= 500 && <p className="limit-notice" role="status">Die API liefert höchstens 500 Kategorien. Für weitere Einträge ist eine paginierte API nötig.</p>}
       <label className="category-search">Suche<input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Code oder Name" /></label>
-      {visible.length === 0 ? <p>Keine Kategorie passt zur Suche.</p> : <div className="table-scroll"><table><thead><tr><th>Code</th><th>Name</th><th>Aktion</th></tr></thead><tbody>{visible.map((item) => <tr key={item.categoryCode}><td><code>{item.categoryCode}</code></td><td>{item.categoryName}</td><td><button className="button" onClick={() => open(item)}>Bearbeiten</button></td></tr>)}</tbody></table></div>}
+      {visible.length === 0 ? <p>Keine Kategorie passt zur Suche.</p> : <DataTable label="Kategorien-Tabelle"><thead><tr><th>Code</th><th>Name</th><th>Aktion</th></tr></thead><tbody>{visible.map((item) => <tr key={item.categoryCode}><td><code>{item.categoryCode}</code></td><td>{item.categoryName}</td><td><button className="button" onClick={() => open(item)}>Bearbeiten</button></td></tr>)}</tbody></DataTable>}
     </section>}
   </div>;
 }
