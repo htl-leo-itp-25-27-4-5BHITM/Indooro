@@ -76,6 +76,12 @@
 - [x] 10.4 Full browser suite green; report whether CI runs it.
 - [x] 10.5 Run admin and showcase browser suites in CI.
 
+## 12. CI Maven resolution (orchestrator follow-up)
+
+- [x] 12.1 Root cause: Maven Central answered the runner with HTTP 429 (rate limit) for `maven-resources-plugin:pom:3.4.0`; Maven records it as "(absent)" and aborts. The version exists, this is not a pom or cache-key problem.
+- [x] 12.2 Fix: `build-and-push` retries 429/503 inside the resolver (6 tries, 10 s apart) and reruns `mvn -U package -DskipTests` up to three times with backoff. Gates, job and image publishing (push only) unchanged.
+- [x] 12.3 CI green on the PR, `build-and-push` included.
+
 ## 11. Showcase CI stability (orchestrator follow-up)
 
 - [ ] 11.1 Reproduce the intermittent `pilot-showcase-browser` failures (tour Back restore, list reload per market) locally under CPU load.
