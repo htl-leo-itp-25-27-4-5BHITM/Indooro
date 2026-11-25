@@ -744,40 +744,52 @@ struct StoreMapPage: View {
     }
 
     private var untrustedPositionBanner: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.a11yWarningText)
+        // Message and actions on separate rows: one row squeezes the text on small iPhones.
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.a11yWarningText)
 
-            Text(navigationSession.navigationStatusMessage ?? "Position ungenau")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.primary)
-                .lineLimit(2)
+                Text(navigationSession.navigationStatusMessage ?? "Position ungenau")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-            Spacer(minLength: 0)
-
-            Button("QR-Code scannen") {
-                openAnchorScanner()
+                Spacer(minLength: 0)
             }
-            .font(.caption.weight(.semibold))
-            .buttonStyle(.plain)
-            .foregroundStyle(accent)
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
 
-            Button("Position setzen") {
-                nextTapSetsPosition = true
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 16) { positionBannerActions }
+                VStack(alignment: .leading, spacing: 0) { positionBannerActions }
             }
-            .font(.caption.weight(.semibold))
-            .buttonStyle(.plain)
-            .foregroundStyle(accent)
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.top, 10)
+        .padding(.bottom, 2)
         .background(MapFloatingSurface())
         .accessibilityIdentifier("positionBanner")
+    }
+
+    @ViewBuilder
+    private var positionBannerActions: some View {
+        Button("QR-Code scannen") {
+            openAnchorScanner()
+        }
+        .font(.caption.weight(.semibold))
+        .buttonStyle(.plain)
+        .foregroundStyle(accent)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+
+        Button("Position setzen") {
+            nextTapSetsPosition = true
+        }
+        .font(.caption.weight(.semibold))
+        .buttonStyle(.plain)
+        .foregroundStyle(accent)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
     }
 
     private var searchBarCard: some View {
