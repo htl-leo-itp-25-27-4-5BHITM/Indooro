@@ -48,5 +48,7 @@ describe("geometry helpers", () => {
     for (let i = 0; i < 60; i++) v = approach(v, 100, 16);
     expect(v).toBeGreaterThan(99);
     expect(approach(50, 100, 0)).toBe(50);
+    expect(approach(50, 100, 0, 0)).toBe(100);
+    expect(approach(50, 100, 16, 0)).toBe(100);
   });
 });

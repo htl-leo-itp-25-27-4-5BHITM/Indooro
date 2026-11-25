@@ -84,7 +84,7 @@ test("dashboard uses scoped backend totals and only admin loads audit activity",
   await expect(page.getByText("Layout veröffentlicht")).toBeVisible();
   await expect(page.getByRole("link", { name: "Layouts prüfen" })).toHaveAttribute("href", "/admin/next/stores/?layout=missing");
   const manageStore = page.getByRole("link", { name: "Zur Store-Liste" });
-  const createStore = page.getByRole("link", { name: "Store anlegen" });
+  const createStore = page.getByRole("link", { name: "Store anlegen", exact: true });
   await expect(createStore).toHaveAttribute("href", "/admin/next/stores/new/");
   await manageStore.focus();
   await page.keyboard.press("Tab");
@@ -130,7 +130,7 @@ test("region manager dashboard stays within scoped APIs without admin-only actio
   await expect(page.getByRole("navigation", { name: "Admin Navigation" }).getByRole("link", { name: "Regionen" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Admin Navigation" }).getByRole("link", { name: "Rezepte" })).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Kennzahlen" })).toContainText("3");
-  await expect(page.getByRole("link", { name: "Store anlegen" })).toHaveAttribute("href", "/admin/next/stores/new/");
+  await expect(page.getByRole("link", { name: "Store anlegen", exact: true })).toHaveAttribute("href", "/admin/next/stores/new/");
   expect(auditRequests).toBe(0);
 });
 

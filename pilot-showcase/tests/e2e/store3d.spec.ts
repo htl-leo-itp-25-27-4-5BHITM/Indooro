@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { collectErrors, gotoTab } from "./helpers";
 
 // Headless Chromium needs a software GL backend for WebGL.
+test.use({ reducedMotion: "no-preference" });
 test.use({ launchOptions: { args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] } });
 
 // software rendering is slow: give the 3D tests room
