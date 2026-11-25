@@ -13,7 +13,7 @@ test("category create keeps input after conflict and reloads confirmed list", as
     return route.fulfill({ json: created });
   });
   await page.goto("/admin/next/categories/");
-  await page.getByRole("button", { name: "Kategorie anlegen" }).click();
+  await page.getByRole("button", { name: "Kategorie anlegen", exact: true }).click();
   await page.getByRole("spinbutton", { name: "Kategorie-Code" }).fill("310");
   await page.getByRole("textbox", { name: "Name" }).fill("Obst & Gemüse");
   await page.getByRole("button", { name: "Speichern" }).click();
@@ -38,7 +38,7 @@ test("category create checks the exact code before a legacy upsert can overwrite
     return route.fulfill({ json: created });
   });
   await page.goto("/admin/next/categories/");
-  await page.getByRole("button", { name: "Kategorie anlegen" }).click();
+  await page.getByRole("button", { name: "Kategorie anlegen", exact: true }).click();
   await page.getByRole("spinbutton", { name: "Kategorie-Code" }).fill("310");
   await page.getByRole("textbox", { name: "Name" }).fill("Neuer Name");
   await page.getByRole("button", { name: "Speichern" }).click();
@@ -75,7 +75,7 @@ test("category import reports duplicate codes and does not call the bulk endpoin
   await expect(page.getByRole("status")).toContainText("3 Zeilen · 1 gültig · 2 ungültig");
   await expect(page.getByText("Doppelte categoryCode: 310.")).toBeVisible();
   await expect(page.getByText("categoryName ist erforderlich.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Commit nicht verfügbar" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Import nicht verfügbar" })).toBeDisabled();
   expect(bulkCalls).toBe(0);
 });
 
@@ -92,8 +92,8 @@ test("empty categories can be searched and category form is keyboard operable", 
   await page.goto("/admin/next/categories/");
   const results = page.getByRole("region", { name: "Kategorie-Ergebnisse" });
   await expect(results).toContainText("0 Kategorien");
-  await expect(results).toContainText("Keine Kategorie passt zur Suche.");
-  const create = page.getByRole("button", { name: "Kategorie anlegen" });
+  await expect(results).toContainText("Noch keine Kategorien vorhanden.");
+  const create = page.getByRole("button", { name: "Kategorie anlegen", exact: true });
   await page.locator("body").focus();
   for (let step = 0; step < 20 && !(await create.evaluate((element) => element === document.activeElement)); step += 1) await page.keyboard.press("Tab");
   await expect(create).toBeFocused();

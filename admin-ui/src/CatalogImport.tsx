@@ -72,7 +72,7 @@ export function reviewCatalogImport(kind: CatalogImportKind, rows: CatalogImport
   };
 }
 
-const limitation = "Commit gesperrt. Für Kategorien ist noch kein Bulk-Import freigegeben. Diese Prüfung hat nichts gesendet.";
+const limitation = "Import gesperrt. Für Kategorien ist noch kein Bulk-Import freigegeben. Diese Prüfung hat nichts gesendet.";
 
 /** Kategorieimport: nur Prüfung, der Commit bleibt gesperrt. Produktimport läuft über ProductCsvImport. */
 export function CatalogImportPanel({ kind }: { kind: "category" }) {
@@ -102,7 +102,7 @@ export function CatalogImportPanel({ kind }: { kind: "category" }) {
     </form>
     {parseError && <p role="alert" className="notice error">Import konnte nicht geprüft werden: {parseError}</p>}
     {review && <div className="catalog-review" aria-live="polite">
-      <h4>Review</h4>
+      <h4>Prüfergebnis</h4>
       <p role="status">{review.total} Zeilen · {review.valid} gültig · {review.invalid} ungültig</p>
       <DataTable label="Importprüfungs-Tabelle"><thead><tr><th>Zeile</th><th>Status</th><th>Datensatz</th><th>Prüfung</th></tr></thead><tbody>
         {review.rows.map(({ row, item, errors }) => <tr key={row}>
@@ -110,8 +110,8 @@ export function CatalogImportPanel({ kind }: { kind: "category" }) {
           <td><code>{JSON.stringify(item)}</code></td><td>{errors.length ? <ul>{errors.map((reason, index) => <li key={`${row}-${index}`}>{reason}</li>)}</ul> : "—"}</td>
         </tr>)}
       </tbody></DataTable>
-      <p className="limit-notice"><strong>Commit nicht verfügbar.</strong> {limitation}</p>
-      <button type="button" disabled aria-disabled="true">Commit nicht verfügbar</button>
+      <p className="limit-notice"><strong>Import nicht verfügbar.</strong> {limitation}</p>
+      <button type="button" disabled aria-disabled="true">Import nicht verfügbar</button>
     </div>}
   </section>;
 }
