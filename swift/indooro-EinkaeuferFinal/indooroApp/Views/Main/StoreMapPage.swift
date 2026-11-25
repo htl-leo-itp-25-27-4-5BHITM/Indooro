@@ -607,7 +607,7 @@ struct StoreMapPage: View {
                     ProgressView()
                         .scaleEffect(0.9)
 
-                    Text("Produkte werden gesucht...")
+                    Text("Produkte werden gesucht …")
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
 

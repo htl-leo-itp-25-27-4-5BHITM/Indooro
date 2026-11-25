@@ -567,7 +567,7 @@ struct ProductsPage: View {
             if productSearch.isSearching {
                 HStack(spacing: 10) {
                     ProgressView()
-                    Text("Produkte werden gesucht...")
+                    Text("Produkte werden gesucht …")
                         .foregroundStyle(.secondary)
                 }
             }

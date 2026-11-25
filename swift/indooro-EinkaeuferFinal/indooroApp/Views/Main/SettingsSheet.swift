@@ -137,7 +137,7 @@ struct SettingsSheet: View {
                         }
                     }
 
-                    Text("Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu aendern. Szenario und Rolle gelten ab dem Start der Aufnahme, der Marker ab dem naechsten Wahrheitsmarker.")
+                    Text("Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu ändern. Szenario und Rolle gelten ab dem Start der Aufnahme, der Marker ab dem naechsten Wahrheitsmarker.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
