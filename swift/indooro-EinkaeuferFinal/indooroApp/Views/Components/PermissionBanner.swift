@@ -18,6 +18,7 @@ struct PermissionBanner: View {
             }
             .font(.subheadline)
             .padding(.horizontal)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(.regularMaterial)
         }
     }
