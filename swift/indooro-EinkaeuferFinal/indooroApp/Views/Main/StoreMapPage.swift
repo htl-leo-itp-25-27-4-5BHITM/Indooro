@@ -988,7 +988,7 @@ struct StoreMapPage: View {
                             .foregroundStyle(Color.a11yWarningText)
                     }
 
-                    Text(String(format: "%.2f EUR", target.price))
+                    Text(PriceText.format(target.price))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(accent)
                 }

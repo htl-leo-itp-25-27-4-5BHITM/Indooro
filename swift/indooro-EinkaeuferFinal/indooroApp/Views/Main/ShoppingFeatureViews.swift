@@ -1875,7 +1875,7 @@ private struct ShoppingChecklistRow: View {
                 Spacer()
 
                 if let price = item.price {
-                    Text("\(String(format: "%.2f", price)) EUR")
+                    Text(PriceText.format(price))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }

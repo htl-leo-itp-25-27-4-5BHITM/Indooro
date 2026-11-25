@@ -24,7 +24,7 @@ public struct UpsellProductSummary: Decodable, Identifiable, Hashable, Sendable 
     public var detailText: String {
         var parts: [String] = []
         if let price, price > 0 {
-            parts.append(String(format: "%.2f EUR", price))
+            parts.append(PriceText.format(price))
         }
         if hasLayoutPosition {
             parts.append("im Markt auffindbar")
