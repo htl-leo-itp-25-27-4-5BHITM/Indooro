@@ -208,8 +208,8 @@ export function StoreDemo() {
                   {t.icon}
                   {t.id === "liste" ? (
                     <span className="truncate">
-                      <span className="sm:hidden">Liste</span>
-                      <span className="hidden sm:inline">{t.label}</span>
+                      <span className="sm:hidden lg:inline">Liste</span>
+                      <span className="hidden sm:inline lg:hidden">{t.label}</span>
                     </span>
                   ) : (
                     <span className="truncate">{t.label}</span>

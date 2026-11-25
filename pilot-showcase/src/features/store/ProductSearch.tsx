@@ -152,12 +152,12 @@ export function ProductSearch({ market, selectedProductId, onSelect, has, onAdd,
                       className="flex min-w-0 flex-1 items-center gap-3 text-left"
                       aria-label={`${p.name} auf der Karte zeigen`}
                     >
-                      <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-xl bg-ink-950/70 text-xl ring-1 ring-white/8">
+                      <span aria-hidden className="hidden size-10 shrink-0 place-items-center rounded-xl bg-ink-950/70 text-xl ring-1 ring-white/8 min-[440px]:grid">
                         {p.emoji}
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline gap-2">
-                          <span className="truncate text-[14px] font-semibold text-white">{p.name}</span>
+                        <span className="flex flex-wrap items-baseline gap-x-2">
+                          <span className="min-w-0 break-words text-[14px] font-semibold leading-snug text-white">{p.name}</span>
                           <span className="shrink-0 text-xs tabular-nums text-ink-200">{eur.format(p.price)}</span>
                         </span>
                         <span className="block truncate text-xs text-ink-300">
