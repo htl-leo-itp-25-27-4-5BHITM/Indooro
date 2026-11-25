@@ -43,9 +43,9 @@
 
 ## 7. Integration (orchestrator)
 
-- [ ] 7.1 All package PRs merged, CI green on `main`.
+- [x] 7.1 All package PRs merged, CI green on `main`.
 - [x] 7.2 Integration check on `main`: backend tests, admin-ui tests and build, screenshot check of admin pages.
-- [ ] 7.3 Write final `HANDOFF.md` and archive the change.
+- [x] 7.3 Write final `HANDOFF.md` and archive the change.
 
 ## 8. P6 Customer web and landing (polish-customer-web)
 
