@@ -365,14 +365,8 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/Product" }
       responses:
-        "200":
-          description: OpenSearch result as string.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  result: { type: string, examples: [Created, Updated] }
+        "201": { $ref: "#/components/responses/Created" }
+        "204": { $ref: "#/components/responses/Updated" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -500,11 +494,8 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/Category" }
       responses:
-        "200":
-          description: Stored category.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/Category" }
+        "201": { $ref: "#/components/responses/Created" }
+        "204": { $ref: "#/components/responses/Updated" }
         "400": { $ref: "#/components/responses/LegacyBadRequest" }
         "409": { $ref: "#/components/responses/Conflict" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -972,15 +963,33 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/AccessAssignmentCreateRequest" }
       responses:
-        "200":
-          description: Created assignment.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/AccessAssignmentResponse" }
+        "201": { $ref: "#/components/responses/Created" }
         "400": { $ref: "#/components/responses/ValidationFailed" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
+  /api/admin/access-assignments/{assignmentId}:
+    get:
+      tags: [admin-access]
+      operationId: getAccessAssignment
+      summary: Read one access assignment.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - name: assignmentId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: Found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AccessAssignmentResponse" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
   /api/admin/access-assignments/{assignmentId}/deactivate:
     patch:
       tags: [admin-access]
@@ -1066,11 +1075,8 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/Product" }
       responses:
-        "200":
-          description: Stored product.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/Product" }
+        "201": { $ref: "#/components/responses/Created" }
+        "204": { $ref: "#/components/responses/Updated" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1120,6 +1126,27 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/CatalogBulkResult" }
   /api/admin/products/{id}:
+    get:
+      tags: [admin-products]
+      operationId: getAdminProduct
+      summary: Read one product of a store.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin|region-manager|store-manager
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/ProductIdPath"
+        - $ref: "#/components/parameters/StoreIdQuery"
+        - $ref: "#/components/parameters/StoreCodeQuery"
+      responses:
+        "200":
+          description: Found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Product" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
     delete:
       tags: [admin-products]
       operationId: deleteAdminProduct
@@ -1184,11 +1211,7 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/RecipeCreateRequest" }
       responses:
-        "200":
-          description: Created recipe.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/RecipeDetail" }
+        "201": { $ref: "#/components/responses/Created" }
         "400": { $ref: "#/components/responses/ValidationFailed" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1302,11 +1325,7 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/RecipeIngredientRequest" }
       responses:
-        "200":
-          description: Created ingredient.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/RecipeIngredient" }
+        "201": { $ref: "#/components/responses/Created" }
         "400": { $ref: "#/components/responses/ValidationFailed" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
@@ -1314,6 +1333,22 @@ paths:
     parameters:
       - $ref: "#/components/parameters/RecipeIdPath"
       - $ref: "#/components/parameters/IngredientIdPath"
+    get:
+      tags: [admin-recipes]
+      operationId: getRecipeIngredient
+      summary: Read one ingredient.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      responses:
+        "200":
+          description: Found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeIngredient" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
     put:
       tags: [admin-recipes]
       operationId: updateRecipeIngredient
@@ -1361,11 +1396,7 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/RecipeStepRequest" }
       responses:
-        "200":
-          description: Created step.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/RecipeStep" }
+        "201": { $ref: "#/components/responses/Created" }
         "400": { $ref: "#/components/responses/ValidationFailed" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { $ref: "#/components/responses/Conflict" }
@@ -1376,6 +1407,22 @@ paths:
         in: path
         required: true
         schema: { type: string, format: uuid }
+    get:
+      tags: [admin-recipes]
+      operationId: getRecipeStep
+      summary: Read one step.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      responses:
+        "200":
+          description: Found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeStep" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
     put:
       tags: [admin-recipes]
       operationId: updateRecipeStep
@@ -1534,14 +1581,28 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/RecipeTagRequest" }
       responses:
-        "200":
-          description: Created tag.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/RecipeTag" }
+        "201": { $ref: "#/components/responses/Created" }
         "400": { $ref: "#/components/responses/ValidationFailed" }
         "409": { $ref: "#/components/responses/Conflict" }
   /api/admin/recipe-tags/{tagId}:
+    get:
+      tags: [admin-recipe-tags]
+      operationId: getRecipeTag
+      summary: Read one tag.
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
+      x-indooro-consumers: [admin-ui]
+      parameters:
+        - $ref: "#/components/parameters/TagIdPath"
+      responses:
+        "200":
+          description: Found.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RecipeTag" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
     put:
       tags: [admin-recipe-tags]
       operationId: updateRecipeTag
@@ -1618,11 +1679,7 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/RegionUpsertRequest" }
       responses:
-        "200":
-          description: Created region.
-          content:
-            application/json:
-              schema: { $ref: "#/components/schemas/RegionResponse" }
+        "201": { $ref: "#/components/responses/Created" }
         "400": { $ref: "#/components/responses/ValidationFailed" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
@@ -1743,7 +1800,7 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/StoreUpsertRequest" }
       responses:
-        "200": { $ref: "#/components/responses/StoreDetailOk" }
+        "201": { $ref: "#/components/responses/Created" }
         "400": { $ref: "#/components/responses/ValidationFailed" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -1914,7 +1971,7 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/LayoutSaveRequest" }
       responses:
-        "200": { $ref: "#/components/responses/StoreLayoutOk" }
+        "201": { $ref: "#/components/responses/Created" }
         "400": { $ref: "#/components/responses/ValidationFailed" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -2097,7 +2154,7 @@ paths:
           application/json:
             schema: { $ref: "#/components/schemas/BeaconCreateRequest" }
       responses:
-        "200": { $ref: "#/components/responses/BeaconOk" }
+        "201": { $ref: "#/components/responses/Created" }
         "400": { $ref: "#/components/responses/ValidationFailed" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "409": { $ref: "#/components/responses/Conflict" }
@@ -2325,6 +2382,20 @@ components:
       schema: { type: integer, default: 20, minimum: 1, maximum: 50 }
 
   responses:
+    Created:
+      description: Created. Empty body; read the resource at Location.
+      headers:
+        Location:
+          required: true
+          description: URL of the GET endpoint of the new resource.
+          schema: { type: string, format: uri }
+    Updated:
+      description: Upsert replaced an existing resource. Empty body.
+      headers:
+        Location:
+          required: true
+          description: URL of the GET endpoint of the updated resource.
+          schema: { type: string, format: uri }
     BadRequest:
       description: Request rejected by service validation.
       content:

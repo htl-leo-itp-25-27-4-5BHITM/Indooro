@@ -418,7 +418,15 @@ async function saveLayoutToServer(layoutData, activate = true) {
     throw new Error('Layout konnte nicht am Server gespeichert werden.');
   }
 
-  const savedLayout = await response.json();
+  // A store layout save answers 201 + Location without a body; the global layout save still returns JSON.
+  const location = response.status === 201 ? response.headers.get('Location') : null;
+  let savedResponse = response;
+  if (location) {
+    const target = new URL(location, window.location.origin);
+    savedResponse = await fetch(target.pathname + target.search, { credentials: 'same-origin' });
+    if (!savedResponse.ok) throw new Error('Layout wurde gespeichert, konnte aber nicht neu geladen werden.');
+  }
+  const savedLayout = await savedResponse.json();
   editorLayoutId = savedLayout.layoutId || editorLayoutId;
   savedStateSignature = submittedStateSignature;
   if (hasUnsavedChanges()) showUnsavedStatus();

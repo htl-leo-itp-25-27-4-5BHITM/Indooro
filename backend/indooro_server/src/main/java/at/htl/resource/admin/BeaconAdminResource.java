@@ -1,5 +1,8 @@
 package at.htl.resource.admin;
 
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 import at.htl.admin.dto.BeaconDtos;
 import at.htl.admin.service.BeaconAdminService;
 import jakarta.annotation.security.RolesAllowed;
@@ -49,8 +52,8 @@ public class BeaconAdminResource extends AdminApiSupport {
 
     @Operation(operationId = "createBeacon")
     @POST
-    public BeaconDtos.BeaconResponse createBeacon(@Valid BeaconDtos.BeaconCreateRequest request) {
-        return beaconAdminService.createBeacon(request);
+    public Response createBeacon(@Valid BeaconDtos.BeaconCreateRequest request, @Context UriInfo uriInfo) {
+        return created(uriInfo, beaconAdminService.createBeacon(request).id());
     }
 
     @Operation(operationId = "bulkCreateBeacons")

@@ -103,8 +103,7 @@ class AdminProductStoreScopeTest {
         stubStores();
 
         given().contentType("application/json").body(PRODUCT_JSON_PILOT)
-                .when().post("/api/admin/products").then().statusCode(200)
-                .body("storeCode", equalTo(PILOT_CODE));
+                .when().post("/api/admin/products").then().statusCode(204);
         verify(openSearchService).indexProduct(org.mockito.ArgumentMatchers.argThat(product ->
                 PILOT_ID.toString().equals(product.getStoreId()) && PILOT_CODE.equals(product.getStoreCode())));
     }

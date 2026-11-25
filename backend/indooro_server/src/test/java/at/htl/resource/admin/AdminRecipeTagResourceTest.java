@@ -70,8 +70,7 @@ class AdminRecipeTagResourceTest {
                 .body("{\"code\":\"quick\",\"name\":\"Schnell\",\"kind\":\"category\"}")
                 .when().post("/api/admin/recipe-tags")
                 .then()
-                .statusCode(200)
-                .body("code", equalTo("quick"));
+                .statusCode(201);
 
         given()
                 .contentType("application/json")

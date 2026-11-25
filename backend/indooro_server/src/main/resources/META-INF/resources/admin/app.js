@@ -1581,6 +1581,14 @@ async function request(url, options = {}) {
   if (!response.ok) {
     throw new Error(data?.message || data?.error || text || `Request failed (${response.status})`);
   }
+  // Create/upsert POSTs answer 201/204 with a Location and no body: read the resource from there.
+  const created = options.method === "POST" && !data && (response.status === 201 || response.status === 204)
+    ? response.headers.get("Location")
+    : null;
+  if (created) {
+    const target = new URL(created, window.location.origin);
+    return request(target.pathname + target.search);
+  }
   return data;
 }
 

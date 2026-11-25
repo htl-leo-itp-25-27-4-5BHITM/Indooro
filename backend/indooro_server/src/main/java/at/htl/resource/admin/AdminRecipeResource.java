@@ -1,5 +1,7 @@
 package at.htl.resource.admin;
 
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 import at.htl.admin.dto.CommonDtos;
 import at.htl.admin.dto.RecipeDtos;
 import at.htl.admin.entity.RecordStatus;
@@ -57,8 +59,8 @@ public class AdminRecipeResource extends AdminApiSupport {
 
     @Operation(operationId = "createRecipe")
     @POST
-    public RecipeDtos.RecipeDetailResponse createRecipe(@Valid RecipeDtos.RecipeCreateRequest request) {
-        return recipeService.createRecipe(request);
+    public Response createRecipe(@Valid RecipeDtos.RecipeCreateRequest request, @Context UriInfo uriInfo) {
+        return created(uriInfo, recipeService.createRecipe(request).id());
     }
 
     @Operation(operationId = "getAdminRecipe")
@@ -100,9 +102,18 @@ public class AdminRecipeResource extends AdminApiSupport {
     @Operation(operationId = "addRecipeIngredient")
     @POST
     @Path("/{recipeId}/ingredients")
-    public RecipeDtos.RecipeIngredientResponse addIngredient(@PathParam("recipeId") UUID recipeId,
-                                                             @Valid RecipeDtos.RecipeIngredientRequest request) {
-        return recipeService.addIngredient(recipeId, request);
+    public Response addIngredient(@PathParam("recipeId") UUID recipeId,
+                                  @Valid RecipeDtos.RecipeIngredientRequest request,
+                                  @Context UriInfo uriInfo) {
+        return created(uriInfo, recipeService.addIngredient(recipeId, request).id());
+    }
+
+    @Operation(operationId = "getRecipeIngredient")
+    @GET
+    @Path("/{recipeId}/ingredients/{ingredientId}")
+    public RecipeDtos.RecipeIngredientResponse getIngredient(@PathParam("recipeId") UUID recipeId,
+                                                             @PathParam("ingredientId") UUID ingredientId) {
+        return recipeService.getIngredient(recipeId, ingredientId);
     }
 
     @Operation(operationId = "updateRecipeIngredient")
@@ -126,9 +137,18 @@ public class AdminRecipeResource extends AdminApiSupport {
     @Operation(operationId = "addRecipeStep")
     @POST
     @Path("/{recipeId}/steps")
-    public RecipeDtos.RecipeStepResponse addStep(@PathParam("recipeId") UUID recipeId,
-                                                 @Valid RecipeDtos.RecipeStepRequest request) {
-        return recipeService.addStep(recipeId, request);
+    public Response addStep(@PathParam("recipeId") UUID recipeId,
+                            @Valid RecipeDtos.RecipeStepRequest request,
+                            @Context UriInfo uriInfo) {
+        return created(uriInfo, recipeService.addStep(recipeId, request).id());
+    }
+
+    @Operation(operationId = "getRecipeStep")
+    @GET
+    @Path("/{recipeId}/steps/{stepId}")
+    public RecipeDtos.RecipeStepResponse getStep(@PathParam("recipeId") UUID recipeId,
+                                                 @PathParam("stepId") UUID stepId) {
+        return recipeService.getStep(recipeId, stepId);
     }
 
     @Operation(operationId = "updateRecipeStep")

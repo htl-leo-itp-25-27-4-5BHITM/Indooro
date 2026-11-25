@@ -79,7 +79,7 @@ class StoreLayoutAdminResourceRoleTest {
 
     private static void assertAllowedOnEveryStoreCall() {
         for (Call call : STORE_CALLS) {
-            send(call).then().statusCode(200);
+            send(call).then().statusCode(call.method().equals("POST") && call.path().endsWith("/versions") ? 201 : 200);
         }
     }
 

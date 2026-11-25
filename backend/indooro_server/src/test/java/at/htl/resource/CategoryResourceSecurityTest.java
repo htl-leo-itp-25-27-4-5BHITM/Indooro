@@ -65,8 +65,7 @@ class CategoryResourceSecurityTest {
                 List.of(new CatalogBulkResult.Row(1, "310", "saved", null))));
         given().contentType("application/json")
                 .body("{\"categoryCode\":310,\"categoryName\":\"Obst\"}")
-                .post("/api/categories").then().statusCode(200)
-                .body("categoryName", equalTo("Obst"));
+                .post("/api/categories").then().statusCode(201);
         verify(access).requireAdmin();
         verify(categories).bulkInsert(anyList());
     }
@@ -77,8 +76,7 @@ class CategoryResourceSecurityTest {
         when(categories.create(any(Category.class))).thenReturn(new Category(312, "Neu"));
         given().contentType("application/json").queryParam("createOnly", true)
                 .body("{\"categoryCode\":312,\"categoryName\":\"Neu\"}")
-                .post("/api/categories").then().statusCode(200)
-                .body("categoryCode", equalTo(312));
+                .post("/api/categories").then().statusCode(201);
         verify(categories).create(any(Category.class));
         verify(categories, never()).bulkInsert(anyList());
     }
