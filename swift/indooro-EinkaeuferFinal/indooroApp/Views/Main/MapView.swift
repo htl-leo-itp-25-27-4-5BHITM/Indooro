@@ -37,7 +37,8 @@ struct MapView: View {
             let requestedMapWidth = max(1, CGFloat(beaconManager.gridWidth * pixelsPerMeter))
             let requestedMapHeight = max(1, CGFloat(beaconManager.gridHeight * pixelsPerMeter))
             let maxMapWidth = max(80, geometry.size.width - mapPadding.leading - mapPadding.trailing)
-            let maxMapHeight = max(80, visibleHeight - mapPadding.top - mapPadding.bottom)
+            let hintHeight: CGFloat = 44
+            let maxMapHeight = max(80, visibleHeight - hintHeight - mapPadding.top - mapPadding.bottom)
             let widthScale = maxMapWidth / requestedMapWidth
             let heightScale = maxMapHeight / requestedMapHeight
             let fitScale = min(1.0, min(widthScale, heightScale))
@@ -52,6 +53,20 @@ struct MapView: View {
             VStack(spacing: 0) {
                 Color.clear
                     .frame(height: topInset)
+
+                // Above the map, so the hint never covers a shelf.
+                if allowsManualMapTap {
+                    MapCanvasStatusBadge(
+                        title: nextTapSetsPosition
+                            ? "Tippe auf deinen Standort"
+                            : (beaconManager.tapSetsTarget ? "Tippen setzt Ziel" : "Tippen setzt Position"),
+                        systemImage: "hand.tap",
+                        tint: Color.a11yWarningText
+                    )
+                    .padding(.top, 8)
+                    .padding(.trailing, mapPadding.trailing)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
 
                 ZoomableMapScrollView(
                     contentSize: CGSize(width: mapWidth, height: mapHeight),
@@ -216,21 +231,9 @@ struct MapView: View {
                         }
                     }
                     #endif
-                    .overlay(alignment: .topTrailing) {
-                        if allowsManualMapTap {
-                            MapCanvasStatusBadge(
-                                title: nextTapSetsPosition
-                                    ? "Tippe auf deinen Standort"
-                                    : (beaconManager.tapSetsTarget ? "Tippen setzt Ziel" : "Tippen setzt Position"),
-                                systemImage: "hand.tap",
-                                tint: Color.a11yWarningText
-                            )
-                            .padding(12)
-                        }
-                    }
                 }
                 .padding(mapPadding)
-                .frame(maxWidth: .infinity, maxHeight: visibleHeight, alignment: .center)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .accessibilityIdentifier("storeMap")
 
                 Color.clear
