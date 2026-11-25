@@ -143,3 +143,35 @@ test("reports malformed successful JSON and network failures distinctly", async 
   const network = createApiClient({ origin, fetcher: async () => { throw new TypeError("offline"); } });
   await assert.rejects(network.get("/api/stores"), (error: unknown) => error instanceof ApiClientError && error.kind === "network");
 });
+
+function recordingClient(responses: Response[]) {
+  const calls: string[] = [];
+  const client = createApiClient({
+    origin,
+    fetcher: async (url, init) => {
+      calls.push(`${init?.method} ${String(url)}`);
+      return responses[calls.length - 1];
+    }
+  });
+  return { client, calls };
+}
+
+for (const status of [201, 204]) {
+  test(`post follows Location after ${status} and returns the entity`, async () => {
+    // The server may name an internal host; only path and query are used.
+    const { client, calls } = recordingClient([
+      new Response(null, { status, headers: { location: "http://backend:8080/api/admin/products/7?storeCode=demo" } }),
+      jsonResponse(200, { id: 7 })
+    ]);
+
+    assert.deepEqual(await client.post("/api/admin/products", { id: 7 }), { id: 7 });
+    assert.deepEqual(calls, [`POST ${origin}/api/admin/products`, `GET ${origin}/api/admin/products/7?storeCode=demo`]);
+  });
+}
+
+test("post returns the JSON body of an older server or an action endpoint without a second request", async () => {
+  const { client, calls } = recordingClient([jsonResponse(200, { id: "region-1" })]);
+
+  assert.deepEqual(await client.post("/api/regions", {}), { id: "region-1" });
+  assert.equal(calls.length, 1);
+});
