@@ -1450,6 +1450,7 @@ struct ShoppingListsPage: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(list.name)
                             .font(.title3.weight(.semibold))
+                            .fixedSize(horizontal: false, vertical: true)
                             .accessibilityAddTraits(.isHeader)
 
                         Text("\(list.openItemCount) offen, \(list.completedItemCount) erledigt")
