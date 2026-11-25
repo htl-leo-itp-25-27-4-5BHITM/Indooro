@@ -4,6 +4,7 @@ import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
 import { CopyableId } from "./CopyableId";
 import { EmptyState } from "./EmptyState";
+import { RowMenu } from "./RowMenu";
 
 export interface BeaconStore {
   id: string;
@@ -549,9 +550,11 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
         const canAssign = beacon.status === "ACTIVE" && (manageable || !beacon.currentStore) && storesForUser.length > 0;
         return <tr key={beacon.id}><td>{canAssign && <input type="checkbox" aria-label={`${beacon.beaconCode} auswählen`} disabled={assigning} checked={selectedIds.has(beacon.id)} onChange={(event) => { const checked = event.currentTarget.checked; setSelectedIds((current) => { const next = new Set(current); if (checked) next.add(beacon.id); else next.delete(beacon.id); return next; }); }} />}</td><td><strong className="cell-code">{beacon.beaconCode}</strong>{beacon.notes && <small className="note-clamp" title={beacon.notes}>{beacon.notes}</small>}</td><td className="col-id"><CopyableId value={beacon.identityKey} label={`Identität von ${beacon.beaconCode}`} /></td><td><span className={`status-pill ${beacon.status === "ARCHIVED" ? "missing" : beacon.currentStore ? "info" : "ready"}`}>{statusLabel(beacon)}</span></td><td className="col-wide">{beacon.currentStore?.name ?? "–"}</td><td><div className="row-actions">
           {manageable && beacon.status === "ACTIVE" && <button type="button" onClick={() => openEdit(beacon)}>Bearbeiten</button>}
-          {canAssign && <select aria-label={`${beacon.beaconCode} ${beacon.currentStore ? "verschieben" : "zuweisen"}`} value="" disabled={assigning} onChange={(event) => { const storeId = event.currentTarget.value; if (storeId) void assignTo([beacon], storeId); }}><option value="">{beacon.currentStore ? "Verschieben nach …" : "Zuweisen an …"}</option>{storesForUser.filter((store) => store.id !== beacon.currentStore?.id).map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select>}
-          {beacon.currentStore && manageable && <button type="button" onClick={() => releaseBeacon(beacon)} disabled={pendingActionId === beacon.id}>Freigeben</button>}
-          {manageable && beacon.status === "ACTIVE" && <button type="button" className="danger" onClick={() => archiveBeacon(beacon)} disabled={pendingActionId === beacon.id}>Archivieren</button>}
+          {(canAssign || (manageable && (beacon.currentStore || beacon.status === "ACTIVE"))) && <RowMenu label={`Weitere Aktionen für ${beacon.beaconCode}`}>{(close) => <>
+            {canAssign && <select aria-label={`${beacon.beaconCode} ${beacon.currentStore ? "verschieben" : "zuweisen"}`} value="" disabled={assigning} onChange={(event) => { const storeId = event.currentTarget.value; if (storeId) { close(); void assignTo([beacon], storeId); } }}><option value="">{beacon.currentStore ? "Verschieben nach …" : "Zuweisen an …"}</option>{storesForUser.filter((store) => store.id !== beacon.currentStore?.id).map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select>}
+            {beacon.currentStore && manageable && <button type="button" onClick={() => { close(); void releaseBeacon(beacon); }} disabled={pendingActionId === beacon.id}>Freigeben</button>}
+            {manageable && beacon.status === "ACTIVE" && <button type="button" className="danger" onClick={() => { close(); void archiveBeacon(beacon); }} disabled={pendingActionId === beacon.id}>Archivieren</button>}
+          </>}</RowMenu>}
         </div></td></tr>;
       })}</tbody></DataTable>}
     </section>

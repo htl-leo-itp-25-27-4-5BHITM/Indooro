@@ -316,6 +316,12 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 .data-table pre { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
 .row-actions { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; }
 .row-actions select { max-width: 9rem; }
+.data-table .row-actions { flex-wrap: nowrap; }
+.data-table .row-actions .row-menu-toggle { min-width: 40px; font-size: 1.1rem; }
+.row-menu { position: fixed; inset: auto; margin: 0; min-width: 14rem; max-width: calc(100vw - 8px); padding: .4rem; gap: .35rem; flex-direction: column; background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-control); box-shadow: 0 .75rem 2rem #102a3b33; }
+.row-menu:popover-open { display: flex; }
+.data-table .row-actions .row-menu :is(button, select) { width: 100%; max-width: none; min-height: 40px; justify-content: flex-start; }
+.row-menu select { border: 1px solid var(--border-input); border-radius: var(--radius-control); background: var(--surface); color: var(--text); font: inherit; }
 /* Compact row actions keep action columns narrow so code columns are not squeezed. */
 .data-table .row-actions :is(button, select) { min-height: 34px; padding: .25rem .55rem; font-size: .86rem; white-space: nowrap; }
 .copy-id { display: flex; align-items: center; gap: .3rem; min-width: 0; }
