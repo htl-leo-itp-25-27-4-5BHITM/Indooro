@@ -219,12 +219,18 @@ class Api:
         try:
             with urllib.request.urlopen(request, timeout=60) as response:
                 raw = response.read()
+                location = response.headers.get("Location")
+                status = response.status
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", "replace")[:300]
             raise SeedError(f"{method} {path} -> HTTP {exc.code}: {detail}")
         except urllib.error.URLError as exc:
             raise SeedError(f"Backend nicht erreichbar unter {self.base_url}: {exc.reason}")
         if not raw:
+            # Create/Upsert: 201/204 + Location ohne Body, die Entitaet wird per GET gelesen.
+            if method == "POST" and location and status in (201, 204):
+                target = urllib.parse.urlsplit(location)
+                return self.call("GET", target.path + ("?" + target.query if target.query else ""))
             return None
         try:
             return json.loads(raw.decode("utf-8"))
