@@ -349,6 +349,8 @@ struct StoreMapPage: View {
 
                 VStack(spacing: 0) {
                     toolbarArea
+                        // Map overlay: cap the text size, otherwise the controls push the map off small screens.
+                        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                         .zIndex(2)
 
                     MapView(
@@ -370,6 +372,7 @@ struct StoreMapPage: View {
                     .clipped()
 
                     bottomCard
+                        .dynamicTypeSize(...DynamicTypeSize.accessibility1)
                         .background(MapScreenBackground(accent: accent))
                         .zIndex(3)
                 }
@@ -724,6 +727,7 @@ struct StoreMapPage: View {
             nextTapSetsPosition.toggle()
         } label: {
             Label("Ich bin hier", systemImage: "location.fill")
+                .fixedSize(horizontal: false, vertical: true)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(nextTapSetsPosition ? Color.white : accent)
                 .padding(.horizontal, 12)
@@ -742,6 +746,7 @@ struct StoreMapPage: View {
             openAnchorScanner()
         } label: {
             Label("QR-Code scannen", systemImage: "qrcode.viewfinder")
+                .fixedSize(horizontal: false, vertical: true)
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(accent)
                 .padding(.horizontal, 12)
