@@ -643,6 +643,14 @@ struct StoreMapPage: View {
         .padding(.top, 10)
     }
 
+    /// The title already shows the store name; the subtitle keeps only status and date.
+    private var headerStatusText: String {
+        let description = beaconManager.activeLayoutDescription
+        guard let name = beaconManager.activeLayoutStoreName,
+              description.hasPrefix("\(name) • ") else { return description }
+        return String(description.dropFirst(name.count + 3))
+    }
+
     private var mapPageHeader: some View {
         HStack(alignment: .center, spacing: 12) {
             Button {
@@ -668,7 +676,7 @@ struct StoreMapPage: View {
                     .minimumScaleFactor(0.72)
                     .accessibilityAddTraits(.isHeader)
 
-                Text(beaconManager.activeLayoutDescription)
+                Text(headerStatusText)
                     .font(.subheadline)
                     .foregroundStyle(Color.a11ySecondaryText)
                     .lineLimit(3)
