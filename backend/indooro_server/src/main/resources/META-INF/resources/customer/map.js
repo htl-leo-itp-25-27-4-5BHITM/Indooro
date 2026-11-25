@@ -145,7 +145,7 @@ function entranceNodes(el, geo) {
   rect.appendChild(svgEl("title", {}, "Eingang"));
   return [
     rect,
-    svgEl("text", { x: geo.cx, y: geo.cy, class: "entrance-label", "text-anchor": "middle", "dominant-baseline": "central", "font-size": 0.5 }, "Eingang")
+    svgEl("text", { x: geo.cx, y: geo.cy, class: "entrance-label", "text-anchor": "middle", "dominant-baseline": "central", "font-size": Math.min(0.5, (geo.width / 7) / 0.62).toFixed(2) }, "Eingang")
   ];
 }
 

@@ -233,6 +233,10 @@ h3 {
   overflow-wrap: anywhere;
 }
 
+.search-status:empty {
+  display: none;
+}
+
 .note {
   padding: 0.625rem 0.75rem;
   border-radius: 12px;
