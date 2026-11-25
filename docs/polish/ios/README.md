@@ -29,3 +29,10 @@ available locally) against the mock API `scripts/dev/mock_mobile_api.py`.
 - The app forces light appearance (`ContentView.preferredColorScheme(.light)`). This is unchanged.
 - Not exercised in the simulator: AR navigation (needs a device), camera scanner, permission banner,
   upsell sheet, study mode, list transfer sheets.
+
+## Map follow-up
+`after/se-map.png` and `after/16pro-map.png` show the map after the review fixes (short shelf labels,
+upright entrance label, tap hint above the map, subtitle without the store name, centred map, no meter
+axis labels). `after/se-map-ax.png` and `after/se-tour*.png` predate these map fixes.
+Shelf tiles show only the aisle, so two tiles can read "Gang 1"; colour and, on larger screens, the
+icon tell them apart.
