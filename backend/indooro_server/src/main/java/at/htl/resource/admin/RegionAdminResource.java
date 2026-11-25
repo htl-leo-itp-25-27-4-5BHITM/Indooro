@@ -1,5 +1,8 @@
 package at.htl.resource.admin;
 
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 import at.htl.admin.dto.RegionDtos;
 import at.htl.admin.service.RegionAdminService;
 import jakarta.annotation.security.RolesAllowed;
@@ -37,8 +40,8 @@ public class RegionAdminResource extends AdminApiSupport {
     @Operation(operationId = "createRegion")
     @POST
     @RolesAllowed("admin")
-    public RegionDtos.RegionResponse createRegion(@Valid RegionDtos.RegionUpsertRequest request) {
-        return regionAdminService.createRegion(request);
+    public Response createRegion(@Valid RegionDtos.RegionUpsertRequest request, @Context UriInfo uriInfo) {
+        return created(uriInfo, regionAdminService.createRegion(request).id());
     }
 
     @Operation(operationId = "getRegion")

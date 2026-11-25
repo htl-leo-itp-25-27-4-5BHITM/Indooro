@@ -37,7 +37,8 @@ struct MapView: View {
             let requestedMapWidth = max(1, CGFloat(beaconManager.gridWidth * pixelsPerMeter))
             let requestedMapHeight = max(1, CGFloat(beaconManager.gridHeight * pixelsPerMeter))
             let maxMapWidth = max(80, geometry.size.width - mapPadding.leading - mapPadding.trailing)
-            let maxMapHeight = max(80, visibleHeight - mapPadding.top - mapPadding.bottom)
+            let hintHeight: CGFloat = 44
+            let maxMapHeight = max(80, visibleHeight - hintHeight - mapPadding.top - mapPadding.bottom)
             let widthScale = maxMapWidth / requestedMapWidth
             let heightScale = maxMapHeight / requestedMapHeight
             let fitScale = min(1.0, min(widthScale, heightScale))
@@ -52,6 +53,20 @@ struct MapView: View {
             VStack(spacing: 0) {
                 Color.clear
                     .frame(height: topInset)
+
+                // Above the map, so the hint never covers a shelf.
+                if allowsManualMapTap {
+                    MapCanvasStatusBadge(
+                        title: nextTapSetsPosition
+                            ? "Tippe auf deinen Standort"
+                            : (beaconManager.tapSetsTarget ? "Tippen setzt Ziel" : "Tippen setzt Position"),
+                        systemImage: "hand.tap",
+                        tint: Color.a11yWarningText
+                    )
+                    .padding(.top, 8)
+                    .padding(.trailing, mapPadding.trailing)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
 
                 ZoomableMapScrollView(
                     contentSize: CGSize(width: mapWidth, height: mapHeight),
@@ -71,6 +86,9 @@ struct MapView: View {
                                 gridCountY: Int(beaconManager.gridHeight),
                                 showsDebugStyle: showsDebugMapElements
                             )
+                            // Same shape as the map card, so no grid line sticks out at the rounded corners.
+                            .frame(width: mapWidth, height: mapHeight)
+                            .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
 
                             if !routePoints.isEmpty {
                                 RouteLineView(points: routePoints, accent: routeAccent)
@@ -106,12 +124,6 @@ struct MapView: View {
                             }
 
                             if showsDebugMapElements {
-                                MapAxes(
-                                    pixelsPerMeter: fittedPixelsPerMeter,
-                                    gridWidth: Int(beaconManager.gridWidth),
-                                    gridHeight: Int(beaconManager.gridHeight)
-                                )
-
                                 ForEach(beaconManager.beacons) { beacon in
                                     BeaconMapItem(beacon: beacon, pixelsPerMeter: fittedPixelsPerMeter)
                                         .position(
@@ -216,21 +228,9 @@ struct MapView: View {
                         }
                     }
                     #endif
-                    .overlay(alignment: .topTrailing) {
-                        if allowsManualMapTap {
-                            MapCanvasStatusBadge(
-                                title: nextTapSetsPosition
-                                    ? "Tippe auf deinen Standort"
-                                    : (beaconManager.tapSetsTarget ? "Tippen setzt Ziel" : "Tippen setzt Position"),
-                                systemImage: "hand.tap",
-                                tint: Color.a11yWarningText
-                            )
-                            .padding(12)
-                        }
-                    }
                 }
                 .padding(mapPadding)
-                .frame(maxWidth: .infinity, maxHeight: visibleHeight, alignment: .center)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .accessibilityIdentifier("storeMap")
 
                 Color.clear
@@ -266,7 +266,7 @@ private struct ZoomableMapScrollView<Content: View>: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> UIScrollView {
-        let scrollView = UIScrollView()
+        let scrollView = CenteringScrollView()
         scrollView.delegate = context.coordinator
         scrollView.backgroundColor = .clear
         scrollView.showsHorizontalScrollIndicator = false
@@ -285,6 +285,14 @@ private struct ZoomableMapScrollView<Content: View>: UIViewRepresentable {
         scrollView.addSubview(hostingController.view)
         scrollView.contentSize = contentSize
 
+        scrollView.onResize = { [weak coordinator = context.coordinator] view in
+            coordinator?.centerContent(in: view)
+            // Content smaller than the viewport sits in the middle of the free space.
+            view.contentOffset = CGPoint(
+                x: view.contentInset.left > 0 ? -view.contentInset.left : view.contentOffset.x,
+                y: view.contentInset.top > 0 ? -view.contentInset.top : view.contentOffset.y
+            )
+        }
         context.coordinator.hostingController = hostingController
         context.coordinator.contentSize = contentSize
         scrollView.setZoomScale(clampedZoomScale, animated: false)
@@ -357,6 +365,19 @@ private struct ZoomableMapScrollView<Content: View>: UIViewRepresentable {
                 right: horizontalInset
             )
         }
+    }
+}
+
+/// The first `centerContent` call runs before the view has a size; repeat it whenever the size changes.
+private final class CenteringScrollView: UIScrollView {
+    var onResize: ((UIScrollView) -> Void)?
+    private var lastSize = CGSize.zero
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.size != lastSize else { return }
+        lastSize = bounds.size
+        onResize?(self)
     }
 }
 

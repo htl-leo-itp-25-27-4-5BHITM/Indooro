@@ -5,13 +5,13 @@
 
 ## 2. P1 Backend create contract (polish-backend)
 
-- [ ] 2.1 List every `@POST` in `backend/indooro_server/src/main/java/at/htl/resource/**` and classify it as create, upsert or action in `design.md` appendix.
-- [ ] 2.2 Return `201 Created` + `Location` + empty body for every single-resource create endpoint.
-- [ ] 2.3 Return `201`/`204` + `Location` for upsert endpoints.
-- [ ] 2.4 Add missing `GET` endpoints for every `Location` target with the same role rules.
-- [ ] 2.5 Update backend tests (status, header, empty body, GET on Location); `./mvnw verify` green.
-- [ ] 2.6 Update `api/openapi/**` and `api-tests/httpyac/**` to the new responses.
-- [ ] 2.7 Update `admin-ui/src/api/**` with a tolerant create helper and tests.
+- [x] 2.1 List every `@POST` in `backend/indooro_server/src/main/java/at/htl/resource/**` and classify it as create, upsert or action in `design.md` appendix.
+- [x] 2.2 Return `201 Created` + `Location` + empty body for every single-resource create endpoint.
+- [x] 2.3 Return `201`/`204` + `Location` for upsert endpoints.
+- [x] 2.4 Add missing `GET` endpoints for every `Location` target with the same role rules.
+- [x] 2.5 Update backend tests (status, header, empty body, GET on Location); `./mvnw verify` green.
+- [x] 2.6 Update `api/openapi/**` and `api-tests/httpyac/**` to the new responses.
+- [x] 2.7 Update `admin-ui/src/api/**` with a tolerant create helper and tests.
 
 ## 3. P2 Admin pages and tables (polish-admin-pages)
 
@@ -30,10 +30,10 @@
 
 ## 5. P4 iOS sweep (polish-ios)
 
-- [ ] 5.1 Confirm the app calls no changed create endpoint; adapt if it does.
-- [ ] 5.2 Sweep all screens for overflow, truncation, Dynamic Type, safe-area and dark-mode issues and fix them.
-- [ ] 5.3 Unify German copy and button styles.
-- [ ] 5.4 Build and unit tests green; simulator screenshots recorded.
+- [x] 5.1 Confirm the app calls no changed create endpoint; adapt if it does.
+- [x] 5.2 Sweep all screens for overflow, truncation, Dynamic Type, safe-area and dark-mode issues and fix them.
+- [x] 5.3 Unify German copy and button styles.
+- [x] 5.4 Build and unit tests green; simulator screenshots recorded.
 
 ## 6. P5 Web clients sweep (polish-web)
 
@@ -53,3 +53,25 @@
 - [x] 8.2 Customer web polish: map labels no longer clipped, header aligned with page column, empty status hidden; no overflow at 375/768/1440.
 - [x] 8.3 Legacy static admin `app.js` and `editor.js`: create calls tolerate 201/204 + `Location` (GET it), else parse body as before. (Delivered by #231, P1.)
 - [x] 8.4 Tests and before/after screenshots under `docs/polish/customer-web/`.
+
+
+
+## 9. P7 Admin responsive and header polish (polish-admin-responsive)
+
+- [x] 9.1 Remove the "Indooro Admin" heading above pages; the page title is the only `h1`.
+- [x] 9.2 Collapse the sidebar into a menu below 900 px.
+- [x] 9.3 Make every admin page work at 768x1024 and 390x844: no document horizontal scroll, single-column forms, touch targets of at least 40 px.
+- [x] 9.4 Compact Beacons row actions to one line with a keyboard-accessible "Weitere Aktionen" menu.
+- [x] 9.5 Consistent German header copy and role labels.
+- [x] 9.6 Typecheck, lint, tests, build green; screenshots at 390, 768 and 1280 px under `docs/polish/admin-responsive/`.
+- [x] 9.7 Show every admin table as stacked cards on phones (no sideways scrolling, actions at the bottom of the card).
+- [x] 9.8 Keep the space in the "Indooro Admin" brand on phones.
+- [x] 9.9 Browser test for the card layout; screenshots at 390 and 768 px updated.
+
+## 10. P8 Admin browser tests (polish-admin-tests)
+
+- [x] 10.1 Run `npm run test:browser` on `main` and classify every failure as stale test, UI bug or flaky.
+- [x] 10.2 Fix stale tests and mocks, including create POSTs answering `201 Created` + `Location`.
+- [x] 10.3 Add browser assertions for the polish contract (no horizontal scroll, editor fits viewport, store create lands on detail).
+- [x] 10.4 Full browser suite green; report whether CI runs it.
+- [x] 10.5 Run admin and showcase browser suites in CI.

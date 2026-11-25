@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.opensearch.client.opensearch.OpenSearchClient;
 
+import java.net.URI;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -138,8 +139,8 @@ class StoreOnboardingFullRunIT {
 
         // 1 Markt anlegen (Region ueber den Regions-Endpunkt)
         long t = now();
-        Response region = post("/api/regions", Map.of("code", dataset.get("region").get("code").asText(),
-                "name", dataset.get("region").get("name").asText(), "description", "Full-Run"), 200);
+        Response region = create("/api/regions", Map.of("code", dataset.get("region").get("code").asText(),
+                "name", dataset.get("region").get("name").asText(), "description", "Full-Run"));
         String regionId = region.path("id");
         String storeId = createStore(regionId, storeDef);
         String secondId = createStore(regionId, second);
@@ -154,7 +155,7 @@ class StoreOnboardingFullRunIT {
             body.put("uuid", b.get("uuid").asText());
             body.put("major", b.get("major").asInt());
             body.put("minor", b.get("minor").asInt());
-            String beaconId = post("/api/beacons", body, 200).path("id");
+            String beaconId = create("/api/beacons", body).path("id");
             post("/api/beacons/" + beaconId + "/assign", Map.of("storeId", storeId), 200);
         }
         JsonNode assigned = json(given().get("/api/stores/" + storeId + "/beacons").then().statusCode(200).extract().asString());
@@ -184,8 +185,8 @@ class StoreOnboardingFullRunIT {
                 }
             }
         }
-        Response draft = given().contentType("application/json").body(layoutSave.toString())
-                .post("/api/stores/" + storeId + "/layout/versions").then().statusCode(200).extract().response();
+        Response draft = follow(given().contentType("application/json").body(layoutSave.toString())
+                .post("/api/stores/" + storeId + "/layout/versions").then().statusCode(201).extract().header("Location"));
         assertEquals("DRAFT", draft.path("status"));
         String layoutId = draft.path("layoutId");
         ok("Layout als Entwurf gespeichert (Version " + draft.path("versionNo") + ", Beacon-Identity aus Editor-Kontext fuer " + enriched + " Plaetze ergaenzt)", t);
@@ -324,7 +325,17 @@ class StoreOnboardingFullRunIT {
         }
         if (def.hasNonNull("latitude")) body.put("latitude", def.get("latitude").asDouble());
         if (def.hasNonNull("longitude")) body.put("longitude", def.get("longitude").asDouble());
-        return post("/api/stores", body, 200).path("id");
+        return create("/api/stores", body).path("id");
+    }
+
+    /** POST that creates one resource: 201 + Location, then the GET on that Location. */
+    private Response create(String path, Object body) {
+        String location = post(path, body, 201).header("Location");
+        return follow(location);
+    }
+
+    private Response follow(String location) {
+        return given().get(URI.create(location).getRawPath()).then().statusCode(200).extract().response();
     }
 
     private Response post(String path, Object body, int status) {

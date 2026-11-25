@@ -54,6 +54,13 @@ public class AccessAssignmentService {
                 .toList();
     }
 
+    public AccessAssignmentDtos.AccessAssignmentResponse getAssignment(UUID assignmentId) {
+        adminAccessService.requireAdmin();
+        return assignmentRepository.findByIdWithScope(assignmentId)
+                .map(AccessAssignmentService::toResponse)
+                .orElseThrow(() -> new NotFoundException("Zugang nicht gefunden."));
+    }
+
     @Transactional
     public AccessAssignmentDtos.AccessAssignmentResponse createAssignment(AccessAssignmentDtos.AccessAssignmentCreateRequest request) {
         adminAccessService.requireAdmin();

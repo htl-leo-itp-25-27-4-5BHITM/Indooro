@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import type { LayoutDocument } from "../../src/editor/model";
+import { fulfillCreatedVersion } from "./support/created";
 
 const fixture = JSON.parse(readFileSync(new URL("../../src/editor/fixtures/store-layout.json", import.meta.url), "utf8")) as LayoutDocument;
 const admin = { subject: "admin-1", username: "admin", email: null, role: "admin", scope: null };
@@ -44,7 +45,7 @@ async function mockStoreEditor(page: Page, { saved = [] }: EditorOptions = {}) {
     if (path.endsWith("/versions") && route.request().method() === "POST") {
       const payload = route.request().postDataJSON() as { activate: boolean; layout: LayoutDocument };
       saved.push(payload.layout);
-      return route.fulfill({ json: { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "DRAFT", layoutName: "Indooro Testfiliale", layout: payload.layout } });
+      return fulfillCreatedVersion(route, { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "DRAFT", layoutName: "Indooro Testfiliale", layout: payload.layout });
     }
     return route.fulfill({ status: 404, json: { message: "Unexpected editor route" } });
   });

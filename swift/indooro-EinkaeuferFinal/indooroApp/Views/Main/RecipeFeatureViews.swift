@@ -155,8 +155,7 @@ struct RecipeDetailView: View {
                     } label: {
                         Label("Zur Einkaufsliste", systemImage: "cart.badge.plus")
                             .font(.headline.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 52)
+                            .frame(maxWidth: .infinity, minHeight: 52)
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.white)
@@ -294,7 +293,7 @@ struct AddRecipeToShoppingListSheet: View {
                     }
                 }
             }
-            .navigationTitle("Rezept hinzufügen")
+            .navigationTitle("Zutaten")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -477,9 +476,15 @@ struct RecipeCard: View {
     let recipe: RecipeSummary
 
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(alignment: .top, spacing: 18) {
+        // At accessibility text sizes the image moves above the text so the title keeps the full width.
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: 18))
+
+        layout {
             RecipeImage(urlString: recipe.imageUrl, title: recipe.title)
                 .frame(width: 108, height: 96)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -489,21 +494,21 @@ struct RecipeCard: View {
                 Text(recipe.displayTitle)
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .lineLimit(2)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let summary = recipe.displaySummary, !summary.isEmpty {
                     Text(summary)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 HStack(spacing: 10) {
                     Label("\(recipe.servings)", systemImage: "person.2")
                     if let total = recipe.totalTimeMinutes {
-                        Label("\(total) min", systemImage: "clock")
+                        Label("\(total) Min.", systemImage: "clock")
                     }
                     if let total = recipe.totalIngredientCount {
                         Label("\(total)", systemImage: "basket")
@@ -564,7 +569,7 @@ private struct RecipeHero: View {
                     HStack(spacing: 12) {
                         Label("\(recipe.servings) Portionen", systemImage: "person.2")
                         if let total = recipe.totalTimeMinutes {
-                            Label("\(total) min", systemImage: "clock")
+                            Label("\(total) Min.", systemImage: "clock")
                         }
                     }
                     .font(.caption.weight(.semibold))
@@ -604,7 +609,7 @@ private struct RecipeStepsView: View {
                         Text(step.displayInstruction)
                             .font(.subheadline)
                         if let duration = step.durationMinutes {
-                            Text("\(duration) min")
+                            Text("\(duration) Min.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -632,10 +637,13 @@ private struct RecipeImage: View {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case let .success(image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // The overlay keeps the aspect-filled image from widening the surrounding layout.
+                        Color.clear
+                            .overlay {
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            }
                             .clipped()
                     case .failure:
                         fallback

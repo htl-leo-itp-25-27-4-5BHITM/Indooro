@@ -40,6 +40,7 @@ struct StoreMapPage: View {
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
     private let routeAccent = Color(red: 0.15, green: 0.57, blue: 0.88)
     @ScaledMetric(relativeTo: .title) private var targetIconSize: CGFloat = 38
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var activeShoppingSnapshot: ShoppingRouteSnapshot? {
         shoppingSessionManager.snapshot
@@ -349,6 +350,8 @@ struct StoreMapPage: View {
 
                 VStack(spacing: 0) {
                     toolbarArea
+                        // Map overlay: cap the text size, otherwise the controls push the map off small screens.
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .zIndex(2)
 
                     MapView(
@@ -370,6 +373,7 @@ struct StoreMapPage: View {
                     .clipped()
 
                     bottomCard
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .background(MapScreenBackground(accent: accent))
                         .zIndex(3)
                 }
@@ -441,7 +445,7 @@ struct StoreMapPage: View {
                 Text(storeOverviewSubtitle)
                     .font(.subheadline)
                     .foregroundStyle(Color.a11ySecondaryText)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
 
             Spacer(minLength: 0)
@@ -450,6 +454,7 @@ struct StoreMapPage: View {
                 fitStorePins()
             } label: {
                 Image(systemName: "location.viewfinder")
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -464,6 +469,7 @@ struct StoreMapPage: View {
                 beaconManager.refreshMobileStores()
             } label: {
                 Image(systemName: "arrow.clockwise")
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -477,6 +483,7 @@ struct StoreMapPage: View {
 
             Button { showSettings = true } label: {
                 Image(systemName: "slider.horizontal.3")
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -524,7 +531,7 @@ struct StoreMapPage: View {
                 Text(message)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.primary)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Spacer(minLength: 0)
 
@@ -532,6 +539,7 @@ struct StoreMapPage: View {
                     beaconManager.refreshMobileStores()
                 } label: {
                     Image(systemName: "arrow.clockwise")
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 36, height: 36)
                         .frame(minWidth: 44, minHeight: 44)
@@ -607,7 +615,7 @@ struct StoreMapPage: View {
                     ProgressView()
                         .scaleEffect(0.9)
 
-                    Text("Produkte werden gesucht...")
+                    Text("Produkte werden gesucht …")
                         .font(.caption.weight(.medium))
                         .foregroundStyle(.secondary)
 
@@ -635,12 +643,21 @@ struct StoreMapPage: View {
         .padding(.top, 10)
     }
 
+    /// The title already shows the store name; the subtitle keeps only status and date.
+    private var headerStatusText: String {
+        let description = beaconManager.activeLayoutDescription
+        guard let name = beaconManager.activeLayoutStoreName,
+              description.hasPrefix("\(name) • ") else { return description }
+        return String(description.dropFirst(name.count + 3))
+    }
+
     private var mapPageHeader: some View {
         HStack(alignment: .center, spacing: 12) {
             Button {
                 showStoreOverview()
             } label: {
                 Image(systemName: "chevron.left")
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -659,10 +676,11 @@ struct StoreMapPage: View {
                     .minimumScaleFactor(0.72)
                     .accessibilityAddTraits(.isHeader)
 
-                Text(beaconManager.activeLayoutDescription)
+                Text(headerStatusText)
                     .font(.subheadline)
                     .foregroundStyle(Color.a11ySecondaryText)
-                    .lineLimit(1)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 0)
@@ -681,6 +699,7 @@ struct StoreMapPage: View {
 
             Button { showSettings = true } label: {
                 Image(systemName: "slider.horizontal.3")
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -699,41 +718,13 @@ struct StoreMapPage: View {
 
     private var indoorPositionControls: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Button {
-                    nextTapSetsPosition.toggle()
-                } label: {
-                    Label("Ich bin hier", systemImage: "location.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(nextTapSetsPosition ? Color.white : accent)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 9)
-                        .background(
-                            nextTapSetsPosition ? accent : accent.opacity(0.11),
-                            in: Capsule()
-                        )
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
+            // At accessibility sizes the banner already offers both actions; do not show them twice
+            // during a tour, otherwise the tour panel no longer fits on small iPhones.
+            if !(dynamicTypeSize.isAccessibilitySize && activeShoppingSnapshot != nil && !beaconManager.isPositionTrusted) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) { positionButtons }
+                    VStack(alignment: .leading, spacing: 4) { positionButtons }
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Ich bin hier")
-
-                Button {
-                    openAnchorScanner()
-                } label: {
-                    Label("QR-Code scannen", systemImage: "qrcode.viewfinder")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(accent)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 9)
-                        .background(accent.opacity(0.11), in: Capsule())
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("QR-Code scannen")
-
-                Spacer(minLength: 0)
             }
 
             if !beaconManager.isPositionTrusted {
@@ -743,41 +734,91 @@ struct StoreMapPage: View {
         .padding(.horizontal, 2)
     }
 
+    @ViewBuilder
+    private var positionButtons: some View {
+        Button {
+            nextTapSetsPosition.toggle()
+        } label: {
+            Label("Ich bin hier", systemImage: "location.fill")
+                .fixedSize(horizontal: false, vertical: true)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(nextTapSetsPosition ? Color.white : accent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(
+                    nextTapSetsPosition ? accent : accent.opacity(0.11),
+                    in: Capsule()
+                )
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Ich bin hier")
+
+        Button {
+            openAnchorScanner()
+        } label: {
+            Label("QR-Code scannen", systemImage: "qrcode.viewfinder")
+                .fixedSize(horizontal: false, vertical: true)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(accent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(accent.opacity(0.11), in: Capsule())
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("QR-Code scannen")
+    }
+
     private var untrustedPositionBanner: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Color.a11yWarningText)
+        // Message and actions on separate rows: one row squeezes the text on small iPhones.
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.a11yWarningText)
 
-            Text(navigationSession.navigationStatusMessage ?? "Position ungenau")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.primary)
-                .lineLimit(2)
+                Text(navigationSession.navigationStatusMessage ?? "Position ungenau")
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
 
-            Spacer(minLength: 0)
-
-            Button("QR-Code scannen") {
-                openAnchorScanner()
+                Spacer(minLength: 0)
             }
-            .font(.caption.weight(.semibold))
-            .buttonStyle(.plain)
-            .foregroundStyle(accent)
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
 
-            Button("Position setzen") {
-                nextTapSetsPosition = true
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 16) { positionBannerActions }
+                VStack(alignment: .leading, spacing: 0) { positionBannerActions }
             }
-            .font(.caption.weight(.semibold))
-            .buttonStyle(.plain)
-            .foregroundStyle(accent)
-            .frame(minHeight: 44)
-            .contentShape(Rectangle())
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.top, 10)
+        .padding(.bottom, 2)
         .background(MapFloatingSurface())
         .accessibilityIdentifier("positionBanner")
+    }
+
+    @ViewBuilder
+    private var positionBannerActions: some View {
+        Button("QR-Code scannen") {
+            openAnchorScanner()
+        }
+        .font(.caption.weight(.semibold))
+        .buttonStyle(.plain)
+        .foregroundStyle(accent)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
+
+        Button("Position setzen") {
+            nextTapSetsPosition = true
+        }
+        .font(.caption.weight(.semibold))
+        .buttonStyle(.plain)
+        .foregroundStyle(accent)
+        .frame(minHeight: 44)
+        .contentShape(Rectangle())
     }
 
     private var searchBarCard: some View {
@@ -786,7 +827,7 @@ struct StoreMapPage: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            TextField("Produkte oder Kategorien suchen", text: $searchText)
+            TextField("Produkt suchen", text: $searchText)
                 .textFieldStyle(.plain)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
@@ -988,7 +1029,7 @@ struct StoreMapPage: View {
                             .foregroundStyle(Color.a11yWarningText)
                     }
 
-                    Text(String(format: "%.2f EUR", target.price))
+                    Text(PriceText.format(target.price))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(accent)
                 }
@@ -1024,8 +1065,7 @@ struct StoreMapPage: View {
                 } label: {
                     Label("Route starten", systemImage: "location.north.circle.fill")
                         .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
+                        .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .disabled(shelfDescriptor == nil)
                 .buttonStyle(.plain)
@@ -1042,7 +1082,7 @@ struct StoreMapPage: View {
                         Label("Einplanen", systemImage: "plus")
                             .font(.subheadline.weight(.semibold))
                             .padding(.horizontal, 14)
-                            .frame(height: 44)
+                            .frame(minHeight: 44)
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(accent)
@@ -1311,8 +1351,8 @@ private struct StoreOverviewCard: View {
                         Text(store.displaySubtitle)
                             .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
-                            .lineLimit(2)
                             .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Spacer(minLength: 0)

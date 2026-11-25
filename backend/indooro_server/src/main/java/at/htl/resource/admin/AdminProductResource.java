@@ -1,5 +1,8 @@
 package at.htl.resource.admin;
 
+import java.net.URI;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 import at.htl.admin.service.AdminAccessService;
 import at.htl.admin.service.AuditLogService;
 import at.htl.admin.service.CurrentAdminUser;
@@ -129,7 +132,7 @@ public class AdminProductResource extends AdminApiSupport {
 
     @Operation(operationId = "upsertAdminProduct")
     @POST
-    public Product upsertProduct(Product product) {
+    public Response upsertProduct(Product product, @Context UriInfo uriInfo) {
         validateProduct(product);
 
         product.setName(product.getName().trim());
@@ -139,8 +142,9 @@ public class AdminProductResource extends AdminApiSupport {
         product.setStoreCode(store.storeCode());
         legacyDocumentGuard.requireNoLegacyDocuments(store.storeCode());
 
+        String result;
         try {
-            openSearchService.indexProduct(product);
+            result = openSearchService.indexProduct(product);
         } catch (IOException exception) {
             LOG.error("Error indexing admin product", exception);
             throw new WebApplicationException(
@@ -149,7 +153,35 @@ public class AdminProductResource extends AdminApiSupport {
             );
         }
         auditProductWrite(product.getId(), store.storeCode(), "UPSERT", "Produkt " + product.getId() + " gespeichert", null, product);
-        return product;
+        URI location = uriInfo.getAbsolutePathBuilder()
+                .path(String.valueOf(product.getId()))
+                .queryParam("storeCode", store.storeCode())
+                .build();
+        return "created".equalsIgnoreCase(result)
+                ? Response.created(location).build()
+                : Response.noContent().location(location).build();
+    }
+
+    @Operation(operationId = "getAdminProduct")
+    @GET
+    @Path("/{id}")
+    public Product getProduct(@PathParam("id") Integer id,
+                              @QueryParam("storeId") String storeId,
+                              @QueryParam("storeCode") String storeCode) {
+        ResolvedStore store = requireStoreAccess(storeId, storeCode);
+        try {
+            Product product = openSearchService.getProductById(id, store.id().toString(), store.storeCode());
+            if (product == null) {
+                throw new WebApplicationException("Produkt wurde nicht gefunden.", Response.Status.NOT_FOUND);
+            }
+            return product;
+        } catch (IOException exception) {
+            LOG.error("Error loading admin product", exception);
+            throw new WebApplicationException(
+                    "Produkt konnte nicht geladen werden.",
+                    Response.Status.INTERNAL_SERVER_ERROR
+            );
+        }
     }
 
     @Operation(operationId = "deleteAdminProduct")

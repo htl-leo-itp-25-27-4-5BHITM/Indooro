@@ -1,5 +1,8 @@
 package at.htl.resource.admin;
 
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriInfo;
+import jakarta.ws.rs.core.Context;
 import at.htl.admin.dto.CommonDtos;
 import at.htl.admin.dto.StoreDtos;
 import at.htl.admin.service.StoreAdminService;
@@ -54,8 +57,8 @@ public class StoreAdminResource extends AdminApiSupport {
 
     @Operation(operationId = "createStore")
     @POST
-    public StoreDtos.StoreDetailResponse createStore(@Valid StoreDtos.StoreUpsertRequest request) {
-        return storeAdminService.createStore(request);
+    public Response createStore(@Valid StoreDtos.StoreUpsertRequest request, @Context UriInfo uriInfo) {
+        return created(uriInfo, storeAdminService.createStore(request).id());
     }
 
     @Operation(operationId = "getStore")

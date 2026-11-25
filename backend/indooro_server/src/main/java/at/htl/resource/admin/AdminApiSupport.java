@@ -1,5 +1,6 @@
 package at.htl.resource.admin;
 
+import jakarta.ws.rs.core.UriInfo;
 import at.htl.admin.entity.RecordStatus;
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
@@ -18,6 +19,11 @@ abstract class AdminApiSupport {
                     Response.Status.BAD_REQUEST
             );
         }
+    }
+
+    /** 201 Created, empty body, Location = request path (public prefix included) + id. */
+    static Response created(UriInfo uriInfo, Object id) {
+        return Response.created(uriInfo.getAbsolutePathBuilder().path(String.valueOf(id)).build()).build();
     }
 
     protected int normalizePage(int page) {

@@ -41,3 +41,35 @@ Each worker ticks only its own section in `tasks.md`.
 ## Risks
 - Wire-format break for third-party scripts: mitigated by tolerant admin client and updated `api-tests`.
 - Deploy order: backend first is safe because the admin client accepts both forms.
+
+## Appendix: POST inventory
+
+All `@POST` methods under `backend/indooro_server/src/main/java/at/htl/resource/**`.
+
+| Resource method | Path | Class | Success response | `Location` target |
+|---|---|---|---|---|
+| `CategoryResource.upsertCategory` | `/api/categories` | upsert (`createOnly=true`: create) | 201 / 204 | `GET /api/categories/{categoryCode}` |
+| `ProductResource.indexProduct` | `/api/products` | upsert | 201 / 204 | `GET /api/products/{id}?storeCode=` |
+| `AdminProductResource.upsertProduct` | `/api/admin/products` | upsert | 201 / 204 | `GET /api/admin/products/{id}?storeCode=` (new) |
+| `RegionAdminResource.createRegion` | `/api/regions` | create | 201 | `GET /api/regions/{regionId}` |
+| `StoreAdminResource.createStore` | `/api/stores` | create | 201 | `GET /api/stores/{storeId}` |
+| `AdminRecipeResource.createRecipe` | `/api/admin/recipes` | create | 201 | `GET /api/admin/recipes/{recipeId}` |
+| `AdminRecipeResource.addIngredient` | `/api/admin/recipes/{recipeId}/ingredients` | create | 201 | `GET .../ingredients/{ingredientId}` (new) |
+| `AdminRecipeResource.addStep` | `/api/admin/recipes/{recipeId}/steps` | create | 201 | `GET .../steps/{stepId}` (new) |
+| `AdminRecipeTagResource.createTag` | `/api/admin/recipe-tags` | create | 201 | `GET /api/admin/recipe-tags/{tagId}` (new) |
+| `BeaconAdminResource.createBeacon` | `/api/beacons` | create | 201 | `GET /api/beacons/{beaconId}` |
+| `AccessAssignmentResource.createAssignment` | `/api/admin/access-assignments` | create | 201 | `GET /api/admin/access-assignments/{assignmentId}` (new) |
+| `StoreLayoutAdminResource.saveLayoutVersion` | `/api/stores/{storeId}/layout/versions` | create | 201 | `GET .../versions/{layoutId}` |
+| `StoreLayoutAdminResource.activateLayoutVersion` | `.../versions/{layoutId}/activate` | action | unchanged | |
+| `BeaconAdminResource.bulkCreate` | `/api/beacons/bulk` | action (bulk) | unchanged | |
+| `BeaconAdminResource.assignBeacon`, `releaseBeacon` | `/api/beacons/{beaconId}/assign`, `/release` | action | unchanged | |
+| `CategoryResource.bulkInsert` | `/api/categories/bulk` | action (bulk) | unchanged | |
+| `ProductResource.indexProducts` | `/api/products/bulk` | action (bulk) | unchanged | |
+| `AdminProductResource.bulkImport` | `/api/admin/products/bulk` | action (bulk) | unchanged | |
+| `AdminResource.createIndex`, `reindexProducts`, `activateIndex` | `/api/admin/index/*` | action | unchanged | |
+| `LayoutResource.saveCurrentLayout` | `/api/layout/current` | action | unchanged | |
+| `ExportResource.exportBelegplanPdf` | `/api/export/pdf` | action | unchanged | |
+| `ImportResource.convertPdfToJson` | `/api/convert/pdf-to-json` | action | unchanged | |
+| `MobileUpsellResource.suggestions`, `plan`, `recordEvent`, `dismiss` | `/api/mobile/upsell/*` | action (mobile) | unchanged | |
+
+`PUT /api/categories/{categoryCode}` keeps `200` with the entity.

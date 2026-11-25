@@ -43,11 +43,9 @@ struct ShelfView: View {
                 }
 
                 if showsText, let title = element.displayMapTitle {
-                    Text(title)
+                    titleLabel(title, width: width, height: height)
                         .font(.system(size: textSize(for: width, height: height), weight: .semibold, design: .rounded))
-                        .lineLimit(height >= 44 ? 2 : 1)
                         .multilineTextAlignment(.center)
-                        .minimumScaleFactor(0.75)
                         .frame(maxWidth: .infinity)
                         .foregroundStyle(palette.textColor)
                 }
@@ -58,6 +56,33 @@ struct ShelfView: View {
         .frame(width: width, height: height)
         .rotationEffect(.degrees(element.rotation ?? 0))
         .position(x: xPos, y: yPos)
+    }
+
+    /// Tile text without truncation or mid-word breaks. "Gang 1 – Obst & Gemüse" falls back to "Gang 1";
+    /// the full name stays in the product and shelf texts shown on selection.
+    @ViewBuilder
+    private func titleLabel(_ title: String, width: CGFloat, height: CGFloat) -> some View {
+        let short = title.components(separatedBy: " – ").first ?? title
+        let estimatedWidth = CGFloat(short.count) * textSize(for: width, height: height) * 0.62
+
+        if short == title && title.contains(" ") {
+            Text(title)
+                .lineLimit(height >= 44 ? 2 : 1)
+                .minimumScaleFactor(0.5)
+        } else if height > width * 1.4 && estimatedWidth > width - 8 {
+            // Narrow upright zones such as the entrance: write along the long side.
+            Text(short)
+                .lineLimit(1)
+                .fixedSize()
+                .rotationEffect(.degrees(-90))
+                .frame(width: max(0, width - 8), height: min(estimatedWidth, max(0, height - 8)))
+        } else {
+            ViewThatFits(in: .horizontal) {
+                Text(title).lineLimit(1).fixedSize()
+                Text(short).lineLimit(1).fixedSize()
+                Text(short).lineLimit(1).minimumScaleFactor(0.5)
+            }
+        }
     }
 
     private func iconSize(for width: CGFloat, height: CGFloat) -> CGFloat {

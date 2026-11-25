@@ -626,6 +626,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/access-assignments/{assignmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read one access assignment. */
+        get: operations["getAccessAssignment"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/access-assignments/{assignmentId}/deactivate": {
         parameters: {
             query?: never;
@@ -691,7 +708,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Read one product of a store. */
+        get: operations["getAdminProduct"];
         put?: never;
         post?: never;
         /** Delete a product document. */
@@ -821,7 +839,8 @@ export interface paths {
             };
             cookie?: never;
         };
-        get?: never;
+        /** Read one ingredient. */
+        get: operations["getRecipeIngredient"];
         /** Replace an ingredient. */
         put: operations["updateRecipeIngredient"];
         post?: never;
@@ -859,7 +878,8 @@ export interface paths {
             };
             cookie?: never;
         };
-        get?: never;
+        /** Read one step. */
+        get: operations["getRecipeStep"];
         /** Replace a step. */
         put: operations["updateRecipeStep"];
         post?: never;
@@ -963,7 +983,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Read one tag. */
+        get: operations["getRecipeTag"];
         /** Replace a tag. */
         put: operations["updateRecipeTag"];
         post?: never;
@@ -2348,6 +2369,24 @@ export interface components {
         };
     };
     responses: {
+        /** @description Created. Empty body; read the resource at Location. */
+        Created: {
+            headers: {
+                /** @description URL of the GET endpoint of the new resource. */
+                Location: string;
+                [name: string]: unknown;
+            };
+            content?: never;
+        };
+        /** @description Upsert replaced an existing resource. Empty body. */
+        Updated: {
+            headers: {
+                /** @description URL of the GET endpoint of the updated resource. */
+                Location: string;
+                [name: string]: unknown;
+            };
+            content?: never;
+        };
         /** @description Request rejected by service validation. */
         BadRequest: {
             headers: {
@@ -2867,21 +2906,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description OpenSearch result as string. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        /**
-                         * @example Created
-                         * @example Updated
-                         */
-                        result?: string;
-                    };
-                };
-            };
+            201: components["responses"]["Created"];
+            204: components["responses"]["Updated"];
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -3023,15 +3049,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Stored category. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Category"];
-                };
-            };
+            201: components["responses"]["Created"];
+            204: components["responses"]["Updated"];
             400: components["responses"]["LegacyBadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -3585,7 +3604,25 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Created assignment. */
+            201: components["responses"]["Created"];
+            400: components["responses"]["ValidationFailed"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getAccessAssignment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assignmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Found. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3594,10 +3631,9 @@ export interface operations {
                     "application/json": components["schemas"]["AccessAssignmentResponse"];
                 };
             };
-            400: components["responses"]["ValidationFailed"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            409: components["responses"]["Conflict"];
+            404: components["responses"]["NotFound"];
         };
     };
     deactivateAccessAssignment: {
@@ -3676,15 +3712,8 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Stored product. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Product"];
-                };
-            };
+            201: components["responses"]["Created"];
+            204: components["responses"]["Updated"];
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -3734,6 +3763,35 @@ export interface operations {
                     "application/json": components["schemas"]["CatalogBulkResult"];
                 };
             };
+        };
+    };
+    getAdminProduct: {
+        parameters: {
+            query?: {
+                storeId?: components["parameters"]["StoreIdQuery"];
+                storeCode?: components["parameters"]["StoreCodeQuery"];
+            };
+            header?: never;
+            path: {
+                id: components["parameters"]["ProductIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Found. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Product"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     deleteAdminProduct: {
@@ -3810,15 +3868,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Created recipe. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RecipeDetail"];
-                };
-            };
+            201: components["responses"]["Created"];
             400: components["responses"]["ValidationFailed"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -3949,7 +3999,25 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Created ingredient. */
+            201: components["responses"]["Created"];
+            400: components["responses"]["ValidationFailed"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getRecipeIngredient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recipeId: components["parameters"]["RecipeIdPath"];
+                ingredientId: components["parameters"]["IngredientIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Found. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3958,9 +4026,9 @@ export interface operations {
                     "application/json": components["schemas"]["RecipeIngredient"];
                 };
             };
-            400: components["responses"]["ValidationFailed"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
         };
     };
     updateRecipeIngredient: {
@@ -4030,7 +4098,25 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Created step. */
+            201: components["responses"]["Created"];
+            400: components["responses"]["ValidationFailed"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getRecipeStep: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                recipeId: components["parameters"]["RecipeIdPath"];
+                stepId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Found. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4039,9 +4125,9 @@ export interface operations {
                     "application/json": components["schemas"]["RecipeStep"];
                 };
             };
-            400: components["responses"]["ValidationFailed"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
-            409: components["responses"]["Conflict"];
         };
     };
     updateRecipeStep: {
@@ -4243,7 +4329,23 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Created tag. */
+            201: components["responses"]["Created"];
+            400: components["responses"]["ValidationFailed"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getRecipeTag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tagId: components["parameters"]["TagIdPath"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Found. */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -4252,8 +4354,9 @@ export interface operations {
                     "application/json": components["schemas"]["RecipeTag"];
                 };
             };
-            400: components["responses"]["ValidationFailed"];
-            409: components["responses"]["Conflict"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
     updateRecipeTag: {
@@ -4347,15 +4450,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Created region. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["RegionResponse"];
-                };
-            };
+            201: components["responses"]["Created"];
             400: components["responses"]["ValidationFailed"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
@@ -4490,7 +4585,7 @@ export interface operations {
             };
         };
         responses: {
-            200: components["responses"]["StoreDetailOk"];
+            201: components["responses"]["Created"];
             400: components["responses"]["ValidationFailed"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -4687,7 +4782,7 @@ export interface operations {
             };
         };
         responses: {
-            200: components["responses"]["StoreLayoutOk"];
+            201: components["responses"]["Created"];
             400: components["responses"]["ValidationFailed"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -4915,7 +5010,7 @@ export interface operations {
             };
         };
         responses: {
-            200: components["responses"]["BeaconOk"];
+            201: components["responses"]["Created"];
             400: components["responses"]["ValidationFailed"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];

@@ -113,7 +113,7 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
   const normalizedOrigin = new URL(origin).origin;
   const fetcher = options.fetcher ?? globalThis.fetch;
 
-  async function request<T>(path: string, requestOptions: ApiRequestOptions = {}): Promise<T> {
+  async function exchange<T>(path: string, requestOptions: ApiRequestOptions = {}): Promise<{ payload: T; response: Response }> {
     if (!path.startsWith("/api/")) throw new TypeError("API paths must start with /api/");
     const url = new URL(path, normalizedOrigin);
     if (url.origin !== normalizedOrigin) throw new TypeError("Cross-origin API requests are not allowed");
@@ -170,13 +170,30 @@ export function createApiClient(options: ApiClientOptions = {}): ApiClient {
     if (text && !isJson) {
       throw new ApiClientError("invalid-response", response.status, "Unerwartete Serverantwort.");
     }
-    return payload as T;
+    return { payload: payload as T, response };
+  }
+
+  async function request<T>(path: string, requestOptions: ApiRequestOptions = {}): Promise<T> {
+    return (await exchange<T>(path, requestOptions)).payload;
+  }
+
+  /**
+   * Create/upsert POSTs answer `201` or `204` with a `Location` and no body: GET that resource and
+   * return it. Any response with a body (older servers, action endpoints) is returned unchanged.
+   */
+  async function createResource<T>(path: string, json: unknown, options?: ApiRequestOptions): Promise<T> {
+    const { payload, response } = await exchange<T>(path, { ...options, method: "POST", json });
+    const location = response.headers.get("location");
+    if (payload !== undefined || !location || (response.status !== 201 && response.status !== 204)) return payload;
+    // Only the path and query are used, so the read stays same-origin even behind a proxy.
+    const target = new URL(location, new URL(path, normalizedOrigin));
+    return request<T>(target.pathname + target.search, { method: "GET", signal: options?.signal });
   }
 
   return {
     request,
     get: (path, opts) => request(path, { ...opts, method: "GET" }),
-    post: (path, json, opts) => request(path, { ...opts, method: "POST", json }),
+    post: createResource,
     put: (path, json, opts) => request(path, { ...opts, method: "PUT", json }),
     delete: (path, opts) => request(path, { ...opts, method: "DELETE" })
   };

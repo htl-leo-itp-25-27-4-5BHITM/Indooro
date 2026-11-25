@@ -107,7 +107,7 @@ export function CatalogImportPanel({ kind }: { kind: "category" }) {
       <DataTable label="Importprüfungs-Tabelle"><thead><tr><th>Zeile</th><th>Status</th><th>Datensatz</th><th>Prüfung</th></tr></thead><tbody>
         {review.rows.map(({ row, item, errors }) => <tr key={row}>
           <td>{row}</td><td><span className={`status-pill ${errors.length ? "missing" : "ready"}`}>{errors.length ? "Ungültig" : "Gültig"}</span></td>
-          <td><code>{JSON.stringify(item)}</code></td><td>{errors.length ? <ul>{errors.map((reason, index) => <li key={`${row}-${index}`}>{reason}</li>)}</ul> : "—"}</td>
+          <td><code className="cell-wrap">{JSON.stringify(item)}</code></td><td>{errors.length ? <ul>{errors.map((reason, index) => <li key={`${row}-${index}`}>{reason}</li>)}</ul> : "—"}</td>
         </tr>)}
       </tbody></DataTable>
       <p className="limit-notice"><strong>Import nicht verfügbar.</strong> {limitation}</p>

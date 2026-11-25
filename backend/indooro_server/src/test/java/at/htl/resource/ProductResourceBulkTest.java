@@ -149,7 +149,7 @@ class ProductResourceBulkTest {
 
         given().contentType("application/json").body(ONE_SINGLE.replace("}", ",\"storeCode\":\"" + PILOT_CODE + "\"}"))
                 .post("/api/products").then()
-                .statusCode(200);
+                .statusCode(204);
         verify(products).indexProduct(argThat(product -> PILOT_CODE.equals(product.getStoreCode())
                 && PILOT_ID.toString().equals(product.getStoreId())));
     }

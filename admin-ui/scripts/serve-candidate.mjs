@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const repository = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const resources = path.join(repository, "backend/indooro_server/src/main/resources/META-INF/resources");
 const contentTypes = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".json": "application/json" };
+const port = Number(process.env.ADMIN_TEST_PORT ?? 4188);
 
 http.createServer(async (request, response) => {
   const pathname = new URL(request.url ?? "/", "http://127.0.0.1").pathname;
@@ -23,4 +24,4 @@ http.createServer(async (request, response) => {
   } catch {
     response.writeHead(404).end();
   }
-}).listen(4188, "127.0.0.1", () => console.log("Candidate static test server listening on 4188"));
+}).listen(port, "127.0.0.1", () => console.log(`Candidate static test server listening on ${port}`));

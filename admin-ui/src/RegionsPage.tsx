@@ -205,12 +205,12 @@ export function RegionsPage({ api, user }: { api: ApiClient; user: CurrentUser }
   }
 
   if (!canRead) {
-    return <section role="alert" className="notice"><h2>Zugriff verweigert</h2><p>Regionen sind nur für Administratoren und Regionsmanager verfügbar.</p></section>;
+    return <section role="alert" className="notice"><h1>Zugriff verweigert</h1><p>Regionen sind nur für Administratoren und Regionsmanager verfügbar.</p></section>;
   }
 
   return <section className="regions-page" aria-labelledby="regions-title">
     <div className="page-intro">
-      <div><p className="eyebrow">Standorte</p><h2 id="regions-title">Regionen</h2><p>Regionen und ihre Zuständigkeiten verwalten.</p></div>
+      <div><p className="eyebrow">Standorte</p><h1 id="regions-title">Regionen</h1><p>Regionen und ihre Zuständigkeiten verwalten.</p></div>
       {canManage && <button type="button" className="primary" onClick={startCreate}>Region anlegen</button>}
     </div>
 

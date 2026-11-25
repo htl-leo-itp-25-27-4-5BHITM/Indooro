@@ -153,7 +153,7 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
   }
 
   if (!canManage) {
-    return <section role="alert" className="notice"><h2>Zugriff verweigert</h2><p>Zugänge können nur Administratoren vergeben.</p></section>;
+    return <section role="alert" className="notice"><h1>Zugriff verweigert</h1><p>Zugänge können nur Administratoren vergeben.</p></section>;
   }
 
   const fieldProps = (name: keyof AccessDraft) => ({
@@ -168,7 +168,7 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
     <div className="page-intro">
       <div>
         <p className="eyebrow">Verwaltung</p>
-        <h2 id="access-title">Zugänge</h2>
+        <h1 id="access-title">Zugänge</h1>
         <p>Keycloak-Benutzer einer Rolle und einem Markt oder einer Region zuordnen. Den Benutzer selbst und seine Realm-Rolle legen Sie weiter in der Keycloak-Konsole an.</p>
       </div>
     </div>
@@ -189,13 +189,13 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
         {listError && <div role="alert" className="notice"><p>{listError}</p><button type="button" onClick={() => setReload((current) => current + 1)}>Erneut versuchen</button></div>}
         {!loading && !listError && visibleAssignments.length === 0 && <EmptyState action={!query && status === "ACTIVE" ? <button type="button" className="primary" onClick={() => document.getElementById("access-keycloakSubject")?.focus()}>Ersten Zugang anlegen</button> : undefined}>{query ? "Kein Zugang passt zur Suche." : "Keine Zugänge in diesem Status."}</EmptyState>}
         {!loading && !listError && visibleAssignments.length > 0 && <DataTable label="Zugangs-Tabelle">
-          <thead><tr><th>Benutzer</th><th>Rolle</th><th>Bereich</th><th>Status</th><th>Aktion</th></tr></thead>
+          <thead><tr><th>Benutzer</th><th className="col-mid">Rolle</th><th className="col-mid">Bereich</th><th>Status</th><th>Aktion</th></tr></thead>
           <tbody>{visibleAssignments.map((assignment) => {
             const own = assignment.keycloakSubject === user.subject;
             return <tr key={assignment.id}>
-              <td><strong>{assignment.username}</strong>{assignment.email && <small>{assignment.email}</small>}<CopyableId value={assignment.keycloakSubject} label={`Keycloak-ID von ${assignment.username}`} /></td>
-              <td>{roleLabel(assignment.role)}</td>
-              <td>{scopeLabel(assignment)}</td>
+              <td><strong className="cell-code">{assignment.username}</strong>{assignment.email && <small className="note-clamp" title={assignment.email}>{assignment.email}</small>}<CopyableId value={assignment.keycloakSubject} label={`Keycloak-ID von ${assignment.username}`} /></td>
+              <td className="col-mid">{roleLabel(assignment.role)}</td>
+              <td className="col-mid">{scopeLabel(assignment)}</td>
               <td><span className={`status-pill ${assignment.status === "ACTIVE" ? "ready" : "missing"}`}>{assignment.status === "ACTIVE" ? "Aktiv" : "Deaktiviert"}</span></td>
               <td>{assignment.status === "ACTIVE" && (own
                 ? <span>Eigener Zugang</span>

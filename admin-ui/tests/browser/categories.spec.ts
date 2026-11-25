@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { fulfillCreated } from "./support/created";
 
 test("category create keeps input after conflict and reloads confirmed list", async ({ page }) => {
   const categories: Array<{ categoryCode: number; categoryName: string }> = [];
@@ -10,7 +11,7 @@ test("category create keeps input after conflict and reloads confirmed list", as
     if (conflict) return route.fulfill({ status: 409, json: { error: "Code existiert bereits" } });
     const created = route.request().postDataJSON() as { categoryCode: number; categoryName: string };
     categories.push(created);
-    return route.fulfill({ json: created });
+    return fulfillCreated(route, `/api/categories/${created.categoryCode}`, created);
   });
   await page.goto("/admin/next/categories/");
   await page.getByRole("button", { name: "Kategorie anlegen", exact: true }).click();
@@ -35,7 +36,7 @@ test("category create checks the exact code before a legacy upsert can overwrite
     writes += 1;
     const created = route.request().postDataJSON() as { categoryCode: number; categoryName: string };
     categories.push(created);
-    return route.fulfill({ json: created });
+    return fulfillCreated(route, `/api/categories/${created.categoryCode}`, created);
   });
   await page.goto("/admin/next/categories/");
   await page.getByRole("button", { name: "Kategorie anlegen", exact: true }).click();

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { fulfillCreated } from "./support/created";
 
 const uuid = "fda50693a4e24fb1afcfc6eb07647825";
 const store = { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz", status: "ACTIVE", region: { id: "region-1", name: "Oberösterreich" } };
@@ -37,7 +38,7 @@ test("admin validates, creates, edits, bulk reviews, assigns, releases, and arch
     if (method === "POST" && url.pathname === "/api/beacons") {
       const created = { ...beacon(`beacon-${nextId++}`, body.beaconCode, body.minor), uuid: body.uuid, major: body.major, identityKey: `${body.uuid}:${body.major}:${body.minor}`, notes: body.notes };
       records.push(created);
-      return route.fulfill({ json: created });
+      return fulfillCreated(route, `/api/beacons/${created.id}`, created);
     }
     const record = records.find((item) => item.id === id)!;
     if (method === "PUT") {
@@ -81,10 +82,13 @@ test("admin validates, creates, edits, bulk reviews, assigns, releases, and arch
   await expect(page.getByText("Eingang Nord")).toBeVisible();
   expect(writes[1].method).toBe("PUT");
 
+  await page.getByRole("button", { name: "Weitere Aktionen für B-001" }).click();
   await page.getByRole("combobox", { name: "B-001 zuweisen" }).selectOption("store-1");
   await expect(page.getByText("Zugewiesen · LINZ-01")).toBeVisible();
+  await page.getByRole("button", { name: "Weitere Aktionen für B-001" }).click();
   await page.getByRole("button", { name: "Freigeben" }).click();
   await expect(page.getByRole("cell", { name: "Frei" })).toBeVisible();
+  await page.getByRole("button", { name: "Weitere Aktionen für B-001" }).click();
   await page.getByRole("button", { name: "Archivieren" }).click();
   await page.getByRole("combobox", { name: "Status" }).selectOption("ARCHIVED");
   await expect(page.getByRole("cell", { name: "Archiviert" })).toBeVisible();
@@ -127,6 +131,7 @@ test("scoped staff can assign within scope but cannot create or bulk create", as
   await page.getByRole("checkbox", { name: "SCOPED-1 auswählen" }).check();
   await page.getByRole("combobox", { name: "Auswahl zuweisen an" }).selectOption("store-1");
   await page.getByRole("button", { name: "1 zuweisen" }).click();
+  await page.getByRole("button", { name: "Weitere Aktionen für SCOPED-1" }).click();
   await expect(page.getByRole("button", { name: "Freigeben" })).toBeVisible();
   expect(writes).toBe(1);
 });
@@ -152,9 +157,11 @@ test("beacon assignment reaches a store beyond the first 100 results", async ({ 
   });
 
   await page.goto("/admin/next/beacons/");
+  await page.getByRole("button", { name: "Weitere Aktionen für FREE-1" }).click();
   const targetSelect = page.getByRole("combobox", { name: "FREE-1 zuweisen" });
   await expect(targetSelect.locator('option[value="store-target"]')).toHaveCount(0);
   await page.getByRole("button", { name: "Weitere Stores laden (100 von 101)" }).click();
+  await page.getByRole("button", { name: "Weitere Aktionen für FREE-1" }).click();
   await expect(targetSelect.locator('option[value="store-target"]')).toHaveCount(1);
   await targetSelect.selectOption(target.id);
   await expect(page.getByRole("status").filter({ hasText: "Target Store zugewiesen" })).toBeVisible();
@@ -326,10 +333,10 @@ test("admin can create a beacon with keyboard controls and see the saved row", a
     const body = request.postDataJSON();
     const created = { ...beacon("keyboard-beacon", body.beaconCode, body.minor), uuid: body.uuid, major: body.major, identityKey: `${body.uuid}:${body.major}:${body.minor}`, notes: body.notes };
     records.push(created);
-    return route.fulfill({ json: created });
+    return fulfillCreated(route, `/api/beacons/${created.id}`, created);
   });
   await page.goto("/admin/next/beacons/");
-  await page.getByRole("button", { name: "Beacon anlegen" }).focus();
+  await page.getByRole("button", { name: "Beacon anlegen", exact: true }).focus();
   await page.keyboard.press("Enter");
   const code = page.getByRole("textbox", { name: "Beacon-Code" });
   await code.focus();

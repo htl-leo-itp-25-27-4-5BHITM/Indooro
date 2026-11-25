@@ -128,7 +128,7 @@ class LegacyWriteSecurityMatrixTest {
     @TestSecurity(user = "admin", roles = "admin")
     void adminWriteIsNotBlockedBySecurity(String method, String path, String body, boolean multipart) throws Exception {
         stubAdminWrites();
-        send(method, path, body, multipart).then().statusCode(anyOf(is(200), is(400)));
+        send(method, path, body, multipart).then().statusCode(anyOf(is(200), is(201), is(204), is(400)));
     }
 
     @Test
