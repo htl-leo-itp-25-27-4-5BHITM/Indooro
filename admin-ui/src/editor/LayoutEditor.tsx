@@ -456,7 +456,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
     <div className="le-body">
       <aside className="le-left" aria-label="Werkzeuge und Elemente">
         <h2>Werkzeuge</h2>
-        <div className="le-tool-row"><button type="button" aria-pressed={tool === "select"} onClick={() => setTool("select")}>Auswählen <kbd>V</kbd></button><button type="button" aria-pressed={tool === "pan"} onClick={() => setTool("pan")}>Verschieben <kbd>Space</kbd></button></div>
+        <div className="le-tool-row"><button type="button" aria-pressed={tool === "select"} onClick={() => setTool("select")}>Auswählen <kbd>V</kbd></button><button type="button" aria-pressed={tool === "pan"} onClick={() => setTool("pan")}>Verschieben <kbd>Leertaste</kbd></button></div>
         <button type="button" className="le-button le-new-layout" onClick={startNewLayout} disabled={!!working}>Neues Layout</button>
         {invalidMobileIds > 0 && <button type="button" className="le-button le-new-layout" disabled={!!working} onClick={() => {
           if (!window.confirm(`${invalidMobileIds} Element-ID${invalidMobileIds === 1 ? "" : "s"} für die iOS-Karte numerisch neu vergeben? Der Schritt kann rückgängig gemacht werden.`)) return;
@@ -475,7 +475,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
         {mode === "store" && api && storeId && <UnderlayPanel api={api} storeId={storeId} underlay={underlay} onChange={setUnderlay} />}
         <CoveragePanel overlay={coverage} />
         {mode === "store" && <PlanImportBlock disabled={!!working} getDocument={() => editorRef.current.document} onImport={importPlan} />}
-        <h2>Elemente</h2><p id="le-keyboard-help" className="le-hint">Tastatur: Element wählen, Tab zum Grundriss, Pfeile positionieren, Enter platzieren. Bei ausgewählter Ebene bewegen Pfeile das Element; Shift + Pfeil bewegt schneller. Escape beendet das Werkzeug. Eigenschaften stehen rechts.</p>
+        <h2>Elemente</h2><p id="le-keyboard-help" className="le-hint">Tastatur: Element wählen, Tab zum Grundriss, Pfeile positionieren, Enter platzieren. Bei ausgewählter Ebene bewegen Pfeile das Element; Umschalt + Pfeil bewegt schneller. Escape beendet das Werkzeug. Eigenschaften stehen rechts.</p>
         <div className="le-library">{TYPES.map((item) => <button type="button" key={item.type} aria-pressed={tool === "create" && createType === item.type} onClick={() => { setCreateType(item.type); setTool("create"); setKeyboardPoint({ x: document.gridSize.width / 2, y: document.gridSize.height / 2 }); }}><span className="le-swatch" style={{ background: item.color }} />{item.label}</button>)}</div>
         <h2>Ebenen <span>{document.elements.length}</span></h2>
         <ul className="le-layers">{document.elements.length ? document.elements.map((element, index) => <li key={`${element.id ?? "missing"}-${index}`}><button type="button" aria-current={editor.selectedId === element.id} onClick={() => setEditor((current) => selectElement(current, element.id ?? null))}><span className="le-layer-index">{String(index + 1).padStart(2, "0")}</span><span>{labelFor(element)}</span>{element.locked && <span title="Gesperrt">🔒</span>}{issueFor(element.id) && <span className="le-error-dot" title="Validierungsfehler">!</span>}</button></li>) : <li className="le-empty">Noch keine Elemente</li>}</ul>
@@ -524,7 +524,7 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
             })}
           </g>
         </svg>
-        <div className="le-canvas-footer"><span>{tool === "create" ? `${TYPES.find((item) => item.type === createType)?.label} platzieren` : tool === "pan" ? "Ansicht verschieben" : "Element auswählen oder ziehen"}</span><span>Rad: Zoom · Space: Schwenken · ⌘/Ctrl Z: Rückgängig</span></div>
+        <div className="le-canvas-footer"><span>{tool === "create" ? `${TYPES.find((item) => item.type === createType)?.label} platzieren` : tool === "pan" ? "Ansicht verschieben" : "Element auswählen oder ziehen"}</span><span>Mausrad: Zoom · Leertaste: Schwenken · ⌘/Strg Z: Rückgängig</span></div>
       </div>
       <aside className="le-right" aria-label="Eigenschaften und Prüfung">
         <h2>Eigenschaften</h2>
