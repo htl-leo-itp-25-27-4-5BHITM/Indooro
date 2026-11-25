@@ -95,8 +95,7 @@ class AdminRecipeResourceTest {
                         """)
                 .when().post("/api/admin/recipes")
                 .then()
-                .statusCode(200)
-                .body("title", equalTo("Tomaten Pasta"));
+                .statusCode(201);
 
         given()
                 .when().patch("/api/admin/recipes/{recipeId}/publish", RECIPE_ID)
@@ -211,8 +210,7 @@ class AdminRecipeResourceTest {
                         """)
                 .when().post("/api/admin/recipes/{recipeId}/ingredients", RECIPE_ID)
                 .then()
-                .statusCode(200)
-                .body("displayName", equalTo("Tomaten"));
+                .statusCode(201);
 
         given()
                 .contentType("application/json")
@@ -252,8 +250,7 @@ class AdminRecipeResourceTest {
                 .body("{\"position\":1,\"instruction\":\"Kochen.\",\"durationMinutes\":10}")
                 .when().post("/api/admin/recipes/{recipeId}/steps", RECIPE_ID)
                 .then()
-                .statusCode(200)
-                .body("instruction", equalTo("Kochen."));
+                .statusCode(201);
 
         given()
                 .contentType("application/json")

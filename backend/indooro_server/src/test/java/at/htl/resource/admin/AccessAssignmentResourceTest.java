@@ -106,9 +106,7 @@ class AccessAssignmentResourceTest {
         given().get(BASE + "?status=active").then().statusCode(200)
                 .body("[0].storeCode", equalTo("SPAR-Leonding-002"))
                 .body("[0].keycloakSubject", equalTo("6d1f0c2e-1b7a-4c55-9a0e-3f3b8d2a9e11"));
-        given().contentType("application/json").body(CREATE_BODY).post(BASE).then().statusCode(200)
-                .body("storeId", equalTo(STORE.toString()))
-                .body("status", equalTo("ACTIVE"));
+        given().contentType("application/json").body(CREATE_BODY).post(BASE).then().statusCode(201);
         given().patch(BASE + "/" + ASSIGNMENT + "/deactivate").then().statusCode(200)
                 .body("status", equalTo("DISABLED"));
     }

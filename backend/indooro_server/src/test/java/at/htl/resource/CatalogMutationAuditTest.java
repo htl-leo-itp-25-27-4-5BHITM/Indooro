@@ -49,7 +49,7 @@ class CatalogMutationAuditTest {
         when(storeResolver.require(any(), eq(STORE_CODE))).thenReturn(STORE);
 
         given().contentType("application/json").body(PRODUCT.replace("}", ",\"storeCode\":\"" + STORE_CODE + "\"}"))
-                .post("/api/products").then().statusCode(200);
+                .post("/api/products").then().statusCode(204);
 
         verify(audit).logByAdmin(any(), eq("PRODUCT"), eq(AuditEntityIds.product(101)), eq("UPSERT"), anyString(), isNull(), any());
     }
@@ -89,8 +89,7 @@ class CatalogMutationAuditTest {
 
         given().contentType("application/json").body("{\"categoryCode\":310,\"categoryName\":\"Obst\"}")
                 .queryParam("createOnly", true)
-                .post("/api/categories").then().statusCode(200)
-                .body("categoryName", equalTo("Obst"));
+                .post("/api/categories").then().statusCode(201);
 
         verify(audit).logByAdmin(any(), eq("CATEGORY"), eq(AuditEntityIds.category(310)), eq("CREATE"), anyString(), isNull(), any());
     }
@@ -116,7 +115,7 @@ class CatalogMutationAuditTest {
                 .when(audit).logByAdmin(any(), any(), any(), any(), any(), any(), any());
 
         given().contentType("application/json").body(PRODUCT.replace("}", ",\"storeCode\":\"" + STORE_CODE + "\"}"))
-                .post("/api/products").then().statusCode(200);
+                .post("/api/products").then().statusCode(204);
     }
 
     /** Bulk-Eintraege enthalten nur Zaehler, keine Produkt-Payloads. */
