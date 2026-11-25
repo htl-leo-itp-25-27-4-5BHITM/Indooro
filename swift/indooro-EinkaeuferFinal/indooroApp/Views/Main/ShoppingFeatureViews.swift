@@ -1,6 +1,10 @@
 import IndooroModels
 import SwiftUI
 
+private func stopCountText(_ count: Int) -> String {
+    count == 1 ? "1 Stopp" : "\(count) Stopps"
+}
+
 struct ShoppingStopMarker: View {
     let index: Int
     let isActive: Bool
@@ -103,7 +107,7 @@ struct ShoppingSessionPanel: View {
                         .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
 
-                        Text("\(snapshot.remainingStopCount) Stopps · \(snapshot.remainingProductCount) offen")
+                        Text("\(stopCountText(snapshot.remainingStopCount)) · \(snapshot.remainingProductCount) offen")
                             .font(.caption2)
                             .foregroundStyle(Color.a11ySecondaryText)
                             .lineLimit(1)
@@ -1564,7 +1568,7 @@ struct ShoppingListsPage: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                Text("\(preview.remainingStopCount) Stopps und \(preview.remainingProductCount) Artikel sind noch offen.")
+                Text("\(stopCountText(preview.remainingStopCount)) und \(preview.remainingProductCount) Artikel sind noch offen.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
