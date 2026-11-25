@@ -1569,8 +1569,16 @@ async function request(url, options = {}) {
     headers: { Accept: "application/json", ...(options.body ? { "Content-Type": "application/json" } : {}) },
     ...options
   });
-  const text = await response.text();
-  const data = text ? parseMaybeJson(text) : null;
+  let text = await response.text();
+  let data = text ? parseMaybeJson(text) : null;
+  const createdLocation = response.headers.get("Location");
+  if (options.method === "POST" && (response.status === 201 || response.status === 204) && createdLocation && !text) {
+    const created = await fetch(createdLocation, { credentials: "same-origin", headers: { Accept: "application/json" } });
+    if (created.ok) {
+      text = await created.text();
+      data = text ? parseMaybeJson(text) : null;
+    }
+  }
   if (response.status === 401) {
     location.href = "/admin/";
     throw new Error("Anmeldung erforderlich.");
