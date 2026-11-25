@@ -78,42 +78,46 @@ struct ShoppingSessionPanel: View {
                         Text(currentStop.itemNamesPreview)
                             .font(.caption)
                             .foregroundStyle(Color.a11ySecondaryText)
-                            .lineLimit(1)
+                            .lineLimit(2)
 
                         if let routeOriginText {
                             Text(routeOriginText)
                                 .font(.caption2)
                                 .foregroundStyle(Color.a11ySecondaryText)
-                                .lineLimit(1)
+                                .lineLimit(2)
                         }
                     }
 
                     Spacer(minLength: 0)
+                }
 
-                    VStack(alignment: .trailing, spacing: 3) {
-                        Button(snapshot.routeMode.title) {
-                            onToggleMode()
-                        }
-                        .font(.caption2.weight(.semibold))
-                        .buttonStyle(.plain)
-                        .foregroundStyle(accent)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-
-                        Button("Neu planen") {
-                            onReplan()
-                        }
-                        .font(.caption2.weight(.semibold))
-                        .buttonStyle(.plain)
-                        .foregroundStyle(accent)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-
-                        Text("\(stopCountText(snapshot.remainingStopCount)) · \(snapshot.remainingProductCount) offen")
-                            .font(.caption2)
-                            .foregroundStyle(Color.a11ySecondaryText)
-                            .lineLimit(1)
+                // Route controls on their own row so the stop text keeps the full panel width.
+                HStack(spacing: 14) {
+                    Button(snapshot.routeMode.title) {
+                        onToggleMode()
                     }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(accent)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+
+                    Button("Neu planen") {
+                        onReplan()
+                    }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(accent)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+
+                    Spacer(minLength: 0)
+
+                    Text("\(stopCountText(snapshot.remainingStopCount)) · \(snapshot.remainingProductCount) offen")
+                        .font(.caption2)
+                        .foregroundStyle(Color.a11ySecondaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
 
                 HStack(spacing: 7) {
@@ -133,6 +137,8 @@ struct ShoppingSessionPanel: View {
                         onSkipCurrentStop()
                     }
                     .buttonStyle(.plain)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
                     .foregroundStyle(accent)
                     .padding(.horizontal, 10)
                     .frame(minHeight: 44)
