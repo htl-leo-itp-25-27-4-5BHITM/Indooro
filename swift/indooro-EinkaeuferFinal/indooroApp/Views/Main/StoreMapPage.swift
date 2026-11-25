@@ -441,7 +441,7 @@ struct StoreMapPage: View {
                 Text(storeOverviewSubtitle)
                     .font(.subheadline)
                     .foregroundStyle(Color.a11ySecondaryText)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
 
             Spacer(minLength: 0)
@@ -524,7 +524,7 @@ struct StoreMapPage: View {
                 Text(message)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.primary)
-                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 Spacer(minLength: 0)
 
@@ -662,7 +662,7 @@ struct StoreMapPage: View {
                 Text(beaconManager.activeLayoutDescription)
                     .font(.subheadline)
                     .foregroundStyle(Color.a11ySecondaryText)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
 
             Spacer(minLength: 0)
@@ -699,41 +699,9 @@ struct StoreMapPage: View {
 
     private var indoorPositionControls: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Button {
-                    nextTapSetsPosition.toggle()
-                } label: {
-                    Label("Ich bin hier", systemImage: "location.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(nextTapSetsPosition ? Color.white : accent)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 9)
-                        .background(
-                            nextTapSetsPosition ? accent : accent.opacity(0.11),
-                            in: Capsule()
-                        )
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Ich bin hier")
-
-                Button {
-                    openAnchorScanner()
-                } label: {
-                    Label("QR-Code scannen", systemImage: "qrcode.viewfinder")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(accent)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 9)
-                        .background(accent.opacity(0.11), in: Capsule())
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("QR-Code scannen")
-
-                Spacer(minLength: 0)
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 8) { positionButtons }
+                VStack(alignment: .leading, spacing: 4) { positionButtons }
             }
 
             if !beaconManager.isPositionTrusted {
@@ -741,6 +709,42 @@ struct StoreMapPage: View {
             }
         }
         .padding(.horizontal, 2)
+    }
+
+    @ViewBuilder
+    private var positionButtons: some View {
+        Button {
+            nextTapSetsPosition.toggle()
+        } label: {
+            Label("Ich bin hier", systemImage: "location.fill")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(nextTapSetsPosition ? Color.white : accent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(
+                    nextTapSetsPosition ? accent : accent.opacity(0.11),
+                    in: Capsule()
+                )
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Ich bin hier")
+
+        Button {
+            openAnchorScanner()
+        } label: {
+            Label("QR-Code scannen", systemImage: "qrcode.viewfinder")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(accent)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 9)
+                .background(accent.opacity(0.11), in: Capsule())
+                .frame(minWidth: 44, minHeight: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("QR-Code scannen")
     }
 
     private var untrustedPositionBanner: some View {
@@ -1036,8 +1040,7 @@ struct StoreMapPage: View {
                 } label: {
                     Label("Route starten", systemImage: "location.north.circle.fill")
                         .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 44)
+                        .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .disabled(shelfDescriptor == nil)
                 .buttonStyle(.plain)
@@ -1054,7 +1057,7 @@ struct StoreMapPage: View {
                         Label("Einplanen", systemImage: "plus")
                             .font(.subheadline.weight(.semibold))
                             .padding(.horizontal, 14)
-                            .frame(height: 44)
+                            .frame(minHeight: 44)
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(accent)
