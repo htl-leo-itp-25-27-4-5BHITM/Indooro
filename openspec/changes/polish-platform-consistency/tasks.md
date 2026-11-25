@@ -56,7 +56,7 @@
 
 ## 10. P8 Admin browser tests (polish-admin-tests)
 
-- [ ] 10.1 Run `npm run test:browser` on `main` and classify every failure as stale test, UI bug or flaky.
-- [ ] 10.2 Fix stale tests and mocks, including create POSTs answering `201 Created` + `Location`.
-- [ ] 10.3 Add browser assertions for the polish contract (no horizontal scroll, editor fits viewport, store create lands on detail).
-- [ ] 10.4 Full browser suite green; report whether CI runs it.
+- [x] 10.1 Run `npm run test:browser` on `main` and classify every failure as stale test, UI bug or flaky.
+- [x] 10.2 Fix stale tests and mocks, including create POSTs answering `201 Created` + `Location`.
+- [x] 10.3 Add browser assertions for the polish contract (no horizontal scroll, editor fits viewport, store create lands on detail).
+- [x] 10.4 Full browser suite green; report whether CI runs it.
