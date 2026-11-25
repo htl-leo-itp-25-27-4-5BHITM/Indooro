@@ -30,10 +30,10 @@
 
 ## 5. P4 iOS sweep (polish-ios)
 
-- [ ] 5.1 Confirm the app calls no changed create endpoint; adapt if it does.
-- [ ] 5.2 Sweep all screens for overflow, truncation, Dynamic Type, safe-area and dark-mode issues and fix them.
-- [ ] 5.3 Unify German copy and button styles.
-- [ ] 5.4 Build and unit tests green; simulator screenshots recorded.
+- [x] 5.1 Confirm the app calls no changed create endpoint; adapt if it does.
+- [x] 5.2 Sweep all screens for overflow, truncation, Dynamic Type, safe-area and dark-mode issues and fix them.
+- [x] 5.3 Unify German copy and button styles.
+- [x] 5.4 Build and unit tests green; simulator screenshots recorded.
 
 ## 6. P5 Web clients sweep (polish-web)
 

@@ -103,7 +103,6 @@ struct ContentView: View {
         // Untere Tab-Leiste auch auf dem iPad (die Tab-API zeigt dort sonst eine obere Leiste).
         .tabViewStyle(.tabBarOnly)
         .environment(router)
-        .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
         .preferredColorScheme(.light)
         .alert("Filiale erkannt: \(beaconManager.suggestedPilotStore?.name ?? "") – öffnen?", isPresented: Binding(
             get: { beaconManager.suggestedPilotStore != nil },
@@ -199,6 +198,8 @@ struct ContentView: View {
             .presentationDetents([.height(360), .medium])
             .presentationDragIndicator(.visible)
         }
+        // Last, so that sheets and alerts above inherit the app colour instead of system blue.
+        .tint(Color(red: 0.12, green: 0.46, blue: 0.39))
     }
 
     private var upsellPromptBinding: Binding<UpsellPrompt?> {

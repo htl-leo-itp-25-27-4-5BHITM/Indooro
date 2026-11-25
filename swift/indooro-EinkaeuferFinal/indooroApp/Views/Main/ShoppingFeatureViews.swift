@@ -1,6 +1,10 @@
 import IndooroModels
 import SwiftUI
 
+private func stopCountText(_ count: Int) -> String {
+    count == 1 ? "1 Stopp" : "\(count) Stopps"
+}
+
 struct ShoppingStopMarker: View {
     let index: Int
     let isActive: Bool
@@ -60,54 +64,60 @@ struct ShoppingSessionPanel: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(currentStop.title)
                             .font(.subheadline.weight(.bold))
-                            .lineLimit(1)
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                        if let location = locationText(currentStop) {
+                        // The stop title is often the shelf name itself; do not repeat it.
+                        if let location = locationText(currentStop), location != currentStop.title {
                             Text(location)
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(accent)
-                                .lineLimit(1)
+                                .lineLimit(2)
                         }
 
                         Text(currentStop.itemNamesPreview)
                             .font(.caption)
                             .foregroundStyle(Color.a11ySecondaryText)
-                            .lineLimit(1)
+                            .lineLimit(2)
 
                         if let routeOriginText {
                             Text(routeOriginText)
                                 .font(.caption2)
                                 .foregroundStyle(Color.a11ySecondaryText)
-                                .lineLimit(1)
+                                .lineLimit(2)
                         }
                     }
 
                     Spacer(minLength: 0)
+                }
 
-                    VStack(alignment: .trailing, spacing: 3) {
-                        Button(snapshot.routeMode.title) {
-                            onToggleMode()
-                        }
-                        .font(.caption2.weight(.semibold))
-                        .buttonStyle(.plain)
-                        .foregroundStyle(accent)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-
-                        Button("Neu planen") {
-                            onReplan()
-                        }
-                        .font(.caption2.weight(.semibold))
-                        .buttonStyle(.plain)
-                        .foregroundStyle(accent)
-                        .frame(minWidth: 44, minHeight: 44)
-                        .contentShape(Rectangle())
-
-                        Text("\(snapshot.remainingStopCount) Stopps · \(snapshot.remainingProductCount) offen")
-                            .font(.caption2)
-                            .foregroundStyle(Color.a11ySecondaryText)
-                            .lineLimit(1)
+                // Route controls on their own row so the stop text keeps the full panel width.
+                HStack(spacing: 14) {
+                    Button(snapshot.routeMode.title) {
+                        onToggleMode()
                     }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(accent)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+
+                    Button("Neu planen") {
+                        onReplan()
+                    }
+                    .font(.caption.weight(.semibold))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(accent)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .contentShape(Rectangle())
+
+                    Spacer(minLength: 0)
+
+                    Text("\(stopCountText(snapshot.remainingStopCount)) · \(snapshot.remainingProductCount) offen")
+                        .font(.caption2)
+                        .foregroundStyle(Color.a11ySecondaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                 }
 
                 HStack(spacing: 7) {
@@ -115,20 +125,24 @@ struct ShoppingSessionPanel: View {
                         onMarkCurrentStopDone()
                     } label: {
                         Text("Erledigt")
-                            .frame(maxWidth: .infinity)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.white)
-                    .frame(height: 44)
+                    .frame(minHeight: 44)
                     .background(accent, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                     Button("Überspringen") {
                         onSkipCurrentStop()
                     }
                     .buttonStyle(.plain)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
                     .foregroundStyle(accent)
-                    .frame(height: 44)
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, 8)
+                    .layoutPriority(1)
+                    .frame(minHeight: 44)
                     .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 
                     Button {
@@ -567,7 +581,7 @@ struct ProductsPage: View {
             if productSearch.isSearching {
                 HStack(spacing: 10) {
                     ProgressView()
-                    Text("Produkte werden gesucht...")
+                    Text("Produkte werden gesucht …")
                         .foregroundStyle(.secondary)
                 }
             }
@@ -806,7 +820,8 @@ struct ProductsPage: View {
                 .minimumScaleFactor(0.75)
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 84)
+        .padding(.vertical, 6)
+        .frame(minHeight: 84)
         .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -1442,11 +1457,13 @@ struct ShoppingListsPage: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(list.name)
                             .font(.title3.weight(.semibold))
+                            .fixedSize(horizontal: false, vertical: true)
                             .accessibilityAddTraits(.isHeader)
 
                         Text("\(list.openItemCount) offen, \(list.completedItemCount) erledigt")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Spacer()
@@ -1562,7 +1579,7 @@ struct ShoppingListsPage: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                Text("\(preview.remainingStopCount) Stopps und \(preview.remainingProductCount) Artikel sind noch offen.")
+                Text("\(stopCountText(preview.remainingStopCount)) und \(preview.remainingProductCount) Artikel sind noch offen.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -1840,7 +1857,7 @@ private struct ShoppingChecklistRow: View {
             HStack(spacing: 12) {
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(isCompleted ? .green : .blue)
+                    .foregroundStyle(isCompleted ? AnyShapeStyle(.green) : AnyShapeStyle(.tint))
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
@@ -1875,7 +1892,7 @@ private struct ShoppingChecklistRow: View {
                 Spacer()
 
                 if let price = item.price {
-                    Text("\(String(format: "%.2f", price)) EUR")
+                    Text(PriceText.format(price))
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
                 }
