@@ -418,16 +418,7 @@ async function saveLayoutToServer(layoutData, activate = true) {
     throw new Error('Layout konnte nicht am Server gespeichert werden.');
   }
 
-  let savedLayout = null;
-  const createdLocation = response.headers.get('Location');
-  if ((response.status === 201 || response.status === 204) && createdLocation) {
-    const created = await fetch(createdLocation, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
-    if (created.ok) savedLayout = await created.json();
-  }
-  if (!savedLayout) {
-    const savedText = await response.text();
-    savedLayout = savedText ? JSON.parse(savedText) : {};
-  }
+  const savedLayout = await response.json();
   editorLayoutId = savedLayout.layoutId || editorLayoutId;
   savedStateSignature = submittedStateSignature;
   if (hasUnsavedChanges()) showUnsavedStatus();
