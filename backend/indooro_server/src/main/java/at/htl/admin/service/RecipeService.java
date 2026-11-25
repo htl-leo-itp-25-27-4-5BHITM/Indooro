@@ -188,6 +188,22 @@ public class RecipeService {
         return after;
     }
 
+    public RecipeDtos.RecipeIngredientResponse getIngredient(UUID recipeId, UUID ingredientId) {
+        adminAccessService.requireAdmin();
+        return toIngredient(requireIngredient(recipeId, ingredientId));
+    }
+
+    public RecipeDtos.RecipeStepResponse getStep(UUID recipeId, UUID stepId) {
+        adminAccessService.requireAdmin();
+        return toStep(requireStep(recipeId, stepId));
+    }
+
+    public RecipeDtos.RecipeTagResponse getTag(UUID tagId) {
+        adminAccessService.requireAdmin();
+        return toTag(tagRepository.findByIdOptional(tagId)
+                .orElseThrow(() -> new NotFoundException("Rezept-Tag nicht gefunden.")));
+    }
+
     @Transactional
     public RecipeDtos.RecipeIngredientResponse addIngredient(UUID recipeId, RecipeDtos.RecipeIngredientRequest request) {
         adminAccessService.requireAdmin();
