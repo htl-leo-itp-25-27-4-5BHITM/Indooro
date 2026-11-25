@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import type { LayoutDocument } from "../../src/editor/model";
+import { fulfillCreatedVersion } from "./support/created";
 
 const layout = JSON.parse(readFileSync(new URL("../../src/editor/fixtures/store-layout.json", import.meta.url), "utf8")) as LayoutDocument;
 
@@ -17,7 +18,7 @@ async function mockEditor(page: Page, saved: LayoutDocument[] = []) {
     if (url.pathname.endsWith("/versions") && route.request().method() === "POST") {
       const payload = route.request().postDataJSON() as { layout: LayoutDocument };
       saved.push(payload.layout);
-      return route.fulfill({ json: { layoutId: "draft-1", versionNo: 2, status: "DRAFT", layout: payload.layout } });
+      return fulfillCreatedVersion(route, { layoutId: "draft-1", versionNo: 2, status: "DRAFT", layout: payload.layout });
     }
     return route.fulfill({ status: 404, json: { message: "Unexpected editor route" } });
   });

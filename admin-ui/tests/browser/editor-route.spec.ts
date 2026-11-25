@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { fulfillCreatedVersion } from "./support/created";
 
 const document = {
   shopName: "Indooro Linz",
@@ -19,7 +20,7 @@ test("new editor saves a draft, reloads it, then activates the same version", as
     if (route.request().method() === "GET") return route.fulfill({ json: current.layoutId ? [{ layoutId: current.layoutId, versionNo: current.versionNo, layoutName: current.layout.shopName, status: current.status }] : [] });
     savedPayload = route.request().postDataJSON();
     current = { layoutId: "layout-2", versionNo: 2, status: "DRAFT", layout: savedPayload!.layout as typeof document };
-    return route.fulfill({ json: current });
+    return fulfillCreatedVersion(route, { ...current, layoutId: "layout-2" });
   });
   await page.route("**/api/stores/store-1/layout/versions/layout-2", (route) => route.fulfill({ json: current }));
   await page.route("**/api/stores/store-1/layout/versions/layout-2/activate", (route) => {
@@ -59,7 +60,7 @@ test("a layout without an entrance can be saved as a private draft but cannot be
     if (route.request().method() === "GET") return route.fulfill({ json: [] });
     draftWrites += 1;
     expect(route.request().postDataJSON().activate).toBe(false);
-    return route.fulfill({ json: { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layout: route.request().postDataJSON().layout } });
+    return fulfillCreatedVersion(route, { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layout: route.request().postDataJSON().layout });
   });
   await page.route("**/api/stores/store-1/layout/versions/draft-2/activate", (route) => {
     activations += 1;
@@ -112,7 +113,7 @@ test("failed draft save keeps edits dirty and can be retried", async ({ page }) 
     saves += 1;
     if (fail) return route.fulfill({ status: 503, json: { error: "Unavailable" } });
     savedLayout = route.request().postDataJSON().layout as typeof document;
-    return route.fulfill({ json: { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layout: savedLayout } });
+    return fulfillCreatedVersion(route, { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layout: savedLayout });
   });
   await page.goto("/admin/next/editor/?storeId=store-1");
   const name = page.getByRole("textbox", { name: "Filialname" });

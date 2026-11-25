@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import type { LayoutDocument } from "../../src/editor/model";
+import { fulfillCreatedVersion } from "./support/created";
 
 const layout = JSON.parse(readFileSync(new URL("../../src/editor/fixtures/store-layout.json", import.meta.url), "utf8")) as LayoutDocument;
 const assignedBeacons = [{ beaconCode: "IN-001", beaconId: "beacon-db-1", identityKey: "123e4567-e89b-12d3-a456-426614174000:1:2", uuid: "123e4567-e89b-12d3-a456-426614174000", major: 1, minor: 2 }];
@@ -15,7 +16,7 @@ async function mockEditor(page: Page, status: "ACTIVE" | "DRAFT", saved: LayoutD
     if (path.endsWith("/versions") && route.request().method() === "POST") {
       const payload = route.request().postDataJSON() as { activate: boolean; layout: LayoutDocument };
       saved.push(payload.layout);
-      return route.fulfill({ json: { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "DRAFT", layoutName: "Indooro Testfiliale", layout: payload.layout } });
+      return fulfillCreatedVersion(route, { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "DRAFT", layoutName: "Indooro Testfiliale", layout: payload.layout });
     }
     if (path.endsWith("/activate")) return route.fulfill({ json: { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "ACTIVE", layout: saved.at(-1) } });
     return route.fulfill({ status: 404, json: { message: "Unexpected editor route" } });
@@ -178,7 +179,7 @@ test("save failure is announced, retains edits, and announces a successful retry
     if (saveAttempts === 1) return route.fulfill({ status: 503, json: { message: "Vorübergehend nicht verfügbar" } });
     const payload = route.request().postDataJSON() as { layout: LayoutDocument };
     saved.push(payload.layout);
-    return route.fulfill({ json: { layoutId: "draft-retry", versionNo: 2, status: "DRAFT", layoutName: payload.layout.shopName, layout: payload.layout } });
+    return fulfillCreatedVersion(route, { layoutId: "draft-retry", versionNo: 2, status: "DRAFT", layoutName: payload.layout.shopName, layout: payload.layout });
   });
   await page.goto("/admin/next/editor/?storeId=store-1");
 

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import type { LayoutDocument } from "../../src/editor/model";
+import { fulfillCreatedVersion } from "./support/created";
 
 const layout = JSON.parse(readFileSync(new URL("../../src/editor/fixtures/store-layout.json", import.meta.url), "utf8")) as LayoutDocument;
 const assignedBeacons = [{ beaconCode: "IN-001", beaconId: "beacon-db-1", identityKey: "123e4567-e89b-12d3-a456-426614174000:1:2", uuid: "123e4567-e89b-12d3-a456-426614174000", major: 1, minor: 2 }];
@@ -17,7 +18,7 @@ async function mockEditor(page: Page, status: "ACTIVE" | "DRAFT", saved: LayoutD
       const payload = route.request().postDataJSON() as { activate: boolean; layout: LayoutDocument };
       expect(payload.activate).toBe(false);
       saved.push(payload.layout);
-      return route.fulfill({ json: { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "DRAFT", layoutName: "Indooro Testfiliale", layout: payload.layout } });
+      return fulfillCreatedVersion(route, { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "DRAFT", layoutName: "Indooro Testfiliale", layout: payload.layout });
     }
     if (path.endsWith("/activate")) return route.fulfill({ json: { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "ACTIVE", layout: saved.at(-1) } });
     return route.fulfill({ status: 404, json: { message: "Unexpected editor route" } });
