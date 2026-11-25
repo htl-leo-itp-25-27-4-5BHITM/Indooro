@@ -24,9 +24,9 @@
 
 ## 4. P3 Admin layout editor (polish-admin-editor)
 
-- [ ] 4.1 Make the editor route fill the viewport; panels and canvas scroll internally; no document scroll at 1280x800 and 1440x900.
-- [ ] 4.2 Check the legacy editor route for the same issue and fix it.
-- [ ] 4.3 Tests, lint, typecheck, build green; before/after screenshots recorded.
+- [x] 4.1 Make the editor route fill the viewport; panels and canvas scroll internally; no document scroll at 1280x800 and 1440x900.
+- [x] 4.2 Check the legacy editor route for the same issue and fix it.
+- [x] 4.3 Tests, lint, typecheck, build green; before/after screenshots recorded.
 
 ## 5. P4 iOS sweep (polish-ios)
 
