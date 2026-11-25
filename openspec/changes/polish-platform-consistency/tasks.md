@@ -56,9 +56,9 @@
 
 ## 9. P7 Admin responsive and header polish (polish-admin-responsive)
 
-- [ ] 9.1 Remove the "Indooro Admin" heading above pages; the page title is the only `h1`.
-- [ ] 9.2 Collapse the sidebar into a menu below 900 px.
-- [ ] 9.3 Make every admin page work at 768x1024 and 390x844: no document horizontal scroll, single-column forms, touch targets of at least 40 px.
-- [ ] 9.4 Compact Beacons row actions to one line with a keyboard-accessible "Weitere Aktionen" menu.
-- [ ] 9.5 Consistent German header copy and role labels.
-- [ ] 9.6 Typecheck, lint, tests, build green; screenshots at 390, 768 and 1280 px under `docs/polish/admin-responsive/`.
+- [x] 9.1 Remove the "Indooro Admin" heading above pages; the page title is the only `h1`.
+- [x] 9.2 Collapse the sidebar into a menu below 900 px.
+- [x] 9.3 Make every admin page work at 768x1024 and 390x844: no document horizontal scroll, single-column forms, touch targets of at least 40 px.
+- [x] 9.4 Compact Beacons row actions to one line with a keyboard-accessible "Weitere Aktionen" menu.
+- [x] 9.5 Consistent German header copy and role labels.
+- [x] 9.6 Typecheck, lint, tests, build green; screenshots at 390, 768 and 1280 px under `docs/polish/admin-responsive/`.
