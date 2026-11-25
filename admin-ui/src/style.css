@@ -58,7 +58,19 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 .notice { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1.5rem; }
 .notice :is(h1, h2) { margin-top: 0; }
 .notice h1 { font-size: 1.5rem; }
-@media (max-width: 700px) { .masthead { padding: 1rem; align-items: flex-start; } .account { flex-wrap: wrap; justify-content: flex-end; } .workspace { display: block; } .sidebar { border-right: 0; border-bottom: 1px solid var(--border); flex-direction: row; flex-wrap: wrap; padding: .75rem; } .sidebar-title { width: 100%; margin: .25rem; } .content { padding: 1rem; } }
+.menu-toggle { display: none; }
+.account a { display: inline-flex; align-items: center; min-height: 40px; }
+@media (max-width: 900px) {
+  .masthead { flex-wrap: wrap; padding: .75rem 1rem; gap: .5rem 1rem; }
+  .menu-toggle { display: inline-flex; align-items: center; gap: .4rem; min-height: 42px; padding: .5rem .8rem; border: 1px solid var(--text-on-brand-muted); border-radius: var(--radius-control); background: transparent; color: var(--surface); font: inherit; font-weight: 650; cursor: pointer; }
+  .brand { display: inline-flex; align-items: center; min-height: 40px; margin-right: auto; }
+  .workspace { display: block; }
+  .sidebar { display: none; border-right: 0; border-bottom: 1px solid var(--border); padding: .75rem; }
+  .sidebar.open { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .sidebar-title { grid-column: 1 / -1; margin: .25rem; }
+  .sidebar a { display: flex; align-items: center; min-height: 42px; }
+  .content { width: 100%; padding: 1rem; }
+}
 .page-intro { display: flex; align-items: end; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
 .page-intro h1 { font-size: clamp(1.7rem, 3vw, 2.3rem); margin: .15rem 0; }
 .page-intro p:last-child { color: var(--text-muted); margin: .25rem 0 0; }
@@ -275,9 +287,6 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 /* Zugänge (access assignments) and the Keycloak id on the forbidden page */
 .forbidden-identity input { min-height: 40px; border: 1px solid var(--border-input); border-radius: .5rem; padding: .4rem .6rem; font: inherit; font-family: ui-monospace, monospace; }
 .forbidden-identity .toolbar { display: flex; gap: .5rem; flex-wrap: wrap; }
-
-/* Compact mobile navigation: eleven admin entries must leave the editor canvas in the first viewport. */
-@media (max-width: 700px) { .sidebar { gap: .1rem; } .sidebar a { padding: .45rem .6rem; } }
 
 /* Shared table container: every admin table sits in <DataTable>. */
 .data-table { min-width: 0; max-width: 100%; container-type: inline-size; }

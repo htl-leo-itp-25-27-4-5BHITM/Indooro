@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ApiClientError, createApiClient } from "./api/client";
 import { Dashboard } from "./Dashboard";
@@ -28,6 +28,8 @@ function AdminCandidate() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<ApiClientError | null>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -52,11 +54,12 @@ function AdminCandidate() {
     <div className="admin-shell">
       <a className="skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <header className="masthead">
+        {user && <button ref={menuButton} type="button" className="menu-toggle" aria-expanded={menuOpen} aria-controls="admin-navigation" onClick={() => setMenuOpen((open) => !open)}><span aria-hidden="true">☰</span> Menü</button>}
         <a className="brand" href="/admin/next/" aria-label="Indooro Admin Startseite">Indooro <span>Admin</span></a>
         {user && <div className="account"><span>{user.username}</span><span className="scope">{user.scope?.storeName ?? user.scope?.regionName ?? ROLE_TEXT[user.role] ?? user.role}</span><a href="/admin/logout">Abmelden</a></div>}
       </header>
       <div className="workspace">
-        {user && <nav aria-label="Admin Navigation" className="sidebar">
+        {user && <nav id="admin-navigation" aria-label="Admin Navigation" className={`sidebar ${menuOpen ? "open" : ""}`} onKeyDown={(event) => { if (event.key === "Escape" && menuOpen) { setMenuOpen(false); menuButton.current?.focus(); } }}>
           <p className="sidebar-title">Arbeitsbereiche</p>
           {navigation.map(({ route, href }) => <a href={href} key={route.path} aria-current={route === currentNavigation ? "page" : undefined}>{route.label}</a>)}
         </nav>}
