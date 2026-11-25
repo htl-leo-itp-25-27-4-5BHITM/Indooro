@@ -65,7 +65,7 @@ export function Hero() {
 
           <motion.h1 id="hero-title" {...rise(1)} className="display mt-6 text-[2.3rem] text-white sm:text-6xl lg:text-7xl">
             Jedes Produkt.
-            <span className="block bg-gradient-to-r from-mint via-mint-soft to-teal bg-clip-text text-transparent">Auf direktem Weg.</span>
+            <span className="-mb-[0.14em] block pb-[0.14em] bg-gradient-to-r from-mint via-mint-soft to-teal bg-clip-text text-transparent">Auf direktem Weg.</span>
           </motion.h1>
 
           <motion.p {...rise(2)} className="text-pretty mt-4 max-w-xl text-[15px] leading-relaxed text-ink-200 sm:mt-6 sm:text-xl">
