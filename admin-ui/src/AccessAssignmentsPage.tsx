@@ -18,6 +18,7 @@ import {
   type AccessStatusFilter
 } from "./accessAssignments";
 import { CopyableId } from "./CopyableId";
+import { EmptyState } from "./EmptyState";
 
 interface RegionOption { id: string; code: string; name: string }
 interface StoreOption { id: string; storeCode: string; name: string; region: { id: string; name: string } | null }
@@ -57,6 +58,7 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
   const [regions, setRegions] = useState<RegionOption[]>([]);
   const [stores, setStores] = useState<StoreOption[]>([]);
   const [optionsError, setOptionsError] = useState("");
+  const [optionsReload, setOptionsReload] = useState(0);
   const [draft, setDraft] = useState<AccessDraft>(blankAccessDraft);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
@@ -92,7 +94,7 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
       setStores(storeList);
     }).catch((error: unknown) => { if (!isAbort(error)) setOptionsError(`Märkte und Regionen konnten nicht geladen werden. ${friendlyError(error)}`); });
     return () => controller.abort();
-  }, [api, canManage]);
+  }, [api, canManage, optionsReload]);
 
   const visibleAssignments = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
@@ -163,8 +165,9 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
   const fieldError = (name: keyof AccessDraft) => fieldErrors[name] && <small id={`access-${name}-error`} role="alert">{fieldErrors[name]}</small>;
 
   return <section className="regions-page access-page" aria-labelledby="access-title">
-    <div className="page-heading">
+    <div className="page-intro">
       <div>
+        <p className="eyebrow">Verwaltung</p>
         <h2 id="access-title">Zugänge</h2>
         <p>Keycloak-Benutzer einer Rolle und einem Markt oder einer Region zuordnen. Den Benutzer selbst und seine Realm-Rolle legen Sie weiter in der Keycloak-Konsole an.</p>
       </div>
@@ -183,8 +186,8 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
         </div>
         {rowError && <p role="alert" className="notice error">{rowError}</p>}
         {loading && <p role="status">Zugänge werden geladen …</p>}
-        {listError && <div role="alert" className="notice"><p>{listError}</p><button type="button" onClick={() => setReload((current) => current + 1)}>Erneut laden</button></div>}
-        {!loading && !listError && visibleAssignments.length === 0 && <p className="empty-state">{query ? "Kein Zugang passt zur Suche." : "Keine Zugänge in diesem Status."}</p>}
+        {listError && <div role="alert" className="notice"><p>{listError}</p><button type="button" onClick={() => setReload((current) => current + 1)}>Erneut versuchen</button></div>}
+        {!loading && !listError && visibleAssignments.length === 0 && <EmptyState action={!query && status === "ACTIVE" ? <button type="button" className="primary" onClick={() => document.getElementById("access-keycloakSubject")?.focus()}>Ersten Zugang anlegen</button> : undefined}>{query ? "Kein Zugang passt zur Suche." : "Keine Zugänge in diesem Status."}</EmptyState>}
         {!loading && !listError && visibleAssignments.length > 0 && <DataTable label="Zugangs-Tabelle">
           <thead><tr><th>Benutzer</th><th>Rolle</th><th>Bereich</th><th>Status</th><th>Aktion</th></tr></thead>
           <tbody>{visibleAssignments.map((assignment) => {
@@ -206,7 +209,7 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
         <section className="panel" aria-labelledby="access-form-title">
           <div className="panel-header"><h3 id="access-form-title">Zugang anlegen</h3></div>
           <p>Die Keycloak-ID (<code>sub</code>) zeigt die Administration einer angemeldeten Person ohne Zugang auf der Seite „Zugriff verweigert“. Sie steht auch in der Keycloak-Konsole unter Users → ID.</p>
-          {optionsError && <p role="alert" className="notice error">{optionsError}</p>}
+          {optionsError && <div role="alert" className="notice error"><p>{optionsError}</p><button type="button" onClick={() => setOptionsReload((current) => current + 1)}>Erneut versuchen</button></div>}
           {formError && <p role="alert" className="notice error">{formError}</p>}
           <form className="stack" onSubmit={createAssignment} noValidate>
             <label htmlFor="access-keycloakSubject">Keycloak-ID (sub)</label>
