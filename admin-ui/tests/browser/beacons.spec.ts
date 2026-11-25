@@ -62,7 +62,7 @@ test("admin validates, creates, edits, bulk reviews, assigns, releases, and arch
   });
 
   await page.goto("/admin/next/beacons/");
-  await page.getByRole("button", { name: "Beacon anlegen" }).click();
+  await page.getByRole("button", { name: "Beacon anlegen", exact: true }).click();
   await page.getByRole("textbox", { name: "Beacon-Code" }).fill("  B-001  ");
   await page.getByRole("textbox", { name: "UUID" }).fill("bad");
   await page.getByRole("button", { name: "Speichern" }).click();
