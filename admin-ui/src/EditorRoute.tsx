@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
 import { LayoutEditor } from "./editor/LayoutEditor";
 import type { LayoutDocument } from "./editor/model";
@@ -13,6 +13,8 @@ interface LayoutVersion {
   createdAt?: string | null;
   layout?: LayoutDocument;
 }
+const STATUS_LABELS: Record<LayoutVersion["status"], string> = { DEFAULT: "Vorlage", DRAFT: "Entwurf", ACTIVE: "Aktiv", ARCHIVED: "Archiviert" };
+
 interface EditorContext {
   store: { id: string; storeCode: string; name: string };
   currentLayout: LayoutVersion & { layout: LayoutDocument };
@@ -38,6 +40,7 @@ export function EditorRoute({ api }: { api: ApiClient }) {
   const [versionError, setVersionError] = useState<string | null>(null);
   const [revision, setRevision] = useState(0);
   const [versionRevision, setVersionRevision] = useState(0);
+  const secondaryRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!storeId) return;
@@ -98,13 +101,15 @@ export function EditorRoute({ api }: { api: ApiClient }) {
     setVersions((current) => current.map((item) => ({ ...item, status: item.layoutId === response.layoutId ? "ACTIVE" : item.status === "ACTIVE" ? "ARCHIVED" : item.status })));
   } : undefined;
 
-  return <div className="editor-route">
-    <div className="editor-route-header"><div><p className="eyebrow">{context.store.storeCode} · {context.store.name}</p><h2>Layout Editor</h2><p>Version {version.versionNo ?? "–"} · {version.status === "DEFAULT" ? "Vorlage" : version.status === "DRAFT" ? "Entwurf" : version.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</p></div><a className="button" href={`/admin/next/stores/detail/?storeId=${encodeURIComponent(storeId)}`}>Store-Detail öffnen</a></div>
+  return <div className="editor-route editor-viewport">
+    <div className="editor-fit">
+    <div className="editor-route-header"><div className="editor-route-title"><p className="eyebrow">{context.store.storeCode} · {context.store.name}</p><h2>Layout Editor</h2><p>Version {version.versionNo ?? "–"} · {STATUS_LABELS[version.status] ?? version.status}</p></div><div className="editor-route-links"><button type="button" className="button" onClick={() => secondaryRef.current?.scrollIntoView()}>Vorschau & Versionen</button><a className="button" href={`/admin/next/stores/detail/?storeId=${encodeURIComponent(storeId)}`}>Store-Detail öffnen</a></div></div>
     <LayoutEditor key={storeId} api={api} initialDocument={version.layout} mode="store" storeId={storeId} storeName={context.store.name} assignedBeacons={context.assignedBeacons ?? []} onSaveDraft={saveDraft} onPublish={publish} publishLabel={version.status === "ARCHIVED" ? "Version wieder aktivieren" : "Veröffentlichen"} publishPrompt={version.status === "ARCHIVED" ? "Diese ältere Version wieder aktivieren? Die mobile Ansicht verwendet danach genau diese gespeicherte Version." : undefined} onBack={() => { window.location.href = `/admin/next/stores/detail/?storeId=${encodeURIComponent(storeId)}`; }} />
-    <MobileCurrentPreview api={api} storeId={storeId} refreshKey={`${version.layoutId}:${version.status}`} draft={version.status === "DRAFT" ? { layoutId: version.layoutId, layout: version.layout } : null} assignedBeacons={context.assignedBeacons ?? []} />
+    </div>
+    <div ref={secondaryRef}><MobileCurrentPreview api={api} storeId={storeId} refreshKey={`${version.layoutId}:${version.status}`} draft={version.status === "DRAFT" ? { layoutId: version.layoutId, layout: version.layout } : null} assignedBeacons={context.assignedBeacons ?? []} /></div>
     <section className="notice version-history"><div className="section-heading"><h3>Versionen</h3><span>Öffnen lädt die gewählte Version im Editor.</span></div>
       {versionError && <div role="alert"><p>Versionsliste nicht verfügbar: {versionError}</p><button type="button" className="button" onClick={() => setVersionRevision((value) => value + 1)}>Versionen erneut laden</button></div>}
-      {!versionError && (versions.length ? <ul>{versions.map((item) => <li key={item.layoutId}><span>v{item.versionNo} · {item.layoutName || "Layout"} · {item.status}</span><a href={`/admin/next/editor/?storeId=${encodeURIComponent(storeId)}&layoutId=${encodeURIComponent(item.layoutId)}`}>Öffnen</a></li>)}</ul> : <p>Noch keine gespeicherten Versionen.</p>)}
+      {!versionError && (versions.length ? <ul>{versions.map((item) => <li key={item.layoutId}><span>v{item.versionNo} · {item.layoutName || "Layout"} · {STATUS_LABELS[item.status] ?? item.status}</span><a href={`/admin/next/editor/?storeId=${encodeURIComponent(storeId)}&layoutId=${encodeURIComponent(item.layoutId)}`}>Öffnen</a></li>)}</ul> : <p>Noch keine gespeicherten Versionen.</p>)}
     </section>
   </div>;
 }
