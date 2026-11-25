@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { fulfillCreated } from "./support/created";
 
 const ADMIN = { subject: "admin-sub", username: "indooro-admin", email: null, role: "admin", scope: null };
 const STORE_A = { id: "store-a", storeCode: "SPAR-Leonding-002", name: "SPAR Leonding Testraum", status: "ACTIVE", region: { id: "region-1", name: "Oberösterreich" } };
@@ -31,7 +32,7 @@ test("admin gives a new store manager access to exactly one store", async ({ pag
     posted.push(body);
     const created = assignment({ id: "assignment-new", keycloakSubject: body.keycloakSubject, username: body.username, email: body.email });
     rows.push(created);
-    return route.fulfill({ json: created });
+    return fulfillCreated(route, `/api/admin/access-assignments/${created.id}`, created);
   });
 
   await page.goto("/admin/next/access/");

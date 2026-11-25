@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { fulfillCreated } from "./support/created";
 
 const uuid = "fda50693a4e24fb1afcfc6eb07647825";
 const store = { id: "store-1", storeCode: "LINZ-01", name: "Indooro Linz", status: "ACTIVE", region: { id: "region-1", name: "Oberösterreich" } };
@@ -37,7 +38,7 @@ test("admin validates, creates, edits, bulk reviews, assigns, releases, and arch
     if (method === "POST" && url.pathname === "/api/beacons") {
       const created = { ...beacon(`beacon-${nextId++}`, body.beaconCode, body.minor), uuid: body.uuid, major: body.major, identityKey: `${body.uuid}:${body.major}:${body.minor}`, notes: body.notes };
       records.push(created);
-      return route.fulfill({ json: created });
+      return fulfillCreated(route, `/api/beacons/${created.id}`, created);
     }
     const record = records.find((item) => item.id === id)!;
     if (method === "PUT") {
@@ -326,7 +327,7 @@ test("admin can create a beacon with keyboard controls and see the saved row", a
     const body = request.postDataJSON();
     const created = { ...beacon("keyboard-beacon", body.beaconCode, body.minor), uuid: body.uuid, major: body.major, identityKey: `${body.uuid}:${body.major}:${body.minor}`, notes: body.notes };
     records.push(created);
-    return route.fulfill({ json: created });
+    return fulfillCreated(route, `/api/beacons/${created.id}`, created);
   });
   await page.goto("/admin/next/beacons/");
   await page.getByRole("button", { name: "Beacon anlegen", exact: true }).focus();
