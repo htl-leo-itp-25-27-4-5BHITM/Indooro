@@ -1,6 +1,6 @@
 # HANDOFF: polish-platform-consistency (final)
 
-Goal: make every Indooro platform polished, consistent and production-ready. OpenSpec change `polish-platform-consistency` (archived at the end of this work; specs applied to `openspec/specs/`).
+Goal: make every Indooro platform polished, consistent and production-ready. OpenSpec change `polish-platform-consistency`, archived as `openspec/changes/archive/2026-11-25-polish-platform-consistency/` (specs applied to `openspec/specs/`).
 
 ## Merged PRs
 
