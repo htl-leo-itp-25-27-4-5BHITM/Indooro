@@ -216,7 +216,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   };
   return <div className="recipes-page">
-    <div className="page-intro"><div><p className="eyebrow">Inhalte</p><h2>Rezepte</h2><p>Rezeptdaten, Zutaten, Schritte und Produktzuordnung.</p></div><button className="button primary" type="button" onClick={startCreate}>Rezept anlegen</button></div>
+    <div className="page-intro"><div><p className="eyebrow">Inhalte</p><h1>Rezepte</h1><p>Rezeptdaten, Zutaten, Schritte und Produktzuordnung.</p></div><button className="button primary" type="button" onClick={startCreate}>Rezept anlegen</button></div>
     <form className="notice recipe-filters" action="/admin/next/recipes/" method="get" role="search">
       <label>Suche<input type="search" name="q" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Titel oder Slug" /></label>
       <label>Status<select name="status" defaultValue={filters.status}><option value="">Alle</option><option value="DRAFT">Entwurf</option><option value="PUBLISHED">Veröffentlicht</option><option value="ARCHIVED">Archiviert</option></select></label>
@@ -231,9 +231,9 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
       <div className="section-heading"><h3>{page.totalElements.toLocaleString("de-AT")} Rezepte</h3><span>Seite {page.page + 1} von {Math.max(totalPages, 1)}</span></div>
       {page.content.length === 0 ? (filters.q || filters.status || filters.tag
         ? <EmptyState action={<a className="button" href="/admin/next/recipes/">Filter zurücksetzen</a>}>Keine Rezepte passen zu den Filtern.</EmptyState>
-        : <EmptyState action={<button className="button primary" type="button" onClick={startCreate}>Erstes Rezept anlegen</button>}>Noch keine Rezepte vorhanden.</EmptyState>) : <DataTable label="Rezept-Tabelle"><thead><tr><th>Rezept</th><th>Status</th><th>Zutaten</th><th className="col-low">Tags</th><th>Aktion</th></tr></thead><tbody>{page.content.map((recipe) => <tr key={recipe.id}>
+        : <EmptyState action={<button className="button primary" type="button" onClick={startCreate}>Erstes Rezept anlegen</button>}>Noch keine Rezepte vorhanden.</EmptyState>) : <DataTable label="Rezept-Tabelle"><thead><tr><th>Rezept</th><th>Status</th><th className="col-mid">Zutaten</th><th className="col-low">Tags</th><th>Aktion</th></tr></thead><tbody>{page.content.map((recipe) => <tr key={recipe.id}>
         <td><strong>{recipe.title}</strong><small className="cell-code note-clamp" title={recipe.slug}>{recipe.slug}</small></td><td><span className={`status-pill ${recipe.status === "PUBLISHED" ? "ready" : "missing"}`}>{statusText(recipe.status)}</span></td>
-        <td>{recipe.mappedIngredientCount}/{recipe.totalIngredientCount} Zutaten{recipe.stepCount === 0 && <small className="recipe-warning">Keine Schritte</small>}</td><td className="col-low">{recipe.tags?.map((tag) => tag.name).join(", ") || "–"}</td>
+        <td className="col-mid">{recipe.mappedIngredientCount}/{recipe.totalIngredientCount} Zutaten{recipe.stepCount === 0 && <small className="recipe-warning">Keine Schritte</small>}</td><td className="col-low">{recipe.tags?.map((tag) => tag.name).join(", ") || "–"}</td>
         <td><div className="recipe-row-actions"><button className="button small-button" onClick={() => void loadDetail(recipe.id, true)}>Vorschau</button><button className="button small-button" onClick={() => void loadDetail(recipe.id)}>Bearbeiten</button></div></td>
       </tr>)}</tbody></DataTable>}
       <div className="pager"><span>{page.totalElements ? `${page.page * page.size + 1}–${Math.min((page.page + 1) * page.size, page.totalElements)} von ${page.totalElements}` : "0 Ergebnisse"}</span><div>{page.page > 0 && <a className="button" href={pageUrl(page.page - 1)}>Zurück</a>}{page.page + 1 < totalPages && <a className="button" href={pageUrl(page.page + 1)}>Weiter</a>}</div></div>

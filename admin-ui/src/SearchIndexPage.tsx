@@ -49,7 +49,7 @@ export function SearchIndexPage({ api, user }: { api: ApiClient; user: CurrentUs
     return () => controller.abort();
   }, [isAdmin, load]);
 
-  if (!isAdmin) return <section className="notice" role="alert"><h2>Zugriff verweigert</h2><p>Der Suchindex ist Administratoren vorbehalten.</p></section>;
+  if (!isAdmin) return <section className="notice" role="alert"><h1>Zugriff verweigert</h1><p>Der Suchindex ist Administratoren vorbehalten.</p></section>;
 
   // One write at a time: a second click while a request runs must not start another reindex or switch.
   async function runWrite(kind: Exclude<Busy, null | "load">, action: () => Promise<string>, failure: "reindex" | "activate") {
@@ -99,7 +99,7 @@ export function SearchIndexPage({ api, user }: { api: ApiClient; user: CurrentUs
 
   return <div className="search-index-page">
     <div className="page-intro">
-      <div><p className="eyebrow">Betrieb</p><h2>Suchindex</h2><p>Neue Version der Produktsuche aufbauen und den Alias umschalten. Es wird kein Index gelöscht.</p></div>
+      <div><p className="eyebrow">Betrieb</p><h1>Suchindex</h1><p>Neue Version der Produktsuche aufbauen und den Alias umschalten. Es wird kein Index gelöscht.</p></div>
       <button className="button" type="button" disabled={disabled} onClick={refresh}>Aktualisieren</button>
     </div>
 

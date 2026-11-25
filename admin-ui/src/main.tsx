@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ApiClientError, createApiClient } from "./api/client";
 import { Dashboard } from "./Dashboard";
@@ -28,6 +28,8 @@ function AdminCandidate() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<ApiClientError | null>(null);
   const [loading, setLoading] = useState(true);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -52,25 +54,27 @@ function AdminCandidate() {
     <div className="admin-shell">
       <a className="skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <header className="masthead">
+        {user && <button ref={menuButton} type="button" className="menu-toggle" aria-expanded={menuOpen} aria-controls="admin-navigation" onClick={() => setMenuOpen((open) => !open)}><span aria-hidden="true">☰</span> Menü</button>}
         <a className="brand" href="/admin/next/" aria-label="Indooro Admin Startseite">Indooro <span>Admin</span></a>
         {user && <div className="account"><span>{user.username}</span><span className="scope">{user.scope?.storeName ?? user.scope?.regionName ?? ROLE_TEXT[user.role] ?? user.role}</span><a href="/admin/logout">Abmelden</a></div>}
       </header>
       <div className="workspace">
-        {user && <nav aria-label="Admin Navigation" className="sidebar">
+        {user && <nav id="admin-navigation" aria-label="Admin Navigation" className={`sidebar ${menuOpen ? "open" : ""}`} onKeyDown={(event) => { if (event.key === "Escape" && menuOpen) { setMenuOpen(false); menuButton.current?.focus(); } }}>
           <p className="sidebar-title">Arbeitsbereiche</p>
           {navigation.map(({ route, href }) => <a href={href} key={route.path} aria-current={route === currentNavigation ? "page" : undefined}>{route.label}</a>)}
         </nav>}
         <main id="main-content" tabIndex={-1} className={`content ${window.location.pathname.includes("/next/editor") ? "editor-content" : ""}`}>
-          <h1>Indooro Admin</h1>
-          {loading && <p role="status">Berechtigungen werden geladen …</p>}
+          {/* Every page renders its own h1; these cover the states and routes that do not. */}
+          {loading && <><h1 className="visually-hidden">Indooro Admin</h1><p role="status">Berechtigungen werden geladen …</p></>}
+          {user && access === "allowed" && window.location.pathname.includes("/editor") && <h1 className="visually-hidden">Layout-Editor</h1>}
           {error && <section role="alert" className="notice">
-            <h2>{error.kind === "unauthorized" ? "Sitzung abgelaufen" : error.kind === "forbidden" ? "Zugriff verweigert" : "Profil nicht verfügbar"}</h2>
+            <h1>{error.kind === "unauthorized" ? "Sitzung abgelaufen" : error.kind === "forbidden" ? "Zugriff verweigert" : "Profil nicht verfügbar"}</h1>
             <p>{error.message}</p>
             {error.kind === "forbidden" && <ForbiddenIdentity api={api} />}
             <a href="/admin/">{error.kind === "unauthorized" ? "Erneut anmelden" : "Zur bisherigen Administration"}</a>
           </section>}
-          {user && access === "forbidden" && <section role="alert" className="notice"><h2>Zugriff verweigert</h2><p>Für diesen Bereich fehlt die Berechtigung.</p></section>}
-          {user && access === "missing" && <section role="alert" className="notice"><h2>Seite nicht gefunden</h2><p>Diese Seite gibt es nicht.</p></section>}
+          {user && access === "forbidden" && <section role="alert" className="notice"><h1>Zugriff verweigert</h1><p>Für diesen Bereich fehlt die Berechtigung.</p></section>}
+          {user && access === "missing" && <section role="alert" className="notice"><h1>Seite nicht gefunden</h1><p>Diese Seite gibt es nicht.</p></section>}
           {user && access === "allowed" && (window.location.pathname.includes("/editor")
             ? new URLSearchParams(window.location.search).has("storeId") ? <EditorRoute api={api} /> : <LegacyEditorRoute api={api} role={user.role} />
             : window.location.pathname.includes("/stores/new")

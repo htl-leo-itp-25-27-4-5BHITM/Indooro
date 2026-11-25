@@ -104,7 +104,7 @@ export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser
     return () => controller.abort();
   }, [api, storeId, radius, revision]);
 
-  if (!storeId) return <section className="notice" role="alert"><h2>Store auswählen</h2><p>Die Pilot-Bereitschaft gehört zu einem Store.</p><a href="/admin/next/stores/">Zur Store-Liste</a></section>;
+  if (!storeId) return <section className="notice" role="alert"><h1>Store auswählen</h1><p>Die Pilot-Bereitschaft gehört zu einem Store.</p><a href="/admin/next/stores/">Zur Store-Liste</a></section>;
 
   // Narrowed copy for the nested functions below, which TypeScript does not narrow from the early return.
   const activeStoreId: string = storeId;
@@ -138,7 +138,7 @@ export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser
   const { blocking, warnings } = report ? groupFindings(report.findings) : { blocking: [], warnings: [] };
 
   return <div className="readiness-page">
-    <div className="page-intro"><div><p className="eyebrow">{store ? `${store.storeCode} · ${store.name}` : "Store"}</p><h2>Pilot-Bereitschaft</h2><p>Prüft aktives Layout, Produkte und Beacons dieses Markts.</p></div><a className="button" href={backHref}>Zurück zum Store</a></div>
+    <div className="page-intro"><div><p className="eyebrow">{store ? `${store.storeCode} · ${store.name}` : "Store"}</p><h1>Pilot-Bereitschaft</h1><p>Prüft aktives Layout, Produkte und Beacons dieses Markts.</p></div><a className="button" href={backHref}>Zurück zum Store</a></div>
 
     {/* noValidate: the range is checked by parseRadiusInput so the message stays German and consistent. */}
     <form className="readiness-controls notice" noValidate onSubmit={applyRadius}>

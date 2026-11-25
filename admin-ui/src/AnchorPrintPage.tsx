@@ -53,15 +53,15 @@ export function AnchorPrintPage({ api }: { api: ApiClient }) {
     return () => controller.abort();
   }, [api, storeId, revision]);
 
-  if (!storeId) return <section className="notice" role="alert"><h2>Store auswählen</h2><a href="/admin/next/stores/">Zur Store-Liste</a></section>;
-  if (error) return <section className="notice error-state" role="alert"><h2>{error.forbidden ? "Zugriff verweigert" : "QR-Codes konnten nicht geladen werden"}</h2><p>{error.message}</p>{!error.forbidden && <button className="button" type="button" onClick={() => { setError(null); setRevision((value) => value + 1); }}>Erneut versuchen</button>}</section>;
-  if (!store || !layout) return <p role="status">QR-Anker werden geladen …</p>;
+  if (!storeId) return <section className="notice" role="alert"><h1>Store auswählen</h1><a href="/admin/next/stores/">Zur Store-Liste</a></section>;
+  if (error) return <section className="notice error-state" role="alert"><h1>{error.forbidden ? "Zugriff verweigert" : "QR-Codes konnten nicht geladen werden"}</h1><p>{error.message}</p>{!error.forbidden && <button className="button" type="button" onClick={() => { setError(null); setRevision((value) => value + 1); }}>Erneut versuchen</button>}</section>;
+  if (!store || !layout) return <><h1 className="visually-hidden">QR-Codes drucken</h1><p role="status">QR-Anker werden geladen …</p></>;
 
   const anchors = printableAnchors(layout, window.location.host, store.storeCode);
   const sheets = chunk(anchors, ANCHORS_PER_PAGE);
   return <div className="anchor-print-page">
     <div className="page-intro anchor-print-toolbar">
-      <div><p className="eyebrow">{store.storeCode}</p><h2>QR-Codes drucken</h2><p>{store.name}</p></div>
+      <div><p className="eyebrow">{store.storeCode}</p><h1>QR-Codes drucken</h1><p>{store.name}</p></div>
       <div className="anchor-print-actions">
         <a className="button" href={`/admin/next/stores/detail/?storeId=${encodeURIComponent(store.id)}`}>Zum Store</a>
         {anchors.length > 0 && <button className="button primary" type="button" onClick={() => window.print()}>Drucken</button>}

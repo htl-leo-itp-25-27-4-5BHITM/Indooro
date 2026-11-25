@@ -68,9 +68,9 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
     return () => controller.abort();
   }, [api, storeId, user.role, revision]);
 
-  if (!storeId) return <section className="notice" role="alert"><h2>Store auswählen</h2><a href="/admin/next/stores/">Zur Store-Liste</a></section>;
-  if (error) return <section className="notice error-state" role="alert"><h2>{error.forbidden ? "Zugriff verweigert" : "Store konnte nicht geladen werden"}</h2><p>{error.message}</p>{!error.forbidden && <button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button>}</section>;
-  if (!data) return <p role="status">Store wird geladen …</p>;
+  if (!storeId) return <section className="notice" role="alert"><h1>Store auswählen</h1><a href="/admin/next/stores/">Zur Store-Liste</a></section>;
+  if (error) return <section className="notice error-state" role="alert"><h1>{error.forbidden ? "Zugriff verweigert" : "Store konnte nicht geladen werden"}</h1><p>{error.message}</p>{!error.forbidden && <button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button>}</section>;
+  if (!data) return <><h1 className="visually-hidden">Store</h1><p role="status">Store wird geladen …</p></>;
 
   const { store, regions, beacons, versions, audit, free } = data;
   const path = `/api/stores/${encodeURIComponent(store.id)}`;
@@ -115,7 +115,7 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
   const released = store.released ?? true;
 
   return <div className="store-detail-page">
-    <div className="page-intro"><div><p className="eyebrow">{store.region.code} · {store.storeCode}</p><h2>{store.name}</h2><p>{store.street}, {store.zipCode} {store.city} · {store.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</p></div><div className="form-actions"><a className="button" href={`/admin/next/stores/readiness/?storeId=${encodeURIComponent(store.id)}`}>Pilot-Bereitschaft</a><a className="button" href={`/admin/next/stores/anchors/?storeId=${encodeURIComponent(store.id)}`}>QR-Codes drucken</a><a className="button" href="/admin/next/stores/">Zur Store-Liste</a></div></div>
+    <div className="page-intro"><div><p className="eyebrow">{store.region.code} · {store.storeCode}</p><h1>{store.name}</h1><p>{store.street}, {store.zipCode} {store.city} · {store.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</p></div><div className="form-actions"><a className="button" href={`/admin/next/stores/readiness/?storeId=${encodeURIComponent(store.id)}`}>Pilot-Bereitschaft</a><a className="button" href={`/admin/next/stores/anchors/?storeId=${encodeURIComponent(store.id)}`}>QR-Codes drucken</a><a className="button" href="/admin/next/stores/">Zur Store-Liste</a></div></div>
     {created && !notice && <p className="notice success-state" role="status">Store „{store.name}“ wurde angelegt.</p>}
     {notice && <p className="notice success-state" role="status">{notice}</p>}
     {mutationError && <div className="notice error-state" role="alert"><strong>Änderung nicht gespeichert</strong><p>{mutationError}</p></div>}
