@@ -1731,16 +1731,6 @@
         }
       }
     },
-    "Produkte oder Kategorien suchen": {
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Produkte oder Kategorien suchen"
-          }
-        }
-      }
-    },
     "Produkte werden gesucht...": {
       "localizations": {
         "de": {

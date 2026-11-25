@@ -802,7 +802,7 @@ struct StoreMapPage: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
 
-            TextField("Produkte oder Kategorien suchen", text: $searchText)
+            TextField("Produkt suchen", text: $searchText)
                 .textFieldStyle(.plain)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
