@@ -77,7 +77,8 @@ struct HomeDashboardView: View {
                     Label("Los geht's", systemImage: "arrow.right.circle.fill")
                         .font(.headline.weight(.semibold))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 50)
+                        .padding(.vertical, 8)
+                        .frame(minHeight: 50)
                 }
                 .buttonStyle(.plain)
                 .contentShape(Capsule())
@@ -92,7 +93,8 @@ struct HomeDashboardView: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(accent)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 44)
+                        .padding(.vertical, 8)
+                        .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
                 .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -141,7 +143,8 @@ struct HomeDashboardView: View {
                 Label("Route fortsetzen", systemImage: "location.north.circle.fill")
                     .font(.subheadline.weight(.semibold))
                     .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .padding(.vertical, 8)
+                    .frame(minHeight: 48)
             }
             .buttonStyle(.plain)
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -173,7 +176,7 @@ struct HomeDashboardView: View {
 
                     Text(selectedList?.name ?? "Standardliste")
                         .font(.headline.weight(.semibold))
-                        .lineLimit(1)
+                        .lineLimit(2)
                 }
 
                 Spacer(minLength: 0)
@@ -191,7 +194,8 @@ struct HomeDashboardView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(accent)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 44)
+                    .padding(.vertical, 8)
+                    .frame(minHeight: 44)
             }
             .buttonStyle(.plain)
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -235,7 +239,8 @@ struct HomeDashboardView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.a11yWarningText)
                     .frame(maxWidth: .infinity)
-                    .frame(height: 44)
+                    .padding(.vertical, 8)
+                    .frame(minHeight: 44)
             }
             .buttonStyle(.plain)
             .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -279,7 +284,8 @@ struct HomeDashboardView: View {
                     Label("Karte", systemImage: "location.fill")
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
-                        .frame(height: 44)
+                        .padding(.vertical, 8)
+                        .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
                 .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
