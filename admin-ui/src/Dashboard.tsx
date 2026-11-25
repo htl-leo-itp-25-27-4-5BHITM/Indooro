@@ -62,7 +62,7 @@ export function Dashboard({ api, user }: { api: ApiClient; user: CurrentUser }) 
   }, [api, user, revision]);
 
   return <div className="dashboard">
-    <div className="page-intro"><div><p className="eyebrow">Übersicht</p><h2>Dashboard</h2><p>Stand Ihrer sichtbaren Stores und der nächsten Einrichtungsschritte.</p></div><a className="button primary" href="/admin/next/stores/">Stores verwalten</a></div>
+    <div className="page-intro"><div><p className="eyebrow">Übersicht</p><h1>Dashboard</h1><p>Stand Ihrer sichtbaren Stores und der nächsten Einrichtungsschritte.</p></div><a className="button primary" href="/admin/next/stores/">Stores verwalten</a></div>
     {error && <div className="notice error-state" role="alert"><h3>Daten konnten nicht geladen werden</h3><p>{error}</p><button className="button" onClick={retry}>Erneut versuchen</button></div>}
     {!data && !error && <div className="notice" role="status">Dashboard wird geladen …</div>}
     {data && !error && <>

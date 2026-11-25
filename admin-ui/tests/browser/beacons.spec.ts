@@ -82,10 +82,13 @@ test("admin validates, creates, edits, bulk reviews, assigns, releases, and arch
   await expect(page.getByText("Eingang Nord")).toBeVisible();
   expect(writes[1].method).toBe("PUT");
 
+  await page.getByRole("button", { name: "Weitere Aktionen für B-001" }).click();
   await page.getByRole("combobox", { name: "B-001 zuweisen" }).selectOption("store-1");
   await expect(page.getByText("Zugewiesen · LINZ-01")).toBeVisible();
+  await page.getByRole("button", { name: "Weitere Aktionen für B-001" }).click();
   await page.getByRole("button", { name: "Freigeben" }).click();
   await expect(page.getByRole("cell", { name: "Frei" })).toBeVisible();
+  await page.getByRole("button", { name: "Weitere Aktionen für B-001" }).click();
   await page.getByRole("button", { name: "Archivieren" }).click();
   await page.getByRole("combobox", { name: "Status" }).selectOption("ARCHIVED");
   await expect(page.getByRole("cell", { name: "Archiviert" })).toBeVisible();
@@ -128,6 +131,7 @@ test("scoped staff can assign within scope but cannot create or bulk create", as
   await page.getByRole("checkbox", { name: "SCOPED-1 auswählen" }).check();
   await page.getByRole("combobox", { name: "Auswahl zuweisen an" }).selectOption("store-1");
   await page.getByRole("button", { name: "1 zuweisen" }).click();
+  await page.getByRole("button", { name: "Weitere Aktionen für SCOPED-1" }).click();
   await expect(page.getByRole("button", { name: "Freigeben" })).toBeVisible();
   expect(writes).toBe(1);
 });
@@ -153,9 +157,11 @@ test("beacon assignment reaches a store beyond the first 100 results", async ({ 
   });
 
   await page.goto("/admin/next/beacons/");
+  await page.getByRole("button", { name: "Weitere Aktionen für FREE-1" }).click();
   const targetSelect = page.getByRole("combobox", { name: "FREE-1 zuweisen" });
   await expect(targetSelect.locator('option[value="store-target"]')).toHaveCount(0);
   await page.getByRole("button", { name: "Weitere Stores laden (100 von 101)" }).click();
+  await page.getByRole("button", { name: "Weitere Aktionen für FREE-1" }).click();
   await expect(targetSelect.locator('option[value="store-target"]')).toHaveCount(1);
   await targetSelect.selectOption(target.id);
   await expect(page.getByRole("status").filter({ hasText: "Target Store zugewiesen" })).toBeVisible();

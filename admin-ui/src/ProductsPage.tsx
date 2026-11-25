@@ -362,7 +362,7 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
   const pageItems = useMemo(() => pageData?.content ?? [], [pageData]);
 
   return <section className="products-page" aria-labelledby="products-title">
-    <div className="page-intro"><div><p className="eyebrow">Katalog</p><h2 id="products-title">Produkte</h2><p>Produkte, Kategorie-Kontext und Regalpositionen im Katalog verwalten.</p></div><button type="button" className="primary" onClick={startCreate} disabled={!selectedStore}>Produkt anlegen</button></div>
+    <div className="page-intro"><div><p className="eyebrow">Katalog</p><h1 id="products-title">Produkte</h1><p>Produkte, Kategorie-Kontext und Regalpositionen im Katalog verwalten.</p></div><button type="button" className="primary" onClick={startCreate} disabled={!selectedStore}>Produkt anlegen</button></div>
     <div className="filters" role="group" aria-label="Markt"><label>Markt<select value={selectedStore?.id ?? ""} disabled={!storesLoaded || accessible.length <= 1 || importBusy} onChange={(event) => changeStore(event.currentTarget.value)}><option value="">Markt wählen</option>{accessible.map((store) => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}</select></label></div>
     {storeError && <div role="alert" className="notice error"><p>{storeError}</p><button type="button" onClick={() => { setStoreError(""); setStoresLoaded(false); setStoreRevision((value) => value + 1); }}>Erneut versuchen</button></div>}
     {storesLoaded && !storeError && accessible.length === 0 && <p role="alert" className="notice error">Für diesen Benutzer ist kein Markt verfügbar.</p>}

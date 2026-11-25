@@ -24,7 +24,7 @@ export function StoreCreatePage({ api, user }: { api: ApiClient; user: CurrentUs
     return () => controller.abort();
   }, [api, user.role, revision]);
 
-  if (user.role === "store-manager") return <section role="alert" className="notice"><h2>Zugriff verweigert</h2><p>Store-Manager können keine neue Filiale anlegen.</p></section>;
+  if (user.role === "store-manager") return <section role="alert" className="notice"><h1>Zugriff verweigert</h1><p>Marktleiter können keine neue Filiale anlegen.</p></section>;
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (saving) return;
@@ -49,7 +49,7 @@ export function StoreCreatePage({ api, user }: { api: ApiClient; user: CurrentUs
     }
   };
   return <div className="store-create-page">
-    <div className="page-intro"><div><p className="eyebrow">Standorte</p><h2>Store anlegen</h2><p>Stammdaten erfassen, danach Beacons zuordnen und Layout erstellen.</p></div><a className="button" href="/admin/next/stores/">Zurück zur Liste</a></div>
+    <div className="page-intro"><div><p className="eyebrow">Standorte</p><h1>Store anlegen</h1><p>Stammdaten erfassen, danach Beacons zuordnen und Layout erstellen.</p></div><a className="button" href="/admin/next/stores/">Zurück zur Liste</a></div>
     {loadError && <div className="notice error-state" role="alert"><p>{loadError}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
     {loading && <p className="notice" role="status">Regionen werden geladen …</p>}
     {!loading && !loadError && regions.length === 0 && <div className="notice" role="status"><p>{user.role === "region-manager" ? "Keine aktive Region in Ihrer Zuständigkeit vorhanden." : "Keine aktiven Regionen vorhanden. Bitte zuerst eine Region anlegen."}</p>{user.role === "admin" && <a className="button primary" href="/admin/next/regions/">Region anlegen</a>}</div>}

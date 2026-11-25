@@ -9,7 +9,7 @@ test("candidate root and nested deep link load built assets on direct refresh", 
 
   const root = await page.goto("/admin/next/");
   expect(root?.status()).toBe(200);
-  await expect(page.getByRole("heading", { name: "Indooro Admin" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Dashboard" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Admin Navigation" })).toBeVisible();
 
   const stores = await page.goto("/admin/next/stores/");
@@ -20,9 +20,9 @@ test("candidate root and nested deep link load built assets on direct refresh", 
 
   const nested = await page.goto("/admin/next/stores/detail/?storeId=example");
   expect(nested?.status()).toBe(200);
-  await expect(page.getByRole("heading", { name: "Indooro Admin" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Indooro Admin" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   expect(failedAssets).toEqual([]);
 });
 
