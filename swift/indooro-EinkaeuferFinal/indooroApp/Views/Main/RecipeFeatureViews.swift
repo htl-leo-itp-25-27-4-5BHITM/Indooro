@@ -508,7 +508,7 @@ struct RecipeCard: View {
                 HStack(spacing: 10) {
                     Label("\(recipe.servings)", systemImage: "person.2")
                     if let total = recipe.totalTimeMinutes {
-                        Label("\(total) min", systemImage: "clock")
+                        Label("\(total) Min.", systemImage: "clock")
                     }
                     if let total = recipe.totalIngredientCount {
                         Label("\(total)", systemImage: "basket")
@@ -569,7 +569,7 @@ private struct RecipeHero: View {
                     HStack(spacing: 12) {
                         Label("\(recipe.servings) Portionen", systemImage: "person.2")
                         if let total = recipe.totalTimeMinutes {
-                            Label("\(total) min", systemImage: "clock")
+                            Label("\(total) Min.", systemImage: "clock")
                         }
                     }
                     .font(.caption.weight(.semibold))
