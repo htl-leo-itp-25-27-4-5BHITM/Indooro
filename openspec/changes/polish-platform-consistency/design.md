@@ -33,7 +33,8 @@ Orchestrated change with one worker session per package. Each package owns a dis
 | P2 admin pages and tables | `polish-admin-pages` | `feat/admin-pages-polish` | `admin-ui/src/**` except `src/api/**`, `src/editor/**`, `EditorRoute.tsx`, `LegacyEditorRoute.*` |
 | P3 admin layout editor | `polish-admin-editor` | `feat/admin-editor-viewport` | `admin-ui/src/editor/**`, `EditorRoute.tsx`, `LegacyEditorRoute.*` (no `style.css`) |
 | P4 iOS sweep | `polish-ios` | `feat/ios-polish` | `swift/indooro-EinkaeuferFinal/**` |
-| P5 web clients sweep | `polish-web` | `feat/web-clients-polish` | `pilot-showcase/**`, `app/**`, `android/*.md` |
+| P5a showcase | `polish-showcase` | `feat/showcase-polish` | `pilot-showcase/**` |
+| P5b legacy web | `polish-legacy-web` | `feat/legacy-web-polish` | `app/**`, `android/*.md` |
 
 Each worker ticks only its own section in `tasks.md`.
 
