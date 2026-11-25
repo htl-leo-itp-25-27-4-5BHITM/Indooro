@@ -300,9 +300,9 @@ jobs:
       # (needs: backend-test). Dieser Schritt erzeugt nur das *-runner.jar, das die Dockerfile kopiert.
       - name: Package runner jar for the image (tests already ran in backend-test)
         working-directory: backend/indooro_server
-        # Maven Central antwortet GitHub-Runnern gelegentlich mit HTTP 429 (Rate Limit). Maven cached das als
-        # "(absent)" und bricht ab. Deshalb: Resolver wiederholt 429/503 mit Wartezeit, und der ganze Lauf
-        # wird bei Fehlschlag mit -U (Fehl-Cache ignorieren) bis zu dreimal neu gestartet.
+        # Maven Central sometimes answers GitHub runners with HTTP 429 (rate limit). Maven caches that as
+        # "(absent)" and aborts. So the resolver retries 429/503 with a delay, and the whole run is
+        # restarted with -U (ignore the failure cache) up to three times if it still fails.
         run: |
           MVN_OPTS="-B -Daether.connector.http.retryHandler.count=6 -Daether.connector.http.retryHandler.interval=10000 -Daether.connector.http.retryHandler.serviceUnavailable=429,503"
           for attempt in 1 2 3; do
