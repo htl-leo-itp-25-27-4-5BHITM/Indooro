@@ -663,6 +663,7 @@ struct StoreMapPage: View {
                     .font(.subheadline)
                     .foregroundStyle(Color.a11ySecondaryText)
                     .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
             }
 
             Spacer(minLength: 0)
