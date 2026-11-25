@@ -19,6 +19,9 @@ Goal: make every Indooro platform polished, consistent and production-ready. Ope
 | P7 follow-up | #240 | Stacked card tables on phones |
 | P8 Browser tests | #237 | Playwright suite green, polish contract assertions |
 | P8 follow-up | #239 | CI jobs `admin-ui-browser` and `pilot-showcase-browser` (lint, typecheck, Playwright) |
+| CI Maven retry | #241 | `build-and-push` retries Maven Central HTTP 429/503 (resolver retry + up to 3 reruns with `-U`) |
+| Admin spec race | #242 | Exact create-button locators (empty-state "Ersten Beacon anlegen" made the locator ambiguous) |
+| Showcase CI stability | #243 | Functional specs run with reduced motion; tour spotlight NaN rect fixed |
 
 ## Decisions
 - D1: create = 201 + Location + empty body; upsert = 201 create / 204 update, both with Location; action endpoints unchanged.
@@ -30,4 +33,4 @@ Goal: make every Indooro platform polished, consistent and production-ready. Ope
 - iOS 26.2 simulator runtime is not installed on the dev Mac: `xcodebuild` build/test ran only in CI. iOS screenshots come from iOS 18.6 simulators (iPhone SE 3, iPhone 16 Pro).
 - Not simulator-verified on iOS: AR, camera scanner, permission banner, upsell sheet, study mode, list transfer sheets. The 16 Pro map screenshot predates the final grid clip.
 - The 201 + Location contract is not yet deployed to LeoCloud; admin web and backend should roll out together (the clients are tolerant, so order does not matter).
-- Integration on main `3b8b5480`: admin-ui typecheck, lint, 260 unit tests, build green; Playwright 238/238 on rerun (first full run had one failure in `beacons.spec.ts:11`, which passed 3x in isolation and in the full rerun: possible flake under parallel load, watch the `admin-ui-browser` CI job); pilot-showcase 166 tests and build green.
+- Integration on main `3b8b5480`: admin-ui typecheck, lint, 260 unit tests, build green; Playwright 238/238 on rerun (first full run had one failure in `beacons.spec.ts:11`, which passed 3x in isolation and in the full rerun: root cause fixed in #242); pilot-showcase 166 tests and build green.
