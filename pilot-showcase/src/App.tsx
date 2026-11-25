@@ -19,8 +19,23 @@ export function App() {
   useEffect(() => {
     const id = decodeURIComponent(window.location.hash.slice(1));
     if (!id) return;
-    const raf = requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView({ behavior: "instant" }));
-    return () => cancelAnimationFrame(raf);
+    const jump = () => document.getElementById(id)?.scrollIntoView({ behavior: "instant" });
+    const raf = requestAnimationFrame(jump);
+    // Sections above the target can still change height while they mount: follow until settled or the visitor takes over.
+    const observer = new ResizeObserver(jump);
+    observer.observe(document.body);
+    const inputs = ["wheel", "touchstart", "pointerdown", "keydown"] as const;
+    const stop = () => {
+      observer.disconnect();
+      inputs.forEach((type) => window.removeEventListener(type, stop));
+    };
+    inputs.forEach((type) => window.addEventListener(type, stop, { passive: true }));
+    const timeout = window.setTimeout(stop, 2000);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(timeout);
+      stop();
+    };
   }, []);
 
   return (

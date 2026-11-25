@@ -65,7 +65,7 @@ export function Hero() {
 
           <motion.h1 id="hero-title" {...rise(1)} className="display mt-6 text-[2.3rem] text-white sm:text-6xl lg:text-7xl">
             Jedes Produkt.
-            <span className="block bg-gradient-to-r from-mint via-mint-soft to-teal bg-clip-text text-transparent">Auf direktem Weg.</span>
+            <span className="-mb-[0.14em] block pb-[0.14em] bg-gradient-to-r from-mint via-mint-soft to-teal bg-clip-text text-transparent">Auf direktem Weg.</span>
           </motion.h1>
 
           <motion.p {...rise(2)} className="text-pretty mt-4 max-w-xl text-[15px] leading-relaxed text-ink-200 sm:mt-6 sm:text-xl">
@@ -81,14 +81,14 @@ export function Hero() {
             ))}
           </motion.ul>
 
-          <motion.div {...rise(4)} className="mt-6 grid grid-cols-2 gap-2.5 sm:mt-8 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
-            <Button size="lg" variant="primary" className="col-span-2" data-testid="hero-cta-tour" onClick={() => startTour()} icon={<Play className="size-4" fill="currentColor" />}>
+          <motion.div {...rise(4)} className="mt-6 grid gap-2.5 sm:mt-8 sm:gap-3 md:flex md:flex-wrap md:items-center lg:grid lg:w-fit lg:grid-cols-2">
+            <Button size="lg" variant="primary" className="lg:col-span-2" data-testid="hero-cta-tour" onClick={() => startTour()} icon={<Play className="size-4" fill="currentColor" />}>
               Geführte Tour starten
             </Button>
-            <Button href="#demo" size="lg" variant="ghost-dark" className="!px-4" data-testid="hero-cta-demo" icon={<ArrowDown className="size-4" />}>
+            <Button href="#demo" size="lg" variant="ghost-dark" className="!px-5" data-testid="hero-cta-demo" icon={<ArrowDown className="size-4" />}>
               Live-Demo starten
             </Button>
-            <Button href="#pilot" size="lg" variant="ghost-dark" className="!px-4" data-testid="hero-cta-pilot" icon={<ArrowRight className="size-4" />}>
+            <Button href="#pilot" size="lg" variant="ghost-dark" className="!px-5" data-testid="hero-cta-pilot" icon={<ArrowRight className="size-4" />}>
               Pilotpartner werden
             </Button>
           </motion.div>

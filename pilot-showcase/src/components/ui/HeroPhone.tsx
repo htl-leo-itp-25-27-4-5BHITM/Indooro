@@ -99,7 +99,7 @@ function MiniMap({ animate }: { animate: boolean }) {
           fill="#fff"
           stroke="#63e6b4"
           strokeWidth="1.6"
-          initial={animate ? undefined : false}
+          initial={{ cx: 40, cy: 214, opacity: 1 }}
           animate={{ cx: [40, 97, 97, 138, 138], cy: [214, 214, 64, 64, 64], opacity: [1, 1, 1, 0, 0] }}
           transition={{ ...loop, times: DOT_TIMES }}
         />
@@ -119,7 +119,7 @@ function MiniMap({ animate }: { animate: boolean }) {
             fill="none"
             stroke="#e8b86d"
             strokeWidth="1.4"
-            initial={animate ? undefined : false}
+            initial={{ r: 7, opacity: 0 }}
             animate={{ r: [7, 7, 7, 17, 17], opacity: [0, 0, 0.8, 0, 0] }}
             transition={{ ...loop, times: [0, DRAW, DRAW + 0.02, DRAW + 0.2, 1] }}
           />

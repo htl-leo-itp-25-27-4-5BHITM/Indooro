@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { ArrowLeft, ArrowRight, Check, Lock, Pause, Play, RotateCcw } from "lucide-react";
 import { Tag } from "../../components/ui/Tag";
@@ -45,6 +45,15 @@ export function OperatorDemo() {
     return () => window.clearTimeout(id);
   }, [state]);
 
+  const stepper = useRef<HTMLOListElement>(null);
+  // Narrow screens show the steps as a horizontal strip: keep the active one visible without moving the page.
+  useEffect(() => {
+    const list = stepper.current;
+    const item = list?.children[state.step] as HTMLElement | undefined;
+    if (!list || !item) return;
+    list.scrollTo({ left: item.offsetLeft - 12, behavior: reduce ? "auto" : "smooth" });
+  }, [state.step, reduce]);
+
   const atEnd = state.step === STEP_COUNT - 1;
 
   return (
@@ -57,7 +66,7 @@ export function OperatorDemo() {
       <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[272px_minmax(0,1fr)]">
         {/* Stepper */}
         <nav aria-label="Schritte der Einrichtung" className="border-b border-line bg-paper/60 lg:border-b-0 lg:border-r">
-          <ol className="flex snap-x gap-1 overflow-x-auto p-3 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:p-4">
+          <ol ref={stepper} className="relative flex snap-x gap-1 overflow-x-auto p-3 lg:flex-col lg:gap-0.5 lg:overflow-visible lg:p-4">
             {OPERATOR_STEPS.map((s, i) => {
               const n = i + 1;
               const active = i === state.step;

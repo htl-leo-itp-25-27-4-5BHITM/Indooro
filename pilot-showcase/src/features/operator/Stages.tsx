@@ -160,13 +160,13 @@ export function StageProducts({ state, dispatch }: StageProps) {
     <div>
       <div className="overflow-hidden rounded-2xl border border-line bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[480px] text-left text-[13.5px]">
+          <table className="w-full text-left text-[13px] sm:text-[13.5px]">
             <thead className="bg-paper text-[11px] uppercase tracking-[0.08em] text-muted">
               <tr>
-                <th className="px-3.5 py-2.5 font-semibold">Zeile</th>
-                <th className="px-3.5 py-2.5 font-semibold">Produkt</th>
-                <th className="px-3.5 py-2.5 font-semibold">Regal</th>
-                <th className="px-3.5 py-2.5 font-semibold">Status</th>
+                <th className="hidden px-3.5 py-2.5 font-semibold sm:table-cell">Zeile</th>
+                <th className="px-2 sm:px-3.5 py-2.5 font-semibold">Produkt</th>
+                <th className="px-2 sm:px-3.5 py-2.5 font-semibold">Regal</th>
+                <th className="px-2 sm:px-3.5 py-2.5 font-semibold">Status</th>
               </tr>
             </thead>
             <tbody>
@@ -174,20 +174,20 @@ export function StageProducts({ state, dispatch }: StageProps) {
                 const bad = !shelfCodes.has(p.layoutCode);
                 return (
                   <tr key={p.id} className={`border-t border-line ${bad ? "bg-danger/8" : ""}`}>
-                    <td className="px-3.5 py-2 font-mono text-muted">{p.line}</td>
-                    <td className="px-3.5 py-2 text-text">
-                      <span aria-hidden className="mr-2">{p.emoji}</span>
+                    <td className="hidden px-3.5 py-2 font-mono text-muted sm:table-cell">{p.line}</td>
+                    <td className="px-2 sm:px-3.5 py-2 text-text">
+                      <span aria-hidden className="mr-2 hidden sm:inline">{p.emoji}</span>
                       {p.name}
                     </td>
-                    <td className="px-3.5 py-2 font-mono text-text">{p.layoutCode}</td>
-                    <td className="px-3.5 py-2">
+                    <td className="px-2 sm:px-3.5 py-2 font-mono text-text">{p.layoutCode}</td>
+                    <td className="px-2 sm:px-3.5 py-2">
                       {bad ? (
                         <span className="inline-flex items-center gap-1.5 font-medium text-[#b3262b]">
-                          <CircleAlert className="size-4" aria-hidden /> Fehler
+                          <CircleAlert className="size-4" aria-hidden /> <span className="max-sm:sr-only">Fehler</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 text-[#13744a]">
-                          <Check className="size-4" aria-hidden /> gültig
+                          <Check className="size-4" aria-hidden /> <span className="max-sm:sr-only">gültig</span>
                         </span>
                       )}
                     </td>

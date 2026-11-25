@@ -1,7 +1,8 @@
+import { Container } from "../components/ui/Container";
 import { Tag } from "../components/ui/Tag";
 import { NOT_PROMISED, PILOT_HEADLINE, PILOT_STEPS, PILOT_SUBLINE, WE_NEED, WE_SEEK, YOU_GET } from "../content/pilot";
 import { AtAGlance, ContactCard, PilotFaq } from "../features/operator/pilotParts";
-import { Container, Reveal, SectionHeading } from "../features/operator/ui";
+import { Reveal, SectionHeading } from "../features/operator/ui";
 
 function Col({ n, title, items, delay }: { n: string; title: string; items: string[]; delay: number }) {
   return (
@@ -23,7 +24,7 @@ function Col({ n, title, items, delay }: { n: string; title: string; items: stri
 /** Pilot-Anfrage an Marktpartner. Enthält den Anker #kontakt (Kontaktkarte). */
 export function PilotSection() {
   return (
-    <section id="pilot" data-testid="pilot-section" aria-labelledby="pilot-title" className="border-t border-line bg-paper py-24 sm:py-32">
+    <section id="pilot" data-testid="pilot-section" aria-labelledby="pilot-title" className="border-t border-line bg-paper py-20 sm:py-24 lg:py-32">
       <Container>
         <SectionHeading id="pilot-title" eyebrow="Pilot-Partner gesucht" title={PILOT_HEADLINE} lead={PILOT_SUBLINE} />
 
@@ -42,7 +43,7 @@ export function PilotSection() {
         <div className="mt-24">
           <Reveal>
             <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-accent">Pilotablauf</p>
-            <h3 className="mt-3 text-[clamp(1.6rem,3.2vw,2.4rem)] font-semibold leading-tight tracking-[-0.03em] text-text">Fünf Schritte, ehrlich beziffert.</h3>
+            <h3 className="display mt-3 text-3xl text-text sm:text-4xl">Fünf Schritte, ehrlich beziffert.</h3>
             <p className="mt-3 max-w-2xl text-[16px] leading-relaxed text-muted">Die Angaben sind Planungswerte aus unseren Unterlagen. Den Aufwand für Ihren Markt halten wir klein; die Termine legen wir mit Ihnen fest.</p>
           </Reveal>
           <ol data-testid="pilot-steps" className="mt-10 border-t border-line">
@@ -63,7 +64,7 @@ export function PilotSection() {
         <div className="mt-24 grid gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-16">
           <Reveal>
             <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-accent">Aufwand & Rahmenbedingungen</p>
-            <h3 className="mt-3 text-[clamp(1.6rem,3.2vw,2.4rem)] font-semibold leading-tight tracking-[-0.03em] text-text">Risiken offen benannt.</h3>
+            <h3 className="display mt-3 text-3xl text-text sm:text-4xl">Risiken offen benannt.</h3>
             <div className="mt-8">
               <PilotFaq />
             </div>

@@ -37,7 +37,7 @@ export interface PilotStep {
 
 export const PILOT_STEPS: PilotStep[] = [
   { title: "Erstgespräch", what: "Wir zeigen die Demo, klären Fragen und Rahmenbedingungen. Sie entscheiden, ob es weitergeht.", effort: "1 Termin · Ihr Aufwand ca. 20–30 Minuten" },
-  { title: "Marktaufnahme", what: "Wir vermessen den vereinbarten Bereich, erfassen Regale und fotografieren Regale ohne Personen.", effort: "Teil von 2–3 Besuchen à 2–3 h außerhalb der Stoßzeiten · Ihr Aufwand: Zugang und Ansprechperson" },
+  { title: "Marktaufnahme", what: "Wir vermessen den vereinbarten Bereich, erfassen die Regale und fotografieren sie ohne Personen.", effort: "Teil von 2–3 Besuchen à 2–3 h außerhalb der Stoßzeiten · Ihr Aufwand: Zugang und Ansprechperson" },
   { title: "Technische Einrichtung", what: "Das Team richtet Grundriss, Sortiment und Beacons in der Verwaltung ein und prüft die Bereitschaft.", effort: "Erledigt das Team · 8–12 kleine Sender, ohne Bohren, rückstandsfrei entfernbar" },
   { title: "Beacon- und Navigationstests", what: "Wir testen Suche, Wegführung und Ortung mit eigenen Geräten. Testpersonen nehmen freiwillig und mit Einwilligung teil.", effort: "Praxistest über 1–2 Wochen mit einzelnen Terminen · Ihr Aufwand insgesamt ca. 1 Stunde" },
   { title: "Gemeinsame Auswertung", what: "Wir besprechen die Ergebnisse, übergeben die schriftliche Auswertung und bauen alle Beacons ab.", effort: "ca. 1 Stunde" }

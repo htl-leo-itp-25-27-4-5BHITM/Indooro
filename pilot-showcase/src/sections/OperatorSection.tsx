@@ -2,21 +2,16 @@ import { Quote } from "lucide-react";
 import { Tag } from "../components/ui/Tag";
 import { ACCEPTANCE_CRITERIA, OPERATOR_HEADLINE, OPERATOR_SUBLINE, USER_STORY } from "../content/operator";
 import { OperatorDemo } from "../features/operator/OperatorDemo";
-import { Container, Eyebrow, Reveal } from "../features/operator/ui";
+import { Container } from "../components/ui/Container";
+import { Reveal, SectionHeading } from "../features/operator/ui";
 import { NextChapter } from "../features/tour/NextChapter";
 
 /** Betreiber-Bereich: „Ihr Markt. In Ihrer Hand.“ mit User Story und geführter Simulation. */
 export function OperatorSection() {
   return (
-    <section id="betreiber" aria-labelledby="betreiber-title" className="bg-paper py-24 sm:py-32">
+    <section id="betreiber" aria-labelledby="betreiber-title" className="bg-paper py-20 sm:py-24 lg:py-32">
       <Container>
-        <Reveal className="max-w-3xl">
-          <Eyebrow>Für Betreiber</Eyebrow>
-          <h2 id="betreiber-title" className="mt-3 text-[clamp(2.25rem,5.5vw,4rem)] font-semibold leading-[1.02] tracking-[-0.03em] text-text">
-            {OPERATOR_HEADLINE}
-          </h2>
-          <p className="mt-6 max-w-2xl text-[18px] leading-relaxed text-muted">{OPERATOR_SUBLINE}</p>
-        </Reveal>
+        <SectionHeading id="betreiber-title" eyebrow="Für Betreiber" title={OPERATOR_HEADLINE} lead={OPERATOR_SUBLINE} />
 
         <Reveal className="mt-14" delay={0.05}>
           <figure className="grid gap-8 rounded-3xl border border-line bg-white p-6 shadow-[0_1px_0_rgba(15,31,23,0.04)] sm:p-9 lg:grid-cols-[1.15fr_1fr] lg:gap-12">

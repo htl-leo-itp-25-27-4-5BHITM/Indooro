@@ -31,7 +31,7 @@ export const SIMULATED: StatusItem[] = [
   { text: "Position", note: "Die Position in der Demo ist simuliert, keine Messung." },
   { text: "Märkte", note: "Alle Märkte und Grundrisse sind fiktiv." },
   { text: "Produkte", note: "Alle Produkte und Regalzuordnungen sind erfunden." },
-  { text: "Betreiber-Ablauf", note: "Die Einrichtung ist eine geführte Simulation, kein Zugriff auf das echte Admin." }
+  { text: "Betreiber-Ablauf", note: "Die Einrichtung ist eine geführte Simulation, kein Zugriff auf die echte Admin-Plattform." }
 ];
 
 export interface TimelineEntry {

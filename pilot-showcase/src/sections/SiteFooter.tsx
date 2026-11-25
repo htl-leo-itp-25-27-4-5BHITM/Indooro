@@ -7,7 +7,7 @@ const APP = "https://it220209.cloud.htl-leonding.ac.at/";
 
 export function SiteFooter() {
   return (
-    <footer id="footer" className="on-dark relative overflow-hidden bg-ink-950 pb-10 pt-16 text-ink-200 sm:pt-20">
+    <footer id="footer" className="on-dark relative overflow-hidden bg-ink-950 pb-24 pt-16 text-ink-200 sm:pt-20">
       <div aria-hidden className="pointer-events-none absolute -bottom-40 left-1/2 size-[44rem] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgb(99_230_180/0.08),transparent)]" />
       <Container className="relative">
         <div className="grid gap-12 lg:grid-cols-12">
