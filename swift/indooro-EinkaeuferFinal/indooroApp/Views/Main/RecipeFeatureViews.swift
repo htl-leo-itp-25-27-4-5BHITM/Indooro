@@ -293,7 +293,7 @@ struct AddRecipeToShoppingListSheet: View {
                     }
                 }
             }
-            .navigationTitle("Rezept hinzufügen")
+            .navigationTitle("Zutaten")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
