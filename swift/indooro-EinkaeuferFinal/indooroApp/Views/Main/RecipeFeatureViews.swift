@@ -155,8 +155,7 @@ struct RecipeDetailView: View {
                     } label: {
                         Label("Zur Einkaufsliste", systemImage: "cart.badge.plus")
                             .font(.headline.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 52)
+                            .frame(maxWidth: .infinity, minHeight: 52)
                     }
                     .buttonStyle(.plain)
                     .foregroundStyle(.white)
@@ -477,9 +476,15 @@ struct RecipeCard: View {
     let recipe: RecipeSummary
 
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(alignment: .top, spacing: 18) {
+        // At accessibility text sizes the image moves above the text so the title keeps the full width.
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(alignment: .top, spacing: 18))
+
+        layout {
             RecipeImage(urlString: recipe.imageUrl, title: recipe.title)
                 .frame(width: 108, height: 96)
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -489,14 +494,14 @@ struct RecipeCard: View {
                 Text(recipe.displayTitle)
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .lineLimit(2)
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let summary = recipe.displaySummary, !summary.isEmpty {
                     Text(summary)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
