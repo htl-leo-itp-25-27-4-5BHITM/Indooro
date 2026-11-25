@@ -670,7 +670,7 @@ struct StoreMapPage: View {
                 Text(beaconManager.activeLayoutDescription)
                     .font(.subheadline)
                     .foregroundStyle(Color.a11ySecondaryText)
-                    .lineLimit(2)
+                    .lineLimit(3)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
