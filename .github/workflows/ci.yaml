@@ -208,6 +208,49 @@ jobs:
             admin-ui/test-results/
           if-no-files-found: ignore
 
+  # pilot-showcase hat kein Lint-Skript: der Typecheck läuft als Teil von npm run build.
+  pilot-showcase-browser:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (version from pilot-showcase/.nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'pilot-showcase/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: 'pilot-showcase/package-lock.json'
+
+      - name: Install showcase dependencies
+        working-directory: pilot-showcase
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium
+        working-directory: pilot-showcase
+        run: npx playwright install --with-deps chromium
+
+      - name: Typecheck and build
+        working-directory: pilot-showcase
+        run: npm run build
+
+      - name: Browser tests (desktop and mobile)
+        working-directory: pilot-showcase
+        run: npm run test:e2e -- --reporter=list,html
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pilot-showcase-playwright
+          path: |
+            pilot-showcase/playwright-report/
+            pilot-showcase/test-results/
+          if-no-files-found: ignore
+
   build-and-push:
     needs: [contract, backend-test]
     runs-on: ubuntu-latest
