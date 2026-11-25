@@ -300,7 +300,17 @@ jobs:
       # (needs: backend-test). Dieser Schritt erzeugt nur das *-runner.jar, das die Dockerfile kopiert.
       - name: Package runner jar for the image (tests already ran in backend-test)
         working-directory: backend/indooro_server
-        run: mvn -B package -DskipTests
+        # Maven Central antwortet GitHub-Runnern gelegentlich mit HTTP 429 (Rate Limit). Maven cached das als
+        # "(absent)" und bricht ab. Deshalb: Resolver wiederholt 429/503 mit Wartezeit, und der ganze Lauf
+        # wird bei Fehlschlag mit -U (Fehl-Cache ignorieren) bis zu dreimal neu gestartet.
+        run: |
+          MVN_OPTS="-B -Daether.connector.http.retryHandler.count=6 -Daether.connector.http.retryHandler.interval=10000 -Daether.connector.http.retryHandler.serviceUnavailable=429,503"
+          for attempt in 1 2 3; do
+            if mvn $MVN_OPTS package -DskipTests; then exit 0; fi
+            echo "::warning::mvn package attempt $attempt failed, retrying"
+            sleep $((attempt * 30))
+          done
+          exit 1
 
       - name: Log in to the Container registry
         if: github.event_name == 'push'
