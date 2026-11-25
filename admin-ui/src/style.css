@@ -342,3 +342,21 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 .product-csv-import .inline-action { flex-wrap: wrap; align-items: center; margin-top: 0; }
 .product-csv-import .inline-action label { min-width: 0; }
 .content:not(.editor-content) .text-button { background: none; color: var(--link); font: inherit; cursor: pointer; }
+
+/* Narrow screens: single-column forms and 40 px touch targets. */
+@media (max-width: 900px) {
+  .store-filters, .beacons-page .filters, .beacons-page .form-grid, .products-page .form-grid, .detail-form,
+  .categories-page .category-form, .regions-page .region-workspace, .recipe-filters, .recipe-form-grid, .recipe-item { grid-template-columns: minmax(0, 1fr); }
+  .recipe-span-2, .recipe-product-search, .recipe-mapping-controls { grid-column: auto; }
+  .products-page .filters, .regions-page .filters, .readiness-controls { flex-direction: column; align-items: stretch; }
+  .readiness-controls input { width: 100%; }
+  .categories-page .category-search { max-width: none; }
+  .content :is(input:not([type="checkbox"], [type="radio"]), select, textarea) { min-height: 42px; max-width: 100%; }
+  .content :is(input[type="checkbox"], input[type="radio"]) { width: 1.4rem; height: 1.4rem; flex: none; }
+  .content label:has(> input:is([type="checkbox"], [type="radio"])) { display: flex; align-items: center; gap: .5rem; min-height: 40px; }
+  .content .check-hit { display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; }
+  .content .data-table .row-actions :is(button, select), .content .small-button, .content button.text-button { min-height: 40px; }
+  .content .copy-id .copy-id-button { min-height: 40px; min-width: 40px; }
+  .content :is(.section-heading, .quick-links, .warning-list, .detail-list, .readiness-links, .row-actions, .data-table td, .notice, .empty-state) > a:not(.button),
+  .content .legacy-editor-route-intro a { display: inline-flex; align-items: center; min-height: 40px; min-width: 40px; }
+}
