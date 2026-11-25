@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { Check, CircleDashed, FlaskConical } from "lucide-react";
+import { Container } from "../components/ui/Container";
 import { Tag } from "../components/ui/Tag";
 import { DONE, OPEN, SIMULATED, TIMELINE, type StatusItem } from "../content/status";
-import { Container, Reveal, SectionHeading } from "../features/operator/ui";
+import { Reveal, SectionHeading } from "../features/operator/ui";
 import { NextChapter } from "../features/tour/NextChapter";
 
 function Column({ title, tag, icon, items, delay }: { title: string; tag: ReactNode; icon: ReactNode; items: StatusItem[]; delay: number }) {
@@ -30,7 +31,7 @@ function Column({ title, tag, icon, items, delay }: { title: string; tag: ReactN
 /** Ehrlicher Projektstand: umgesetzt, offen, simuliert. Keine Prozentangaben. */
 export function ProjectStatus() {
   return (
-    <section id="projektstand" aria-labelledby="projektstand-title" className="border-t border-line bg-paper-2 py-24 sm:py-32">
+    <section id="projektstand" aria-labelledby="projektstand-title" className="border-t border-line bg-paper-2 py-20 sm:py-24 lg:py-32">
       <Container>
         <SectionHeading
           id="projektstand-title"

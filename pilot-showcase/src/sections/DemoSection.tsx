@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import { Check } from "lucide-react";
+import { Container, Eyebrow } from "../components/ui";
 import { StoreDemo } from "../features/store/StoreDemo";
 import { useDemoHandle } from "../features/store/demoBridge";
 import { NextChapter } from "../features/tour/NextChapter";
@@ -73,20 +74,20 @@ export function DemoSection() {
   });
 
   return (
-    <section id="demo" aria-labelledby="demo-title" className="relative isolate overflow-hidden bg-ink-950 py-20 text-white sm:py-28">
+    <section id="demo" aria-labelledby="demo-title" className="relative isolate overflow-hidden bg-ink-950 on-dark py-20 text-white sm:py-24 lg:py-32">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[34rem] bg-[radial-gradient(60%_60%_at_50%_0%,rgba(39,185,171,0.16),transparent_70%)]"
       />
-      <div className="mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8">
+      <Container>
         <div className="max-w-2xl">
-          <motion.p {...reveal()} className="text-[13px] font-semibold uppercase tracking-[0.14em] text-mint">
-            Interaktive Demo
-          </motion.p>
-          <motion.h2 {...reveal(0.06)} id="demo-title" className="mt-3 text-4xl font-semibold tracking-[-0.03em] text-white sm:text-5xl">
+          <motion.div {...reveal()}>
+            <Eyebrow onDark>Interaktive Demo</Eyebrow>
+          </motion.div>
+          <motion.h2 {...reveal(0.06)} id="demo-title" className="display mt-5 text-4xl text-white sm:text-5xl lg:text-[3.4rem]">
             Probieren Sie es selbst.
           </motion.h2>
-          <motion.p {...reveal(0.12)} className="mt-4 text-base leading-relaxed text-ink-200 sm:text-lg">
+          <motion.p {...reveal(0.12)} className="text-pretty mt-6 text-lg leading-relaxed text-ink-200">
             Ein fiktiver Markt, ein echter Ablauf: Produkt suchen, Einkaufsliste füllen, den Weg durch den Markt ansehen. Alles läuft in Ihrem Browser.
           </motion.p>
         </div>
@@ -102,7 +103,7 @@ export function DemoSection() {
           Messung mit Bluetooth-Beacons.
         </p>
         <NextChapter href="#so-funktionierts" tone="dark" title="So funktioniert’s: Ortung, Suche und Route" text="Was hinter der Demo steckt, in drei Schritten erklärt." />
-      </div>
+      </Container>
     </section>
   );
 }

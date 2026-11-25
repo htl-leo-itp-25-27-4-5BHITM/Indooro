@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
+import { Eyebrow } from "../../components/ui/Eyebrow";
 
 /** Kleine lokale Darstellungsbausteine für Betreiber-, Status- und Pilot-Bereich. */
 
@@ -19,22 +20,14 @@ export function Reveal({ children, delay = 0, className = "", as = "div" }: { ch
   );
 }
 
-export function Eyebrow({ children }: { children: ReactNode }) {
-  return <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-accent">{children}</p>;
-}
-
 export function SectionHeading({ eyebrow, title, lead, id }: { eyebrow: string; title: string; lead?: string; id?: string }) {
   return (
-    <Reveal className="max-w-3xl">
+    <Reveal className="max-w-2xl">
       <Eyebrow>{eyebrow}</Eyebrow>
-      <h2 id={id} className="mt-3 text-[clamp(2rem,5vw,3.5rem)] font-semibold leading-[1.04] tracking-[-0.03em] text-text">
+      <h2 id={id} className="display mt-5 text-4xl text-text sm:text-5xl lg:text-[3.4rem]">
         {title}
       </h2>
-      {lead ? <p className="mt-5 max-w-2xl text-[17px] leading-relaxed text-muted">{lead}</p> : null}
+      {lead ? <p className="text-pretty mt-6 text-lg leading-relaxed text-muted">{lead}</p> : null}
     </Reveal>
   );
-}
-
-export function Container({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-8 ${className}`}>{children}</div>;
 }
