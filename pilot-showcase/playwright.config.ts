@@ -14,6 +14,10 @@ export default defineConfig({
       cookies: [],
       origins: [{ origin: `http://127.0.0.1:${PORT}`, localStorage: [{ name: "indooro-pilot-tour-hint", value: "1" }] }]
     },
+    // Functional specs run with reduced motion: the app then skips the continuously rendering WebGL hero and its
+    // exit/enter transitions (AnimatePresence mode="wait" tab swaps, smooth scroll), which starve slow CI runners
+    // of CPU and make tab panels, scroll targets and tour steps lag behind the state. The 3D specs opt back in.
+    reducedMotion: "reduce",
     trace: "retain-on-failure"
   },
   projects: [
