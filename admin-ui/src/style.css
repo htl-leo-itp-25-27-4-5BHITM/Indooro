@@ -222,8 +222,8 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 :where(.content:not(.editor-content)) button.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--surface); }
 :where(.content:not(.editor-content)) button.danger { color: var(--danger-text); border-color: var(--danger-border); }
 .content:not(.editor-content) button:disabled { opacity: .55; cursor: not-allowed; }
-.content .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: end; }
-.content .panel { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-panel); padding: 1.2rem; }
+.content:not(.editor-content) .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: end; }
+.content:not(.editor-content) .panel { min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-panel); padding: 1.2rem; }
 .notice.error { border-color: var(--danger-border-strong); }
 .notice.success { border-color: var(--success-border); color: var(--success-text); }
 .empty-state { display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; margin: .5rem 0; color: var(--text-muted); }
@@ -316,4 +316,4 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 .product-csv-import > p { margin: 0; }
 .product-csv-import .inline-action { flex-wrap: wrap; align-items: center; margin-top: 0; }
 .product-csv-import .inline-action label { min-width: 0; }
-.content .text-button { background: none; color: var(--link); font: inherit; cursor: pointer; }
+.content:not(.editor-content) .text-button { background: none; color: var(--link); font: inherit; cursor: pointer; }
