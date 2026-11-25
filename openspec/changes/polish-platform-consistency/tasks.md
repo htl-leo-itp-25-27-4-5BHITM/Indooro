@@ -54,6 +54,8 @@
 - [x] 8.3 Legacy static admin `app.js` and `editor.js`: create calls tolerate 201/204 + `Location` (GET it), else parse body as before. (Delivered by #231, P1.)
 - [x] 8.4 Tests and before/after screenshots under `docs/polish/customer-web/`.
 
+
+
 ## 9. P7 Admin responsive and header polish (polish-admin-responsive)
 
 - [x] 9.1 Remove the "Indooro Admin" heading above pages; the page title is the only `h1`.

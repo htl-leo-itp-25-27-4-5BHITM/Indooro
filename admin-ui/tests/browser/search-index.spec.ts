@@ -19,7 +19,7 @@ test("admin sees the alias target, versions with counts and the navigation entry
   await page.route("**/api/admin/index", (route) => route.fulfill({ json: overview() }));
   await page.goto("/admin/next/search-index/");
 
-  await expect(page.getByRole("heading", { name: "Suchindex", level: 2 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Suchindex", level: 1 })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Admin Navigation" }).getByRole("link", { name: "Suchindex" })).toHaveAttribute("href", "/admin/next/search-index/");
   await expect(page.getByText("Der Alias products_live zeigt auf products_v1.")).toBeVisible();
   const active = page.getByRole("row").filter({ hasText: "products_v1" });
