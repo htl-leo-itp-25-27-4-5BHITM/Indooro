@@ -14,7 +14,8 @@ Orchestrator: this session, worktree `.claude/worktrees/polish-orch`, branch `ch
 | P3 admin layout editor | polish-admin-editor | `feat/admin-editor-viewport` | running |
 | P4 iOS sweep | polish-ios | `feat/ios-polish` | running |
 | P5a pilot-showcase GUI polish | polish-showcase | `feat/showcase-polish` | running (task 6.1) |
-| P5b legacy `app/` + android docs | polish-legacy-web | `feat/legacy-web-polish` | running (tasks 6.2, 6.3) |
+| P5b legacy `app/` + android docs | polish-legacy-web | `feat/legacy-web-polish` | PR #229 reviewed OK, waits for tick after #228 |
+| P6 customer web + landing + legacy static admin | subagent (worktree) | `feat/customer-web-polish` | running (task group 8) |
 
 ## Decisions
 - D1–D4 in design.md. Create = 201 + Location + empty body; upsert = 201/204 + Location; actions unchanged.
@@ -22,3 +23,4 @@ Orchestrator: this session, worktree `.claude/worktrees/polish-orch`, branch `ch
 - `android/` holds only planning docs; only stale API statements get fixed.
 - P3 must not edit `admin-ui/src/style.css` (owned by P2).
 - 2026-11-25: Erik asked for more parallel GUI polish; P5 split into P5a/P5b and started at once (6 workers, Haiku for P5b).
+- P5b found `app/**` is not deployed; served static web lives in `backend/.../META-INF/resources/` (landing, customer/, legacy admin/). New package P6 owns that folder; P1 told not to touch it. Session start refused from an event turn, so P6 runs as a worktree subagent.
