@@ -343,12 +343,30 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 .product-csv-import .inline-action label { min-width: 0; }
 .content:not(.editor-content) .text-button { background: none; color: var(--link); font: inherit; cursor: pointer; }
 
+/* Without a sidebar (no signed-in user) the content takes the full width. */
+.workspace > .content:only-child { grid-column: 1 / -1; }
+
+/* Phone-sized tables: tighter cells, stacked row actions and wrapping codes keep the actions in view. */
+@media (max-width: 530px) {
+  .data-table th, .data-table td { padding: .5rem .2rem; }
+  .data-table .cell-code, .data-table td code { white-space: normal; overflow-wrap: anywhere; }
+  .data-table td .row-actions { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+  .data-table .status-pill { white-space: normal; border-radius: var(--radius-control); }
+  .data-table th { white-space: normal; letter-spacing: 0; }
+  .data-table td small.note-clamp, .data-table .copy-id code { max-width: 14ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .data-table td .recipe-row-actions { flex-direction: column; flex-wrap: nowrap; }
+  .data-table td > code { display: inline-block; min-width: 13ch; }
+}
+@media (max-width: 530px) { .page-intro .toolbar, .page-intro .form-actions { justify-content: flex-start; } }
+
 /* Narrow screens: single-column forms and 40 px touch targets. */
 @media (max-width: 900px) {
   .store-filters, .beacons-page .filters, .beacons-page .form-grid, .products-page .form-grid, .detail-form,
   .categories-page .category-form, .regions-page .region-workspace, .recipe-filters, .recipe-form-grid, .recipe-item { grid-template-columns: minmax(0, 1fr); }
   .recipe-span-2, .recipe-product-search, .recipe-mapping-controls { grid-column: auto; }
-  .products-page .filters, .regions-page .filters, .readiness-controls { flex-direction: column; align-items: stretch; }
+  .products-page .filters, .regions-page .filters, .readiness-controls { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+  .products-page .filters label, .readiness-controls small { flex: none; }
+  .regions-page .stack { grid-template-columns: minmax(0, 1fr); }
   .readiness-controls input { width: 100%; }
   .categories-page .category-search { max-width: none; }
   .content :is(input:not([type="checkbox"], [type="radio"]), select, textarea) { min-height: 42px; max-width: 100%; }
@@ -357,6 +375,7 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
   .content .check-hit { display: flex; align-items: center; justify-content: center; min-width: 40px; min-height: 40px; }
   .content .data-table .row-actions :is(button, select), .content .small-button, .content button.text-button { min-height: 40px; }
   .content .copy-id .copy-id-button { min-height: 40px; min-width: 40px; }
-  .content :is(.section-heading, .quick-links, .warning-list, .detail-list, .readiness-links, .row-actions, .data-table td, .notice, .empty-state) > a:not(.button),
+  .content :is(.section-heading, .quick-links, .warning-list, .detail-list, .readiness-links, .row-actions, .data-table td, .notice, .empty-state) a:not(.button),
   .content .legacy-editor-route-intro a { display: inline-flex; align-items: center; min-height: 40px; min-width: 40px; }
+  .content summary { min-height: 40px; line-height: 40px; }
 }
