@@ -102,7 +102,7 @@ export function DemoSection() {
           Hinweis: Markt, Sortiment und Preise sind frei erfunden. Die Position auf dem Plan wird in dieser Demo simuliert; es handelt sich nicht um eine
           Messung mit Bluetooth-Beacons.
         </p>
-        <NextChapter href="#so-funktionierts" tone="dark" title="So funktioniert’s: Ortung, Suche und Route" text="Was hinter der Demo steckt, in drei Schritten erklärt." />
+        <NextChapter href="#so-funktionierts" tone="dark" title="So funktioniert’s: Ortung, Suche und Route" text="Was hinter der Demo steckt, in vier Schritten erklärt." />
       </Container>
     </section>
   );
