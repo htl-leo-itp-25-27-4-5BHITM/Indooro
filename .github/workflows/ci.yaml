@@ -163,7 +163,8 @@ jobs:
 
   # Playwright-Suiten im echten Chromium: halten die Layout- und Bedien-Zusagen der Admin-UI.
   admin-ui-browser:
-    runs-on: ubuntu-latest
+    # Gepinnt: Playwright 1.60 (admin-ui) kann Chromium unter Ubuntu 26.04 (ubuntu-latest) nicht installieren.
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
 
@@ -210,7 +211,8 @@ jobs:
 
   # pilot-showcase hat kein Lint-Skript: der Typecheck läuft als Teil von npm run build.
   pilot-showcase-browser:
-    runs-on: ubuntu-latest
+    # Gepinnt wie admin-ui-browser: gleiche Chromium- und Schrift-Basis für beide Suiten.
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
 
