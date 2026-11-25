@@ -75,3 +75,9 @@
 - [x] 10.3 Add browser assertions for the polish contract (no horizontal scroll, editor fits viewport, store create lands on detail).
 - [x] 10.4 Full browser suite green; report whether CI runs it.
 - [x] 10.5 Run admin and showcase browser suites in CI.
+
+## 11. Showcase CI stability (orchestrator follow-up)
+
+- [ ] 11.1 Reproduce the intermittent `pilot-showcase-browser` failures (tour Back restore, list reload per market) locally under CPU load.
+- [ ] 11.2 Fix the root cause: run functional specs with reduced motion (no continuous WebGL hero, no `AnimatePresence` tab-swap lag, no smooth-scroll instability) and fix the NaN spotlight rect that this exposed.
+- [ ] 11.3 `pilot-showcase-browser` green on the PR.
