@@ -99,4 +99,53 @@ final class RecordingMetadataTests: XCTestCase {
         mixed.append(.sync(SyncRecord(t: last + 100, label: "sync-2")))
         XCTAssertEqual(NavigationReplay.run(recording: mixed, layout: layout), baseline)
     }
+
+    func testExplorationRoleAndShadowModeFlagRoundTrip() throws {
+        let record = RecordingMetadata.sessionRecord(
+            t: 1, shortVersion: "1.0", build: "1", machine: "iPhone15,3", osMajor: 18, osMinor: 1, osPatch: 0,
+            scenario: .S2, role: .exploration, shadowMode: true
+        )
+        let text = try NavigationRecordLine.jsonl([.session(record)])
+        XCTAssertTrue(text.contains(#""role":"exploration""#))
+        XCTAssertTrue(text.contains(#""shadowMode":true"#))
+        XCTAssertEqual(try NavigationRecordLine.parse(jsonl: text), [.session(record)])
+        // Aeltere Aufnahme ohne das Feld bleibt lesbar.
+        let old = #"{"type":"session","t":1,"schema":"indooro-recording/2","app":"1.0 (1)","deviceModel":"iPhone15,3","os":"iOS 18.1"}"#
+        guard case .session(let parsed)? = try NavigationRecordLine.parse(jsonl: old).first else { return XCTFail("keine session") }
+        XCTAssertNil(parsed.shadowMode)
+    }
+
+    // MARK: - shadow (Schattenmodus, additiv zu indooro-recording/2)
+
+    func testShadowLineRoundTripAndOptionalFields() throws {
+        let line = NavigationRecordLine.shadow(ShadowRecord(
+            t: 1_792_000_010.5,
+            legacy: ShadowSide(x: 1.5, y: 7.5, status: "tracking", t: 1_792_000_010.25),
+            engine: ShadowSide(x: 1.25, y: 7.0, status: "tracking", confidence: 0.8, t: 1_792_000_010.4)
+        ))
+        let text = try NavigationRecordLine.jsonl([line])
+        XCTAssertTrue(text.contains(#""type":"shadow""#))
+        XCTAssertEqual(try NavigationRecordLine.parse(jsonl: text), [line])
+
+        let noPosition = NavigationRecordLine.shadow(ShadowRecord(
+            t: 1, legacy: ShadowSide(status: "none"), engine: ShadowSide(status: "searching", confidence: 0)
+        ))
+        let parsed = try NavigationRecordLine.parse(jsonl: try NavigationRecordLine.jsonl([noPosition]))
+        XCTAssertEqual(parsed, [noPosition])
+        XCTAssertEqual(parsed.first?.timestamp, 1)
+    }
+
+    func testOlderParsersSkipShadowAsUnknownTypeAndReplayIgnoresIt() throws {
+        let layout = try TestLayouts.demoSupermarket(beaconSpacing: 8)
+        var synthetic = SyntheticRecording(layout: layout, seed: 11)
+        synthetic.walk([SIMD2(2.5, 9.5), SIMD2(10.5, 9.5)], speed: 1.2)
+        let baseline = NavigationReplay.run(recording: synthetic.lines, layout: layout)
+        var mixed = synthetic.lines
+        mixed.insert(.shadow(ShadowRecord(
+            t: synthetic.lines[0].timestamp,
+            legacy: ShadowSide(x: 1, y: 1, status: "tracking"),
+            engine: ShadowSide(x: 2, y: 2, status: "tracking", confidence: 1)
+        )), at: 1)
+        XCTAssertEqual(NavigationReplay.run(recording: mixed, layout: layout), baseline)
+    }
 }

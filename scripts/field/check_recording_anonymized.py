@@ -44,7 +44,7 @@ DENIED_KEYS: FrozenSet[str] = frozenset({
 })
 
 LINE_TYPES: FrozenSet[str] = frozenset({
-    "measurement", "layout", "event", "truth", "step", "heading", "scan", "session", "sync",
+    "measurement", "layout", "event", "truth", "step", "heading", "scan", "session", "sync", "shadow",
 })
 PROXIMITY_VALUES: FrozenSet[str] = frozenset({"immediate", "near", "far", "unknown"})
 EVENT_KINDS: FrozenSet[str] = frozenset({
@@ -55,7 +55,7 @@ EVENT_KINDS: FrozenSet[str] = frozenset({
 # indooro-recording/2: session (genau eine Kopfzeile), sync, truth.marker. Keine Freitextfelder.
 SESSION_SCHEMA = "indooro-recording/2"
 SESSION_SCENARIOS: FrozenSet[str] = frozenset({"S1", "S2", "S3", "S4"})
-SESSION_ROLES: FrozenSet[str] = frozenset({"calibration", "evaluation"})
+SESSION_ROLES: FrozenSet[str] = frozenset({"calibration", "evaluation", "exploration"})
 MARKER_RE = re.compile(r"M[0-9]{1,3}")
 SYNC_LABEL_RE = re.compile(r"sync-[0-9]{1,4}")
 SESSION_APP_RE = re.compile(r"[0-9A-Za-z .()_-]{1,32}")
@@ -64,6 +64,11 @@ SESSION_OS_RE = re.compile(r"iOS [0-9.]{1,16}")
 SESSION_DEVICE_MODEL_MAX = 32
 
 Validator = Callable[[str, object, "Context"], List[str]]
+
+# Schattenmodus (additiv zu indooro-recording/2): je Epoche eine Zeile mit alter (`legacy`) und neuer (`engine`) Seite.
+SHADOW_STATUSES: FrozenSet[str] = frozenset({
+    "none", "stopped", "warmingUp", "searching", "lowConfidence", "tracking", "manual",
+})
 
 
 class Context:
@@ -122,6 +127,16 @@ def _enum(values: FrozenSet[str]) -> Validator:
             return [f"Feld '{name}' hat einen unzulaessigen Wert (erlaubt: {', '.join(sorted(values))})"]
         return []
     return validate
+
+
+def _v_shadow_side(name: str, value: object, ctx: "Context") -> List[str]:
+    """Eine Seite einer `shadow`-Zeile: Position (optional), Status, Konfidenz (nur Engine, optional)."""
+    if not isinstance(value, dict):
+        return [f"Feld '{name}' ist kein Objekt"]
+    fields: Dict[str, Validator] = {
+        "x": _v_number, "y": _v_number, "status": _enum(SHADOW_STATUSES), "confidence": _v_number, "t": _v_number,
+    }
+    return check_record(value, fields, {"status"}, f"Feld '{name}'", ctx)
 
 
 def _pattern(pattern: "re.Pattern[str]", description: str, max_length: Optional[int] = None) -> Validator:
@@ -265,6 +280,7 @@ LINE_SPECS: Dict[str, Tuple[Dict[str, Validator], Set[str]]] = {
             "os": _pattern(SESSION_OS_RE, "iOS <Version>"),
             "scenario": _enum(SESSION_SCENARIOS),
             "role": _enum(SESSION_ROLES),
+            "shadowMode": _v_bool,
         },
         {"t", "schema", "app", "deviceModel", "os"},
     ),
@@ -276,6 +292,16 @@ LINE_SPECS: Dict[str, Tuple[Dict[str, Validator], Set[str]]] = {
             "label": _pattern(SYNC_LABEL_RE, "sync- gefolgt von 1 bis 4 Ziffern"),
         },
         {"t", "label"},
+    ),
+    # Schattenmodus: Positionen beider Pfade je Epoche (nur Zahlen und Status, kein Freitext).
+    "shadow": (
+        {
+            "type": _enum(frozenset({"shadow"})),
+            "t": _v_number,
+            "legacy": _v_shadow_side,
+            "engine": _v_shadow_side,
+        },
+        {"t", "legacy", "engine"},
     ),
     # Layout-fremder iBeacon (nur Major, Minor, RSSI; bewusst ohne UUID).
     "scan": (

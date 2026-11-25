@@ -36,13 +36,55 @@ nonisolated enum AppEnvironment {
 
     static var allowsExtendedFeatures: Bool { featureProfile == .full }
 
-    /// Schalter fuer den Schattenbetrieb der neuen Ortungs-Engine (`ShadowPositioning`). Standard: aus.
-    /// Info.plist `IndooroShadowPositioning`; DEBUG-Builds lesen zusaetzlich `INDOORO_SHADOW_POSITIONING=1`.
-    static var isShadowPositioningEnabled: Bool {
+    /// UserDefaults-Schluessel der Debug-Schalter (nur DEBUG-Builds lesen sie; sie ueberstimmen Info.plist und Umgebung).
+    static let shadowOverrideKey = "IndooroDebugShadowPositioning"
+    static let engineNavigationOverrideKey = "IndooroDebugEngineDrivesNavigation"
+    static let shadowEnvironmentKey = "INDOORO_SHADOW_POSITIONING"
+    static let engineNavigationEnvironmentKey = "INDOORO_ENGINE_NAVIGATION"
+
+    /// Rangfolge eines Schalters: gespeicherte Einstellung (DEBUG) vor Umgebung (`=1`, DEBUG) vor Info.plist vor aus.
+    static func resolveFlag(override: Bool?, environment: String?, plist: Bool?) -> Bool {
+        if let override { return override }
+        if environment == "1" { return true }
+        return plist ?? false
+    }
+
+    private static func debugOverride(_ key: String) -> Bool? {
         #if DEBUG
-        if ProcessInfo.processInfo.environment["INDOORO_SHADOW_POSITIONING"] == "1" { return true }
+        return UserDefaults.standard.object(forKey: key) as? Bool
+        #else
+        return nil
         #endif
-        return Bundle.main.object(forInfoDictionaryKey: "IndooroShadowPositioning") as? Bool ?? false
+    }
+
+    private static func debugEnvironment(_ key: String) -> String? {
+        #if DEBUG
+        return ProcessInfo.processInfo.environment[key]
+        #else
+        return nil
+        #endif
+    }
+
+    /// Schalter fuer den Schattenmodus (`ShadowPositioning`): die neue Engine laeuft mit und wird aufgezeichnet,
+    /// die Navigation bleibt beim alten Pfad. Standard: aus. Info.plist `IndooroShadowPositioning`;
+    /// DEBUG-Builds lesen zusaetzlich `INDOORO_SHADOW_POSITIONING=1` und die Einstellung `shadowOverrideKey`.
+    static var isShadowPositioningEnabled: Bool {
+        resolveFlag(
+            override: debugOverride(shadowOverrideKey),
+            environment: debugEnvironment(shadowEnvironmentKey),
+            plist: Bundle.main.object(forInfoDictionaryKey: "IndooroShadowPositioning") as? Bool
+        )
+    }
+
+    /// Eigener, ausdruecklicher Schalter: Routen-Ticks kommen aus der Engine statt aus `BeaconManager`.
+    /// Setzt einen laufenden Schattenmodus voraus (die Engine laeuft dort). Standard: aus, damit eine Messung
+    /// nicht zwei Quellen mischt. Info.plist `IndooroEngineDrivesNavigation`, DEBUG: `INDOORO_ENGINE_NAVIGATION=1`.
+    static var isEngineDrivingNavigation: Bool {
+        isShadowPositioningEnabled && resolveFlag(
+            override: debugOverride(engineNavigationOverrideKey),
+            environment: debugEnvironment(engineNavigationEnvironmentKey),
+            plist: Bundle.main.object(forInfoDictionaryKey: "IndooroEngineDrivesNavigation") as? Bool
+        )
     }
 
     /// Feldtuning der Ankunftsvorschläge. `nil` heißt: Standardwert der App (ArrivalSuggestionConfig.defaults()).

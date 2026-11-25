@@ -86,18 +86,15 @@ ShadowHook = Callable[[Path, Path, Path, str], Optional[Path]]
 
 
 def shadow_comparison(recording: Path, anonymized: Path, out_dir: Path, name: str) -> Optional[Path]:
-    """HOOK für den Schattenbetrieb. Heute immer None: der Vergleich läuft als Replay (`compare_positioning`).
+    """Schattenbetrieb: Hat die Aufnahme `shadow`-Zeilen (alte und neue Position je Epoche im selben Lauf),
+    wertet `compare_positioning.write_shadow_comparison` sie direkt aus und gibt den Pfad der
+    `<name>-comparison.json` zurueck (Schema `indooro-position-comparison/1`, `origin: "shadow"`).
+    Ohne `shadow`-Zeilen gibt sie None zurueck, dann nimmt der Auswerter den Replay. Alles danach (Regel,
+    Bericht, Kommentar) bleibt unveraendert; der Bericht nennt als Quelle dann "Schattenbetrieb".
 
-    Sobald der Recorder je Epoche die alte und die neue Position in dieselbe Aufnahme schreibt und
-    `compare_positioning.py` das lesen kann, wertet diese Funktion die Aufnahme aus und gibt den Pfad der
-    `<name>-comparison.json` zurueck (Schema `indooro-position-comparison/1`, Felder `origin`, `recording.name`,
-    `recording.sha256`, `session`, `summary.current|engine`, wie `positioning_verdict.py` sie liest). Gibt sie
-    None zurueck, nimmt der Auswerter den Replay. Alles danach (Regel, Bericht, Kommentar) bleibt unverändert;
-    der Bericht nennt als Quelle dann "Schattenbetrieb".
-
-    recording: Original, anonymized: geprüft anonymisierte Kopie, out_dir: Arbeitsordner, name: sicherer Name.
+    recording: Original, anonymized: geprueft anonymisierte Kopie (wird gelesen), out_dir: Arbeitsordner, name: sicherer Name.
     """
-    return None
+    return cp.write_shadow_comparison(anonymized, out_dir, name)
 
 
 # ---------------------------------------------------------------------------------------------------------------------
@@ -275,6 +272,14 @@ def process_run(
         run.errors.append(f"Vergleichsdatei nicht lesbar: {error}")
         return
     run.comparison = data if isinstance(data, dict) else None
+    if shadow_path is not None and isinstance(run.comparison, dict):
+        summary = run.comparison.get("summary")
+        current = summary.get("current") if isinstance(summary, dict) else None
+        if isinstance(current, dict) and not current.get("epochsWithTruth"):
+            # wie beim Replay: ohne Wahrheitsmarken im Zeitraum der shadow-Zeilen gibt es nichts zu bewerten
+            run.excluded = "keine Epoche mit Referenz (keine Wahrheitsmarken)"
+            run.comparison_path = None
+            run.comparison = None
 
 
 # ---------------------------------------------------------------------------------------------------------------------

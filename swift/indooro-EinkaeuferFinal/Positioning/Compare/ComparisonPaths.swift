@@ -44,7 +44,7 @@ struct ReplayPlan {
         let timeline = recording.filter { line in
             switch line {
             case .measurement, .layout, .event, .truth: return true
-            case .step, .heading, .scan, .session, .sync: return false
+            case .step, .heading, .scan, .session, .sync, .shadow: return false
             }
         }
         lines = timeline.enumerated().sorted {
@@ -119,7 +119,7 @@ enum CurrentPipelinePath {
                     if let x = event.x, let y = event.y {
                         _ = pipeline.calibrate(to: SIMD2(x, y), at: event.t)
                     }
-                case .event, .layout, .truth, .step, .heading, .scan, .session, .sync:
+                case .event, .layout, .truth, .step, .heading, .scan, .session, .sync, .shadow:
                     break
                 }
                 consumed += 1
@@ -180,7 +180,7 @@ enum EnginePath {
                         clock.set(event.t)
                         await engine.calibrate(to: SIMD2(x, y))
                     }
-                case .event, .layout, .truth, .step, .heading, .scan, .session, .sync:
+                case .event, .layout, .truth, .step, .heading, .scan, .session, .sync, .shadow:
                     break
                 }
                 consumed += 1
