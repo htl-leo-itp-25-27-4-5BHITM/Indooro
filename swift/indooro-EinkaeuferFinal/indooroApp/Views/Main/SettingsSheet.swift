@@ -51,7 +51,7 @@ struct SettingsSheet: View {
                         HStack {
                             Text("Kartengröße")
                             Spacer()
-                            Text("\(Int(mapScale * 100))%")
+                            Text("\(Int(mapScale * 100)) %")
                                 .foregroundStyle(.secondary)
                                 .monospacedDigit()
                         }
