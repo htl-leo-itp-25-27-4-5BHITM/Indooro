@@ -64,6 +64,9 @@
 - [x] 9.4 Compact Beacons row actions to one line with a keyboard-accessible "Weitere Aktionen" menu.
 - [x] 9.5 Consistent German header copy and role labels.
 - [x] 9.6 Typecheck, lint, tests, build green; screenshots at 390, 768 and 1280 px under `docs/polish/admin-responsive/`.
+- [x] 9.7 Show every admin table as stacked cards on phones (no sideways scrolling, actions at the bottom of the card).
+- [x] 9.8 Keep the space in the "Indooro Admin" brand on phones.
+- [x] 9.9 Browser test for the card layout; screenshots at 390 and 768 px updated.
 
 ## 10. P8 Admin browser tests (polish-admin-tests)
 
