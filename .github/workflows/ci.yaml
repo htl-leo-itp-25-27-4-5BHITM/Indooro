@@ -161,9 +161,9 @@ jobs:
       - name: Test ops scripts
         run: python3 -I -m unittest discover scripts/ops
 
-  # Playwright-Suiten im echten Chromium: halten die Layout- und Bedien-Zusagen der Admin-UI.
+  # Playwright suite in a real Chromium: guards the layout and interaction guarantees of the admin UI.
   admin-ui-browser:
-    # Gepinnt: Playwright 1.60 (admin-ui) kann Chromium unter Ubuntu 26.04 (ubuntu-latest) nicht installieren.
+    # Pinned: Playwright 1.60 (admin-ui) cannot install Chromium on Ubuntu 26.04 (ubuntu-latest).
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -209,9 +209,9 @@ jobs:
             admin-ui/test-results/
           if-no-files-found: ignore
 
-  # pilot-showcase hat kein Lint-Skript: der Typecheck läuft als Teil von npm run build.
+  # pilot-showcase has no lint script: the typecheck runs as part of npm run build.
   pilot-showcase-browser:
-    # Gepinnt wie admin-ui-browser: gleiche Chromium- und Schrift-Basis für beide Suiten.
+    # Pinned like admin-ui-browser: same Chromium and font base for both suites.
     runs-on: ubuntu-24.04
     permissions:
       contents: read
