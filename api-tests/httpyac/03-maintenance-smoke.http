@@ -51,7 +51,7 @@ Authorization: Bearer {{$global.adminToken}}
 ?? header content-type includes json
 
 ###
-# Product single write smoke
+# Product single write smoke: upsert answers 201 (new) or 204 (replaced) with Location, no body
 POST {{baseUrl}}/api/products
 Content-Type: application/json
 Accept: application/json
@@ -66,8 +66,8 @@ Authorization: Bearer {{$global.adminToken}}
   "storeCode": "{{ACTIVE_STORE_CODE}}"
 }
 
-?? status startsWith 20
-?? header content-type includes json
+?? status matches ^(201|204)$
+?? header location includes /api/products/{{TEST_PRODUCT_ID}}?storeCode=
 
 ###
 # Anonymous category bulk import is rejected
