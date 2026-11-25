@@ -27,7 +27,7 @@ export function ChapterRail() {
                 />
                 <span
                   className={`pointer-events-none absolute right-full mr-3 whitespace-nowrap rounded-full bg-ink-950/90 px-3 py-1 text-[12px] font-medium text-white shadow-[0_0_0_1px_rgb(255_255_255/0.1)] transition-opacity duration-300 ${
-                    on ? "opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+                    on ? "opacity-0 min-[1520px]:opacity-100 group-hover:opacity-100 group-focus-visible:opacity-100" : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
                   }`}
                 >
                   {c.label}
