@@ -29,10 +29,19 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
   const [mutationError, setMutationError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [notice, setNotice] = useState<string | null>(null);
+  // Set by "Store anlegen", which lands here directly; the flag leaves the URL so a reload does not repeat the notice.
+  const [created] = useState(() => new URLSearchParams(window.location.search).get("created") === "1");
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(() => new URLSearchParams(window.location.search).get("edit") === "1");
   const [revision, setRevision] = useState(0);
   const [selectedBeacon, setSelectedBeacon] = useState("");
+
+  useEffect(() => {
+    if (!created) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("created");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [created]);
 
   useEffect(() => {
     if (!storeId) return;
@@ -105,6 +114,7 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
 
   return <div className="store-detail-page">
     <div className="page-intro"><div><p className="eyebrow">{store.region.code} · {store.storeCode}</p><h2>{store.name}</h2><p>{store.street}, {store.zipCode} {store.city} · {store.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</p></div><div className="form-actions"><a className="button" href={`/admin/next/stores/readiness/?storeId=${encodeURIComponent(store.id)}`}>Pilot-Bereitschaft</a><a className="button" href={`/admin/next/stores/anchors/?storeId=${encodeURIComponent(store.id)}`}>QR-Codes drucken</a><a className="button" href="/admin/next/stores/">Zur Store-Liste</a></div></div>
+    {created && !notice && <p className="notice success-state" role="status">Store „{store.name}“ wurde angelegt.</p>}
     {notice && <p className="notice success-state" role="status">{notice}</p>}
     {mutationError && <div className="notice error-state" role="alert"><strong>Änderung nicht gespeichert</strong><p>{mutationError}</p></div>}
     <StoreSetupSection api={api} user={user} store={store} refreshKey={revision} />

@@ -12,7 +12,6 @@ export function StoreCreatePage({ api, user }: { api: ApiClient; user: CurrentUs
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [saving, setSaving] = useState(false);
-  const [created, setCreated] = useState<CreatedStore | null>(null);
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     if (user.role === "store-manager") return;
@@ -26,7 +25,6 @@ export function StoreCreatePage({ api, user }: { api: ApiClient; user: CurrentUs
   }, [api, user.role, revision]);
 
   if (user.role === "store-manager") return <section role="alert" className="notice"><h2>Zugriff verweigert</h2><p>Store-Manager können keine neue Filiale anlegen.</p></section>;
-  if (created) return <section className="notice success-state" role="status"><h2>Store angelegt</h2><p>{created.name} wurde gespeichert.</p><a className="button primary" href={`/admin/next/stores/detail/?storeId=${encodeURIComponent(created.id)}`}>Store-Detail öffnen</a></section>;
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (saving) return;
@@ -42,11 +40,13 @@ export function StoreCreatePage({ api, user }: { api: ApiClient; user: CurrentUs
         notes: String(form.get("notes") ?? "").trim() || null
       });
       if (!response?.id) throw new Error("Server hat keinen Store bestätigt.");
-      setCreated(response);
+      // Straight to the new store; saving stays true so the form cannot be sent twice while the page changes.
+      window.location.assign(`/admin/next/stores/detail/?storeId=${encodeURIComponent(response.id)}&created=1`);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Store konnte nicht angelegt werden.");
       if (cause instanceof ApiClientError) setFieldErrors(cause.fieldErrors);
-    } finally { setSaving(false); }
+      setSaving(false);
+    }
   };
   return <div className="store-create-page">
     <div className="page-intro"><div><p className="eyebrow">Standorte</p><h2>Store anlegen</h2><p>Stammdaten erfassen, danach Beacons zuordnen und Layout erstellen.</p></div><a className="button" href="/admin/next/stores/">Zurück zur Liste</a></div>
@@ -59,7 +59,7 @@ export function StoreCreatePage({ api, user }: { api: ApiClient; user: CurrentUs
       {([ ["storeCode", "Store-Code", 50], ["name", "Name", 150], ["street", "Straße", 150], ["zipCode", "PLZ", 20], ["city", "Ort", 100], ["country", "Land", 100] ] as const).map(([name, label, max]) => <label key={name}>{label}<input name={name} maxLength={max} required />{fieldErrors[name] && <small role="alert">{fieldErrors[name].join(" ")}</small>}</label>)}
       <label>Breitengrad<input name="latitude" type="number" step="any" min="-90" max="90" /></label><label>Längengrad<input name="longitude" type="number" step="any" min="-180" max="180" /></label>
       <label className="full">Notizen<textarea name="notes" rows={3} maxLength={2000} /></label>
-      <div className="form-actions"><button className="button primary" type="submit" disabled={saving}>{saving ? "Legt an …" : "Store anlegen"}</button></div>
+      <div className="form-actions"><button className="button primary" type="submit" disabled={saving}>{saving ? "Legt an …" : "Store anlegen"}</button><a className="button" href="/admin/next/stores/">Abbrechen</a></div>
     </form>}
   </div>;
 }
