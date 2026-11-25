@@ -31,9 +31,9 @@ export function DiagnosticsPage({ api, user }: { api: ApiClient; user: CurrentUs
     }).catch((cause: unknown) => { if (!controller.signal.aborted) setFailure(cause instanceof Error ? cause.message : "Diagnosedaten konnten nicht geladen werden."); });
     return () => controller.abort();
   }, [api, user.role, revision]);
-  if (user.role !== "admin") return <section className="notice" role="alert"><h2>Zugriff verweigert</h2><p>Diagnose ist Administratoren vorbehalten.</p></section>;
+  if (user.role !== "admin") return <section className="notice" role="alert"><h1>Zugriff verweigert</h1><p>Diagnose ist Administratoren vorbehalten.</p></section>;
   return <div className="diagnostics-page">
-    <div className="page-intro"><div><p className="eyebrow">Betrieb</p><h2>Diagnose</h2><p>Aktuelle Änderungen und Serverfehler der Administration.</p></div><button className="button" onClick={() => { setAudit(null); setErrors(null); setRevision((value) => value + 1); }}>Aktualisieren</button></div>
+    <div className="page-intro"><div><p className="eyebrow">Betrieb</p><h1>Diagnose</h1><p>Aktuelle Änderungen und Serverfehler der Administration.</p></div><button className="button" onClick={() => { setAudit(null); setErrors(null); setRevision((value) => value + 1); }}>Aktualisieren</button></div>
     {failure && <div className="notice error-state" role="alert"><h3>Diagnose nicht verfügbar</h3><p>{failure}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
     {!failure && (!audit || !errors) && <p className="notice" role="status">Diagnose wird geladen …</p>}
     {!failure && audit && errors && <>
