@@ -306,7 +306,7 @@ jobs:
         run: |
           MVN_OPTS="-B -Daether.connector.http.retryHandler.count=6 -Daether.connector.http.retryHandler.interval=10000 -Daether.connector.http.retryHandler.serviceUnavailable=429,503"
           for attempt in 1 2 3; do
-            if mvn $MVN_OPTS package -DskipTests; then exit 0; fi
+            if mvn $MVN_OPTS -U package -DskipTests; then exit 0; fi
             echo "::warning::mvn package attempt $attempt failed, retrying"
             sleep $((attempt * 30))
           done
