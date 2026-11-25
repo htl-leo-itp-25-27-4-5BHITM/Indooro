@@ -637,10 +637,13 @@ private struct RecipeImage: View {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case let .success(image):
-                        image
-                            .resizable()
-                            .scaledToFill()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        // The overlay keeps the aspect-filled image from widening the surrounding layout.
+                        Color.clear
+                            .overlay {
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                            }
                             .clipped()
                     case .failure:
                         fallback
