@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 
+test.use({ reducedMotion: "no-preference" });
 test.use({ launchOptions: { args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] } });
 
 test.describe("3D hero", () => {

@@ -81,3 +81,9 @@
 - [x] 12.1 Root cause: Maven Central answered the runner with HTTP 429 (rate limit) for `maven-resources-plugin:pom:3.4.0`; Maven records it as "(absent)" and aborts. The version exists, this is not a pom or cache-key problem.
 - [x] 12.2 Fix: `build-and-push` retries 429/503 inside the resolver (6 tries, 10 s apart) and reruns `mvn -U package -DskipTests` up to three times with backoff. Gates, job and image publishing (push only) unchanged.
 - [x] 12.3 CI green on the PR, `build-and-push` included.
+
+## 11. Showcase CI stability (orchestrator follow-up)
+
+- [x] 11.1 Reproduce the intermittent `pilot-showcase-browser` failures (tour Back restore, list reload per market) locally under CPU load.
+- [x] 11.2 Fix the root cause: run functional specs with reduced motion (no continuous WebGL hero, no `AnimatePresence` tab-swap lag, no smooth-scroll instability) and fix the NaN spotlight rect that this exposed.
+- [ ] 11.3 `pilot-showcase-browser` green on the PR.
