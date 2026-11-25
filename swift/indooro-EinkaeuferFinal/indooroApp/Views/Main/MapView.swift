@@ -121,12 +121,6 @@ struct MapView: View {
                             }
 
                             if showsDebugMapElements {
-                                MapAxes(
-                                    pixelsPerMeter: fittedPixelsPerMeter,
-                                    gridWidth: Int(beaconManager.gridWidth),
-                                    gridHeight: Int(beaconManager.gridHeight)
-                                )
-
                                 ForEach(beaconManager.beacons) { beacon in
                                     BeaconMapItem(beacon: beacon, pixelsPerMeter: fittedPixelsPerMeter)
                                         .position(
