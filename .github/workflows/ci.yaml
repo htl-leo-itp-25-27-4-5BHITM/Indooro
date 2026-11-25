@@ -161,6 +161,98 @@ jobs:
       - name: Test ops scripts
         run: python3 -I -m unittest discover scripts/ops
 
+  # Playwright suite in a real Chromium: guards the layout and interaction guarantees of the admin UI.
+  admin-ui-browser:
+    # Pinned: Playwright 1.60 (admin-ui) cannot install Chromium on Ubuntu 26.04 (ubuntu-latest).
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (version from admin-ui/.nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'admin-ui/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: 'admin-ui/package-lock.json'
+
+      - name: Install admin UI dependencies
+        working-directory: admin-ui
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium
+        working-directory: admin-ui
+        run: npx playwright install --with-deps chromium
+
+      - name: Lint
+        working-directory: admin-ui
+        run: npm run lint
+
+      - name: Typecheck
+        working-directory: admin-ui
+        run: npm run typecheck
+
+      - name: Browser tests (pretest builds and verifies the bundle)
+        working-directory: admin-ui
+        run: npm run test:browser -- --reporter=list,html --trace=retain-on-failure
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-ui-playwright
+          path: |
+            admin-ui/playwright-report/
+            admin-ui/test-results/
+          if-no-files-found: ignore
+
+  # pilot-showcase has no lint script: the typecheck runs as part of npm run build.
+  pilot-showcase-browser:
+    # Pinned like admin-ui-browser: same Chromium and font base for both suites.
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (version from pilot-showcase/.nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'pilot-showcase/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: 'pilot-showcase/package-lock.json'
+
+      - name: Install showcase dependencies
+        working-directory: pilot-showcase
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium
+        working-directory: pilot-showcase
+        run: npx playwright install --with-deps chromium
+
+      - name: Typecheck and build
+        working-directory: pilot-showcase
+        run: npm run build
+
+      - name: Browser tests (desktop and mobile)
+        working-directory: pilot-showcase
+        run: npm run test:e2e -- --reporter=list,html
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pilot-showcase-playwright
+          path: |
+            pilot-showcase/playwright-report/
+            pilot-showcase/test-results/
+          if-no-files-found: ignore
+
   build-and-push:
     needs: [contract, backend-test]
     runs-on: ubuntu-latest
