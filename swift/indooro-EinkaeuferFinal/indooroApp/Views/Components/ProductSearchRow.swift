@@ -78,6 +78,7 @@ struct ProductSearchRow: View {
                 } label: {
                     Image(systemName: isInShoppingList ? "plus.circle.fill" : "plus")
                         .font(.headline.weight(.semibold))
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .foregroundStyle(accent)
                         .frame(width: 30, height: 30)
                         .background(accent.opacity(0.10), in: Circle())

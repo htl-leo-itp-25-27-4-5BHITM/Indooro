@@ -1455,6 +1455,7 @@ struct ShoppingListsPage: View {
                         Text("\(list.openItemCount) offen, \(list.completedItemCount) erledigt")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Spacer()

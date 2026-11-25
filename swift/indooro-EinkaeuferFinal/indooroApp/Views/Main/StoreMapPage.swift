@@ -450,6 +450,7 @@ struct StoreMapPage: View {
                 fitStorePins()
             } label: {
                 Image(systemName: "location.viewfinder")
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -464,6 +465,7 @@ struct StoreMapPage: View {
                 beaconManager.refreshMobileStores()
             } label: {
                 Image(systemName: "arrow.clockwise")
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -477,6 +479,7 @@ struct StoreMapPage: View {
 
             Button { showSettings = true } label: {
                 Image(systemName: "slider.horizontal.3")
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -532,6 +535,7 @@ struct StoreMapPage: View {
                     beaconManager.refreshMobileStores()
                 } label: {
                     Image(systemName: "arrow.clockwise")
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 36, height: 36)
                         .frame(minWidth: 44, minHeight: 44)
@@ -641,6 +645,7 @@ struct StoreMapPage: View {
                 showStoreOverview()
             } label: {
                 Image(systemName: "chevron.left")
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -682,6 +687,7 @@ struct StoreMapPage: View {
 
             Button { showSettings = true } label: {
                 Image(systemName: "slider.horizontal.3")
+                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -1327,8 +1333,8 @@ private struct StoreOverviewCard: View {
                         Text(store.displaySubtitle)
                             .font(.caption.weight(.medium))
                             .foregroundStyle(.secondary)
-                            .lineLimit(2)
                             .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
 
                     Spacer(minLength: 0)
