@@ -269,7 +269,7 @@ private struct ZoomableMapScrollView<Content: View>: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> UIScrollView {
-        let scrollView = UIScrollView()
+        let scrollView = CenteringScrollView()
         scrollView.delegate = context.coordinator
         scrollView.backgroundColor = .clear
         scrollView.showsHorizontalScrollIndicator = false
@@ -288,6 +288,14 @@ private struct ZoomableMapScrollView<Content: View>: UIViewRepresentable {
         scrollView.addSubview(hostingController.view)
         scrollView.contentSize = contentSize
 
+        scrollView.onResize = { [weak coordinator = context.coordinator] view in
+            coordinator?.centerContent(in: view)
+            // Content smaller than the viewport sits in the middle of the free space.
+            view.contentOffset = CGPoint(
+                x: view.contentInset.left > 0 ? -view.contentInset.left : view.contentOffset.x,
+                y: view.contentInset.top > 0 ? -view.contentInset.top : view.contentOffset.y
+            )
+        }
         context.coordinator.hostingController = hostingController
         context.coordinator.contentSize = contentSize
         scrollView.setZoomScale(clampedZoomScale, animated: false)
@@ -360,6 +368,19 @@ private struct ZoomableMapScrollView<Content: View>: UIViewRepresentable {
                 right: horizontalInset
             )
         }
+    }
+}
+
+/// The first `centerContent` call runs before the view has a size; repeat it whenever the size changes.
+private final class CenteringScrollView: UIScrollView {
+    var onResize: ((UIScrollView) -> Void)?
+    private var lastSize = CGSize.zero
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        guard bounds.size != lastSize else { return }
+        lastSize = bounds.size
+        onResize?(self)
     }
 }
 
