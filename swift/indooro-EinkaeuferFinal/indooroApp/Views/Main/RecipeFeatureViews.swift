@@ -609,7 +609,7 @@ private struct RecipeStepsView: View {
                         Text(step.displayInstruction)
                             .font(.subheadline)
                         if let duration = step.durationMinutes {
-                            Text("\(duration) min")
+                            Text("\(duration) Min.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
