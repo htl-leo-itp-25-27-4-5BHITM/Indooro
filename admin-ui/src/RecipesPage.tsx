@@ -232,7 +232,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
       {page.content.length === 0 ? (filters.q || filters.status || filters.tag
         ? <EmptyState action={<a className="button" href="/admin/next/recipes/">Filter zurücksetzen</a>}>Keine Rezepte passen zu den Filtern.</EmptyState>
         : <EmptyState action={<button className="button primary" type="button" onClick={startCreate}>Erstes Rezept anlegen</button>}>Noch keine Rezepte vorhanden.</EmptyState>) : <DataTable label="Rezept-Tabelle"><thead><tr><th>Rezept</th><th>Status</th><th>Zutaten</th><th className="col-low">Tags</th><th>Aktion</th></tr></thead><tbody>{page.content.map((recipe) => <tr key={recipe.id}>
-        <td><strong>{recipe.title}</strong><small>{recipe.slug}</small></td><td><span className={`status-pill ${recipe.status === "PUBLISHED" ? "ready" : "missing"}`}>{statusText(recipe.status)}</span></td>
+        <td><strong>{recipe.title}</strong><small className="cell-code note-clamp" title={recipe.slug}>{recipe.slug}</small></td><td><span className={`status-pill ${recipe.status === "PUBLISHED" ? "ready" : "missing"}`}>{statusText(recipe.status)}</span></td>
         <td>{recipe.mappedIngredientCount}/{recipe.totalIngredientCount} Zutaten{recipe.stepCount === 0 && <small className="recipe-warning">Keine Schritte</small>}</td><td className="col-low">{recipe.tags?.map((tag) => tag.name).join(", ") || "–"}</td>
         <td><div className="recipe-row-actions"><button className="button small-button" onClick={() => void loadDetail(recipe.id, true)}>Vorschau</button><button className="button small-button" onClick={() => void loadDetail(recipe.id)}>Bearbeiten</button></div></td>
       </tr>)}</tbody></DataTable>}

@@ -193,7 +193,7 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
           <tbody>{visibleAssignments.map((assignment) => {
             const own = assignment.keycloakSubject === user.subject;
             return <tr key={assignment.id}>
-              <td><strong>{assignment.username}</strong>{assignment.email && <small>{assignment.email}</small>}<CopyableId value={assignment.keycloakSubject} label={`Keycloak-ID von ${assignment.username}`} /></td>
+              <td><strong className="cell-code">{assignment.username}</strong>{assignment.email && <small className="note-clamp" title={assignment.email}>{assignment.email}</small>}<CopyableId value={assignment.keycloakSubject} label={`Keycloak-ID von ${assignment.username}`} /></td>
               <td>{roleLabel(assignment.role)}</td>
               <td>{scopeLabel(assignment)}</td>
               <td><span className={`status-pill ${assignment.status === "ACTIVE" ? "ready" : "missing"}`}>{assignment.status === "ACTIVE" ? "Aktiv" : "Deaktiviert"}</span></td>
