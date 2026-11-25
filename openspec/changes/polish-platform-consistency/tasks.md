@@ -71,3 +71,4 @@
 - [x] 10.2 Fix stale tests and mocks, including create POSTs answering `201 Created` + `Location`.
 - [x] 10.3 Add browser assertions for the polish contract (no horizontal scroll, editor fits viewport, store create lands on detail).
 - [x] 10.4 Full browser suite green; report whether CI runs it.
+- [x] 10.5 Run admin and showcase browser suites in CI.
