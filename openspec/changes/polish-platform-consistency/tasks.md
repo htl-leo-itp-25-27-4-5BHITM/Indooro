@@ -5,13 +5,13 @@
 
 ## 2. P1 Backend create contract (polish-backend)
 
-- [ ] 2.1 List every `@POST` in `backend/indooro_server/src/main/java/at/htl/resource/**` and classify it as create, upsert or action in `design.md` appendix.
-- [ ] 2.2 Return `201 Created` + `Location` + empty body for every single-resource create endpoint.
-- [ ] 2.3 Return `201`/`204` + `Location` for upsert endpoints.
-- [ ] 2.4 Add missing `GET` endpoints for every `Location` target with the same role rules.
-- [ ] 2.5 Update backend tests (status, header, empty body, GET on Location); `./mvnw verify` green.
-- [ ] 2.6 Update `api/openapi/**` and `api-tests/httpyac/**` to the new responses.
-- [ ] 2.7 Update `admin-ui/src/api/**` with a tolerant create helper and tests.
+- [x] 2.1 List every `@POST` in `backend/indooro_server/src/main/java/at/htl/resource/**` and classify it as create, upsert or action in `design.md` appendix.
+- [x] 2.2 Return `201 Created` + `Location` + empty body for every single-resource create endpoint.
+- [x] 2.3 Return `201`/`204` + `Location` for upsert endpoints.
+- [x] 2.4 Add missing `GET` endpoints for every `Location` target with the same role rules.
+- [x] 2.5 Update backend tests (status, header, empty body, GET on Location); `./mvnw verify` green.
+- [x] 2.6 Update `api/openapi/**` and `api-tests/httpyac/**` to the new responses.
+- [x] 2.7 Update `admin-ui/src/api/**` with a tolerant create helper and tests.
 
 ## 3. P2 Admin pages and tables (polish-admin-pages)
 
