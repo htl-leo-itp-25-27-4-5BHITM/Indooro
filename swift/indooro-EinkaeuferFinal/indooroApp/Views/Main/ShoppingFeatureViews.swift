@@ -138,9 +138,10 @@ struct ShoppingSessionPanel: View {
                     }
                     .buttonStyle(.plain)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.8)
+                    .minimumScaleFactor(0.65)
                     .foregroundStyle(accent)
-                    .padding(.horizontal, 10)
+                    .padding(.horizontal, 8)
+                    .layoutPriority(1)
                     .frame(minHeight: 44)
                     .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
 

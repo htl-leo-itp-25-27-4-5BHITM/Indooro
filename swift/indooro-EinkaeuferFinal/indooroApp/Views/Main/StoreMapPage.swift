@@ -40,6 +40,7 @@ struct StoreMapPage: View {
     private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
     private let routeAccent = Color(red: 0.15, green: 0.57, blue: 0.88)
     @ScaledMetric(relativeTo: .title) private var targetIconSize: CGFloat = 38
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var activeShoppingSnapshot: ShoppingRouteSnapshot? {
         shoppingSessionManager.snapshot
@@ -709,9 +710,13 @@ struct StoreMapPage: View {
 
     private var indoorPositionControls: some View {
         VStack(alignment: .leading, spacing: 10) {
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: 8) { positionButtons }
-                VStack(alignment: .leading, spacing: 4) { positionButtons }
+            // At accessibility sizes the banner already offers both actions; do not show them twice
+            // during a tour, otherwise the tour panel no longer fits on small iPhones.
+            if !(dynamicTypeSize.isAccessibilitySize && activeShoppingSnapshot != nil && !beaconManager.isPositionTrusted) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) { positionButtons }
+                    VStack(alignment: .leading, spacing: 4) { positionButtons }
+                }
             }
 
             if !beaconManager.isPositionTrusted {
