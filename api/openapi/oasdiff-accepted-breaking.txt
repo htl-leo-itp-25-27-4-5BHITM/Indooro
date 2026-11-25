@@ -69,3 +69,18 @@ PUT /api/beacons/{beaconId} the `major` request property's max was set to `65535
 PUT /api/beacons/{beaconId} the `major` request property's min was set to `0.00`
 PUT /api/beacons/{beaconId} the `minor` request property's max was set to `65535.00`
 PUT /api/beacons/{beaconId} the `minor` request property's min was set to `0.00`
+#
+# Accepted 2026-11-25 (polish-platform-consistency P1): create POSTs answer 201 (upserts 201/204) + Location
+# with an empty body instead of 200 + entity. admin-ui, legacy admin and scripts follow Location; iOS only POSTs /api/mobile/**.
+POST /api/admin/access-assignments removed the success response with the status `200`
+POST /api/admin/products removed the success response with the status `200`
+POST /api/admin/recipe-tags removed the success response with the status `200`
+POST /api/admin/recipes removed the success response with the status `200`
+POST /api/admin/recipes/{recipeId}/ingredients removed the success response with the status `200`
+POST /api/admin/recipes/{recipeId}/steps removed the success response with the status `200`
+POST /api/beacons removed the success response with the status `200`
+POST /api/categories removed the success response with the status `200`
+POST /api/products removed the success response with the status `200`
+POST /api/regions removed the success response with the status `200`
+POST /api/stores removed the success response with the status `200`
+POST /api/stores/{storeId}/layout/versions removed the success response with the status `200`
