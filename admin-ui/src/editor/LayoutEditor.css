@@ -46,6 +46,9 @@
   .editor-fit .le-heading h1{font-size:18px;margin:0;overflow-wrap:anywhere}
   .editor-fit .le-kicker{display:none}
   .editor-fit .le-actions{gap:7px}
+  /* Fixed widths: a changing label must not wrap a bar, because a canvas resize refits the view. */
+  .editor-fit .le-save-indicator{flex:none;width:15.5em;margin:0;text-align:right;white-space:nowrap}
+  .editor-fit .le-canvas-toolbar>span:not(:first-child){min-width:5.5em;text-align:center}
   .editor-fit .le-button{padding:7px 11px}
   .editor-fit .le-body{grid-template-columns:226px minmax(0,1fr) 276px;grid-template-rows:minmax(0,1fr);min-height:0}
   .editor-fit .le-left,.editor-fit .le-right{max-height:none;min-height:0;min-width:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;padding:14px 12px}
@@ -53,6 +56,7 @@
   .editor-fit .le-canvas{flex:1 1 0;height:0;min-height:0}
   .editor-fit .le-canvas-toolbar,.editor-fit .le-canvas-footer{flex:none;padding:6px 10px;gap:8px;min-height:38px}
   .editor-fit .le-canvas-footer span{min-width:0}
+  .editor-fit .le-canvas-footer{height:46px;overflow:hidden;font-size:11px;line-height:1.35}
   /* Status messages float over the canvas so that showing one never resizes (and refits) the drawing area. */
   .editor-fit .le-message{position:absolute;z-index:2;left:50%;bottom:56px;transform:translateX(-50%);width:max-content;max-width:min(560px,80%);padding:9px 16px;border:1px solid #c2d8ca;border-radius:10px;box-shadow:0 6px 20px #133a3226;pointer-events:none}
 }
