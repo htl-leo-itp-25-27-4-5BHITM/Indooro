@@ -86,6 +86,9 @@ struct MapView: View {
                                 gridCountY: Int(beaconManager.gridHeight),
                                 showsDebugStyle: showsDebugMapElements
                             )
+                            // Same shape as the map card, so no grid line sticks out at the rounded corners.
+                            .frame(width: mapWidth, height: mapHeight)
+                            .clipShape(RoundedRectangle(cornerRadius: 34, style: .continuous))
 
                             if !routePoints.isEmpty {
                                 RouteLineView(points: routePoints, accent: routeAccent)
