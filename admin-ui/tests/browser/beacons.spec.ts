@@ -329,7 +329,7 @@ test("admin can create a beacon with keyboard controls and see the saved row", a
     return route.fulfill({ json: created });
   });
   await page.goto("/admin/next/beacons/");
-  await page.getByRole("button", { name: "Beacon anlegen" }).focus();
+  await page.getByRole("button", { name: "Beacon anlegen", exact: true }).focus();
   await page.keyboard.press("Enter");
   const code = page.getByRole("textbox", { name: "Beacon-Code" });
   await code.focus();
