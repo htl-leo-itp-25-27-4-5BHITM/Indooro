@@ -37,7 +37,7 @@
 
 ## 6. P5 Web clients sweep (polish-web)
 
-- [ ] 6.1 Sweep `pilot-showcase` at 375 px and 1440 px for overflow and consistency issues and fix them; tests and build green.
+- [x] 6.1 Sweep `pilot-showcase` at 375 px and 1440 px for overflow and consistency issues and fix them; tests and build green.
 - [x] 6.2 Sweep the legacy `app/` web pages that are still deployed for the same issues; fix or document as legacy.
 - [x] 6.3 Update stale API statements in `android/*.md` to the 201 + `Location` contract.
 
