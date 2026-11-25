@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { fulfillCreated } from "./support/created";
 
 test("candidate recipe edit reads full detail and preserves image, tags, ingredients and steps", async ({ page }) => {
   const tag = { id: "tag-1", code: "VEGAN", name: "Vegan" };
@@ -173,7 +174,7 @@ test("recipe retry after mapping failure reuses the created ingredient", async (
   await page.route("**/api/admin/recipes/recipe-1/ingredients", (route) => {
     ingredientPosts += 1;
     detail.ingredients.push({ ...route.request().postDataJSON(), id: "ingredient-2" });
-    return route.fulfill({ json: { id: "ingredient-2" } });
+    return fulfillCreated(route, "/api/admin/recipes/recipe-1/ingredients/ingredient-2", { id: "ingredient-2" });
   });
   await page.route("**/api/admin/recipes/recipe-1/ingredients/ingredient-1", (route) => {
     Object.assign(detail.ingredients[0], route.request().postDataJSON());
@@ -261,7 +262,7 @@ test("candidate recipe create and publish preserve saved content and tags", asyn
   await page.route("**/api/admin/recipes", async (route) => {
     createBody = route.request().postDataJSON() as CreatePayload;
     savedRecipe = { id: "recipe-new", slug: createBody.recipe.slug, title: createBody.recipe.title, summary: createBody.recipe.summary, imageUrl: createBody.recipe.imageUrl, imageAlt: createBody.recipe.imageAlt, servings: createBody.recipe.servings, status: "DRAFT", stepCount: 1, mappedIngredientCount: 1, totalIngredientCount: 1, tags: [tag] };
-    return route.fulfill({ json: { ...savedRecipe, description: createBody.recipe.description, publishedAt: null, archivedAt: null, prepTimeMinutes: createBody.recipe.prepTimeMinutes, cookTimeMinutes: createBody.recipe.cookTimeMinutes, totalTimeMinutes: createBody.recipe.totalTimeMinutes, ingredients: [{ id: "ingredient-new", position: 1, displayName: "Birne", quantityText: "2" }], steps: [{ id: "step-new", position: 1, instruction: "Mischen", durationMinutes: null }] } });
+    return fulfillCreated(route, "/api/admin/recipes/recipe-new", { ...savedRecipe, description: createBody.recipe.description, publishedAt: null, archivedAt: null, prepTimeMinutes: createBody.recipe.prepTimeMinutes, cookTimeMinutes: createBody.recipe.cookTimeMinutes, totalTimeMinutes: createBody.recipe.totalTimeMinutes, ingredients: [{ id: "ingredient-new", position: 1, displayName: "Birne", quantityText: "2" }], steps: [{ id: "step-new", position: 1, instruction: "Mischen", durationMinutes: null }] });
   });
   await page.route("**/api/admin/recipes/recipe-new**", async (route) => {
     const request = route.request();

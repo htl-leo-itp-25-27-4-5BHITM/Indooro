@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { fulfillCreated } from "./support/created";
 
 test("admin region create retains input after conflict and reloads confirmed detail", async ({ page }) => {
   const regions: Array<Record<string, unknown>> = [];
@@ -9,7 +10,7 @@ test("admin region create retains input after conflict and reloads confirmed det
     if (fail) return route.fulfill({ status: 409, json: { error: "Code existiert bereits" } });
     const region = { id: "region-1", status: "ACTIVE", ...route.request().postDataJSON() };
     regions.push(region);
-    return route.fulfill({ json: region });
+    return fulfillCreated(route, `/api/regions/${region.id}`, region);
   });
   await page.route("**/api/regions/region-1", (route) => route.fulfill({ json: regions[0] }));
   await page.goto("/admin/next/regions/");

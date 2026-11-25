@@ -2,6 +2,7 @@ import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test, type Page } from "@playwright/test";
+import { fulfillCreatedVersion } from "./support/created";
 
 type Json = Record<string, unknown>;
 
@@ -81,7 +82,7 @@ async function mockStore(page: Page, options: StoreOptions, control: StoreContro
       const body = request.postDataJSON() as { layoutName: string; layout: Json };
       control.attempts.push(body);
       if (control.writeStatus) return route.fulfill({ status: control.writeStatus, json: control.writeMessage ? { error: control.writeMessage } : { error: "Unavailable" } });
-      return route.fulfill({ json: { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layoutName: body.layoutName, layout: body.layout } });
+      return fulfillCreatedVersion(route, { layoutId: "draft-2", versionNo: 2, status: "DRAFT", layoutName: body.layoutName, layout: body.layout });
     }
     if (path.endsWith("/activate") && method === "POST") {
       const target = path.replace("/versions/", "").replace("/activate", "");

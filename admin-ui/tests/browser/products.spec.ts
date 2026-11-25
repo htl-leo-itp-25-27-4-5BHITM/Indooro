@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { fulfillCreated } from "./support/created";
 
 test("admin product list pages through server results and opens a validated edit", async ({ page }) => {
   const requests: string[] = [];
@@ -184,7 +185,7 @@ test("admin validates and creates a product with the documented layout code", as
     const payload = route.request().postDataJSON() as Record<string, unknown>;
     writes.push(payload);
     products.push(payload);
-    return route.fulfill({ json: payload });
+    return fulfillCreated(route, `/api/admin/products/${payload.id}?storeCode=${payload.storeCode}`, payload);
   });
 
   await page.goto("/admin/next/products/");
@@ -227,7 +228,7 @@ test("admin with several stores must pick a store, then sees a new product in th
     if (route.request().method() !== "POST") return route.continue();
     const payload = route.request().postDataJSON() as Record<string, unknown>;
     catalog.push(payload);
-    return route.fulfill({ json: payload });
+    return fulfillCreated(route, `/api/admin/products/${payload.id}?storeCode=${payload.storeCode}`, payload);
   });
 
   await page.goto("/admin/next/products/");

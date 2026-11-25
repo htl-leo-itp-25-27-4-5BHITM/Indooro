@@ -62,3 +62,10 @@
 - [x] 9.4 Compact Beacons row actions to one line with a keyboard-accessible "Weitere Aktionen" menu.
 - [x] 9.5 Consistent German header copy and role labels.
 - [x] 9.6 Typecheck, lint, tests, build green; screenshots at 390, 768 and 1280 px under `docs/polish/admin-responsive/`.
+
+## 10. P8 Admin browser tests (polish-admin-tests)
+
+- [x] 10.1 Run `npm run test:browser` on `main` and classify every failure as stale test, UI bug or flaky.
+- [x] 10.2 Fix stale tests and mocks, including create POSTs answering `201 Created` + `Location`.
+- [x] 10.3 Add browser assertions for the polish contract (no horizontal scroll, editor fits viewport, store create lands on detail).
+- [x] 10.4 Full browser suite green; report whether CI runs it.

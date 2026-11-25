@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { fulfillCreated } from "./support/created";
 
 /** Answers the reads of the store detail page, where "Store anlegen" lands. */
 async function mockCreatedStore(page: Page, id: string, name: string) {
@@ -18,7 +19,7 @@ test("region manager creates a scoped store and continues in detail", async ({ p
   let createdBody: Record<string, unknown> | null = null;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "region-1", username: "manager", role: "region-manager", scope: { regionId: "region-1", regionName: "Oberösterreich" } } }));
   await page.route("**/api/regions?status=ACTIVE", (route) => route.fulfill({ json: [{ id: "region-1", code: "AT-OOE", name: "Oberösterreich", status: "ACTIVE" }] }));
-  await page.route("**/api/stores", (route) => { createdBody = route.request().postDataJSON(); return route.fulfill({ json: { id: "store-new", name: createdBody?.name } }); });
+  await page.route("**/api/stores", (route) => { createdBody = route.request().postDataJSON(); return fulfillCreated(route, "/api/stores/store-new", { id: "store-new", name: createdBody?.name }); });
   await mockCreatedStore(page, "store-new", "Indooro Linz Süd");
   await page.goto("/admin/next/stores/new/");
   await page.getByRole("textbox", { name: "Store-Code" }).fill("LINZ-02");
@@ -63,7 +64,7 @@ test("admin creates a store using keyboard controls", async ({ page }) => {
   let createdBody: Record<string, unknown> | null = null;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "admin-1", username: "admin", role: "admin", scope: null } }));
   await page.route("**/api/regions?status=ACTIVE", (route) => route.fulfill({ json: [{ id: "region-1", code: "AT-OOE", name: "Oberösterreich", status: "ACTIVE" }] }));
-  await page.route("**/api/stores", (route) => { createdBody = route.request().postDataJSON(); return route.fulfill({ json: { id: "store-keyboard", name: createdBody?.name } }); });
+  await page.route("**/api/stores", (route) => { createdBody = route.request().postDataJSON(); return fulfillCreated(route, "/api/stores/store-keyboard", { id: "store-keyboard", name: createdBody?.name }); });
   await mockCreatedStore(page, "store-keyboard", "Keyboard Store");
   await page.goto("/admin/next/stores/new/");
   const fields = [

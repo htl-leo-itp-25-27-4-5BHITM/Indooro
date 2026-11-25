@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { fulfillCreatedVersion } from "./support/created";
 
 type Role = "admin" | "region-manager" | "store-manager";
 type Json = Record<string, unknown>;
@@ -72,7 +73,7 @@ async function mockStoreLayout(page: Page, storeId: string, store: Json, state: 
         layout: body.layout
       };
       state.versions.unshift(draft);
-      return route.fulfill({ json: draft });
+      return fulfillCreatedVersion(route, draft);
     }
     const match = /^\/versions\/([^/]+)(\/activate)?$/.exec(path);
     if (match) {
