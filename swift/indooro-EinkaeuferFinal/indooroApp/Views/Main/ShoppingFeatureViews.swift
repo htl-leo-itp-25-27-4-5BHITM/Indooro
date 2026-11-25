@@ -65,8 +65,10 @@ struct ShoppingSessionPanel: View {
                         Text(currentStop.title)
                             .font(.subheadline.weight(.bold))
                             .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
 
-                        if let location = locationText(currentStop) {
+                        // The stop title is often the shelf name itself; do not repeat it.
+                        if let location = locationText(currentStop), location != currentStop.title {
                             Text(location)
                                 .font(.caption.weight(.semibold))
                                 .foregroundStyle(accent)
@@ -1846,7 +1848,7 @@ private struct ShoppingChecklistRow: View {
             HStack(spacing: 12) {
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
-                    .foregroundStyle(isCompleted ? .green : .blue)
+                    .foregroundStyle(isCompleted ? AnyShapeStyle(.green) : AnyShapeStyle(.tint))
                     .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {

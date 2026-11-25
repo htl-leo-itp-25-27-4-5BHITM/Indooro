@@ -84,7 +84,7 @@ struct ShoppingImportPreviewSheet: View {
                                 Spacer()
                                 Text(item.status.badgeTitle)
                                     .font(.caption2.weight(.semibold))
-                                    .foregroundStyle(item.status == .open ? .blue : .secondary)
+                                    .foregroundStyle(item.status == .open ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                             }
 
                             Text("Regal: \(item.layoutCode)")
@@ -203,7 +203,7 @@ struct ShoppingItemSelectionSheet: View {
                             } label: {
                                 HStack(alignment: .top, spacing: 12) {
                                     Image(systemName: isSelected(item) ? "checkmark.circle.fill" : "circle")
-                                        .foregroundStyle(isSelected(item) ? .blue : .secondary)
+                                        .foregroundStyle(isSelected(item) ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
                                         .font(.title3)
 
                                     VStack(alignment: .leading, spacing: 4) {
