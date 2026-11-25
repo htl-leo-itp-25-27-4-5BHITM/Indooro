@@ -30,7 +30,7 @@ Java-Belegbasis: `backend/indooro_server/src/main/java/at/htl/`. Relative Klasse
 
 DTOs und Domain trennen: Server unbekannte Felder ignorieren, Pflicht-ID-Geometriefehler sichtbar ablehnen; null price bedeutet unbekannt, nicht kostenlos. Produktfehler elementweise isolieren; vollständig invalides Ergebnis ist Datenfehler statt legitim leer. Layout kann Aliase uuid/major/minor/beaconCode/identityKey, category-embedded meter und optionale Metadaten enthalten. IDs niemals aus Anzeigenamen ableiten.
 
-HTTP 2xx mit gültigem Body ist Daten; 202 events/dismiss braucht keinen Body. 304 nur mit passendem vorhandenen Cache verwenden, sonst einmal vollständigen GET ohne Validator. 400 Validierung, 401/403 Vertragszugriff ohne Login, 404 fehlende Ressource, 409 Mehrdeutigkeit, 429 Rate-Limit mit Retry-After, 5xx Serverfehler. Legacy `{error}`/text/plain und ApiErrorResponse unterscheiden, niemals rohe Bodies in Release-UI/Logs. Empty body bei Daten-GET ist Fehler. ISO UTC mit optionalen Sekundenbruchteilen akzeptieren.
+HTTP 2xx mit gültigem Body ist Daten; 202 events/dismiss braucht keinen Body. Single-Resource-Creates antworten mit `201 Created`, Header `Location` (GET-Ziel) und leerem Body; Android ruft keinen Create-Endpunkt auf und liest deshalb keinen Create-Body. 304 nur mit passendem vorhandenen Cache verwenden, sonst einmal vollständigen GET ohne Validator. 400 Validierung, 401/403 Vertragszugriff ohne Login, 404 fehlende Ressource, 409 Mehrdeutigkeit, 429 Rate-Limit mit Retry-After, 5xx Serverfehler. Legacy `{error}`/text/plain und ApiErrorResponse unterscheiden, niemals rohe Bodies in Release-UI/Logs. Empty body bei Daten-GET ist Fehler. ISO UTC mit optionalen Sekundenbruchteilen akzeptieren.
 
 ## Root-Vertragsarbeit vor Produktionsbindung
 
