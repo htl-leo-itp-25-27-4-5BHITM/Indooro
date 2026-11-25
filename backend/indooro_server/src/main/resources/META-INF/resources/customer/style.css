@@ -168,7 +168,7 @@ h3 {
 }
 
 .site-header-inner {
-  max-width: 720px;
+  max-width: calc(720px - 2 * var(--gutter));
   margin: 0 auto;
   padding: 0.875rem 0;
   display: grid;
@@ -231,6 +231,10 @@ h3 {
 .search-status {
   color: var(--muted);
   overflow-wrap: anywhere;
+}
+
+.search-status:empty {
+  display: none;
 }
 
 .note {

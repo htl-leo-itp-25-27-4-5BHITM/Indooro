@@ -90,6 +90,11 @@
       box-shadow: 0 18px 40px rgba(23,48,31,0.12);
     }
 
+    .card:focus-visible {
+      outline: 3px solid var(--green);
+      outline-offset: 3px;
+    }
+
     .card strong {
       display: block;
       font-size: 24px;
@@ -102,6 +107,19 @@
       line-height: 1.5;
       color: rgba(23,48,31,0.8);
     }
+
+    p { overflow-wrap: anywhere; }
+
+    @media (max-width: 520px) {
+      main { padding: 20px 14px 40px; }
+      .hero { padding: 28px 18px; border-radius: 22px; }
+      p { font-size: 16px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .card { transition: none; }
+      .card:hover { transform: none; }
+    }
   </style>
 </head>
 <body>
@@ -110,30 +128,30 @@
       <div class="eyebrow">Indooro LeoCloud</div>
       <h1>Wohin soll es gehen?</h1>
       <p>
-        Diese Startseite fuehrt direkt zu den gehosteten Indooro-Werkzeugen in der LeoCloud.
-        Der Admin-Editor speichert Layouts am Server. Die Kundensuche und die Swift-App koennen
+        Diese Startseite führt direkt zu den gehosteten Indooro-Werkzeugen in der LeoCloud.
+        Der Admin-Editor speichert Layouts am Server. Die Kundensuche und die Swift-App können
         danach auf dasselbe aktuelle Layout zugreifen.
       </p>
 
       <div class="grid">
         <a class="card" href="/admin/">
-          <strong>Admin Plattform</strong>
+          <strong>Admin-Plattform</strong>
           <span>Filialen, Beacons und Layouts verwalten und von dort direkt in den Editor springen.</span>
         </a>
 
         <a class="card" href="/customer/">
           <strong>Kundensuche</strong>
-          <span>Produkte suchen und das aktuell gespeicherte Layout im Browser pruefen.</span>
+          <span>Produkte suchen und das aktuell gespeicherte Layout im Browser prüfen.</span>
         </a>
 
         <a class="card" href="/showcase/">
           <strong>Pilot-Demo</strong>
-          <span>Interaktive Vorfuehrung fuer Supermarktbetreiber: Suche, Route und Markteinrichtung mit fiktiven Daten, ohne Login.</span>
+          <span>Interaktive Vorführung für Supermarktbetreiber: Suche, Route und Markteinrichtung mit fiktiven Daten, ohne Login.</span>
         </a>
 
         <a class="card" href="/api/admin/health">
-          <strong>Backend Health</strong>
-          <span>Pruefen, ob die API im LeoCloud-Cluster erreichbar ist.</span>
+          <strong>Systemstatus</strong>
+          <span>Prüfen, ob die API im LeoCloud-Cluster erreichbar ist.</span>
         </a>
       </div>
     </section>

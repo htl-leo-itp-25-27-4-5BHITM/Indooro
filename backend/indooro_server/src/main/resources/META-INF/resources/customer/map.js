@@ -47,6 +47,18 @@ function gridDimensions(layout) {
   };
 }
 
+// Render-only margin around the grid so edge labels ("Eingang", "Sie sind hier") are not clipped.
+const MAP_MARGIN = { x: 1, top: 1.6, bottom: 0.6 };
+
+function paddedView(dims) {
+  return {
+    x: -MAP_MARGIN.x,
+    y: -MAP_MARGIN.top,
+    width: dims.width + 2 * MAP_MARGIN.x,
+    height: dims.height + MAP_MARGIN.top + MAP_MARGIN.bottom
+  };
+}
+
 // Rough glyph-width fit: a label is drawn only when it reads at a useful size.
 function fittingFontSize(text, width) {
   const glyphs = Array.from(text).length || 1;
@@ -133,16 +145,17 @@ function entranceNodes(el, geo) {
   rect.appendChild(svgEl("title", {}, "Eingang"));
   return [
     rect,
-    svgEl("text", { x: geo.cx, y: geo.cy, class: "entrance-label", "text-anchor": "middle", "dominant-baseline": "central", "font-size": 0.5 }, "Eingang")
+    svgEl("text", { x: geo.cx, y: geo.cy, class: "entrance-label", "text-anchor": "middle", "dominant-baseline": "central", "font-size": Math.min(0.5, (geo.width / 7) / 0.62).toFixed(2) }, "Eingang")
   ];
 }
 
-function anchorNodes(el, geo) {
+function anchorNodes(el, geo, start) {
   const anchorId = typeof el.anchorId === "string" || typeof el.anchorId === "number" ? String(el.anchorId) : "";
   const dot = svgEl("circle", { cx: geo.cx, cy: geo.cy, r: 0.3, class: "anchor-dot" });
   dot.appendChild(svgEl("title", {}, anchorId ? `Anker ${anchorId}` : "Anker"));
   const nodes = [dot];
-  if (anchorId) {
+  const coversStart = start && Math.hypot(start.x - geo.cx, start.y - geo.cy) < 0.5;
+  if (anchorId && !coversStart) {
     nodes.push(svgEl("text", { x: geo.cx, y: geo.cy - 0.7, class: "anchor-label", "text-anchor": "middle", "font-size": 0.55 }, anchorId));
   }
   return nodes;
@@ -171,7 +184,7 @@ function buildSvg(layout, scene) {
   const { width, height } = gridDimensions(layout);
   const svg = svgEl("svg", {
     class: "map-svg",
-    viewBox: `0 0 ${width} ${height}`,
+    viewBox: (({ x, y, width: vw, height: vh }) => `${x} ${y} ${vw} ${vh}`)(paddedView({ width, height })),
     preserveAspectRatio: "xMidYMid meet",
     role: "img",
     "aria-label": "Ladenplan",
@@ -186,7 +199,7 @@ function buildSvg(layout, scene) {
     const geo = geometry(el);
     if (el.type === "shelf") shelves.push(...shelfNodes(el, geo, el === scene.highlight));
     else if (el.type === "entrance") markers.push(...entranceNodes(el, geo));
-    else if (el.type === "anchor") markers.push(...anchorNodes(el, geo));
+    else if (el.type === "anchor") markers.push(...anchorNodes(el, geo, scene.start));
     else base.push(...otherNodes(el, geo));
   }
   svg.append(...base, ...shelves, ...markers);
@@ -264,7 +277,8 @@ export function createMap({ viewport, stage, zoomLabel, zoomIn, zoomOut, zoomRes
     if (layout !== currentLayout) {
       currentLayout = layout;
       dims = gridDimensions(layout);
-      viewport.style.aspectRatio = `${dims.width} / ${dims.height}`;
+      const view = paddedView(dims);
+      viewport.style.aspectRatio = `${view.width} / ${view.height}`;
       scale = MIN_SCALE;
       tx = 0;
       ty = 0;
