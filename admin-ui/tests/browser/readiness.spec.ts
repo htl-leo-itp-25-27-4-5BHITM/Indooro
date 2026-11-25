@@ -227,5 +227,6 @@ test("readiness page lists NO_STORE_PRODUCTS and NO_SHELVES as blocking for an e
   await expect(page.getByRole("heading", { name: "Blockierend (2)" })).toBeVisible();
   await expect(page.getByRole("listitem").filter({ hasText: "Der Markt hat noch keine eigenen Produkte." })).toBeVisible();
   await expect(page.getByRole("listitem").filter({ hasText: "Das Layout hat keine Regale." })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Warnungen" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Warnungen (0)" })).toBeVisible();
+  await expect(page.getByText("Keine Warnungen.")).toBeVisible();
 });

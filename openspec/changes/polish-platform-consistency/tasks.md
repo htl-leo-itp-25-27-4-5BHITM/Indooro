@@ -53,3 +53,10 @@
 - [x] 8.2 Customer web polish: map labels no longer clipped, header aligned with page column, empty status hidden; no overflow at 375/768/1440.
 - [x] 8.3 Legacy static admin `app.js` and `editor.js`: create calls tolerate 201/204 + `Location` (GET it), else parse body as before. (Delivered by #231, P1.)
 - [x] 8.4 Tests and before/after screenshots under `docs/polish/customer-web/`.
+
+## 10. P8 Admin browser tests (polish-admin-tests)
+
+- [x] 10.1 Run `npm run test:browser` on `main` and classify every failure as stale test, UI bug or flaky.
+- [x] 10.2 Fix stale tests and mocks, including create POSTs answering `201 Created` + `Location`.
+- [x] 10.3 Add browser assertions for the polish contract (no horizontal scroll, editor fits viewport, store create lands on detail).
+- [x] 10.4 Full browser suite green; report whether CI runs it.

@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import type { LayoutDocument } from "../../src/editor/model";
+import { fulfillCreatedVersion } from "./support/created";
 
 const layout = JSON.parse(readFileSync(new URL("../../src/editor/fixtures/store-layout.json", import.meta.url), "utf8")) as LayoutDocument;
 const assignedBeacons = [{ beaconCode: "IN-001", beaconId: "beacon-db-1", identityKey: "123e4567-e89b-12d3-a456-426614174000:1:2", uuid: "123e4567-e89b-12d3-a456-426614174000", major: 1, minor: 2 }];
@@ -17,7 +18,7 @@ async function mockEditor(page: Page, status: "ACTIVE" | "DRAFT", saved: LayoutD
       const payload = route.request().postDataJSON() as { activate: boolean; layout: LayoutDocument };
       expect(payload.activate).toBe(false);
       saved.push(payload.layout);
-      return route.fulfill({ json: { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "DRAFT", layoutName: "Indooro Testfiliale", layout: payload.layout } });
+      return fulfillCreatedVersion(route, { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "DRAFT", layoutName: "Indooro Testfiliale", layout: payload.layout });
     }
     if (path.endsWith("/activate")) return route.fulfill({ json: { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "ACTIVE", layout: saved.at(-1) } });
     return route.fulfill({ status: 404, json: { message: "Unexpected editor route" } });
@@ -341,13 +342,13 @@ test("JSON import validates, remains undoable, and export downloads the current 
   await page.goto("/admin/next/editor/?storeId=store-1");
   const file = page.locator(".le-file-input");
   await file.setInputFiles({ name: "broken.json", mimeType: "application/json", buffer: Buffer.from('{"shopName":"broken"}') });
-  await expect(page.getByRole("status")).toContainText("Import fehlgeschlagen");
+  await expect(page.locator(".le-message")).toContainText("Import fehlgeschlagen");
   await expect(page.locator(".le-save-indicator")).toContainText("Gespeichert");
 
   const imported = { ...layout, shopName: "Importierte Filiale", navigationMetadata: { source: "fixture" } };
   await file.setInputFiles({ name: "layout.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(imported)) });
   await expect(page.getByRole("heading", { name: "Indooro Testfiliale" })).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("Grundriss importiert");
+  await expect(page.locator(".le-message")).toContainText("Grundriss importiert");
   await expect(page.getByText("Ungespeicherte Änderungen")).toBeVisible();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "JSON exportieren" }).click();
@@ -361,7 +362,7 @@ test("JSON import validates, remains undoable, and export downloads the current 
   await expect(page.getByText("Ungespeicherte Änderungen")).toHaveCount(0);
   await file.setInputFiles({ name: "layout.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(imported)) });
   await page.getByRole("button", { name: "Entwurf speichern" }).click();
-  await expect(page.getByRole("status")).toContainText("Entwurf gespeichert");
+  await expect(page.locator(".le-message")).toContainText("Entwurf gespeichert");
   expect(saved[0].navigationMetadata).toEqual({ source: "fixture" });
 });
 

@@ -3,6 +3,7 @@ import { expect, test, type Page, type Worker as PlaywrightWorker } from "@playw
 import { computeCoverage, coverageRule, type CoverageInput } from "../../src/editor/coverage";
 import { formatCoverageSummary, formatGapLine } from "../../src/editor/coverageView";
 import type { LayoutDocument, LayoutElement } from "../../src/editor/model";
+import { fulfillCreatedVersion } from "./support/created";
 
 const fixture = JSON.parse(readFileSync(new URL("../../src/editor/fixtures/store-layout.json", import.meta.url), "utf8")) as LayoutDocument;
 const uuid = "123e4567-e89b-12d3-a456-426614174000";
@@ -56,7 +57,7 @@ async function mockEditor(page: Page, options: { layout?: LayoutDocument; saved?
       const payload = route.request().postDataJSON() as { activate: boolean; layout: LayoutDocument };
       expect(payload.activate).toBe(false);
       saved.push(payload.layout);
-      return route.fulfill({ json: { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "DRAFT", layoutName: payload.layout.shopName, layout: payload.layout } });
+      return fulfillCreatedVersion(route, { layoutId: `draft-${saved.length}`, versionNo: saved.length + 1, status: "DRAFT", layoutName: payload.layout.shopName, layout: payload.layout });
     }
     return route.fulfill({ status: 404, json: { message: "Unexpected editor route" } });
   });
