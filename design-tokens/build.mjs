@@ -1,6 +1,7 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { buildSwift } from './build-swift.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const source = JSON.parse(await readFile(path.join(directory, 'tokens.json'), 'utf8'));
@@ -90,6 +91,10 @@ if (process.argv.slice(2).some((arg) => arg !== '--check')) fail('Usage: node de
 const targets = Object.entries(outputs).map(([name, content]) => [path.join(directory, 'dist', name), content]);
 // Quarkus serves this checked copy directly; no backend build or HTML changes.
 targets.push([path.join(directory, '../backend/indooro_server/src/main/resources/META-INF/resources/design-tokens/tokens.css'), outputs['tokens.css']]);
+targets.push([
+  path.resolve(directory, '../swift/indooro-EinkaeuferFinal/indooroApp/DesignSystem/IndooroTokens.swift'),
+  buildSwift(entries, resolve),
+]);
 for (const [target, content] of targets) {
   if (process.argv.includes('--check')) {
     const existing = await readFile(target, 'utf8').catch((error) => {
