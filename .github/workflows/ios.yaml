@@ -132,6 +132,8 @@ jobs:
               -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj \
               -scheme MCindooroApp \
               -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
+              -only-testing:MCindooroAppUITests/AccessibilityAuditUITests \
+              -resultBundlePath "$RUNNER_TEMP/audit.xcresult" \
               -skipPackagePluginValidation \
               CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$1"
             return "${PIPESTATUS[0]}"
@@ -145,3 +147,10 @@ jobs:
             status=$?
           fi
           exit "$status"
+
+      - name: Upload audit result bundle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-xcresult
+          path: ${{ runner.temp }}/audit.xcresult
