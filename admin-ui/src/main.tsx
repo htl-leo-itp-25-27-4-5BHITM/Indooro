@@ -4,12 +4,18 @@ import { createRoot } from "react-dom/client";
 import { ApiClientError, createApiClient } from "./api/client";
 import { Dashboard } from "./Dashboard";
 import { StoresPage } from "./StoresPage";
+// Keep route styles eager and in their original cascade order while deferring route JavaScript.
+import "./editor/LayoutEditor.css";
+import "./editor/MobileCurrentPreview.css";
 import { StoreDetailPage } from "./StoreDetailPage";
+import "./AnchorPrintPage.css";
 import { ReadinessPage } from "./ReadinessPage";
 import { RegionsPage } from "./RegionsPage";
 import { StoreCreatePage } from "./StoreCreatePage";
 import { BeaconsPage } from "./BeaconsPage";
+import "./RecipesPage.css";
 import { DiagnosticsPage } from "./DiagnosticsPage";
+import "./LegacyEditorRoute.css";
 import { ProductsPage } from "./ProductsPage";
 import { CategoriesPage } from "./CategoriesPage";
 import { SearchIndexPage } from "./SearchIndexPage";
