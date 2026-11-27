@@ -6,7 +6,7 @@ struct PermissionBanner: View {
     @ObservedObject var manager: BeaconManager
     var body: some View {
         if manager.trackingMode == .beacon {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value8px) {
                 if manager.locationAuthorization == .denied || manager.locationAuthorization == .restricted || !CLLocationManager.locationServicesEnabled() {
                     Label("Standortzugriff fehlt", systemImage: "location.slash")
                     settingsButton

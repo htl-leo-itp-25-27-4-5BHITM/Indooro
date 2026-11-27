@@ -7,8 +7,14 @@ export default defineConfig({
   testDir: "tests/browser",
   timeout: 30_000,
   projects: [
-    { name: "browser", testIgnore: "a11y.spec.ts" },
-    { name: "a11y", testMatch: "a11y.spec.ts", timeout: 60_000 }
+    { name: "functional", testIgnore: ["**/visual/**", "**/a11y.spec.ts"] },
+    { name: "a11y", testMatch: "**/a11y.spec.ts", timeout: 60_000 },
+    {
+      name: "visual",
+      testMatch: "**/visual/**/*.spec.ts",
+      use: { reducedMotion: "reduce", locale: "de-AT", timezoneId: "Europe/Vienna", colorScheme: "light" },
+      expect: { toHaveScreenshot: { animations: "disabled", caret: "hide", maxDiffPixelRatio: 0.005 } }
+    }
   ],
   use: {
     baseURL: `http://127.0.0.1:${port}`,
