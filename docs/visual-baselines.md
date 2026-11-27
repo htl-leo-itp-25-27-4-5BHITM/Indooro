@@ -27,8 +27,9 @@ With GitHub CLI installed and authenticated (`gh auth login`), run from any dire
 ```
 
 The optional source `ref` defaults to the current checkout branch. The helper
-uses that checkout's current branch for the workflow definition, identifies the
-new dispatch by actor, branch and run title, waits for success, downloads every
+uses that checkout's current branch for the workflow definition and the exact
+run URL returned by newer GitHub CLI versions. With older versions, it identifies
+the new dispatch by actor, branch and run title. It waits for success, downloads every
 requested artifact, then copies PNGs into:
 
 - `admin-ui/tests/browser/visual/screens.spec.ts-snapshots/`
