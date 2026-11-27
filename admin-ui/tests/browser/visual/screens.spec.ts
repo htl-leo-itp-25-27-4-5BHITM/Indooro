@@ -67,6 +67,8 @@ test("representative stores server error", async ({ page }) => {
   await page.goto("/admin/next/stores/");
   await expect(page.getByRole("alert")).toContainText("Serverfehler. Bitte später erneut versuchen.");
   await page.evaluate(() => document.fonts.ready);
+  // Strict CI rejects missing baselines before capturing; retain Linux bootstrap evidence in its artifact.
+  await page.screenshot({ path: test.info().outputPath("stores-error-linux-capture.png"), fullPage: true, animations: "disabled", caret: "hide" });
   await expect(page).toHaveScreenshot("stores-error-1440x900.png", { fullPage: true });
 });
 
@@ -77,5 +79,6 @@ test("representative stores empty state", async ({ page }) => {
   const empty = page.locator(".empty-state");
   await expect(empty).toContainText("Noch keine Stores vorhanden.");
   await page.evaluate(() => document.fonts.ready);
+  await empty.screenshot({ path: test.info().outputPath("stores-empty-linux-capture.png"), animations: "disabled", caret: "hide" });
   await expect(empty).toHaveScreenshot("stores-empty-state-1440x900.png");
 });
