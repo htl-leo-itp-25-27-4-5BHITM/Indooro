@@ -24,9 +24,15 @@ list_runs() {
     --template '{{range .}}{{.databaseId}}{{"\t"}}{{.displayTitle}}{{"\n"}}{{end}}'
 }
 list_runs > "$tmp/before"
-gh workflow run "$workflow" --ref "$branch" -f "ref=$ref" -f "project=$project"
+dispatch_output=$(gh workflow run "$workflow" --ref "$branch" -f "ref=$ref" -f "project=$project")
+printf '%s\n' "$dispatch_output"
 run_id=
+# Recent gh versions return the exact run URL. Keep polling for older versions.
+if [[ "$dispatch_output" =~ /actions/runs/([0-9]+) ]]; then
+  run_id=${BASH_REMATCH[1]}
+fi
 for ((attempt=0; attempt<60; attempt++)); do
+  [ -z "$run_id" ] || break
   list_runs > "$tmp/after"
   candidates=()
   while IFS=$'\t' read -r id run_title; do
