@@ -1,5 +1,8 @@
+import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 import { gotoTab, openDemo, selectMarket } from "../helpers";
+
+const elementScreenshotStyle = fileURLToPath(new URL("./element-screenshot.css", import.meta.url));
 
 const viewports = [
   { width: 390, height: 844 },
@@ -33,9 +36,9 @@ for (const viewport of viewports) {
       for (const id of ["top", "problem", "demo", "so-funktionierts", "betreiber", "projektstand", "pilot", "kontakt"]) {
         const section = page.locator(`#${id}`);
         await section.scrollIntoViewIfNeeded();
-        await expect(section).toHaveScreenshot(`${viewport.width}-section-${id}.png`);
+        await expect(section).toHaveScreenshot(`${viewport.width}-section-${id}.png`, { stylePath: elementScreenshotStyle });
       }
-      await expect(page.getByRole("contentinfo")).toHaveScreenshot(`${viewport.width}-footer.png`);
+      await expect(page.getByRole("contentinfo")).toHaveScreenshot(`${viewport.width}-footer.png`, { stylePath: elementScreenshotStyle });
     });
 
     test("search, empty and populated lists, and planned route in both markets", async ({ page }) => {
@@ -47,16 +50,16 @@ for (const viewport of viewports) {
         await gotoTab(page, "suche");
         await page.getByTestId("search-input").fill("Paradeiser");
         await expect(page.getByTestId("search-result").first()).toBeVisible();
-        await expect(demo).toHaveScreenshot(`${viewport.width}-${market}-search.png`);
+        await expect(demo).toHaveScreenshot(`${viewport.width}-${market}-search.png`, { stylePath: elementScreenshotStyle });
         await gotoTab(page, "liste");
         await expect(page.getByTestId("list-empty")).toBeVisible();
-        await expect(demo).toHaveScreenshot(`${viewport.width}-${market}-empty-list.png`);
+        await expect(demo).toHaveScreenshot(`${viewport.width}-${market}-empty-list.png`, { stylePath: elementScreenshotStyle });
         await page.getByTestId("load-example").click();
         await expect(page.getByTestId("list-item")).toHaveCount(market === "DEMO-NORD" ? 7 : 6);
-        await expect(demo).toHaveScreenshot(`${viewport.width}-${market}-example-list.png`);
+        await expect(demo).toHaveScreenshot(`${viewport.width}-${market}-example-list.png`, { stylePath: elementScreenshotStyle });
         await gotoTab(page, "navigation");
         await expect(page.getByTestId("nav-start")).toBeVisible();
-        await expect(demo).toHaveScreenshot(`${viewport.width}-${market}-route.png`);
+        await expect(demo).toHaveScreenshot(`${viewport.width}-${market}-route.png`, { stylePath: elementScreenshotStyle });
       }
     });
 
@@ -101,7 +104,7 @@ for (const viewport of viewports) {
           opacity: 0 !important;
         }
       ` });
-      await expect(page.getByTestId("store-demo")).toHaveScreenshot(`${viewport.width}-store-3d.png`);
+      await expect(page.getByTestId("store-demo")).toHaveScreenshot(`${viewport.width}-store-3d.png`, { stylePath: elementScreenshotStyle });
     });
   });
 }

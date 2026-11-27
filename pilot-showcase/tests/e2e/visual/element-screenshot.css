@@ -1,0 +1,8 @@
+/* Element screenshots scroll tall sections into view. Fixed page chrome otherwise
+   lands at different positions within the crop as panel heights change.
+   Landing and tour viewport screenshots retain this chrome and cover its layout. */
+body > #root > header,
+[data-testid="chapter-rail"],
+[data-testid="tour-launcher"] {
+  opacity: 0 !important;
+}
