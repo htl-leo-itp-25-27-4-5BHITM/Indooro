@@ -203,7 +203,7 @@ jobs:
       # Linux baselines are generated on Ubuntu 24.04 and committed; this gate never updates them.
       - name: Visual regression tests
         working-directory: admin-ui
-        run: npm run test:visual -- --update-snapshots=changed --reporter=list,html --trace=retain-on-failure
+        run: npm run test:visual -- --update-snapshots=none --reporter=list,html --trace=retain-on-failure
 
       - name: Upload Linux visual baselines
         if: always()
