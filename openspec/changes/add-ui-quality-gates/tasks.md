@@ -1,11 +1,11 @@
 ## 1. Package A — Visual regression
 
-- [ ] 1.1 A1 admin-ui visual: Record dashboard, management list, form/dialog and editor capture states; add deterministic role/scope fixtures and readiness/font checks to the existing browser suite.
-- [ ] 1.2 A1 admin-ui visual: Add `toHaveScreenshot` projects at 390, 768 and 1440 px with fixed heights, reduced motion, disabled animations, targeted volatile masks and `maxDiffPixelRatio` <= 0.01.
-- [ ] 1.3 A2 pilot-showcase visual: Add initial view, representative tab and tour screenshots at all three widths with fixed data, readiness checks and the same motion, masking and threshold policy.
-- [ ] 1.4 A3 customer web visual: Add a local static-assets suite covering landing plus `/customer/` store selection, results and map/list at all three widths, using fixed public API fixtures and the same screenshot policy.
-- [ ] 1.5 A1–A3 CI: Extend the browser jobs on `ubuntu-24.04`, preserving existing checks and adding customer/landing coverage, matching browser/font installation and expected/actual/diff report uploads on failure; include relevant source, fixture and workflow paths.
-- [ ] 1.6 A1–A3 baseline bootstrap: On the first implementation push run only the new visual tests with `--update-snapshots=missing`, upload each snapshot folder, download using `gh run download`, inspect and commit the Linux baselines without replacing them with Mac images.
+- [x] 1.1 A1 admin-ui visual: Record dashboard, management list, form/dialog and editor capture states; add deterministic role/scope fixtures and readiness/font checks to the existing browser suite.
+- [x] 1.2 A1 admin-ui visual: Add `toHaveScreenshot` projects at 390, 768 and 1440 px with fixed heights, reduced motion, disabled animations, targeted volatile masks and `maxDiffPixelRatio` <= 0.01.
+- [x] 1.3 A2 pilot-showcase visual: Add initial view, representative tab and tour screenshots at all three widths with fixed data, readiness checks and the same motion, masking and threshold policy.
+- [x] 1.4 A3 customer web visual: Add a local static-assets suite covering landing plus `/customer/` store selection, results and map/list at all three widths, using fixed public API fixtures and the same screenshot policy.
+- [x] 1.5 A1–A3 CI: Extend the browser jobs on `ubuntu-24.04`, preserving existing checks and adding customer/landing coverage, matching browser/font installation and expected/actual/diff report uploads on failure; include relevant source, fixture and workflow paths.
+- [x] 1.6 A1–A3 baseline bootstrap: On the first implementation push run only the new visual tests with `--update-snapshots=missing`, upload each snapshot folder, download using `gh run download`, inspect and commit the Linux baselines without replacing them with Mac images.
 - [ ] 1.7 A1–A3 strict verification: Remove the bootstrap flag, push again and pass comparison at every width; temporarily prove an excessive unmasked difference and a missing baseline each fail CI, then remove those negative controls.
 - [ ] 1.8 A1–A3 documentation: Record exact capture inventories, Linux artifact paths, bootstrap/download commands, strict local/CI commands and the reviewed intentional-update procedure.
 
@@ -13,7 +13,7 @@
 
 - [ ] 2.1 B1 admin axe: Install `@axe-core/playwright` with lockfile updates; scan dashboard, list, form/dialog and editor fixture states at all three widths with `wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`; fail on serious/critical impact and retain full diagnostics.
 - [ ] 2.2 B2 showcase axe: Add tagged scans for initial view, active content tabs and tour states at 390, 768 and 1440 px with the same severity policy and reports.
-- [ ] 2.3 B3 customer web axe: Add anonymous tagged scans for landing, store selection, product results and map/list at all three widths with the same severity policy and reports.
+- [x] 2.3 B3 customer web axe: Add anonymous tagged scans for landing, store selection, product results and map/list at all three widths with the same severity policy and reports.
 - [ ] 2.4 B1–B3 remediation: Fix reported serious/critical findings in each package while preserving German UI copy and existing auth boundaries; retain lower-impact findings in reports without blanket exclusions or disabled rules.
 - [ ] 2.5 B1–B3 CI verification: Wire scans into pull-request jobs, preserve functional/visual checks, prove a temporary serious/critical fixture fails and a lower-impact finding remains reported, then remove negative controls and pass clean scans.
 - [ ] 2.6 B4 iOS audit: Extend `MCindooroAppUITests` with `performAccessibilityAudit` for Start, Planung, Rezepte, Einkaufen, Karte and representative search/tour/dialog states using `-uiTesting` fixtures without live network, BLE or permission prompts.
@@ -24,9 +24,9 @@
 ## 3. Package C — Shared design tokens
 
 - [ ] 3.1 C1 token source + CSS generation: Inventory existing web/iOS color, typography, spacing and radius values and capture pre-migration appearance evidence; establish DTCG `design-tokens/tokens.json` with typed values, aliases and explicit platform/appearance semantics.
-- [ ] 3.2 C1 token source + CSS generation: Implement deterministic CSS custom property generation with documented type/unit mappings, supported DTCG subset, generated-file headers and a regeneration command; reject invalid values, unsupported types, unresolved/cyclic aliases and output-name collisions without partial writes.
+- [x] 3.2 C1 token source + CSS generation: Implement deterministic CSS custom property generation with documented type/unit mappings, supported DTCG subset, generated-file headers and a regeneration command; reject invalid values, unsupported types, unresolved/cyclic aliases and output-name collisions without partial writes.
 - [ ] 3.3 C1 token source + CSS generation: Commit generated CSS, integrate it into admin-ui, pilot-showcase, customer and landing build/static serving, and replace corresponding shared values with generated properties while preserving responsive behavior and German copy.
-- [ ] 3.4 C1 token source + CSS generation: Add temporary-output drift checking to CI, trigger affected web gates for token/generator changes and verify generation determinism, error handling, stale-output failure and all web builds.
+- [x] 3.4 C1 token source + CSS generation: Add temporary-output drift checking to CI, trigger affected web gates for token/generator changes and verify generation determinism, error handling, stale-output failure and all web builds.
 - [ ] 3.5 C2 iOS Swift generation: Generate typed Swift constants from the same source with explicit color/alpha, dimension, font and light/dark mappings; document and commit the generated output and include it in the canonical MCindooroApp target.
 - [ ] 3.6 C2 iOS Swift generation: Migrate corresponding canonical views to generated constants and verify compilation, alias/error handling, deterministic output and stale-Swift failure in CI; trigger iOS build/audit checks for token/generator changes.
 - [ ] 3.7 C1–C2 parity verification: Pass A/B gates against pre-migration web baselines and compare iOS before/after captures on the same simulator in light/dark and representative Dynamic Type settings; correct conversion drift without refreshing baselines to hide it.
@@ -36,3 +36,66 @@
 
 - [ ] 4.1 Verify every added requirement against implementation evidence, keep existing tests/security/CI gates intact, and run `npx -y @fission-ai/openspec@1.3.1 validate add-ui-quality-gates --strict` plus `npx -y @fission-ai/openspec@1.3.1 validate --all --strict`.
 - [ ] 4.2 After A, B and C are implemented and verified, archive `add-ui-quality-gates` with OpenSpec so the reviewed deltas reach permanent specs, then validate the archived result. Do not archive this proposal-only PR.
+
+## Main verification — 2026-11-27
+
+Reviewed against `origin/main` at `cc0c1e9b`, including merged PRs #249, #252,
+#248, #254, #251, #255, #253 and #246. A merged package does not close a task
+whose full acceptance criteria are still outstanding.
+
+Completed evidence:
+
+- A1–A3: `admin-ui/tests/browser/visual/`,
+  `pilot-showcase/tests/e2e/visual/`, `web-quality/tests/pages.spec.mjs` and their
+  Playwright configs contain deterministic captures at 390, 768 and 1440 px,
+  fixed heights, readiness/font checks and a 0.5% screenshot budget. Committed
+  Linux baselines came from Actions artifacts (admin run `46053802361`, showcase
+  strict run `46056367534`, customer bootstrap run `46053635228` and strict run
+  `46054007303`); `.github/workflows/ci.yaml` retains Ubuntu jobs and failure
+  reports. PR #246 adds matching source/workflow/token path filters.
+- B3: `web-quality/tests/pages.spec.mjs` runs tagged axe scans
+  with full JSON attachments at all three widths in light/dark themes.
+  PRs #249, #254 and #251 fix customer, admin/editor and showcase findings;
+  the admin and showcase audit sources retain the serious/critical policy
+  without disabling rules.
+- C1 generation and CI: `design-tokens/build.mjs`, `build.test.mjs` and
+  `README.md` define CSS/TS mappings, aliases, validation and regeneration.
+  The contract job tests/checks generated outputs; token paths trigger affected
+  web jobs. PR #255 records passing builds and strict web gates against the
+  existing baselines, with no PNG updates.
+
+Unchecked tasks retain these limits:
+
+- 1.7: strict comparisons exist, but the merged implementation evidence does
+  not demonstrate both temporary excessive-difference and missing-baseline
+  negative controls in CI.
+- 1.8: the customer README documents the full baseline procedure; equivalent
+  complete capture inventories and update/download guidance for admin and
+  showcase are not documented in their READMEs.
+- 2.1 and 2.2: `admin-ui/tests/browser/a11y.spec.ts` and
+  `pilot-showcase/tests/a11y/accessibility.spec.ts` scan 390 and 1440 px only.
+  Admin also discards lower-impact results rather than attaching full axe JSON.
+- 2.4: remediation is merged, but admin does not retain lower-impact findings
+  in reports, so the full task remains open.
+- 2.5: scans run in CI, but evidence of the temporary failing fixture and
+  retained lower-impact report is incomplete (including admin diagnostics).
+- 2.6–2.8: B4 remains open with PR #247; no iOS audit completion is claimed.
+  2.9 also awaits complete B1–B4 documentation and manual verification guidance.
+- 3.1: `INVENTORY.md` inventories web values; the complete iOS inventory,
+  pre-migration appearance evidence and explicit appearance semantics remain
+  unverified.
+- 3.3: admin/showcase consume generated tokens and the backend serves a checked
+  CSS copy. `design-tokens/README.md` explicitly leaves customer/landing HTML
+  loading and value migration as follow-up.
+- 3.5: `build-swift.mjs` generates sRGB colors/alpha and px spacing/radii into
+  `indooroApp/DesignSystem/IndooroTokens.swift`; it omits fonts and rem values
+  and provides no light/dark mapping.
+- 3.6: canonical views adopt exact constants, generated Swift is drift-checked,
+  and token changes trigger iOS CI, but the required audit integration remains
+  open with B4. PR #253 reports stale/missing Swift negative checks separately.
+- 3.7: PR #255 verifies web parity, but equivalent iOS before/after simulator
+  captures in light/dark and representative Dynamic Type settings are absent.
+- 3.8: shared regeneration/output documentation exists; complete Swift naming
+  and conversion guidance plus delivery/rollback documentation remain open.
+- 4.1–4.2: full implementation verification and archive await the above work.
+  Keep this change active.

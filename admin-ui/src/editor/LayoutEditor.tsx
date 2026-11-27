@@ -491,7 +491,8 @@ export function LayoutEditor({ api, initialDocument, mode, storeId, storeName, a
             {TYPES.map((item) => <option key={item.type} value={item.type}>{item.label}</option>)}
           </select></label>
         </div>
-        <svg ref={svgRef} tabIndex={0} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} aria-label="Interaktiver Grundriss" aria-describedby="le-keyboard-help" role="group">
+        {/* Size containment keeps the measured viewBox ratio from sizing the canvas itself. */}
+        <svg style={{ contain: "size" }} ref={svgRef} tabIndex={0} className={`le-canvas le-tool-${tool}`} viewBox={`0 0 ${canvasSize.width} ${canvasSize.height}`} preserveAspectRatio="none" onPointerDown={onBackgroundDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerCancel} aria-label="Interaktiver Grundriss" aria-describedby="le-keyboard-help" role="group">
           <defs><pattern id="le-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M 1 0 L 0 0 0 1" fill="none" stroke="#d9e2df" strokeWidth={0.045} /></pattern><clipPath id="le-underlay-clip"><rect x="0" y="0" width={document.gridSize.width} height={document.gridSize.height} /></clipPath></defs>
           <g transform={`translate(${viewport.x} ${viewport.y}) scale(${viewport.scale})`}>
             <rect x={0} y={0} width={document.gridSize.width} height={document.gridSize.height} fill="#fff" stroke="#aabfba" strokeWidth={1 / viewport.scale} />
