@@ -8,41 +8,41 @@
  * on light surfaces the accessible accent #167768 (admin-ui) is used for text.
  */
 @theme {
-  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  --font-sans: var(--ind-font-family-showcase-sans);
+  --font-mono: var(--ind-font-family-showcase-mono);
 
   /* Dark surfaces (hero, demo, map) */
-  --color-ink-950: #050c10;
-  --color-ink-900: #071117;
-  --color-ink-850: #0a161c;
-  --color-ink-800: #0d1b22;
-  --color-ink-700: #11242b;
-  --color-ink-600: #18313a;
-  --color-ink-500: #29454d;
-  --color-ink-400: #31515a;
-  --color-ink-300: #5a777a;
-  --color-ink-200: #9db0b2;
-  --color-ink-100: #d6e0e0;
+  --color-ink-950: var(--ind-color-showcase-ink-950);
+  --color-ink-900: var(--ind-color-showcase-ink-900);
+  --color-ink-850: var(--ind-color-showcase-ink-850);
+  --color-ink-800: var(--ind-color-showcase-ink-800);
+  --color-ink-700: var(--ind-color-showcase-ink-700);
+  --color-ink-600: var(--ind-color-showcase-ink-600);
+  --color-ink-500: var(--ind-color-showcase-ink-500);
+  --color-ink-400: var(--ind-color-showcase-ink-400);
+  --color-ink-300: var(--ind-color-showcase-ink-300);
+  --color-ink-200: var(--ind-color-showcase-ink-200);
+  --color-ink-100: var(--ind-color-showcase-ink-100);
 
   /* Light surfaces */
-  --color-paper: #f4f7f5;
-  --color-paper-2: #eaf0ec;
-  --color-line: #dce5e1;
-  --color-text: #0f1f17;
-  --color-muted: #50645a;
+  --color-paper: var(--ind-color-showcase-paper);
+  --color-paper-2: var(--ind-color-showcase-paper-2);
+  --color-line: var(--ind-color-showcase-line);
+  --color-text: var(--ind-color-showcase-text);
+  --color-muted: var(--ind-color-showcase-muted);
 
   /* Brand accents */
-  --color-mint: #63e6b4;
-  --color-mint-soft: #b8f5dc;
-  --color-teal: #27b9ab;
-  --color-accent: #167768; /* accessible on paper */
-  --color-accent-strong: #0f5e52;
-  --color-brand-green: #309048;
-  --color-pin: #e03830;
-  --color-amber: #e8b86d;
-  --color-warn: #f2a541;
-  --color-danger: #e5484d;
-  --color-ok: #3ccf8e;
+  --color-mint: var(--ind-color-showcase-mint);
+  --color-mint-soft: var(--ind-color-showcase-mint-soft);
+  --color-teal: var(--ind-color-showcase-teal);
+  --color-accent: var(--ind-color-showcase-accent); /* accessible on paper */
+  --color-accent-strong: var(--ind-color-showcase-accent-strong);
+  --color-brand-green: var(--ind-color-showcase-brand-green);
+  --color-pin: var(--ind-color-showcase-pin);
+  --color-amber: var(--ind-color-showcase-amber);
+  --color-warn: var(--ind-color-showcase-warn);
+  --color-danger: var(--ind-color-showcase-danger);
+  --color-ok: var(--ind-color-showcase-ok);
 
   --radius-xl: 1rem;
   --radius-2xl: 1.25rem;
@@ -71,7 +71,7 @@
   :focus-visible {
     outline: 2px solid var(--color-teal);
     outline-offset: 3px;
-    border-radius: 6px;
+    border-radius: var(--ind-radius-6px);
   }
   .on-dark :focus-visible {
     outline-color: var(--color-mint);
@@ -128,7 +128,7 @@
   }
   &::-webkit-scrollbar-thumb {
     background: rgb(255 255 255 / 0.16);
-    border-radius: 999px;
+    border-radius: var(--ind-radius-999px);
     border: 2px solid transparent;
     background-clip: content-box;
   }
@@ -163,7 +163,7 @@
   }
 }
 @utility mask-radial {
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, var(--ind-color-palette-hex-000) 30%, transparent 75%);
 }
 
 @media (prefers-reduced-motion: reduce) {
