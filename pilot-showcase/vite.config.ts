@@ -7,7 +7,24 @@ import tailwindcss from "@tailwindcss/vite";
 export default defineConfig({
   base: "./",
   plugins: [react(), tailwindcss()],
-  build: { outDir: "dist", emptyOutDir: true, target: "es2022" },
+  build: {
+    manifest: true,
+    outDir: "dist",
+    emptyOutDir: true,
+    target: "es2022",
+    rollupOptions: {
+      output: {
+        // Keep vendor boundaries explicit so deferred views stay deferred.
+        onlyExplicitManualChunks: true,
+        manualChunks(id) {
+          if (!id.includes("/node_modules/")) return;
+          if (/\/(react|react-dom|scheduler)\//.test(id)) return "react-vendor";
+          if (/\/three\//.test(id)) return "three-vendor";
+          if (/\/(motion|motion-dom|motion-utils|framer-motion)\//.test(id)) return "motion-vendor";
+        }
+      }
+    }
+  },
   server: { port: 4316 },
   test: {
     include: ["src/**/*.test.ts"],
