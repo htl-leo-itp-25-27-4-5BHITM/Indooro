@@ -157,6 +157,13 @@ Gezählt aus den Logs grüner GitHub-Actions-Läufe (nicht geschätzt):
 - iOS, Positioning-Lab und Feldwerkzeuge laufen nur, wenn sich ihr Bereich ändert.
 - Selbst nachzählen: `gh run view <id> --log | grep -E "Tests run:|# tests|passed|Ran [0-9]+ tests|Executed [0-9]+ tests"`.
 
+### Wo laufen die Tests?
+
+- **Auf GitHub**, nicht lokal und nicht in der LeoCloud. Alle Workflows nutzen GitHub-gehostete Runner (`runs-on: ubuntu-latest`, `ubuntu-24.04`, `macos-latest`), keinen eigenen Server. Jeder Lauf bekommt eine frische virtuelle Maschine.
+- **Lokal** kann jede Person dieselben Befehle ausführen (z. B. `mvn -B verify`, `npm test`). Das ist freiwillig; verbindlich ist nur der Lauf auf GitHub.
+- **Ausnahme:** Die Swift-Schritte der Feldwerkzeuge laufen laut `field-tools.yaml` nur lokal auf einem Mac mit Xcode; in der CI ersetzt sie ein Platzhalter.
+- **Kosten:** Das Repo ist öffentlich. Die GitHub-API meldet für unsere Läufe `billable … total_ms: 0` (z. B. `gh api repos/htl-leo-itp-25-27-4-5BHITM/Indooro/actions/runs/45698916510/timing`), auch für macOS. Die Nutzungsseite der Organisation zeigt trotzdem Minuten und einen Bruttobetrag an.
+
 ### Schritt 5: Review und Merge
 
 - Der PR wird gemergt, wenn die Checks grün sind.
