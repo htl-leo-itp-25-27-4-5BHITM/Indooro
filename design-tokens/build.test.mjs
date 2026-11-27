@@ -11,6 +11,7 @@ async function fixture(t, tokens) {
   const dir = path.join(root, 'design-tokens');
   await mkdir(dir);
   await copyFile(new URL('./build.mjs', import.meta.url), path.join(dir, 'build.mjs'));
+  await copyFile(new URL('./build-swift.mjs', import.meta.url), path.join(dir, 'build-swift.mjs'));
   await writeFile(path.join(dir, 'tokens.json'), JSON.stringify(tokens));
   return { dir, run: (...args) => spawnSync(process.execPath, [path.join(dir, 'build.mjs'), ...args], { cwd: tmpdir(), encoding: 'utf8' }) };
 }
