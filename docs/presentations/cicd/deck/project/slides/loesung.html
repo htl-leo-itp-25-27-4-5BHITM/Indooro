@@ -12,6 +12,6 @@
 <div class="step in" style="--i:4"><p class="step-n">5</p><p class="step-p">Wackelige Tests: nur bei bekannten Fehlern und nur einmal neu starten.</p></div>
 <div class="step in" style="--i:5"><p class="step-n">6</p><p class="step-p">Nach dem Merge auf main läuft weiterhin alles. Das Image entsteht wie vorher.</p></div>
 </div>
-<p class="small">Merke: Bei vielen parallelen Agenten kostet jeder Push. Die Pipeline muss dafür gebaut sein.</p>
+<p class="small">Weiterhin automatisch: Jeder Pull Request wird geprüft, nur gezielter. Merke: Bei vielen parallelen Agenten kostet jeder Push.</p>
 <aside>Die drei großen Hebel sind billig: Pfadfilter, alte Läufe abbrechen und Entwürfe überspringen. Technisch: Der Job changes nutzt dorny/paths-filter und setzt pro Bereich ein Ja oder Nein, zum Beispiel backend, admin-ui oder web-quality. Der API-Vertrag läuft trotzdem bei jedem Pull Request, weil er billig ist und viel schützt. Warum iOS auf dem Mac bleibt: Unsere Swift-Pakete nutzen Apple-Bibliotheken wie simd, CoreGraphics, CryptoKit und Combine, die es unter Linux nicht gibt. Neu starten macht unser Werkzeug pr-wait: Es startet einen roten Job genau einmal neu, und nur wenn das Log zu einem bekannten Störfall passt, etwa Maven 429 oder ein Mac-Runner, der nicht startet. Echte Fehler bleiben rot. Gemergt wurde das am 27.11.2026.</aside>
 </section>
