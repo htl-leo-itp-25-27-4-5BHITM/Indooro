@@ -1,20 +1,22 @@
 import { describeError, LoadingState } from "./PageState";
 import "../../design-tokens/dist/tokens.css";
-import React, { useEffect, useRef, useState } from "react";
+import React, { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ApiClientError, createApiClient } from "./api/client";
 import { Dashboard } from "./Dashboard";
 import { StoresPage } from "./StoresPage";
-import { EditorRoute } from "./EditorRoute";
+// Keep route styles eager and in their original cascade order while deferring route JavaScript.
+import "./editor/LayoutEditor.css";
+import "./editor/MobileCurrentPreview.css";
 import { StoreDetailPage } from "./StoreDetailPage";
-import { AnchorPrintPage } from "./AnchorPrintPage";
+import "./AnchorPrintPage.css";
 import { ReadinessPage } from "./ReadinessPage";
 import { RegionsPage } from "./RegionsPage";
 import { StoreCreatePage } from "./StoreCreatePage";
 import { BeaconsPage } from "./BeaconsPage";
-import { RecipesPage } from "./RecipesPage";
+import "./RecipesPage.css";
 import { DiagnosticsPage } from "./DiagnosticsPage";
-import { LegacyEditorRoute } from "./LegacyEditorRoute";
+import "./LegacyEditorRoute.css";
 import { ProductsPage } from "./ProductsPage";
 import { CategoriesPage } from "./CategoriesPage";
 import { SearchIndexPage } from "./SearchIndexPage";
@@ -23,6 +25,10 @@ import { ForbiddenIdentity } from "./ForbiddenIdentity";
 import { candidateAccess, candidateNavigationPath, visibleRoutes, type CurrentUser } from "./routes";
 import "./style.css";
 
+const EditorRoute = lazy(() => import("./EditorRoute").then((module) => ({ default: module.EditorRoute })));
+const LegacyEditorRoute = lazy(() => import("./LegacyEditorRoute").then((module) => ({ default: module.LegacyEditorRoute })));
+const RecipesPage = lazy(() => import("./RecipesPage").then((module) => ({ default: module.RecipesPage })));
+const AnchorPrintPage = lazy(() => import("./AnchorPrintPage").then((module) => ({ default: module.AnchorPrintPage })));
 const api = createApiClient();
 const ROLE_TEXT: Record<string, string> = { admin: "Administrator", "region-manager": "Regionsmanager", "store-manager": "Marktleiter" };
 
@@ -80,6 +86,7 @@ function AdminCandidate() {
           </section>}
           {user && access === "forbidden" && <section role="alert" className="notice"><h1>Zugriff verweigert</h1><p>Für diesen Bereich fehlt die Berechtigung.</p></section>}
           {user && access === "missing" && <section role="alert" className="notice"><h1>Seite nicht gefunden</h1><p>Diese Seite gibt es nicht.</p><a className="button primary" href="/admin/next/">Zur Übersicht</a></section>}
+          <Suspense fallback={<LoadingState>Seite wird geladen …</LoadingState>}>
           {user && access === "allowed" && (window.location.pathname.includes("/editor")
             ? new URLSearchParams(window.location.search).has("storeId") ? <EditorRoute api={api} /> : <LegacyEditorRoute api={api} role={user.role} />
             : window.location.pathname.includes("/stores/new")
@@ -100,6 +107,7 @@ function AdminCandidate() {
             : window.location.pathname.includes("/server-logs") ? <DiagnosticsPage api={api} user={user} />
             : window.location.pathname.includes("/access") ? <AccessAssignmentsPage api={api} user={user} />
             : <Dashboard api={api} user={user} />)}
+          </Suspense>
         </main>
       </div>
     </div>
