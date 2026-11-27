@@ -30,7 +30,7 @@ export function Section({
   "data-testid"?: string;
 }) {
   return (
-    <section id={id} className={`relative isolate overflow-x-clip py-20 sm:py-24 lg:py-32 ${TONES[tone]} ${className}`} {...rest}>
+    <section id={id} tabIndex={-1} className={`relative isolate overflow-x-clip py-20 sm:py-24 lg:py-32 ${TONES[tone]} ${className}`} {...rest}>
       {bare ? children : <Container className={innerClassName}>{children}</Container>}
     </section>
   );
