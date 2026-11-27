@@ -170,9 +170,11 @@ Gezählt aus den Logs grüner GitHub-Actions-Läufe (nicht geschätzt):
 
 ### Was wir über GitHub-Actions-Minuten gelernt haben
 
-**Problem.** Im November hat das Projekt ungefähr 1.600 der 2.000 Actions-Minuten im Monat verbraucht (Nutzungsseite der Organisation). Gründe:
+**Zuerst die Kosten, damit niemand falsch rechnet.** Das Repo ist **öffentlich** (`gh repo view --json visibility` → `PUBLIC`). Für öffentliche Repos sind die normalen GitHub-Runner gratis, auch macOS, und zählen nicht ins 2.000-Minuten-Kontingent der Organisation. Die API bestätigt das: Für den Lauf `46058138398` (PR #246, mit 31 Minuten macOS) meldet `.../actions/runs/46058138398/timing` `billable … total_ms: 0` für `MACOS` und `UBUNTU`. Die Nutzungsseite zeigt trotzdem die Laufzeit an (im November ungefähr 1.600 Minuten, brutto, vor dem Rabatt für öffentliche Repos). Geld kostet das erst, wenn das Repo privat wird; dann zählt eine macOS-Minute zehnfach.
 
-- **macOS ist teuer.** GitHub rechnet eine macOS-Minute zehnmal so hoch wie eine Linux-Minute. Unser Job `swift-tests` (`xcodebuild` mit Unit- und UI-Tests) läuft auf `macos-latest`; im Lauf auf PR #246 dauerte er 31 Minuten.
+**Das eigentliche Problem war Zeit.** Zu viele und zu lange Läufe bedeuten Warteschlange, späte Rückmeldung auf Pull Requests und verschwendete Runner. Gründe:
+
+- **macOS ist langsam.** Unser Job `swift-tests` (`xcodebuild` mit Unit- und UI-Tests) läuft auf `macos-latest`; im Lauf auf PR #246 dauerte er 31 Minuten.
 - **Viele parallele Agenten.** Bis zu 9 Agenten (Claude Code und Codex) arbeiten gleichzeitig, jeder auf eigenem Branch und PR. Jeder Push startete die **ganze** Pipeline: Maven, zwei Playwright-Suiten, `build-and-push`, dazu iOS auf dem Mac, auch bei reinen Doku-Änderungen.
 - **Alte Läufe liefen weiter.** Ein neuer Push auf denselben PR brach den alten Lauf nicht ab.
 - **Draft-PRs** liefen mit allen schweren Jobs.
@@ -180,7 +182,7 @@ Gezählt aus den Logs grüner GitHub-Actions-Läufe (nicht geschätzt):
 - **Wackelige Jobs** kosteten Wiederholungen: iOS-UI-Tests mit Timeout (z. B. `AnchorScanUITests`), Maven Central HTTP 429, Docker Hub 5xx, „runner not acquired“ auf macOS.
 - **Neue Qualitätsprüfungen** (Screenshot-Vergleich bei 390/768/1440 px und axe-core) kosten zusätzliche Minuten. Die Linux-Referenzbilder müssen in der CI entstehen, weil Screenshots plattformabhängig sind und der Entwicklungs-Mac kein Docker hat.
 
-**Lösung (PR #246, gemergt am 27.11.2026):**
+**Lösung (PR #246, gemergt am 27.11.2026).** Ziel: schnellere Rückmeldung, weniger Warten, keine verschwendeten Runner. Getestet wird weiterhin automatisch, nur gezielter.
 
 1. **Pfadfilter.** Der Job `changes` entscheidet, welche Jobs laufen:
    - `backend-test` nur bei Backend, Admin-UI, Showcase, API, `openspec/specs/shared-api/**`, `scripts/ops/**`.
@@ -215,10 +217,11 @@ concurrency:
 **Merksätze:**
 
 - Pfadfilter, Abbrechen alter Läufe und Draft-Skip sind die drei billigen großen Hebel.
-- macOS-Minuten dominieren die Kosten, also dort am strengsten filtern.
+- macOS-Läufe sind am langsamsten (und wären bei einem privaten Repo am teuersten), also dort am strengsten filtern.
 - Nur bekannte Störfälle neu starten, und nur einmal.
 - Plattformabhängige Referenzbilder in der CI erzeugen, nicht lokal.
-- Bei vielen parallelen Agenten wachsen die CI-Kosten mit der Zahl der Pushes. Die Pipeline muss dafür gebaut sein.
+- Bei vielen parallelen Agenten wächst die CI-Last mit der Zahl der Pushes. Die Pipeline muss dafür gebaut sein.
+- Bei einem öffentlichen Repo kosten Standard-Runner nichts; die Nutzungsseite zeigt trotzdem Minuten an.
 
 ### Schritt 5: Review und Merge
 
@@ -366,7 +369,7 @@ Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkze
 
 - Über 3.200 automatische Tests; pro PR laufen die passenden (maximal 1.780 in `ci.yaml`).
 - Breite automatische Prüfung: Vertrag bei jedem PR, dazu je nach Änderung Backend mit echtem OpenSearch, Browser-Suiten, Web-Qualität und iOS auf macOS.
-- Sparsam mit Actions-Minuten: Pfadfilter, Abbrechen alter Läufe, Draft-Skip (PR #246).
+- Schnellere Rückmeldung: Pfadfilter, Abbrechen alter Läufe, Draft-Skip (PR #246).
 - API-Vertrag als zentrale Quelle; Breaking Changes werden automatisch erkannt.
 - Reproduzierbare Images mit Commit-SHA-Tag, nie `:latest` im Cluster.
 - Rollout und Rollback sind dokumentiert, mit Backup und Smoke-Check; jedes Release ist protokolliert.
@@ -392,6 +395,8 @@ Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkze
 - `RELEASES.md` enthält nur die Rollouts vom 17. und 18.10.; die späteren stehen nur als einzelne Dateien in `docs/pilot-readiness/releases/`.
 - Ob das GHCR-Paket öffentlich ist, ist im Repo nicht belegt (`k8s/backend.yaml` hat einen auskommentierten Hinweis auf `imagePullSecrets`).
 - Wie iOS-Builds auf echte Geräte kommen (Xcode lokal, TestFlight?), ist in den Workflows nicht beschrieben.
+- Die ~1.600 Minuten im November stammen von der Nutzungsseite der Organisation; per API nicht prüfbar (braucht den Scope `admin:org`).
+- iOS-Barrierefreiheits-Audits (`performAccessibilityAudit`) sollen laut Team in einen eigenen nächtlichen Workflow `ios-a11y-audit.yaml` wandern; am 27.11.2026 ist der noch nicht auf `main`.
 - Wer im Team neben Erik LeoCloud-Zugang hat, ist nicht dokumentiert. Das Runbook sagt: „Die Befehle führt die Person mit LeoCloud-Zugang aus (Erik).“
 
 ---
@@ -405,8 +410,8 @@ Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkze
 5. **Pipeline-Diagramm (1 min):** Branch → PR → Actions → GHCR → manueller Rollout → LeoCloud. Betonen: LeoCloud zieht das Image, GitHub schiebt nicht.
 6. **Was geprüft wird (1 min):** pro Job die Frage nennen, die er beantwortet („Funktioniert der Server?“), nicht den Job-Namen.
 7. **Tests (30 s):** 3.240 automatische Tests, pro PR die passenden. Kurz auf den längsten Balken zeigen (Backend, 793).
-8. **Minuten-Problem (1 min):** ~1.600 von 2.000 Minuten im November; Mac-Minute zählt zehnfach; viele parallele Agenten, jeder Push startete alles.
-9. **Lösung (1 min):** sechs Punkte aus PR #246 nennen. Merksatz: Bei vielen Agenten kostet jeder Push.
+8. **Laufzeit-Problem (1 min):** ~1.600 Minuten Laufzeit im November, Mac-Lauf 31 Minuten; viele parallele Agenten, jeder Push startete alles. Gleich sagen: kostet uns 0 $, weil das Repo öffentlich ist; das Problem ist Wartezeit.
+9. **Lösung (1 min):** sechs Punkte aus PR #246 nennen. Weiterhin automatisch, nur gezielter.
 10. **Image und LeoCloud (1 min):** ein Image für Backend + Admin + Showcase; fester SHA-Tag; Runbook mit Backup, `kubectl set image`, Smoke-Check, Rollback.
 11. **Claude Code (1 min):** OpenSpec → Sessions in Worktrees → PR → gleiche CI. Zahlen: 214 Co-Authored-Commits, 125 von 133 PRs.
 12. **Live-Beispiel (1,5 min):** PR #241 im Browser öffnen, roten Lauf vom 25.11. zeigen, dann grüne Checks.
@@ -469,8 +474,8 @@ Ein zusätzlicher Docker-Container, der neben dem Job läuft. Bei uns startet `b
 **17. Wie viele Tests habt ihr?**
 In den letzten grünen Läufen 3.240 automatische Tests. Ändert ein Pull Request alle Bereiche, laufen davon 1.780 im Workflow `ci.yaml`, sonst nur die passenden; der größte Teil sind 793 Java-Tests im Backend. iOS (646), Positioning-Lab (553) und Feldwerkzeuge (261) laufen nur bei Änderungen in ihrem Bereich.
 
-**18. Warum habt ihr so viele GitHub-Actions-Minuten verbraucht?**
-macOS-Minuten zählen zehnfach, und `swift-tests` braucht etwa eine halbe Stunde. Dazu arbeiten bis zu 9 Agenten parallel, und bisher startete jeder Push die ganze Pipeline. Alte Läufe liefen weiter, Draft-PRs liefen voll mit, und wackelige Jobs mussten wiederholt werden.
+**18. Warum brauchte eure CI so viel Laufzeit, und kostet das etwas?**
+Bis zu 9 Agenten arbeiten parallel, und bisher startete jeder Push die ganze Pipeline, inklusive `swift-tests` auf macOS (etwa eine halbe Stunde). Alte Läufe liefen weiter, Draft-PRs liefen voll mit, und wackelige Jobs mussten wiederholt werden. Geld kostet das nicht: Das Repo ist öffentlich, dort sind Standard-Runner gratis (API: `billable … total_ms: 0`). Das Problem war Wartezeit. Bei einem privaten Repo würde eine macOS-Minute zehnfach zählen.
 
 **19. Wie spart ihr Minuten, ohne Tests wegzulassen?**
 PR #246: Der Job `changes` startet nur die Jobs für geänderte Bereiche; `concurrency` bricht alte PR-Läufe ab; Draft-PRs überspringen schwere Jobs bis „Ready for review“. Auf `main` läuft weiterhin alles. Wackelige Jobs startet `pr-wait` nur bei bekannten Störfällen und nur einmal neu.
