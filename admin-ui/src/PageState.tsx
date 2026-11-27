@@ -9,7 +9,7 @@ export function describeError(error: unknown, fallback = "Die Daten konnten nich
   if (error.kind === "unauthorized") return "Sitzung abgelaufen. Bitte erneut anmelden.";
   if (error.kind === "network") return "Die Verbindung zum Server ist unterbrochen. Bitte prüfe deine Internetverbindung.";
   if (error.kind === "server") return "Serverfehler. Bitte später erneut versuchen.";
-  if (error.kind === "invalid-response") return "Die Serverantwort ist unvollständig oder ungültig. Bitte versuche es erneut.";
+  if (error.kind === "invalid-response") return error.message;
   if (error.kind === "validation" || error.kind === "conflict") return error.message;
   return fallback;
 }

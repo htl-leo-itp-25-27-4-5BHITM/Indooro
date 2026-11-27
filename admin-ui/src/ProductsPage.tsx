@@ -191,6 +191,7 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
   const [pageData, setPageData] = useState<ProductPage | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryError, setCategoryError] = useState("");
+  const [categoryRevision, setCategoryRevision] = useState(0);
   const [stores, setStores] = useState<AdminStore[]>([]);
   const [storesLoaded, setStoresLoaded] = useState(false);
   const [storeError, setStoreError] = useState("");
@@ -272,7 +273,7 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
         if (!(error instanceof DOMException && error.name === "AbortError")) setCategoryError(friendlyError(error));
       });
     return () => controller.abort();
-  }, [api, revision]);
+  }, [api, revision, categoryRevision]);
 
   const totalPages = pageData ? Math.ceil(pageData.totalElements / Math.max(1, pageData.size)) : 0;
 
@@ -370,7 +371,7 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
     <ProductCsvImport key={selectedStore?.id ?? "no-store"} api={api} store={selectedStore} onBusyChange={setImportBusy} onImported={() => setRevision((value) => value + 1)} />
     {notice && <p role="status" className="notice success">{notice}</p>}
     {deleteError && <p role="alert" className="notice error">{deleteError}</p>}
-    {categoryError && <p role="status" className="notice">Kategorien konnten nicht geladen werden. Kategorie-Namen und lokale Layout-Prüfung sind eingeschränkt: {categoryError}</p>}
+    {categoryError && <ErrorState title="Kategorien konnten nicht geladen werden" message={categoryError} onRetry={() => { setCategoryError(""); setCategoryRevision((value) => value + 1); }} />}
 
     {editor !== false && <section className="panel" aria-labelledby="product-form-title"><div className="panel-header"><h3 id="product-form-title">{editor ? "Produkt bearbeiten" : "Produkt anlegen"}</h3></div>
       {saveError && <p role="alert" className="notice error">{saveError}</p>}

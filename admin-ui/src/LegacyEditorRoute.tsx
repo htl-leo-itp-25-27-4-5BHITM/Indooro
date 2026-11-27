@@ -1,6 +1,6 @@
 import { ErrorState, describeError, LoadingState } from "./PageState";
 import { useEffect, useRef, useState } from "react";
-import type { ApiClient } from "./api/client";
+import { ApiClientError, type ApiClient } from "./api/client";
 import { LayoutEditor } from "./editor/LayoutEditor";
 import { isLegacyLayoutDocument } from "./editor/contracts";
 import type { LayoutDocument } from "./editor/model";
@@ -34,7 +34,7 @@ export function LegacyEditorRoute({ api, role }: { api: ApiClient; role: string 
     const layoutPath = versionId ? `/api/layout/versions/${encodeURIComponent(versionId)}` : "/api/layout/current";
     api.get<unknown>(layoutPath, { signal: controller.signal })
       .then((response) => {
-        if (!isLegacyLayoutDocument(response)) throw new Error("Globales Layout enthält kein gültiges Raster und keine Elementliste.");
+        if (!isLegacyLayoutDocument(response)) throw new ApiClientError("invalid-response", 200, "Globales Layout enthält kein gültiges Raster und keine Elementliste.");
         if (controller.signal.aborted) return;
         setLayout(response);
         setError(null);

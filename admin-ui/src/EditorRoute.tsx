@@ -46,13 +46,14 @@ export function EditorRoute({ api }: { api: ApiClient }) {
   useEffect(() => {
     if (!storeId) return;
     const controller = new AbortController();
+    setError(null);
     const base = `/api/stores/${encodeURIComponent(storeId)}/layout`;
     api.get<EditorContext>(`${base}/editor-context`, { signal: controller.signal })
       .then(async (loadedContext) => {
         const loadedVersion = selectedVersionId
           ? await api.get<LayoutVersion>(`${base}/versions/${encodeURIComponent(selectedVersionId)}`, { signal: controller.signal })
           : loadedContext.currentLayout;
-        if (!validDocument(loadedVersion?.layout)) throw new Error("Layout-Daten sind unvollständig.");
+        if (!validDocument(loadedVersion?.layout)) throw new ApiClientError("invalid-response", 200, "Layout-Daten sind unvollständig.");
         if (controller.signal.aborted) return;
         setContext(loadedContext);
         setVersion(loadedVersion);
