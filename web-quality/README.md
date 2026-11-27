@@ -12,7 +12,8 @@ npm test
 ```
 
 `npm run test:a11y` checks WCAG 2 A/AA and 2.1 A/AA with axe, failing on serious
-or critical violations. Complete axe JSON results are attached to the report.
+or critical violations in both light and dark themes. Complete axe JSON results
+are attached to the report. A keyboard check also covers map panning and reset.
 Automated checks do not replace manual keyboard/screen-reader reviews.
 
 `npm run test:visual` compares full-page screenshots at 390×844, 768×1024 and

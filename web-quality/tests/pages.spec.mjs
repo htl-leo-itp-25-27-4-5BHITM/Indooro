@@ -60,13 +60,31 @@ for (const [name, prepare] of Object.entries(scenarios)) {
 
   test(`${name} @a11y`, async ({ page }, testInfo) => {
     await prepare(page);
-    const results = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-    await testInfo.attach('axe-results', {
-      body: JSON.stringify(results, null, 2), contentType: 'application/json',
-    });
-    expect(results.violations.filter(({ impact }) => ['serious', 'critical'].includes(impact)))
-      .toEqual([]);
+    for (const colorScheme of ['light', 'dark']) {
+      await page.emulateMedia({ colorScheme });
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+        .analyze();
+      await testInfo.attach(`axe-results-${colorScheme}`, {
+        body: JSON.stringify(results, null, 2), contentType: 'application/json',
+      });
+      expect(results.violations.filter(({ impact }) => ['serious', 'critical'].includes(impact)),
+        `${name}: ${colorScheme} theme`).toEqual([]);
+    }
   });
 }
+
+
+test('zoomed map supports keyboard panning and reset @a11y', async ({ page }) => {
+  await openFinder(page);
+  await page.getByRole('button', { name: 'Vergrößern' }).click();
+  const viewport = page.getByRole('region', { name: 'Ladenplan verschieben' });
+  await viewport.focus();
+  const stage = page.locator('#mapCanvas');
+  const before = await stage.getAttribute('style');
+  await page.keyboard.press('ArrowRight');
+  await expect(stage).not.toHaveAttribute('style', before);
+  await page.keyboard.press('Home');
+  await expect(page.locator('#zoom-label')).toHaveText('100 %');
+  await expect(stage).toHaveCSS('transform', 'matrix(1, 0, 0, 1, 0, 0)');
+});
