@@ -5,7 +5,7 @@ struct PilotIntroduction: View {
     var body: some View {
         // Scrollable so large Dynamic Type sizes and small iPhones never clip the text or the button.
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value24px) {
                 Text("Willkommen bei Indooro").font(.largeTitle.bold())
                     .accessibilityAddTraits(.isHeader)
                 Label("Suche unter „Planung“ nach einem Produkt und öffne die Karte.", systemImage: "magnifyingglass")
@@ -19,7 +19,7 @@ struct PilotIntroduction: View {
             .font(.body)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(28)
+            .padding(IndooroTokens.Spacing.value28px)
         }
         .scrollBounceBehavior(.basedOnSize)
         .interactiveDismissDisabled()

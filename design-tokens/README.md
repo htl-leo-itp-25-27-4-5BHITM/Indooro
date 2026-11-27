@@ -1,6 +1,6 @@
 # Shared web design tokens
 
-`tokens.json` is the shared source for web and future Swift generation. It follows
+`tokens.json` is the shared source for web and the generated SwiftUI constants in `swift/indooro-EinkaeuferFinal/indooroApp/DesignSystem/IndooroTokens.swift`. It follows
 [DTCG 2025.10](https://www.designtokens.org/tr/2025.10/format/), including typed
 sRGB color objects, `{value, unit}` dimensions, font-family arrays, shadow
 composites, and whole-token `{path.to.token}` aliases. The stable color format
