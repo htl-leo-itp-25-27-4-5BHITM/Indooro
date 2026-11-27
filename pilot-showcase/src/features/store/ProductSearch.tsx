@@ -87,7 +87,8 @@ export function ProductSearch({ market, selectedProductId, onSelect, has, onAdd,
           type="search"
           role="combobox"
           aria-expanded={rows.length > 0}
-          aria-controls={listId}
+          aria-controls={rows.length > 0 ? listId : undefined}
+          aria-haspopup="grid"
           aria-activedescendant={rows[safeActive] ? `${listId}-${rows[safeActive].id}` : undefined}
           aria-label={`Produkt suchen in ${market.name}`}
           autoComplete="off"
@@ -127,7 +128,7 @@ export function ProductSearch({ market, selectedProductId, onSelect, has, onAdd,
                 </button>
               </div>
             )}
-            <ul id={listId} role="listbox" aria-label="Suchergebnisse" className="flex flex-col gap-1.5">
+            <ul id={listId} role="grid" aria-label="Suchergebnisse" className="flex flex-col gap-1.5">
               {rows.map((p, i) => {
                 const onList = has(p.id);
                 const isActive = i === safeActive;
@@ -136,7 +137,7 @@ export function ProductSearch({ market, selectedProductId, onSelect, has, onAdd,
                   <li
                     key={p.id}
                     id={`${listId}-${p.id}`}
-                    role="option"
+                    role="row"
                     aria-selected={isActive}
                     data-testid="search-result"
                     data-product-id={p.id}
@@ -145,41 +146,43 @@ export function ProductSearch({ market, selectedProductId, onSelect, has, onAdd,
                       isSelected ? "border-amber/50 bg-amber/10" : isActive ? "border-white/12 bg-white/6" : "border-transparent bg-white/[0.03] hover:bg-white/6"
                     }`}
                   >
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      onClick={() => onSelect(p.id)}
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                      aria-label={`${p.name} auf der Karte zeigen`}
-                    >
-                      <span aria-hidden className="hidden size-10 shrink-0 place-items-center rounded-xl bg-ink-950/70 text-xl ring-1 ring-white/8 min-[440px]:grid">
-                        {p.emoji}
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex flex-wrap items-baseline gap-x-2">
-                          <span className="min-w-0 break-words text-[14px] font-semibold leading-snug text-white">{p.name}</span>
-                          <span className="shrink-0 text-xs tabular-nums text-ink-200">{eur.format(p.price)}</span>
+                    <div role="gridcell" className="contents">
+                      <button
+                        type="button"
+                        onClick={() => onSelect(p.id)}
+                        className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                      >
+                        <span aria-hidden className="hidden size-10 shrink-0 place-items-center rounded-xl bg-ink-950/70 text-xl ring-1 ring-white/8 min-[440px]:grid">
+                          {p.emoji}
                         </span>
-                        <span className="block truncate text-xs text-ink-300">
-                          {[p.brand, p.unit].filter(Boolean).join(" · ")}
+                        <span className="min-w-0 flex-1">
+                          <span className="flex flex-wrap items-baseline gap-x-2">
+                            <span className="min-w-0 break-words text-[14px] font-semibold leading-snug text-white">{p.name}</span>
+                            <span className="shrink-0 text-xs tabular-nums text-ink-200">{eur.format(p.price)}</span>
+                          </span>
+                          <span className="block truncate text-xs text-ink-300">
+                            {[p.brand, p.unit].filter(Boolean).join(" · ")}
+                          </span>
+                          <span className="mt-0.5 block text-xs font-medium leading-snug text-mint/90">{shelfText(p)}</span>
                         </span>
-                        <span className="mt-0.5 block text-xs font-medium leading-snug text-mint/90">{shelfText(p)}</span>
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      tabIndex={-1}
-                      data-testid="add-button"
-                      aria-pressed={onList}
-                      aria-label={onList ? `${p.name} von der Liste entfernen` : `${p.name} zur Liste hinzufügen`}
-                      onClick={() => (onList ? onRemove(p.id) : onAdd(p.id))}
-                      className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition ${
-                        onList ? "bg-mint/15 text-mint ring-1 ring-mint/30 hover:bg-mint/20" : "bg-mint text-ink-950 hover:bg-mint-soft"
-                      }`}
-                    >
-                      {onList ? <Check className="size-4" aria-hidden /> : <Plus className="size-4" aria-hidden />}
-                      {onList ? "Auf Liste" : "Liste"}
-                    </button>
+                        <span className="sr-only"> auf der Karte zeigen</span>
+                      </button>
+                    </div>
+                    <div role="gridcell" className="contents">
+                      <button
+                        type="button"
+                        data-testid="add-button"
+                        aria-pressed={onList}
+                        aria-label={onList ? `Auf Liste: ${p.name} entfernen` : `Liste: ${p.name} hinzufügen`}
+                        onClick={() => (onList ? onRemove(p.id) : onAdd(p.id))}
+                        className={`inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold transition ${
+                          onList ? "bg-mint/15 text-mint ring-1 ring-mint/30 hover:bg-mint/20" : "bg-mint text-ink-950 hover:bg-mint-soft"
+                        }`}
+                      >
+                        {onList ? <Check className="size-4" aria-hidden /> : <Plus className="size-4" aria-hidden />}
+                        {onList ? "Auf Liste" : "Liste"}
+                      </button>
+                    </div>
                   </li>
                 );
               })}

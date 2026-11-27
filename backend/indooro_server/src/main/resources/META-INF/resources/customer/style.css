@@ -11,6 +11,7 @@
   --on-primary: #ffffff;
   --focus: #1d4ed8;
   --ok: #15803d;
+  --on-ok: #ffffff;
   --danger: #b91c1c;
   --shelf: #dbe7fb;
   --shelf-stroke: #2563eb;
@@ -41,6 +42,7 @@
     --on-primary: #0b1220;
     --focus: #93c5fd;
     --ok: #22c55e;
+    --on-ok: #0b1220;
     --danger: #fca5a5;
     --shelf: #1e3a6e;
     --shelf-stroke: #60a5fa;
@@ -68,6 +70,7 @@
   --on-primary: #0b1220;
   --focus: #93c5fd;
   --ok: #22c55e;
+  --on-ok: #0b1220;
   --danger: #fca5a5;
   --shelf: #1e3a6e;
   --shelf-stroke: #60a5fa;
@@ -316,7 +319,7 @@ h3 {
 .btn-toggle[aria-pressed="true"] {
   background: var(--ok);
   border-color: var(--ok);
-  color: #ffffff;
+  color: var(--on-ok);
 }
 
 .btn-link {
@@ -558,7 +561,7 @@ h3 {
 }
 
 .entrance-label {
-  fill: #ffffff;
+  fill: #071b13;
   font-weight: 700;
   pointer-events: none;
 }

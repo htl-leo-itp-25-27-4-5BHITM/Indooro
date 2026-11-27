@@ -1,7 +1,6 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { buildSwift } from './build-swift.mjs';
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
 const source = JSON.parse(await readFile(path.join(directory, 'tokens.json'), 'utf8'));
@@ -76,8 +75,9 @@ function serialize(type, value) {
 const css = [];
 const ts = [];
 for (const [key, token] of entries) {
+  const resolved = resolve(token.$value, [key]);
   if (reference(token.$value) && entries.get(token.$value.slice(1, -1))?.$type !== token.$type) fail(`Alias type mismatch: ${key}`);
-  const literal = serialize(token.$type, resolve(token.$value, [key]));
+  const literal = serialize(token.$type, resolved);
   const value = reference(token.$value) ? `var(${cssName(token.$value.slice(1, -1))})` : literal;
   css.push(`  ${cssName(key)}: ${value};`);
   ts.push(`  ${JSON.stringify(key)}: ${JSON.stringify(literal)},`);
@@ -88,10 +88,8 @@ const outputs = {
 };
 if (process.argv.slice(2).some((arg) => arg !== '--check')) fail('Usage: node design-tokens/build.mjs [--check]');
 const targets = Object.entries(outputs).map(([name, content]) => [path.join(directory, 'dist', name), content]);
-targets.push([
-  path.resolve(directory, '../swift/indooro-EinkaeuferFinal/indooroApp/DesignSystem/IndooroTokens.swift'),
-  buildSwift(entries, resolve),
-]);
+// Quarkus serves this checked copy directly; no backend build or HTML changes.
+targets.push([path.join(directory, '../backend/indooro_server/src/main/resources/META-INF/resources/design-tokens/tokens.css'), outputs['tokens.css']]);
 for (const [target, content] of targets) {
   if (process.argv.includes('--check')) {
     const existing = await readFile(target, 'utf8').catch((error) => {
