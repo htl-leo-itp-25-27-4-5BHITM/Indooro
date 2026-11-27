@@ -76,9 +76,9 @@ for (const viewport of viewports) {
         const style = step === "demo-simulation" || step === "demo-markt-suche"
           ? '[data-testid="store-demo"] { visibility: hidden !important; }'
           : step === "betreiber-demo" ? '[data-testid="operator-demo"] { visibility: hidden !important; }' : "";
-        const hiddenContent = await page.addStyleTag({ content: style });
+        const hiddenContent = style ? await page.addStyleTag({ content: style }) : null;
         await expect(page).toHaveScreenshot(`${viewport.width}-tour-${step}.png`);
-        await hiddenContent.evaluate((element) => element.parentNode?.removeChild(element));
+        await hiddenContent?.evaluate((element) => element.parentNode?.removeChild(element));
         if (index < tourSteps.length - 1) await page.getByTestId("tour-next").click();
       }
     });
