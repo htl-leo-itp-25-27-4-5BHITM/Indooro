@@ -93,10 +93,16 @@ for (const viewport of viewports) {
       await expect(page.getByTestId("store-3d-canvas")).toBeVisible({ timeout: 20_000 });
       await expect(view).not.toHaveAttribute("data-fallback", "true");
       await expect(page.getByTestId("store3d-overview")).toBeVisible();
-      await expect(page.getByTestId("store-demo")).toHaveScreenshot(`${viewport.width}-store-3d.png`, {
-        // Projected shelf labels use the renderer's camera coordinates and vary with GPU timing.
-        mask: [page.getByTestId("store-3d-canvas"), view.locator(':scope > div[aria-hidden="true"]')]
-      });
+      // CSS masks only the rendered pixels and projected labels. A rectangular Playwright
+      // mask on the canvas would also obscure the controls and legend layered above it.
+      await page.addStyleTag({ content: `
+        [data-testid="store-3d-canvas"],
+        [data-testid="store-3d"] > div[aria-hidden="true"].overflow-hidden {
+          visibility: hidden !important;
+        }
+      ` });
+      await expect(page.getByTestId("store-demo")).toHaveScreenshot(`${viewport.width}-store-3d.png`);
+    });
     });
   });
 }
