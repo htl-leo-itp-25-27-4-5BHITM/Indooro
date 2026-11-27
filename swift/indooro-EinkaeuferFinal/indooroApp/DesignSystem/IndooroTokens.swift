@@ -155,6 +155,8 @@ enum IndooroTokens {
         static let paletteHex50645a = SwiftUI.Color(.sRGB, red: 0.3137254901960784, green: 0.39215686274509803, blue: 0.35294117647058826, opacity: 1)
         /// color.palette.hex-506779
         static let paletteHex506779 = SwiftUI.Color(.sRGB, red: 0.3137254901960784, green: 0.403921568627451, blue: 0.4745098039215686, opacity: 1)
+        /// color.palette.hex-526b63
+        static let paletteHex526b63 = SwiftUI.Color(.sRGB, red: 0.3215686274509804, green: 0.4196078431372549, blue: 0.38823529411764707, opacity: 1)
         /// color.palette.hex-526e63
         static let paletteHex526e63 = SwiftUI.Color(.sRGB, red: 0.3215686274509804, green: 0.43137254901960786, blue: 0.38823529411764707, opacity: 1)
         /// color.palette.hex-557269
@@ -207,6 +209,8 @@ enum IndooroTokens {
         static let paletteHex806947 = SwiftUI.Color(.sRGB, red: 0.5019607843137255, green: 0.4117647058823529, blue: 0.2784313725490196, opacity: 1)
         /// color.palette.hex-81938c
         static let paletteHex81938c = SwiftUI.Color(.sRGB, red: 0.5058823529411764, green: 0.5764705882352941, blue: 0.5490196078431373, opacity: 1)
+        /// color.palette.hex-81999c
+        static let paletteHex81999c = SwiftUI.Color(.sRGB, red: 0.5058823529411764, green: 0.6, blue: 0.611764705882353, opacity: 1)
         /// color.palette.hex-83948c
         static let paletteHex83948c = SwiftUI.Color(.sRGB, red: 0.5137254901960784, green: 0.5803921568627451, blue: 0.5490196078431373, opacity: 1)
         /// color.palette.hex-8c3030
