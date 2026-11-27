@@ -1,0 +1,87 @@
+name: iOS Accessibility Audit
+
+# Runs performAccessibilityAudit() UI tests (MCindooroAppUITests/AccessibilityAuditUITests)
+# nightly and on demand. Not part of PR CI: the audit findings on iOS 26 vary from run to run
+# and a full macOS cycle takes about 35 minutes. Findings are reported as a failed run plus the
+# uploaded xcresult bundle, so they can be triaged without blocking pull requests.
+on:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch or SHA to audit
+        required: false
+        default: main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-a11y-audit
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || 'main' }}
+
+      - name: Resolve an available iPhone simulator
+        id: simulator
+        run: |
+          NAME=$(xcrun simctl list devices available | grep -E '^[[:space:]]+iPhone' | head -n 1 | sed -E 's/^[[:space:]]+//; s/ \([0-9A-F-]+\).*$//')
+          if [ -z "$NAME" ]; then
+            echo "No iPhone simulator available" >&2
+            exit 1
+          fi
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "Simulator: $NAME"
+
+      - name: Start mobile API mock (ui-test-store)
+        run: |
+          MOCK_DATASET=ui-test-store nohup python3 scripts/dev/mock_mobile_api.py 18090 > "$RUNNER_TEMP/mock-api.log" 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://127.0.0.1:18090/api/mobile/stores; then
+              echo "Mock is up after $attempt attempt(s)."
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/mock-api.log" >&2
+          exit 1
+
+      - name: Accessibility audit UI tests
+        run: |
+          set -o pipefail
+          xcodebuild test \
+            -project swift/indooro-EinkaeuferFinal/MCindooroApp.xcodeproj \
+            -scheme MCindooroApp \
+            -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
+            -only-testing:MCindooroAppUITests/AccessibilityAuditUITests \
+            -resultBundlePath "$RUNNER_TEMP/a11y-audit.xcresult" \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$RUNNER_TEMP/a11y-audit.log"
+
+      - name: Summarize findings
+        if: always()
+        run: |
+          {
+            echo "## iOS accessibility audit"
+            echo
+            grep -E "AccessibilityAuditUITests.*(error|failed|passed)" "$RUNNER_TEMP/a11y-audit.log" | sed -E 's#^.*/MCindooroAppUITests/##' | head -100 || echo "No test output."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload xcresult and log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-a11y-audit
+          path: |
+            ${{ runner.temp }}/a11y-audit.xcresult
+            ${{ runner.temp }}/a11y-audit.log
+          retention-days: 14
