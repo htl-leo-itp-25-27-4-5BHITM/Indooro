@@ -7,6 +7,7 @@ on:
       - 'backend/indooro_server/**' # Nur wenn sich was im Backend ändert
       - 'admin-ui/**' # Neues Admin-Frontend wird ins Backend-Image gepackt
       - 'pilot-showcase/**' # Pilot-Demo wird unter /showcase/ ins Backend-Image gepackt
+      - 'design-tokens/**' # Shared inputs for both web builds and the served static CSS copy
       - 'web-quality/**'
       - 'openspec/**'
       - 'api/**'
@@ -64,6 +65,11 @@ jobs:
 
       - name: Contract tests (node --test)
         run: npm run contract:test
+
+      - name: Shared design tokens are up to date
+        run: |
+          node --test design-tokens/build.test.mjs
+          node design-tokens/build.mjs --check
 
       - name: Generated TypeScript types are up to date
         run: npm run contract:types:check
