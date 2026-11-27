@@ -7,21 +7,21 @@
 <div class="col-good">
 <h3>Gut</h3>
 <ul class="col-list">
-<li>Jeder PR: Vertrag, Backend mit echtem OpenSearch, zwei Browser-Suiten, iOS</li>
-<li>Breaking Changes an der API werden automatisch erkannt</li>
-<li>Fester SHA-Tag, Rollback und Backup dokumentiert</li>
-<li>Claude-PRs durchlaufen dieselben Checks</li>
+<li>Über 3.200 automatische Tests, bei jedem PR mindestens 1.780</li>
+<li>Echter Browser und echte Datenbank in den Tests</li>
+<li>Jede Version eindeutig benannt, Rückweg dokumentiert</li>
+<li>Code von Claude geht durch dieselben Tests</li>
 </ul>
 </div>
 <div class="col-bad">
 <h3>Fehlt</h3>
 <ul class="col-list">
-<li>Kein Continuous Deployment, Rollout nur mit Eriks Zugang</li>
-<li>main ohne Branch-Schutz, keine GitHub-Reviews</li>
-<li>Browsertests blockieren den Image-Build nicht</li>
-<li>iOS nur Tests, kein TestFlight; Android ohne Pipeline</li>
+<li>Live gehen nur von Hand, nur mit Eriks Zugang</li>
+<li>main ist nicht gesperrt: Mergen ginge auch bei roten Tests</li>
+<li>Kein zweiter Mensch prüft den Pull Request auf GitHub</li>
+<li>iOS wird nur getestet, nicht verteilt; Android hat noch keinen Code</li>
 </ul>
 </div>
 </div>
-<aside>Ehrlich bleiben. Fakten aus GitHub: main hat keinen Branch-Schutz und keine Rulesets, grüne Checks sind also eine Teamregel, nicht erzwungen. Keiner der letzten 133 gemergten PRs hat ein formales GitHub-Review. build-and-push wartet nur auf contract und backend-test. Nächste Schritte wären Branch-Schutz mit Pflicht-Checks und ein Deploy-Workflow mit manueller Freigabe, falls die LeoCloud einen Zugang für CI erlaubt.</aside>
+<aside>Ehrlich bleiben. Fakten aus GitHub: main hat keinen Branch-Schutz. Dass wir nur mit grünen Tests mergen, ist eine Teamregel, technisch erzwungen ist es nicht. Keiner der 133 gemergten Pull Requests hat ein formales Review auf GitHub, geprüft wird in der Claude-Session und vom Menschen, der mergt. Nächste Schritte wären: main sperren, sodass rote Tests den Merge blockieren, und ein Deploy-Knopf in GitHub mit Freigabe, falls die LeoCloud das erlaubt.</aside>
 </section>

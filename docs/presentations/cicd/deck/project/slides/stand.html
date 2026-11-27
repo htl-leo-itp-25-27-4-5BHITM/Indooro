@@ -1,24 +1,24 @@
 <section id="stand" class="dark">
 <div class="head">
 <p class="eyebrow-dark">Wo steht Indooro?</p>
-<h2>CI und Delivery ja. Deployment bewusst manuell.</h2>
+<h2>Prüfen und Packen: automatisch. Abschicken: von Hand.</h2>
 </div>
 <div class="rows">
 <div class="row">
 <p class="row-name">Continuous Integration</p>
 <p class="pill-yes">Ja</p>
-<p class="row-text">Jeder Pull Request nach main startet die Checks in .github/workflows/ci.yaml.</p>
+<p class="row-text">Jeder Pull Request startet automatisch alle Tests.</p>
 </div>
 <div class="row">
 <p class="row-name">Continuous Delivery</p>
 <p class="pill-yes">Ja</p>
-<p class="row-text">Jeder Push auf main baut ein Docker-Image und legt es in GHCR ab, Tag = Commit-SHA.</p>
+<p class="row-text">Nach jedem Merge entsteht automatisch ein fertiges Docker-Image.</p>
 </div>
 <div class="row">
 <p class="row-name">Continuous Deployment</p>
 <p class="pill-no">Nein</p>
-<p class="row-text">Kein Workflow deployt. Rollout per kubectl nach Runbook, mit Backup und Smoke-Check.</p>
+<p class="row-text">Live geht es erst, wenn Erik es in der LeoCloud einspielt. Mit Absicht.</p>
 </div>
 </div>
-<aside>Ehrlich sagen: Wir haben kein Continuous Deployment. Das ist eine bewusste Entscheidung. Laut Release-Runbook gibt es vor jedem Rollout ein Backup, nie einen Rollout während einer Pilot-Sitzung im Markt, und danach einen Smoke-Check. Außerdem hat nur Erik Zugang zur LeoCloud.</aside>
+<aside>Ehrlich sagen: Wir haben kein Continuous Deployment, und das ist Absicht. Vor jedem Live-Gang machen wir ein Backup der Datenbank, wir spielen nichts ein, während gerade im Markt getestet wird, und danach prüfen wir, ob alles läuft. Außerdem hat nur Erik Zugang zur LeoCloud.</aside>
 </section>

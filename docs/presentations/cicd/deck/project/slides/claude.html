@@ -1,38 +1,38 @@
 <section id="claude">
 <div class="head">
 <p class="eyebrow">Rolle von Claude Code</p>
-<h2>Agenten schreiben Code, die CI prüft ihn wie jeden anderen</h2>
+<h2>Claude Code schreibt mit, die Tests prüfen alle gleich</h2>
 </div>
 <div class="flow">
 <div class="node in" style="--i:0">
-<p class="node-t">OpenSpec</p>
-<p class="node-p">proposal, design und tasks in openspec/changes/</p>
+<p class="node-t">Plan</p>
+<p class="node-p">Was soll sich ändern? Steht in openspec/</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:1">
-<p class="node-t">Session</p>
-<p class="node-p">eigener git worktree, eigener Branch</p>
+<p class="node-t">Arbeitskopie</p>
+<p class="node-p">Jede Claude-Session hat ihre eigene Kopie und ihren Branch</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:2">
 <p class="node-t">Pull Request</p>
-<p class="node-p">viele kleine Commits, Branch claude/… oder fix/…</p>
+<p class="node-p">viele kleine Commits</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:3">
-<p class="node-t">Gleiche CI</p>
-<p class="node-p">dieselben Checks wie bei Menschen</p>
+<p class="node-t">Gleiche Tests</p>
+<p class="node-p">keine Ausnahme für die KI</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:4">
-<p class="node-t">Merge + Archiv</p>
-<p class="node-p">openspec archive, z. B. PR #244</p>
+<p class="node-t">Merge</p>
+<p class="node-p">Plan wird als erledigt archiviert</p>
 </div>
 </div>
 <div class="stats">
-<div class="stat"><p class="stat-n">214</p><p class="stat-p">von 828 Commits auf main mit „Co-Authored-By: Claude“</p></div>
-<div class="stat"><p class="stat-n">125/133</p><p class="stat-p">gemergte PRs mit „Claude Code“ im PR-Text</p></div>
-<div class="stat"><p class="stat-n">37</p><p class="stat-p">archivierte OpenSpec-Changes, CI prüft mit openspec validate --strict</p></div>
+<div class="stat"><p class="stat-n">214</p><p class="stat-p">von 828 Commits auf main mit Claude als Co-Autor</p></div>
+<div class="stat"><p class="stat-n">125/133</p><p class="stat-p">gemergte Pull Requests mit Vermerk „Claude Code“</p></div>
+<div class="stat"><p class="stat-n">37</p><p class="stat-p">abgeschlossene Pläne in openspec/changes/archive/</p></div>
 </div>
-<aside>Claude Code ist kein Teil von GitHub Actions. Es sitzt davor. Eine Orchestrator-Session teilt die Arbeit, startet Sub-Sessions, jede in einem eigenen git worktree auf einem eigenen Branch. Die öffnen PRs gegen main, und dort laufen exakt dieselben Checks wie bei uns. Ein Agent kann einen roten Check nicht wegreden. Die Zahlen kommen aus git log und gh pr list.</aside>
+<aside>Claude Code ist nicht Teil von GitHub Actions, es sitzt davor und schreibt Code. Zuerst wird ein Plan in openspec geschrieben. Dann arbeiten mehrere Claude-Sessions gleichzeitig, jede in ihrer eigenen Arbeitskopie, einem sogenannten git worktree, auf einem eigenen Branch. Jede öffnet einen Pull Request, und dort laufen genau dieselben Tests wie bei uns. Ein roter Test bleibt rot, egal wer den Code geschrieben hat. Die Zahlen kommen aus git log und der PR-Liste auf GitHub: 125 PR-Texte enthalten den Vermerk Generated with Claude Code.</aside>
 </section>

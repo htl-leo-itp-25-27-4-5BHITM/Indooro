@@ -1,17 +1,30 @@
 <section id="jobs">
 <div class="head">
-<p class="eyebrow">Was bei jedem Pull Request läuft</p>
-<h2>Fünf Jobs in ci.yaml, dazu iOS auf macOS</h2>
+<p class="eyebrow">Schritt 3 genauer</p>
+<h2>Was der Roboter bei jedem Pull Request prüft</h2>
 </div>
-<table class="jobs">
-<tr class="jobs-head"><th style="width:28%">Job</th><th style="width:22%">Runner</th><th style="width:50%">Prüft</th></tr>
-<tr><td>contract</td><td>ubuntu-latest</td><td>API-Vertrag: Lint, Typen, Parität, Breaking Changes (oasdiff), OpenSpec</td></tr>
-<tr><td>backend-test</td><td>ubuntu-latest + OpenSearch</td><td>Admin-UI- und Showcase-Tests, mvn verify, Ops-Skripte</td></tr>
-<tr><td>admin-ui-browser</td><td>ubuntu-24.04</td><td>Lint, Typecheck, Playwright in Chromium</td></tr>
-<tr><td>pilot-showcase-browser</td><td>ubuntu-24.04</td><td>Build, Playwright auf Desktop und Mobil</td></tr>
-<tr><td>build-and-push</td><td>ubuntu-latest</td><td>baut das Image; Push nur beim Push auf main</td></tr>
-<tr><td>swift-tests (ios.yaml)</td><td>macos-latest</td><td>swift test, Simulator-Build, UI-Tests, unsigniert</td></tr>
-</table>
-<p class="small">Außerdem: beacon-lab.yaml und field-tools.yaml, nur Tests, nur bei Änderungen in ihren Ordnern.</p>
-<aside>Ein Satz pro Job. contract prüft den API-Vertrag in openspec/specs/shared-api/openapi.yaml und erkennt Breaking Changes. backend-test startet einen echten OpenSearch als Service-Container und führt mvn verify ohne skipTests aus. Die zwei Browser-Jobs testen Admin-UI und Showcase in echtem Chromium. build-and-push wartet auf contract und backend-test. Bei einem PR baut er nur, beim Push auf main pusht er das Image. iOS läuft in einem eigenen Workflow auf einem Mac-Runner.</aside>
+<div class="checks">
+<div class="check in" style="--i:0">
+<p class="check-t">Sprechen alle dieselbe Sprache?</p>
+<p class="check-p">App, Webseiten und Server nutzen eine gemeinsame API-Beschreibung. Bricht eine Änderung etwas, schlägt der Test an.</p>
+<p class="check-job">contract</p>
+</div>
+<div class="check in" style="--i:1">
+<p class="check-t">Funktioniert der Server?</p>
+<p class="check-p">Alle Java-Tests laufen, mit einer echten Suchdatenbank (OpenSearch).</p>
+<p class="check-job">backend-test</p>
+</div>
+<div class="check in" style="--i:2">
+<p class="check-t">Funktionieren die Webseiten?</p>
+<p class="check-p">Ein echter Chrome klickt Admin-Seite und Showcase durch, am PC und am Handy.</p>
+<p class="check-job">admin-ui-browser · pilot-showcase-browser</p>
+</div>
+<div class="check in" style="--i:3">
+<p class="check-t">Funktioniert die iOS-App?</p>
+<p class="check-p">Tests auf einem Mac in der Cloud, nur wenn sich iOS-Code ändert.</p>
+<p class="check-job">ios.yaml · swift-tests</p>
+</div>
+</div>
+<p class="small">Alles grün? Dann darf gemergt werden. Danach baut der Job build-and-push das Image.</p>
+<aside>Die Namen in orange sind die echten Job-Namen aus .github/workflows/ci.yaml und ios.yaml, die muss man aber nicht auswendig können. Wichtig ist die Frage, die jeder Job beantwortet. Der erste Job ist besonders: Er prüft unseren API-Vertrag. Wenn jemand im Backend etwas ändert, das die App kaputt machen würde, wird das automatisch erkannt. Zusätzlich gibt es noch kleine Workflows für das Positioning-Lab und die Feldwerkzeuge.</aside>
 </section>

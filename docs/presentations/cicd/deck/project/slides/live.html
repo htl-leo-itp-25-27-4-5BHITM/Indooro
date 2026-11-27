@@ -1,14 +1,14 @@
 <section id="live">
 <div class="head">
-<p class="eyebrow">Live-Beispiel · 25.11.2026</p>
-<h2>PR #241: Von Rot zu Grün</h2>
+<p class="eyebrow">Echtes Beispiel · 25.11.2026</p>
+<h2>PR #241: Die Pipeline fängt einen Fehler</h2>
 </div>
 <div class="tl">
-<div class="ev"><p class="ev-time">11:30</p><p class="ev-red">Rot</p><p class="ev-text">Push-Lauf auf main: build-and-push scheitert, Maven Central antwortet mit HTTP 429</p></div>
-<div class="ev"><p class="ev-time">11:49</p><p class="ev-red">Rot</p><p class="ev-text">Erster Lauf auf dem PR-Branch fix/ci-maven-resolution</p></div>
-<div class="ev"><p class="ev-time">11:56</p><p class="ev-green">Grün</p><p class="ev-text">Retry bei 429/503 und Neustart mit -U: alle 5 Checks grün, danach Merge nach main</p></div>
-<div class="ev"><p class="ev-time">20:45</p><p class="ev-green">Grün</p><p class="ev-text">Späterer Push-Lauf auf main (8238b4c): Tests ca. 4 min, Image-Build ca. 1 min</p></div>
+<div class="ev"><p class="ev-time">11:30</p><p class="ev-red">Rot</p><p class="ev-text">Image-Bau scheitert: Der Server für Java-Bibliotheken sagt „zu viele Anfragen“ (HTTP 429)</p></div>
+<div class="ev"><p class="ev-time">11:49</p><p class="ev-red">Rot</p><p class="ev-text">Erster Lauf im Pull Request mit der Lösung: noch rot</p></div>
+<div class="ev"><p class="ev-time">11:56</p><p class="ev-green">Grün</p><p class="ev-text">Lösung: bei „zu viele Anfragen“ kurz warten und neu versuchen. Alle 5 Checks grün, danach Merge</p></div>
+<div class="ev"><p class="ev-time">20:45</p><p class="ev-green">Grün</p><p class="ev-text">Späterer Lauf auf main: Tests ca. 4 Minuten, Image fertig nach ca. 5 Minuten</p></div>
 </div>
 <p class="small mono">github.com/htl-leo-itp-25-27-4-5BHITM/Indooro/pull/241</p>
-<aside>Hier PR 241 im Browser öffnen. Zeigen: der rote Lauf, der Grund im PR-Text (HTTP 429 von Maven Central, also kein Code-Fehler, sondern ein externer Dienst), dann die fünf grünen Checks. Befehl zum Zeigen: gh run list --limit 10. Der PR wurde von Claude Code erstellt, der Text endet mit Generated with Claude Code.</aside>
+<aside>Hier PR 241 im Browser öffnen. Die Geschichte: Unser Code war in Ordnung, aber Maven Central, der Server, von dem Java-Bibliotheken geladen werden, hat den GitHub-Roboter wegen zu vieler Anfragen abgewiesen. Die Pipeline wurde rot und nichts kaputtes ging raus. Claude Code hat die Lösung als Pull Request gebaut: warten und neu versuchen. Erst als alle fünf Checks grün waren, wurde gemergt. Zum Zeigen im Terminal: gh run list --limit 10.</aside>
 </section>

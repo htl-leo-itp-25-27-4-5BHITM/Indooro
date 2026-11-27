@@ -1,32 +1,32 @@
 <section id="pipeline">
 <div class="head">
 <p class="eyebrow">Unsere Pipeline</p>
-<h2>Code → GitHub → Actions → Image → LeoCloud</h2>
+<h2>Der Weg einer Änderung</h2>
 </div>
 <div class="flow">
 <div class="node in" style="--i:0">
-<p class="node-t">Branch</p>
-<p class="node-p">Mensch oder Claude Code pusht Commits</p>
+<p class="node-t">1 · Branch</p>
+<p class="node-p">Wir oder Claude Code schreiben Code</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:1">
-<p class="node-t">Pull Request</p>
-<p class="node-p">gegen main, startet die Checks</p>
+<p class="node-t">2 · Pull Request</p>
+<p class="node-p">Antrag auf GitHub: „bitte in main“</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:2">
-<p class="node-t">GitHub Actions</p>
-<p class="node-p">Vertrag, Tests, Browser, Build</p>
+<p class="node-t">3 · Tests</p>
+<p class="node-p">GitHub Actions prüft alles automatisch</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:3">
-<p class="node-t">GHCR</p>
-<p class="node-p">nach Merge: Image mit Tag = Commit-SHA</p>
+<p class="node-t">4 · Image</p>
+<p class="node-p">nach dem Merge: fertiges Paket im Lager GHCR</p>
 </div>
 <x-connector class="arrow-manual"></x-connector>
 <div class="node-hl in" style="--i:4">
-<p class="node-t">LeoCloud</p>
-<p class="node-p">kubectl set image, von Hand</p>
+<p class="node-t">5 · LeoCloud</p>
+<p class="node-p">Erik spielt es von Hand ein</p>
 </div>
 </div>
 <div class="spans">
@@ -34,8 +34,8 @@
 <div></div>
 <p class="span-cd">Continuous Delivery</p>
 <div></div>
-<p class="span-man">Manuell</p>
+<p class="span-man">Von Hand</p>
 </div>
-<p class="lead">Die LeoCloud zieht das Image aus GHCR. Kein Workflow hat Zugang zum Cluster.</p>
-<aside>Das ist das wichtigste Bild. Links bis GitHub Actions ist CI. Das fertige Image in der GitHub Container Registry ist Continuous Delivery. Der letzte Pfeil ist gestrichelt, weil er manuell ist. Wichtig: GitHub schiebt nichts in die LeoCloud. Kubernetes zieht das Image, sobald jemand mit kubectl den neuen Tag setzt.</aside>
+<p class="lead">Schritt 1 bis 4 laufen von selbst. Nur der gestrichelte Pfeil braucht einen Menschen.</p>
+<aside>Das ist das wichtigste Bild, am besten von links nach rechts durchgehen. Eins: Jemand schreibt Code auf einem eigenen Branch, entweder wir oder Claude Code. Zwei: Ein Pull Request auf GitHub. Drei: GitHub Actions startet automatisch alle Tests. Vier: Wenn alles grün ist und gemergt wurde, baut GitHub ein Docker-Image und legt es in GHCR ab. Fünf: Erik holt dieses Image mit einem Befehl in die LeoCloud. Dieser letzte Pfeil ist gestrichelt, weil er von Hand passiert.</aside>
 </section>
