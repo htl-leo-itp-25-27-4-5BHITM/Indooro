@@ -2,7 +2,11 @@
 
 Stand: 2026-11-27. Alle Fakten in diesem Text stammen aus dem Repository `htl-leo-itp-25-27-4-5BHITM/Indooro` (Branch `main`, Commit `9d6a0b1`) und aus GitHub (`gh pr list`, `gh run list`, `gh api`). Wo etwas nicht belegbar ist, steht es unter „Offene Punkte“.
 
-Die Folien zu diesem Text liegen im selben Ordner: [`praesentation.html`](praesentation.html).
+Die Folien zu diesem Text liegen im selben Ordner:
+
+- [`praesentation.html`](praesentation.html): alle Folien als eine HTML-Datei, im Browser öffnen (Sprechnotizen stehen im Quelltext in `<aside>`).
+- [`deck/project/`](deck/project/): Quelle des Slide-Decks (`deck.json`, `deck.css`, eine Datei pro Folie unter `slides/`, Sprechnotizen jeweils im `<aside>`).
+- Das Deck ist zusätzlich als claude.ai-Artifact veröffentlicht (Link im Pull Request).
 
 ---
 
@@ -135,7 +139,7 @@ Die iOS-Pipeline ist also **nur CI**. Sie erzeugt kein `.ipa`, signiert nichts u
 
 - Der PR wird gemergt, wenn die Checks grün sind.
 - **Fakt aus GitHub:** `main` hat **keinen Branch-Schutz** (`gh api .../branches/main/protection` → „Branch not protected“) und **keine Rulesets** (`.../rulesets` → 0). Grüne Checks sind also **Teamregel, nicht technisch erzwungen**.
-- **Fakt aus GitHub:** Von den letzten 133 gemergten PRs hat **keiner** ein formales GitHub-Review (`reviews` leer). Review passiert in der Praxis in der Claude-Code-Session (Orchestrator prüft den Diff der Sub-Session) und durch den Menschen, der den Merge auslöst, aber nicht als GitHub-Review.
+- **Fakt aus GitHub:** Von allen 133 gemergten PRs hat **keiner** ein formales GitHub-Review (`reviews` leer). Review passiert in der Praxis in der Claude-Code-Session (Orchestrator prüft den Diff der Sub-Session) und durch den Menschen, der den Merge auslöst, aber nicht als GitHub-Review.
 
 ### Schritt 6: Push auf `main` → Image in die Registry
 
@@ -250,7 +254,7 @@ gh pr view 241 --web
 
 ## 5. Rolle von Claude Code
 
-Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkzeug **vor** der Pipeline, das Code schreibt, und manchmal **nach** der Pipeline, das auf Erik's Auftrag deployt.
+Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkzeug **vor** der Pipeline, das Code schreibt, und manchmal **nach** der Pipeline, das auf Eriks Auftrag deployt.
 
 ### Wie eine Änderung mit Claude Code entsteht
 
@@ -264,10 +268,10 @@ Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkze
 ### Belege aus Git und GitHub
 
 - 214 Commits auf `main` tragen die Zeile `Co-Authored-By: Claude` (von 828 Commits insgesamt).
-- 125 der letzten 133 gemergten PRs enthalten „Claude Code“ im PR-Text.
+- 125 von allen 133 gemergten PRs enthalten „Claude Code“ im PR-Text.
 - 14 dieser PRs kommen von Branches mit Präfix `claude/` (z. B. PR #235 `claude/ios-polish-b9fb39`, 37 Commits, Checks `contract`, `mobile-contract`, `backend-test`, `swift-tests`, `build-and-push` grün). Die übrigen Agent-PRs nutzen Präfixe wie `feat/`, `fix/`, `ci/`.
 - 37 archivierte OpenSpec-Changes in `openspec/changes/archive/`, 22 offene in `openspec/changes/`.
-- Die Release-Protokolle 2026-11-18 sagen: „Ausgeführt von Claude Code im Auftrag von Erik („Merge and deploy“)“. Das Deployment läuft also mit Erik's LeoCloud-Zugang und auf seine ausdrückliche Anweisung, nicht automatisch.
+- Die Release-Protokolle 2026-11-18 sagen: „Ausgeführt von Claude Code im Auftrag von Erik („Merge and deploy“)“. Das Deployment läuft also mit Eriks LeoCloud-Zugang und auf seine ausdrückliche Anweisung, nicht automatisch.
 
 ---
 
@@ -283,7 +287,7 @@ Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkze
 
 ### Fehlt / Schwächen
 
-- Kein Continuous Deployment: LeoCloud-Rollout manuell, braucht Erik's Zugang.
+- Kein Continuous Deployment: LeoCloud-Rollout manuell, braucht Eriks Zugang.
 - `main` nicht geschützt: grüne Checks und Reviews sind nicht erzwungen.
 - Keine formalen GitHub-Reviews auf den PRs.
 - Browsertests blockieren den Image-Build nicht (`needs` enthält nur `contract` und `backend-test`).
@@ -357,7 +361,7 @@ Nur `secrets.GITHUB_TOKEN`, das GitHub automatisch bereitstellt, für den Login 
 Logs sichern (`kubectl logs --previous`, `describe pod`), dann `kubectl set image` auf den vorher notierten Tag, Smoke-Check, Revert-Commit für `k8s/backend.yaml`. Bei neuer Flyway-Migration eventuell Datenbank-Restore aus dem Backup.
 
 **12. Welche Rolle spielt Claude Code?**
-Claude Code schreibt Code in eigenen Sessions, jede in einem git worktree auf einem eigenen Branch, und öffnet PRs. Diese PRs durchlaufen dieselben Checks. Deployt wird nur auf ausdrücklichen Auftrag mit Erik's Zugang.
+Claude Code schreibt Code in eigenen Sessions, jede in einem git worktree auf einem eigenen Branch, und öffnet PRs. Diese PRs durchlaufen dieselben Checks. Deployt wird nur auf ausdrücklichen Auftrag mit Eriks Zugang.
 
 **13. Was ist OpenSpec?**
 Ein Format für Änderungsvorschläge im Repo (`openspec/changes/<name>/` mit `proposal.md`, `design.md`, `tasks.md`, Spec-Deltas). Nach dem Umsetzen wird der Change archiviert und die Specs unter `openspec/specs/` werden aktualisiert. Die CI validiert das mit `openspec validate --all --strict`.
