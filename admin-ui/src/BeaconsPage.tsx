@@ -1,3 +1,4 @@
+import { describeError, ErrorState, LoadingState } from "./PageState";
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
@@ -183,7 +184,7 @@ export function assignNotice(result: BulkAssignResult, storeName: string): strin
 }
 
 function errorMessage(error: unknown): string {
-  return error instanceof ApiClientError ? error.message : "Die Anfrage ist fehlgeschlagen. Bitte erneut versuchen.";
+  return describeError(error, "Die Anfrage ist fehlgeschlagen. Bitte erneut versuchen.");
 }
 
 function statusLabel(beacon: Beacon): string {
@@ -495,7 +496,7 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
     </div>
     {notice && <p role="status" className="notice success">{notice}</p>}
     {archiveError && <p role="alert" className="notice error">{archiveError}</p>}
-    {loadError && <div role="alert" className="notice error"><p>{loadError}</p><button type="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
+    {loadError && <ErrorState message={loadError} onRetry={() => setRevision((value) => value + 1)} />}
 
     {bulkOpen && admin && <section className="panel" aria-labelledby="beacon-bulk-title"><div className="panel-header"><h3 id="beacon-bulk-title">Mehrere Beacons anlegen</h3></div>
       {bulkError && <p role="alert" className="notice error">{bulkError}</p>}
@@ -537,8 +538,8 @@ export function BeaconsPage({ api, user }: { api: ApiClient; user: CurrentUser }
       </form>
       {stores.length < storeTotal && <button type="button" onClick={() => void loadMoreStores()} disabled={loadingMoreStores}>{loadingMoreStores ? "Lädt …" : `Weitere Stores laden (${stores.length} von ${storeTotal})`}</button>}
       {storePageError && <p role="alert" className="notice error">Weitere Stores konnten nicht geladen werden: {storePageError}</p>}
-      {loading && <p role="status">Beacons werden geladen …</p>}
-      {!loading && !loadError && sortedBeacons.length === 0 && <EmptyState action={admin && editing === false && !filters.query && !filters.storeId && filters.assigned === "all" && filters.status === "ACTIVE" ? <button type="button" className="primary" onClick={openCreate}>Ersten Beacon anlegen</button> : undefined}>{!filters.query && !filters.storeId && filters.assigned === "all" && filters.status === "ACTIVE" ? "Noch keine Beacons vorhanden." : "Keine Beacons passen zu Suche, Filtern oder Zugriff."}</EmptyState>}
+      {loading && <LoadingState>Beacons werden geladen …</LoadingState>}
+      {!loading && !loadError && sortedBeacons.length === 0 && <EmptyState action={admin && editing === false && !filters.query && !filters.storeId && filters.assigned === "all" && filters.status === "ACTIVE" ? <button type="button" className="primary" onClick={openCreate}>Ersten Beacon anlegen</button> : <a className="button primary" href="/admin/next/beacons/">Filter zurücksetzen</a>}>{!filters.query && !filters.storeId && filters.assigned === "all" && filters.status === "ACTIVE" ? "Noch keine Beacons vorhanden." : "Keine Beacons passen zu Suche, Filtern oder Zugriff."}</EmptyState>}
       {!loading && !loadError && selectable.length > 0 && <div className="toolbar" aria-label="Auswahl zuweisen">
         <span>{selected.length} ausgewählt</span>
         <label>Auswahl zuweisen an<select value={selectionStoreId} disabled={assigning || !selected.length} onChange={(event) => setSelectionStoreId(event.currentTarget.value)}><option value="">Store auswählen</option>{storesForUser.map((store) => <option key={store.id} value={store.id}>{store.storeCode} · {store.name}</option>)}</select></label>

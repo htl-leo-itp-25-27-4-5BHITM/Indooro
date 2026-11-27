@@ -1,3 +1,4 @@
+import { describeError, ErrorState, LoadingState } from "./PageState";
 import { useEffect, useMemo, useState } from "react";
 import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
@@ -27,7 +28,7 @@ const STORE_PAGE_SIZE = 100;
 const MAX_STORE_PAGES = 20;
 
 function friendlyError(error: unknown): string {
-  if (error instanceof ApiClientError) return error.message;
+  if (error instanceof ApiClientError) return describeError(error);
   return "Die Anfrage ist fehlgeschlagen. Bitte erneut versuchen.";
 }
 
@@ -185,9 +186,9 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
           </select></label>
         </div>
         {rowError && <p role="alert" className="notice error">{rowError}</p>}
-        {loading && <p role="status">Zugänge werden geladen …</p>}
-        {listError && <div role="alert" className="notice"><p>{listError}</p><button type="button" onClick={() => setReload((current) => current + 1)}>Erneut versuchen</button></div>}
-        {!loading && !listError && visibleAssignments.length === 0 && <EmptyState action={!query && status === "ACTIVE" ? <button type="button" className="primary" onClick={() => document.getElementById("access-keycloakSubject")?.focus()}>Ersten Zugang anlegen</button> : undefined}>{query ? "Kein Zugang passt zur Suche." : "Keine Zugänge in diesem Status."}</EmptyState>}
+        {loading && <LoadingState>Zugänge werden geladen …</LoadingState>}
+        {listError && <ErrorState message={listError} onRetry={() => setReload((current) => current + 1)} />}
+        {!loading && !listError && visibleAssignments.length === 0 && <EmptyState action={!query && status === "ACTIVE" ? <button type="button" className="primary" onClick={() => document.getElementById("access-keycloakSubject")?.focus()}>Ersten Zugang anlegen</button> : <button type="button" className="primary" onClick={() => { setQuery(""); setStatus("ACTIVE"); }}>Filter zurücksetzen</button>}>{query ? "Kein Zugang passt zur Suche." : "Keine Zugänge in diesem Status."}</EmptyState>}
         {!loading && !listError && visibleAssignments.length > 0 && <DataTable label="Zugangs-Tabelle">
           <thead><tr><th>Benutzer</th><th className="col-mid">Rolle</th><th className="col-mid">Bereich</th><th>Status</th><th>Aktion</th></tr></thead>
           <tbody>{visibleAssignments.map((assignment) => {
@@ -209,7 +210,7 @@ export function AccessAssignmentsPage({ api, user }: { api: ApiClient; user: Cur
         <section className="panel" aria-labelledby="access-form-title">
           <div className="panel-header"><h3 id="access-form-title">Zugang anlegen</h3></div>
           <p>Die Keycloak-ID (<code>sub</code>) zeigt die Administration einer angemeldeten Person ohne Zugang auf der Seite „Zugriff verweigert“. Sie steht auch in der Keycloak-Konsole unter Users → ID.</p>
-          {optionsError && <div role="alert" className="notice error"><p>{optionsError}</p><button type="button" onClick={() => setOptionsReload((current) => current + 1)}>Erneut versuchen</button></div>}
+          {optionsError && <ErrorState message={optionsError} onRetry={() => setOptionsReload((current) => current + 1)} />}
           {formError && <p role="alert" className="notice error">{formError}</p>}
           <form className="stack" onSubmit={createAssignment} noValidate>
             <label htmlFor="access-keycloakSubject">Keycloak-ID (sub)</label>

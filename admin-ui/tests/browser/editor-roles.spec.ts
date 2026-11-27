@@ -160,8 +160,8 @@ for (const profile of profiles) {
       });
       await page.goto("/admin/next/editor/?storeId=store-2");
       await expect(page.getByRole("alert")).toContainText("Zugriff verweigert");
-      await expect(page.getByRole("alert")).toContainText("Für diese Aktion fehlen die Berechtigungen.");
-      await expect(page.getByRole("button", { name: "Erneut versuchen" })).toHaveCount(0);
+      await expect(page.getByRole("alert")).toContainText("Für diese Daten fehlt dir die Berechtigung.");
+      await expect(page.getByRole("button", { name: "Erneut versuchen" })).toBeVisible();
       expect(contextPaths).toEqual(["/api/stores/store-2/layout/editor-context"]);
     });
 

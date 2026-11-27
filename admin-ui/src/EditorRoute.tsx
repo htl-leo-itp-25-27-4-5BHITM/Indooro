@@ -1,3 +1,4 @@
+import { ErrorState, describeError, LoadingState } from "./PageState";
 import { useEffect, useRef, useState } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
 import { LayoutEditor } from "./editor/LayoutEditor";
@@ -45,13 +46,14 @@ export function EditorRoute({ api }: { api: ApiClient }) {
   useEffect(() => {
     if (!storeId) return;
     const controller = new AbortController();
+    setError(null);
     const base = `/api/stores/${encodeURIComponent(storeId)}/layout`;
     api.get<EditorContext>(`${base}/editor-context`, { signal: controller.signal })
       .then(async (loadedContext) => {
         const loadedVersion = selectedVersionId
           ? await api.get<LayoutVersion>(`${base}/versions/${encodeURIComponent(selectedVersionId)}`, { signal: controller.signal })
           : loadedContext.currentLayout;
-        if (!validDocument(loadedVersion?.layout)) throw new Error("Layout-Daten sind unvollständig.");
+        if (!validDocument(loadedVersion?.layout)) throw new ApiClientError("invalid-response", 200, "Layout-Daten sind unvollständig.");
         if (controller.signal.aborted) return;
         setContext(loadedContext);
         setVersion(loadedVersion);
@@ -59,7 +61,7 @@ export function EditorRoute({ api }: { api: ApiClient }) {
         setError(null);
       })
       .catch((cause: unknown) => { if (!controller.signal.aborted) setError({
-        message: cause instanceof Error ? cause.message : "Editor konnte nicht geladen werden.",
+        message: describeError(cause, "Editor konnte nicht geladen werden."),
         forbidden: cause instanceof ApiClientError && cause.kind === "forbidden"
       }); });
     return () => controller.abort();
@@ -70,13 +72,13 @@ export function EditorRoute({ api }: { api: ApiClient }) {
     const controller = new AbortController();
     api.get<LayoutVersion[]>(`/api/stores/${encodeURIComponent(storeId)}/layout/versions`, { signal: controller.signal })
       .then((result) => { if (!controller.signal.aborted) { setVersions(Array.isArray(result) ? result : []); setVersionError(null); } })
-      .catch((cause: unknown) => { if (!controller.signal.aborted) setVersionError(cause instanceof Error ? cause.message : "Versionsliste konnte nicht geladen werden."); });
+      .catch((cause: unknown) => { if (!controller.signal.aborted) setVersionError(describeError(cause, "Versionsliste konnte nicht geladen werden.")); });
     return () => controller.abort();
   }, [api, storeId, revision, versionRevision]);
 
   if (!storeId) return <section className="notice" role="alert"><h2>Store auswählen</h2><p>Der neue Layout-Editor benötigt eine Filiale. Das globale Kundenlayout bleibt im bisherigen Editor verfügbar.</p><a href="/admin/next/stores/">Zur Store-Liste</a><span> · </span><a href="/admin/editor/">Globales Layout öffnen</a></section>;
-  if (error) return <section className="notice error-state" role="alert"><h2>{error.forbidden ? "Zugriff verweigert" : "Editor konnte nicht geladen werden"}</h2><p>{error.message}</p>{!error.forbidden && <button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button>}</section>;
-  if (!context || !version?.layout) return <p role="status">Layout-Editor wird geladen …</p>;
+  if (error) return <ErrorState title={error.forbidden ? "Zugriff verweigert" : "Editor konnte nicht geladen werden"} message={error.message} onRetry={() => setRevision((value) => value + 1)} />;
+  if (!context || !version?.layout) return <LoadingState>Layout-Editor wird geladen …</LoadingState>;
 
   const base = `/api/stores/${encodeURIComponent(storeId)}/layout`;
   const saveDraft = async (document: LayoutDocument) => {

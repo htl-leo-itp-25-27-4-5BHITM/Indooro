@@ -1,3 +1,4 @@
+import { ErrorState, describeError, LoadingState } from "./PageState";
 import { useCallback, useEffect, useState } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
@@ -56,15 +57,15 @@ export function Dashboard({ api, user }: { api: ApiClient; user: CurrentUser }) 
       .then((summary) => { if (!controller.signal.aborted) setData(summary); })
       .catch((cause: unknown) => {
         if (controller.signal.aborted) return;
-        setError(cause instanceof Error ? cause.message : "Dashboard konnte nicht geladen werden.");
+        setError(describeError(cause, "Dashboard konnte nicht geladen werden."));
       });
     return () => controller.abort();
   }, [api, user, revision]);
 
   return <div className="dashboard">
     <div className="page-intro"><div><p className="eyebrow">Übersicht</p><h1>Dashboard</h1><p>Stand Ihrer sichtbaren Stores und der nächsten Einrichtungsschritte.</p></div><a className="button primary" href="/admin/next/stores/">Stores verwalten</a></div>
-    {error && <div className="notice error-state" role="alert"><h3>Daten konnten nicht geladen werden</h3><p>{error}</p><button className="button" onClick={retry}>Erneut versuchen</button></div>}
-    {!data && !error && <div className="notice" role="status">Dashboard wird geladen …</div>}
+    {error && <ErrorState message={error} onRetry={retry} />}
+    {!data && !error && <LoadingState>Dashboard wird geladen …</LoadingState>}
     {data && !error && <>
       <section className="metrics" aria-label="Kennzahlen">
         <Metric label="Regionen" value={data.regions} detail="in Ihrem Zugriff" />
@@ -85,7 +86,7 @@ export function Dashboard({ api, user }: { api: ApiClient; user: CurrentUser }) 
         </div></section>
       </div>
       {user.role === "admin" && <section className="notice activity"><div className="section-heading"><h3>Letzte Aktivitäten</h3><a href="/admin/next/server-logs/">Diagnose öffnen</a></div>
-        {data.activity.length === 0 ? <p>Keine Aktivitäten vorhanden.</p> : <ul>{data.activity.map((entry) => <li key={entry.id}><span>{entry.summary || entry.action}</span><time dateTime={entry.createdAt}>{new Intl.DateTimeFormat("de-AT", { dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.createdAt))}</time></li>)}</ul>}
+        {data.activity.length === 0 ? <EmptyState action={<a className="button primary" href="/admin/next/stores/">Stores verwalten</a>}>Keine Aktivitäten vorhanden.</EmptyState> : <ul>{data.activity.map((entry) => <li key={entry.id}><span>{entry.summary || entry.action}</span><time dateTime={entry.createdAt}>{new Intl.DateTimeFormat("de-AT", { dateStyle: "medium", timeStyle: "short" }).format(new Date(entry.createdAt))}</time></li>)}</ul>}
       </section>}
     </>}
   </div>;

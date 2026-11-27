@@ -59,3 +59,26 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 
     });
   });
 }
+
+test("representative stores server error", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mockVisualApi(page);
+  await page.route("**/api/stores?*", (route) => route.fulfill({ status: 500, json: { error: "Internal Server Error" } }));
+  await page.goto("/admin/next/stores/");
+  await expect(page.getByRole("alert")).toContainText("Serverfehler. Bitte später erneut versuchen.");
+  await page.evaluate(() => document.fonts.ready);
+  // Strict CI rejects missing baselines before capturing; retain Linux bootstrap evidence in its artifact.
+  await page.screenshot({ path: test.info().outputPath("stores-error-linux-capture.png"), fullPage: true, animations: "disabled", caret: "hide" });
+  await expect(page).toHaveScreenshot("stores-error-1440x900.png", { fullPage: true });
+});
+
+test("representative stores empty state", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mockVisualApi(page, true);
+  await page.goto("/admin/next/stores/");
+  const empty = page.locator(".empty-state");
+  await expect(empty).toContainText("Noch keine Stores vorhanden.");
+  await page.evaluate(() => document.fonts.ready);
+  await empty.screenshot({ path: test.info().outputPath("stores-empty-linux-capture.png"), animations: "disabled", caret: "hide" });
+  await expect(empty).toHaveScreenshot("stores-empty-state-1440x900.png");
+});

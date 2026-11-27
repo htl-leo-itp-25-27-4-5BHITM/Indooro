@@ -108,3 +108,24 @@ for (const viewport of viewports) {
     });
   });
 }
+
+test("representative unavailable 3D view", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.route("**/assets/Store3DView-*.js", (route) => route.fulfill({ status: 500, body: "Unavailable" }));
+  await page.goto("/?ansicht=3d");
+  await page.locator("#demo").scrollIntoViewIfNeeded();
+  const error = page.getByRole("alert");
+  await expect(error).toContainText("3D-Ansicht konnte nicht geladen werden");
+  await page.evaluate(() => document.fonts.ready);
+  await expect(error).toHaveScreenshot("1440-demo-error.png");
+});
+
+test("representative empty shopping list", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openDemo(page);
+  await gotoTab(page, "liste");
+  const empty = page.getByTestId("list-empty");
+  await expect(empty).toContainText("Ihre Einkaufsliste ist leer");
+  await page.evaluate(() => document.fonts.ready);
+  await expect(empty).toHaveScreenshot("1440-empty-list-state.png", { stylePath: elementScreenshotStyle });
+});

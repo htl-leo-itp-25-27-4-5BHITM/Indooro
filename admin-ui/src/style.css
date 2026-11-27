@@ -399,3 +399,10 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
   .content .legacy-editor-route-intro a { display: inline-flex; align-items: center; min-height: 40px; min-width: 40px; }
   .content summary { min-height: 40px; line-height: 40px; }
 }
+
+/* Reserve the results area while requests settle, including retries. */
+.loading-state, .page-error { min-height: 14rem; }
+.loading-state { display: flex; align-items: center; justify-content: center; gap: .75rem; }
+.state-spinner { width: 1.25rem; height: 1.25rem; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: state-spin .8s linear infinite; }
+@keyframes state-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .state-spinner { animation: none; } }
