@@ -1,0 +1,61 @@
+name: Visual baselines
+run-name: Visual baselines - ${{ inputs.project }} - ${{ inputs.ref }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch to check out
+        required: true
+        type: string
+        default: main
+      project:
+        description: Visual suite to refresh
+        required: true
+        type: choice
+        options: [admin-ui, pilot-showcase, web-quality, all]
+
+permissions:
+  contents: read
+
+jobs:
+  snapshots:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ inputs.project == 'all' && fromJSON('["admin-ui","pilot-showcase","web-quality"]') || fromJSON(format('["{0}"]', inputs.project)) }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.project }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: ${{ matrix.project == 'pilot-showcase' && 'pilot-showcase/.nvmrc' || 'admin-ui/.nvmrc' }}
+          cache: npm
+          cache-dependency-path: ${{ matrix.project }}/package-lock.json
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Build showcase (admin builds through pretest; web-quality serves static files)
+        if: matrix.project == 'pilot-showcase'
+        run: npm run build
+      - name: Generate Linux baselines
+        run: npm run test:visual -- --update-snapshots=all --workers=1
+      - name: Stage PNGs with repository-relative paths
+        working-directory: .
+        env:
+          SNAPSHOT_ROOT: ${{ matrix.project == 'admin-ui' && 'admin-ui/tests/browser/visual' || matrix.project == 'pilot-showcase' && 'pilot-showcase/tests/e2e/visual/snapshots' || 'web-quality/tests/snapshots' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/visual-baselines"
+          find "$SNAPSHOT_ROOT" -type f -name '*.png' -exec cp --parents '{}' "$RUNNER_TEMP/visual-baselines" ';'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines-${{ matrix.project }}
+          path: ${{ runner.temp }}/visual-baselines/
+          if-no-files-found: error
