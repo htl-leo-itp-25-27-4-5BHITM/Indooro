@@ -109,6 +109,31 @@ p { margin: 0; font-size: 32px; line-height: 1.4; }
 .col-bad { background: var(--paper); padding: 44px; border-top: 8px solid var(--accent); display: flex; flex-direction: column; gap: 24px; }
 .col-list { font-size: 28px; line-height: 1.4; margin: 0; padding-left: 36px; }
 
+/* Wörter */
+.gloss { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; }
+.word { background: var(--paper); padding: 32px 36px; border-top: 6px solid var(--blue); display: flex; flex-direction: column; gap: 10px; }
+.word-t { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 36px; font-weight: 700; }
+.word-p { font-size: 28px; line-height: 1.35; color: var(--muted); }
+
+/* Prüfungen */
+.checks { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.check { background: var(--paper); padding: 32px 36px; border-left: 8px solid var(--blue); display: flex; flex-direction: column; gap: 10px; }
+.check-t { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 36px; font-weight: 700; }
+.check-p { font-size: 28px; line-height: 1.35; color: var(--muted); }
+.check-job { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; color: var(--accent-deep); }
+
+/* Tests */
+.tests { display: flex; gap: 80px; align-items: center; flex: 1; }
+.big { display: flex; flex-direction: column; gap: 8px; width: 520px; }
+.big-n { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 180px; font-weight: 700; line-height: 1; color: var(--blue); }
+.big-p { font-size: 36px; font-weight: 600; }
+.big-s { font-size: 26px; line-height: 1.35; color: var(--muted); }
+.bars { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.bar-row { display: flex; align-items: center; gap: 24px; }
+.bar-name { width: 300px; font-size: 26px; }
+.bar { height: 30px; background: var(--blue); border-radius: 4px; }
+.bar-n { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
 /* Bewegung */
 @keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0px); } }
 .in { animation: rise 500ms ease-out both; animation-delay: calc(var(--i) * 120ms); }
@@ -131,79 +156,97 @@ table { border-collapse:collapse; } th, td { text-align:left; padding:14px 16px;
 </section>
 <section id="begriffe">
 <div class="head">
-<p class="eyebrow">Begriffe</p>
-<h2>Drei Stufen, eine Frage: Wie weit läuft es automatisch?</h2>
+<p class="eyebrow">Begriffe, erklärt wie bei der Post</p>
+<h2>Drei Stufen: Wie viel läuft automatisch?</h2>
 </div>
 <div class="cards">
 <div class="card-blue in" style="--i:0">
 <h3 class="card-t">Continuous Integration</h3>
-<p class="card-p">Jede Änderung wird früh in den Hauptzweig integriert. Ein Server baut und testet sie automatisch.</p>
+<p class="card-p">Inhalt prüfen: Jede Änderung wird sofort automatisch gebaut und getestet.</p>
+<p class="card-code">„Passt alles zusammen?“</p>
 </div>
 <div class="card-blue in" style="--i:1">
 <h3 class="card-t">Continuous Delivery</h3>
-<p class="card-p">Nach grüner CI entsteht automatisch ein auslieferbares Paket. Ein Mensch entscheidet, wann es live geht.</p>
+<p class="card-p">Paket packen: Nach grünen Tests liegt ein fertiges Programm im Lager. Ein Mensch schickt es ab.</p>
+<p class="card-code">„Könnten wir jetzt liefern?“</p>
 </div>
 <div class="card in" style="--i:2">
 <h3 class="card-t">Continuous Deployment</h3>
-<p class="card-p">Jede grüne Änderung geht ohne menschlichen Schritt automatisch in Produktion.</p>
+<p class="card-p">Automatisch zustellen: Jede grüne Änderung geht ohne Mensch direkt live.</p>
+<p class="card-code">„Geht es von selbst live?“</p>
 </div>
 </div>
-<p class="statement">CI = bauen + testen · Delivery = Paket liegt bereit · Deployment = Paket geht automatisch live</p>
-<aside class="notes">Der Unterschied liegt nur im letzten Schritt. Bei Continuous Delivery liegt das fertige Paket bereit und ein Mensch drückt auf den Knopf. Bei Continuous Deployment gibt es diesen Knopf nicht mehr. Bild: Paket gepackt und abholbereit gegen Paket wird automatisch zugestellt.</aside>
+<p class="statement">Der einzige Unterschied zwischen Delivery und Deployment: Wer drückt auf „Abschicken“?</p>
+<aside class="notes">Vergleich mit der Post. CI heißt: Bevor etwas ins Paket kommt, wird es geprüft. Das passiert bei jeder Änderung automatisch. Continuous Delivery heißt: Das Paket ist fertig gepackt und liegt im Lager. Jemand muss es noch abschicken. Continuous Deployment heißt: Die Post holt jedes fertige Paket sofort automatisch ab. Merksatz: Delivery und Deployment unterscheiden sich nur darin, ob ein Mensch auf Abschicken drückt.</aside>
 </section>
 <section id="stand" class="dark">
 <div class="head">
 <p class="eyebrow-dark">Wo steht Indooro?</p>
-<h2>CI und Delivery ja. Deployment bewusst manuell.</h2>
+<h2>Prüfen und Packen: automatisch. Abschicken: von Hand.</h2>
 </div>
 <div class="rows">
 <div class="row">
 <p class="row-name">Continuous Integration</p>
 <p class="pill-yes">Ja</p>
-<p class="row-text">Jeder Pull Request nach main startet die Checks in .github/workflows/ci.yaml.</p>
+<p class="row-text">Jeder Pull Request startet automatisch alle Tests.</p>
 </div>
 <div class="row">
 <p class="row-name">Continuous Delivery</p>
 <p class="pill-yes">Ja</p>
-<p class="row-text">Jeder Push auf main baut ein Docker-Image und legt es in GHCR ab, Tag = Commit-SHA.</p>
+<p class="row-text">Nach jedem Merge entsteht automatisch ein fertiges Docker-Image.</p>
 </div>
 <div class="row">
 <p class="row-name">Continuous Deployment</p>
 <p class="pill-no">Nein</p>
-<p class="row-text">Kein Workflow deployt. Rollout per kubectl nach Runbook, mit Backup und Smoke-Check.</p>
+<p class="row-text">Live geht es erst, wenn Erik es in der LeoCloud einspielt. Mit Absicht.</p>
 </div>
 </div>
-<aside class="notes">Ehrlich sagen: Wir haben kein Continuous Deployment. Das ist eine bewusste Entscheidung. Laut Release-Runbook gibt es vor jedem Rollout ein Backup, nie einen Rollout während einer Pilot-Sitzung im Markt, und danach einen Smoke-Check. Außerdem hat nur Erik Zugang zur LeoCloud.</aside>
+<aside class="notes">Ehrlich sagen: Wir haben kein Continuous Deployment, und das ist Absicht. Vor jedem Live-Gang machen wir ein Backup der Datenbank, wir spielen nichts ein, während gerade im Markt getestet wird, und danach prüfen wir, ob alles läuft. Außerdem hat nur Erik Zugang zur LeoCloud.</aside>
+</section>
+<section id="woerter">
+<div class="head">
+<p class="eyebrow">Sechs Wörter, dann versteht man alles</p>
+<h2>Kurz erklärt</h2>
+</div>
+<div class="gloss">
+<div class="word in" style="--i:0"><p class="word-t">Branch</p><p class="word-p">Eigene Kopie des Codes. Man arbeitet daran, ohne main zu stören.</p></div>
+<div class="word in" style="--i:1"><p class="word-t">Pull Request</p><p class="word-p">Antrag: „Bitte meine Änderung in main übernehmen.“</p></div>
+<div class="word in" style="--i:2"><p class="word-t">GitHub Actions</p><p class="word-p">Roboter von GitHub. Startet bei jedem Pull Request die Tests.</p></div>
+<div class="word in" style="--i:3"><p class="word-t">Docker-Image</p><p class="word-p">Fertig verpacktes Programm. Läuft auf jedem Server gleich.</p></div>
+<div class="word in" style="--i:4"><p class="word-t">GHCR</p><p class="word-p">Lager für unsere Images bei GitHub (GitHub Container Registry).</p></div>
+<div class="word in" style="--i:5"><p class="word-t">LeoCloud</p><p class="word-p">Server der HTL Leonding (Kubernetes). Dort läuft Indooro live.</p></div>
+</div>
+<aside class="notes">Diese sechs Wörter kommen in jeder weiteren Folie vor. main ist der Hauptzweig, also die offizielle Version des Codes. Ein Branch ist eine Arbeitskopie. Mit einem Pull Request fragt man, ob die Änderung in main darf. GitHub Actions ist der Roboter, der dann automatisch testet. Am Ende entsteht ein Docker-Image, also das fertig verpackte Programm, das im Lager GHCR liegt. Die LeoCloud ist der Kubernetes-Cluster der Schule, auf dem unser Server läuft.</aside>
 </section>
 <section id="pipeline">
 <div class="head">
 <p class="eyebrow">Unsere Pipeline</p>
-<h2>Code → GitHub → Actions → Image → LeoCloud</h2>
+<h2>Der Weg einer Änderung</h2>
 </div>
 <div class="flow">
 <div class="node in" style="--i:0">
-<p class="node-t">Branch</p>
-<p class="node-p">Mensch oder Claude Code pusht Commits</p>
+<p class="node-t">1 · Branch</p>
+<p class="node-p">Wir oder Claude Code schreiben Code</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:1">
-<p class="node-t">Pull Request</p>
-<p class="node-p">gegen main, startet die Checks</p>
+<p class="node-t">2 · Pull Request</p>
+<p class="node-p">Antrag auf GitHub: „bitte in main“</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:2">
-<p class="node-t">GitHub Actions</p>
-<p class="node-p">Vertrag, Tests, Browser, Build</p>
+<p class="node-t">3 · Tests</p>
+<p class="node-p">GitHub Actions prüft alles automatisch</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:3">
-<p class="node-t">GHCR</p>
-<p class="node-p">nach Merge: Image mit Tag = Commit-SHA</p>
+<p class="node-t">4 · Image</p>
+<p class="node-p">nach dem Merge: fertiges Paket im Lager GHCR</p>
 </div>
 <x-connector class="arrow-manual"></x-connector>
 <div class="node-hl in" style="--i:4">
-<p class="node-t">LeoCloud</p>
-<p class="node-p">kubectl set image, von Hand</p>
+<p class="node-t">5 · LeoCloud</p>
+<p class="node-p">Erik spielt es von Hand ein</p>
 </div>
 </div>
 <div class="spans">
@@ -211,124 +254,162 @@ table { border-collapse:collapse; } th, td { text-align:left; padding:14px 16px;
 <div></div>
 <p class="span-cd">Continuous Delivery</p>
 <div></div>
-<p class="span-man">Manuell</p>
+<p class="span-man">Von Hand</p>
 </div>
-<p class="lead">Die LeoCloud zieht das Image aus GHCR. Kein Workflow hat Zugang zum Cluster.</p>
-<aside class="notes">Das ist das wichtigste Bild. Links bis GitHub Actions ist CI. Das fertige Image in der GitHub Container Registry ist Continuous Delivery. Der letzte Pfeil ist gestrichelt, weil er manuell ist. Wichtig: GitHub schiebt nichts in die LeoCloud. Kubernetes zieht das Image, sobald jemand mit kubectl den neuen Tag setzt.</aside>
+<p class="lead">Schritt 1 bis 4 laufen von selbst. Nur der gestrichelte Pfeil braucht einen Menschen.</p>
+<aside class="notes">Das ist das wichtigste Bild, am besten von links nach rechts durchgehen. Eins: Jemand schreibt Code auf einem eigenen Branch, entweder wir oder Claude Code. Zwei: Ein Pull Request auf GitHub. Drei: GitHub Actions startet automatisch alle Tests. Vier: Wenn alles grün ist und gemergt wurde, baut GitHub ein Docker-Image und legt es in GHCR ab. Fünf: Erik holt dieses Image mit einem Befehl in die LeoCloud. Dieser letzte Pfeil ist gestrichelt, weil er von Hand passiert.</aside>
 </section>
 <section id="jobs">
 <div class="head">
-<p class="eyebrow">Was bei jedem Pull Request läuft</p>
-<h2>Fünf Jobs in ci.yaml, dazu iOS auf macOS</h2>
+<p class="eyebrow">Schritt 3 genauer</p>
+<h2>Was der Roboter bei jedem Pull Request prüft</h2>
 </div>
-<table class="jobs">
-<tr class="jobs-head"><th style="width:28%">Job</th><th style="width:22%">Runner</th><th style="width:50%">Prüft</th></tr>
-<tr><td>contract</td><td>ubuntu-latest</td><td>API-Vertrag: Lint, Typen, Parität, Breaking Changes (oasdiff), OpenSpec</td></tr>
-<tr><td>backend-test</td><td>ubuntu-latest + OpenSearch</td><td>Admin-UI- und Showcase-Tests, mvn verify, Ops-Skripte</td></tr>
-<tr><td>admin-ui-browser</td><td>ubuntu-24.04</td><td>Lint, Typecheck, Playwright in Chromium</td></tr>
-<tr><td>pilot-showcase-browser</td><td>ubuntu-24.04</td><td>Build, Playwright auf Desktop und Mobil</td></tr>
-<tr><td>build-and-push</td><td>ubuntu-latest</td><td>baut das Image; Push nur beim Push auf main</td></tr>
-<tr><td>swift-tests (ios.yaml)</td><td>macos-latest</td><td>swift test, Simulator-Build, UI-Tests, unsigniert</td></tr>
-</table>
-<p class="small">Außerdem: beacon-lab.yaml und field-tools.yaml, nur Tests, nur bei Änderungen in ihren Ordnern.</p>
-<aside class="notes">Ein Satz pro Job. contract prüft den API-Vertrag in openspec/specs/shared-api/openapi.yaml und erkennt Breaking Changes. backend-test startet einen echten OpenSearch als Service-Container und führt mvn verify ohne skipTests aus. Die zwei Browser-Jobs testen Admin-UI und Showcase in echtem Chromium. build-and-push wartet auf contract und backend-test. Bei einem PR baut er nur, beim Push auf main pusht er das Image. iOS läuft in einem eigenen Workflow auf einem Mac-Runner.</aside>
+<div class="checks">
+<div class="check in" style="--i:0">
+<p class="check-t">Sprechen alle dieselbe Sprache?</p>
+<p class="check-p">App, Webseiten und Server nutzen eine gemeinsame API-Beschreibung. Bricht eine Änderung etwas, schlägt der Test an.</p>
+<p class="check-job">contract</p>
+</div>
+<div class="check in" style="--i:1">
+<p class="check-t">Funktioniert der Server?</p>
+<p class="check-p">Alle Java-Tests laufen, mit einer echten Suchdatenbank (OpenSearch).</p>
+<p class="check-job">backend-test</p>
+</div>
+<div class="check in" style="--i:2">
+<p class="check-t">Funktionieren die Webseiten?</p>
+<p class="check-p">Ein echter Chrome klickt Admin-Seite und Showcase durch, am PC und am Handy.</p>
+<p class="check-job">admin-ui-browser · pilot-showcase-browser</p>
+</div>
+<div class="check in" style="--i:3">
+<p class="check-t">Funktioniert die iOS-App?</p>
+<p class="check-p">Tests auf einem Mac in der Cloud, nur wenn sich iOS-Code ändert.</p>
+<p class="check-job">ios.yaml · swift-tests</p>
+</div>
+</div>
+<p class="small">Alles grün? Dann darf gemergt werden. Danach baut der Job build-and-push das Image.</p>
+<aside class="notes">Die Namen in orange sind die echten Job-Namen aus .github/workflows/ci.yaml und ios.yaml, die muss man aber nicht auswendig können. Wichtig ist die Frage, die jeder Job beantwortet. Der erste Job ist besonders: Er prüft unseren API-Vertrag. Wenn jemand im Backend etwas ändert, das die App kaputt machen würde, wird das automatisch erkannt. Zusätzlich gibt es noch kleine Workflows für das Positioning-Lab und die Feldwerkzeuge.</aside>
+</section>
+<section id="tests">
+<div class="head">
+<p class="eyebrow">Wie viel wird getestet?</p>
+<h2>Über 3.200 automatische Tests</h2>
+</div>
+<div class="tests">
+<div class="big">
+<p class="big-n">3.240</p>
+<p class="big-p">Tests in unseren grünen CI-Läufen</p>
+<p class="big-s">Bei jedem Pull Request nach main laufen mindestens 1.780 davon. Kein Mensch klickt das von Hand.</p>
+</div>
+<div class="bars">
+<div class="bar-row"><p class="bar-name">Backend (Java)</p><div class="bar" style="width:640px"></div><p class="bar-n">793</p></div>
+<div class="bar-row"><p class="bar-name">iOS-App</p><div class="bar" style="width:521px"></div><p class="bar-n">646</p></div>
+<div class="bar-row"><p class="bar-name">Positioning-Lab</p><div class="bar" style="width:446px"></div><p class="bar-n">553</p></div>
+<div class="bar-row"><p class="bar-name">Admin-Web</p><div class="bar" style="width:402px"></div><p class="bar-n">498</p></div>
+<div class="bar-row"><p class="bar-name">Showcase</p><div class="bar" style="width:218px"></div><p class="bar-n">270</p></div>
+<div class="bar-row"><p class="bar-name">Feldwerkzeuge</p><div class="bar" style="width:211px"></div><p class="bar-n">261</p></div>
+<div class="bar-row"><p class="bar-name">Ops-Skripte</p><div class="bar" style="width:164px"></div><p class="bar-n">203</p></div>
+<div class="bar-row"><p class="bar-name">API-Vertrag</p><div class="bar" style="width:13px"></div><p class="bar-n">16</p></div>
+</div>
+</div>
+<p class="small">Gezählt aus den Logs grüner Läufe: ci.yaml und ios.yaml am 25.11.2026, beacon-lab.yaml und field-tools.yaml am 19.11.2026.</p>
+<aside class="notes">Die Zahlen sind nicht geschätzt, sondern aus den Protokollen echter grüner Läufe auf GitHub. Backend: 793 Java-Tests. iOS: 646 Tests in drei Paketen plus UI-Tests. Admin-Web: 260 Unit-Tests und 238 Browser-Tests. Showcase: 166 Unit-Tests und 104 Browser-Tests. Die 1.780 aus ci.yaml laufen bei jedem Pull Request nach main, die anderen nur, wenn sich ihr Bereich ändert. Ein paar wenige Tests werden übersprungen, 4 im Backend und 2 bei iOS.</aside>
 </section>
 <section id="image">
 <div class="head">
-<p class="eyebrow">Das Ergebnis der Pipeline</p>
-<h2>Ein Docker-Image für das ganze Web</h2>
+<p class="eyebrow">Schritt 4 genauer</p>
+<h2>Ein Paket für das ganze Web</h2>
 </div>
-<p class="tagline">ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:8238b4c</p>
+<p class="tagline">ghcr.io/…/indooro-backend-v2 : 8238b4c</p>
+<div class="facts">
+<p class="small">Links: wo das Paket im Lager liegt</p>
+<p class="small">Rechts: die Versionsnummer = Kurzform des Commits</p>
+</div>
 <div class="cards">
 <div class="card-blue in" style="--i:0">
-<h3 class="card-t">Backend-API</h3>
-<p class="card-p">Quarkus-Jar auf JRE 21, Nicht-root-Benutzer, Port 8080</p>
+<h3 class="card-t">Server</h3>
+<p class="card-p">Das Backend, mit dem App und Webseiten reden</p>
 <p class="card-code">/api/…</p>
 </div>
 <div class="card-blue in" style="--i:1">
-<h3 class="card-t">Admin-UI</h3>
-<p class="card-p">Bundle aus admin-ui/, ins Backend gebaut</p>
+<h3 class="card-t">Admin-Seite</h3>
+<p class="card-p">Märkte, Regale und Beacons verwalten</p>
 <p class="card-code">/admin/next/</p>
 </div>
 <div class="card-blue in" style="--i:2">
-<h3 class="card-t">Pilot-Showcase</h3>
-<p class="card-p">Bundle aus pilot-showcase/, ins Backend gebaut</p>
+<h3 class="card-t">Showcase</h3>
+<p class="card-p">Die Demo-Seite ohne Login</p>
 <p class="card-code">/showcase/</p>
 </div>
 </div>
-<div class="facts">
-<p class="small">Tag = 7-stelliger Commit-SHA, dazu :latest. Im Cluster laufen nur SHA-Tags.</p>
-<p class="small">Einziges Secret der Pipeline: GITHUB_TOKEN, automatisch von GitHub.</p>
-</div>
-<aside class="notes">Ein einziges Image enthält Backend, Admin-Oberfläche und Showcase. Deshalb braucht die LeoCloud keinen eigenen Web-Container. Der Tag ist der Commit-SHA, hier 8238b4c vom grünen Lauf am 25.11. So wissen wir genau, welcher Code läuft, und können gezielt zurückrollen. Die Pipeline braucht kein eigenes Secret: Das GITHUB_TOKEN reicht für den Login bei GHCR.</aside>
+<aside class="notes">Am Ende der Pipeline steht genau ein Docker-Image. Es enthält den Server und gleich auch die zwei Webseiten. Deshalb brauchen wir in der LeoCloud nur einen Container für alles. Die Versionsnummer ist die Kurzform des Git-Commits, hier 8238b4c. So wissen wir immer genau, welcher Code gerade läuft, und können gezielt zur alten Version zurück. Ein geheimes Passwort braucht die Pipeline dafür nicht, GitHub stellt automatisch ein Token bereit.</aside>
 </section>
 <section id="leocloud">
 <div class="head">
-<p class="eyebrow">Deployment in die LeoCloud</p>
-<h2>Sechs Schritte nach dem Release-Runbook</h2>
+<p class="eyebrow">Schritt 5 genauer</p>
+<h2>So geht eine neue Version live</h2>
 </div>
 <div class="steps">
-<div class="step in" style="--i:0"><p class="step-n">1</p><p class="step-p">CI auf main grün, Image mit neuem Tag existiert</p></div>
-<div class="step in" style="--i:1"><p class="step-n">2</p><p class="step-p">Backup: backup_postgres.py</p></div>
-<div class="step in" style="--i:2"><p class="step-n">3</p><p class="step-p">Alten Image-Tag als Rollback-Punkt notieren</p></div>
-<div class="step in" style="--i:3"><p class="step-n">4</p><p class="step-p">kubectl set image auf den neuen SHA-Tag</p></div>
-<div class="step in" style="--i:4"><p class="step-n">5</p><p class="step-p">rollout status, dann Smoke-Check mit pilot_smoke.py</p></div>
-<div class="step in" style="--i:5"><p class="step-n">6</p><p class="step-p">Release protokollieren, bei Fehler Rollback auf alten Tag</p></div>
+<div class="step in" style="--i:0"><p class="step-n">1</p><p class="step-p">Prüfen: Tests auf main grün, Image liegt im Lager</p></div>
+<div class="step in" style="--i:1"><p class="step-n">2</p><p class="step-p">Datenbank sichern (Backup)</p></div>
+<div class="step in" style="--i:2"><p class="step-n">3</p><p class="step-p">Alte Version notieren, falls wir zurück müssen</p></div>
+<div class="step in" style="--i:3"><p class="step-n">4</p><p class="step-p">Neue Version einspielen: kubectl set image</p></div>
+<div class="step in" style="--i:4"><p class="step-n">5</p><p class="step-p">Kurztest: Läuft alles? (Smoke-Check)</p></div>
+<div class="step in" style="--i:5"><p class="step-n">6</p><p class="step-p">Aufschreiben, was wann live ging</p></div>
 </div>
-<p class="small">Namespace student-it220209 · it220209.cloud.htl-leonding.ac.at · Ingress nginx · docs/pilot-readiness/operations/RELEASE_RUNBOOK.md</p>
-<aside class="notes">Das ist der manuelle Teil. Erik führt ihn mit seinem LeoCloud-Zugang aus, manchmal lässt er Claude Code die Befehle ausführen, aber immer auf ausdrückliche Anweisung. Grundregel: nie :latest deployen, immer einen festen Commit-Tag. Die Releases sind in docs/pilot-readiness/releases protokolliert, zum Beispiel 18.11.: Image 308cd08, vorher 27e1255, Pod 1/1 Running.</aside>
+<p class="small">Geht etwas schief: alte Version wieder einspielen (Rollback). Anleitung: docs/pilot-readiness/operations/RELEASE_RUNBOOK.md</p>
+<aside class="notes">Das ist der Teil, den wir bewusst von Hand machen. Erik macht das mit seinem LeoCloud-Zugang, manchmal lässt er Claude Code die Befehle ausführen, aber nur auf ausdrückliche Anweisung. Der wichtigste Befehl ist kubectl set image: Er sagt Kubernetes, welche Version laufen soll, und Kubernetes holt sie selbst aus dem Lager. Smoke-Check heißt: ein kurzer Test, ob die wichtigsten Seiten antworten, wie Rauch, der zeigt, ob etwas brennt. Jedes Release ist in docs/pilot-readiness/releases protokolliert.</aside>
 </section>
 <section id="claude">
 <div class="head">
 <p class="eyebrow">Rolle von Claude Code</p>
-<h2>Agenten schreiben Code, die CI prüft ihn wie jeden anderen</h2>
+<h2>Claude Code schreibt mit, die Tests prüfen alle gleich</h2>
 </div>
 <div class="flow">
 <div class="node in" style="--i:0">
-<p class="node-t">OpenSpec</p>
-<p class="node-p">proposal, design und tasks in openspec/changes/</p>
+<p class="node-t">Plan</p>
+<p class="node-p">Was soll sich ändern? Steht in openspec/</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:1">
-<p class="node-t">Session</p>
-<p class="node-p">eigener git worktree, eigener Branch</p>
+<p class="node-t">Arbeitskopie</p>
+<p class="node-p">Jede Claude-Session hat ihre eigene Kopie und ihren Branch</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:2">
 <p class="node-t">Pull Request</p>
-<p class="node-p">viele kleine Commits, Branch claude/… oder fix/…</p>
+<p class="node-p">viele kleine Commits</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:3">
-<p class="node-t">Gleiche CI</p>
-<p class="node-p">dieselben Checks wie bei Menschen</p>
+<p class="node-t">Gleiche Tests</p>
+<p class="node-p">keine Ausnahme für die KI</p>
 </div>
 <x-connector class="arrow"></x-connector>
 <div class="node in" style="--i:4">
-<p class="node-t">Merge + Archiv</p>
-<p class="node-p">openspec archive, z. B. PR #244</p>
+<p class="node-t">Merge</p>
+<p class="node-p">Plan wird als erledigt archiviert</p>
 </div>
 </div>
 <div class="stats">
-<div class="stat"><p class="stat-n">214</p><p class="stat-p">von 828 Commits auf main mit „Co-Authored-By: Claude“</p></div>
-<div class="stat"><p class="stat-n">125/133</p><p class="stat-p">gemergte PRs mit „Claude Code“ im PR-Text</p></div>
-<div class="stat"><p class="stat-n">37</p><p class="stat-p">archivierte OpenSpec-Changes, CI prüft mit openspec validate --strict</p></div>
+<div class="stat"><p class="stat-n">214</p><p class="stat-p">von 828 Commits auf main mit Claude als Co-Autor</p></div>
+<div class="stat"><p class="stat-n">125/133</p><p class="stat-p">gemergte Pull Requests mit Vermerk „Claude Code“</p></div>
+<div class="stat"><p class="stat-n">37</p><p class="stat-p">abgeschlossene Pläne in openspec/changes/archive/</p></div>
 </div>
-<aside class="notes">Claude Code ist kein Teil von GitHub Actions. Es sitzt davor. Eine Orchestrator-Session teilt die Arbeit, startet Sub-Sessions, jede in einem eigenen git worktree auf einem eigenen Branch. Die öffnen PRs gegen main, und dort laufen exakt dieselben Checks wie bei uns. Ein Agent kann einen roten Check nicht wegreden. Die Zahlen kommen aus git log und gh pr list.</aside>
+<aside class="notes">Claude Code ist nicht Teil von GitHub Actions, es sitzt davor und schreibt Code. Zuerst wird ein Plan in openspec geschrieben. Dann arbeiten mehrere Claude-Sessions gleichzeitig, jede in ihrer eigenen Arbeitskopie, einem sogenannten git worktree, auf einem eigenen Branch. Jede öffnet einen Pull Request, und dort laufen genau dieselben Tests wie bei uns. Ein roter Test bleibt rot, egal wer den Code geschrieben hat. Die Zahlen kommen aus git log und der PR-Liste auf GitHub: 125 PR-Texte enthalten den Vermerk Generated with Claude Code.</aside>
 </section>
 <section id="live">
 <div class="head">
-<p class="eyebrow">Live-Beispiel · 25.11.2026</p>
-<h2>PR #241: Von Rot zu Grün</h2>
+<p class="eyebrow">Echtes Beispiel · 25.11.2026</p>
+<h2>PR #241: Die Pipeline fängt einen Fehler</h2>
 </div>
 <div class="tl">
-<div class="ev"><p class="ev-time">11:30</p><p class="ev-red">Rot</p><p class="ev-text">Push-Lauf auf main: build-and-push scheitert, Maven Central antwortet mit HTTP 429</p></div>
-<div class="ev"><p class="ev-time">11:49</p><p class="ev-red">Rot</p><p class="ev-text">Erster Lauf auf dem PR-Branch fix/ci-maven-resolution</p></div>
-<div class="ev"><p class="ev-time">11:56</p><p class="ev-green">Grün</p><p class="ev-text">Retry bei 429/503 und Neustart mit -U: alle 5 Checks grün, danach Merge nach main</p></div>
-<div class="ev"><p class="ev-time">20:45</p><p class="ev-green">Grün</p><p class="ev-text">Späterer Push-Lauf auf main (8238b4c): Tests ca. 4 min, Image-Build ca. 1 min</p></div>
+<div class="ev"><p class="ev-time">11:30</p><p class="ev-red">Rot</p><p class="ev-text">Image-Bau scheitert: Der Server für Java-Bibliotheken sagt „zu viele Anfragen“ (HTTP 429)</p></div>
+<div class="ev"><p class="ev-time">11:49</p><p class="ev-red">Rot</p><p class="ev-text">Erster Lauf im Pull Request mit der Lösung: noch rot</p></div>
+<div class="ev"><p class="ev-time">11:56</p><p class="ev-green">Grün</p><p class="ev-text">Lösung: bei „zu viele Anfragen“ kurz warten und neu versuchen. Alle 5 Checks grün, danach Merge</p></div>
+<div class="ev"><p class="ev-time">20:45</p><p class="ev-green">Grün</p><p class="ev-text">Späterer Lauf auf main: Tests ca. 4 Minuten, Image fertig nach ca. 5 Minuten</p></div>
 </div>
 <p class="small mono">github.com/htl-leo-itp-25-27-4-5BHITM/Indooro/pull/241</p>
-<aside class="notes">Hier PR 241 im Browser öffnen. Zeigen: der rote Lauf, der Grund im PR-Text (HTTP 429 von Maven Central, also kein Code-Fehler, sondern ein externer Dienst), dann die fünf grünen Checks. Befehl zum Zeigen: gh run list --limit 10. Der PR wurde von Claude Code erstellt, der Text endet mit Generated with Claude Code.</aside>
+<aside class="notes">Hier PR 241 im Browser öffnen. Die Geschichte: Unser Code war in Ordnung, aber Maven Central, der Server, von dem Java-Bibliotheken geladen werden, hat den GitHub-Roboter wegen zu vieler Anfragen abgewiesen. Die Pipeline wurde rot und nichts kaputtes ging raus. Claude Code hat die Lösung als Pull Request gebaut: warten und neu versuchen. Erst als alle fünf Checks grün waren, wurde gemergt. Zum Zeigen im Terminal: gh run list --limit 10.</aside>
 </section>
 <section id="bilanz">
 <div class="head">
@@ -339,23 +420,23 @@ table { border-collapse:collapse; } th, td { text-align:left; padding:14px 16px;
 <div class="col-good">
 <h3>Gut</h3>
 <ul class="col-list">
-<li>Jeder PR: Vertrag, Backend mit echtem OpenSearch, zwei Browser-Suiten, iOS</li>
-<li>Breaking Changes an der API werden automatisch erkannt</li>
-<li>Fester SHA-Tag, Rollback und Backup dokumentiert</li>
-<li>Claude-PRs durchlaufen dieselben Checks</li>
+<li>Über 3.200 automatische Tests, bei jedem PR mindestens 1.780</li>
+<li>Echter Browser und echte Datenbank in den Tests</li>
+<li>Jede Version eindeutig benannt, Rückweg dokumentiert</li>
+<li>Code von Claude geht durch dieselben Tests</li>
 </ul>
 </div>
 <div class="col-bad">
 <h3>Fehlt</h3>
 <ul class="col-list">
-<li>Kein Continuous Deployment, Rollout nur mit Eriks Zugang</li>
-<li>main ohne Branch-Schutz, keine GitHub-Reviews</li>
-<li>Browsertests blockieren den Image-Build nicht</li>
-<li>iOS nur Tests, kein TestFlight; Android ohne Pipeline</li>
+<li>Live gehen nur von Hand, nur mit Eriks Zugang</li>
+<li>main ist nicht gesperrt: Mergen ginge auch bei roten Tests</li>
+<li>Kein zweiter Mensch prüft den Pull Request auf GitHub</li>
+<li>iOS wird nur getestet, nicht verteilt; Android hat noch keinen Code</li>
 </ul>
 </div>
 </div>
-<aside class="notes">Ehrlich bleiben. Fakten aus GitHub: main hat keinen Branch-Schutz und keine Rulesets, grüne Checks sind also eine Teamregel, nicht erzwungen. Keiner der letzten 133 gemergten PRs hat ein formales GitHub-Review. build-and-push wartet nur auf contract und backend-test. Nächste Schritte wären Branch-Schutz mit Pflicht-Checks und ein Deploy-Workflow mit manueller Freigabe, falls die LeoCloud einen Zugang für CI erlaubt.</aside>
+<aside class="notes">Ehrlich bleiben. Fakten aus GitHub: main hat keinen Branch-Schutz. Dass wir nur mit grünen Tests mergen, ist eine Teamregel, technisch erzwungen ist es nicht. Keiner der 133 gemergten Pull Requests hat ein formales Review auf GitHub, geprüft wird in der Claude-Session und vom Menschen, der mergt. Nächste Schritte wären: main sperren, sodass rote Tests den Merge blockieren, und ein Deploy-Knopf in GitHub mit Freigabe, falls die LeoCloud das erlaubt.</aside>
 </section>
 <section id="fragen" class="accent cover">
 <h1>Fragen?</h1>
