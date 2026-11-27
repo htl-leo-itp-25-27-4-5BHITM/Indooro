@@ -32,7 +32,8 @@
     "test:swift-layout": "node scripts/verify-swift-layout-decode.mjs",
     "test:swift-routing": "node scripts/verify-swift-shelf-routing.mjs",
     "test:swift-endpoint": "node scripts/verify-swift-api-endpoint.mjs",
-    "seed:live:ios-map": "node scripts/live-ios-map-fixture.mjs"
+    "seed:live:ios-map": "node scripts/live-ios-map-fixture.mjs",
+    "check:bundle": "node scripts/check-bundle-budget.mjs"
   },
   "dependencies": {
     "qrcode-generator": "2.0.4",
