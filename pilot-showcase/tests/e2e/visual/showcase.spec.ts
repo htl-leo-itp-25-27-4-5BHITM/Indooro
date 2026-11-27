@@ -103,6 +103,5 @@ for (const viewport of viewports) {
       ` });
       await expect(page.getByTestId("store-demo")).toHaveScreenshot(`${viewport.width}-store-3d.png`);
     });
-    });
   });
 }
