@@ -37,8 +37,8 @@ struct BeaconMapItem: View {
 
             Text(beacon.name)
                 .font(.system(size: 8, weight: .semibold, design: .rounded))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
+                .padding(.horizontal, IndooroTokens.Spacing.value6px)
+                .padding(.vertical, IndooroTokens.Spacing.value3px)
                 .background(Color(uiColor: .systemBackground).opacity(0.9), in: Capsule())
                 .offset(y: 18)
         }

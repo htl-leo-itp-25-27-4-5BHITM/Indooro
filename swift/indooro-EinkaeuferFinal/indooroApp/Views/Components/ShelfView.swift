@@ -39,7 +39,7 @@ struct ShelfView: View {
                         .font(.system(size: iconSize(for: width, height: height), weight: .semibold))
                         .foregroundStyle(palette.iconColor)
                         .frame(width: iconContainerSize(for: width, height: height), height: iconContainerSize(for: width, height: height))
-                        .background(palette.iconBackground, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .background(palette.iconBackground, in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value10px, style: .continuous))
                 }
 
                 if showsText, let title = element.displayMapTitle {
@@ -115,7 +115,7 @@ struct MapZonePalette {
             borderColor: rawColor.opacity(element.isEmptyMapZone ? 0.18 : 0.68),
             textColor: Color(red: 0.18, green: 0.22, blue: 0.26),
             iconColor: rawColor.opacity(0.85),
-            iconBackground: Color.white.opacity(0.55),
+            iconBackground: IndooroTokens.Color.paletteHexffffff.opacity(0.55),
             shadowColor: rawColor.opacity(element.isEmptyMapZone ? 0.05 : 0.14),
             symbolName: "square.grid.2x2.fill"
         )
@@ -126,7 +126,7 @@ struct MapZonePalette {
                 borderColor: Color(hex: "#8BBE88"),
                 textColor: Color(hex: "#2E5630"),
                 iconColor: Color(hex: "#4A8D50"),
-                iconBackground: Color.white.opacity(0.65),
+                iconBackground: IndooroTokens.Color.paletteHexffffff.opacity(0.65),
                 shadowColor: Color(hex: "#8BBE88").opacity(0.20),
                 symbolName: "leaf.fill"
             )
@@ -138,7 +138,7 @@ struct MapZonePalette {
                 borderColor: Color(hex: "#D7AE64"),
                 textColor: Color(hex: "#6E4F1F"),
                 iconColor: Color(hex: "#B8812F"),
-                iconBackground: Color.white.opacity(0.65),
+                iconBackground: IndooroTokens.Color.paletteHexffffff.opacity(0.65),
                 shadowColor: Color(hex: "#D7AE64").opacity(0.20),
                 symbolName: "fork.knife"
             )
@@ -150,7 +150,7 @@ struct MapZonePalette {
                 borderColor: Color(hex: "#82A8CF"),
                 textColor: Color(hex: "#294C71"),
                 iconColor: Color(hex: "#4D7FB3"),
-                iconBackground: Color.white.opacity(0.70),
+                iconBackground: IndooroTokens.Color.paletteHexffffff.opacity(0.70),
                 shadowColor: Color(hex: "#82A8CF").opacity(0.20),
                 symbolName: "drop.fill"
             )
@@ -162,7 +162,7 @@ struct MapZonePalette {
                 borderColor: Color(hex: "#74ABD4"),
                 textColor: Color(hex: "#285170"),
                 iconColor: Color(hex: "#4E88B5"),
-                iconBackground: Color.white.opacity(0.72),
+                iconBackground: IndooroTokens.Color.paletteHexffffff.opacity(0.72),
                 shadowColor: Color(hex: "#74ABD4").opacity(0.20),
                 symbolName: "snowflake"
             )
@@ -174,7 +174,7 @@ struct MapZonePalette {
                 borderColor: Color(hex: "#6BB6AA"),
                 textColor: Color(hex: "#24554D"),
                 iconColor: Color(hex: "#3B8E83"),
-                iconBackground: Color.white.opacity(0.68),
+                iconBackground: IndooroTokens.Color.paletteHexffffff.opacity(0.68),
                 shadowColor: Color(hex: "#6BB6AA").opacity(0.20),
                 symbolName: "waterbottle"
             )
@@ -186,7 +186,7 @@ struct MapZonePalette {
                 borderColor: Color(hex: "#D9A37E"),
                 textColor: Color(hex: "#73452A"),
                 iconColor: Color(hex: "#B66E40"),
-                iconBackground: Color.white.opacity(0.68),
+                iconBackground: IndooroTokens.Color.paletteHexffffff.opacity(0.68),
                 shadowColor: Color(hex: "#D9A37E").opacity(0.20),
                 symbolName: "birthday.cake.fill"
             )
@@ -198,7 +198,7 @@ struct MapZonePalette {
                 borderColor: Color(hex: "#C98BA5"),
                 textColor: Color(hex: "#6A3E55"),
                 iconColor: Color(hex: "#A35E7E"),
-                iconBackground: Color.white.opacity(0.70),
+                iconBackground: IndooroTokens.Color.paletteHexffffff.opacity(0.70),
                 shadowColor: Color(hex: "#C98BA5").opacity(0.20),
                 symbolName: "popcorn.fill"
             )

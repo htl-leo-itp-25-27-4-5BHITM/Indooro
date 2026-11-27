@@ -4,7 +4,7 @@ struct ProductSearchFeedback: View {
     @ObservedObject var store: ProductSearchStore
     var body: some View {
         if let error = store.errorMessage {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value8px) {
                 Label("Suche fehlgeschlagen", systemImage: "exclamationmark.triangle")
                     .font(.headline)
                 Text(error).font(.subheadline)

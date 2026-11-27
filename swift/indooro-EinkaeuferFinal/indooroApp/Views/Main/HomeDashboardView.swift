@@ -24,7 +24,7 @@ struct HomeDashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: IndooroTokens.Spacing.value16px) {
                     headerSection
 
                     if let activeBanner {
@@ -35,9 +35,9 @@ struct HomeDashboardView: View {
                     if AppEnvironment.allowsExtendedFeatures { recipesEntryCard }
                     mapEntryCard
                 }
-                .padding(.horizontal, 22)
-                .padding(.top, 10)
-                .padding(.bottom, 28)
+                .padding(.horizontal, IndooroTokens.Spacing.value22px)
+                .padding(.top, IndooroTokens.Spacing.value10px)
+                .padding(.bottom, IndooroTokens.Spacing.value28px)
             }
             .background(HomeSoftBackground(accent: accent).ignoresSafeArea())
             .navigationTitle("")
@@ -50,14 +50,14 @@ struct HomeDashboardView: View {
     }
 
     private var headerSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: IndooroTokens.Spacing.value16px) {
             Text("Indooro")
                 .font(.system(.largeTitle, design: .rounded, weight: .bold))
                 .foregroundStyle(accent)
-                .padding(.top, 6)
+                .padding(.top, IndooroTokens.Spacing.value6px)
                 .accessibilityAddTraits(.isHeader)
 
-            VStack(spacing: 8) {
+            VStack(spacing: IndooroTokens.Spacing.value8px) {
                 Text("Finde alles.\nSchnell und einfach.")
                     .font(.system(.title2, design: .rounded, weight: .bold))
                     .multilineTextAlignment(.center)
@@ -67,17 +67,17 @@ struct HomeDashboardView: View {
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, IndooroTokens.Spacing.value16px)
             }
 
-            VStack(spacing: 12) {
+            VStack(spacing: IndooroTokens.Spacing.value12px) {
                 Button {
                     router.open(.planning)
                 } label: {
                     Label("Los geht's", systemImage: "arrow.right.circle.fill")
                         .font(.headline.weight(.semibold))
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, IndooroTokens.Spacing.value8px)
                         .frame(minHeight: 50)
                 }
                 .buttonStyle(.plain)
@@ -93,27 +93,27 @@ struct HomeDashboardView: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(accent)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, IndooroTokens.Spacing.value8px)
                         .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
-                .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .background(accent.opacity(0.08), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
+                .background(accent.opacity(0.08), in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
             }
         }
         .frame(maxWidth: .infinity)
     }
 
     private func activeTourCard(_ banner: ShoppingSessionBanner) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 14) {
+        VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value14px) {
+            HStack(alignment: .top, spacing: IndooroTokens.Spacing.value14px) {
                 Image(systemName: "arrow.up.circle.fill")
                     .font(.system(size: heroIconSize))
                     .foregroundStyle(.white, accent)
                     .shadow(color: accent.opacity(0.22), radius: 8, y: 4)
                     .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value4px) {
                     Text("Aktive Einkaufstour")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -130,7 +130,7 @@ struct HomeDashboardView: View {
                 .font(.system(.title3, design: .rounded, weight: .bold))
                 .lineLimit(4)
 
-            HStack(spacing: 14) {
+            HStack(spacing: IndooroTokens.Spacing.value14px) {
                 statColumn(title: "Stopps", value: "\(banner.remainingStopCount)")
                 statColumn(title: "Artikel", value: "\(banner.remainingProductCount)")
                 statColumn(title: "Ohne Regal", value: "\(banner.unresolvedProductCount)")
@@ -143,33 +143,33 @@ struct HomeDashboardView: View {
                 Label("Route fortsetzen", systemImage: "location.north.circle.fill")
                     .font(.subheadline.weight(.semibold))
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, IndooroTokens.Spacing.value8px)
                     .frame(minHeight: 48)
             }
             .buttonStyle(.plain)
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
             .foregroundStyle(.white)
-            .background(accent, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .background(accent, in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
         }
-        .padding(18)
-        .background(cardBackground, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .padding(IndooroTokens.Spacing.value18px)
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value28px, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: IndooroTokens.Radius.value28px, style: .continuous)
                 .strokeBorder(borderColor, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.05), radius: 18, y: 10)
     }
 
     private var currentListCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value16px) {
+            HStack(spacing: IndooroTokens.Spacing.value12px) {
                 Image(systemName: "bag.fill")
                     .font(.title3)
                     .foregroundStyle(accent)
                     .frame(width: 44, height: 44)
-                    .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value16px, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value3px) {
                     Text("Dein Einkauf")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
@@ -182,7 +182,7 @@ struct HomeDashboardView: View {
                 Spacer(minLength: 0)
             }
 
-            HStack(spacing: 14) {
+            HStack(spacing: IndooroTokens.Spacing.value14px) {
                 statColumn(title: "Offen", value: "\(selectedList?.openItemCount ?? 0)")
                 statColumn(title: "Erledigt", value: "\(selectedList?.completedItemCount ?? 0)")
             }
@@ -194,33 +194,33 @@ struct HomeDashboardView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(accent)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, IndooroTokens.Spacing.value8px)
                     .frame(minHeight: 44)
             }
             .buttonStyle(.plain)
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
+            .background(accent.opacity(0.10), in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
         }
-        .padding(18)
+        .padding(IndooroTokens.Spacing.value18px)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(cardBackground, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value28px, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: IndooroTokens.Radius.value28px, style: .continuous)
                 .strokeBorder(borderColor, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.04), radius: 16, y: 8)
     }
 
     private var recipesEntryCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value16px) {
+            HStack(spacing: IndooroTokens.Spacing.value12px) {
                 Image(systemName: "fork.knife")
                     .font(.title3)
                     .foregroundStyle(warmAccent)
                     .frame(width: 44, height: 44)
-                    .background(warmAccent.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(warmAccent.opacity(0.12), in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value16px, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value3px) {
                     Text("Rezepte")
                         .font(.headline.weight(.semibold))
 
@@ -239,33 +239,33 @@ struct HomeDashboardView: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Color.a11yWarningText)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
+                    .padding(.vertical, IndooroTokens.Spacing.value8px)
                     .frame(minHeight: 44)
             }
             .buttonStyle(.plain)
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .background(warmAccent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
+            .background(warmAccent.opacity(0.12), in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
         }
-        .padding(18)
+        .padding(IndooroTokens.Spacing.value18px)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(cardBackground, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value28px, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: IndooroTokens.Radius.value28px, style: .continuous)
                 .strokeBorder(borderColor, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.04), radius: 16, y: 8)
     }
 
     private var mapEntryCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value16px) {
+            HStack(spacing: IndooroTokens.Spacing.value12px) {
                 Image(systemName: "map.fill")
                     .font(.title3)
                     .foregroundStyle(routeAccent)
                     .frame(width: 44, height: 44)
-                    .background(routeAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .background(routeAccent.opacity(0.10), in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value16px, style: .continuous))
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value3px) {
                     Text("Marktkarte")
                         .font(.headline.weight(.semibold))
 
@@ -277,20 +277,20 @@ struct HomeDashboardView: View {
                 Spacer(minLength: 0)
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: IndooroTokens.Spacing.value10px) {
                 Button {
                     router.open(.map)
                 } label: {
                     Label("Karte", systemImage: "location.fill")
                         .font(.subheadline.weight(.semibold))
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                        .padding(.vertical, IndooroTokens.Spacing.value8px)
                         .frame(minHeight: 44)
                 }
                 .buttonStyle(.plain)
-                .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
                 .foregroundStyle(.white)
-                .background(Color.a11yRouteBlueText, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(Color.a11yRouteBlueText, in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
 
                 Button {
                     showsTutorial = true
@@ -299,24 +299,24 @@ struct HomeDashboardView: View {
                         .font(.headline.weight(.bold))
                         .foregroundStyle(Color.a11yWarningText)
                         .frame(width: 44, height: 44)
-                        .background(warmAccent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .background(warmAccent.opacity(0.12), in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
                 }
                 .buttonStyle(.plain)
-                .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .contentShape(RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
                 .accessibilityLabel("Einführung anzeigen")
             }
         }
-        .padding(18)
-        .background(cardBackground, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .padding(IndooroTokens.Spacing.value18px)
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value28px, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: IndooroTokens.Radius.value28px, style: .continuous)
                 .strokeBorder(borderColor, lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.04), radius: 16, y: 8)
     }
 
     private func statColumn(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value3px) {
             Text(value)
                 .font(.title3.weight(.bold))
 
@@ -362,7 +362,7 @@ private struct HomeTutorialSheet: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value16px) {
                     Text("So nutzt du Indooro am einfachsten")
                         .font(.system(.title, design: .rounded, weight: .bold))
 
@@ -388,7 +388,7 @@ private struct HomeTutorialSheet: View {
                         text: "Starte die Tour aus deiner Liste oder öffne die Karten-Seite, wenn du zu einem Regal geführt werden willst."
                     )
 
-                    VStack(spacing: 10) {
+                    VStack(spacing: IndooroTokens.Spacing.value10px) {
                         Button {
                             onOpenPlanning()
                         } label: {
@@ -407,9 +407,9 @@ private struct HomeTutorialSheet: View {
                         .buttonStyle(.bordered)
                         .tint(accent)
                     }
-                    .padding(.top, 8)
+                    .padding(.top, IndooroTokens.Spacing.value8px)
                 }
-                .padding(20)
+                .padding(IndooroTokens.Spacing.value20px)
             }
             .background(pageBackground.ignoresSafeArea())
             .navigationTitle("Hilfe")
@@ -435,14 +435,14 @@ private struct TutorialStepCard: View {
     private var borderColor: Color { Color.primary.opacity(0.08) }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
+        HStack(alignment: .top, spacing: IndooroTokens.Spacing.value14px) {
             Image(systemName: symbol)
                 .font(.title2)
                 .foregroundStyle(accent)
                 .frame(width: 42, height: 42)
-                .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(accent.opacity(0.12), in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value14px, style: .continuous))
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value6px) {
                 Text(title)
                     .font(.headline)
                 Text(text)
@@ -452,10 +452,10 @@ private struct TutorialStepCard: View {
 
             Spacer(minLength: 0)
         }
-        .padding(18)
-        .background(cardBackground, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .padding(IndooroTokens.Spacing.value18px)
+        .background(cardBackground, in: RoundedRectangle(cornerRadius: IndooroTokens.Radius.value22px, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: IndooroTokens.Radius.value22px, style: .continuous)
                 .strokeBorder(borderColor, lineWidth: 1)
         )
     }
