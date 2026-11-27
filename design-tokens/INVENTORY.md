@@ -34,6 +34,8 @@ Captured before the token refactor. Values are exact source spellings; duplicate
 
 ## admin-ui/src/style.css
 
+- **Foundation variables**: `--radius-control: .5rem`; `--radius-panel: .75rem`; `--space-control: .65rem`
+
 - **Colors**: `#005f73`; `#102a3b`; `#102a3b33`; `#102a3b40`; `#102a3b99`; `#136c60`; `#155a70`; `#167768`; `#173047`; `#17603e`; `#28577a`; `#506779`; `#69ad87`; `#7edcc6`; `#7f4d17`; `#9b2d2d`; `#b6c9d1`; `#b98049`; `#bdd2d4`; `#c7d9df`; `#c87575`; `#d59a9a`; `#dce5e9`; `#def4e9`; `#e0eaec`; `#e4effa`; `#e9f4f3`; `#eef2f3`; `#f2f8f7`; `#f4f7f8`; `#ffbf47`; `#fff1d4`; `#ffffff`
 - **Spacing**: `-1px`; `.15rem 0`; `.25rem`; `.25rem .55rem`; `.25rem 0`; `.25rem 0 0`; `.2rem`; `.2rem .55rem`; `.2rem 0 0`; `.35rem`; `.3em`; `.3rem`; `.4rem`; `.4rem .6rem`; `.55rem .65rem`; `.55rem 1rem`; `.5rem`; `.5rem .75rem`; `.5rem .8rem`; `.5rem 0`; `.5rem 1rem`; `.65rem`; `.65rem .9rem`; `.65rem 0`; `.65rem 1rem`; `.6rem`; `.6rem .7rem`; `.75rem`; `.75rem 0`; `.75rem 1rem`; `.7rem`; `.7rem .5rem`; `.7rem .75rem`; `.7rem 0`; `.7rem 1rem`; `.85rem`; `.8rem`; `.8rem 0`; `0`; `0 .25rem`; `0 .45rem`; `0 .75rem`; `0 0 .4rem`; `0 0 1rem`; `1.1rem`; `1.25rem`; `1.2rem`; `1.5rem`; `1.5rem 1rem`; `1rem`; `1rem 2rem`; `2rem`; `auto`
 - **Radii**: `.45rem`; `.55rem`; `.5rem`; `.75rem`; `50%`; `999px`; `var(--radius-control)`; `var(--radius-panel)`
@@ -64,15 +66,19 @@ Captured before the token refactor. Values are exact source spellings; duplicate
 
 ## pilot-showcase/src/styles/index.css
 
+- **Foundation variables**: `--font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif`; `--font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace`; `--radius-xl: 1rem`; `--radius-2xl: 1.25rem`; `--radius-3xl: 1.75rem`
+
 - **Colors**: `#000`; `#050c10`; `#071117`; `#0a161c`; `#0d1b22`; `#0f1f17`; `#0f5e52`; `#11242b`; `#167768`; `#18313a`; `#27b9ab`; `#29454d`; `#309048`; `#31515a`; `#3ccf8e`; `#50645a`; `#5a777a`; `#63e6b4`; `#9db0b2`; `#b8f5dc`; `#d6e0e0`; `#dce5e1`; `#e03830`; `#e5484d`; `#e8b86d`; `#eaf0ec`; `#f2a541`; `#f4f7f5`; `rgb(15 31 23 / 0.04)`; `rgb(15 31 23 / 0.045)`; `rgb(15 31 23 / 0.05)`; `rgb(15 31 23 / 0.1)`; `rgb(15 31 23 / 0.18)`; `rgb(255 255 255 / 0.045)`; `rgb(255 255 255 / 0.08)`; `rgb(255 255 255 / 0.16)`; `rgb(255 255 255 / 0.18)`
 - **Spacing**: none
 - **Radii**: `6px`; `999px`
 - **Font sizes**: none
-- **Font families / shorthands**: none
+- **Font families / shorthands**: defined by `--font-sans` and `--font-mono` above (Tailwind theme)
 - **Shadows**: `0 1px 0 rgb(15 31 23 / 0.04), 0 2px 4px rgb(15 31 23 / 0.04), 0 12px 32px -8px rgb(15 31 23 / 0.1)`; `0 1px 0 rgb(15 31 23 / 0.04), 0 4px 8px rgb(15 31 23 / 0.05), 0 24px 56px -12px rgb(15 31 23 / 0.18)`; `inset 0 0 0 1px rgb(255 255 255 / 0.08)`; `inset 0 0 0 1px var(--color-line)`
 - **Z-index**: none
 
 ## backend/indooro_server/src/main/resources/META-INF/resources/customer/style.css
+
+- **Foundation variables**: `--gutter: 16px`; `--radius: 16px`
 
 - **Colors**: `#059669`; `#0b1220`; `#0f172a`; `#0f1828`; `#111827`; `#131c2f`; `#15803d`; `#1b263d`; `#1d4ed8`; `#1e3a6e`; `#22c55e`; `#243247`; `#2563eb`; `#34d399`; `#3a4960`; `#4b5563`; `#60a5fa`; `#6b7280`; `#7c3aed`; `#93c5fd`; `#94a3b8`; `#b3bdcf`; `#b91c1c`; `#c2410c`; `#c4b5fd`; `#cbd3df`; `#dbe7fb`; `#dc2626`; `#e5e7eb`; `#e5edff`; `#eef2f8`; `#f4f6fa`; `#f87171`; `#fb923c`; `#fbfcfe`; `#fca5a5`; `#fdba74`; `#fed7aa`; `#ffffff`
 - **Spacing**: `-1px`; `0`; `0 auto`; `0.25rem`; `0.25rem 0.75rem`; `0.2rem`; `0.375rem`; `0.4rem`; `0.5rem`; `0.5rem 0.75rem`; `0.5rem 0.9rem`; `0.5rem max(var(--gutter), env(safe-area-inset-right)) 1.5rem max(var(--gutter), env(safe-area-inset-left))`; `0.625rem`; `0.625rem 0.75rem`; `0.6rem 0.8rem`; `0.75rem`; `0.75rem 1rem`; `0.875rem`; `0.875rem 0`; `1.5rem`; `1rem`; `1rem var(--gutter)`; `env(safe-area-inset-top)`; `max(var(--gutter), env(safe-area-inset-left))`; `max(var(--gutter), env(safe-area-inset-right))`
