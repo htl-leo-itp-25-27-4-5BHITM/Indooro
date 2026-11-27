@@ -18,6 +18,6 @@ export function LoadingState({ children }: { children: ReactNode }) {
   return <div className="notice loading-state" role="status" aria-live="polite"><span className="state-spinner" aria-hidden="true" />{children}</div>;
 }
 
-export function ErrorState({ message, onRetry, title = "Daten konnten nicht geladen werden" }: { message: string; onRetry: () => void; title?: string }) {
-  return <section className="notice error-state page-error" role="alert"><h2>{title}</h2><p>{message}</p><button className="button primary" type="button" onClick={onRetry}>Erneut versuchen</button></section>;
+export function ErrorState({ message, onRetry, title = "Daten konnten nicht geladen werden", action }: { message: string; onRetry: () => void; title?: string; action?: ReactNode }) {
+  return <section className="notice error-state page-error" role="alert"><h2>{title}</h2><p>{message}</p><button className="button primary" type="button" onClick={onRetry}>Erneut versuchen</button>{action}</section>;
 }

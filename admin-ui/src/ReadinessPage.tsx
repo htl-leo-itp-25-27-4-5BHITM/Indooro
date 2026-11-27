@@ -148,7 +148,7 @@ export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser
       {radiusError && <small id="readiness-radius-error" role="alert">{radiusError}</small>}
     </form>
 
-    {loadError && <ErrorState title={loadError.title} message={loadError.message} onRetry={() => setRevision((value) => value + 1)} />}
+    {loadError && <ErrorState action={loadError.kind === "unauthorized" ? <a className="button" href="/admin/">Erneut anmelden</a> : undefined} title={loadError.title} message={loadError.message} onRetry={() => setRevision((value) => value + 1)} />}
     {!loadError && !report && <LoadingState>Pilot-Bereitschaft wird geprüft …</LoadingState>}
 
     {report && <>

@@ -66,3 +66,17 @@ for (const list of lists) {
     });
   }
 }
+
+for (const path of ["search-index/", "stores/readiness/?storeId=store-1"]) {
+  test(`${path} expired session keeps the sign-in action`, async ({ page }) => {
+    await mockVisualApi(page);
+    const endpoint = path.startsWith("search") ? "**/api/admin/index" : "**/api/stores/store-1/readiness*";
+    await page.route(endpoint, (route) => route.fulfill({ status: 401, json: { error: "SECRET_EXCEPTION" } }));
+    await page.goto(`/admin/next/${path}`);
+    const alert = page.getByRole("alert");
+    await expect(alert).toContainText("Sitzung abgelaufen");
+    await expect(alert.getByRole("link", { name: "Erneut anmelden" })).toHaveAttribute("href", "/admin/");
+    await expect(alert.getByRole("button", { name: "Erneut versuchen" })).toBeVisible();
+    await expect(alert).not.toContainText("SECRET_EXCEPTION");
+  });
+}
