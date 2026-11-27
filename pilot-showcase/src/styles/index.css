@@ -20,7 +20,7 @@
   --color-ink-600: #18313a;
   --color-ink-500: #29454d;
   --color-ink-400: #31515a;
-  --color-ink-300: #5a777a;
+  --color-ink-300: #81999c;
   --color-ink-200: #9db0b2;
   --color-ink-100: #d6e0e0;
 
@@ -69,7 +69,7 @@
     background: color-mix(in oklab, var(--color-mint) 45%, transparent);
   }
   :focus-visible {
-    outline: 2px solid var(--color-teal);
+    outline: 2px solid var(--color-accent);
     outline-offset: 3px;
     border-radius: 6px;
   }

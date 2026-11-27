@@ -7,7 +7,8 @@ export default defineConfig({
   testDir: "tests/browser",
   timeout: 30_000,
   projects: [
-    { name: "functional", testIgnore: "**/visual/**" },
+    { name: "functional", testIgnore: ["**/visual/**", "**/a11y.spec.ts"] },
+    { name: "a11y", testMatch: "**/a11y.spec.ts", timeout: 60_000 },
     {
       name: "visual",
       testMatch: "**/visual/**/*.spec.ts",

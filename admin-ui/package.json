@@ -15,7 +15,7 @@
     "package:candidate": "npm run build && node scripts/package-candidate.mjs",
     "verify:candidate": "node scripts/verify-candidate.mjs",
     "pretest:browser": "npm run package:candidate && npm run verify:candidate",
-    "test:browser": "playwright test --project=functional",
+    "test:browser": "playwright test --project=functional --project=a11y",
     "pretest:visual": "npm run package:candidate && npm run verify:candidate",
     "test:visual": "playwright test --project=visual --update-snapshots=none",
     "test:visual:update": "npm run test:visual -- --update-snapshots=all",
@@ -40,6 +40,7 @@
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.1",
     "@eslint/js": "9.39.5",
     "@playwright/test": "1.60.0",
     "@types/node": "22.20.5",
