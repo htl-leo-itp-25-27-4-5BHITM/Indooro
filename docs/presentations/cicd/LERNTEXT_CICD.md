@@ -135,6 +135,28 @@ Hinweis: `admin-ui-browser` und `pilot-showcase-browser` stehen **nicht** in `ne
 
 Die iOS-Pipeline ist also **nur CI**. Sie erzeugt kein `.ipa`, signiert nichts und lädt nichts zu TestFlight hoch.
 
+### Wie viele Tests laufen insgesamt?
+
+Gezählt aus den Logs grüner GitHub-Actions-Läufe (nicht geschätzt):
+
+| Bereich | Tests | Wo im Log | Lauf |
+|---|---:|---|---|
+| Backend (Java, `mvn -B verify`) | 793 (4 übersprungen) | `Tests run: 793, Failures: 0, Errors: 0, Skipped: 4` | ci.yaml, Run `45697942265`, 25.11. |
+| Admin-Web Unit (`node --test`) | 260 | `# tests 260` | ci.yaml, Run `45697942265` |
+| Admin-Web Browser (Playwright) | 238 | `238 passed` | ci.yaml, Run `45697942265` |
+| Showcase Unit (Vitest) | 166 | `Tests 166 passed` | ci.yaml, Run `45697942265` |
+| Showcase Browser (Playwright, Desktop + Mobil) | 104 | `104 passed` | ci.yaml, Run `45697942265` |
+| Ops-Skripte (Python `unittest`) | 203 | `Ran 203 tests` | ci.yaml, Run `45697942265` |
+| API-Vertrag (`node --test`) | 16 | `# tests 16` | ci.yaml, Run `45697942265` |
+| iOS (3 × `swift test`/`xcodebuild test`) | 646 (2 übersprungen) | 144 + 402 + 83 + 17 `Executed … tests` | ios.yaml, Run `45698916510`, 25.11. |
+| Positioning-Lab (Vitest + Playwright) | 553 | `Tests 530 passed`, `23 passed` | beacon-lab.yaml, Run `44503535620`, 19.11. |
+| Feldwerkzeuge (Python `unittest`) | 261 | `Ran 261 tests` | field-tools.yaml, Run `44528319772`, 19.11. |
+| **Summe** | **3.240** | | |
+
+- Bei **jedem PR nach `main`** läuft `ci.yaml` komplett: **1.780 Tests**.
+- iOS, Positioning-Lab und Feldwerkzeuge laufen nur, wenn sich ihr Bereich ändert.
+- Selbst nachzählen: `gh run view <id> --log | grep -E "Tests run:|# tests|passed|Ran [0-9]+ tests|Executed [0-9]+ tests"`.
+
 ### Schritt 5: Review und Merge
 
 - Der PR wird gemergt, wenn die Checks grün sind.
@@ -279,6 +301,7 @@ Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkze
 
 ### Gut
 
+- Über 3.200 automatische Tests, davon 1.780 bei jedem PR nach `main`.
 - Breite automatische Prüfung bei jedem PR: Vertrag, Backend mit echtem OpenSearch, zwei Browser-Suiten, iOS auf macOS.
 - API-Vertrag als zentrale Quelle; Breaking Changes werden automatisch erkannt.
 - Reproduzierbare Images mit Commit-SHA-Tag, nie `:latest` im Cluster.
@@ -309,17 +332,19 @@ Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkze
 
 ---
 
-## 8. So präsentieren wir das (Sprechnotizen, ca. 8 Minuten)
+## 8. So präsentieren wir das (Sprechnotizen, ca. 9 Minuten)
 
 1. **Titel (15 s):** „Wir zeigen, wie Code bei Indooro von einem Commit bis in die LeoCloud kommt.“
 2. **Begriffe (1 min):** CI = bauen und testen bei jedem PR. Delivery = fertiges Paket liegt bereit. Deployment = geht automatisch live. Bild: Paket gepackt vs. Paket automatisch zugestellt.
 3. **Wo stehen wir (30 s):** CI ja, Continuous Delivery ja (Image in GHCR), Continuous Deployment nein, bewusst.
-4. **Pipeline-Diagramm (1 min):** Branch → PR → Actions → GHCR → manueller Rollout → LeoCloud. Betonen: LeoCloud zieht das Image, GitHub schiebt nicht.
-5. **Jobs (1 min):** Fünf Jobs in `ci.yaml`, plus iOS auf macOS. Ein Satz pro Job.
-6. **Image und LeoCloud (1 min):** ein Image für Backend + Admin + Showcase; fester SHA-Tag; Runbook mit Backup, `kubectl set image`, Smoke-Check, Rollback.
-7. **Claude Code (1 min):** OpenSpec → Sessions in Worktrees → PR → gleiche CI. Zahlen: 214 Co-Authored-Commits, 125 von 133 PRs.
-8. **Live-Beispiel (1,5 min):** PR #241 im Browser öffnen, roten Lauf vom 25.11. zeigen, dann grüne Checks.
-9. **Gut / fehlt (1 min):** drei Punkte gut, drei Punkte fehlt. Ehrlich bleiben: kein Branch-Schutz, kein CD, iOS nur Test.
+4. **Wörter (30 s):** Branch, Pull Request, GitHub Actions, Docker-Image, GHCR, LeoCloud je in einem Satz erklären (eigene Folie). Nicht überspringen, wenn das Publikum nicht aus der Informatik kommt.
+5. **Pipeline-Diagramm (1 min):** Branch → PR → Actions → GHCR → manueller Rollout → LeoCloud. Betonen: LeoCloud zieht das Image, GitHub schiebt nicht.
+6. **Was geprüft wird (1 min):** pro Job die Frage nennen, die er beantwortet („Funktioniert der Server?“), nicht den Job-Namen.
+7. **Tests (30 s):** 3.240 automatische Tests, 1.780 davon bei jedem PR. Kurz auf den längsten Balken zeigen (Backend, 793).
+8. **Image und LeoCloud (1 min):** ein Image für Backend + Admin + Showcase; fester SHA-Tag; Runbook mit Backup, `kubectl set image`, Smoke-Check, Rollback.
+9. **Claude Code (1 min):** OpenSpec → Sessions in Worktrees → PR → gleiche CI. Zahlen: 214 Co-Authored-Commits, 125 von 133 PRs.
+10. **Live-Beispiel (1,5 min):** PR #241 im Browser öffnen, roten Lauf vom 25.11. zeigen, dann grüne Checks.
+11. **Gut / fehlt (1 min):** drei Punkte gut, drei Punkte fehlt. Ehrlich bleiben: kein Branch-Schutz, kein CD, iOS nur Test.
 
 Tipps: Diagramm-Folie zweimal zeigen (am Anfang und vor dem Live-Beispiel). Vorher `gh auth status` prüfen und den PR-Tab offen haben, falls das WLAN langsam ist.
 
@@ -374,3 +399,6 @@ Branch-Schutz auf `main` mit Pflicht-Checks; Browsertests in `needs` von `build-
 
 **16. Was ist ein Service-Container in GitHub Actions?**
 Ein zusätzlicher Docker-Container, der neben dem Job läuft. Bei uns startet `backend-test` OpenSearch 2.9.0 als Service, damit der Integrationstest gegen einen echten Suchdienst läuft.
+
+**17. Wie viele Tests habt ihr?**
+In den letzten grünen Läufen 3.240 automatische Tests. Bei jedem Pull Request nach `main` laufen davon 1.780 (Workflow `ci.yaml`); der größte Teil sind 793 Java-Tests im Backend. iOS (646), Positioning-Lab (553) und Feldwerkzeuge (261) laufen nur bei Änderungen in ihrem Bereich.
