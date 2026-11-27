@@ -43,6 +43,7 @@ jobs:
       backend: ${{ github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true' }}
       admin-ui: ${{ github.event_name != 'pull_request' || steps.filter.outputs.admin-ui == 'true' }}
       pilot-showcase: ${{ github.event_name != 'pull_request' || steps.filter.outputs.pilot-showcase == 'true' }}
+      web-quality: ${{ github.event_name != 'pull_request' || steps.filter.outputs.web-quality == 'true' }}
 
     steps:
       # Auf pull_request liest paths-filter die geänderten Dateien über die GitHub-API, ohne Checkout.
@@ -64,9 +65,16 @@ jobs:
               - '.github/workflows/ci.yaml'
             admin-ui:
               - 'admin-ui/**'
+              - 'design-tokens/**'
               - '.github/workflows/ci.yaml'
             pilot-showcase:
               - 'pilot-showcase/**'
+              - 'design-tokens/**'
+              - '.github/workflows/ci.yaml'
+            web-quality:
+              - 'web-quality/**'
+              - 'backend/indooro_server/src/main/resources/META-INF/resources/**'
+              - 'design-tokens/**'
               - '.github/workflows/ci.yaml'
 
   # Vertrag (openspec/specs/shared-api/openapi.yaml) gegen Lint, generierte Dateien,
@@ -325,6 +333,9 @@ jobs:
 
   # Deployed static landing/customer pages; API fixtures require no backend.
   web-quality:
+    needs: changes
+    # Nur wenn web-quality/ oder die Kunden-Webseiten im Backend sich ändern; nicht auf Draft-PRs.
+    if: needs.changes.outputs.web-quality == 'true' && (github.event_name == 'push' || github.event.pull_request.draft == false)
     # Keep Chromium and font rendering stable for the committed Linux baselines.
     runs-on: ubuntu-24.04
     permissions:

@@ -9,6 +9,7 @@ on:
       - 'api/openapi/**'
       - 'scripts/export-mobile-openapi.mjs'
       - 'openspec/specs/shared-api/**'
+      - 'design-tokens/**'
       - '.github/workflows/ios.yaml'
     # ready_for_review: ein Draft-PR, der fertig wird, bekommt sofort den macOS-Job.
     types: [ opened, synchronize, reopened, ready_for_review ]
