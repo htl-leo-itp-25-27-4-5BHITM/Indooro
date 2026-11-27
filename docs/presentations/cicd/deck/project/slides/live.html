@@ -1,0 +1,14 @@
+<section id="live">
+<div class="head">
+<p class="eyebrow">Live-Beispiel · 25.11.2026</p>
+<h2>PR #241: Von Rot zu Grün</h2>
+</div>
+<div class="tl">
+<div class="ev"><p class="ev-time">11:30</p><p class="ev-red">Rot</p><p class="ev-text">Push-Lauf auf main: build-and-push scheitert, Maven Central antwortet mit HTTP 429</p></div>
+<div class="ev"><p class="ev-time">11:49</p><p class="ev-red">Rot</p><p class="ev-text">Erster Lauf auf dem PR-Branch fix/ci-maven-resolution</p></div>
+<div class="ev"><p class="ev-time">11:56</p><p class="ev-green">Grün</p><p class="ev-text">Retry bei 429/503 und Neustart mit -U: alle 5 Checks grün, danach Merge nach main</p></div>
+<div class="ev"><p class="ev-time">20:45</p><p class="ev-green">Grün</p><p class="ev-text">Späterer Push-Lauf auf main (8238b4c): Tests ca. 4 min, Image-Build ca. 1 min</p></div>
+</div>
+<p class="small mono">github.com/htl-leo-itp-25-27-4-5BHITM/Indooro/pull/241</p>
+<aside>Hier PR 241 im Browser öffnen. Zeigen: der rote Lauf, der Grund im PR-Text (HTTP 429 von Maven Central, also kein Code-Fehler, sondern ein externer Dienst), dann die fünf grünen Checks. Befehl zum Zeigen: gh run list --limit 10. Der PR wurde von Claude Code erstellt, der Text endet mit Generated with Claude Code.</aside>
+</section>

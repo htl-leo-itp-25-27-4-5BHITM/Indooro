@@ -1,0 +1,24 @@
+<section id="stand" class="dark">
+<div class="head">
+<p class="eyebrow-dark">Wo steht Indooro?</p>
+<h2>CI und Delivery ja. Deployment bewusst manuell.</h2>
+</div>
+<div class="rows">
+<div class="row">
+<p class="row-name">Continuous Integration</p>
+<p class="pill-yes">Ja</p>
+<p class="row-text">Jeder Pull Request nach main startet die Checks in .github/workflows/ci.yaml.</p>
+</div>
+<div class="row">
+<p class="row-name">Continuous Delivery</p>
+<p class="pill-yes">Ja</p>
+<p class="row-text">Jeder Push auf main baut ein Docker-Image und legt es in GHCR ab, Tag = Commit-SHA.</p>
+</div>
+<div class="row">
+<p class="row-name">Continuous Deployment</p>
+<p class="pill-no">Nein</p>
+<p class="row-text">Kein Workflow deployt. Rollout per kubectl nach Runbook, mit Backup und Smoke-Check.</p>
+</div>
+</div>
+<aside>Ehrlich sagen: Wir haben kein Continuous Deployment. Das ist eine bewusste Entscheidung. Laut Release-Runbook gibt es vor jedem Rollout ein Backup, nie einen Rollout während einer Pilot-Sitzung im Markt, und danach einen Smoke-Check. Außerdem hat nur Erik Zugang zur LeoCloud.</aside>
+</section>

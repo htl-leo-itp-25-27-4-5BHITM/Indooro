@@ -1,0 +1,29 @@
+<section id="image">
+<div class="head">
+<p class="eyebrow">Das Ergebnis der Pipeline</p>
+<h2>Ein Docker-Image für das ganze Web</h2>
+</div>
+<p class="tagline">ghcr.io/htl-leo-itp-25-27-4-5bhitm/indooro-backend-v2:8238b4c</p>
+<div class="cards">
+<div class="card-blue in" style="--i:0">
+<h3 class="card-t">Backend-API</h3>
+<p class="card-p">Quarkus-Jar auf JRE 21, Nicht-root-Benutzer, Port 8080</p>
+<p class="card-code">/api/…</p>
+</div>
+<div class="card-blue in" style="--i:1">
+<h3 class="card-t">Admin-UI</h3>
+<p class="card-p">Bundle aus admin-ui/, ins Backend gebaut</p>
+<p class="card-code">/admin/next/</p>
+</div>
+<div class="card-blue in" style="--i:2">
+<h3 class="card-t">Pilot-Showcase</h3>
+<p class="card-p">Bundle aus pilot-showcase/, ins Backend gebaut</p>
+<p class="card-code">/showcase/</p>
+</div>
+</div>
+<div class="facts">
+<p class="small">Tag = 7-stelliger Commit-SHA, dazu :latest. Im Cluster laufen nur SHA-Tags.</p>
+<p class="small">Einziges Secret der Pipeline: GITHUB_TOKEN, automatisch von GitHub.</p>
+</div>
+<aside>Ein einziges Image enthält Backend, Admin-Oberfläche und Showcase. Deshalb braucht die LeoCloud keinen eigenen Web-Container. Der Tag ist der Commit-SHA, hier 8238b4c vom grünen Lauf am 25.11. So wissen wir genau, welcher Code läuft, und können gezielt zurückrollen. Die Pipeline braucht kein eigenes Secret: Das GITHUB_TOKEN reicht für den Login bei GHCR.</aside>
+</section>

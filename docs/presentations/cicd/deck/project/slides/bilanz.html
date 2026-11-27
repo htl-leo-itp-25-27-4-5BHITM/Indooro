@@ -1,0 +1,27 @@
+<section id="bilanz">
+<div class="head">
+<p class="eyebrow">Bilanz</p>
+<h2>Was gut läuft, was fehlt</h2>
+</div>
+<div class="cols">
+<div class="col-good">
+<h3>Gut</h3>
+<ul class="col-list">
+<li>Jeder PR: Vertrag, Backend mit echtem OpenSearch, zwei Browser-Suiten, iOS</li>
+<li>Breaking Changes an der API werden automatisch erkannt</li>
+<li>Fester SHA-Tag, Rollback und Backup dokumentiert</li>
+<li>Claude-PRs durchlaufen dieselben Checks</li>
+</ul>
+</div>
+<div class="col-bad">
+<h3>Fehlt</h3>
+<ul class="col-list">
+<li>Kein Continuous Deployment, Rollout nur mit Eriks Zugang</li>
+<li>main ohne Branch-Schutz, keine GitHub-Reviews</li>
+<li>Browsertests blockieren den Image-Build nicht</li>
+<li>iOS nur Tests, kein TestFlight; Android ohne Pipeline</li>
+</ul>
+</div>
+</div>
+<aside>Ehrlich bleiben. Fakten aus GitHub: main hat keinen Branch-Schutz und keine Rulesets, grüne Checks sind also eine Teamregel, nicht erzwungen. Keiner der letzten 133 gemergten PRs hat ein formales GitHub-Review. build-and-push wartet nur auf contract und backend-test. Nächste Schritte wären Branch-Schutz mit Pflicht-Checks und ein Deploy-Workflow mit manueller Freigabe, falls die LeoCloud einen Zugang für CI erlaubt.</aside>
+</section>
