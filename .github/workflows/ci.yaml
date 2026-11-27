@@ -243,6 +243,20 @@ jobs:
         working-directory: pilot-showcase
         run: npm run test:e2e -- --reporter=list,html
 
+      # Bootstrap Linux baselines on the first push only. Replace with strict comparison
+      # after downloading and committing the generated artifact.
+      - name: Visual regression tests
+        working-directory: pilot-showcase
+        run: npm run test:visual -- --update-snapshots=missing --workers=1 --reporter=list,html
+
+      - name: Upload visual baselines
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pilot-showcase-visual-baselines
+          path: pilot-showcase/tests/e2e/visual/snapshots/
+          if-no-files-found: error
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4

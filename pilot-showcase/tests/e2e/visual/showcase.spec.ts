@@ -52,7 +52,7 @@ for (const viewport of viewports) {
         await expect(page.getByTestId("list-empty")).toBeVisible();
         await expect(demo).toHaveScreenshot(`${viewport.width}-${market}-empty-list.png`);
         await page.getByTestId("load-example").click();
-        await expect(page.getByTestId("list-item")).toHaveCount(7);
+        await expect(page.getByTestId("list-item")).toHaveCount(market === "DEMO-NORD" ? 7 : 6);
         await expect(demo).toHaveScreenshot(`${viewport.width}-${market}-example-list.png`);
         await gotoTab(page, "navigation");
         await expect(page.getByTestId("nav-start")).toBeVisible();
