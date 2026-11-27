@@ -499,6 +499,7 @@ private struct MapCanvasStatusBadge: View {
         HStack(spacing: 8) {
             Image(systemName: systemImage)
                 .font(.caption.weight(.semibold))
+                .accessibilityHidden(true)
             Text(title)
                 .font(.caption.weight(.semibold))
         }

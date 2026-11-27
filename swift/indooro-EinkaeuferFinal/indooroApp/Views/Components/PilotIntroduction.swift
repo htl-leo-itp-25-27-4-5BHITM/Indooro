@@ -17,7 +17,6 @@ struct PilotIntroduction: View {
                     .frame(maxWidth: .infinity)
             }
             .font(.body)
-            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(28)
         }

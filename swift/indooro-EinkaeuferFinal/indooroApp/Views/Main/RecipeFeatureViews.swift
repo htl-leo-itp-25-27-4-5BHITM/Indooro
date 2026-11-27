@@ -276,7 +276,7 @@ struct AddRecipeToShoppingListSheet: View {
                     }
                     if selectedCount == 0 {
                         Label("Wähle mindestens eine Zutat aus", systemImage: "info.circle.fill")
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                     }
                 }
 
@@ -359,7 +359,7 @@ struct RecipeIngredientList: View {
                         if let note = ingredient.localizedPreparationNote, !note.isEmpty {
                             Text(note)
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.a11ySecondaryText)
                         }
                     }
 
@@ -500,7 +500,7 @@ struct RecipeCard: View {
                 if let summary = recipe.displaySummary, !summary.isEmpty {
                     Text(summary)
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                         .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 2)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -562,7 +562,7 @@ private struct RecipeHero: View {
                     if let summary = recipe.displaySummary, !summary.isEmpty {
                         Text(summary)
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                             .lineLimit(2)
                     }
 
@@ -611,7 +611,7 @@ private struct RecipeStepsView: View {
                         if let duration = step.durationMinutes {
                             Text("\(duration) Min.")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.a11ySecondaryText)
                         }
                     }
                 }
@@ -708,7 +708,7 @@ private struct RecipeStateView: View {
             Text(message)
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.a11ySecondaryText)
                 .padding(.horizontal, 28)
 
             Button(buttonTitle, action: action)

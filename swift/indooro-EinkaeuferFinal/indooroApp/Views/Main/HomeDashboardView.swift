@@ -66,7 +66,7 @@ struct HomeDashboardView: View {
                 Text("Plane deinen Einkauf und finde im Markt schnell den richtigen Weg.")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
                     .padding(.horizontal, 16)
             }
 
@@ -116,7 +116,7 @@ struct HomeDashboardView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Aktive Einkaufstour")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
 
                     Text(banner.listName)
                         .font(.headline.weight(.semibold))
@@ -171,7 +171,7 @@ struct HomeDashboardView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text("Dein Einkauf")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
 
                     Text(selectedList?.name ?? "Standardliste")
                         .font(.headline.weight(.semibold))
@@ -224,7 +224,7 @@ struct HomeDashboardView: View {
 
                     Text("Zutaten übernehmen und direkt durch den Markt routen.")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                 }
 
                 Spacer(minLength: 0)
@@ -269,7 +269,7 @@ struct HomeDashboardView: View {
 
                     Text("Route, Produktziel und Standort auf einen Blick.")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                 }
 
                 Spacer(minLength: 0)
@@ -320,7 +320,7 @@ struct HomeDashboardView: View {
 
             Text(title)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.a11ySecondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -352,7 +352,7 @@ private struct HomeTutorialSheet: View {
 
     @Environment(\.dismiss) private var dismiss
 
-    private let accent = Color(red: 0.12, green: 0.50, blue: 0.39)
+    private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
     private var pageBackground: Color { Color(uiColor: .systemGroupedBackground) }
     private var cardBackground: Color { Color(uiColor: .secondarySystemGroupedBackground) }
     private var borderColor: Color { Color.primary.opacity(0.08) }
@@ -366,7 +366,7 @@ private struct HomeTutorialSheet: View {
 
                     Text("Die beste Reihenfolge ist: Einkauf planen, kurz prüfen und dann mit der Karte durch den Markt gehen.")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
 
                     TutorialStepCard(
                         symbol: "checklist.checked",
@@ -428,7 +428,7 @@ private struct TutorialStepCard: View {
     let title: String
     let text: String
 
-    private let accent = Color(red: 0.12, green: 0.50, blue: 0.39)
+    private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
     private var cardBackground: Color { Color(uiColor: .secondarySystemGroupedBackground) }
     private var borderColor: Color { Color.primary.opacity(0.08) }
 
@@ -445,7 +445,7 @@ private struct TutorialStepCard: View {
                     .font(.headline)
                 Text(text)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
             }
 
             Spacer(minLength: 0)

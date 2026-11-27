@@ -350,8 +350,6 @@ struct StoreMapPage: View {
 
                 VStack(spacing: 0) {
                     toolbarArea
-                        // Map overlay: cap the text size, otherwise the controls push the map off small screens.
-                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .zIndex(2)
 
                     MapView(
@@ -373,7 +371,6 @@ struct StoreMapPage: View {
                     .clipped()
 
                     bottomCard
-                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .background(MapScreenBackground(accent: accent))
                         .zIndex(3)
                 }
@@ -454,7 +451,6 @@ struct StoreMapPage: View {
                 fitStorePins()
             } label: {
                 Image(systemName: "location.viewfinder")
-                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -469,7 +465,6 @@ struct StoreMapPage: View {
                 beaconManager.refreshMobileStores()
             } label: {
                 Image(systemName: "arrow.clockwise")
-                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -483,7 +478,6 @@ struct StoreMapPage: View {
 
             Button { showSettings = true } label: {
                 Image(systemName: "slider.horizontal.3")
-                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -539,7 +533,6 @@ struct StoreMapPage: View {
                     beaconManager.refreshMobileStores()
                 } label: {
                     Image(systemName: "arrow.clockwise")
-                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .font(.subheadline.weight(.semibold))
                         .frame(width: 36, height: 36)
                         .frame(minWidth: 44, minHeight: 44)
@@ -561,7 +554,7 @@ struct StoreMapPage: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("Ohne Kartenposition")
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.a11ySecondaryText)
                 .padding(.horizontal, 16)
                 .accessibilityAddTraits(.isHeader)
 
@@ -617,7 +610,7 @@ struct StoreMapPage: View {
 
                     Text("Produkte werden gesucht …")
                         .font(.caption.weight(.medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
 
                     Spacer(minLength: 0)
                 }
@@ -657,7 +650,6 @@ struct StoreMapPage: View {
                 showStoreOverview()
             } label: {
                 Image(systemName: "chevron.left")
-                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.bold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -699,7 +691,6 @@ struct StoreMapPage: View {
 
             Button { showSettings = true } label: {
                 Image(systemName: "slider.horizontal.3")
-                    .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: 44, height: 44)
@@ -827,7 +818,7 @@ struct StoreMapPage: View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.a11ySecondaryText)
 
             TextField("Produkt suchen", text: $searchText)
                 .textFieldStyle(.plain)
@@ -840,7 +831,7 @@ struct StoreMapPage: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.body)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                         .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
                 }
@@ -850,7 +841,7 @@ struct StoreMapPage: View {
 
             Image(systemName: "viewfinder")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.a11ySecondaryText)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 13)
@@ -1022,7 +1013,7 @@ struct StoreMapPage: View {
                         #if DEBUG
                         Text(shelfDescriptor.debugCode)
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                             .lineLimit(1)
                         #endif
                     } else {
@@ -1045,7 +1036,7 @@ struct StoreMapPage: View {
                 } label: {
                     Image(systemName: "xmark")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                         .frame(width: 32, height: 32)
                         .background(Color.primary.opacity(0.05), in: Circle())
                         .frame(minWidth: 44, minHeight: 44)
@@ -1352,7 +1343,7 @@ private struct StoreOverviewCard: View {
 
                         Text(store.displaySubtitle)
                             .font(.caption.weight(.medium))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                             .multilineTextAlignment(.leading)
                             .fixedSize(horizontal: false, vertical: true)
                     }

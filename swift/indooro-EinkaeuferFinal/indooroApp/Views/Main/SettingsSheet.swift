@@ -41,7 +41,7 @@ struct SettingsSheet: View {
                             Text("Position")
                             Spacer()
                             Text("\(String(format: "%.1f", pos.x))m / \(String(format: "%.1f", pos.y))m")
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.a11ySecondaryText)
                         }
                     }
                 }
@@ -52,7 +52,7 @@ struct SettingsSheet: View {
                             Text("Kartengröße")
                             Spacer()
                             Text("\(Int(mapScale * 100)) %")
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.a11ySecondaryText)
                                 .monospacedDigit()
                         }
                         Slider(value: $mapScale, in: 0.65...2.5, step: 0.05)
@@ -70,13 +70,11 @@ struct SettingsSheet: View {
 
                 #if DEBUG
                 Section("Diagnose") {
-                    ScrollView {
-                        Text(debugLogText.isEmpty ? "Noch keine Einträge." : debugLogText)
-                            .font(.system(.caption2, design: .monospaced))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .textSelection(.enabled)
-                    }
-                    .frame(maxHeight: 220)
+                    Text(debugLogText.isEmpty ? "Noch keine Einträge." : debugLogText)
+                        .font(.system(.caption2, design: .monospaced))
+                        .lineLimit(30)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
                     Button("Protokoll kopieren") { UIPasteboard.general.string = debugLogText }
                         .disabled(debugLogText.isEmpty)
                     Button("Protokoll leeren", role: .destructive, action: onClearDebugLog)
@@ -143,7 +141,7 @@ struct SettingsSheet: View {
 
                     Text("Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu ändern. Szenario und Rolle gelten ab dem Start der Aufnahme, der Marker ab dem naechsten Wahrheitsmarker.")
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                 }
                 #endif
 
@@ -159,7 +157,7 @@ struct SettingsSheet: View {
                     if !canShowAR {
                         Text("Wähle zuerst ein Ziel, damit eine Route berechnet werden kann.")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                     }
                 }
                 }
