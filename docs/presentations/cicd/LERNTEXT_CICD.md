@@ -76,18 +76,22 @@ on:
       ...
   pull_request: # Contract-Job läuft auf jedem PR, auch bei reinen Doku-PRs: deshalb kein paths-Filter
     branches: [ "main", "master" ]
+    # ready_for_review: ein Draft-PR, der fertig wird, bekommt sofort die schweren Jobs.
+    types: [ opened, synchronize, reopened, ready_for_review ]
 ```
 
-Wichtig: Beim **Push auf `main`** läuft `ci.yaml` nur, wenn sich bestimmte Pfade ändern (Backend, Admin-UI, Showcase, API, OpenSpec …). Beim **PR** läuft er immer.
+Wichtig: Beim **Push auf `main`** läuft `ci.yaml` nur, wenn sich bestimmte Pfade ändern (Backend, Admin-UI, Showcase, API, OpenSpec …). Beim **PR** startet der Workflow immer, aber seit PR #246 laufen darin nur die Jobs für die geänderten Bereiche (siehe „Was wir über GitHub-Actions-Minuten gelernt haben“).
 
 ### Schritt 3: Die Jobs in `ci.yaml` (Workflow-Name „Build and Push Backend“)
 
 | Job | Runner | Was er prüft |
 |---|---|---|
+| `changes` | `ubuntu-latest` | Seit PR #246: stellt mit `dorny/paths-filter` fest, welche Bereiche ein PR ändert (`backend`, `admin-ui`, `pilot-showcase`, `web-quality`). Auf `push` nach `main` sind alle Ausgaben `true`. |
 | `contract` | `ubuntu-latest` | API-Vertrag `openspec/specs/shared-api/openapi.yaml`: Lint, Contract-Tests, generierte TypeScript-Typen aktuell, Mobile-Export aktuell, Parität mit dem Quarkus-OpenAPI-Export, Breaking-Change-Check mit `oasdiff` (nur PR), `openspec validate --all --strict` |
 | `backend-test` | `ubuntu-latest` + Service-Container OpenSearch 2.9.0 | Admin-UI: `npm test` und Bundle bauen; Pilot-Showcase: `npm test` und Bundle bauen; Backend: `mvn -B verify` (ohne `-DskipTests`); Ops-Skripte: `python3 -I -m unittest discover scripts/ops` |
 | `admin-ui-browser` | `ubuntu-24.04` | Lint, Typecheck, Playwright-Browsertests in echtem Chromium |
 | `pilot-showcase-browser` | `ubuntu-24.04` | Typecheck + Build, Playwright-Tests Desktop und Mobil |
+| `web-quality` | `ubuntu-24.04` | Neu seit PR #249: Playwright-Screenshots und axe-Barrierefreiheitsprüfung für Kunden-Web und Landingpage |
 | `build-and-push` | `ubuntu-latest` | `needs: [contract, backend-test]`. Baut Admin-UI und Showcase ins Backend, baut das Runner-Jar, baut das Docker-Image. **Push nur bei `push`-Event.** |
 
 Zitat Breaking-Change-Check:
@@ -153,7 +157,7 @@ Gezählt aus den Logs grüner GitHub-Actions-Läufe (nicht geschätzt):
 | Feldwerkzeuge (Python `unittest`) | 261 | `Ran 261 tests` | field-tools.yaml, Run `44528319772`, 19.11. |
 | **Summe** | **3.240** | | |
 
-- Bei **jedem PR nach `main`** läuft `ci.yaml` komplett: **1.780 Tests**.
+- Ändert ein PR alle Bereiche (oder `ci.yaml` selbst), laufen in `ci.yaml` **1.780 Tests**. Seit PR #246 laufen sonst nur die Jobs für die geänderten Bereiche; der Vertrag (`contract`) läuft immer.
 - iOS, Positioning-Lab und Feldwerkzeuge laufen nur, wenn sich ihr Bereich ändert.
 - Selbst nachzählen: `gh run view <id> --log | grep -E "Tests run:|# tests|passed|Ran [0-9]+ tests|Executed [0-9]+ tests"`.
 
@@ -163,6 +167,58 @@ Gezählt aus den Logs grüner GitHub-Actions-Läufe (nicht geschätzt):
 - **Lokal** kann jede Person dieselben Befehle ausführen (z. B. `mvn -B verify`, `npm test`). Das ist freiwillig; verbindlich ist nur der Lauf auf GitHub.
 - **Ausnahme:** Die Swift-Schritte der Feldwerkzeuge laufen laut `field-tools.yaml` nur lokal auf einem Mac mit Xcode; in der CI ersetzt sie ein Platzhalter.
 - **Kosten:** Das Repo ist öffentlich. Die GitHub-API meldet für unsere Läufe `billable … total_ms: 0` (z. B. `gh api repos/htl-leo-itp-25-27-4-5BHITM/Indooro/actions/runs/45698916510/timing`), auch für macOS. Die Nutzungsseite der Organisation zeigt trotzdem Minuten und einen Bruttobetrag an.
+
+### Was wir über GitHub-Actions-Minuten gelernt haben
+
+**Problem.** Im November hat das Projekt ungefähr 1.600 der 2.000 Actions-Minuten im Monat verbraucht (Nutzungsseite der Organisation). Gründe:
+
+- **macOS ist teuer.** GitHub rechnet eine macOS-Minute zehnmal so hoch wie eine Linux-Minute. Unser Job `swift-tests` (`xcodebuild` mit Unit- und UI-Tests) läuft auf `macos-latest`; im Lauf auf PR #246 dauerte er 31 Minuten.
+- **Viele parallele Agenten.** Bis zu 9 Agenten (Claude Code und Codex) arbeiten gleichzeitig, jeder auf eigenem Branch und PR. Jeder Push startete die **ganze** Pipeline: Maven, zwei Playwright-Suiten, `build-and-push`, dazu iOS auf dem Mac, auch bei reinen Doku-Änderungen.
+- **Alte Läufe liefen weiter.** Ein neuer Push auf denselben PR brach den alten Lauf nicht ab.
+- **Draft-PRs** liefen mit allen schweren Jobs.
+- **`field-tools.yaml` lief doppelt** auf Feature-Branches (`push` und `pull_request`).
+- **Wackelige Jobs** kosteten Wiederholungen: iOS-UI-Tests mit Timeout (z. B. `AnchorScanUITests`), Maven Central HTTP 429, Docker Hub 5xx, „runner not acquired“ auf macOS.
+- **Neue Qualitätsprüfungen** (Screenshot-Vergleich bei 390/768/1440 px und axe-core) kosten zusätzliche Minuten. Die Linux-Referenzbilder müssen in der CI entstehen, weil Screenshots plattformabhängig sind und der Entwicklungs-Mac kein Docker hat.
+
+**Lösung (PR #246, gemergt am 27.11.2026):**
+
+1. **Pfadfilter.** Der Job `changes` entscheidet, welche Jobs laufen:
+   - `backend-test` nur bei Backend, Admin-UI, Showcase, API, `openspec/specs/shared-api/**`, `scripts/ops/**`.
+   - `admin-ui-browser` bei `admin-ui/**` oder `design-tokens/**`.
+   - `pilot-showcase-browser` bei `pilot-showcase/**` oder `design-tokens/**`.
+   - `web-quality` bei `web-quality/**`, `backend/indooro_server/src/main/resources/META-INF/resources/**` oder `design-tokens/**`.
+   - `ios.yaml` zusätzlich bei `design-tokens/**`.
+   - Eine Änderung an `ci.yaml` selbst startet alles; `contract` läuft immer.
+2. **Alte Läufe abbrechen.** `concurrency` mit `cancel-in-progress` nur für PRs; Läufe auf `main` werden nie abgebrochen.
+3. **Drafts überspringen** die schweren Jobs, auch `swift-tests` auf macOS. Der Trigger `ready_for_review` startet sie, sobald der PR fertig ist.
+4. **`field-tools.yaml`** läuft bei `push` nur noch auf `main`/`master`.
+5. **iOS bleibt auf dem Mac:** `IndooroKit` und `IndooroNavigationCore` importieren `simd`, `CoreGraphics`, `CryptoKit` und `Combine`; die gibt es unter Linux nicht.
+6. **Nach dem Merge** läuft auf `main` weiterhin alles; das Image entsteht wie vorher.
+
+Zitat aus `.github/workflows/ci.yaml`:
+
+```yaml
+concurrency:
+  group: ci-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+...
+  backend-test:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' && (github.event_name == 'push' || github.event.pull_request.draft == false)
+```
+
+**Dazu Werkzeuge außerhalb von GitHub:**
+
+- **`pr-wait`** (lokales Werkzeug der Agenten): wartet, bis die Checks registriert und fertig sind. Einen roten Job startet es **genau einmal** neu und nur, wenn das Log zu einer Liste bekannter Störfälle passt (Docker Hub, Maven 429, macOS-Runner, iOS-UI-Timeout). Echte Fehler bleiben rot. Gelernt: Direkt nach einem Push meldete es einmal „grün“, weil der neue Lauf noch nicht registriert war; jetzt wartet es kurz und verlangt zweimal hintereinander „nichts mehr offen“.
+- **Maven-Retry** bei HTTP 429/503 in `build-and-push` statt den ganzen Job neu zu starten (PR #241, siehe Live-Beispiel).
+
+**Merksätze:**
+
+- Pfadfilter, Abbrechen alter Läufe und Draft-Skip sind die drei billigen großen Hebel.
+- macOS-Minuten dominieren die Kosten, also dort am strengsten filtern.
+- Nur bekannte Störfälle neu starten, und nur einmal.
+- Plattformabhängige Referenzbilder in der CI erzeugen, nicht lokal.
+- Bei vielen parallelen Agenten wachsen die CI-Kosten mit der Zahl der Pushes. Die Pipeline muss dafür gebaut sein.
 
 ### Schritt 5: Review und Merge
 
@@ -308,8 +364,9 @@ Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkze
 
 ### Gut
 
-- Über 3.200 automatische Tests, davon 1.780 bei jedem PR nach `main`.
-- Breite automatische Prüfung bei jedem PR: Vertrag, Backend mit echtem OpenSearch, zwei Browser-Suiten, iOS auf macOS.
+- Über 3.200 automatische Tests; pro PR laufen die passenden (maximal 1.780 in `ci.yaml`).
+- Breite automatische Prüfung: Vertrag bei jedem PR, dazu je nach Änderung Backend mit echtem OpenSearch, Browser-Suiten, Web-Qualität und iOS auf macOS.
+- Sparsam mit Actions-Minuten: Pfadfilter, Abbrechen alter Läufe, Draft-Skip (PR #246).
 - API-Vertrag als zentrale Quelle; Breaking Changes werden automatisch erkannt.
 - Reproduzierbare Images mit Commit-SHA-Tag, nie `:latest` im Cluster.
 - Rollout und Rollback sind dokumentiert, mit Backup und Smoke-Check; jedes Release ist protokolliert.
@@ -339,7 +396,7 @@ Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkze
 
 ---
 
-## 8. So präsentieren wir das (Sprechnotizen, ca. 9 Minuten)
+## 8. So präsentieren wir das (Sprechnotizen, ca. 11 Minuten)
 
 1. **Titel (15 s):** „Wir zeigen, wie Code bei Indooro von einem Commit bis in die LeoCloud kommt.“
 2. **Begriffe (1 min):** CI = bauen und testen bei jedem PR. Delivery = fertiges Paket liegt bereit. Deployment = geht automatisch live. Bild: Paket gepackt vs. Paket automatisch zugestellt.
@@ -347,11 +404,13 @@ Claude Code ist bei uns kein Teil der GitHub-Actions-Pipeline. Es ist ein Werkze
 4. **Wörter (30 s):** Branch, Pull Request, GitHub Actions, Docker-Image, GHCR, LeoCloud je in einem Satz erklären (eigene Folie). Nicht überspringen, wenn das Publikum nicht aus der Informatik kommt.
 5. **Pipeline-Diagramm (1 min):** Branch → PR → Actions → GHCR → manueller Rollout → LeoCloud. Betonen: LeoCloud zieht das Image, GitHub schiebt nicht.
 6. **Was geprüft wird (1 min):** pro Job die Frage nennen, die er beantwortet („Funktioniert der Server?“), nicht den Job-Namen.
-7. **Tests (30 s):** 3.240 automatische Tests, 1.780 davon bei jedem PR. Kurz auf den längsten Balken zeigen (Backend, 793).
-8. **Image und LeoCloud (1 min):** ein Image für Backend + Admin + Showcase; fester SHA-Tag; Runbook mit Backup, `kubectl set image`, Smoke-Check, Rollback.
-9. **Claude Code (1 min):** OpenSpec → Sessions in Worktrees → PR → gleiche CI. Zahlen: 214 Co-Authored-Commits, 125 von 133 PRs.
-10. **Live-Beispiel (1,5 min):** PR #241 im Browser öffnen, roten Lauf vom 25.11. zeigen, dann grüne Checks.
-11. **Gut / fehlt (1 min):** drei Punkte gut, drei Punkte fehlt. Ehrlich bleiben: kein Branch-Schutz, kein CD, iOS nur Test.
+7. **Tests (30 s):** 3.240 automatische Tests, pro PR die passenden. Kurz auf den längsten Balken zeigen (Backend, 793).
+8. **Minuten-Problem (1 min):** ~1.600 von 2.000 Minuten im November; Mac-Minute zählt zehnfach; viele parallele Agenten, jeder Push startete alles.
+9. **Lösung (1 min):** sechs Punkte aus PR #246 nennen. Merksatz: Bei vielen Agenten kostet jeder Push.
+10. **Image und LeoCloud (1 min):** ein Image für Backend + Admin + Showcase; fester SHA-Tag; Runbook mit Backup, `kubectl set image`, Smoke-Check, Rollback.
+11. **Claude Code (1 min):** OpenSpec → Sessions in Worktrees → PR → gleiche CI. Zahlen: 214 Co-Authored-Commits, 125 von 133 PRs.
+12. **Live-Beispiel (1,5 min):** PR #241 im Browser öffnen, roten Lauf vom 25.11. zeigen, dann grüne Checks.
+13. **Gut / fehlt (1 min):** drei Punkte gut, drei Punkte fehlt. Ehrlich bleiben: kein Branch-Schutz, kein CD, iOS nur Test.
 
 Tipps: Diagramm-Folie zweimal zeigen (am Anfang und vor dem Live-Beispiel). Vorher `gh auth status` prüfen und den PR-Tab offen haben, falls das WLAN langsam ist.
 
@@ -408,4 +467,10 @@ Branch-Schutz auf `main` mit Pflicht-Checks; Browsertests in `needs` von `build-
 Ein zusätzlicher Docker-Container, der neben dem Job läuft. Bei uns startet `backend-test` OpenSearch 2.9.0 als Service, damit der Integrationstest gegen einen echten Suchdienst läuft.
 
 **17. Wie viele Tests habt ihr?**
-In den letzten grünen Läufen 3.240 automatische Tests. Bei jedem Pull Request nach `main` laufen davon 1.780 (Workflow `ci.yaml`); der größte Teil sind 793 Java-Tests im Backend. iOS (646), Positioning-Lab (553) und Feldwerkzeuge (261) laufen nur bei Änderungen in ihrem Bereich.
+In den letzten grünen Läufen 3.240 automatische Tests. Ändert ein Pull Request alle Bereiche, laufen davon 1.780 im Workflow `ci.yaml`, sonst nur die passenden; der größte Teil sind 793 Java-Tests im Backend. iOS (646), Positioning-Lab (553) und Feldwerkzeuge (261) laufen nur bei Änderungen in ihrem Bereich.
+
+**18. Warum habt ihr so viele GitHub-Actions-Minuten verbraucht?**
+macOS-Minuten zählen zehnfach, und `swift-tests` braucht etwa eine halbe Stunde. Dazu arbeiten bis zu 9 Agenten parallel, und bisher startete jeder Push die ganze Pipeline. Alte Läufe liefen weiter, Draft-PRs liefen voll mit, und wackelige Jobs mussten wiederholt werden.
+
+**19. Wie spart ihr Minuten, ohne Tests wegzulassen?**
+PR #246: Der Job `changes` startet nur die Jobs für geänderte Bereiche; `concurrency` bricht alte PR-Läufe ab; Draft-PRs überspringen schwere Jobs bis „Ready for review“. Auf `main` läuft weiterhin alles. Wackelige Jobs startet `pr-wait` nur bei bekannten Störfällen und nur einmal neu.
