@@ -1,3 +1,4 @@
+import { describeError, ErrorState, LoadingState } from "./PageState";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
@@ -181,7 +182,7 @@ function productDraft(product?: Product, store?: AdminStore | null): ProductDraf
 }
 
 function friendlyError(error: unknown): string {
-  return error instanceof ApiClientError ? error.message : "Anfrage fehlgeschlagen. Bitte erneut versuchen.";
+  return describeError(error, "Anfrage fehlgeschlagen. Bitte erneut versuchen.");
 }
 
 export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser }) {
@@ -364,7 +365,7 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
   return <section className="products-page" aria-labelledby="products-title">
     <div className="page-intro"><div><p className="eyebrow">Katalog</p><h1 id="products-title">Produkte</h1><p>Produkte, Kategorie-Kontext und Regalpositionen im Katalog verwalten.</p></div><button type="button" className="primary" onClick={startCreate} disabled={!selectedStore}>Produkt anlegen</button></div>
     <div className="filters" role="group" aria-label="Markt"><label>Markt<select value={selectedStore?.id ?? ""} disabled={!storesLoaded || accessible.length <= 1 || importBusy} onChange={(event) => changeStore(event.currentTarget.value)}><option value="">Markt wählen</option>{accessible.map((store) => <option key={store.id} value={store.id}>{storeLabel(store)}</option>)}</select></label></div>
-    {storeError && <div role="alert" className="notice error"><p>{storeError}</p><button type="button" onClick={() => { setStoreError(""); setStoresLoaded(false); setStoreRevision((value) => value + 1); }}>Erneut versuchen</button></div>}
+    {storeError && <ErrorState message={storeError} onRetry={() => { setStoreError(""); setStoresLoaded(false); setStoreRevision((value) => value + 1); }} />}
     {storesLoaded && !storeError && accessible.length === 0 && <p role="alert" className="notice error">Für diesen Benutzer ist kein Markt verfügbar.</p>}
     <ProductCsvImport key={selectedStore?.id ?? "no-store"} api={api} store={selectedStore} onBusyChange={setImportBusy} onImported={() => setRevision((value) => value + 1)} />
     {notice && <p role="status" className="notice success">{notice}</p>}
@@ -392,12 +393,12 @@ export function ProductsPage({ api, user }: { api: ApiClient; user?: CurrentUser
     <form className="filters" role="search" onSubmit={submitSearch}><label>Suche<input type="search" value={searchInput} maxLength={120} onChange={(event) => setSearchInput(event.currentTarget.value)} placeholder="Name, ID, Layout-Code oder Store-Code" /></label><label>Routing-Status<select value={filters.readiness} onChange={(event) => changeFilters({ ...filters, readiness: event.currentTarget.value as ProductFilters["readiness"], page: 0 })}><option value="">Alle</option><option value="ready">Routbar</option><option value="warning">Nicht routbar</option></select></label><label>Sortierung<select value={filters.sort} onChange={(event) => changeFilters({ ...filters, sort: event.currentTarget.value as ProductFilters["sort"], page: 0 })}><option value="name">Name</option><option value="id">ID</option><option value="layoutCode">Layout-Code</option></select></label><button type="submit" className="primary">Suchen</button></form>
     <p className="help-text">Der Routing-Status prüft hier nur das vierteilige Zahlenformat des Layout-Codes. Ob ein Produkt im mobilen Store tatsächlich erreichbar ist, hängt vom veröffentlichten Store-Layout ab.</p>
     {!selectedStore && storesLoaded && accessible.length > 1 && <p role="status" className="empty-state">Bitte einen Markt wählen.</p>}
-    {!selectedStore && !storesLoaded && <p role="status">Märkte werden geladen …</p>}
-    {loadError && <div role="alert" className="notice error"><p>{loadError}</p><button type="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
-    {selectedStore && loading && <p role="status">Produkte werden geladen …</p>}
+    {!selectedStore && !storesLoaded && <LoadingState>Märkte werden geladen …</LoadingState>}
+    {loadError && <ErrorState message={loadError} onRetry={() => setRevision((value) => value + 1)} />}
+    {selectedStore && loading && <LoadingState>Produkte werden geladen …</LoadingState>}
     {!loading && !loadError && pageData && <section className="panel" aria-labelledby="product-list-title">
       <div className="panel-header"><h3 id="product-list-title">{pageData.totalElements.toLocaleString("de-AT")} Produkte</h3><span>Seite {pageData.page + 1} von {Math.max(totalPages, 1)}</span></div>
-      {pageItems.length === 0 ? <EmptyState action={!filters.q && !filters.readiness && editor === false ? <button type="button" className="primary" onClick={startCreate}>Erstes Produkt anlegen</button> : undefined}>{filters.q || filters.readiness ? "Keine Produkte zu Suche oder Filter gefunden." : "Der Produktkatalog ist leer."}</EmptyState> : <DataTable label="Produkt-Tabelle"><thead><tr><th className="col-mid">ID</th><th>Produkt</th><th>Preis</th><th className="col-low">Kategorie</th><th>Regalposition</th><th className="col-low">Store</th><th>Routing</th><th>Aktionen</th></tr></thead><tbody>{pageItems.map((product) => {
+      {pageItems.length === 0 ? <EmptyState action={!filters.q && !filters.readiness && editor === false ? <button type="button" className="primary" onClick={startCreate}>Erstes Produkt anlegen</button> : <a className="button primary" href={`/admin/next/products/?storeId=${encodeURIComponent(selectedStore?.id ?? "")}`}>Filter zurücksetzen</a>}>{filters.q || filters.readiness ? "Keine Produkte zu Suche oder Filter gefunden." : "Der Produktkatalog ist leer."}</EmptyState> : <DataTable label="Produkt-Tabelle"><thead><tr><th className="col-mid">ID</th><th>Produkt</th><th>Preis</th><th className="col-low">Kategorie</th><th>Regalposition</th><th className="col-low">Store</th><th>Routing</th><th>Aktionen</th></tr></thead><tbody>{pageItems.map((product) => {
         const readiness = productReadiness(product, categories);
         return <tr key={product.id}><td className="col-mid">{product.id}</td><td><strong>{product.name}</strong></td><td>{product.price == null ? "–" : `${Number(product.price).toLocaleString("de-AT", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}</td>
           <td className="col-low">{readiness.categoryName}</td><td><code>{product.layoutCode || "–"}</code>{readiness.ready && <small>{readiness.detail}</small>}</td><td className="col-low cell-code">{product.storeCode || product.storeId || "Global"}</td>

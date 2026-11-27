@@ -1,3 +1,4 @@
+import { ErrorState, LoadingState } from "./PageState";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ApiClient } from "./api/client";
 import { activateIndex, fetchIndexOverview, reindexProducts, type IndexOverview } from "./api/searchIndex";
@@ -103,9 +104,9 @@ export function SearchIndexPage({ api, user }: { api: ApiClient; user: CurrentUs
       <button className="button" type="button" disabled={disabled} onClick={refresh}>Aktualisieren</button>
     </div>
 
-    {error && <section className="notice error-state" role="alert"><h3>{error.kind === "conflict" ? "Umschaltung abgelehnt" : "Aktion nicht möglich"}</h3><p>{error.message}</p>{error.kind === "unauthorized" ? <a href="/admin/">Erneut anmelden</a> : !overview && <button className="button" type="button" disabled={disabled} onClick={refresh}>Erneut versuchen</button>}</section>}
+    {error && <ErrorState title={error.kind === "conflict" ? "Umschaltung abgelehnt" : "Aktion nicht möglich"} message={error.message} onRetry={refresh} />}
     {notice && <p className="notice" role="status">{notice}</p>}
-    {busy === "load" && !overview && <p className="notice" role="status">Suchindex wird geladen …</p>}
+    {busy === "load" && !overview && <LoadingState>Suchindex wird geladen …</LoadingState>}
     {busy === "reindex" && <p className="notice" role="status">Reindex läuft. Bitte warten und die Seite offen lassen …</p>}
     {busy !== null && typeof busy === "object" && <p className="notice" role="status">Alias wird auf {busy.activate} umgeschaltet …</p>}
 

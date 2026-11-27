@@ -1,3 +1,5 @@
+import { EmptyState } from "./EmptyState";
+import { ErrorState, describeError, LoadingState } from "./PageState";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
@@ -49,6 +51,7 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
     if (!storeId) return;
     const controller = new AbortController();
     const path = `/api/stores/${encodeURIComponent(storeId)}`;
+    setData(null); setError(null);
     Promise.all([
       api.get<StoreDetail>(path, { signal: controller.signal }),
       api.get<Region[]>("/api/regions", { signal: controller.signal }),
@@ -62,15 +65,15 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
       setData({ store, regions, beacons, versions, audit: audit.entries, free });
       setError(null);
     }).catch((cause: unknown) => { if (!controller.signal.aborted) setError({
-      message: cause instanceof Error ? cause.message : "Store konnte nicht geladen werden.",
+      message: describeError(cause, "Store konnte nicht geladen werden."),
       forbidden: cause instanceof ApiClientError && cause.kind === "forbidden"
     }); });
     return () => controller.abort();
   }, [api, storeId, user.role, revision]);
 
   if (!storeId) return <section className="notice" role="alert"><h1>Store auswählen</h1><a href="/admin/next/stores/">Zur Store-Liste</a></section>;
-  if (error) return <section className="notice error-state" role="alert"><h1>{error.forbidden ? "Zugriff verweigert" : "Store konnte nicht geladen werden"}</h1><p>{error.message}</p>{!error.forbidden && <button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button>}</section>;
-  if (!data) return <><h1 className="visually-hidden">Store</h1><p role="status">Store wird geladen …</p></>;
+  if (error) return <ErrorState title={error.forbidden ? "Zugriff verweigert" : "Store konnte nicht geladen werden"} message={error.message} onRetry={() => setRevision((value) => value + 1)} />;
+  if (!data) return <><h1 className="visually-hidden">Store</h1><LoadingState>Store wird geladen …</LoadingState></>;
 
   const { store, regions, beacons, versions, audit, free } = data;
   const path = `/api/stores/${encodeURIComponent(store.id)}`;
@@ -92,7 +95,7 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
       setSelectedBeacon("");
       setRevision((value) => value + 1);
     } catch (cause) {
-      setMutationError(cause instanceof Error ? cause.message : "Änderung fehlgeschlagen.");
+      setMutationError(describeError(cause, "Änderung fehlgeschlagen."));
       if (cause instanceof ApiClientError) setFieldErrors(cause.fieldErrors);
     } finally { setBusy(false); }
   };
@@ -138,14 +141,14 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
       </form> : <dl className="detail-facts"><div><dt>Region</dt><dd>{store.region.name}</dd></div><div><dt>Land</dt><dd>{store.country}</dd></div><div><dt>Koordinaten</dt><dd>{store.latitude == null || store.longitude == null ? "Nicht gesetzt" : `${store.latitude}, ${store.longitude}`}</dd></div><div><dt>Abdeckungsprofil</dt><dd>{profileLabel(store.readinessProfile ?? "market")}</dd></div><div><dt>Notizen</dt><dd>{store.notes || "–"}</dd></div></dl>}
     </section>
     <section className="notice detail-section" aria-labelledby="beacons-title"><div className="section-heading"><h3 id="beacons-title">Beacons ({beacons.length})</h3></div>
-      {beacons.length ? <ul className="detail-list">{beacons.map((beacon) => <li key={beacon.beaconId}><span><strong>{beacon.beaconCode}</strong><small className="long-id">{beacon.identityKey} · Zugeordnet am {formattedDate(beacon.assignedAt)}</small></span><button className="button" disabled={busy} onClick={() => { if (window.confirm(`Beacon ${beacon.beaconCode} freigeben?`)) void mutate(() => api.post(`/api/beacons/${encodeURIComponent(beacon.beaconId)}/release`, {}), "Beacon freigegeben."); }}>Freigeben</button></li>)}</ul> : <p>Keine Beacons zugeordnet.</p>}
+      {beacons.length ? <ul className="detail-list">{beacons.map((beacon) => <li key={beacon.beaconId}><span><strong>{beacon.beaconCode}</strong><small className="long-id">{beacon.identityKey} · Zugeordnet am {formattedDate(beacon.assignedAt)}</small></span><button className="button" disabled={busy} onClick={() => { if (window.confirm(`Beacon ${beacon.beaconCode} freigeben?`)) void mutate(() => api.post(`/api/beacons/${encodeURIComponent(beacon.beaconId)}/release`, {}), "Beacon freigegeben."); }}>Freigeben</button></li>)}</ul> : <EmptyState action={<a className="button primary" href={`/admin/next/beacons/?storeId=${encodeURIComponent(store.id)}`}>Beacons verwalten</a>}>Keine Beacons zugeordnet.</EmptyState>}
       {canAssign && <div className="inline-action"><label>Freien Beacon zuordnen<select value={selectedBeacon} onChange={(event) => setSelectedBeacon(event.target.value)}><option value="">Beacon wählen</option>{free.map((beacon) => <option key={beacon.id} value={beacon.id}>{beacon.beaconCode} · {beacon.identityKey}</option>)}</select></label><button className="button primary" disabled={busy || !selectedBeacon} onClick={() => void mutate(() => api.post(`/api/beacons/${encodeURIComponent(selectedBeacon)}/assign`, { storeId: store.id }), "Beacon zugeordnet.")}>Zuordnen</button></div>}
     </section>
     <section className="notice detail-section" aria-labelledby="layouts-title"><div className="section-heading"><h3 id="layouts-title">Layout-Versionen</h3><a className="button" href={`/admin/next/editor/?storeId=${encodeURIComponent(store.id)}`}>Layout Editor öffnen</a></div>
       <p>{store.activeLayout ? `Aktiv: Version ${store.activeLayout.versionNo}` : "Noch kein aktives Layout. Ein Entwurf kann im Editor angelegt werden."}</p>
       {versions.length > 0 && <ul className="detail-list">{versions.map((version) => <li key={version.layoutId}><span><strong>v{version.versionNo} · {version.layoutName || "Layout"} · {LAYOUT_STATUS_TEXT[version.status] ?? version.status}</strong><small>Erstellt am {formattedDate(version.createdAt)}{version.activatedAt ? ` · Aktiviert am ${formattedDate(version.activatedAt)}` : ""}</small></span><a href={`/admin/next/editor/?storeId=${encodeURIComponent(store.id)}&layoutId=${encodeURIComponent(version.layoutId)}`}>Im Editor öffnen</a></li>)}</ul>}
     </section>
-    <section className="notice detail-section" aria-labelledby="audit-title"><h3 id="audit-title">Änderungsverlauf</h3>{audit.length ? <ul className="detail-list">{audit.map((entry) => <li key={entry.id}><span><strong>{entry.summary || "Änderung"}</strong><small>{[entry.entityType, entry.action, entry.actorLabel || entry.actorRole || "System"].filter(Boolean).join(" · ")}</small></span><time dateTime={entry.createdAt}>{formattedDate(entry.createdAt)}</time></li>)}</ul> : <p>Keine Änderungen protokolliert.</p>}</section>
+    <section className="notice detail-section" aria-labelledby="audit-title"><h3 id="audit-title">Änderungsverlauf</h3>{audit.length ? <ul className="detail-list">{audit.map((entry) => <li key={entry.id}><span><strong>{entry.summary || "Änderung"}</strong><small>{[entry.entityType, entry.action, entry.actorLabel || entry.actorRole || "System"].filter(Boolean).join(" · ")}</small></span><time dateTime={entry.createdAt}>{formattedDate(entry.createdAt)}</time></li>)}</ul> : <EmptyState action={<button type="button" className="button primary" onClick={() => setRevision((value) => value + 1)}>Erneut prüfen</button>}>Keine Änderungen protokolliert.</EmptyState>}</section>
     {canArchive && <section className="notice detail-section"><h3>Store archivieren</h3><p>Beim Archivieren werden alle Beacon-Zuordnungen freigegeben.</p><button className="button danger-button" disabled={busy} onClick={() => { if (window.confirm(`Store ${store.name} archivieren und Beacons freigeben?`)) void mutate(() => api.request(`${path}/archive`, { method: "PATCH" }), "Store archiviert."); }}>Archivieren</button></section>}
   </div>;
 }

@@ -1,3 +1,4 @@
+import { describeError } from "./PageState";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
 
@@ -105,8 +106,8 @@ export function storeLabel(store: Pick<AdminStore, "name" | "storeCode">): strin
 export function productErrorMessage(error: unknown, fallback = "Anfrage fehlgeschlagen. Bitte erneut versuchen."): string {
   if (error instanceof ApiClientError) {
     if (error.status === 403) return "Kein Zugriff auf diesen Markt.";
-    return error.message;
+    return describeError(error);
   }
-  if (error instanceof Error && error.message) return error.message;
+  if (error instanceof Error) return fallback;
   return fallback;
 }

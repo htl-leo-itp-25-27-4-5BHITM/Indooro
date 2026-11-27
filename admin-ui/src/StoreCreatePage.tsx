@@ -1,3 +1,5 @@
+import { EmptyState } from "./EmptyState";
+import { describeError, ErrorState, LoadingState } from "./PageState";
 import { useEffect, useState, type FormEvent } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
 import type { CurrentUser } from "./routes";
@@ -19,7 +21,7 @@ export function StoreCreatePage({ api, user }: { api: ApiClient; user: CurrentUs
     setLoading(true);
     api.get<Region[]>("/api/regions?status=ACTIVE", { signal: controller.signal })
       .then((result) => { if (!controller.signal.aborted) { if (!Array.isArray(result)) throw new Error("Regionen sind unvollständig."); setRegions(result); setLoadError(null); } })
-      .catch((cause: unknown) => { if (!controller.signal.aborted) setLoadError(cause instanceof Error ? cause.message : "Regionen konnten nicht geladen werden."); })
+      .catch((cause: unknown) => { if (!controller.signal.aborted) setLoadError(describeError(cause, "Regionen konnten nicht geladen werden.")); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [api, user.role, revision]);
@@ -43,16 +45,16 @@ export function StoreCreatePage({ api, user }: { api: ApiClient; user: CurrentUs
       // Straight to the new store; saving stays true so the form cannot be sent twice while the page changes.
       window.location.assign(`/admin/next/stores/detail/?storeId=${encodeURIComponent(response.id)}&created=1`);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Store konnte nicht angelegt werden.");
+      setError(describeError(cause, "Store konnte nicht angelegt werden."));
       if (cause instanceof ApiClientError) setFieldErrors(cause.fieldErrors);
       setSaving(false);
     }
   };
   return <div className="store-create-page">
     <div className="page-intro"><div><p className="eyebrow">Standorte</p><h1>Store anlegen</h1><p>Stammdaten erfassen, danach Beacons zuordnen und Layout erstellen.</p></div><a className="button" href="/admin/next/stores/">Zurück zur Liste</a></div>
-    {loadError && <div className="notice error-state" role="alert"><p>{loadError}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
-    {loading && <p className="notice" role="status">Regionen werden geladen …</p>}
-    {!loading && !loadError && regions.length === 0 && <div className="notice" role="status"><p>{user.role === "region-manager" ? "Keine aktive Region in Ihrer Zuständigkeit vorhanden." : "Keine aktiven Regionen vorhanden. Bitte zuerst eine Region anlegen."}</p>{user.role === "admin" && <a className="button primary" href="/admin/next/regions/">Region anlegen</a>}</div>}
+    {loadError && <ErrorState message={loadError} onRetry={() => setRevision((value) => value + 1)} />}
+    {loading && <LoadingState>Regionen werden geladen …</LoadingState>}
+    {!loading && !loadError && regions.length === 0 && <EmptyState action={user.role === "admin" ? <a className="button primary" href="/admin/next/regions/">Region anlegen</a> : <a className="button primary" href="/admin/next/regions/">Regionen prüfen</a>}>{user.role === "region-manager" ? "Keine aktive Region in Ihrer Zuständigkeit vorhanden." : "Keine aktiven Regionen vorhanden. Bitte zuerst eine Region anlegen."}</EmptyState>}
     {!loading && !loadError && regions.length > 0 && <form className="notice detail-form" onSubmit={submit}>
       {error && <p className="full error-state" role="alert">{error}</p>}
       <label>Region<select name="regionId" required defaultValue={user.role === "region-manager" ? user.scope?.regionId ?? regions[0].id : regions[0].id} disabled={user.role === "region-manager"}>{regions.map((region) => <option key={region.id} value={region.id}>{region.code} · {region.name}</option>)}</select>{user.role === "region-manager" && <input type="hidden" name="regionId" value={user.scope?.regionId ?? regions[0].id} />}{fieldErrors.regionId && <small role="alert">{fieldErrors.regionId.join(" ")}</small>}</label>

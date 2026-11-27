@@ -1,3 +1,5 @@
+import { EmptyState } from "./EmptyState";
+import { ErrorState, describeError, LoadingState } from "./PageState";
 import { useEffect, useMemo, useState } from "react";
 import { ApiClientError, type ApiClient } from "./api/client";
 import { ANCHORS_PER_PAGE, chunk, printableAnchors, type PrintableAnchor } from "./anchors";
@@ -34,6 +36,7 @@ export function AnchorPrintPage({ api }: { api: ApiClient }) {
     if (!storeId) return;
     const controller = new AbortController();
     const path = `/api/stores/${encodeURIComponent(storeId)}`;
+    setStore(null); setLayout(null); setError(null);
     Promise.all([
       api.get<StoreSummary>(path, { signal: controller.signal }),
       api.get<CurrentLayout>(`${path}/layout/current`, { signal: controller.signal }),
@@ -46,7 +49,7 @@ export function AnchorPrintPage({ api }: { api: ApiClient }) {
     }).catch((cause: unknown) => {
       if (controller.signal.aborted) return;
       setError({
-        message: cause instanceof Error ? cause.message : "QR-Codes konnten nicht geladen werden.",
+        message: describeError(cause, "QR-Codes konnten nicht geladen werden."),
         forbidden: cause instanceof ApiClientError && cause.kind === "forbidden",
       });
     });
@@ -54,8 +57,8 @@ export function AnchorPrintPage({ api }: { api: ApiClient }) {
   }, [api, storeId, revision]);
 
   if (!storeId) return <section className="notice" role="alert"><h1>Store auswählen</h1><a href="/admin/next/stores/">Zur Store-Liste</a></section>;
-  if (error) return <section className="notice error-state" role="alert"><h1>{error.forbidden ? "Zugriff verweigert" : "QR-Codes konnten nicht geladen werden"}</h1><p>{error.message}</p>{!error.forbidden && <button className="button" type="button" onClick={() => { setError(null); setRevision((value) => value + 1); }}>Erneut versuchen</button>}</section>;
-  if (!store || !layout) return <><h1 className="visually-hidden">QR-Codes drucken</h1><p role="status">QR-Anker werden geladen …</p></>;
+  if (error) return <ErrorState title={error.forbidden ? "Zugriff verweigert" : "QR-Codes konnten nicht geladen werden"} message={error.message} onRetry={() => setRevision((value) => value + 1)} />;
+  if (!store || !layout) return <><h1 className="visually-hidden">QR-Codes drucken</h1><LoadingState>QR-Anker werden geladen …</LoadingState></>;
 
   const anchors = printableAnchors(layout, window.location.host, store.storeCode);
   const sheets = chunk(anchors, ANCHORS_PER_PAGE);
@@ -67,7 +70,7 @@ export function AnchorPrintPage({ api }: { api: ApiClient }) {
         {anchors.length > 0 && <button className="button primary" type="button" onClick={() => window.print()}>Drucken</button>}
       </div>
     </div>
-    {anchors.length === 0 ? <section className="notice" role="status"><p>Keine QR-Anker im aktiven Layout. Im Editor mit dem Werkzeug „QR-Anker“ anlegen.</p><a className="button primary" href={`/admin/next/editor/?storeId=${encodeURIComponent(store.id)}`}>Im Editor anlegen</a></section> : <>
+    {anchors.length === 0 ? <EmptyState action={<a className="button primary" href={`/admin/next/editor/?storeId=${encodeURIComponent(store.id)}`}>Im Editor anlegen</a>}>Keine QR-Anker im aktiven Layout. Im Editor mit dem Werkzeug „QR-Anker“ anlegen.</EmptyState> : <>
       <p className="anchor-print-notice">{anchors.length} QR-Code{anchors.length === 1 ? "" : "s"} auf {sheets.length} A4-{sheets.length === 1 ? "Seite" : "Seiten"}. Nach jeder Layoutänderung neu drucken.</p>
       {sheets.map((sheet, index) => <section key={index} className="anchor-sheet" aria-label={`Seite ${index + 1} von ${sheets.length}`}>
         {sheet.map((anchor) => <AnchorCard key={anchor.anchorId} anchor={anchor} storeName={store.name} />)}

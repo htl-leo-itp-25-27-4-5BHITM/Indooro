@@ -1,3 +1,4 @@
+import { describeError, ErrorState, LoadingState } from "./PageState";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { DataTable } from "./DataTable";
@@ -67,6 +68,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
 
   useEffect(() => {
     const controller = new AbortController();
+    setPage(null); setError(null);
     Promise.all([
       api.get<RecipePageResponse>(recipeListPath(filters), { signal: controller.signal }),
       api.get<RecipeTag[]>('/api/admin/recipe-tags?status=ACTIVE', { signal: controller.signal })
@@ -74,7 +76,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
       if (controller.signal.aborted) return;
       if (!Array.isArray(result?.content) || !Number.isFinite(result.totalElements) || !Array.isArray(tagList)) throw new Error("Rezeptdaten sind unvollständig.");
       setPage(result); setTags(tagList); setError(null);
-    }).catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Rezepte konnten nicht geladen werden."); });
+    }).catch((cause: unknown) => { if (!controller.signal.aborted) setError(describeError(cause, "Rezepte konnten nicht geladen werden.")); });
     return () => controller.abort();
   }, [api, revision]);
 
@@ -87,7 +89,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
       if (!detail?.id || !Array.isArray(detail.ingredients) || !Array.isArray(detail.steps) || !Array.isArray(detail.tags)) throw new Error("Rezeptdetails sind unvollständig.");
       const normalized = cloneDetail(detail);
       setOriginal(normalized); setEditor(cloneDetail(normalized)); setSelectedTagIds(normalized.tags.map((tag) => tag.id));
-    } catch (cause) { setEditorError(cause instanceof Error ? cause.message : "Rezeptdetails konnten nicht geladen werden."); }
+    } catch (cause) { setEditorError(describeError(cause, "Rezeptdetails konnten nicht geladen werden.")); }
     finally { setBusy(false); }
   }, [api]);
 
@@ -180,7 +182,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
     try {
       const result = await api.get<RecipeMappingResponse>(`/api/admin/recipes/${encodeURIComponent(editor.id)}/mapping-status`);
       setMappings(result.ingredients ?? []);
-    } catch (cause) { setMappingError(cause instanceof Error ? cause.message : "Zuordnung konnte nicht geladen werden."); }
+    } catch (cause) { setMappingError(describeError(cause, "Zuordnung konnte nicht geladen werden.")); }
   };
 
   const searchMapping = async () => {
@@ -189,7 +191,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
     try {
       const result = await api.get<Product[]>(`/api/admin/recipes/${encodeURIComponent(editor.id)}/ingredients/${encodeURIComponent(mappingFor)}/mapping-suggestions?${new URLSearchParams({ q: mappingQuery.trim(), size: "8" })}`);
       setMappingProducts(result);
-    } catch (cause) { setMappingError(cause instanceof Error ? cause.message : "Produktsuche fehlgeschlagen."); }
+    } catch (cause) { setMappingError(describeError(cause, "Produktsuche fehlgeschlagen.")); }
   };
 
   const saveMapping = async () => {
@@ -199,7 +201,7 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
       await api.put(`/api/admin/recipes/${encodeURIComponent(editor.id)}/ingredients/${encodeURIComponent(mappingFor)}/product-mapping`, { productId: mappingSelection.id, productName: mappingSelection.name, layoutCode: mappingSelection.layoutCode ?? null, storeId: mappingSelection.storeId ?? null, storeCode: mappingSelection.storeCode ?? null, mappingType: "MANUAL", confidence: 1, manuallyConfirmed: true });
       const result = await api.get<RecipeMappingResponse>(`/api/admin/recipes/${encodeURIComponent(editor.id)}/mapping-status`);
       setMappings(result.ingredients ?? []); setMappingFor(null); setMappingSelection(null); setRevision((value) => value + 1);
-    } catch (cause) { setMappingError(cause instanceof Error ? cause.message : "Zuordnung konnte nicht gespeichert werden."); }
+    } catch (cause) { setMappingError(describeError(cause, "Zuordnung konnte nicht gespeichert werden.")); }
     finally { setBusy(false); }
   };
 
@@ -224,9 +226,9 @@ export function RecipesPage({ api, user }: { api: ApiClient; user?: CurrentUser 
       <label>Sortierung<select name="sort" defaultValue={filters.sort}><option value="title">Titel</option><option value="status">Status</option><option value="publishedAt">Veröffentlichung</option></select></label>
       <button className="button primary" type="submit">Anwenden</button>
     </form>
-    {error && <div className="notice error-state" role="alert"><h3>Rezepte konnten nicht geladen werden</h3><p>{error}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
+    {error && <ErrorState message={error} title="Rezepte konnten nicht geladen werden" onRetry={() => setRevision((value) => value + 1)} />}
     {editorError && !editor && <div className="notice error-state" role="alert">{editorError}</div>}
-    {!page && !error && <p className="notice" role="status">Rezepte werden geladen …</p>}
+    {!page && !error && <LoadingState>Rezepte werden geladen …</LoadingState>}
     {page && !error && <section className="notice recipe-results" aria-label="Rezept-Ergebnisse">
       <div className="section-heading"><h3>{page.totalElements.toLocaleString("de-AT")} Rezepte</h3><span>Seite {page.page + 1} von {Math.max(totalPages, 1)}</span></div>
       {page.content.length === 0 ? (filters.q || filters.status || filters.tag

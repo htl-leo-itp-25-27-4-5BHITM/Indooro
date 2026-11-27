@@ -1,3 +1,4 @@
+import { describeError, ErrorState, LoadingState } from "./PageState";
 import { useEffect, useState } from "react";
 import { DataTable } from "./DataTable";
 import type { ApiClient } from "./api/client";
@@ -58,6 +59,7 @@ export function StoresPage({ api, user }: { api: ApiClient; user: CurrentUser })
 
   useEffect(() => {
     const controller = new AbortController();
+    setPage(null); setError(null);
     Promise.all([
       api.get<StorePageResponse>(storeApiPath(query), { signal: controller.signal }),
       api.get<Region[]>("/api/regions", { signal: controller.signal })
@@ -68,7 +70,7 @@ export function StoresPage({ api, user }: { api: ApiClient; user: CurrentUser })
       setRegions(regionList);
       setError(null);
     }).catch((cause: unknown) => {
-      if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Stores konnten nicht geladen werden.");
+      if (!controller.signal.aborted) setError(describeError(cause, "Stores konnten nicht geladen werden."));
     });
     return () => controller.abort();
   }, [api, revision]);
@@ -85,8 +87,8 @@ export function StoresPage({ api, user }: { api: ApiClient; user: CurrentUser })
       <label>Sortierung<select name="sort" defaultValue={query.sort}><option value="name">Name</option><option value="storeCode">Code</option><option value="city">Stadt</option></select></label>
       <button className="button primary" type="submit">Anwenden</button>
     </form>
-    {error && <div className="notice error-state" role="alert"><h3>Stores konnten nicht geladen werden</h3><p>{error}</p><button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button></div>}
-    {!page && !error && <div className="notice" role="status">Stores werden geladen …</div>}
+    {error && <ErrorState message={error} title="Stores konnten nicht geladen werden" onRetry={() => setRevision((value) => value + 1)} />}
+    {!page && !error && <LoadingState>Stores werden geladen …</LoadingState>}
     {page && !error && <section className="notice store-results" aria-label="Store-Ergebnisse">
       <div className="section-heading"><h3>{page.totalElements.toLocaleString("de-AT")} Stores</h3><span>Seite {page.page + 1} von {Math.max(1, totalPages)}</span></div>
       {page.content.length === 0 ? (query.query || query.regionId || query.layout || query.status !== "ACTIVE"

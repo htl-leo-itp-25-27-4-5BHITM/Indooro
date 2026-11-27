@@ -1,3 +1,4 @@
+import { describeError, ErrorState, LoadingState } from "./PageState";
 import { useEffect, useMemo, useState } from "react";
 import { DataTable } from "./DataTable";
 import { ApiClientError, type ApiClient } from "./api/client";
@@ -57,7 +58,7 @@ function draftFromRegion(region: Region): RegionDraft {
 }
 
 function friendlyError(error: unknown): string {
-  if (error instanceof ApiClientError) return error.message;
+  if (error instanceof ApiClientError) return describeError(error);
   return "Die Anfrage ist fehlgeschlagen. Bitte erneut versuchen.";
 }
 
@@ -225,9 +226,9 @@ export function RegionsPage({ api, user }: { api: ApiClient; user: CurrentUser }
             <option value="ACTIVE">Aktiv</option><option value="ARCHIVED">Archiviert</option>
           </select></label>
         </div>
-        {loading && <p role="status">Regionen werden geladen …</p>}
-        {listError && <div role="alert" className="notice"><p>{listError}</p><button type="button" onClick={() => setReload((current) => current + 1)}>Erneut versuchen</button></div>}
-        {!loading && !listError && visibleRegions.length === 0 && <EmptyState action={!query && status === "ACTIVE" && canManage && !editing ? <button type="button" className="primary" onClick={startCreate}>Erste Region anlegen</button> : undefined}>{query ? "Keine Region passt zur Suche." : "Keine Regionen in diesem Status."}</EmptyState>}
+        {loading && <LoadingState>Regionen werden geladen …</LoadingState>}
+        {listError && <ErrorState message={listError} onRetry={() => setReload((current) => current + 1)} />}
+        {!loading && !listError && visibleRegions.length === 0 && <EmptyState action={!query && status === "ACTIVE" && canManage && !editing ? <button type="button" className="primary" onClick={startCreate}>Erste Region anlegen</button> : <button type="button" className="primary" onClick={() => { setQuery(""); setStatus("ACTIVE"); }}>Filter zurücksetzen</button>}>{query ? "Keine Region passt zur Suche." : "Keine Regionen in diesem Status."}</EmptyState>}
         {!loading && !listError && visibleRegions.length > 0 && <DataTable label="Regionen-Tabelle">
           <thead><tr><th>Code</th><th>Name</th><th>Status</th><th>Aktion</th></tr></thead>
           <tbody>{visibleRegions.map((region) => <tr key={region.id}>
@@ -258,8 +259,8 @@ export function RegionsPage({ api, user }: { api: ApiClient; user: CurrentUser }
         {!editing && <section className="panel" aria-labelledby="region-detail-title">
           <div className="panel-header"><h3 id="region-detail-title">Details</h3></div>
           {!selectedId && <p className="empty-state">Wählen Sie eine Region aus der Übersicht aus.</p>}
-          {detailLoading && <p role="status">Details werden geladen …</p>}
-          {detailError && <div role="alert" className="notice"><p>{detailError}</p><button type="button" onClick={() => setReload((current) => current + 1)}>Erneut versuchen</button></div>}
+          {detailLoading && <LoadingState>Details werden geladen …</LoadingState>}
+          {detailError && <ErrorState message={detailError} onRetry={() => setReload((current) => current + 1)} />}
           {detail && !detailLoading && <>
             <dl className="detail-list"><dt>Code</dt><dd><code>{detail.code}</code></dd><dt>Name</dt><dd>{detail.name}</dd><dt>Beschreibung</dt><dd>{detail.description || "Keine Beschreibung"}</dd><dt>Status</dt><dd>{detail.status === "ACTIVE" ? "Aktiv" : "Archiviert"}</dd></dl>
             {canManage && detail.status === "ACTIVE" && <div className="toolbar"><button type="button" onClick={startEdit}>Bearbeiten</button><button type="button" className="danger" onClick={archiveRegion} disabled={archiving}>{archiving ? "Archiviert …" : "Archivieren"}</button></div>}
