@@ -72,10 +72,10 @@
             <button id="zoom-reset" class="btn btn-small" type="button">Zurücksetzen</button>
           </div>
         </div>
-        <div id="map-viewport" class="map-viewport">
+        <div id="map-viewport" class="map-viewport" tabindex="0" role="region" aria-label="Ladenplan verschieben" aria-describedby="map-help">
           <div id="mapCanvas" class="map-stage"></div>
         </div>
-        <p class="hint">Mit zwei Fingern zoomen, mit einem Finger verschieben.</p>
+        <p id="map-help" class="hint">Mit zwei Fingern zoomen, mit einem Finger verschieben. Mit der Tastatur: Pfeiltasten zum Verschieben, Pos1 zum Zurücksetzen.</p>
       </section>
 
       <section id="list-section" class="card" aria-labelledby="list-heading">

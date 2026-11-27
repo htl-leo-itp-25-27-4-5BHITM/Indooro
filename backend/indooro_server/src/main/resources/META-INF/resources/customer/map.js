@@ -302,6 +302,23 @@ export function createMap({ viewport, stage, zoomLabel, zoomIn, zoomOut, zoomRes
   });
   zoomReset.addEventListener("click", reset);
 
+  // Keyboard users can reach the same parts of a zoomed map as pointer users.
+  viewport.addEventListener("keydown", (event) => {
+    if (event.key === "Home") {
+      event.preventDefault();
+      reset();
+      return;
+    }
+    const directions = { ArrowLeft: [40, 0], ArrowRight: [-40, 0], ArrowUp: [0, 40], ArrowDown: [0, -40] };
+    const delta = directions[event.key];
+    if (!delta || scale <= MIN_SCALE) return;
+    event.preventDefault();
+    tx += delta[0];
+    ty += delta[1];
+    clampPan();
+    apply();
+  });
+
   viewport.addEventListener("pointerdown", (event) => {
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     try {

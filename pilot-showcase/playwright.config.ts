@@ -21,6 +21,7 @@ export default defineConfig({
     trace: "retain-on-failure"
   },
   projects: [
+    { name: "a11y", testDir: "tests/a11y", use: { ...devices["Desktop Chrome"], launchOptions: { args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] } } },
     { name: "desktop", testIgnore: "**/visual/**", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
     { name: "mobile", testIgnore: "**/visual/**", use: { ...devices["Pixel 7"] } },
     {

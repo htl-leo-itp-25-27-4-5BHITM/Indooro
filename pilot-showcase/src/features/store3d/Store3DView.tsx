@@ -97,7 +97,11 @@ export default function Store3DView(props: Store3DViewProps) {
           dpr={[1, compact ? 1.5 : 2]}
           camera={{ fov: 38, near: 0.1, far: 400, position: [0, 40, 40] }}
           gl={{ antialias: true, powerPreference: "high-performance" }}
-          onCreated={({ gl }) => gl.domElement.setAttribute("data-testid", "store-3d-canvas")}
+          ref={(canvas) => {
+            canvas?.setAttribute("data-testid", "store-3d-canvas");
+            canvas?.setAttribute("role", "img");
+            canvas?.setAttribute("aria-label", `3D-Grundriss ${market.name}, fiktiver Demomarkt. Produkte und Regale sind über die Suche und den Grundriss zugänglich.`);
+          }}
           style={{ position: "absolute", inset: 0 }}
         >
           <Scene {...props} labelRoot={labelRoot} reduce={reduce} compact={compact} following={following} followWanted={follow} overviewNonce={overviewNonce} />
