@@ -56,6 +56,7 @@ struct SettingsSheet: View {
                                 .monospacedDigit()
                         }
                         Slider(value: $mapScale, in: 0.65...2.5, step: 0.05)
+                            .frame(minHeight: 44)
                             .accessibilityLabel("Kartengröße")
                             .accessibilityValue("\(Int(mapScale * 100)) Prozent")
                             .accessibilityHint("Vergrößert oder verkleinert die Marktkarte")

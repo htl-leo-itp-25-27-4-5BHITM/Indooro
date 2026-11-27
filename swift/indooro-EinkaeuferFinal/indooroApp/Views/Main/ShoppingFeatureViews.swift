@@ -1537,8 +1537,9 @@ struct ShoppingListsPage: View {
                         Image(systemName: "ellipsis.circle")
                             .font(.title3)
                             .foregroundStyle(.secondary)
-                            .accessibilityLabel("Listenaktionen")
+                            .frame(minWidth: 44, minHeight: 44)
                     }
+                    .accessibilityLabel("Listenaktionen")
                 }
 
                 Text(headerDescription(for: list))
@@ -1900,6 +1901,7 @@ private struct ShoppingChecklistRow: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
