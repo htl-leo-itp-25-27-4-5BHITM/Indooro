@@ -7,6 +7,7 @@ on:
       - 'backend/indooro_server/**' # Nur wenn sich was im Backend ändert
       - 'admin-ui/**' # Neues Admin-Frontend wird ins Backend-Image gepackt
       - 'pilot-showcase/**' # Pilot-Demo wird unter /showcase/ ins Backend-Image gepackt
+      - 'web-quality/**'
       - 'openspec/**'
       - 'api/**'
       - 'api-tests/**'
@@ -251,6 +252,58 @@ jobs:
           path: |
             pilot-showcase/playwright-report/
             pilot-showcase/test-results/
+          if-no-files-found: ignore
+
+  # Deployed static landing/customer pages; API fixtures require no backend.
+  web-quality:
+    # Keep Chromium and font rendering stable for the committed Linux baselines.
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (version from admin-ui/.nvmrc)
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: 'admin-ui/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: 'web-quality/package-lock.json'
+
+      - name: Install web quality dependencies
+        working-directory: web-quality
+        run: npm ci --no-audit --no-fund
+
+      - name: Install Chromium
+        working-directory: web-quality
+        run: npx playwright install --with-deps chromium
+
+      - name: Accessibility checks (WCAG 2.1 AA)
+        working-directory: web-quality
+        run: npm run test:a11y
+
+      - name: Visual regression checks
+        working-directory: web-quality
+        run: npm run test:visual -- --update-snapshots=none
+
+      - name: Upload Linux baselines
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-quality-linux-snapshots
+          path: web-quality/tests/snapshots/
+          if-no-files-found: error
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-quality-playwright
+          path: |
+            web-quality/playwright-report/
+            web-quality/test-results/
           if-no-files-found: ignore
 
   build-and-push:
