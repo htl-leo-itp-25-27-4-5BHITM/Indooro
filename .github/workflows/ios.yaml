@@ -10,6 +10,8 @@ on:
       - 'scripts/export-mobile-openapi.mjs'
       - 'openspec/specs/shared-api/**'
       - '.github/workflows/ios.yaml'
+    # ready_for_review: ein Draft-PR, der fertig wird, bekommt sofort den macOS-Job.
+    types: [ opened, synchronize, reopened, ready_for_review ]
 
 concurrency:
   group: ios-${{ github.ref }}
@@ -42,7 +44,11 @@ jobs:
       - name: Mobile OpenAPI export is up to date
         run: npm run contract:mobile:check
 
+  # macOS ist der teuerste Runner. Die Paket-Tests bleiben hier: IndooroKit und IndooroNavigationCore importieren
+  # simd, CoreGraphics, CryptoKit und Combine ohne #if-Schutz; diese Module gibt es unter Linux nicht.
   swift-tests:
+    # Nicht auf Draft-PRs; der Lauf startet, sobald der PR auf "Ready for review" gestellt wird.
+    if: github.event.pull_request.draft == false
     runs-on: macos-latest
     timeout-minutes: 45
 
