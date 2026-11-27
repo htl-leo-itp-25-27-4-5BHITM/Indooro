@@ -30,10 +30,11 @@ From the repository root (Node 22 or 24; no dependencies):
 ```sh
 node design-tokens/build.mjs
 node design-tokens/build.mjs --check
+node --test design-tokens/build.test.mjs
 ```
 
 The generator works from any current directory. Commit both `dist/tokens.css`
-and `dist/tokens.ts`; CI's contract job rejects missing or stale output. The
+and `dist/tokens.ts`, plus the served backend CSS copy; CI's contract job rejects missing or stale output. The
 local `.gitignore` explicitly allows these generated artifacts. CSS preserves
 aliases as `var(...)`; TS exports resolved CSS values keyed by token path.
 Three.js consumes TS values because its colors cannot resolve CSS variables.
@@ -63,7 +64,8 @@ The 3D `CEILING` is geometry, not a design dimension, and remains unchanged.
 Quarkus already serves files directly from
 `backend/indooro_server/src/main/resources/META-INF/resources/`; a generated
 `design-tokens/tokens.css` copy there would need no backend build changes.
-However, that destination and the customer/landing HTML are outside this task's
-listed package scope. Follow up by agreeing on that asset path, adding a checked
-copy to the generator, and loading it from the customer and landing pages before
-replacing exact values. No unused static copy is added in this scoped change.
+The generator therefore writes and checks that copy, served at
+`/design-tokens/tokens.css`. This is the one minimal addition outside the listed
+package scope, explicitly requested for static serving. Customer/landing HTML
+and existing CSS are unchanged; loading the file and migrating those pages is a
+follow-up. The copy is available without changing either page's rendered pixels.
