@@ -30,7 +30,7 @@ final class IndooroTokensTests: XCTestCase {
             ("color.brand.primary", IndooroTokens.Color.brandPrimary),
             ("color.brand.accent", IndooroTokens.Color.brandAccent),
             ("color.palette.hex-102a3b33", IndooroTokens.Color.paletteHex102a3b33),
-            ("color.palette.hex-ffffff", IndooroTokens.Color.paletteHexffffff),
+            ("color.palette.hex-ffffff", IndooroTokens.Color.paletteHexFfffff),
         ] {
             let value = try token(path)
             let components = try XCTUnwrap(value["components"] as? [Double])
