@@ -70,7 +70,7 @@ export function AnchorPrintPage({ api }: { api: ApiClient }) {
         {anchors.length > 0 && <button className="button primary" type="button" onClick={() => window.print()}>Drucken</button>}
       </div>
     </div>
-    {anchors.length === 0 ? <EmptyState action={<a className="button primary" href={`/admin/next/editor/?storeId=${encodeURIComponent(store.id)}`}>Im Editor anlegen</a>}>Keine QR-Anker im aktiven Layout. Im Editor mit dem Werkzeug „QR-Anker“ anlegen.</EmptyState> : <>
+    {anchors.length === 0 ? <EmptyState announce action={<a className="button primary" href={`/admin/next/editor/?storeId=${encodeURIComponent(store.id)}`}>Im Editor anlegen</a>}>Keine QR-Anker im aktiven Layout. Im Editor mit dem Werkzeug „QR-Anker“ anlegen.</EmptyState> : <>
       <p className="anchor-print-notice">{anchors.length} QR-Code{anchors.length === 1 ? "" : "s"} auf {sheets.length} A4-{sheets.length === 1 ? "Seite" : "Seiten"}. Nach jeder Layoutänderung neu drucken.</p>
       {sheets.map((sheet, index) => <section key={index} className="anchor-sheet" aria-label={`Seite ${index + 1} von ${sheets.length}`}>
         {sheet.map((anchor) => <AnchorCard key={anchor.anchorId} anchor={anchor} storeName={store.name} />)}
