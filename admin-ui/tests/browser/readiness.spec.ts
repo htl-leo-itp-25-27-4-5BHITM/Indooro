@@ -86,7 +86,7 @@ test("ready store shows a green summary and copies the Markdown checklist", asyn
   expect(copied[0]).not.toContain("- [ ]");
 });
 
-test("readiness page explains a forbidden market and offers no retry", async ({ page }) => {
+test("readiness page explains a forbidden market and offers a read retry", async ({ page }) => {
   let readinessCalls = 0;
   await page.route("**/api/admin/me", (route) => route.fulfill({ json: { subject: "region-2", username: "region", email: null, role: "region-manager", scope: { regionId: "region-2", regionName: "Wien", storeId: null, storeName: null } } }));
   await page.route("**/api/stores/foreign-store", (route) => route.fulfill({ status: 403, json: { error: "Forbidden" } }));
@@ -99,7 +99,7 @@ test("readiness page explains a forbidden market and offers no retry", async ({ 
   const alert = page.getByRole("alert");
   await expect(alert.getByRole("heading", { name: "Zugriff verweigert" })).toBeVisible();
   await expect(alert).toContainText("Kein Zugriff auf diesen Markt.");
-  await expect(page.getByRole("button", { name: "Erneut versuchen" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Erneut versuchen" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Als Markdown kopieren" })).toHaveCount(0);
   expect(readinessCalls).toBe(1);
 });

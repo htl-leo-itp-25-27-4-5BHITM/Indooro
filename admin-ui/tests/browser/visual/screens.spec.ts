@@ -59,3 +59,13 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 768, height: 1024 
     });
   });
 }
+
+test("representative stores server error", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mockVisualApi(page);
+  await page.route("**/api/stores?*", (route) => route.fulfill({ status: 500, json: { error: "Internal Server Error" } }));
+  await page.goto("/admin/next/stores/");
+  await expect(page.getByRole("alert")).toContainText("Serverfehler. Bitte später erneut versuchen.");
+  await page.evaluate(() => document.fonts.ready);
+  await expect(page).toHaveScreenshot("stores-error-1440x900.png", { fullPage: true });
+});
