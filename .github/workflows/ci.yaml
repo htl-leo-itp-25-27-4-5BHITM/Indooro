@@ -244,11 +244,11 @@ jobs:
         working-directory: pilot-showcase
         run: npm run test:e2e -- --reporter=list,html
 
-      # Bootstrap Linux baselines on the first push only. Replace with strict comparison
-      # after downloading and committing the generated artifact.
+      # Strict comparison against the committed Linux baselines (tests/e2e/visual/snapshots).
+      # To intentionally refresh them, run this job once with --update-snapshots and commit the artifact.
       - name: Visual regression tests
         working-directory: pilot-showcase
-        run: npm run test:visual -- --update-snapshots=missing --workers=1 --reporter=list,html
+        run: npm run test:visual -- --workers=1 --reporter=list,html
 
       - name: Upload visual baselines
         if: always()
