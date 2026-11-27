@@ -24,9 +24,13 @@ test("delayed 3D load reserves space", async ({ page }) => {
   await page.route("**/assets/Store3DView-*.js", async (route) => { await pending; await route.continue(); });
   await page.goto("/?ansicht=3d");
   await page.locator("#demo").scrollIntoViewIfNeeded();
-  await expect(page.getByRole("status", { name: "" }).filter({ hasText: "3D-Ansicht wird geladen" })).toBeVisible();
+  const loading = page.getByRole("status").filter({ hasText: "3D-Ansicht wird geladen" });
+  await expect(loading).toBeVisible();
+  const reserved = await loading.boundingBox();
   release();
   await expect(page.getByTestId("store-3d")).toBeVisible();
+  const loaded = await page.getByTestId("store-3d").boundingBox();
+  expect(Math.abs((loaded?.height ?? 0) - (reserved?.height ?? 0))).toBeLessThan(1);
 });
 
 for (const status of [500, 403]) {

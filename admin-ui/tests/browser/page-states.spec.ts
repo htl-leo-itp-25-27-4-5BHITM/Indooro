@@ -1,7 +1,9 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { mockVisualApi } from "./visual/fixtures";
 
 const lists = [
+  { path: "regions/", api: "/api/regions", ready: "Oberösterreich", empty: "Keine Regionen in diesem Status." },
+  { path: "access/", api: "/api/admin/access-assignments", ready: "team-member", empty: "Keine Zugänge in diesem Status." },
   { path: "stores/", api: "/api/stores", ready: "Indooro Linz", empty: "Noch keine Stores vorhanden." },
   { path: "beacons/", api: "/api/beacons", ready: "BC-1", empty: "Noch keine Beacons vorhanden." },
   { path: "categories/", api: "/api/categories", ready: "Obst", empty: "Noch keine Kategorien vorhanden." },
@@ -9,24 +11,40 @@ const lists = [
   { path: "recipes/", api: "/api/admin/recipes", ready: "Apfel-Hafer-Crumble", empty: "Noch keine Rezepte vorhanden." }
 ];
 
+async function mockListApi(page: Page, list: typeof lists[number], empty = false) {
+  await mockVisualApi(page, empty, list.api === "/api/admin/products");
+  if (list.api === "/api/regions" && empty) {
+    await page.route("**/api/regions?*", (route) => route.fulfill({ json: [] }));
+  }
+  if (list.api === "/api/admin/access-assignments") {
+    await page.route("**/api/admin/access-assignments?*", (route) => route.fulfill({ json: empty ? [] : [{
+      id: "access-1", keycloakSubject: "member-1", username: "team-member", email: null,
+      role: "admin", regionId: null, regionName: null, storeId: null, storeCode: null,
+      storeName: null, status: "ACTIVE", createdAt: "2026-11-01T08:00:00Z", updatedAt: "2026-11-01T08:00:00Z"
+    }] }));
+  }
+}
+
 for (const list of lists) {
   test(`${list.path} delayed loading and empty action`, async ({ page }) => {
-    await mockVisualApi(page, true, list.api === "/api/admin/products");
+    await mockListApi(page, list, true);
     let release!: () => void;
     const pending = new Promise<void>((resolve) => { release = resolve; });
     await page.route(`**${list.api}?*`, async (route) => { await pending; await route.fallback(); });
     await page.goto(`/admin/next/${list.path}`);
     await expect(page.locator(".loading-state")).toBeVisible();
-    await expect(page.locator(".loading-state")).toHaveCSS("min-height", "224px");
+    const headingBefore = await page.getByRole("heading", { level: 1 }).boundingBox();
     release();
     await expect(page.getByText(list.empty, { exact: true })).toBeVisible();
     await expect(page.locator(".empty-state").getByRole("button").or(page.locator(".empty-state").getByRole("link"))).toBeVisible();
     await expect(page.locator(".loading-state")).toHaveCount(0);
+    const headingAfter = await page.getByRole("heading", { level: 1 }).boundingBox();
+    expect(headingAfter?.y).toBe(headingBefore?.y);
   });
 
   for (const failure of [500, 403, 404, "network"] as const) {
     test(`${list.path} ${failure} retry recovers`, async ({ page }) => {
-      await mockVisualApi(page);
+      await mockListApi(page, list);
       let failing = true;
       let requests = 0;
       await page.route(`**${list.api}?*`, async (route) => {

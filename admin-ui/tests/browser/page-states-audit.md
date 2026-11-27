@@ -22,4 +22,4 @@ The editor implementation under `src/editor/` is excluded. Its route wrappers us
 
 API load failures distinguish network, 403, 404, session expiry and server failures. Technical response bodies and arbitrary exception strings are hidden. Existing form validation/conflict details and the authorized diagnostics log viewer remain available. Mutations retain their explicit save/recovery actions rather than automatically replaying writes.
 
-Functional tests delay actual requests and cover empty lists and recovery from 500, 403, 404 and network failure on the five main lists. Existing empty visual cases remain; the stores error screenshot adds error coverage. Linux baselines must come from CI artifacts.
+Functional tests delay actual requests and cover empty lists and recovery from 500, 403, 404 and network failure on all seven main lists. Existing empty visual cases remain; focused stores empty/error screenshots add component coverage. Linux baselines must come from CI artifacts.
