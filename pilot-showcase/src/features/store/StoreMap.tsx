@@ -257,7 +257,7 @@ export function StoreMap({
                   }}
                   role="button"
                   tabIndex={roving === i ? 0 : -1}
-                  aria-label={`${shelfName(market, s)}, ${count} ${count === 1 ? "Produkt" : "Produkte"}`}
+                  aria-label={`${fitLabel(s, labelFont) ?? shelfName(market, s)}: ${shelfName(market, s)}, ${count} ${count === 1 ? "Produkt" : "Produkte"}`}
                   data-testid="map-shelf"
                   data-category={s.category}
                   data-meter={s.meter}
