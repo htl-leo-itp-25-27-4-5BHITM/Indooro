@@ -6,6 +6,15 @@ const port = Number(process.env.ADMIN_TEST_PORT ?? 4188);
 export default defineConfig({
   testDir: "tests/browser",
   timeout: 30_000,
+  projects: [
+    { name: "functional", testIgnore: "**/visual/**" },
+    {
+      name: "visual",
+      testMatch: "**/visual/**/*.spec.ts",
+      use: { reducedMotion: "reduce", locale: "de-AT", timezoneId: "Europe/Vienna", colorScheme: "light" },
+      expect: { toHaveScreenshot: { animations: "disabled", caret: "hide", maxDiffPixelRatio: 0.005 } }
+    }
+  ],
   use: {
     baseURL: `http://127.0.0.1:${port}`,
     browserName: "chromium"
