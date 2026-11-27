@@ -98,7 +98,7 @@ for (const viewport of viewports) {
       await page.addStyleTag({ content: `
         [data-testid="store-3d-canvas"],
         [data-testid="store-3d"] > div[aria-hidden="true"].overflow-hidden {
-          visibility: hidden !important;
+          opacity: 0 !important;
         }
       ` });
       await expect(page.getByTestId("store-demo")).toHaveScreenshot(`${viewport.width}-store-3d.png`);
