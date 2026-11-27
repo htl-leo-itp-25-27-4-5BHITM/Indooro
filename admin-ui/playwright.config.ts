@@ -6,6 +6,10 @@ const port = Number(process.env.ADMIN_TEST_PORT ?? 4188);
 export default defineConfig({
   testDir: "tests/browser",
   timeout: 30_000,
+  projects: [
+    { name: "browser", testIgnore: "a11y.spec.ts" },
+    { name: "a11y", testMatch: "a11y.spec.ts", timeout: 60_000 }
+  ],
   use: {
     baseURL: `http://127.0.0.1:${port}`,
     browserName: "chromium"
