@@ -21,8 +21,24 @@ export default defineConfig({
     trace: "retain-on-failure"
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } }
+    { name: "desktop", testIgnore: "**/visual/**", use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } } },
+    { name: "mobile", testIgnore: "**/visual/**", use: { ...devices["Pixel 7"] } },
+    {
+      name: "visual",
+      testMatch: "**/visual/**/*.spec.ts",
+      snapshotPathTemplate: "{testDir}/visual/snapshots/{testFilePath}/{arg}-{platform}{ext}",
+      expect: {
+        toHaveScreenshot: { animations: "disabled", caret: "hide", maxDiffPixelRatio: 0.005 }
+      },
+      use: {
+        ...devices["Desktop Chrome"],
+        reducedMotion: "reduce",
+        locale: "de-AT",
+        timezoneId: "Europe/Vienna",
+        colorScheme: "light",
+        launchOptions: { args: ["--use-gl=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"] }
+      }
+    }
   ],
   webServer: {
     command: `npx vite preview --port ${PORT} --strictPort --host 127.0.0.1`,
