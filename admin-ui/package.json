@@ -17,7 +17,7 @@
     "pretest:browser": "npm run package:candidate && npm run verify:candidate",
     "test:browser": "playwright test --project=functional",
     "pretest:visual": "npm run package:candidate && npm run verify:candidate",
-    "test:visual": "playwright test --project=visual",
+    "test:visual": "playwright test --project=visual --update-snapshots=none",
     "test:visual:update": "npm run test:visual -- --update-snapshots=all",
     "test:live": "node scripts/live-admin-smoke.mjs",
     "test:live:dashboard": "node scripts/live-dashboard-parity.mjs",

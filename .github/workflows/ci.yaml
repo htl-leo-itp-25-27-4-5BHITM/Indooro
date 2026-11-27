@@ -199,10 +199,10 @@ jobs:
         working-directory: admin-ui
         run: npm run test:browser -- --reporter=list,html --trace=retain-on-failure
 
-      # Bootstrap Linux baselines on the first push; switch to strict comparison after committing them.
+      # Linux baselines are generated on Ubuntu 24.04 and committed; this gate never updates them.
       - name: Visual regression tests
         working-directory: admin-ui
-        run: npm run test:visual -- --update-snapshots=missing --reporter=list,html --trace=retain-on-failure
+        run: npm run test:visual -- --update-snapshots=none --reporter=list,html --trace=retain-on-failure
 
       - name: Upload Linux visual baselines
         if: always()
