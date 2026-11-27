@@ -57,7 +57,7 @@ export function AnchorPrintPage({ api }: { api: ApiClient }) {
   }, [api, storeId, revision]);
 
   if (!storeId) return <section className="notice" role="alert"><h1>Store auswählen</h1><a href="/admin/next/stores/">Zur Store-Liste</a></section>;
-  if (error) return <ErrorState title={error.forbidden ? "Zugriff verweigert" : "QR-Codes konnten nicht geladen werden"} message={error.message} onRetry={() => setRevision((value) => value + 1)} />;
+  if (error) return <ErrorState headingLevel={1} title={error.forbidden ? "Zugriff verweigert" : "QR-Codes konnten nicht geladen werden"} message={error.message} onRetry={() => setRevision((value) => value + 1)} />;
   if (!store || !layout) return <><h1 className="visually-hidden">QR-Codes drucken</h1><LoadingState>QR-Anker werden geladen …</LoadingState></>;
 
   const anchors = printableAnchors(layout, window.location.host, store.storeCode);

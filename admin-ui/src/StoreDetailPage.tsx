@@ -72,7 +72,7 @@ export function StoreDetailPage({ api, user }: { api: ApiClient; user: CurrentUs
   }, [api, storeId, user.role, revision]);
 
   if (!storeId) return <section className="notice" role="alert"><h1>Store auswählen</h1><a href="/admin/next/stores/">Zur Store-Liste</a></section>;
-  if (error) return <ErrorState title={error.forbidden ? "Zugriff verweigert" : "Store konnte nicht geladen werden"} message={error.message} onRetry={() => setRevision((value) => value + 1)} />;
+  if (error) return <ErrorState headingLevel={1} title={error.forbidden ? "Zugriff verweigert" : "Store konnte nicht geladen werden"} message={error.message} onRetry={() => setRevision((value) => value + 1)} />;
   if (!data) return <><h1 className="visually-hidden">Store</h1><LoadingState>Store wird geladen …</LoadingState></>;
 
   const { store, regions, beacons, versions, audit, free } = data;
