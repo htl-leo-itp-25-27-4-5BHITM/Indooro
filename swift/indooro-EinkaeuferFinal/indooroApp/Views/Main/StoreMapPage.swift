@@ -350,6 +350,8 @@ struct StoreMapPage: View {
 
                 VStack(spacing: 0) {
                     toolbarArea
+                        // Map overlay: cap the text size, otherwise the controls push the map off small screens.
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .zIndex(2)
 
                     MapView(
@@ -371,6 +373,7 @@ struct StoreMapPage: View {
                     .clipped()
 
                     bottomCard
+                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .background(MapScreenBackground(accent: accent))
                         .zIndex(3)
                 }

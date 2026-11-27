@@ -593,8 +593,7 @@ struct ProductsPage: View {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(Color.a11ySecondaryText)
 
-            TextField("Was möchtest du kaufen?", text: $searchText, axis: .vertical)
-                .lineLimit(1...4)
+            TextField("Was möchtest du kaufen?", text: $searchText)
                 .frame(minHeight: 44)
                 .accessibilityLabel("Was möchtest du kaufen?")
                 .accessibilityHint("Sucht Produkte für deine Einkaufsliste")
