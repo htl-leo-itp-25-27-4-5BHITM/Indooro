@@ -1,5 +1,6 @@
+import { ErrorState, describeError, LoadingState } from "./PageState";
 import { useEffect, useRef, useState } from "react";
-import type { ApiClient } from "./api/client";
+import { ApiClientError, type ApiClient } from "./api/client";
 import { LayoutEditor } from "./editor/LayoutEditor";
 import { isLegacyLayoutDocument } from "./editor/contracts";
 import type { LayoutDocument } from "./editor/model";
@@ -33,12 +34,12 @@ export function LegacyEditorRoute({ api, role }: { api: ApiClient; role: string 
     const layoutPath = versionId ? `/api/layout/versions/${encodeURIComponent(versionId)}` : "/api/layout/current";
     api.get<unknown>(layoutPath, { signal: controller.signal })
       .then((response) => {
-        if (!isLegacyLayoutDocument(response)) throw new Error("Globales Layout enthält kein gültiges Raster und keine Elementliste.");
+        if (!isLegacyLayoutDocument(response)) throw new ApiClientError("invalid-response", 200, "Globales Layout enthält kein gültiges Raster und keine Elementliste.");
         if (controller.signal.aborted) return;
         setLayout(response);
         setError(null);
       })
-      .catch((cause: unknown) => { if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Globales Layout konnte nicht geladen werden."); });
+      .catch((cause: unknown) => { if (!controller.signal.aborted) setError(describeError(cause, "Globales Layout konnte nicht geladen werden.")); });
     return () => controller.abort();
   }, [api, role, versionId, revision]);
 
@@ -47,13 +48,13 @@ export function LegacyEditorRoute({ api, role }: { api: ApiClient; role: string 
     const controller = new AbortController();
     api.get<LegacyHistoryEntry[]>(`/api/layout/history?limit=${historyLimit}`, { signal: controller.signal })
       .then((response) => { if (!controller.signal.aborted) { setHistory(Array.isArray(response) ? response : []); setHistoryError(null); } })
-      .catch((cause: unknown) => { if (!controller.signal.aborted) setHistoryError(cause instanceof Error ? cause.message : "Historie konnte nicht geladen werden."); });
+      .catch((cause: unknown) => { if (!controller.signal.aborted) setHistoryError(describeError(cause, "Historie konnte nicht geladen werden.")); });
     return () => controller.abort();
   }, [api, role, historyLimit, historyRevision]);
 
   if (role !== "admin") return <section className="legacy-editor-route-error" role="alert"><h2>Zugriff verweigert</h2><p>Das globale Kundenlayout kann nur von Administratoren bearbeitet werden.</p></section>;
-  if (error) return <section className="legacy-editor-route-error" role="alert"><h2>Globales Layout nicht verfügbar</h2><p>{error}</p><button type="button" onClick={() => { setError(null); setRevision((current) => current + 1); }}>Erneut versuchen</button></section>;
-  if (!layout) return <p role="status">Globales Layout wird geladen …</p>;
+  if (error) return <ErrorState title="Globales Layout nicht verfügbar" message={error} onRetry={() => { setError(null); setRevision((value) => value + 1); }} />;
+  if (!layout) return <LoadingState>Globales Layout wird geladen …</LoadingState>;
 
   const saveCurrent = async (document: LayoutDocument) => {
     // The backend accepts the document itself, not the store version envelope.
@@ -67,7 +68,7 @@ export function LegacyEditorRoute({ api, role }: { api: ApiClient; role: string 
     }
     api.get<LegacyHistoryEntry[]>(`/api/layout/history?limit=${historyLimit}`)
       .then((response) => { setHistory(Array.isArray(response) ? response : []); setHistoryError(null); })
-      .catch((cause: unknown) => setHistoryError(cause instanceof Error ? cause.message : "Historie konnte nicht aktualisiert werden."));
+      .catch((cause: unknown) => setHistoryError(describeError(cause, "Historie konnte nicht aktualisiert werden.")));
   };
 
   return <div className="legacy-editor-route editor-viewport">

@@ -1,3 +1,4 @@
+import { describeError, LoadingState } from "./PageState";
 import "../../design-tokens/dist/tokens.css";
 import React, { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -29,11 +30,13 @@ function AdminCandidate() {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [error, setError] = useState<ApiClientError | null>(null);
   const [loading, setLoading] = useState(true);
+  const [revision, setRevision] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
+    setLoading(true); setError(null);
     api.get<CurrentUser>("/api/admin/me", { signal: controller.signal })
       .then(setUser)
       .catch((cause: unknown) => {
@@ -42,7 +45,7 @@ function AdminCandidate() {
       })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
-  }, []);
+  }, [revision]);
 
   const access = user ? candidateAccess(window.location.pathname, user.role, new URLSearchParams(window.location.search).get("storeId"), user.scope?.storeId) : null;
   const navigation = user ? visibleRoutes(user.role).map((route) => ({ route, href: candidateNavigationPath(route, user) })) : [];
@@ -66,16 +69,17 @@ function AdminCandidate() {
         </nav>}
         <main id="main-content" tabIndex={-1} className={`content ${window.location.pathname.includes("/next/editor") ? "editor-content" : ""}`}>
           {/* Every page renders its own h1; these cover the states and routes that do not. */}
-          {loading && <><h1 className="visually-hidden">Indooro Admin</h1><p role="status">Berechtigungen werden geladen …</p></>}
+          {loading && <><h1 className="visually-hidden">Indooro Admin</h1><LoadingState>Berechtigungen werden geladen …</LoadingState></>}
           {user && access === "allowed" && window.location.pathname.includes("/editor") && <h1 className="visually-hidden">Layout-Editor</h1>}
           {error && <section role="alert" className="notice">
             <h1>{error.kind === "unauthorized" ? "Sitzung abgelaufen" : error.kind === "forbidden" ? "Zugriff verweigert" : "Profil nicht verfügbar"}</h1>
-            <p>{error.message}</p>
+            <p>{describeError(error)}</p>
+            {error.kind !== "unauthorized" && <button type="button" className="button primary" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button>}
             {error.kind === "forbidden" && <ForbiddenIdentity api={api} />}
             <a href="/admin/">{error.kind === "unauthorized" ? "Erneut anmelden" : "Zur bisherigen Administration"}</a>
           </section>}
           {user && access === "forbidden" && <section role="alert" className="notice"><h1>Zugriff verweigert</h1><p>Für diesen Bereich fehlt die Berechtigung.</p></section>}
-          {user && access === "missing" && <section role="alert" className="notice"><h1>Seite nicht gefunden</h1><p>Diese Seite gibt es nicht.</p></section>}
+          {user && access === "missing" && <section role="alert" className="notice"><h1>Seite nicht gefunden</h1><p>Diese Seite gibt es nicht.</p><a className="button primary" href="/admin/next/">Zur Übersicht</a></section>}
           {user && access === "allowed" && (window.location.pathname.includes("/editor")
             ? new URLSearchParams(window.location.search).has("storeId") ? <EditorRoute api={api} /> : <LegacyEditorRoute api={api} role={user.role} />
             : window.location.pathname.includes("/stores/new")

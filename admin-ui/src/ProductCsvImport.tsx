@@ -1,3 +1,4 @@
+import { LoadingState } from "./PageState";
 import { useRef, useState, type ChangeEvent } from "react";
 import type { ApiClient } from "./api/client";
 import {
@@ -116,7 +117,7 @@ export function ProductCsvImport({ api, store, onImported, onBusyChange }: {
     </div>
     {!store && <p role="status" className="notice">Bitte zuerst einen Markt wählen.</p>}
     {fileName && <p>Datei: <code>{fileName}</code></p>}
-    {checking && <p role="status">Datei wird geprüft …</p>}
+    {checking && <LoadingState>Datei wird geprüft …</LoadingState>}
     {checkError && <p role="alert" className="notice error">{checkError}</p>}
 
     {review && <div className="catalog-review" aria-live="polite">

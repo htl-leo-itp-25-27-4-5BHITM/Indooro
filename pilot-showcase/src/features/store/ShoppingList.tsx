@@ -1,3 +1,4 @@
+import { EmptyState } from "../../components/ui/PageState";
 import { ListChecks, Minus, Plus, Trash2, X } from "lucide-react";
 import type { Product } from "../../domain/types";
 import type { ListItem } from "./useStoreDemo";
@@ -40,15 +41,7 @@ export function ShoppingList({
 
   if (rows.length === 0) {
     return (
-      <div className="flex flex-col items-center rounded-2xl border border-dashed border-white/12 px-5 py-9 text-center" data-testid="list-empty">
-        <span className="grid size-12 place-items-center rounded-2xl bg-white/5 text-mint ring-1 ring-white/10">
-          <ListChecks className="size-6" aria-hidden />
-        </span>
-        <p className="mt-4 text-[15px] font-semibold text-white">Ihre Einkaufsliste ist leer</p>
-        <p className="mt-1 max-w-[18rem] text-xs leading-relaxed text-ink-200">
-          Fügen Sie Produkte aus der Suche hinzu. Indooro ordnet sie automatisch zu einem kurzen Weg durch den Markt.
-        </p>
-        <div className="mt-5 flex flex-wrap justify-center gap-2">
+      <EmptyState action={<div className="mt-5 flex flex-wrap justify-center gap-2">
           <button
             type="button"
             data-testid="load-example"
@@ -64,8 +57,15 @@ export function ShoppingList({
           >
             Produkt suchen
           </button>
-        </div>
-      </div>
+        </div>} className="flex flex-col items-center rounded-2xl border border-dashed border-white/12 px-5 py-9 text-center" testId="list-empty">
+        <span className="grid size-12 place-items-center rounded-2xl bg-white/5 text-mint ring-1 ring-white/10">
+          <ListChecks className="size-6" aria-hidden />
+        </span>
+        <p className="mt-4 text-[15px] font-semibold text-white">Ihre Einkaufsliste ist leer</p>
+        <p className="mt-1 max-w-[18rem] text-xs leading-relaxed text-ink-200">
+          Fügen Sie Produkte aus der Suche hinzu. Indooro ordnet sie automatisch zu einem kurzen Weg durch den Markt.
+        </p>
+      </EmptyState>
     );
   }
 

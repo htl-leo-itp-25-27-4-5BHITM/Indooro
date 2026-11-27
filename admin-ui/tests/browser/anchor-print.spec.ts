@@ -70,5 +70,5 @@ test("print sheet denies access when the API answers forbidden", async ({ page }
   await page.goto("/admin/next/stores/anchors/?storeId=store-anchor");
 
   await expect(page.getByRole("alert")).toContainText("Zugriff verweigert");
-  await expect(page.getByRole("button", { name: "Erneut versuchen" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Erneut versuchen" })).toBeVisible();
 });

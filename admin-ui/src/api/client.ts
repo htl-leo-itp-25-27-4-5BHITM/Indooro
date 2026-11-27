@@ -93,6 +93,9 @@ function errorForStatus(status: number, payload: unknown): ApiClientError {
   if (status === 403) {
     return new ApiClientError("forbidden", status, "Für diese Aktion fehlen die Berechtigungen.");
   }
+  if (status === 404) {
+    return new ApiClientError("server", status, "Die angefragten Daten wurden nicht gefunden.");
+  }
   if (status === 409) {
     return new ApiClientError("conflict", status, messageFrom(payload) ?? "Der Datensatz wurde inzwischen geändert.");
   }

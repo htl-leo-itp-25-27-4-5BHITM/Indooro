@@ -90,8 +90,12 @@ test("rejects incomplete store responses instead of silently showing no stores",
   await assert.rejects(loadActiveStores(api), /Store-Antwort ist unvollständig/);
 });
 
-test("forbidden store access gets the explicit German message, other errors keep their text", () => {
+test("store errors use safe German messages without exposing response payloads", () => {
   assert.equal(productErrorMessage(new ApiClientError("forbidden", 403, "Für diese Aktion fehlen die Berechtigungen.")), "Kein Zugriff auf diesen Markt.");
   assert.equal(productErrorMessage(new ApiClientError("validation", 400, "storeCode ist ungültig.")), "storeCode ist ungültig.");
   assert.equal(productErrorMessage("boom", "Fallback"), "Fallback");
+  assert.equal(productErrorMessage(new Error("secret stack trace"), "Fallback"), "Fallback");
+  assert.match(productErrorMessage(new ApiClientError("server", 404, "secret")), /nicht gefunden/);
+  assert.match(productErrorMessage(new ApiClientError("network", null, "secret")), /Internetverbindung/);
+  assert.match(productErrorMessage(new ApiClientError("server", 500, "secret")), /Server/);
 });

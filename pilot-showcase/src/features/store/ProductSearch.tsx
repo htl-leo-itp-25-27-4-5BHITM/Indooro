@@ -1,3 +1,4 @@
+import { EmptyState } from "../../components/ui/PageState";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { Check, Plus, Search, X } from "lucide-react";
@@ -192,11 +193,11 @@ export function ProductSearch({ market, selectedProductId, onSelect, has, onAdd,
             </p>
           </>
         ) : trimmed ? (
-          <div data-testid="search-empty" className="rounded-2xl border border-dashed border-white/12 px-4 py-6 text-center">
+          <EmptyState action={<button type="button" onClick={() => { setQuery(""); inputRef.current?.focus(); }} className="mt-4 rounded-full bg-mint px-4 py-2 text-sm font-semibold text-ink-950">Neue Suche starten</button>} testId="search-empty" className="rounded-2xl border border-dashed border-white/12 px-4 py-6 text-center">
             <p className="text-sm font-semibold text-white">Keine Treffer in „{market.name}“</p>
             <p className="mt-1 text-xs text-ink-200">Das Sortiment ist je Markt getrennt – manche Produkte gibt es nur in einem der beiden Demomärkte.</p>
             <Suggestions items={suggestions} onPick={pick} className="mt-4 justify-center" />
-          </div>
+          </EmptyState>
         ) : (
           <div className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-5">
             <p className="text-sm font-semibold text-white">Was suchen Sie?</p>

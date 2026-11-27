@@ -1,3 +1,4 @@
+import { LoadingState, ViewBoundary } from "../../components/ui/PageState";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -129,7 +130,7 @@ export function StoreDemo() {
         </div>
 
         {viewMode === "3d" ? (
-          <Suspense fallback={<div className="grid aspect-[40/26] place-items-center rounded-3xl bg-ink-800 text-sm text-ink-200">3D-Ansicht wird geladen …</div>}>
+          <ViewBoundary onRetry={() => window.location.reload()}><Suspense fallback={<LoadingState>3D-Ansicht wird geladen …</LoadingState>}>
             <Store3DView
               market={market}
               route={route}
@@ -143,7 +144,7 @@ export function StoreDemo() {
                 demo.setTab("suche");
               }}
             />
-          </Suspense>
+          </Suspense></ViewBoundary>
         ) : (
           <StoreMap
             market={market}

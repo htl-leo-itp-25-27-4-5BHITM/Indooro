@@ -1,3 +1,4 @@
+import { ErrorState, LoadingState } from "./PageState";
 import { useEffect, useState, type FormEvent } from "react";
 import type { ApiClient } from "./api/client";
 import { fetchStoreReadiness, type ReadinessFinding, type ReadinessReport } from "./api/readiness";
@@ -147,11 +148,8 @@ export function ReadinessPage({ api, user }: { api: ApiClient; user: CurrentUser
       {radiusError && <small id="readiness-radius-error" role="alert">{radiusError}</small>}
     </form>
 
-    {loadError && <section className="notice error-state" role="alert"><h2>{loadError.title}</h2><p>{loadError.message}</p>
-      {loadError.kind === "retryable" && <button className="button" onClick={() => setRevision((value) => value + 1)}>Erneut versuchen</button>}
-      {loadError.kind === "unauthorized" && <a href="/admin/">Erneut anmelden</a>}
-    </section>}
-    {!loadError && !report && <p role="status">Pilot-Bereitschaft wird geprüft …</p>}
+    {loadError && <ErrorState action={loadError.kind === "unauthorized" ? <a className="button" href="/admin/">Erneut anmelden</a> : undefined} title={loadError.title} message={loadError.message} onRetry={() => setRevision((value) => value + 1)} />}
+    {!loadError && !report && <LoadingState>Pilot-Bereitschaft wird geprüft …</LoadingState>}
 
     {report && <>
       <section className={`notice readiness-summary readiness-${report.status.toLowerCase()}`} aria-labelledby="readiness-status-title">
