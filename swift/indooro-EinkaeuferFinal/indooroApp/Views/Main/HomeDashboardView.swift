@@ -128,7 +128,6 @@ struct HomeDashboardView: View {
 
             Text(banner.currentStopTitle)
                 .font(.system(.title3, design: .rounded, weight: .bold))
-                .lineLimit(4)
 
             HStack(spacing: 14) {
                 statColumn(title: "Stopps", value: "\(banner.remainingStopCount)")
@@ -176,7 +175,6 @@ struct HomeDashboardView: View {
 
                     Text(selectedList?.name ?? "Standardliste")
                         .font(.headline.weight(.semibold))
-                        .lineLimit(2)
                 }
 
                 Spacer(minLength: 0)

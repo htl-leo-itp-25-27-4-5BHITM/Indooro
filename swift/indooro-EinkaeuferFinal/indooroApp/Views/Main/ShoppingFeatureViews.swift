@@ -593,7 +593,8 @@ struct ProductsPage: View {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(.secondary)
 
-            TextField("Was möchtest du kaufen?", text: $searchText)
+            TextField("Was möchtest du kaufen?", text: $searchText, axis: .vertical)
+                .lineLimit(1...4)
                 .frame(minHeight: 44)
                 .accessibilityLabel("Was möchtest du kaufen?")
                 .accessibilityHint("Sucht Produkte für deine Einkaufsliste")
@@ -603,6 +604,13 @@ struct ProductsPage: View {
                 .submitLabel(.search)
                 .onSubmit {
                     submitSearch()
+                }
+                .onChange(of: searchText) { _, newValue in
+                    // A multi-line field lets the placeholder wrap at large text sizes; Return still submits.
+                    if newValue.contains("\n") {
+                        searchText = newValue.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces)
+                        submitSearch()
+                    }
                 }
 
             if !searchText.isEmpty {
@@ -1897,8 +1905,9 @@ private struct ShoppingChecklistRow: View {
 
                 if let price = item.price {
                     Text(PriceText.format(price))
-                        .font(.caption.weight(.semibold))
+                        .font(.footnote.weight(.semibold))
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             .frame(minHeight: 44)

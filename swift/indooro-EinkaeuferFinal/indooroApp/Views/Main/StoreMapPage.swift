@@ -759,8 +759,8 @@ struct StoreMapPage: View {
             openAnchorScanner()
         } label: {
             Label("QR-Code scannen", systemImage: "qrcode.viewfinder")
+                .font(.footnote.weight(.semibold))
                 .fixedSize(horizontal: false, vertical: true)
-                .font(.caption.weight(.semibold))
                 .foregroundStyle(accent)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
@@ -805,7 +805,8 @@ struct StoreMapPage: View {
         Button("QR-Code scannen") {
             openAnchorScanner()
         }
-        .font(.caption.weight(.semibold))
+        .font(.footnote.weight(.semibold))
+        .fixedSize(horizontal: false, vertical: true)
         .buttonStyle(.plain)
         .foregroundStyle(accent)
         .frame(minHeight: 44)
@@ -814,7 +815,8 @@ struct StoreMapPage: View {
         Button("Position setzen") {
             nextTapSetsPosition = true
         }
-        .font(.caption.weight(.semibold))
+        .font(.footnote.weight(.semibold))
+        .fixedSize(horizontal: false, vertical: true)
         .buttonStyle(.plain)
         .foregroundStyle(accent)
         .frame(minHeight: 44)
