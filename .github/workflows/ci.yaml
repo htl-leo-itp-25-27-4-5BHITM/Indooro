@@ -286,7 +286,7 @@ jobs:
 
       - name: Visual regression checks
         working-directory: web-quality
-        run: npm run test:visual -- --update-snapshots=missing
+        run: npm run test:visual -- --update-snapshots=none
 
       - name: Upload Linux baselines
         if: always()
