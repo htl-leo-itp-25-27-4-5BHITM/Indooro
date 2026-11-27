@@ -42,6 +42,33 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 
       await audit(page, info, "navigation");
     });
 
+    test("second market", async ({ page }, info) => {
+      await page.goto("/?markt=DEMO-SUED&ansicht=2d#demo");
+      await page.locator("#demo").scrollIntoViewIfNeeded();
+      await expect(page.locator('[data-testid="market-switch"][data-market-code="DEMO-SUED"]')).toHaveAttribute("aria-checked", "true");
+      await audit(page, info, "second-market");
+    });
+
+    test("keyboard can skip navigation and reach result actions", async ({ page }) => {
+      await page.goto("/?ansicht=2d");
+      await page.keyboard.press("Tab");
+      await expect(page.getByRole("link", { name: "Zum Hauptinhalt" })).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(page.getByRole("main")).toBeFocused();
+      const input = page.getByTestId("search-input");
+      await input.fill("Milch");
+      await input.press("ArrowDown");
+      await input.press("Enter");
+      await input.press("Tab"); // Clear search.
+      await page.keyboard.press("Tab"); // First result's map action.
+      await expect(page.getByTestId("search-result").first().getByRole("button", { name: /auf der Karte zeigen/ })).toBeFocused();
+      await page.keyboard.press("Tab");
+      const add = page.getByTestId("search-result").first().getByTestId("add-button");
+      await expect(add).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(add).toHaveAttribute("aria-pressed", "true");
+    });
+
     test("all operator stages", async ({ page }, info) => {
       await page.goto("/?ansicht=2d#betreiber");
       await page.getByTestId("operator-create").click();
