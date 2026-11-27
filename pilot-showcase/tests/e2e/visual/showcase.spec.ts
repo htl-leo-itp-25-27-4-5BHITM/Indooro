@@ -119,3 +119,13 @@ test("representative unavailable 3D view", async ({ page }) => {
   await page.evaluate(() => document.fonts.ready);
   await expect(error).toHaveScreenshot("1440-demo-error.png");
 });
+
+test("representative empty shopping list", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openDemo(page);
+  await gotoTab(page, "liste");
+  const empty = page.getByTestId("list-empty");
+  await expect(empty).toContainText("Ihre Einkaufsliste ist leer");
+  await page.evaluate(() => document.fonts.ready);
+  await expect(empty).toHaveScreenshot("1440-empty-list-state.png", { stylePath: elementScreenshotStyle });
+});

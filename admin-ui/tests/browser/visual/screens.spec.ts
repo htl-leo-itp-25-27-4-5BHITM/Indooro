@@ -69,3 +69,13 @@ test("representative stores server error", async ({ page }) => {
   await page.evaluate(() => document.fonts.ready);
   await expect(page).toHaveScreenshot("stores-error-1440x900.png", { fullPage: true });
 });
+
+test("representative stores empty state", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await mockVisualApi(page, true);
+  await page.goto("/admin/next/stores/");
+  const empty = page.locator(".empty-state");
+  await expect(empty).toContainText("Noch keine Stores vorhanden.");
+  await page.evaluate(() => document.fonts.ready);
+  await expect(empty).toHaveScreenshot("stores-empty-state-1440x900.png");
+});
