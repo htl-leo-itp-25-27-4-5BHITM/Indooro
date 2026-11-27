@@ -27,14 +27,14 @@ struct ProductSearchRow: View {
     }
 
     var body: some View {
-        HStack(spacing: IndooroTokens.Spacing.value13px) {
+        HStack(spacing: 13) {
             Image(systemName: "cart.circle.fill")
                 .font(.system(size: productIconSize))
                 .foregroundStyle(.white, routeAccent)
                 .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: IndooroTokens.Spacing.value5px) {
-                HStack(spacing: IndooroTokens.Spacing.value6px) {
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 6) {
                     Text(product.name)
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(.primary)
@@ -59,7 +59,7 @@ struct ProductSearchRow: View {
 
             Spacer(minLength: 0)
 
-            VStack(spacing: IndooroTokens.Spacing.value8px) {
+            VStack(spacing: 8) {
                 Button {
                     onNavigate()
                 } label: {
@@ -90,11 +90,11 @@ struct ProductSearchRow: View {
                 .accessibilityHint("\(product.name) zur Einkaufsliste hinzufügen")
             }
         }
-        .padding(IndooroTokens.Spacing.value14px)
+        .padding(14)
         .background(Color(uiColor: .systemBackground))
-        .clipShape(RoundedRectangle(cornerRadius: IndooroTokens.Radius.value22px, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: IndooroTokens.Radius.value22px, style: .continuous)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(Color.primary.opacity(0.055), lineWidth: 1)
         )
         .shadow(color: .black.opacity(0.035), radius: 10, y: 5)
