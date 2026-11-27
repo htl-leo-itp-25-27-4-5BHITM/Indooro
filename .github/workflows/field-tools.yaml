@@ -4,7 +4,9 @@ name: Field tools
 # (Replay, compare-positioning) sind in den Tests durch scripts/field/stub_swift.py ersetzt und laufen nur auf macOS
 # mit Xcode (siehe scripts/field/README.md, "Auswertung mit einem Befehl").
 on:
+  # push nur auf main/master: auf Feature-Branches prüft der PR-Lauf dasselbe, sonst lief alles doppelt.
   push:
+    branches: [ "main", "master" ]
     paths:
       - 'scripts/field/**'
       - '.github/workflows/field-tools.yaml'
@@ -12,6 +14,11 @@ on:
     paths:
       - 'scripts/field/**'
       - '.github/workflows/field-tools.yaml'
+
+# Neuer Push auf denselben PR bricht den alten Lauf ab; auf main/master wird nichts abgebrochen.
+concurrency:
+  group: field-tools-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
