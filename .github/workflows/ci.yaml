@@ -200,6 +200,19 @@ jobs:
         working-directory: admin-ui
         run: npm run test:browser -- --reporter=list,html --trace=retain-on-failure
 
+      # Linux baselines are generated on Ubuntu 24.04 and committed; this gate never updates them.
+      - name: Visual regression tests
+        working-directory: admin-ui
+        run: npm run test:visual -- --update-snapshots=none --reporter=list,html --trace=retain-on-failure
+
+      - name: Upload Linux visual baselines
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: admin-ui-visual-baselines
+          path: admin-ui/tests/browser/visual/*-snapshots/
+          if-no-files-found: error
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v4
