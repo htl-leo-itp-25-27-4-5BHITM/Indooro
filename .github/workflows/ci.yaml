@@ -30,6 +30,44 @@ env:
   IMAGE_NAME: ${{ github.repository }}-backend-v2
 
 jobs:
+  # Welche Bereiche ein PR ändert. Auf push nach main/master sind alle Ausgaben 'true': dort läuft alles wie bisher.
+  # Die Workflow-Datei selbst zählt in jedem Filter, damit CI-Änderungen alle Jobs auslösen.
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ github.event_name != 'pull_request' || steps.filter.outputs.backend == 'true' }}
+      admin-ui: ${{ github.event_name != 'pull_request' || steps.filter.outputs.admin-ui == 'true' }}
+      pilot-showcase: ${{ github.event_name != 'pull_request' || steps.filter.outputs.pilot-showcase == 'true' }}
+
+    steps:
+      # Auf pull_request liest paths-filter die geänderten Dateien über die GitHub-API, ohne Checkout.
+      - name: Detect changed areas (v4.0.3)
+        if: github.event_name == 'pull_request'
+        id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d
+        with:
+          filters: |
+            backend:
+              - 'backend/indooro_server/**'
+              - 'admin-ui/**'
+              - 'pilot-showcase/**'
+              - 'api/**'
+              - 'api-tests/**'
+              - 'openspec/specs/shared-api/**'
+              - 'scripts/ops/**'
+              - 'demoproducts.ndjson'
+              - '.github/workflows/ci.yaml'
+            admin-ui:
+              - 'admin-ui/**'
+              - '.github/workflows/ci.yaml'
+            pilot-showcase:
+              - 'pilot-showcase/**'
+              - '.github/workflows/ci.yaml'
+
   # Vertrag (openspec/specs/shared-api/openapi.yaml) gegen Lint, generierte Dateien,
   # Mobile-Export, Parität mit dem Quarkus-Export und (nur PR) Breaking-Change-Check.
   contract:
@@ -101,6 +139,9 @@ jobs:
 
   # Backend-Tests ohne -DskipTests. Dieselben Tests laufen vor dem Image-Build, nicht doppelt.
   backend-test:
+    needs: changes
+    # Nur wenn Backend, Admin-UI, Showcase oder API sich ändern; nicht auf Draft-PRs.
+    if: needs.changes.outputs.backend == 'true' && (github.event_name == 'push' || github.event.pull_request.draft == false)
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -171,6 +212,9 @@ jobs:
 
   # Playwright suite in a real Chromium: guards the layout and interaction guarantees of the admin UI.
   admin-ui-browser:
+    needs: changes
+    # Nur wenn admin-ui/ sich ändert; nicht auf Draft-PRs.
+    if: needs.changes.outputs.admin-ui == 'true' && (github.event_name == 'push' || github.event.pull_request.draft == false)
     # Pinned: Playwright 1.60 (admin-ui) cannot install Chromium on Ubuntu 26.04 (ubuntu-latest).
     runs-on: ubuntu-24.04
     permissions:
@@ -219,6 +263,9 @@ jobs:
 
   # pilot-showcase has no lint script: the typecheck runs as part of npm run build.
   pilot-showcase-browser:
+    needs: changes
+    # Nur wenn pilot-showcase/ sich ändert; nicht auf Draft-PRs.
+    if: needs.changes.outputs.pilot-showcase == 'true' && (github.event_name == 'push' || github.event.pull_request.draft == false)
     # Pinned like admin-ui-browser: same Chromium and font base for both suites.
     runs-on: ubuntu-24.04
     permissions:
