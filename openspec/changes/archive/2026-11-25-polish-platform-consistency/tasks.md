@@ -43,9 +43,9 @@
 
 ## 7. Integration (orchestrator)
 
-- [ ] 7.1 All package PRs merged, CI green on `main`.
-- [ ] 7.2 Integration check on `main`: backend tests, admin-ui tests and build, screenshot check of admin pages.
-- [ ] 7.3 Write final `HANDOFF.md` and archive the change.
+- [x] 7.1 All package PRs merged, CI green on `main`.
+- [x] 7.2 Integration check on `main`: backend tests, admin-ui tests and build, screenshot check of admin pages.
+- [x] 7.3 Write final `HANDOFF.md` and archive the change.
 
 ## 8. P6 Customer web and landing (polish-customer-web)
 
@@ -86,4 +86,4 @@
 
 - [x] 11.1 Reproduce the intermittent `pilot-showcase-browser` failures (tour Back restore, list reload per market) locally under CPU load.
 - [x] 11.2 Fix the root cause: run functional specs with reduced motion (no continuous WebGL hero, no `AnimatePresence` tab-swap lag, no smooth-scroll instability) and fix the NaN spotlight rect that this exposed.
-- [ ] 11.3 `pilot-showcase-browser` green on the PR.
+- [x] 11.3 `pilot-showcase-browser` green on the PR.
