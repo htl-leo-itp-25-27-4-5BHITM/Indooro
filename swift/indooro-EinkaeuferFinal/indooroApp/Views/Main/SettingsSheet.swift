@@ -56,6 +56,9 @@ struct SettingsSheet: View {
                                 .monospacedDigit()
                         }
                         Slider(value: $mapScale, in: 0.65...2.5, step: 0.05)
+                            .accessibilityLabel("Kartengröße")
+                            .accessibilityValue("\(Int(mapScale * 100)) Prozent")
+                            .accessibilityHint("Vergrößert oder verkleinert die Marktkarte")
                     }
                     .padding(.vertical, 2)
 
@@ -123,7 +126,7 @@ struct SettingsSheet: View {
                             // Fremde oder falsch registrierte iBeacons: stehen als `scan`-Zeilen in der Aufnahme.
                             Text("Ohne Layout-Treffer: " + recorder.unmatchedBeacons.keys.sorted().joined(separator: ", ") + " (Major-Minor)")
                                 .font(.caption)
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(Color.a11yWarningText)
                         }
                     }
 

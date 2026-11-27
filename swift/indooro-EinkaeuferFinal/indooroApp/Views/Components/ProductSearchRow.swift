@@ -38,7 +38,7 @@ struct ProductSearchRow: View {
                     Text(product.name)
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(.primary)
-                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     if isInShoppingList {
                         Image(systemName: "checkmark.circle.fill")

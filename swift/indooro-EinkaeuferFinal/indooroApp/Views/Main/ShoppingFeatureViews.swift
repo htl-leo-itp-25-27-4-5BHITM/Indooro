@@ -594,6 +594,9 @@ struct ProductsPage: View {
                 .foregroundStyle(.secondary)
 
             TextField("Was möchtest du kaufen?", text: $searchText)
+                .frame(minHeight: 44)
+                .accessibilityLabel("Was möchtest du kaufen?")
+                .accessibilityHint("Sucht Produkte für deine Einkaufsliste")
                 .textFieldStyle(.plain)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
@@ -1901,6 +1904,7 @@ private struct ShoppingChecklistRow: View {
         }
         .buttonStyle(.plain)
         .accessibilityValue(AccessibilityText.shoppingItemValue(isChecked: isCompleted))
+        .accessibilityHint(isCompleted ? "Markiert den Artikel als offen" : "Markiert den Artikel als erledigt")
         .accessibilityAddTraits(.isButton)
     }
 }
