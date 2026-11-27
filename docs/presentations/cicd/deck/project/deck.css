@@ -104,6 +104,31 @@ p { margin: 0; font-size: 32px; line-height: 1.4; }
 .col-bad { background: var(--paper); padding: 44px; border-top: 8px solid var(--accent); display: flex; flex-direction: column; gap: 24px; }
 .col-list { font-size: 28px; line-height: 1.4; margin: 0; padding-left: 36px; }
 
+/* Wörter */
+.gloss { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; }
+.word { background: var(--paper); padding: 32px 36px; border-top: 6px solid var(--blue); display: flex; flex-direction: column; gap: 10px; }
+.word-t { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 36px; font-weight: 700; }
+.word-p { font-size: 28px; line-height: 1.35; color: var(--muted); }
+
+/* Prüfungen */
+.checks { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.check { background: var(--paper); padding: 32px 36px; border-left: 8px solid var(--blue); display: flex; flex-direction: column; gap: 10px; }
+.check-t { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 36px; font-weight: 700; }
+.check-p { font-size: 28px; line-height: 1.35; color: var(--muted); }
+.check-job { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 24px; color: var(--accent-deep); }
+
+/* Tests */
+.tests { display: flex; gap: 80px; align-items: center; flex: 1; }
+.big { display: flex; flex-direction: column; gap: 8px; width: 520px; }
+.big-n { font-family: 'Space Grotesk', Arial, sans-serif; font-size: 180px; font-weight: 700; line-height: 1; color: var(--blue); }
+.big-p { font-size: 36px; font-weight: 600; }
+.big-s { font-size: 26px; line-height: 1.35; color: var(--muted); }
+.bars { flex: 1; display: flex; flex-direction: column; gap: 14px; }
+.bar-row { display: flex; align-items: center; gap: 24px; }
+.bar-name { width: 300px; font-size: 26px; }
+.bar { height: 30px; background: var(--blue); border-radius: 4px; }
+.bar-n { font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
 /* Bewegung */
 @keyframes rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0px); } }
 .in { animation: rise 500ms ease-out both; animation-delay: calc(var(--i) * 120ms); }
