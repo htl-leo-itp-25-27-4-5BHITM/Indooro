@@ -605,7 +605,6 @@ struct ProductsPage: View {
                     submitSearch()
                 }
                 .onChange(of: searchText) { _, newValue in
-                    // A multi-line field lets the placeholder wrap at large text sizes; Return still submits.
                     if newValue.contains("\n") {
                         searchText = newValue.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces)
                         submitSearch()
