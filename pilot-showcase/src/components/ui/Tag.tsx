@@ -8,8 +8,8 @@ import type { ReactNode } from "react";
 export type TagKind = "umgesetzt" | "simulation" | "geplant" | "fiktiv" | "neutral";
 
 const STYLES: Record<TagKind, string> = {
-  umgesetzt: "bg-ok/15 text-[#13744a] ring-ok/30",
-  simulation: "bg-amber/20 text-[#7a5212] ring-amber/40",
+  umgesetzt: "bg-ok/15 text-status-success ring-ok/30",
+  simulation: "bg-amber/20 text-status-warning ring-amber/40",
   geplant: "bg-ink-200/25 text-muted ring-ink-200/40",
   fiktiv: "bg-teal/12 text-accent ring-teal/30",
   neutral: "bg-black/5 text-text ring-black/10"

@@ -8,7 +8,7 @@ import { NextChapter } from "../features/tour/NextChapter";
 
 function Column({ title, tag, icon, items, delay }: { title: string; tag: ReactNode; icon: ReactNode; items: StatusItem[]; delay: number }) {
   return (
-    <Reveal delay={delay} className="flex flex-col rounded-3xl border border-line bg-white p-6 sm:p-7">
+    <Reveal delay={delay} className="flex flex-col rounded-3xl border border-line bg-surface p-6 sm:p-7">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-[19px] font-semibold tracking-tight text-text">{title}</h3>
         {tag}
@@ -43,7 +43,7 @@ export function ProjectStatus() {
         <div className="mt-12 grid gap-5 lg:grid-cols-3" data-testid="project-status">
           <Column title="Umgesetzt" tag={<Tag kind="umgesetzt" />} icon={<Check className="size-4" aria-hidden />} items={DONE} delay={0} />
           <Column title="In Arbeit / Offen" tag={<Tag kind="geplant">Offen</Tag>} icon={<CircleDashed className="size-4 text-muted" aria-hidden />} items={OPEN} delay={0.08} />
-          <Column title="Was diese Demo simuliert" tag={<Tag kind="simulation" />} icon={<FlaskConical className="size-4 text-[#7a5212]" aria-hidden />} items={SIMULATED} delay={0.16} />
+          <Column title="Was diese Demo simuliert" tag={<Tag kind="simulation" />} icon={<FlaskConical className="size-4 text-status-warning" aria-hidden />} items={SIMULATED} delay={0.16} />
         </div>
 
         <Reveal className="mt-16">
@@ -55,7 +55,7 @@ export function ProjectStatus() {
               <li key={t.title} className="relative pl-8 md:pl-0 md:pt-8">
                 <span
                   aria-hidden
-                  className={`absolute left-0 top-1 size-[15px] rounded-full border-2 md:top-0 ${t.state === "done" ? "border-accent bg-accent" : t.state === "now" ? "border-accent bg-paper-2 ring-4 ring-accent/20" : "border-ink-300 bg-paper-2"}`}
+                  className={`absolute left-0 top-1 size-[15px] rounded-full border-2 md:top-0 ${t.state === "done" ? "border-accent bg-accent-fill" : t.state === "now" ? "border-accent bg-paper-2 ring-4 ring-accent/20" : "border-ink-300 bg-paper-2"}`}
                 />
                 <p className="text-[12.5px] font-semibold uppercase tracking-[0.1em] text-accent">{t.when}</p>
                 <p className="mt-1 text-[18px] font-semibold tracking-tight text-text">{t.title}</p>

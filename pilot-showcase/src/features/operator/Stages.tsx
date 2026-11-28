@@ -27,7 +27,7 @@ function useCounter(max: number, intervalMs: number, key: unknown): number {
   return n;
 }
 
-const inputCls = "mt-1.5 w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-[15px] text-text outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/25";
+const inputCls = "mt-1.5 w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[15px] text-text outline-none transition focus:border-teal focus:ring-2 focus:ring-teal/25";
 const primaryBtn =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-ink-900 px-5 text-[14px] font-semibold text-white transition hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-40";
 
@@ -76,7 +76,7 @@ export function StageMarket({ state, dispatch }: StageProps) {
             const done = i === 0 && state.created;
             return (
               <li key={t} className={`flex items-center gap-2.5 ${done ? "text-text" : "text-muted"}`}>
-                <span className={`grid size-5 shrink-0 place-items-center rounded-full ring-1 ring-inset ${done ? "bg-ok/20 text-[#13744a] ring-ok/40" : "ring-line"}`}>
+                <span className={`grid size-5 shrink-0 place-items-center rounded-full ring-1 ring-inset ${done ? "bg-ok/20 text-status-success ring-ok/40" : "ring-line"}`}>
                   {done ? <Check className="size-3" aria-hidden /> : null}
                 </span>
                 {t}
@@ -95,13 +95,13 @@ export function StageLayout({ state }: StageProps) {
   const n = useCounter(shelves.length, 480, "layout");
   return (
     <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
-      <div className="rounded-2xl border border-line bg-white p-3">
+      <div className="rounded-2xl border border-line bg-surface p-3">
         <MiniPlan state={state.sim} shelfCount={n} beaconCount={0} />
         <p className="px-1 pt-2 text-[12px] text-muted">Fiktiver Grundriss, 14 × 9 m, 1 Zelle = 1 m.</p>
       </div>
       <ul className="space-y-2" aria-label="Regale">
         {shelves.map((s, i) => (
-          <li key={s.id} className={`flex items-baseline gap-3 rounded-xl border px-3.5 py-2.5 text-[14px] transition-opacity duration-500 ${i < n ? "border-line bg-white opacity-100" : "border-transparent opacity-0"}`}>
+          <li key={s.id} className={`flex items-baseline gap-3 rounded-xl border px-3.5 py-2.5 text-[14px] transition-opacity duration-500 ${i < n ? "border-line bg-surface opacity-100" : "border-transparent opacity-0"}`}>
             <span className="font-mono text-[13px] font-semibold text-accent">{s.category}</span>
             <span className="text-text">{s.label}</span>
           </li>
@@ -120,7 +120,7 @@ export function StageBeacons({ state }: StageProps) {
   const pct = Math.round(cov.coveredShare * 100);
   return (
     <div className="grid gap-6 md:grid-cols-[1.4fr_1fr]">
-      <div className="rounded-2xl border border-line bg-white p-3">
+      <div className="rounded-2xl border border-line bg-surface p-3">
         <MiniPlan state={state.sim} beaconCount={n} showHeat={heat} />
         <div className="flex flex-wrap items-center justify-between gap-2 px-1 pt-2 text-[12px] text-muted">
           <span className="inline-flex items-center gap-1.5">
@@ -136,9 +136,9 @@ export function StageBeacons({ state }: StageProps) {
           {beacons.map((b, i) => {
             const bad = b.major === null || b.minor === null;
             return (
-              <li key={b.code} className={`flex items-center justify-between gap-3 rounded-xl border bg-white px-3.5 py-2 text-[13.5px] transition-opacity duration-500 ${i < n ? "opacity-100" : "opacity-0"} ${bad ? "border-danger/50" : "border-line"}`}>
+              <li key={b.code} className={`flex items-center justify-between gap-3 rounded-xl border bg-surface px-3.5 py-2 text-[13.5px] transition-opacity duration-500 ${i < n ? "opacity-100" : "opacity-0"} ${bad ? "border-danger/50" : "border-line"}`}>
                 <span className="font-mono font-semibold text-text">{b.code}</span>
-                <span className={bad ? "font-medium text-[#b3262b]" : "font-mono text-muted"}>{bad ? "Major/Minor fehlt" : `${b.major} / ${b.minor}`}</span>
+                <span className={bad ? "font-medium text-status-danger" : "font-mono text-muted"}>{bad ? "Major/Minor fehlt" : `${b.major} / ${b.minor}`}</span>
               </li>
             );
           })}
@@ -158,7 +158,7 @@ export function StageProducts({ state, dispatch }: StageProps) {
   const invalid = rows.filter((p) => !shelfCodes.has(p.layoutCode));
   return (
     <div>
-      <div className="overflow-hidden rounded-2xl border border-line bg-white">
+      <div className="overflow-hidden rounded-2xl border border-line bg-surface">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[13px] sm:text-[13.5px]">
             <thead className="bg-paper text-[11px] uppercase tracking-[0.08em] text-muted">
@@ -182,11 +182,11 @@ export function StageProducts({ state, dispatch }: StageProps) {
                     <td className="px-2 sm:px-3.5 py-2 font-mono text-text">{p.layoutCode}</td>
                     <td className="px-2 sm:px-3.5 py-2">
                       {bad ? (
-                        <span className="inline-flex items-center gap-1.5 font-medium text-[#b3262b]">
+                        <span className="inline-flex items-center gap-1.5 font-medium text-status-danger">
                           <CircleAlert className="size-4" aria-hidden /> <span className="max-sm:sr-only">Fehler</span>
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1.5 text-[#13744a]">
+                        <span className="inline-flex items-center gap-1.5 text-status-success">
                           <Check className="size-4" aria-hidden /> <span className="max-sm:sr-only">gültig</span>
                         </span>
                       )}
@@ -202,7 +202,7 @@ export function StageProducts({ state, dispatch }: StageProps) {
         {rows.length} Zeilen · {rows.length - invalid.length} gültig · {invalid.length} ungültig
       </p>
       {invalid.map((p) => (
-        <p key={p.id} className="mt-2 rounded-xl border border-danger/40 bg-danger/8 px-3.5 py-2.5 text-[14px] text-[#8f1d22]">
+        <p key={p.id} className="mt-2 rounded-xl border border-danger/40 bg-danger/8 px-3.5 py-2.5 text-[14px] text-error-text">
           Zeile {p.line}: Kein Regal {p.layoutCode} im aktiven Layout.
         </p>
       ))}
@@ -242,7 +242,7 @@ function checkOutcome(findings: readonly Finding[], index: number): "ok" | "warn
 function SeverityChip({ f }: { f: Finding }) {
   const block = f.severity === "BLOCKING";
   return (
-    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] ring-1 ring-inset ${block ? "bg-danger/10 text-[#b3262b] ring-danger/30" : "bg-warn/20 text-[#7a5212] ring-warn/40"}`}>
+    <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] ring-1 ring-inset ${block ? "bg-danger/10 text-status-danger ring-danger/30" : "bg-warn/20 text-status-warning ring-warn/40"}`}>
       {block ? <CircleAlert className="size-3" aria-hidden /> : <TriangleAlert className="size-3" aria-hidden />}
       {block ? "Blockierend" : "Warnung"}
     </span>
@@ -251,7 +251,7 @@ function SeverityChip({ f }: { f: Finding }) {
 
 function FindingRow({ f, children }: { f: Finding; children?: ReactNode }) {
   return (
-    <li className="rounded-xl border border-line bg-white p-3.5">
+    <li className="rounded-xl border border-line bg-surface p-3.5">
       <div className="flex flex-wrap items-center gap-2">
         <SeverityChip f={f} />
         <code className="font-mono text-[12.5px] font-semibold text-text">{f.code}</code>
@@ -311,10 +311,10 @@ export function StageCheck({ state, dispatch }: StageProps) {
               i >= shown
                 ? "text-muted ring-line"
                 : outcome === "block"
-                  ? "bg-danger/12 text-[#b3262b] ring-danger/35"
+                  ? "bg-danger/12 text-status-danger ring-danger/35"
                   : outcome === "warn"
-                    ? "bg-warn/20 text-[#7a5212] ring-warn/40"
-                    : "bg-ok/20 text-[#13744a] ring-ok/40";
+                    ? "bg-warn/20 text-status-warning ring-warn/40"
+                    : "bg-ok/20 text-status-success ring-ok/40";
             return (
               <li key={c} className="flex items-center gap-3 text-[14.5px]" data-outcome={i < shown ? outcome : "pending"}>
                 <span className={`grid size-6 shrink-0 place-items-center rounded-full ring-1 ring-inset transition-colors duration-300 ${tone}`}>
@@ -365,10 +365,10 @@ export function StageFix({ state, dispatch }: StageProps) {
           const info = FIXES[code];
           if (open.length === 0 && !fixed) return null;
           return (
-            <li key={code} className={`rounded-2xl border p-4 transition-colors ${fixed && open.length === 0 ? "border-ok/40 bg-ok/8" : "border-line bg-white"}`}>
+            <li key={code} className={`rounded-2xl border p-4 transition-colors ${fixed && open.length === 0 ? "border-ok/40 bg-ok/8" : "border-line bg-surface"}`}>
               <div className="flex flex-wrap items-center gap-2">
                 {fixed && open.length === 0 ? (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-ok/20 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-[#13744a]">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-ok/20 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-[0.06em] text-status-success">
                     <Check className="size-3" aria-hidden /> Behoben
                   </span>
                 ) : (
@@ -432,7 +432,7 @@ export function StageReady({ state }: StageProps) {
 
       <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {counters.map((c, i) => (
-          <motion.div key={c.label} className="rounded-2xl border border-line bg-white p-4" initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduce ? 0 : 0.15 + i * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}>
+          <motion.div key={c.label} className="rounded-2xl border border-line bg-surface p-4" initial={reduce ? false : { opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: reduce ? 0 : 0.15 + i * 0.08, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}>
             <dt className="text-[12px] font-medium text-muted">{c.label}</dt>
             <dd className="mt-1 text-[28px] font-semibold tracking-tight text-text">{c.value}</dd>
           </motion.div>
@@ -440,13 +440,13 @@ export function StageReady({ state }: StageProps) {
       </dl>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-line bg-white p-4">
+        <div className="rounded-2xl border border-line bg-surface p-4">
           <p className="flex items-center gap-2 text-[13px] font-semibold text-text">
             <Download className="size-4 text-accent" aria-hidden /> Bericht als Markdown
           </p>
           <p className="mt-1 text-[13.5px] leading-relaxed text-muted">Im echten System exportieren Sie Ampel, Zähler und Befunde als Markdown-Datei. Hier wird nichts heruntergeladen.</p>
         </div>
-        <div className="rounded-2xl border border-line bg-white p-4">
+        <div className="rounded-2xl border border-line bg-surface p-4">
           <p className="flex items-center gap-2 text-[13px] font-semibold text-text">
             <Search className="size-4 text-accent" aria-hidden /> Suche nur in diesem Markt
           </p>
@@ -473,7 +473,7 @@ export function StageReady({ state }: StageProps) {
 
 export const STATUS_STYLE: Record<ReadinessStatus | "NONE", string> = {
   NONE: "bg-black/5 text-muted ring-black/10",
-  RED: "bg-danger/10 text-[#b3262b] ring-danger/30",
-  YELLOW: "bg-warn/20 text-[#7a5212] ring-warn/40",
-  GREEN: "bg-ok/15 text-[#13744a] ring-ok/30"
+  RED: "bg-danger/10 text-status-danger ring-danger/30",
+  YELLOW: "bg-warn/20 text-status-warning ring-warn/40",
+  GREEN: "bg-ok/15 text-status-success ring-ok/30"
 };
