@@ -65,7 +65,8 @@ class ProductResourceBulkTest {
 
         given().contentType("application/json").body(TWO).queryParam("storeCode", PILOT_CODE)
                 .post("/api/products/bulk").then()
-                .statusCode(503).body("saved", equalTo(0), "unknown", equalTo(2),
+                .statusCode(503).body("status", equalTo(503), "method", equalTo("POST"),
+                        "saved", equalTo(0), "unknown", equalTo(2),
                         "rows[0].status", equalTo("unknown"));
     }
 

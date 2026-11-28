@@ -19,6 +19,7 @@ import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -78,9 +79,7 @@ public class ProductResource {
             @QueryParam("storeCode") String storeCode) {
 
         if (query == null || query.trim().isEmpty()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("{\"error\": \"Query parameter 'q' is required\"}")
-                    .build();
+            throw new WebApplicationException("Query parameter 'q' is required", Response.Status.BAD_REQUEST);
         }
 
         try {
@@ -89,10 +88,7 @@ public class ProductResource {
             LOG.info("Search for '" + query + "' returned " + products.size() + " results");
             return Response.ok(products).build();
         } catch (IOException e) {
-            LOG.error("Error searching products", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
-                    .build();
+            throw new WebApplicationException("Error searching products", e, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -111,10 +107,7 @@ public class ProductResource {
                     effectiveStoreCode(storeId, storeCode));
             return Response.ok(products).build();
         } catch (IOException e) {
-            LOG.error("Error getting all products", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
-                    .build();
+            throw new WebApplicationException("Error getting all products", e, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -134,15 +127,10 @@ public class ProductResource {
             if (product != null) {
                 return Response.ok(product).build();
             } else {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity("{\"error\": \"Product not found\"}")
-                        .build();
+                throw new WebApplicationException("Product not found", Response.Status.NOT_FOUND);
             }
         } catch (IOException e) {
-            LOG.error("Error getting product by id", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
-                    .build();
+            throw new WebApplicationException("Error getting product by id", e, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -150,7 +138,7 @@ public class ProductResource {
      * Indexiert ein einzelnes Produkt (Markt im Body: storeId oder storeCode)
      * POST /api/products
      */
-    @Operation(operationId = "indexProduct")
+    @Operation(operationId = "indexProduct", deprecated = true)
     @POST
     @RolesAllowed("admin")
     public Response indexProduct(Product product, @Context UriInfo uriInfo) {
@@ -161,7 +149,7 @@ public class ProductResource {
         try {
             store = storeResolver.require(product.getStoreId(), product.getStoreCode());
         } catch (CatalogStoreException exception) {
-            return errorResponse(Response.Status.BAD_REQUEST, exception.getMessage());
+            throw new WebApplicationException(exception.getMessage(), Response.Status.BAD_REQUEST);
         }
         ProductBulkService.applyStore(product, store);
         legacyDocumentGuard.requireNoLegacyDocuments(store.storeCode());
@@ -177,10 +165,7 @@ public class ProductResource {
                     ? Response.created(location).build()
                     : Response.noContent().location(location).build();
         } catch (IOException e) {
-            LOG.error("Error indexing product", e);
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("{\"error\": \"" + e.getMessage() + "\"}")
-                    .build();
+            throw new WebApplicationException("Error indexing product", e, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -189,7 +174,7 @@ public class ProductResource {
      * ein Item, das dem Parameter widerspricht, wird als fehlerhafte Zeile gemeldet.
      * POST /api/products/bulk?storeCode=SPAR-Leonding-001
      */
-    @Operation(operationId = "indexProductsBulk")
+    @Operation(operationId = "indexProductsBulk", deprecated = true)
     @POST
     @Path("/bulk")
     @RolesAllowed("admin")
@@ -200,22 +185,22 @@ public class ProductResource {
         try {
             bulkService.validateRequest(products);
         } catch (ProductBulkService.CatalogBulkRequestException exception) {
-            return errorResponse(Response.Status.BAD_REQUEST, exception.getMessage());
+            throw new WebApplicationException(exception.getMessage(), Response.Status.BAD_REQUEST);
         }
 
         ResolvedStore parameterStore;
         try {
             parameterStore = storeResolver.resolveOptional(storeId, storeCode);
         } catch (CatalogStoreException exception) {
-            return errorResponse(Response.Status.BAD_REQUEST, exception.getMessage());
+            throw new WebApplicationException(exception.getMessage(), Response.Status.BAD_REQUEST);
         }
         if (parameterStore == null && products.stream().anyMatch(ProductBulkService::hasNoStore)) {
-            return errorResponse(Response.Status.BAD_REQUEST, CatalogStoreResolver.MISSING_STORE);
+            throw new WebApplicationException(CatalogStoreResolver.MISSING_STORE, Response.Status.BAD_REQUEST);
         }
 
         ProductBulkService.Outcome outcome = bulkService.write(products, parameterStore);
         if (outcome.transportFailed()) {
-            return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(outcome.result()).build();
+            throw new CatalogBulkWriteException(outcome.result(), null);
         }
         auditProductBulk(parameterStore == null ? null : parameterStore.storeCode(), outcome.result());
         return Response.ok(outcome.result()).build();
@@ -266,13 +251,6 @@ public class ProductResource {
                     .orElse(null);
         }
         return isBlank(storeCode) ? null : storeCode.trim();
-    }
-
-    private Response errorResponse(Response.Status status, String message) {
-        return Response.status(status)
-                .type(MediaType.APPLICATION_JSON)
-                .entity(Map.of("error", message))
-                .build();
     }
 
     private static boolean isBlank(String value) {

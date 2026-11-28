@@ -24,6 +24,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
@@ -61,7 +62,7 @@ public class CategoryResource {
         try {
             return Response.ok(categoryService.getAllCategories(size)).build();
         } catch (IOException e) {
-            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+            throw new WebApplicationException(e, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -73,13 +74,11 @@ public class CategoryResource {
         try {
             Category category = categoryService.getCategoryByCode(categoryCode);
             if (category == null) {
-                return Response.status(Response.Status.NOT_FOUND)
-                        .entity(Map.of("error", "Category not found"))
-                        .build();
+                throw new WebApplicationException("Category not found", Response.Status.NOT_FOUND);
             }
             return Response.ok(category).build();
         } catch (IOException e) {
-            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+            throw new WebApplicationException(e, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -95,46 +94,42 @@ public class CategoryResource {
             existed = !createOnly && category != null && category.getCategoryCode() != null
                     && categoryService.getCategoryByCode(category.getCategoryCode()) != null;
         } catch (IOException e) {
-            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+            throw new WebApplicationException(e, Response.Status.INTERNAL_SERVER_ERROR);
         }
-        Response written = write(createOnly, category);
-        if (written.getStatus() != Response.Status.OK.getStatusCode()) {
-            return written;
-        }
+        write(createOnly, category);
         URI location = uriInfo.getAbsolutePathBuilder().path(String.valueOf(category.getCategoryCode())).build();
         return existed
                 ? Response.noContent().location(location).build()
                 : Response.created(location).build();
     }
 
-    /** 200 with the stored category, or the error response. */
-    private Response write(boolean createOnly, Category category) {
+    private Category write(boolean createOnly, Category category) {
         try {
             if (createOnly) {
                 Category created = categoryService.create(category);
                 auditCategoryWrite(created.getCategoryCode(), "CREATE", created);
-                return Response.ok(created).build();
+                return created;
             }
             CatalogBulkResult result = categoryService.bulkInsert(List.of(category));
             if (result.failed() > 0 || result.unknown() > 0) {
-                return Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(result).build();
+                throw new CatalogBulkWriteException(result, null);
             }
             auditCategoryWrite(category.getCategoryCode(), "UPSERT", category);
-            return Response.ok(category).build();
+            return category;
         } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", e.getMessage())).build();
+            throw new WebApplicationException(e.getMessage(), Response.Status.BAD_REQUEST);
         } catch (OpenSearchException e) {
             if (e.status() == 409) {
-                return Response.status(Response.Status.CONFLICT).entity(Map.of("error", "Kategorie-Code existiert bereits.")).build();
+                throw new WebApplicationException("Kategorie-Code existiert bereits.", Response.Status.CONFLICT);
             }
             throw e;
         } catch (ResponseException e) {
             if (e.getResponse().getStatusLine().getStatusCode() == 409) {
-                return Response.status(Response.Status.CONFLICT).entity(Map.of("error", "Kategorie-Code existiert bereits.")).build();
+                throw new WebApplicationException("Kategorie-Code existiert bereits.", Response.Status.CONFLICT);
             }
-            return Response.serverError().entity(Map.of("error", "Category create failed")).build();
+            throw new WebApplicationException("Category create failed", e, Response.Status.INTERNAL_SERVER_ERROR);
         } catch (IOException e) {
-            return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+            throw new WebApplicationException(e, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -147,7 +142,7 @@ public class CategoryResource {
         if (category != null) {
             category.setCategoryCode(categoryCode);
         }
-        return write(false, category);
+        return Response.ok(write(false, category)).build();
     }
 
     @Operation(operationId = "indexCategoriesBulk")
@@ -161,15 +156,15 @@ public class CategoryResource {
             auditCategoryBulk(result);
             return Response.ok(result).build();
         } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST).entity(Map.of("error", e.getMessage())).build();
+            throw new WebApplicationException(e.getMessage(), Response.Status.BAD_REQUEST);
         } catch (IOException e) {
             if (categories == null) {
-                return Response.serverError().entity(Map.of("error", e.getMessage())).build();
+                throw new WebApplicationException(e, Response.Status.INTERNAL_SERVER_ERROR);
             }
-            return Response.status(Response.Status.SERVICE_UNAVAILABLE)
-                    .entity(CatalogBulkResult.unknown(categories.stream().map(category -> String.valueOf(category.getCategoryCode())).toList(),
-                            "Transport failed; some writes may have persisted. Verify before retrying."))
-                    .build();
+            CatalogBulkResult result = CatalogBulkResult.unknown(
+                    categories.stream().map(category -> String.valueOf(category.getCategoryCode())).toList(),
+                    "Transport failed; some writes may have persisted. Verify before retrying.");
+            throw new CatalogBulkWriteException(result, e);
         }
     }
 

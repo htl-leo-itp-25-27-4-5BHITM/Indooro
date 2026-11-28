@@ -8,15 +8,15 @@
 
 ## 2. Versioning and Deprecation
 
-- [ ] 2.1 Add the `/api/v1` pre-matching rewrite filter and the `Indooro-Api-Version` response header. (zurückgestellt: Backend-Logik, parallele Sicherheits-/Datenzugriffs-Sessions; eigene Folgeänderung)
-- [ ] 2.2 Duplicate HTTP permission paths for `/api/v1` and add a unit test that checks every permission path has a v1 twin. (zurückgestellt: Backend-Logik, parallele Sicherheits-/Datenzugriffs-Sessions; eigene Folgeänderung)
-- [ ] 2.3 Add the configurable deprecation filter with `Deprecation`, `Sunset`, and `Link` headers for the four listed operations; mark them `deprecated: true` in the contract. (zurückgestellt: Backend-Logik, parallele Sicherheits-/Datenzugriffs-Sessions; eigene Folgeänderung)
-- [x] 2.4 Document the versioning and deprecation policy in `docs/audit/MODERNIZATION_BLUEPRINT.md` and `DEPLOYMENT.md`. Evidence: section 3.4a in `docs/audit/MODERNIZATION_BLUEPRINT.md` and section "API-Versionierung" in `DEPLOYMENT.md`; both state that the runtime parts (2.1-2.3) are not yet active.
+- [x] 2.1 Add the `/api/v1` pre-matching rewrite filter and the `Indooro-Api-Version` response header. Evidence: `ApiVersionFilter` rewrites only the v1 prefix before REST matching. `ApiResponseHeadersFilter` sets the version header before authentication. `ApiVersionResourceTest` covers both prefixes and an encoded query.
+- [x] 2.2 Duplicate HTTP permission paths for `/api/v1` and add a unit test that checks every permission path has a v1 twin. Evidence: `application.properties` lists aliases in the same permission rules. `ApiPermissionPathsTest` verifies each API path and its twin share a rule.
+- [x] 2.3 Add the configurable deprecation filter with `Deprecation`, `Sunset`, and `Link` headers for the four listed operations; mark them `deprecated: true` in the contract. Evidence: `ApiResponseHeadersFilter` reads configured successor links and UTC rollout and sunset dates, with a six-month minimum. `ApiVersionResourceTest` checks all four POSTs and the GET exclusions. The reviewed contract marks all four operations deprecated.
+- [x] 2.4 Document the versioning and deprecation policy in `docs/audit/MODERNIZATION_BLUEPRINT.md` and `DEPLOYMENT.md`. Evidence: section 3.4a in `docs/audit/MODERNIZATION_BLUEPRINT.md` and section "API-Versionierung" in `DEPLOYMENT.md`. These references describe the policy; tasks 2.1–2.3 record the runtime activation and configuration.
 
 ## 3. Error Envelope
 
-- [ ] 3.1 Refactor `ProductResource`, `CategoryResource`, `LayoutResource`, `AdminResource`, `ImportResource`, and `ExportResource` to throw `WebApplicationException` instead of building error bodies. (zurückgestellt: Backend-Logik, parallele Sicherheits-/Datenzugriffs-Sessions; eigene Folgeänderung)
-- [ ] 3.2 Update the contract responses to `ApiErrorResponse` and remove `LegacyError` once no operation references it. (zurückgestellt: Backend-Logik, parallele Sicherheits-/Datenzugriffs-Sessions; eigene Folgeänderung)
+- [x] 3.1 Refactor `ProductResource`, `CategoryResource`, `LayoutResource`, `AdminResource`, `ImportResource`, and `ExportResource` to throw `WebApplicationException` instead of building error bodies. Evidence: All six resources use `WebApplicationException` and the shared mapper. `PdfBoundsResourceTest`, `ApiVersionResourceTest`, and `ProductResourceBulkTest` cover the JSON envelope and retained bulk row outcomes.
+- [x] 3.2 Update the contract responses to `ApiErrorResponse` and remove `LegacyError` once no operation references it. Evidence: The reviewed contract uses `ApiErrorResponse` for legacy errors and composes it with `CatalogBulkResult` for 503s that include row outcomes. `LegacyError` is removed, generated declarations and the mobile export are current, and contract lint and parity pass.
 
 ## 4. Generated Clients
 
@@ -38,5 +38,5 @@ Coordination (2026-10-12): `docs/admin-rebuild/CHANGE_COORDINATION.md` records t
 ## 7. Verification
 
 - [x] 7.1 Demonstrate a failing contract job for an undocumented field rename. Evidence: `scripts/contract/check-parity.test.mjs` renames `MobileStoreSummary.storeCode` in a mutated generated document and expects exit code 1 (`npm run contract:test`).
-- [ ] 7.2 Demonstrate identical responses for `/api/mobile/stores` and `/api/v1/mobile/stores` and identical 401/403 behavior for protected v1 aliases. (zurückgestellt: Backend-Logik, parallele Sicherheits-/Datenzugriffs-Sessions; eigene Folgeänderung)
+- [x] 7.2 Demonstrate identical responses for `/api/mobile/stores` and `/api/v1/mobile/stores` and identical 401/403 behavior for protected v1 aliases. Evidence: `ApiVersionResourceTest` compares nonempty mobile store responses and protected store 401/403 responses. `LegacyWriteSecurityMatrixTest` verifies 401/403 parity for ten protected writes, and `MobileRateLimitResourceTest` verifies a shared rate-limit budget.
 - [x] 7.3 Run `npx -y @fission-ai/openspec@1.3.1 validate establish-shared-api-contract --strict`. Evidence: `npx -y @fission-ai/openspec@1.3.1 validate --all --strict` -> 60 passed, 0 failed.

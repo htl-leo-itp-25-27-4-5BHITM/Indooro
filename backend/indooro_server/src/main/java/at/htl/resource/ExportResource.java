@@ -10,11 +10,11 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.util.List;
-import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -46,13 +46,9 @@ public class ExportResource {
                     .build();
 
         } catch (PdfInputException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .type(MediaType.APPLICATION_JSON)
-                    .entity(Map.of("error", e.getMessage()))
-                    .build();
+            throw new WebApplicationException(e.getMessage(), e, Response.Status.BAD_REQUEST);
         } catch (Exception e) {
-            e.printStackTrace();
-            return Response.serverError().entity("Fehler beim PDF Export: " + e.getMessage()).build();
+            throw new WebApplicationException("PDF export failed", e, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 }

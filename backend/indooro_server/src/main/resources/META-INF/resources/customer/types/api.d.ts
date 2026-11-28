@@ -227,7 +227,10 @@ export interface paths {
          */
         get: operations["listProducts"];
         put?: never;
-        /** Index one product (legacy write path). */
+        /**
+         * Index one product (legacy write path).
+         * @deprecated
+         */
         post: operations["indexProduct"];
         delete?: never;
         options?: never;
@@ -284,7 +287,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Bulk upsert products with ordered row outcomes; writes are not atomic. */
+        /**
+         * Bulk upsert products with ordered row outcomes; writes are not atomic.
+         * @deprecated
+         */
         post: operations["indexProductsBulk"];
         delete?: never;
         options?: never;
@@ -359,6 +365,7 @@ export interface paths {
         put?: never;
         /**
          * Save a new global layout version and make it current.
+         * @deprecated
          * @description Published elements require positive numeric IDs at most 9007199254740991 for iOS. A shelf layoutCode, when present, must begin with that shelf's category and section. Requires role admin.
          */
         post: operations["saveLegacyCurrentLayout"];
@@ -1467,6 +1474,11 @@ export interface components {
             path: string;
             /** Format: date-time */
             timestamp: string;
+            /**
+             * Format: uuid
+             * @description Identifier for a server error when one is available.
+             */
+            correlationId?: string;
         };
         /** @description Quarkus Hibernate Validator violation report. */
         ViolationReport: {
@@ -1478,12 +1490,11 @@ export interface components {
                 message?: string;
             }[];
         };
-        LegacyError: {
-            error?: string;
-        };
         MessageResponse: {
             message: string;
         };
+        /** @description API error with the original row outcomes for safe recovery. */
+        CatalogBulkError: components["schemas"]["ApiErrorResponse"] & components["schemas"]["CatalogBulkResult"];
         CatalogBulkResult: {
             message: string;
             count: number;
@@ -2457,31 +2468,13 @@ export interface components {
                 "application/json": components["schemas"]["ApiErrorResponse"];
             };
         };
-        /** @description Legacy error body. */
-        LegacyBadRequest: {
+        /** @description The category write could not be confirmed. */
+        CatalogBulkUnavailable: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": components["schemas"]["LegacyError"];
-            };
-        };
-        /** @description Legacy error body. */
-        LegacyNotFound: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["LegacyError"];
-            };
-        };
-        /** @description Legacy error body built by string concatenation (may be invalid JSON, finding BUG-12). */
-        LegacyServerError: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["LegacyError"];
+                "application/json": components["schemas"]["CatalogBulkError"];
             };
         };
         /** @description Recipe detail. */
@@ -2890,7 +2883,7 @@ export interface operations {
                     "application/json": (components["schemas"]["Product"] | null)[];
                 };
             };
-            500: components["responses"]["LegacyServerError"];
+            500: components["responses"]["ServerError"];
         };
     };
     indexProduct: {
@@ -2911,7 +2904,7 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
-            500: components["responses"]["LegacyServerError"];
+            500: components["responses"]["ServerError"];
         };
     };
     searchProducts: {
@@ -2938,8 +2931,8 @@ export interface operations {
                     "application/json": components["schemas"]["Product"][];
                 };
             };
-            400: components["responses"]["LegacyBadRequest"];
-            500: components["responses"]["LegacyServerError"];
+            400: components["responses"]["BadRequest"];
+            500: components["responses"]["ServerError"];
         };
     };
     getProduct: {
@@ -2966,8 +2959,8 @@ export interface operations {
                     "application/json": components["schemas"]["Product"];
                 };
             };
-            404: components["responses"]["LegacyNotFound"];
-            500: components["responses"]["LegacyServerError"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
         };
     };
     indexProductsBulk: {
@@ -3004,7 +2997,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogBulkResult"];
+                    "application/json": components["schemas"]["CatalogBulkError"];
                 };
             };
         };
@@ -3030,7 +3023,7 @@ export interface operations {
                     "application/json": components["schemas"]["Category"][];
                 };
             };
-            500: components["responses"]["LegacyServerError"];
+            500: components["responses"]["ServerError"];
         };
     };
     upsertCategory: {
@@ -3051,10 +3044,12 @@ export interface operations {
         responses: {
             201: components["responses"]["Created"];
             204: components["responses"]["Updated"];
-            400: components["responses"]["LegacyBadRequest"];
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["CatalogBulkUnavailable"];
         };
     };
     getCategory: {
@@ -3077,7 +3072,8 @@ export interface operations {
                     "application/json": components["schemas"]["Category"];
                 };
             };
-            404: components["responses"]["LegacyNotFound"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
         };
     };
     replaceCategory: {
@@ -3104,9 +3100,12 @@ export interface operations {
                     "application/json": components["schemas"]["Category"];
                 };
             };
-            400: components["responses"]["LegacyBadRequest"];
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["ServerError"];
+            503: components["responses"]["CatalogBulkUnavailable"];
         };
     };
     indexCategoriesBulk: {
@@ -3131,7 +3130,7 @@ export interface operations {
                     "application/json": components["schemas"]["CatalogBulkResult"];
                 };
             };
-            400: components["responses"]["LegacyBadRequest"];
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             /** @description Transport outcome is ambiguous; verify affected category codes before retrying. */
@@ -3140,7 +3139,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CatalogBulkResult"];
+                    "application/json": components["schemas"]["CatalogBulkError"];
                 };
             };
         };
@@ -3163,7 +3162,7 @@ export interface operations {
                     "application/json": components["schemas"]["LegacyLayoutDocument"];
                 };
             };
-            500: components["responses"]["LegacyServerError"];
+            500: components["responses"]["ServerError"];
         };
     };
     saveLegacyCurrentLayout: {
@@ -3194,9 +3193,9 @@ export interface operations {
                     };
                 };
             };
-            400: components["responses"]["LegacyBadRequest"];
+            400: components["responses"]["BadRequest"];
             403: components["responses"]["Forbidden"];
-            500: components["responses"]["LegacyServerError"];
+            500: components["responses"]["ServerError"];
         };
     };
     listLegacyLayoutHistory: {
@@ -3220,7 +3219,7 @@ export interface operations {
                     "application/json": components["schemas"]["LayoutHistoryEntry"][];
                 };
             };
-            500: components["responses"]["LegacyServerError"];
+            500: components["responses"]["ServerError"];
         };
     };
     getLegacyLayoutVersion: {
@@ -3243,7 +3242,8 @@ export interface operations {
                     "application/json": components["schemas"]["LegacyLayoutDocument"];
                 };
             };
-            404: components["responses"]["LegacyNotFound"];
+            404: components["responses"]["NotFound"];
+            500: components["responses"]["ServerError"];
         };
     };
     convertPdfToJson: {
@@ -3270,24 +3270,10 @@ export interface operations {
                     "application/json": components["schemas"]["ImportedProduct"][];
                 };
             };
-            /** @description No file uploaded. */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": "Keine Datei hochgeladen";
-                };
-            };
-            /** @description Parsing failed (plain German message). */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": string;
-                };
-            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["ServerError"];
         };
     };
     exportBelegplanPdf: {
@@ -3312,15 +3298,10 @@ export interface operations {
                     "application/pdf": string;
                 };
             };
-            /** @description Export failed (plain German message). */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/pdf": string;
-                };
-            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            500: components["responses"]["ServerError"];
         };
     };
     createProductIndex: {
