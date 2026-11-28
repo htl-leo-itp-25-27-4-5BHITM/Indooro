@@ -421,12 +421,15 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 }
 .theme-control select { font: inherit; color: inherit; background: var(--ind-color-admin-surface); border: 1px solid var(--ind-color-admin-border-input); border-radius: .25rem; padding: .25rem; }
 .theme-icon { display: none; }
-@media (max-width: 600px) {
+@media (max-width: 900px) {
   .masthead .account { gap: .5rem; }
   .theme-control { gap: .25rem; padding-inline: .25rem; }
   .theme-label { display: none; }
   .theme-icon { display: block; }
   .theme-control select { font-size: 13px; }
+}
+@media (max-width: 600px) {
+  .masthead .account { font-size: 14px; }
 }
 .masthead { position: relative; }
 :root[data-theme=light] { color-scheme: light; }
