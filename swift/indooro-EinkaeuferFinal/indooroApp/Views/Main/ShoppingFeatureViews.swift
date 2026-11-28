@@ -575,7 +575,7 @@ struct ProductsPage: View {
     }
 
     private var searchSection: some View {
-        Section("Produkt hinzufügen") {
+        Section {
             searchField
 
             if productSearch.isSearching {
@@ -585,6 +585,11 @@ struct ProductsPage: View {
                         .foregroundStyle(Color.a11ySecondaryText)
                 }
             }
+        } header: {
+            Text("Produkt hinzufügen")
+                .font(.headline)
+                .foregroundStyle(Color.a11ySecondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -605,7 +610,6 @@ struct ProductsPage: View {
                     submitSearch()
                 }
                 .onChange(of: searchText) { _, newValue in
-                    // A multi-line field lets the placeholder wrap at large text sizes; Return still submits.
                     if newValue.contains("\n") {
                         searchText = newValue.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces)
                         submitSearch()
@@ -840,7 +844,7 @@ struct ProductsPage: View {
     }
 
     private var resultsSection: some View {
-        Section(resultsTitle) {
+        Section {
             if discoveryMode == .category, let selectedCategory {
                 HStack {
                     Label(selectedCategory.title, systemImage: selectedCategory.symbol)
@@ -879,6 +883,11 @@ struct ProductsPage: View {
                     description: Text(emptyText)
                 )
             }
+        } header: {
+            Text(resultsTitle)
+                .font(.headline)
+                .foregroundStyle(Color.a11ySecondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -1599,7 +1608,7 @@ struct ShoppingListsPage: View {
     }
 
     private var openItemsSection: some View {
-        Section("Auf deiner Liste") {
+        Section {
             if openItems.isEmpty {
                 ContentUnavailableView(
                     "Noch keine Artikel",
@@ -1627,6 +1636,11 @@ struct ShoppingListsPage: View {
                     }
                 }
             }
+        } header: {
+            Text("Auf deiner Liste")
+                .font(.headline)
+                .foregroundStyle(Color.a11ySecondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -1875,6 +1889,7 @@ private struct ShoppingChecklistRow: View {
                     HStack(spacing: 6) {
                         Text(item.name)
                             .font(.headline)
+                            .fixedSize(horizontal: false, vertical: true)
                             .foregroundStyle(.primary)
                             .strikethrough(isCompleted)
 
@@ -1889,7 +1904,8 @@ private struct ShoppingChecklistRow: View {
                     }
 
                     Text(locationText ?? (item.layoutCode == nil ? "Keine Regalposition" : ShelfLocationDescriptor.notInTestAreaText))
-                        .font(.caption)
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
                         .foregroundStyle(Color.a11ySecondaryText)
 
                     if let recipeSourceText = item.recipeSourceText {

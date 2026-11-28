@@ -35,7 +35,10 @@ nonisolated enum AccessibilityPalette {
     static let warningText = RGB(0.70, 0.33, 0.00)
 
     /// Neutrales Grau für Sekundärtext.
-    static let secondaryText = RGB(0.36, 0.36, 0.38)
+    static let secondaryText = RGB(0.28, 0.28, 0.30)
+
+    /// Dark green for small text on pale tinted control surfaces.
+    static let brandGreenText = RGB(0.00, 0.34, 0.28)
 
     /// Relative Leuchtdichte nach WCAG 2.x.
     static func relativeLuminance(_ color: RGB) -> Double {

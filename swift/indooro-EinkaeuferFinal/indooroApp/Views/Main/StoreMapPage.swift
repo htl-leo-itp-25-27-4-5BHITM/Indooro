@@ -206,7 +206,7 @@ struct StoreMapPage: View {
                 debugLogText: beaconManager.debugLogText,
                 onClearDebugLog: { beaconManager.clearDebugLog() }
             )
-            .presentationDetents([.medium])
+            .presentationDetents([.large])
         }
         .sheet(isPresented: $showAnchorScanner) {
             AnchorScannerView(
@@ -736,7 +736,7 @@ struct StoreMapPage: View {
             Label("Ich bin hier", systemImage: "location.fill")
                 .fixedSize(horizontal: false, vertical: true)
                 .font(.caption.weight(.semibold))
-                .foregroundStyle(nextTapSetsPosition ? Color.white : accent)
+                .foregroundStyle(nextTapSetsPosition ? Color.white : Color.a11yBrandGreenText)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
                 .background(
@@ -755,7 +755,7 @@ struct StoreMapPage: View {
             Label("QR-Code scannen", systemImage: "qrcode.viewfinder")
                 .font(.footnote.weight(.semibold))
                 .fixedSize(horizontal: false, vertical: true)
-                .foregroundStyle(accent)
+                .foregroundStyle(Color.a11yBrandGreenText)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 9)
                 .background(accent.opacity(0.11), in: Capsule())
@@ -802,7 +802,7 @@ struct StoreMapPage: View {
         .font(.footnote.weight(.semibold))
         .fixedSize(horizontal: false, vertical: true)
         .buttonStyle(.plain)
-        .foregroundStyle(accent)
+        .foregroundStyle(Color.a11yBrandGreenText)
         .frame(minHeight: 44)
         .contentShape(Rectangle())
 
@@ -812,7 +812,7 @@ struct StoreMapPage: View {
         .font(.footnote.weight(.semibold))
         .fixedSize(horizontal: false, vertical: true)
         .buttonStyle(.plain)
-        .foregroundStyle(accent)
+        .foregroundStyle(Color.a11yBrandGreenText)
         .frame(minHeight: 44)
         .contentShape(Rectangle())
     }

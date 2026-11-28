@@ -99,3 +99,94 @@ Unchecked tasks retain these limits:
   and conversion guidance plus delivery/rollback documentation remain open.
 - 4.1–4.2: full implementation verification and archive await the above work.
   Keep this change active.
+
+### Task 2.8 audit triage (2026-11-28)
+
+Baseline: Actions run `46135081559`, main `e1bc4125`, iPhone 17 Pro / iOS
+26.5 (23F77). Downloaded `ios-a11y-audit` and extracted the xcresult summary,
+activity details, complete issue descriptions and app/element screenshots with
+`xcrun xcresulttool get test-results` / `export attachments`. The workflow step
+summary reports six failed tests; the log and xcresult agree:
+
+| Test / screen | Issue type | Element | Exact label | Disposition |
+| --- | --- | --- | --- | --- |
+| `testStartAccessibilityAudit` / Start | `textClipped` (131072) | StaticText | `Finde alles.\nSchnell und einfach.` | Give the multiline hero text its full intrinsic height. |
+| `testOnboardingAccessibilityAudit` / introduction sheet | `textClipped` (131072) | StaticText | `Ortung ist freiwillig. Du kannst auch ohne Standort- oder Bluetooth-Zugriff einkaufen.` | Stack the icon above wrapping text at accessibility sizes to reclaim paragraph width. |
+| `testProductSearchAccessibilityAudit` / Planung results | `contrast` (1) | StaticText | `Suchergebnisse` | Exact label/type exclusion in this test only: attached screenshot shows the scrolled header behind iOS 26 navigation-bar Liquid Glass blur. |
+| `testSettingsAccessibilityAudit` / settings sheet | `dynamicType` (65536), partially unsupported | StaticText | `Diagnose` | Give settings section headers an explicit semantic headline style, wrapping and the existing secondary-text palette. |
+| `testShoppingListAccessibilityAudit` / Einkaufen | `dynamicType` (65536), partially unsupported | StaticText | `Gang 2 – Molkereiprodukte` | Use a larger semantic subheadline style and intrinsic wrapping height for checklist location text. This is ordinary row text, not a map-canvas exception. |
+| `testStoreMapAccessibilityAudit` / Karte | Audit execution error -56, timed out | None | None | No exclusion; must complete in a verification run. |
+
+The baseline stops after its first finding in each test, so it does not establish
+that these are the only issues. The follow-up handler collects all findings while
+returning false for every real/unrecognized issue. The single-line product search
+TextField and both map-overlay `...xxxLarge` caps remain intact. The stale
+multiline-field comment is removed. Verification is pending; task 2.8 stays open.
+
+
+Cycle 1: run `46136705451`, branch `beb0eca7`, failed. `xcresulttool`
+attachments and complete issue descriptions were exported and reviewed. Unlike
+the baseline, this cycle collects all findings. Onboarding failed during mock
+setup (request timeout), so no onboarding accessibility conclusion is possible.
+The map audit completed; its baseline timeout did not recur.
+
+| Test | Issue type / description | Element | Exact label | Count |
+| --- | --- | --- | --- | --- |
+| `testProductSearchAccessibilityAudit` | Contrast failed (`1`) | None | `None` | 3 |
+| `testSettingsAccessibilityAudit` | Contrast failed (`1`) | Button | `Fertig` | 1 |
+| `testSettingsAccessibilityAudit` | Contrast failed (`1`) | None | `None` | 4 |
+| `testSettingsAccessibilityAudit` | Contrast failed (`1`) | StaticText | `Diagnose` | 1 |
+| `testSettingsAccessibilityAudit` | Potentially inaccessible text (`2`) | None | `None` | 1 |
+| `testSettingsAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `Diagnose` | 1 |
+| `testSettingsAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | Button | `Fertig` | 1 |
+| `testSettingsAccessibilityAudit` | Text clipped (`131072`) | None | `None` | 1 |
+| `testSettingsAccessibilityAudit` | Text clipped (`131072`) | StaticText | `Diagnose` | 1 |
+| `testSettingsAccessibilityAudit` | Text clipped (`131072`) | StaticText | `Ohne Ortung` | 1 |
+| `testSettingsAccessibilityAudit` | Text clipped (`131072`) | Button | `Fertig` | 1 |
+| `testShoppingListAccessibilityAudit` | Contrast nearly passed (`1`) | StaticText | `Auf deiner Liste` | 1 |
+| `testShoppingListAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `€ 1,79` | 1 |
+| `testShoppingListAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `Auf deiner Liste` | 1 |
+| `testShoppingListAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `Bio-Vollmilch 1L` | 1 |
+| `testShoppingListAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `Gang 2 – Molkereiprodukte` | 1 |
+| `testStartAccessibilityAudit` | Contrast failed (`1`) | StaticText | `Plane deinen Einkauf und finde im Markt schnell den richtigen Weg.` | 1 |
+| `testStartAccessibilityAudit` | Contrast failed (`1`) | StaticText | `Erledigt` | 1 |
+| `testStartAccessibilityAudit` | Contrast failed (`1`) | StaticText | `Route, Produktziel und Standort auf einen Blick.` | 1 |
+| `testStartAccessibilityAudit` | Text clipped (`131072`) | StaticText | `Attributes: StaticText, 0x10ac29900, {{96.7, 134.7}, {208.7, 54.3}}, label: 'Finde alles.` | 1 |
+| `testStartAccessibilityAudit` | Text clipped (`131072`) | StaticText | `Route, Produktziel und Standort auf einen Blick.` | 1 |
+| `testStoreMapAccessibilityAudit` | Contrast failed (`1`) | Button | `QR-Code scannen` | 1 |
+| `testStoreMapAccessibilityAudit` | Contrast failed (`1`) | Button | `Position setzen` | 1 |
+| `testStoreMapAccessibilityAudit` | Contrast failed (`1`) | StaticText | `Ich bin hier` | 1 |
+| `testStoreMapAccessibilityAudit` | Contrast failed (`1`) | StaticText | `QR-Code scannen` | 1 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are unsupported (`65536`) | StaticText | `Gang 3` | 2 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | Button | `QR-Code scannen` | 1 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `Aktive Filiale • 01.10.2026, 08:00` | 1 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | TextField | `(empty label; placeholder/value: Produkt suchen)` | 1 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are unsupported (`65536`) | StaticText | `Gang 2` | 2 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `A12` | 1 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `A1` | 1 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `Position ungenau` | 1 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are unsupported (`65536`) | StaticText | `Gang 1` | 2 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `QR-Code scannen` | 1 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `UI-Testmarkt` | 1 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | Button | `Position setzen` | 1 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are partially unsupported (`65536`) | StaticText | `Ich bin hier` | 1 |
+| `testStoreMapAccessibilityAudit` | Dynamic Type font sizes are unsupported (`65536`) | StaticText | `Eingang` | 1 |
+| `testStoreMapAccessibilityAudit` | Text clipped (`131072`) | StaticText | `Eingang` | 1 |
+
+Cycle 2 remediation: darker existing secondary-text palette and a named dark
+green text color for tinted map controls; intrinsic wrapping height for the
+Start map description and checklist name; natural hero-heading wrapping;
+explicit semantic checklist section header; full-height settings sheet to
+provide space for larger content. Add default/XXL screenshot evidence before
+considering any further Dynamic Type exclusions. Preserve both map-overlay caps.
+
+Proven cycle 1 exclusions: only the observed nil-element screen/type pairs
+(contrast in search; contrast, element detection and clipping in settings),
+map-canvas labels A1, A12, Gang 1–3 and Eingang for Dynamic Type, rotated Eingang
+for clipping, and native settings confirmation button Fertig for contrast,
+Dynamic Type and clipping. Each match is limited by screen, issue type and exact
+label/element kind, or explicitly missing element. Comments cite the source and
+screenshot proof. The map-overlay Dynamic Type findings remain unsuppressed:
+the intentional xxxLarge caps do restrict the larger accessibility categories.
+Normal PR draft checks and `openspec validate add-ui-quality-gates --strict`
+pass; `swift-tests` has not yet run because the PR is draft.

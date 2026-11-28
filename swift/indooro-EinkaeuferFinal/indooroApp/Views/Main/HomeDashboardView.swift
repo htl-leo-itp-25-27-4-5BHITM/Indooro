@@ -58,14 +58,16 @@ struct HomeDashboardView: View {
                 .accessibilityAddTraits(.isHeader)
 
             VStack(spacing: IndooroTokens.Spacing.value8px) {
-                Text("Finde alles.\nSchnell und einfach.")
+                Text("Finde alles. Schnell und einfach.")
                     .font(.system(.title2, design: .rounded, weight: .bold))
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
                     .foregroundStyle(.primary)
 
                 Text("Plane deinen Einkauf und finde im Markt schnell den richtigen Weg.")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
                     .foregroundStyle(Color.a11ySecondaryText)
                     .padding(.horizontal, IndooroTokens.Spacing.value16px)
             }
@@ -269,6 +271,7 @@ struct HomeDashboardView: View {
 
                     Text("Route, Produktziel und Standort auf einen Blick.")
                         .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
                         .foregroundStyle(Color.a11ySecondaryText)
                 }
 

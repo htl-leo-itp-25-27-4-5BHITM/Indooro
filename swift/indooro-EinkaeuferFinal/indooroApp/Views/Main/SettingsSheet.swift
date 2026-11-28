@@ -30,7 +30,7 @@ struct SettingsSheet: View {
                         }
                     }
                 }
-                Section("Ortung") {
+                Section {
                     Picker("Modus", selection: $trackingMode) {
                         Text("Mit Ortung").tag(TrackingMode.beacon)
                         Text("Ohne Ortung").tag(TrackingMode.debugNoBeacons)
@@ -44,9 +44,14 @@ struct SettingsSheet: View {
                                 .foregroundStyle(Color.a11ySecondaryText)
                         }
                     }
+                } header: {
+                    Text("Ortung")
+                        .font(.headline)
+                        .foregroundStyle(Color.a11ySecondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
-                Section("Karte") {
+                Section {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Text("Kartengröße")
@@ -66,10 +71,15 @@ struct SettingsSheet: View {
                     #if DEBUG
                     Toggle("Tippen setzt Ziel", isOn: $tapSetsTarget)
                     #endif
+                } header: {
+                    Text("Karte")
+                        .font(.headline)
+                        .foregroundStyle(Color.a11ySecondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
 
                 #if DEBUG
-                Section("Diagnose") {
+                Section {
                     Text(debugLogText.isEmpty ? "Noch keine Einträge." : debugLogText)
                         .font(.system(.caption2, design: .monospaced))
                         .lineLimit(30)
@@ -78,11 +88,16 @@ struct SettingsSheet: View {
                     Button("Protokoll kopieren") { UIPasteboard.general.string = debugLogText }
                         .disabled(debugLogText.isEmpty)
                     Button("Protokoll leeren", role: .destructive, action: onClearDebugLog)
+                } header: {
+                    Text("Diagnose")
+                        .font(.headline)
+                        .foregroundStyle(Color.a11ySecondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 #endif
 
                 #if DEBUG
-                Section("Debug") {
+                Section {
                     Picker("Funktionsprofil", selection: $profileOverride) {
                         Text("Aus Build").tag("")
                         Text("Pilot").tag("pilot")
@@ -142,11 +157,16 @@ struct SettingsSheet: View {
                     Text("Langer Druck auf die Karte setzt eine Wahrheitsmarkierung, ohne die Position zu ändern. Szenario und Rolle gelten ab dem Start der Aufnahme, der Marker ab dem naechsten Wahrheitsmarker.")
                         .font(.caption)
                         .foregroundStyle(Color.a11ySecondaryText)
+                } header: {
+                    Text("Debug")
+                        .font(.headline)
+                        .foregroundStyle(Color.a11ySecondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 #endif
 
                 if AppEnvironment.allowsExtendedFeatures {
-                Section("AR") {
+                Section {
                     Button {
                         onShowAR()
                     } label: {
@@ -159,6 +179,11 @@ struct SettingsSheet: View {
                             .font(.caption)
                             .foregroundStyle(Color.a11ySecondaryText)
                     }
+                } header: {
+                    Text("AR")
+                        .font(.headline)
+                        .foregroundStyle(Color.a11ySecondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 }
             }
