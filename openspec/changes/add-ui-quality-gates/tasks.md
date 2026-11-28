@@ -17,8 +17,8 @@
 - [ ] 2.4 B1–B3 remediation: Fix reported serious/critical findings in each package while preserving German UI copy and existing auth boundaries; retain lower-impact findings in reports without blanket exclusions or disabled rules.
 - [ ] 2.5 B1–B3 CI verification: Wire scans into pull-request jobs, preserve functional/visual checks, prove a temporary serious/critical fixture fails and a lower-impact finding remains reported, then remove negative controls and pass clean scans.
 - [ ] 2.6 B4 iOS audit: Extend `MCindooroAppUITests` with `performAccessibilityAudit` for Start, Planung, Rezepte, Einkaufen, Karte and representative search/tour/dialog states using `-uiTesting` fixtures without live network, BLE or permission prompts.
-- [ ] 2.7 B4 iOS audit: Select and document an audit-capable Xcode/simulator destination in macOS CI for main and pilot/first-store pull requests; retain `.xcresult` on failure and fail setup if the runtime cannot execute audits.
-- [ ] 2.8 B4 iOS remediation and verification: Fix audit findings without suppression, demonstrate that an audit issue fails XCTest/CI and pass all required fixture states after removing the temporary negative control.
+- [ ] 2.7 B4 iOS audit: Run the audits in `.github/workflows/ios-a11y-audit.yaml` (nightly + `workflow_dispatch`) instead of PR CI (decision 2026-11-27: findings vary on iOS 26 and a macOS cycle takes ~35 min); upload `.xcresult` and a step summary; skip `AccessibilityAuditUITests` in `ios.yaml` swift-tests.
+- [ ] 2.8 B4 iOS remediation and verification: Fix audit findings without suppression (first round in PR #247: Dynamic Type caps, line limits, secondary-text contrast), triage the nightly audit reports and reach a passing audit run.
 - [ ] 2.9 B1–B4 documentation: Record covered states, commands, artifacts and automated coverage limits, retaining manual keyboard, VoiceOver and Dynamic Type verification guidance.
 
 ## 3. Package C — Shared design tokens

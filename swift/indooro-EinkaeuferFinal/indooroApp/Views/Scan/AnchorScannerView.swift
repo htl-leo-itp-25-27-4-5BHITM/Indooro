@@ -65,12 +65,12 @@ struct AnchorScannerView: View {
         VStack(spacing: 16) {
             Image(systemName: "qrcode.viewfinder")
                 .font(.system(size: fallbackIconSize, weight: .regular))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.a11ySecondaryText)
 
             Text(message)
                 .font(.body)
                 .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.a11ySecondaryText)
 
             #if DEBUG
             VStack(alignment: .leading, spacing: 8) {

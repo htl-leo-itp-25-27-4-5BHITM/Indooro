@@ -35,7 +35,7 @@ struct ShoppingImportPreviewSheet: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Notiz")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.a11ySecondaryText)
                             Text(note)
                                 .font(.subheadline)
                         }
@@ -89,7 +89,7 @@ struct ShoppingImportPreviewSheet: View {
 
                             Text("Regal: \(item.layoutCode)")
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.a11ySecondaryText)
                         }
                         .padding(.vertical, 2)
                     }
@@ -133,7 +133,7 @@ struct ShoppingImportPreviewSheet: View {
             Text(title)
             Spacer()
             Text(value)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.a11ySecondaryText)
                 .multilineTextAlignment(.trailing)
         }
     }
@@ -181,7 +181,7 @@ struct ShoppingItemSelectionSheet: View {
                     HStack {
                         Text("\(selectedItemCount) von \(openItems.count) Positionen, \(selectedQuantityCount) Artikel ausgewählt")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                         Spacer()
                         Button("Alle") {
                             selectAll()
@@ -217,18 +217,18 @@ struct ShoppingItemSelectionSheet: View {
                                                     .padding(.horizontal, 5)
                                                     .padding(.vertical, 2)
                                                     .background(Color.secondary.opacity(0.12), in: Capsule())
-                                                    .foregroundStyle(.secondary)
+                                                    .foregroundStyle(Color.a11ySecondaryText)
                                             }
                                         }
 
                                         Text(item.layoutCode.map { "Regal: \($0)" } ?? "Freier Eintrag")
                                             .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(Color.a11ySecondaryText)
 
                                         if let note = item.trimmedNote {
                                             Text(note)
                                                 .font(.caption)
-                                                .foregroundStyle(.secondary)
+                                                .foregroundStyle(Color.a11ySecondaryText)
                                                 .lineLimit(2)
                                         }
                                     }
@@ -246,7 +246,7 @@ struct ShoppingItemSelectionSheet: View {
                                 ) {
                                     Text("Teilen: \(selectedQuantities[item.id] ?? item.quantity) von \(item.quantity)")
                                         .font(.caption)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(Color.a11ySecondaryText)
                                 }
                             }
                         }

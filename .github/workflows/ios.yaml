@@ -124,6 +124,7 @@ jobs:
         # Erst aktiv, wenn der Testtarget in Xcode angelegt wurde (add-ios-app-test-target 1.2).
         # Der Scheme-Lauf enthaelt beide Testziele. Bei einem Simulator-Boot-Fehler wird einmal wiederholt
         # (design.md, Entscheidung 4); echte Testfehler werden nicht wiederholt.
+        # The accessibility audits run in ios-a11y-audit.yaml (nightly and on demand), not on every PR.
         if: ${{ hashFiles('swift/indooro-EinkaeuferFinal/MCindooroAppTests/**/*.swift') != '' }}
         run: |
           set +e
@@ -133,6 +134,7 @@ jobs:
               -scheme MCindooroApp \
               -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.name }}" \
               -skipPackagePluginValidation \
+              -skip-testing:MCindooroAppUITests/AccessibilityAuditUITests \
               CODE_SIGNING_ALLOWED=NO 2>&1 | tee "$1"
             return "${PIPESTATUS[0]}"
           }

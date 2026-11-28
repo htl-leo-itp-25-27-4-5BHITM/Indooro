@@ -38,7 +38,7 @@ struct ProductSearchRow: View {
                     Text(product.name)
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(.primary)
-                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
 
                     if isInShoppingList {
                         Image(systemName: "checkmark.circle.fill")
@@ -50,7 +50,7 @@ struct ProductSearchRow: View {
 
                 Text(product.layoutCode.isEmpty ? "Keine Regalposition" : "Regal auf der Karte")
                     .font(.caption)
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.a11ySecondaryText)
 
                 Text(PriceText.format(product.price))
                     .font(.caption.weight(.semibold))
@@ -78,7 +78,6 @@ struct ProductSearchRow: View {
                 } label: {
                     Image(systemName: isInShoppingList ? "plus.circle.fill" : "plus")
                         .font(.headline.weight(.semibold))
-                        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
                         .foregroundStyle(accent)
                         .frame(width: 30, height: 30)
                         .background(accent.opacity(0.10), in: Circle())

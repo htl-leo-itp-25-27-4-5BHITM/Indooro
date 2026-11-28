@@ -160,7 +160,7 @@ struct ShoppingSessionPanel: View {
                 HStack(spacing: 10) {
                     Text("Alle Stopps erledigt!")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
 
                     Spacer()
 
@@ -225,7 +225,7 @@ struct UpsellPromptSheet: View {
                     VStack(alignment: .leading, spacing: 6) {
                         Text("Zu \(prompt.checkedProductName) passt vielleicht noch:")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                             .accessibilityAddTraits(.isHeader)
 
                         ForEach(prompt.suggestions) { suggestion in
@@ -238,7 +238,7 @@ struct UpsellPromptSheet: View {
 
                                         Text(suggestion.product.detailText)
                                             .font(.caption)
-                                            .foregroundStyle(.secondary)
+                                            .foregroundStyle(Color.a11ySecondaryText)
                                     }
 
                                     Spacer(minLength: 0)
@@ -261,7 +261,7 @@ struct UpsellPromptSheet: View {
 
                                 Text(suggestion.reason)
                                     .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(Color.a11ySecondaryText)
                                     .lineLimit(3)
                                     .accessibilityHidden(true)
                             }
@@ -279,7 +279,7 @@ struct UpsellPromptSheet: View {
                     Button("Nicht mehr für dieses Produkt") {
                         onSuppressProduct()
                     }
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
                 }
             }
             .navigationTitle("Passt gut dazu")
@@ -582,7 +582,7 @@ struct ProductsPage: View {
                 HStack(spacing: 10) {
                     ProgressView()
                     Text("Produkte werden gesucht …")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                 }
             }
         }
@@ -591,15 +591,25 @@ struct ProductsPage: View {
     private var searchField: some View {
         HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.a11ySecondaryText)
 
             TextField("Was möchtest du kaufen?", text: $searchText)
+                .frame(minHeight: 44)
+                .accessibilityLabel("Was möchtest du kaufen?")
+                .accessibilityHint("Sucht Produkte für deine Einkaufsliste")
                 .textFieldStyle(.plain)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
                 .onSubmit {
                     submitSearch()
+                }
+                .onChange(of: searchText) { _, newValue in
+                    // A multi-line field lets the placeholder wrap at large text sizes; Return still submits.
+                    if newValue.contains("\n") {
+                        searchText = newValue.replacingOccurrences(of: "\n", with: " ").trimmingCharacters(in: .whitespaces)
+                        submitSearch()
+                    }
                 }
 
             if !searchText.isEmpty {
@@ -615,7 +625,7 @@ struct ProductsPage: View {
                     dismissKeyboard()
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                         .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
                 }
@@ -644,7 +654,7 @@ struct ProductsPage: View {
 
                         Text("Suche oben oder tippe auf eine Kategorie.")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                     }
                 }
                 .padding(.vertical, 4)
@@ -768,7 +778,7 @@ struct ProductsPage: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Weitere Kategorie")
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
 
                     Text(selectedAdditionalCategory?.title ?? "Kategorie auswählen")
                         .font(.subheadline.weight(.semibold))
@@ -781,7 +791,7 @@ struct ProductsPage: View {
 
                 Image(systemName: "chevron.down")
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
             }
             .padding(12)
             .background(Color(uiColor: .systemBackground), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
@@ -838,7 +848,7 @@ struct ProductsPage: View {
                     Spacer()
                     Text(selectedCertification.title)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                 }
                 .padding(.vertical, 4)
             }
@@ -1179,18 +1189,18 @@ private struct PlannedProductRow: View {
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(Color.secondary.opacity(0.12), in: Capsule())
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                     }
                 }
 
                 Text(locationText ?? (item.layoutCode == nil ? "Freier Eintrag" : ShelfLocationDescriptor.notInTestAreaText))
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
 
                 if let recipeSourceText = item.recipeSourceText {
                     Text(recipeSourceText)
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
                         .lineLimit(2)
                 }
             }
@@ -1202,7 +1212,7 @@ private struct PlannedProductRow: View {
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.title3)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
                     .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
@@ -1239,7 +1249,7 @@ struct ShoppingListsPage: View {
     @State private var showsUnresolvedItems = false
     @State private var storedPreview: ShoppingRouteSnapshot?
 
-    private let accent = Color(red: 0.12, green: 0.50, blue: 0.39)
+    private let accent = Color(red: 0.00, green: 0.43, blue: 0.36)
 
     private var pageBackground: Color {
         Color(uiColor: .systemGroupedBackground)
@@ -1462,7 +1472,7 @@ struct ShoppingListsPage: View {
 
                         Text("\(list.openItemCount) offen, \(list.completedItemCount) erledigt")
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
@@ -1533,14 +1543,15 @@ struct ShoppingListsPage: View {
                     } label: {
                         Image(systemName: "ellipsis.circle")
                             .font(.title3)
-                            .foregroundStyle(.secondary)
-                            .accessibilityLabel("Listenaktionen")
+                            .foregroundStyle(Color.a11ySecondaryText)
+                            .frame(minWidth: 44, minHeight: 44)
                     }
+                    .accessibilityLabel("Listenaktionen")
                 }
 
                 Text(headerDescription(for: list))
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
 
                 if sessionManager.activeListID == list.id {
                     HStack(spacing: 10) {
@@ -1577,11 +1588,11 @@ struct ShoppingListsPage: View {
 
                 Text(currentStop.itemNamesPreview)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
 
                 Text("\(stopCountText(preview.remainingStopCount)) und \(preview.remainingProductCount) Artikel sind noch offen.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.a11ySecondaryText)
             }
             .padding(.vertical, 6)
         }
@@ -1873,18 +1884,18 @@ private struct ShoppingChecklistRow: View {
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(Color.secondary.opacity(0.12), in: Capsule())
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Color.a11ySecondaryText)
                         }
                     }
 
                     Text(locationText ?? (item.layoutCode == nil ? "Keine Regalposition" : ShelfLocationDescriptor.notInTestAreaText))
                         .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.a11ySecondaryText)
 
                     if let recipeSourceText = item.recipeSourceText {
                         Text(recipeSourceText)
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Color.a11ySecondaryText)
                             .lineLimit(2)
                     }
                 }
@@ -1893,14 +1904,17 @@ private struct ShoppingChecklistRow: View {
 
                 if let price = item.price {
                     Text(PriceText.format(price))
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Color.a11ySecondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
+            .frame(minHeight: 44)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityValue(AccessibilityText.shoppingItemValue(isChecked: isCompleted))
+        .accessibilityHint(isCompleted ? "Markiert den Artikel als offen" : "Markiert den Artikel als erledigt")
         .accessibilityAddTraits(.isButton)
     }
 }
