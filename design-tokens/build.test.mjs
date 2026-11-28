@@ -58,6 +58,7 @@ test('dark overrides preserve light output and use explicit and system selectors
   const { dir, run } = await fixture(t, light);
   assert.equal(run().status, 0);
   const original = await readFile(path.join(dir, 'dist/tokens.css'), 'utf8');
+  light.color['new-web-alias'] = { $type: 'color', $value: '{color.ink}', $extensions: { 'indooro.web-only': true } };
   light.color.surface.$extensions = { 'indooro.dark': { colorSpace: 'srgb', components: [1, 1, 1], alpha: 1 } };
   await writeFile(path.join(dir, 'tokens.json'), JSON.stringify(light));
   assert.equal(run().status, 0);
