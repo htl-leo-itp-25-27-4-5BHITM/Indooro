@@ -1,6 +1,6 @@
 import { initializeTheme, ThemeControl } from "./ThemeControl";
 import { describeError, LoadingState } from "./PageState";
-import "../../design-tokens/dist/tokens.css";
+import "../../design-tokens/dist/admin-ui.css";
 import React, { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ApiClientError, createApiClient } from "./api/client";

@@ -323,6 +323,7 @@ export const tokens = {
   "color.admin.editor-validation-warning-surface": "#e7e4da",
   "color.admin.editor-dialog-border": "#b9ccc3",
   "color.admin.editor-action-border": "#ccdad2",
+  "color.admin.preview-link": "#205b4b",
   "color.showcase.ink-950": "#050c10",
   "color.showcase.ink-900": "#071117",
   "color.showcase.ink-850": "#0a161c",

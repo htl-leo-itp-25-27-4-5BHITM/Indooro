@@ -322,6 +322,7 @@
   --ind-color-admin-editor-validation-warning-surface: var(--ind-color-palette-hex-e7e4da);
   --ind-color-admin-editor-dialog-border: var(--ind-color-palette-hex-b9ccc3);
   --ind-color-admin-editor-action-border: var(--ind-color-palette-hex-ccdad2);
+  --ind-color-admin-preview-link: var(--ind-color-palette-hex-205b4b);
   --ind-color-showcase-ink-950: var(--ind-color-palette-hex-050c10);
   --ind-color-showcase-ink-900: var(--ind-color-palette-hex-071117);
   --ind-color-showcase-ink-850: var(--ind-color-palette-hex-0a161c);
@@ -590,6 +591,7 @@
   --ind-color-admin-editor-validation-warning-surface: #203b43;
   --ind-color-admin-editor-dialog-border: #476773;
   --ind-color-admin-editor-action-border: #203b43;
+  --ind-color-admin-preview-link: #d5eee6;
   --ind-color-showcase-paper: #0b151c;
   --ind-color-showcase-paper-2: #15252f;
   --ind-color-showcase-line: #3e5863;
@@ -708,6 +710,7 @@
     --ind-color-admin-editor-validation-warning-surface: #203b43;
     --ind-color-admin-editor-dialog-border: #476773;
     --ind-color-admin-editor-action-border: #203b43;
+    --ind-color-admin-preview-link: #d5eee6;
     --ind-color-showcase-paper: #0b151c;
     --ind-color-showcase-paper-2: #15252f;
     --ind-color-showcase-line: #3e5863;

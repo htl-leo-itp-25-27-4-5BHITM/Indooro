@@ -79,3 +79,11 @@ and appends explicit `[data-theme=dark]` overrides and system dark overrides for
 New web-only aliases use `$extensions["indooro.web-only"]: true` so the generated
 iOS constants remain unchanged. Both web apps persist `indooro-theme` as `light`,
 `dark`, or `system`; system removes the attribute so CSS tracks OS changes live.
+
+The web entry points import generated `dist/admin-ui.css` and
+`dist/pilot-showcase.css`. These contain the tokens referenced in each app's
+source and their transitive dependencies; palette aliases are resolved inline
+with exactly the same values. This keeps both themes inside existing CSS bundle
+budgets. The complete `dist/tokens.css`, TS export and backend copy remain
+available. Re-run the generator after adding or removing a token reference in
+app source; `--check` also validates these app-specific outputs.

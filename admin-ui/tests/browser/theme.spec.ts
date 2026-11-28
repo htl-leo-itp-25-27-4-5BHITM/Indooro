@@ -27,7 +27,7 @@ test("theme follows the OS, persists manual choices, and restores System", async
   expect(await scheme()).toBe("light");
 });
 
-test("blocked storage and invalid preferences preserve a working selector", async ({ page }) => {
+test("blocked storage preserves a working selector", async ({ page }) => {
   await mockVisualApi(page);
   await page.addInitScript(() => {
     Object.defineProperty(window, "localStorage", { get() { throw new Error("Blocked storage"); } });
@@ -35,4 +35,15 @@ test("blocked storage and invalid preferences preserve a working selector", asyn
   await page.goto(path);
   await page.getByRole("combobox", { name: "Darstellung", exact: true }).selectOption("light");
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+});
+
+test("invalid stored preferences fall back to System and the header selector reveals on focus", async ({ page }) => {
+  await mockVisualApi(page);
+  await page.addInitScript(() => localStorage.setItem("indooro-theme", "invalid"));
+  await page.goto(path);
+  const control = page.getByRole("combobox", { name: "Darstellung", exact: true });
+  await expect(control).toHaveValue("system");
+  await control.focus();
+  await expect(page.locator(".theme-control")).toHaveCSS("opacity", "1");
+  await expect(page.locator("html")).not.toHaveAttribute("data-theme");
 });

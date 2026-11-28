@@ -1,5 +1,5 @@
 import { initializeTheme } from "./ThemeControl";
-import "../../design-tokens/dist/tokens.css";
+import "../../design-tokens/dist/pilot-showcase.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
