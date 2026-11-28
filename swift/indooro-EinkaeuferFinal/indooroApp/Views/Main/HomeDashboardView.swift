@@ -61,11 +61,13 @@ struct HomeDashboardView: View {
                 Text("Finde alles.\nSchnell und einfach.")
                     .font(.system(.title2, design: .rounded, weight: .bold))
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
                     .foregroundStyle(.primary)
 
                 Text("Plane deinen Einkauf und finde im Markt schnell den richtigen Weg.")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
                     .foregroundStyle(Color.a11ySecondaryText)
                     .padding(.horizontal, IndooroTokens.Spacing.value16px)
             }

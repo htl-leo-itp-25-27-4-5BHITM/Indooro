@@ -1888,7 +1888,8 @@ private struct ShoppingChecklistRow: View {
                     }
 
                     Text(locationText ?? (item.layoutCode == nil ? "Keine Regalposition" : ShelfLocationDescriptor.notInTestAreaText))
-                        .font(.caption)
+                        .font(.subheadline)
+                        .fixedSize(horizontal: false, vertical: true)
                         .foregroundStyle(Color.a11ySecondaryText)
 
                     if let recipeSourceText = item.recipeSourceText {

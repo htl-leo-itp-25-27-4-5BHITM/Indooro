@@ -29,9 +29,13 @@ struct PilotIntroduction: View {
 private struct IntroductionRow: View {
     let text: LocalizedStringKey
     let symbol: String
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 12) {
+        let layout = dynamicTypeSize.isAccessibilitySize
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12))
+            : AnyLayout(HStackLayout(alignment: .firstTextBaseline, spacing: 12))
+        layout {
             Image(systemName: symbol)
                 .accessibilityHidden(true)
             Text(text)
