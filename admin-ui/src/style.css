@@ -407,26 +407,30 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 @keyframes state-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .state-spinner { animation: none; } }
 
-/* Reveal on pointer hover and keyboard focus without moving the existing header. */
+/* Keep the labelled selector in the header flow. */
 .theme-control {
-  position: absolute;
-  top: 100%;
-  right: 1rem;
-  z-index: 100;
   display: flex;
   align-items: center;
   gap: .5rem;
-  padding: .5rem .75rem;
+  padding: .125rem .5rem;
   border: 1px solid var(--ind-color-admin-border);
   border-radius: .5rem;
   background: var(--ind-color-admin-surface);
   color: var(--ind-color-admin-text);
   font: 14px/1.5 var(--ind-font-family-system);
-  opacity: 0;
 }
 .theme-control select { font: inherit; color: inherit; background: var(--ind-color-admin-surface); border: 1px solid var(--ind-color-admin-border-input); border-radius: .25rem; padding: .25rem; }
-header:hover > .theme-control, header:focus-within > .theme-control, .theme-control:focus-within { opacity: 1; }
-@media (hover: none) { .theme-control { opacity: 1; } }
+.theme-icon { display: none; }
+@media (max-width: 900px) {
+  .masthead .account { gap: .5rem; }
+  .theme-control { gap: .25rem; padding-inline: .25rem; }
+  .theme-label { display: none; }
+  .theme-icon { display: block; }
+  .theme-control select { font-size: 13px; }
+}
+@media (max-width: 600px) {
+  .masthead .account { font-size: 14px; }
+}
 .masthead { position: relative; }
 :root[data-theme=light] { color-scheme: light; }
 :root:not([data-theme=dark]) { color-scheme: light; }
