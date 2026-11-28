@@ -1,0 +1,17 @@
+<section id="loesung">
+<svg class="deco" aria-label="" width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg"><path d="M1580 0H1920V300C1880 280 1830 220 1800 150C1780 100 1740 80 1690 60C1640 40 1600 20 1580 0Z" fill="#B5DDF7"/><path d="M1730 0H1920V170C1890 160 1860 120 1840 80C1820 45 1780 25 1730 0Z" fill="#8CC8F2"/><path d="M0 900C100 880 190 930 260 990C310 1035 360 1060 420 1080H0Z" fill="#B5DDF7"/><path d="M0 980C60 975 110 1010 150 1080H0Z" fill="#8CC8F2"/><path d="M1856 396L1864 420L1888 428L1864 436L1856 460L1848 436L1824 428L1848 420Z" fill="#0B4F6C"/><path d="M1880 500L1884 512L1896 516L1884 520L1880 532L1876 520L1864 516L1876 512Z" fill="#F28C28"/></svg>
+<div class="head">
+<p class="eyebrow">Die Lösung (PR #246)</p>
+<h2>Nur testen, was sich geändert hat</h2>
+</div>
+<div class="steps">
+<div class="step in" style="--i:0"><p class="step-n">1</p><p class="step-p">Ein kleiner Job schaut zuerst, welche Ordner sich geändert haben. Nur die passenden Tests starten.</p></div>
+<div class="step in" style="--i:1"><p class="step-n">2</p><p class="step-p">Neuer Push auf denselben Pull Request? Der alte Lauf wird abgebrochen.</p></div>
+<div class="step in" style="--i:2"><p class="step-n">3</p><p class="step-p">Entwürfe überspringen die schweren Tests. Sie starten bei „Ready for review“.</p></div>
+<div class="step in" style="--i:3"><p class="step-n">4</p><p class="step-p">Der Mac läuft nur, wenn sich iOS-Code ändert. Linux geht dort nicht.</p></div>
+<div class="step in" style="--i:4"><p class="step-n">5</p><p class="step-p">Wackelige Tests: nur bei bekannten Fehlern und nur einmal neu starten.</p></div>
+<div class="step in" style="--i:5"><p class="step-n">6</p><p class="step-p">Nach dem Merge auf main läuft weiterhin alles. Das Image entsteht wie vorher.</p></div>
+</div>
+<p class="small">Weiterhin automatisch: Jeder Pull Request wird geprüft, nur gezielter. Ergebnis: schnellere Rückmeldung, weniger Warten.</p>
+<aside>Ziel ist Geschwindigkeit: weniger Warteschlange, schneller grüne oder rote Checks, keine verschwendeten Runner. Die drei großen Hebel sind einfach: Pfadfilter, alte Läufe abbrechen und Entwürfe überspringen. Technisch: Der Job changes nutzt dorny/paths-filter und setzt pro Bereich ein Ja oder Nein, zum Beispiel backend, admin-ui oder web-quality. Der API-Vertrag läuft trotzdem bei jedem Pull Request, weil er billig ist und viel schützt. Warum iOS auf dem Mac bleibt: Unsere Swift-Pakete nutzen Apple-Bibliotheken wie simd, CoreGraphics, CryptoKit und Combine, die es unter Linux nicht gibt. Neu starten macht unser Werkzeug pr-wait: Es startet einen roten Job genau einmal neu, und nur wenn das Log zu einem bekannten Störfall passt, etwa Maven 429 oder ein Mac-Runner, der nicht startet. Echte Fehler bleiben rot. Gemergt wurde das am 27.11.2026.</aside>
+</section>

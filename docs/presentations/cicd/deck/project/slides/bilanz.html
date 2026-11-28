@@ -1,0 +1,28 @@
+<section id="bilanz">
+<svg class="deco" aria-label="" width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg"><path d="M1580 0H1920V300C1880 280 1830 220 1800 150C1780 100 1740 80 1690 60C1640 40 1600 20 1580 0Z" fill="#B5DDF7"/><path d="M1730 0H1920V170C1890 160 1860 120 1840 80C1820 45 1780 25 1730 0Z" fill="#8CC8F2"/><path d="M0 900C100 880 190 930 260 990C310 1035 360 1060 420 1080H0Z" fill="#B5DDF7"/><path d="M0 980C60 975 110 1010 150 1080H0Z" fill="#8CC8F2"/><path d="M1856 396L1864 420L1888 428L1864 436L1856 460L1848 436L1824 428L1848 420Z" fill="#0B4F6C"/><path d="M1880 500L1884 512L1896 516L1884 520L1880 532L1876 520L1864 516L1876 512Z" fill="#F28C28"/></svg>
+<div class="head">
+<p class="eyebrow">Bilanz</p>
+<h2>Was gut läuft, was fehlt</h2>
+</div>
+<div class="cols">
+<div class="col-good">
+<h3>Gut</h3>
+<ul class="col-list">
+<li>Über 3.200 automatische Tests, pro PR nur die passenden</li>
+<li>Echter Browser und echte Datenbank in den Tests</li>
+<li>Jede Version eindeutig benannt, Rückweg dokumentiert</li>
+<li>Code von Claude geht durch dieselben Tests</li>
+</ul>
+</div>
+<div class="col-bad">
+<h3>Fehlt</h3>
+<ul class="col-list">
+<li>Live gehen nur von Hand, nur mit Eriks Zugang</li>
+<li>main ist nicht gesperrt: Mergen ginge auch bei roten Tests</li>
+<li>Kein zweiter Mensch prüft den Pull Request auf GitHub</li>
+<li>iOS wird nur getestet, nicht verteilt; Android hat noch keinen Code</li>
+</ul>
+</div>
+</div>
+<aside>Ehrlich bleiben. Fakten aus GitHub: main hat keinen Branch-Schutz. Dass wir nur mit grünen Tests mergen, ist eine Teamregel, technisch erzwungen ist es nicht. Keiner der 133 gemergten Pull Requests hat ein formales Review auf GitHub, geprüft wird in der Claude-Session und vom Menschen, der mergt. Nächste Schritte wären: main sperren, sodass rote Tests den Merge blockieren, und ein Deploy-Knopf in GitHub mit Freigabe, falls die LeoCloud das erlaubt.</aside>
+</section>
