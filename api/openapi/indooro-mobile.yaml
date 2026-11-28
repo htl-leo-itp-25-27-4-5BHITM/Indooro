@@ -16,6 +16,10 @@ info:
     - `x-indooro-consumers`: known shipped consumers (`ios`, `admin-ui`, `customer-web`, `api-tests`, `none`).
     - `x-indooro-findings` (optional): audit finding ids from `docs/audit/CODE_AUDIT.md`.
 
+    Routes under `/api/` are also served under `/api/v1/`. Both forms return
+    `Indooro-Api-Version: 1`. Deprecated POST operations return `Deprecation`,
+    `Sunset`, and a `Link` with the `successor-version` relation.
+
     Conventions: camelCase JSON, UUID strings for PostgreSQL ids, integer product ids and category codes,
     ISO-8601 UTC instants (fractional seconds possible), beacon UUIDs as 32 lowercase hex characters.
   contact:
@@ -319,7 +323,7 @@ paths:
                     - $ref: "#/components/schemas/Product"
                     - type: "null"
         "500":
-          $ref: "#/components/responses/LegacyServerError"
+          $ref: "#/components/responses/ServerError"
   /api/products/search:
     get:
       tags:
@@ -353,9 +357,9 @@ paths:
                 items:
                   $ref: "#/components/schemas/Product"
         "400":
-          $ref: "#/components/responses/LegacyBadRequest"
+          $ref: "#/components/responses/BadRequest"
         "500":
-          $ref: "#/components/responses/LegacyServerError"
+          $ref: "#/components/responses/ServerError"
   /api/layout/current:
     get:
       tags:
@@ -370,7 +374,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/LegacyLayoutDocument"
         "500":
-          $ref: "#/components/responses/LegacyServerError"
+          $ref: "#/components/responses/ServerError"
   /api/layout/history:
     get:
       tags:
@@ -396,7 +400,7 @@ paths:
                 items:
                   $ref: "#/components/schemas/LayoutHistoryEntry"
         "500":
-          $ref: "#/components/responses/LegacyServerError"
+          $ref: "#/components/responses/ServerError"
   /api/layout/versions/{layoutId}:
     get:
       tags:
@@ -417,7 +421,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/LegacyLayoutDocument"
         "404":
-          $ref: "#/components/responses/LegacyNotFound"
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/ServerError"
 components:
   schemas:
     ApiErrorResponse:
@@ -448,6 +454,10 @@ components:
         timestamp:
           type: string
           format: date-time
+        correlationId:
+          type: string
+          format: uuid
+          description: Identifier for a server error when one is available.
     ViolationReport:
       type: object
       description: Quarkus Hibernate Validator violation report.
@@ -466,11 +476,6 @@ components:
                 type: string
               message:
                 type: string
-    LegacyError:
-      type: object
-      properties:
-        error:
-          type: string
     RecordStatus:
       type: string
       enum:
@@ -1315,24 +1320,12 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/ApiErrorResponse"
-    LegacyBadRequest:
-      description: Legacy error body.
+    ServerError:
+      description: Unexpected error.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/LegacyError"
-    LegacyNotFound:
-      description: Legacy error body.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/LegacyError"
-    LegacyServerError:
-      description: Legacy error body built by string concatenation (may be invalid JSON, finding BUG-12).
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/LegacyError"
+            $ref: "#/components/schemas/ApiErrorResponse"
   parameters:
     StoreIdPath:
       name: storeId

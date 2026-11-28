@@ -84,3 +84,10 @@ POST /api/products removed the success response with the status `200`
 POST /api/regions removed the success response with the status `200`
 POST /api/stores removed the success response with the status `200`
 POST /api/stores/{storeId}/layout/versions removed the success response with the status `200`
+#
+# Shared API error envelope. No shipped client consumes the PDF utility routes.
+# PDF downloads still use application/pdf on success; errors use application/json.
+POST /api/convert/pdf-to-json the response body `application/json` const value `Keine Datei hochgeladen` was removed for the status `400`
+POST /api/convert/pdf-to-json the response's body `type` changed from `string` to `object` for status `400`
+POST /api/convert/pdf-to-json the response's body `type` changed from `string` to `object` for status `500`
+POST /api/export/pdf removed the media type `application/pdf` for the response with the status `500`

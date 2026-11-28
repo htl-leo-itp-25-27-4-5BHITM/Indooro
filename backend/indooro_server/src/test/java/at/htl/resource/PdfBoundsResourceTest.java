@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 
 @QuarkusTest
@@ -25,8 +26,20 @@ class PdfBoundsResourceTest {
                 .then()
                 .statusCode(400)
                 .contentType(containsString("application/json"))
+                .body("status", equalTo(400), "timestamp", notNullValue())
                 .body("error", notNullValue())
                 .body("error", containsString("Level"));
+    }
+
+    @Test
+    void multipartWithoutFileReturnsSharedError() {
+        given().multiPart("unrelated", "field")
+                .post("/api/convert/pdf-to-json")
+                .then()
+                .statusCode(400)
+                .contentType(containsString("application/json"))
+                .body("status", equalTo(400), "error", equalTo("Keine Datei hochgeladen"),
+                        "method", equalTo("POST"), "timestamp", notNullValue());
     }
 
     @Test
