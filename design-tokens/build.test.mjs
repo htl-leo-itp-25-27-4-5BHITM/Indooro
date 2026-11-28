@@ -52,3 +52,18 @@ for (const [name, tokens, message] of [
     assert.match(result.stderr, message);
   });
 }
+
+test('dark overrides preserve light output and use explicit and system selectors', async (t) => {
+  const light = { color: { ...palette, surface: { $type: 'color', $value: '{color.ink}' } } };
+  const { dir, run } = await fixture(t, light);
+  assert.equal(run().status, 0);
+  const original = await readFile(path.join(dir, 'dist/tokens.css'), 'utf8');
+  light.color.surface.$extensions = { 'indooro.dark': { colorSpace: 'srgb', components: [1, 1, 1], alpha: 1 } };
+  await writeFile(path.join(dir, 'tokens.json'), JSON.stringify(light));
+  assert.equal(run().status, 0);
+  const css = await readFile(path.join(dir, 'dist/tokens.css'), 'utf8');
+  assert.ok(css.startsWith(original), 'light CSS stays byte identical');
+  assert.match(css, /\[data-theme=dark\] \{\n  color-scheme: dark;\n  --ind-color-surface: #ffffff;/);
+  assert.match(css, /@media \(prefers-color-scheme: dark\) \{\n  :root:not\(\[data-theme=light\]\)/);
+  assert.equal(run('--check').status, 0);
+});

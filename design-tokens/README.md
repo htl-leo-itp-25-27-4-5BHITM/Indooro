@@ -69,3 +69,13 @@ The generator therefore writes and checks that copy, served at
 package scope, explicitly requested for static serving. Customer/landing HTML
 and existing CSS are unchanged; loading the file and migrating those pages is a
 follow-up. The copy is available without changing either page's rendered pixels.
+
+## Web color modes
+
+Semantic color tokens can define a typed sRGB dark value in
+`$extensions["indooro.dark"]`. The generator preserves each light declaration
+and appends explicit `[data-theme=dark]` overrides and system dark overrides for
+`:root:not([data-theme=light])`. Palette and scene tokens remain mode independent.
+New web-only aliases use `$extensions["indooro.web-only"]: true` so the generated
+iOS constants remain unchanged. Both web apps persist `indooro-theme` as `light`,
+`dark`, or `system`; system removes the attribute so CSS tracks OS changes live.
