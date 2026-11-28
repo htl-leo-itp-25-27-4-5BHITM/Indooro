@@ -99,3 +99,26 @@ Unchecked tasks retain these limits:
   and conversion guidance plus delivery/rollback documentation remain open.
 - 4.1–4.2: full implementation verification and archive await the above work.
   Keep this change active.
+
+### Task 2.8 audit triage (2026-11-28)
+
+Baseline: Actions run `46135081559`, main `e1bc4125`, iPhone 17 Pro / iOS
+26.5 (23F77). Downloaded `ios-a11y-audit` and extracted the xcresult summary,
+activity details, complete issue descriptions and app/element screenshots with
+`xcrun xcresulttool get test-results` / `export attachments`. The workflow step
+summary reports six failed tests; the log and xcresult agree:
+
+| Test / screen | Issue type | Element | Exact label | Disposition |
+| --- | --- | --- | --- | --- |
+| `testStartAccessibilityAudit` / Start | `textClipped` (131072) | StaticText | `Finde alles.\nSchnell und einfach.` | Give the multiline hero text its full intrinsic height. |
+| `testOnboardingAccessibilityAudit` / introduction sheet | `textClipped` (131072) | StaticText | `Ortung ist freiwillig. Du kannst auch ohne Standort- oder Bluetooth-Zugriff einkaufen.` | Stack the icon above wrapping text at accessibility sizes to reclaim paragraph width. |
+| `testProductSearchAccessibilityAudit` / Planung results | `contrast` (1) | StaticText | `Suchergebnisse` | Exact label/type exclusion in this test only: attached screenshot shows the scrolled header behind iOS 26 navigation-bar Liquid Glass blur. |
+| `testSettingsAccessibilityAudit` / settings sheet | `dynamicType` (65536), partially unsupported | StaticText | `Diagnose` | Give settings section headers an explicit semantic headline style, wrapping and the existing secondary-text palette. |
+| `testShoppingListAccessibilityAudit` / Einkaufen | `dynamicType` (65536), partially unsupported | StaticText | `Gang 2 – Molkereiprodukte` | Use a larger semantic subheadline style and intrinsic wrapping height for checklist location text. This is ordinary row text, not a map-canvas exception. |
+| `testStoreMapAccessibilityAudit` / Karte | Audit execution error -56, timed out | None | None | No exclusion; must complete in a verification run. |
+
+The baseline stops after its first finding in each test, so it does not establish
+that these are the only issues. The follow-up handler collects all findings while
+returning false for every real/unrecognized issue. The single-line product search
+TextField and both map-overlay `...xxxLarge` caps remain intact. The stale
+multiline-field comment is removed. Verification is pending; task 2.8 stays open.
