@@ -82,3 +82,19 @@ test("representative stores empty state", async ({ page }) => {
   await empty.screenshot({ path: test.info().outputPath("stores-empty-linux-capture.png"), animations: "disabled", caret: "hide" });
   await expect(empty).toHaveScreenshot("stores-empty-state-1440x900.png");
 });
+
+for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
+  test.describe(`dark ${viewport.width}`, () => {
+    test.use({ viewport, colorScheme: "dark" });
+    for (const screen of screens.filter(({ name }) => ["dashboard", "stores", "layout-editor"].includes(name))) {
+      test(screen.name, async ({ page }) => {
+        await mockVisualApi(page);
+        await page.goto(`/admin/next/${screen.path}`);
+        await expect(page.getByText(screen.ready, { exact: true }).first()).toBeVisible();
+        if (screen.name === "layout-editor") await expect(page.getByText("Mobiles Layout wird geladen …", { exact: true })).toHaveCount(0);
+        await page.evaluate(() => document.fonts.ready);
+        await expect(page).toHaveScreenshot(`dark-${screen.name}-${viewport.width}x${viewport.height}.png`, { fullPage: true });
+      });
+    }
+  });
+}

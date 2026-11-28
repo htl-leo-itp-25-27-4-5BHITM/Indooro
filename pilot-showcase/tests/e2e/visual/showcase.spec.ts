@@ -129,3 +129,18 @@ test("representative empty shopping list", async ({ page }) => {
   await page.evaluate(() => document.fonts.ready);
   await expect(empty).toHaveScreenshot("1440-empty-list-state.png", { stylePath: elementScreenshotStyle });
 });
+
+for (const viewport of [viewports[0], viewports[2]]) {
+  test.describe(`dark ${viewport.width}`, () => {
+    test.use({ viewport, colorScheme: "dark" });
+    test("landing and store demo", async ({ page }) => {
+      await page.clock.setFixedTime(new Date("2026-01-15T12:00:00Z"));
+      await page.goto("/?ansicht=2d");
+      await page.evaluate(() => document.fonts.ready);
+      await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+      await expect(page).toHaveScreenshot(`${viewport.width}-dark-landing.png`);
+      await openDemo(page);
+      await expect(page.getByTestId("store-demo")).toHaveScreenshot(`${viewport.width}-dark-store-demo.png`, { stylePath: elementScreenshotStyle });
+    });
+  });
+}
