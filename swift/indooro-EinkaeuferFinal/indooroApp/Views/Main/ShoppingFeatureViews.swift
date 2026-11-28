@@ -575,7 +575,7 @@ struct ProductsPage: View {
     }
 
     private var searchSection: some View {
-        Section("Produkt hinzufügen") {
+        Section {
             searchField
 
             if productSearch.isSearching {
@@ -585,6 +585,11 @@ struct ProductsPage: View {
                         .foregroundStyle(Color.a11ySecondaryText)
                 }
             }
+        } header: {
+            Text("Produkt hinzufügen")
+                .font(.headline)
+                .foregroundStyle(Color.a11ySecondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -839,7 +844,7 @@ struct ProductsPage: View {
     }
 
     private var resultsSection: some View {
-        Section(resultsTitle) {
+        Section {
             if discoveryMode == .category, let selectedCategory {
                 HStack {
                     Label(selectedCategory.title, systemImage: selectedCategory.symbol)
@@ -878,6 +883,11 @@ struct ProductsPage: View {
                     description: Text(emptyText)
                 )
             }
+        } header: {
+            Text(resultsTitle)
+                .font(.headline)
+                .foregroundStyle(Color.a11ySecondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
