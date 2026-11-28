@@ -107,7 +107,7 @@ export function ContactCard({ config = contact }: { config?: ContactConfig }) {
 /** Druckfreundliche Zusammenfassung. */
 export function AtAGlance() {
   return (
-    <div id="auf-einen-blick" data-testid="at-a-glance" className="rounded-3xl border border-line bg-white p-6 sm:p-8">
+    <div id="auf-einen-blick" data-testid="at-a-glance" className="rounded-3xl border border-line bg-surface p-6 sm:p-8">
       <style>{`@media print { body * { visibility: hidden !important; } #auf-einen-blick, #auf-einen-blick * { visibility: visible !important; } #auf-einen-blick { position: absolute; inset: 0 auto auto 0; width: 100%; border: 0; } .no-print { display: none !important; } }`}</style>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-[20px] font-semibold tracking-tight text-text">Pilot auf einen Blick</h3>

@@ -13,9 +13,9 @@ async function audit(page: Page, info: TestInfo, state: string) {
   expect(violations, `${state}: ${JSON.stringify(violations, null, 2)}`).toEqual([]);
 }
 
-for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
-  test.describe(`${viewport.width}x${viewport.height}`, () => {
-    test.use({ viewport, reducedMotion: "reduce" });
+for (const colorScheme of ["light", "dark"] as const) for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+  test.describe(`${colorScheme} ${viewport.width}x${viewport.height}`, () => {
+    test.use({ colorScheme, viewport, reducedMotion: "reduce" });
     test.setTimeout(120_000);
 
     for (const section of sections) {

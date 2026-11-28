@@ -6,13 +6,13 @@ import { Reveal, SectionHeading } from "../features/operator/ui";
 
 function Col({ n, title, items, delay }: { n: string; title: string; items: string[]; delay: number }) {
   return (
-    <Reveal delay={delay} className="rounded-3xl border border-line bg-white p-6 sm:p-7">
+    <Reveal delay={delay} className="rounded-3xl border border-line bg-surface p-6 sm:p-7">
       <p className="font-mono text-[12px] font-semibold text-accent">{n}</p>
       <h3 className="mt-2 text-[20px] font-semibold tracking-tight text-text">{title}</h3>
       <ul className="mt-5 space-y-3">
         {items.map((t) => (
           <li key={t} className="flex gap-3 text-[14.5px] leading-snug text-text">
-            <span aria-hidden className="mt-[7px] size-1.5 shrink-0 rounded-full bg-accent" />
+            <span aria-hidden className="mt-[7px] size-1.5 shrink-0 rounded-full bg-accent-fill" />
             {t}
           </li>
         ))}

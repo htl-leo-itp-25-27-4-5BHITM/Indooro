@@ -17,8 +17,8 @@
   padding: var(--ind-space-0-75rem);
   border: 1px dashed var(--border-strong);
   border-radius: var(--ind-radius-0-5rem);
-  background: var(--ind-color-palette-hex-ffffff);
-  color: var(--ind-color-palette-hex-111111);
+  background: var(--ind-color-admin-on-brand);
+  color: var(--ind-color-admin-print-ink);
   text-align: center;
   break-inside: avoid;
 }
@@ -27,11 +27,11 @@
 .anchor-label { font-weight: 700; font-size: var(--ind-font-size-1rem); }
 .anchor-id { font-family: var(--ind-font-family-mono); font-size: var(--ind-font-size-0-9rem); }
 .anchor-store, .anchor-hint { font-size: var(--ind-font-size-0-85rem); }
-.anchor-hint { color: var(--ind-color-palette-hex-444444); }
+.anchor-hint { color: var(--ind-color-admin-print-muted); }
 
 @media print {
   @page { size: A4; margin: 1cm; }
-  body, .admin-shell, .workspace, .content { background: var(--ind-color-palette-hex-ffffff) !important; }
+  body, .admin-shell, .workspace, .content { background: var(--ind-color-admin-on-brand) !important; }
   .skip-link, .masthead, .sidebar, .content > h1, .anchor-print-toolbar, .anchor-print-notice { display: none !important; }
   .workspace { display: block; min-height: 0; }
   .content { width: 100%; max-width: none; padding: 0; overflow: visible; }

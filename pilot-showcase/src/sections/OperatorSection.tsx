@@ -14,7 +14,7 @@ export function OperatorSection() {
         <SectionHeading id="betreiber-title" eyebrow="Für Betreiber" title={OPERATOR_HEADLINE} lead={OPERATOR_SUBLINE} />
 
         <Reveal className="mt-14" delay={0.05}>
-          <figure className="grid gap-8 rounded-3xl border border-line bg-white p-6 shadow-[0_1px_0_rgba(15,31,23,0.04)] sm:p-9 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
+          <figure className="grid gap-8 rounded-3xl border border-line bg-surface p-6 shadow-[0_1px_0_rgba(15,31,23,0.04)] sm:p-9 lg:grid-cols-[1.15fr_1fr] lg:gap-12">
             <div>
               <div className="flex items-center gap-3">
                 <Quote className="size-5 text-accent" aria-hidden />

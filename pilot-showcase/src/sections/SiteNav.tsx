@@ -1,3 +1,4 @@
+import { ThemeControl } from "../ThemeControl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import { createPortal } from "react-dom";
@@ -83,6 +84,7 @@ export function SiteNav() {
         solid ? "bg-ink-950/90 shadow-[inset_0_-1px_0_rgb(255_255_255/0.08),0_10px_30px_-12px_rgb(5_12_16/0.45)] backdrop-blur-xl backdrop-saturate-150" : "bg-transparent shadow-[inset_0_-1px_0_transparent]"
       }`}
     >
+      {!tour.active && <ThemeControl />}
       <Container className="relative z-[60] flex h-16 items-center justify-between gap-4">
         <a href="#top" aria-label="Indooro – zum Seitenanfang" className="rounded-lg" onClick={() => open && close(false)}>
           <Logo size={28} />

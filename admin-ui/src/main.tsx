@@ -1,5 +1,6 @@
+import { initializeTheme, ThemeControl } from "./ThemeControl";
 import { describeError, LoadingState } from "./PageState";
-import "../../design-tokens/dist/tokens.css";
+import "../../design-tokens/dist/admin-ui.css";
 import React, { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { ApiClientError, createApiClient } from "./api/client";
@@ -64,6 +65,7 @@ function AdminCandidate() {
     <div className="admin-shell">
       <a className="skip-link" href="#main-content">Zum Hauptinhalt springen</a>
       <header className="masthead">
+        <ThemeControl />
         {user && <button ref={menuButton} type="button" className="menu-toggle" aria-expanded={menuOpen} aria-controls="admin-navigation" onClick={() => setMenuOpen((open) => !open)}><span aria-hidden="true">☰</span> Menü</button>}
         <a className="brand" href="/admin/next/" aria-label="Indooro Admin Startseite">Indooro <span>Admin</span></a>
         {user && <div className="account"><span>{user.username}</span><span className="scope">{user.scope?.storeName ?? user.scope?.regionName ?? ROLE_TEXT[user.role] ?? user.role}</span><a href="/admin/logout">Abmelden</a></div>}
@@ -116,5 +118,7 @@ function AdminCandidate() {
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Admin root element is missing");
+
+initializeTheme();
 
 createRoot(root).render(<React.StrictMode><AdminCandidate /></React.StrictMode>);

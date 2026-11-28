@@ -52,3 +52,37 @@ for (const [name, tokens, message] of [
     assert.match(result.stderr, message);
   });
 }
+
+test('dark overrides preserve light output and use explicit and system selectors', async (t) => {
+  const light = { color: { ...palette, surface: { $type: 'color', $value: '{color.ink}' } } };
+  const { dir, run } = await fixture(t, light);
+  assert.equal(run().status, 0);
+  const original = await readFile(path.join(dir, 'dist/tokens.css'), 'utf8');
+  light.color['new-web-alias'] = { $type: 'color', $value: '{color.ink}', $extensions: { 'indooro.web-only': true } };
+  light.color.surface.$extensions = { 'indooro.dark': { colorSpace: 'srgb', components: [1, 1, 1], alpha: 1 } };
+  await writeFile(path.join(dir, 'tokens.json'), JSON.stringify(light));
+  assert.equal(run().status, 0);
+  const css = await readFile(path.join(dir, 'dist/tokens.css'), 'utf8');
+  assert.ok(css.startsWith(original), 'light CSS stays byte identical');
+  assert.match(css, /\[data-theme=dark\] \{\n  color-scheme: dark;\n  --ind-color-surface: #ffffff;/);
+  assert.match(css, /@media \(prefers-color-scheme: dark\) \{\n  :root:not\(\[data-theme=light\]\)/);
+  assert.equal(run('--check').status, 0);
+});
+
+test('app styles include only referenced tokens, inline palette aliases and check source changes', async (t) => {
+  const { dir, run } = await fixture(t, { color: { palette, surface: { $type: 'color', $value: '{color.palette.ink}' }, unused: { $type: 'color', $value: '{color.palette.ink}' } } });
+  const app = path.resolve(dir, '../admin-ui/src');
+  await mkdir(app, { recursive: true });
+  await writeFile(path.join(app, 'style.css'), 'body { color: var(--ind-color-surface); }');
+  assert.equal(run().status, 0);
+  const css = await readFile(path.join(dir, 'dist/admin-ui.css'), 'utf8');
+  assert.match(css, /--ind-color-surface: #102a3b;/);
+  assert.doesNotMatch(css, /--ind-color-(unused|palette)/);
+  assert.equal(run('--check').status, 0);
+  await writeFile(path.join(app, 'style.css'), 'body { color: var(--ind-color-unused); }');
+  assert.equal(run('--check').status, 1, 'source changes require regeneration');
+  await writeFile(path.join(app, 'style.css'), 'body { color: var(--ind-color-missing); }');
+  const invalid = run();
+  assert.notEqual(invalid.status, 0);
+  assert.match(invalid.stderr, /Unknown CSS token/);
+});
