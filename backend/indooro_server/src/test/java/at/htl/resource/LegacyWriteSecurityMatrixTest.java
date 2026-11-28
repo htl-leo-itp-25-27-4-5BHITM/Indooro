@@ -104,6 +104,7 @@ class LegacyWriteSecurityMatrixTest {
     @MethodSource("protectedWrites")
     void anonymousWriteIsUnauthorized(String method, String path, String body, boolean multipart) {
         send(method, path, body, multipart).then().statusCode(401);
+        send(method, "/api/v1" + path.substring("/api".length()), body, multipart).then().statusCode(401);
         verifyNoInteractions(layoutService, pdfImportService, pdfExportService, openSearchService, categoryService);
     }
 
@@ -112,6 +113,7 @@ class LegacyWriteSecurityMatrixTest {
     @TestSecurity(user = "store", roles = "store-manager")
     void storeManagerWriteIsForbidden(String method, String path, String body, boolean multipart) {
         send(method, path, body, multipart).then().statusCode(403);
+        send(method, "/api/v1" + path.substring("/api".length()), body, multipart).then().statusCode(403);
         verifyNoInteractions(layoutService, pdfImportService, pdfExportService, openSearchService, categoryService);
     }
 
@@ -120,6 +122,7 @@ class LegacyWriteSecurityMatrixTest {
     @TestSecurity(user = "region", roles = "region-manager")
     void regionManagerWriteIsForbidden(String method, String path, String body, boolean multipart) {
         send(method, path, body, multipart).then().statusCode(403);
+        send(method, "/api/v1" + path.substring("/api".length()), body, multipart).then().statusCode(403);
         verifyNoInteractions(layoutService, pdfImportService, pdfExportService, openSearchService, categoryService);
     }
 

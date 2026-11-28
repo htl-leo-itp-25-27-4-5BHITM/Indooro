@@ -78,6 +78,19 @@ class MobileRateLimitResourceTest {
     }
 
     @Test
+    void versionedEventsShareTheUnversionedRateLimit() {
+        doNothing().when(upsellSuggestionService).recordEvent(any());
+
+        postEvent("198.51.100.41").statusCode(202);
+        postEvent("198.51.100.41").statusCode(202);
+        given().contentType("application/json").header("X-Forwarded-For", "198.51.100.41")
+                .body(EVENT_BODY).post("/api/v1/mobile/upsell/events")
+                .then().statusCode(429).header("Retry-After", notNullValue());
+
+        verify(upsellSuggestionService, times(2)).recordEvent(any());
+    }
+
+    @Test
     void limitsAreIsolatedPerForwardedClient() {
         doNothing().when(upsellSuggestionService).recordEvent(any());
 
