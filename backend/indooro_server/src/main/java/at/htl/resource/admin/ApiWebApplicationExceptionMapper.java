@@ -2,6 +2,9 @@ package at.htl.resource.admin;
 
 import at.htl.admin.dto.ErrorLogDtos;
 import at.htl.admin.service.ErrorLogService;
+import at.htl.resource.CatalogBulkWriteException;
+import at.htl.service.CatalogBulkResult;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.Priority;
 import jakarta.inject.Inject;
@@ -62,8 +65,14 @@ public class ApiWebApplicationExceptionMapper implements ExceptionMapper<WebAppl
 
         return Response.status(status)
                 .type(MediaType.APPLICATION_JSON)
-                .entity(payload)
+                .entity(exception instanceof CatalogBulkWriteException bulk
+                        ? new CatalogBulkError(payload, bulk.result())
+                        : payload)
                 .build();
+    }
+
+    public record CatalogBulkError(@JsonUnwrapped ErrorLogDtos.ApiErrorResponse error,
+                                   @JsonUnwrapped CatalogBulkResult result) {
     }
 
     private String normalizeMessage(WebApplicationException exception, int status) {

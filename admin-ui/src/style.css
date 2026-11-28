@@ -42,8 +42,8 @@
 body { margin: 0; }
 a { color: var(--link); }
 a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px; }
-.masthead { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: var(--ind-space-1rem); padding: var(--ind-space-1rem) var(--ind-space-2rem); background: var(--brand); color: var(--surface); }
-.masthead a { color: var(--surface); }
+.masthead { min-height: 72px; display: flex; align-items: center; justify-content: space-between; gap: var(--ind-space-1rem); padding: var(--ind-space-1rem) var(--ind-space-2rem); background: var(--brand); color: var(--ind-color-admin-on-brand); }
+.masthead a { color: var(--ind-color-admin-on-brand); }
 .brand { font-size: var(--ind-font-size-1-3rem); font-weight: 700; text-decoration: none; }
 .brand span { color: var(--brand-accent); }
 .account { display: flex; align-items: center; gap: var(--ind-space-1rem); }
@@ -62,7 +62,7 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 .account a { display: inline-flex; align-items: center; min-height: 40px; }
 @media (max-width: 900px) {
   .masthead { flex-wrap: wrap; padding: var(--ind-space-0-75rem) var(--ind-space-1rem); gap: var(--ind-space-0-5rem) var(--ind-space-1rem); }
-  .menu-toggle { display: inline-flex; align-items: center; gap: var(--ind-space-0-4rem); min-height: 42px; padding: var(--ind-space-0-5rem) var(--ind-space-0-8rem); border: 1px solid var(--text-on-brand-muted); border-radius: var(--radius-control); background: transparent; color: var(--surface); font: inherit; font-weight: 650; cursor: pointer; }
+  .menu-toggle { display: inline-flex; align-items: center; gap: var(--ind-space-0-4rem); min-height: 42px; padding: var(--ind-space-0-5rem) var(--ind-space-0-8rem); border: 1px solid var(--text-on-brand-muted); border-radius: var(--radius-control); background: transparent; color: var(--ind-color-admin-on-brand); font: inherit; font-weight: 650; cursor: pointer; }
   .brand { display: inline-flex; align-items: center; column-gap: .3em; min-height: 40px; margin-right: auto; }
   .workspace { display: block; }
   .sidebar { display: none; border-right: 0; border-bottom: 1px solid var(--border); padding: var(--ind-space-0-75rem); }
@@ -76,7 +76,7 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 .page-intro p:last-child { color: var(--text-muted); margin: var(--ind-space-0-25rem) 0 0; }
 .eyebrow { text-transform: uppercase; letter-spacing: .11em; font-size: var(--ind-font-size-0-75rem); font-weight: 800; color: var(--accent); }
 .button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: var(--ind-space-0-65rem) var(--ind-space-1rem); border: 1px solid var(--border-strong); border-radius: var(--ind-radius-0-55rem); background: var(--surface); color: var(--link); text-decoration: none; font: inherit; font-weight: 650; cursor: pointer; }
-.button.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--surface); }
+.button.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--ind-color-admin-on-brand); }
 .button:hover { filter: brightness(.94); }
 .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--ind-space-0-8rem); margin-bottom: var(--ind-space-1rem); }
 .metric { display: flex; flex-direction: column; gap: var(--ind-space-0-3rem); background: var(--surface); border: 1px solid var(--border); border-radius: var(--ind-radius-0-75rem); padding: var(--ind-space-1-1rem); }
@@ -234,7 +234,7 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 
 /* One button look outside the layout editor, which styles its own tools. */
 :where(.content:not(.editor-content)) button:not(.text-button) { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; padding: var(--ind-space-0-55rem) var(--ind-space-1rem); border: 1px solid var(--border-strong); border-radius: var(--ind-radius-0-55rem); background: var(--surface); color: var(--link); font: inherit; font-weight: 650; cursor: pointer; }
-:where(.content:not(.editor-content)) button.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--surface); }
+:where(.content:not(.editor-content)) button.primary { background: var(--accent-strong); border-color: var(--accent-strong); color: var(--ind-color-admin-on-brand); }
 :where(.content:not(.editor-content)) button.danger { color: var(--danger-text); border-color: var(--danger-border); }
 .content:not(.editor-content) button:disabled { opacity: .55; cursor: not-allowed; }
 .content:not(.editor-content) .toolbar { display: flex; flex-wrap: wrap; gap: var(--ind-space-0-5rem); align-items: end; }
@@ -406,3 +406,33 @@ a:focus-visible { outline: 3px solid var(--focus-on-light); outline-offset: 3px;
 .state-spinner { width: 1.25rem; height: 1.25rem; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: state-spin .8s linear infinite; }
 @keyframes state-spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .state-spinner { animation: none; } }
+
+/* Keep the labelled selector in the header flow. */
+.theme-control {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .125rem .5rem;
+  border: 1px solid var(--ind-color-admin-border);
+  border-radius: .5rem;
+  background: var(--ind-color-admin-surface);
+  color: var(--ind-color-admin-text);
+  font: 14px/1.5 var(--ind-font-family-system);
+}
+.theme-control select { font: inherit; color: inherit; background: var(--ind-color-admin-surface); border: 1px solid var(--ind-color-admin-border-input); border-radius: .25rem; padding: .25rem; }
+.theme-icon { display: none; }
+@media (max-width: 900px) {
+  .masthead .account { gap: .5rem; }
+  .theme-control { gap: .25rem; padding-inline: .25rem; }
+  .theme-label { display: none; }
+  .theme-icon { display: block; }
+  .theme-control select { font-size: 13px; }
+}
+@media (max-width: 600px) {
+  .masthead .account { font-size: 14px; }
+}
+.masthead { position: relative; }
+:root[data-theme=light] { color-scheme: light; }
+:root:not([data-theme=dark]) { color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme=light]) { color-scheme: dark; } }
+:root[data-theme=dark] { color-scheme: dark; }

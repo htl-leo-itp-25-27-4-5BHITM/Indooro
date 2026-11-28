@@ -67,9 +67,9 @@ const routes = [
   "/admin/next/editor/?storeId=store-1"
 ];
 
-for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
-  test.describe(`${viewport.width}x${viewport.height}`, () => {
-    test.use({ viewport, reducedMotion: "reduce" });
+for (const colorScheme of ["light", "dark"] as const) for (const viewport of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+  test.describe(`${colorScheme} ${viewport.width}x${viewport.height}`, () => {
+    test.use({ colorScheme, viewport, reducedMotion: "reduce" });
     for (const path of routes) {
       test(`WCAG 2.1 AA ${path}`, async ({ page }) => {
         const { unexpected, errors } = await mockRoutes(page);

@@ -42,7 +42,7 @@ public class AdminResource {
             return Response.ok("{\"message\": \"Index created successfully\"}").build();
         } catch (IOException e) {
             LOG.error("Error creating index", e);
-            throw new WebApplicationException("OpenSearch ist nicht erreichbar.", Response.Status.SERVICE_UNAVAILABLE);
+            throw new WebApplicationException("OpenSearch ist nicht erreichbar.", e, Response.Status.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -60,7 +60,7 @@ public class AdminResource {
             return Response.ok(openSearchService.describeIndices()).build();
         } catch (IOException e) {
             LOG.error("Error reading index overview", e);
-            throw new WebApplicationException("OpenSearch ist nicht erreichbar.", Response.Status.SERVICE_UNAVAILABLE);
+            throw new WebApplicationException("OpenSearch ist nicht erreichbar.", e, Response.Status.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -79,7 +79,7 @@ public class AdminResource {
             return Response.ok("{\"message\": \"Index deleted successfully\"}").build();
         } catch (IOException e) {
             LOG.error("Error deleting index", e);
-            throw new WebApplicationException("OpenSearch ist nicht erreichbar.", Response.Status.SERVICE_UNAVAILABLE);
+            throw new WebApplicationException("OpenSearch ist nicht erreichbar.", e, Response.Status.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -98,7 +98,7 @@ public class AdminResource {
         } catch (IOException e) {
             LOG.error("Error reindexing products", e);
             throw new WebApplicationException("Reindex fehlgeschlagen: OpenSearch nicht erreichbar oder Fehler beim Kopieren.",
-                    Response.Status.INTERNAL_SERVER_ERROR);
+                    e, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -119,7 +119,7 @@ public class AdminResource {
         } catch (IOException e) {
             LOG.error("Error activating index " + index, e);
             throw new WebApplicationException("Alias-Umschaltung fehlgeschlagen: OpenSearch nicht erreichbar oder Fehler beim Schreiben der Aliase.",
-                    Response.Status.INTERNAL_SERVER_ERROR);
+                    e, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 

@@ -41,7 +41,7 @@ export function Problem() {
             </p>
           </Reveal>
 
-          <Reveal delay={0.15} className="mt-10 rounded-2xl bg-white/70 p-5 shadow-soft hairline">
+          <Reveal delay={0.15} className="mt-10 rounded-2xl bg-surface/70 p-5 shadow-soft hairline">
             <figure className="flex gap-4">
               <span aria-hidden className="mt-1 h-auto w-1 shrink-0 rounded-full bg-gradient-to-b from-accent to-teal" />
               <div>

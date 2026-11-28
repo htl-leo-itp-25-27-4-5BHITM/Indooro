@@ -1,3 +1,4 @@
+import { ThemeControl } from "../ThemeControl";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
 import { createPortal } from "react-dom";
@@ -44,14 +45,14 @@ export function SiteNav() {
     if (!open) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const first = sheetRef.current?.querySelector<HTMLElement>("a,button");
+    const first = sheetRef.current?.querySelector<HTMLElement>("a,button,select");
     first?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
         close();
       } else if (e.key === "Tab" && sheetRef.current) {
-        const items = [buttonRef.current, ...Array.from(sheetRef.current.querySelectorAll<HTMLElement>("a,button"))].filter(Boolean) as HTMLElement[];
+        const items = [buttonRef.current, ...Array.from(sheetRef.current.querySelectorAll<HTMLElement>("a,button,select"))].filter(Boolean) as HTMLElement[];
         const idx = items.indexOf(document.activeElement as HTMLElement);
         if (e.shiftKey && idx <= 0) {
           e.preventDefault();
@@ -119,6 +120,7 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {!tour.active && !open && <div className="hidden lg:block"><ThemeControl /></div>}
           <button
             type="button"
             data-testid="nav-tour"
@@ -181,6 +183,7 @@ export function SiteNav() {
                 </motion.li>
               ))}
             </ul>
+            <div className="relative mt-6 self-start"><ThemeControl /></div>
             <div className="relative mt-auto pt-10">
               <Button href="#pilot" size="lg" variant="primary" className="w-full" onClick={() => close(false)} data-testid="nav-sheet-cta">
                 Pilotpartner werden

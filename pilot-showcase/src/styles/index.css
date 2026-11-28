@@ -24,6 +24,16 @@
   --color-ink-200: var(--ind-color-showcase-ink-200);
   --color-ink-100: var(--ind-color-showcase-ink-100);
 
+  --color-surface: var(--ind-color-showcase-surface);
+  --color-accent-fill: var(--ind-color-showcase-accent-fill);
+  --color-accent-fill-hover: var(--ind-color-showcase-accent-fill-hover);
+
+  --color-status-success: var(--ind-color-showcase-status-success);
+  --color-status-warning: var(--ind-color-showcase-status-warning);
+  --color-simulation-text: var(--ind-color-showcase-simulation-text);
+  --color-status-danger: var(--ind-color-showcase-status-danger);
+  --color-error-text: var(--ind-color-showcase-error-text);
+
   /* Light surfaces */
   --color-paper: var(--ind-color-showcase-paper);
   --color-paper-2: var(--ind-color-showcase-paper-2);
@@ -178,3 +188,21 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Keep the labelled selector in the header flow. */
+.theme-control {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .125rem .5rem;
+  border: 1px solid var(--ind-color-admin-border);
+  border-radius: .5rem;
+  background: var(--ind-color-admin-surface);
+  color: var(--ind-color-admin-text);
+  font: 14px/1.5 var(--ind-font-family-system);
+}
+.theme-control select { font: inherit; color: inherit; background: var(--ind-color-admin-surface); border: 1px solid var(--ind-color-admin-border-input); border-radius: .25rem; padding: .25rem; }
+:root[data-theme=light] { color-scheme: light; }
+:root:not([data-theme=dark]) { color-scheme: light; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme=light]) { color-scheme: dark; } }
+:root[data-theme=dark] { color-scheme: dark; }

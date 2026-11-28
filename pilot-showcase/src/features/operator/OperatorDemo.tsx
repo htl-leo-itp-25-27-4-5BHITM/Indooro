@@ -57,10 +57,10 @@ export function OperatorDemo() {
   const atEnd = state.step === STEP_COUNT - 1;
 
   return (
-    <div className="overflow-hidden rounded-3xl border border-line bg-white shadow-[0_1px_0_rgba(15,31,23,0.04),0_24px_60px_-24px_rgba(15,31,23,0.22)]" data-testid="operator-demo">
+    <div className="overflow-hidden rounded-3xl border border-line bg-surface shadow-[0_1px_0_rgba(15,31,23,0.04),0_24px_60px_-24px_rgba(15,31,23,0.22)]" data-testid="operator-demo">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-amber/40 bg-amber/15 px-4 py-3 sm:px-6">
         <Tag kind="simulation">Simulation</Tag>
-        <p className="text-[13.5px] leading-snug text-[#5c4210]">{SIMULATION_BANNER}</p>
+        <p className="text-[13.5px] leading-snug text-simulation-text">{SIMULATION_BANNER}</p>
       </div>
 
       <div className="grid grid-cols-[minmax(0,1fr)] lg:grid-cols-[272px_minmax(0,1fr)]">
@@ -80,9 +80,9 @@ export function OperatorDemo() {
                     aria-current={active ? "step" : undefined}
                     disabled={locked}
                     onClick={() => dispatch({ type: "goto", step: i })}
-                    className={`group flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors ${active ? "bg-white shadow-sm ring-1 ring-line" : "hover:bg-white/70"} ${locked ? "cursor-not-allowed opacity-50" : ""}`}
+                    className={`group flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors ${active ? "bg-surface shadow-sm ring-1 ring-line" : "hover:bg-white/70"} ${locked ? "cursor-not-allowed opacity-50" : ""}`}
                   >
-                    <span className={`grid size-7 shrink-0 place-items-center rounded-full text-[12px] font-semibold ring-1 ring-inset ${active ? "bg-ink-900 text-white ring-ink-900" : done ? "bg-ok/20 text-[#13744a] ring-ok/40" : "text-muted ring-line"}`}>
+                    <span className={`grid size-7 shrink-0 place-items-center rounded-full text-[12px] font-semibold ring-1 ring-inset ${active ? "bg-ink-900 text-white ring-ink-900" : done ? "bg-ok/20 text-status-success ring-ok/40" : "text-muted ring-line"}`}>
                       {done && !active ? <Check className="size-3.5" aria-hidden /> : locked ? <Lock className="size-3" aria-hidden /> : n}
                     </span>
                     <span className="min-w-0">
@@ -105,7 +105,7 @@ export function OperatorDemo() {
         {/* Stage */}
         <div className="flex min-w-0 flex-col p-4 sm:p-6 lg:p-8">
           <div className="h-1 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuemin={1} aria-valuemax={STEP_COUNT} aria-valuenow={step1} aria-label="Fortschritt der Simulation">
-            <motion.div className="h-full rounded-full bg-accent" animate={{ width: `${(step1 / STEP_COUNT) * 100}%` }} transition={{ duration: reduce ? 0 : 0.6, ease: [0.16, 1, 0.3, 1] }} />
+            <motion.div className="h-full rounded-full bg-accent-fill" animate={{ width: `${(step1 / STEP_COUNT) * 100}%` }} transition={{ duration: reduce ? 0 : 0.6, ease: [0.16, 1, 0.3, 1] }} />
           </div>
 
           <div className="mt-5 flex flex-wrap items-start justify-between gap-3">
@@ -155,7 +155,7 @@ export function OperatorDemo() {
             <button type="button" data-testid="operator-prev" onClick={() => dispatch({ type: "prev" })} disabled={state.step === 0} className="inline-flex min-h-11 items-center gap-2 rounded-full border border-line px-4 text-[14px] font-medium text-text transition hover:bg-paper disabled:opacity-40">
               <ArrowLeft className="size-4" aria-hidden /> Zurück
             </button>
-            <button type="button" data-testid="operator-next" onClick={() => dispatch({ type: "next" })} disabled={!canNext(state)} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-accent px-5 text-[14px] font-semibold text-white transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-40">
+            <button type="button" data-testid="operator-next" onClick={() => dispatch({ type: "next" })} disabled={!canNext(state)} className="inline-flex min-h-11 items-center gap-2 rounded-full bg-accent-fill px-5 text-[14px] font-semibold text-white transition hover:bg-accent-fill-hover disabled:cursor-not-allowed disabled:opacity-40">
               Weiter <ArrowRight className="size-4" aria-hidden />
             </button>
             <button

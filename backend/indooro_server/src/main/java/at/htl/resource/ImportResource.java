@@ -9,6 +9,7 @@ import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.RestForm;
@@ -16,7 +17,6 @@ import org.jboss.resteasy.reactive.RestForm;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import org.eclipse.microprofile.openapi.annotations.Operation;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
@@ -46,9 +46,7 @@ public class ImportResource {
         adminAccessService.requireAdmin();
 
         if (file == null || !file.exists()) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Keine Datei hochgeladen")
-                    .build();
+            throw new WebApplicationException("Keine Datei hochgeladen", Response.Status.BAD_REQUEST);
         }
 
         try {
@@ -65,14 +63,9 @@ public class ImportResource {
             return Response.ok(out).build();
 
         } catch (PdfInputException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                    .type(MediaType.APPLICATION_JSON)
-                    .entity(Map.of("error", e.getMessage()))
-                    .build();
+            throw new WebApplicationException(e.getMessage(), e, Response.Status.BAD_REQUEST);
         } catch (IOException e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity("Fehler beim Verarbeiten: " + e.getMessage())
-                    .build();
+            throw new WebApplicationException("PDF import failed", e, Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 }

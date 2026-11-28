@@ -15,6 +15,10 @@ info:
     - `x-indooro-consumers`: known shipped consumers (`ios`, `admin-ui`, `customer-web`, `api-tests`, `none`).
     - `x-indooro-findings` (optional): audit finding ids from `docs/audit/CODE_AUDIT.md`.
 
+    Routes under `/api/` are also served under `/api/v1/`. Both forms return
+    `Indooro-Api-Version: 1`. Deprecated POST operations return `Deprecation`,
+    `Sunset`, and a `Link` with the `successor-version` relation.
+
     Conventions: camelCase JSON, UUID strings for PostgreSQL ids, integer product ids and category codes,
     ISO-8601 UTC instants (fractional seconds possible), beacon UUIDs as 32 lowercase hex characters.
   contact:
@@ -350,10 +354,11 @@ paths:
                   oneOf:
                     - $ref: "#/components/schemas/Product"
                     - type: "null"
-        "500": { $ref: "#/components/responses/LegacyServerError" }
+        "500": { $ref: "#/components/responses/ServerError" }
     post:
       tags: [catalog]
       operationId: indexProduct
+      deprecated: true
       summary: Index one product (legacy write path).
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
@@ -370,7 +375,7 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "500": { $ref: "#/components/responses/LegacyServerError" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/products/search:
     get:
       tags: [catalog]
@@ -398,8 +403,8 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/Product" }
-        "400": { $ref: "#/components/responses/LegacyBadRequest" }
-        "500": { $ref: "#/components/responses/LegacyServerError" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/products/{id}:
     get:
       tags: [catalog]
@@ -418,12 +423,13 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Product" }
-        "404": { $ref: "#/components/responses/LegacyNotFound" }
-        "500": { $ref: "#/components/responses/LegacyServerError" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/products/bulk:
     post:
       tags: [catalog]
       operationId: indexProductsBulk
+      deprecated: true
       summary: Bulk upsert products with ordered row outcomes; writes are not atomic.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
       x-indooro-access: role:admin
@@ -453,7 +459,7 @@ paths:
           description: Transport outcome is ambiguous; verify affected document IDs before retrying.
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
+              schema: { $ref: "#/components/schemas/CatalogBulkError" }
   /api/categories:
     get:
       tags: [catalog]
@@ -475,7 +481,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/Category" }
-        "500": { $ref: "#/components/responses/LegacyServerError" }
+        "500": { $ref: "#/components/responses/ServerError" }
     post:
       tags: [catalog]
       operationId: upsertCategory
@@ -496,10 +502,12 @@ paths:
       responses:
         "201": { $ref: "#/components/responses/Created" }
         "204": { $ref: "#/components/responses/Updated" }
-        "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "409": { $ref: "#/components/responses/Conflict" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "503": { $ref: "#/components/responses/CatalogBulkUnavailable" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/categories/{categoryCode}:
     parameters:
       - name: categoryCode
@@ -518,7 +526,8 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Category" }
-        "404": { $ref: "#/components/responses/LegacyNotFound" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
     put:
       tags: [catalog]
       operationId: replaceCategory
@@ -537,9 +546,12 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Category" }
-        "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "503": { $ref: "#/components/responses/CatalogBulkUnavailable" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/categories/bulk:
     post:
       tags: [catalog]
@@ -562,14 +574,14 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/CatalogBulkResult" }
-        "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "503":
           description: Transport outcome is ambiguous; verify affected category codes before retrying.
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/CatalogBulkResult" }
+              schema: { $ref: "#/components/schemas/CatalogBulkError" }
 
   # ---------------------------------------------------------------- legacy layout
   /api/layout/current:
@@ -586,10 +598,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/LegacyLayoutDocument" }
-        "500": { $ref: "#/components/responses/LegacyServerError" }
+        "500": { $ref: "#/components/responses/ServerError" }
     post:
       tags: [legacy-layout]
       operationId: saveLegacyCurrentLayout
+      deprecated: true
       summary: Save a new global layout version and make it current.
       description: Published elements require positive numeric IDs at most 9007199254740991 for iOS. A shelf layoutCode, when present, must begin with that shelf's category and section. Requires role admin.
       security: [{ oidcSession: [] }, { bearerAuth: [] }]
@@ -613,9 +626,9 @@ paths:
                   message: { type: string }
                   layoutId: { type: string, format: uuid }
                   savedAt: { type: string, format: date-time }
-        "400": { $ref: "#/components/responses/LegacyBadRequest" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "403": { $ref: "#/components/responses/Forbidden" }
-        "500": { $ref: "#/components/responses/LegacyServerError" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/layout/history:
     get:
       tags: [legacy-layout]
@@ -637,7 +650,7 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/LayoutHistoryEntry" }
-        "500": { $ref: "#/components/responses/LegacyServerError" }
+        "500": { $ref: "#/components/responses/ServerError" }
   /api/layout/versions/{layoutId}:
     get:
       tags: [legacy-layout]
@@ -656,7 +669,8 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/LegacyLayoutDocument" }
-        "404": { $ref: "#/components/responses/LegacyNotFound" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   # ---------------------------------------------------------------- utility
   /api/convert/pdf-to-json:
@@ -664,7 +678,8 @@ paths:
       tags: [utility]
       operationId: convertPdfToJson
       summary: Parse a belegplan PDF into product rows without persisting them.
-      x-indooro-access: public
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
       x-indooro-consumers: [none]
       x-indooro-findings: [SEC-06, SEC-11]
       requestBody:
@@ -686,22 +701,18 @@ paths:
               schema:
                 type: array
                 items: { $ref: "#/components/schemas/ImportedProduct" }
-        "400":
-          description: No file uploaded.
-          content:
-            application/json:
-              schema: { type: string, const: Keine Datei hochgeladen }
-        "500":
-          description: Parsing failed (plain German message).
-          content:
-            application/json:
-              schema: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
+
   /api/export/pdf:
     post:
       tags: [utility]
       operationId: exportBelegplanPdf
       summary: Render a belegplan PDF from product rows.
-      x-indooro-access: public
+      security: [{ oidcSession: [] }, { bearerAuth: [] }]
+      x-indooro-access: role:admin
       x-indooro-consumers: [none]
       x-indooro-findings: [SEC-05, SEC-06]
       requestBody:
@@ -717,11 +728,10 @@ paths:
           content:
             application/pdf:
               schema: { type: string, contentMediaType: application/pdf }
-        "500":
-          description: Export failed (plain German message).
-          content:
-            application/pdf:
-              schema: { type: string }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "500": { $ref: "#/components/responses/ServerError" }
 
   # ---------------------------------------------------------------- maintenance
   /api/admin/index/create:
@@ -2436,21 +2446,11 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/ApiErrorResponse" }
-    LegacyBadRequest:
-      description: Legacy error body.
+    CatalogBulkUnavailable:
+      description: The category write could not be confirmed.
       content:
         application/json:
-          schema: { $ref: "#/components/schemas/LegacyError" }
-    LegacyNotFound:
-      description: Legacy error body.
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/LegacyError" }
-    LegacyServerError:
-      description: Legacy error body built by string concatenation (may be invalid JSON, finding BUG-12).
-      content:
-        application/json:
-          schema: { $ref: "#/components/schemas/LegacyError" }
+          schema: { $ref: "#/components/schemas/CatalogBulkError" }
     RecipeDetailOk:
       description: Recipe detail.
       content:
@@ -2483,6 +2483,10 @@ components:
         method: { type: string, examples: [GET] }
         path: { type: string, examples: [/api/stores/00000000-0000-0000-0000-000000000000] }
         timestamp: { type: string, format: date-time }
+        correlationId:
+          type: string
+          format: uuid
+          description: Identifier for a server error when one is available.
     ViolationReport:
       type: object
       description: Quarkus Hibernate Validator violation report.
@@ -2496,15 +2500,16 @@ components:
             properties:
               field: { type: string }
               message: { type: string }
-    LegacyError:
-      type: object
-      properties:
-        error: { type: string }
     MessageResponse:
       type: object
       required: [message]
       properties:
         message: { type: string }
+    CatalogBulkError:
+      description: API error with the original row outcomes for safe recovery.
+      allOf:
+        - $ref: "#/components/schemas/ApiErrorResponse"
+        - $ref: "#/components/schemas/CatalogBulkResult"
     CatalogBulkResult:
       type: object
       required: [message, count, saved, failed, unknown, rows]

@@ -130,7 +130,7 @@ function StepsStatic() {
             className="relative pl-16 lg:pl-0"
           >
             <span className="absolute left-0 top-0 grid size-11 place-items-center rounded-full bg-paper text-sm font-semibold text-accent-strong shadow-[0_0_0_6px_var(--color-paper)] ring-1 ring-inset ring-accent/40 lg:static">
-              <span className="grid size-11 place-items-center rounded-full bg-white shadow-soft ring-1 ring-inset ring-accent/30">
+              <span className="grid size-11 place-items-center rounded-full bg-surface shadow-soft ring-1 ring-inset ring-accent/30">
                 {i + 1}
               </span>
             </span>
@@ -233,7 +233,7 @@ function StepsScrolly({ onFail }: { onFail: () => void }) {
           >
             <div className="relative pl-16">
               <span
-                className={`absolute left-0 top-0 grid size-11 place-items-center rounded-full text-sm font-semibold ring-1 ring-inset transition-colors duration-500 ${step === i ? "bg-accent text-white ring-accent" : "bg-white text-accent-strong shadow-soft ring-accent/30"}`}
+                className={`absolute left-0 top-0 grid size-11 place-items-center rounded-full text-sm font-semibold ring-1 ring-inset transition-colors duration-500 ${step === i ? "bg-accent-fill text-white ring-accent" : "bg-surface text-accent-strong shadow-soft ring-accent/30"}`}
               >
                 {i + 1}
               </span>
