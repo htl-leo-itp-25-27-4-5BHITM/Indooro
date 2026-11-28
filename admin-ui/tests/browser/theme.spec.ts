@@ -56,6 +56,7 @@ for (const width of [390, 768, 1440]) {
     const control = page.getByRole("combobox", { name: "Darstellung", exact: true });
     await expect(control).toBeVisible();
     const header = await page.locator(".masthead").boundingBox();
+    expect(header!.height).toBe(width === 390 ? 114 : 72);
     const box = await control.boundingBox();
     expect(box!.x).toBeGreaterThanOrEqual(0);
     expect(box!.x + box!.width).toBeLessThanOrEqual(width);
