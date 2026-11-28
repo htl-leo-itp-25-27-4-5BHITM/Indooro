@@ -12,6 +12,9 @@ extension Color {
     /// Dunkles Orange für Warnhinweise und Akzenttext auf hellem Hintergrund (WCAG AA).
     static var a11yWarningText: Color { Color(AccessibilityPalette.warningText) }
 
-    /// Neutrales Grau für Sekundärtext auf weißen Karten (WCAG AA).
+    /// Dark green text on pale tinted controls.
+    static var a11yBrandGreenText: Color { Color(AccessibilityPalette.brandGreenText) }
+
+    /// Secondary text on white and pale card surfaces.
     static var a11ySecondaryText: Color { Color(AccessibilityPalette.secondaryText) }
 }

@@ -1598,7 +1598,7 @@ struct ShoppingListsPage: View {
     }
 
     private var openItemsSection: some View {
-        Section("Auf deiner Liste") {
+        Section {
             if openItems.isEmpty {
                 ContentUnavailableView(
                     "Noch keine Artikel",
@@ -1626,6 +1626,11 @@ struct ShoppingListsPage: View {
                     }
                 }
             }
+        } header: {
+            Text("Auf deiner Liste")
+                .font(.headline)
+                .foregroundStyle(Color.a11ySecondaryText)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -1874,6 +1879,7 @@ private struct ShoppingChecklistRow: View {
                     HStack(spacing: 6) {
                         Text(item.name)
                             .font(.headline)
+                            .fixedSize(horizontal: false, vertical: true)
                             .foregroundStyle(.primary)
                             .strikethrough(isCompleted)
 
