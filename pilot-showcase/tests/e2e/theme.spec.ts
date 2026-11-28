@@ -70,4 +70,6 @@ test("390px mobile menu exposes the theme selector in its keyboard loop", async 
   await page.keyboard.press("Escape");
   await expect(page.getByTestId("nav-menu-button")).toBeFocused();
   await expect(page.getByRole("dialog", { name: "Navigation" })).toHaveCount(0);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(control).toHaveValue("light");
 });

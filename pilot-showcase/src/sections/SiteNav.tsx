@@ -120,7 +120,7 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-2">
-          {!tour.active && <div className="hidden lg:block"><ThemeControl /></div>}
+          {!tour.active && !open && <div className="hidden lg:block"><ThemeControl /></div>}
           <button
             type="button"
             data-testid="nav-tour"
